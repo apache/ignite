@@ -27,18 +27,18 @@ public abstract class AbstractMetric implements Metric {
     private final String name;
 
     /** Description. */
-    @Nullable private final String descr;
+    @Nullable private final String desc;
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      */
-    public AbstractMetric(String name, String descr) {
+    public AbstractMetric(String name, String desc) {
         assert name != null;
         assert !name.isEmpty();
 
         this.name = name;
-        this.descr = descr;
+        this.desc = desc;
     }
 
     /** {@inheritDoc} */
@@ -48,7 +48,7 @@ public abstract class AbstractMetric implements Metric {
 
     /** {@inheritDoc} */
     @Override @Nullable public String description() {
-        return descr;
+        return desc;
     }
 
     /** {@inheritDoc} */

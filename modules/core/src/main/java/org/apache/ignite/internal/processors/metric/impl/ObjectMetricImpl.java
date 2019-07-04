@@ -32,11 +32,11 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @param type Type.
      */
-    public ObjectMetricImpl(String name, @Nullable String description, Class<T> type) {
-        super(name, description);
+    public ObjectMetricImpl(String name, @Nullable String desc, Class<T> type) {
+        super(name, desc);
 
         this.type = type;
     }

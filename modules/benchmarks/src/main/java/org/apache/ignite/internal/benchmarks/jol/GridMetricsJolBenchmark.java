@@ -16,7 +16,7 @@
 
 package org.apache.ignite.internal.benchmarks.jol;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
@@ -110,7 +110,7 @@ public class GridMetricsJolBenchmark {
      * Calculates and prints the size of metric registry of {@code TOTAL} size;
      */
     private static void measureMetricRegistry() {
-        MetricRegistryImpl mreg = new MetricRegistryImpl();
+        MetricRegistry mreg = new MetricRegistry("test", null);
 
         for(int i=0; i<BOOLEAN_CNT; i++)
             mreg.booleanMetric(BOOLEAN_METRIC + i, null);

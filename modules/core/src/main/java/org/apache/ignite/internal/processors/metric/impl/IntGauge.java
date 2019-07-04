@@ -30,11 +30,11 @@ public class IntGauge extends AbstractMetric implements IntMetric {
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      * @param val Supplier.
      */
-    public IntGauge(String name, @Nullable String descr, IntSupplier val) {
-        super(name, descr);
+    public IntGauge(String name, @Nullable String desc, IntSupplier val) {
+        super(name, desc);
 
         this.val = val;
     }

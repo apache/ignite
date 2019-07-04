@@ -17,10 +17,10 @@
 package org.apache.ignite.spi.metric.noop;
 
 import java.util.function.Predicate;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -46,7 +46,7 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<Metric> filter) {
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
         // No-op.
     }
 }

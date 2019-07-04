@@ -18,13 +18,14 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 
 /**
  *
@@ -103,13 +104,13 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private final LongMetricImpl sparseStorageSize;
 
     /**
-     * @param mreg Metrics registry.
+     * @param mmgr Metrics manager.
      * @param metricsEnabled Metrics enabled flag.
      * @param rateTimeInterval Rate time interval.
      * @param subInts Number of sub-intervals.
      */
     public DataStorageMetricsImpl(
-        MetricRegistry mreg,
+        GridMetricManager mmgr,
         boolean metricsEnabled,
         long rateTimeInterval,
         int subInts
@@ -118,78 +119,78 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
 
-        MetricRegistry mset = mreg.withPrefix(DATASTORAGE_METRIC_PREFIX);
+        MetricRegistry mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
 
-        walLoggingRate = mset.hitRateMetric("WalLoggingRate",
+        walLoggingRate = mreg.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",
             rateTimeInterval,
             subInts);
 
-        walWritingRate = mset.hitRateMetric(
+        walWritingRate = mreg.hitRateMetric(
             "WalWritingRate",
             "Average number of bytes per second written during the last time interval.",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeDuration = mset.hitRateMetric(
+        walFsyncTimeDuration = mreg.hitRateMetric(
             "WalFsyncTimeDuration",
             "Total duration of fsync",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeNum = mset.hitRateMetric(
+        walFsyncTimeNum = mreg.hitRateMetric(
             "WalFsyncTimeNum",
             "Total count of fsync",
             rateTimeInterval,
             subInts);
 
-        walBuffPollSpinsNum = mset.hitRateMetric(
+        walBuffPollSpinsNum = mreg.hitRateMetric(
             "WalBuffPollSpinsRate",
             "WAL buffer poll spins number over the last time interval.",
             rateTimeInterval,
             subInts);
 
-        lastCpLockWaitDuration = mset.metric("LastCheckpointLockWaitDuration",
+        lastCpLockWaitDuration = mreg.metric("LastCheckpointLockWaitDuration",
             "Duration of the checkpoint lock wait in milliseconds.");
 
-        lastCpMarkDuration = mset.metric("LastCheckpointMarkDuration",
+        lastCpMarkDuration = mreg.metric("LastCheckpointMarkDuration",
             "Duration of the checkpoint lock wait in milliseconds.");
 
-        lastCpPagesWriteDuration = mset.metric("LastCheckpointPagesWriteDuration",
+        lastCpPagesWriteDuration = mreg.metric("LastCheckpointPagesWriteDuration",
             "Duration of the checkpoint pages write in milliseconds.");
 
-        lastCpDuration = mset.metric("LastCheckpointDuration",
+        lastCpDuration = mreg.metric("LastCheckpointDuration",
             "Duration of the last checkpoint in milliseconds.");
 
-        lastCpFsyncDuration = mset.metric("LastCheckpointFsyncDuration",
+        lastCpFsyncDuration = mreg.metric("LastCheckpointFsyncDuration",
             "Duration of the sync phase of the last checkpoint in milliseconds.");
 
-        lastCpTotalPages = mset.metric("LastCheckpointTotalPagesNumber",
+        lastCpTotalPages = mreg.metric("LastCheckpointTotalPagesNumber",
             "Total number of pages written during the last checkpoint.");
 
-        lastCpDataPages = mset.metric("LastCheckpointDataPagesNumber",
+        lastCpDataPages = mreg.metric("LastCheckpointDataPagesNumber",
             "Total number of data pages written during the last checkpoint.");
 
-        lastCpCowPages = mset.metric("LastCheckpointCopiedOnWritePagesNumber",
+        lastCpCowPages = mreg.metric("LastCheckpointCopiedOnWritePagesNumber",
             "Number of pages copied to a temporary checkpoint buffer during the last checkpoint.");
 
-        lastWalSegmentRollOverTime = mset.metric("WalLastRollOverTime",
+        lastWalSegmentRollOverTime = mreg.metric("WalLastRollOverTime",
             "Time of the last WAL segment rollover.");
 
-        totalCheckpointTime = mset.metric("CheckpointTotalTime",
+        totalCheckpointTime = mreg.metric("CheckpointTotalTime",
             "Total duration of checkpoint");
 
-        storageSize = mset.metric("StorageSize",
+        storageSize = mreg.metric("StorageSize",
             "Storage space allocated, in bytes.");
 
-        sparseStorageSize = mset.metric("SparseStorageSize",
+        sparseStorageSize = mreg.metric("SparseStorageSize",
             "Storage space allocated adjusted for possible sparsity, in bytes.");
 
-        mset.register("WalArchiveSegments",
+        mreg.register("WalArchiveSegments",
             this::getWalArchiveSegments,
             "Current number of WAL segments in the WAL archive.");
 
-        mset.register("WalTotalSize",
+        mreg.register("WalTotalSize",
             this::getWalTotalSize,
             "Total size in bytes for storage wal files.");
     }

@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric;
-
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+/**
+ *
+ */
+package org.apache.ignite.spi.metric.opencensus;
 
 /**
- * Read only metric registry.
+ * <!-- Package description. -->
+ * Contains Opencensus based implementation of MetricExporterSpi.
  */
-public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
-    /**
-     * Adds listener of metrics group creation events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
-}

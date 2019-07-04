@@ -51,7 +51,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
 
         logSpi.setPeriod(EXPORT_TIMEOUT);
 
-        logSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
+        logSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(logSpi);
 

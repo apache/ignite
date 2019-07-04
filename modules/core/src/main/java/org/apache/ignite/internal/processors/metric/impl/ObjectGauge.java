@@ -33,12 +33,12 @@ public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T> {
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      * @param val Supplier.
      * @param type Type.
      */
-    public ObjectGauge(String name, @Nullable String descr, Supplier<T> val, Class<T> type) {
-        super(name, descr);
+    public ObjectGauge(String name, @Nullable String desc, Supplier<T> val, Class<T> type) {
+        super(name, desc);
 
         this.val = val;
         this.type = type;

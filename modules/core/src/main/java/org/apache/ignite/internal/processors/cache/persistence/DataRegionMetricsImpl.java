@@ -22,12 +22,14 @@ import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  *
@@ -38,7 +40,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
      * Full name will contain {@link DataRegionConfiguration#getName()} also.
      * {@code "io.dataregion.default"}, for example.
      */
-    public static final String DATAREGION_METRICS_PREFIX = "io.dataregion";
+    public static final String DATAREGION_METRICS_PREFIX = metricName("io", "dataregion");
 
     /** */
     private final DataRegionMetricsProvider dataRegionMetricsProvider;
@@ -119,16 +121,38 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
      * @param memPlcCfg DataRegionConfiguration.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
-        this(memPlcCfg, new MetricRegistryImpl(), NO_OP_METRICS);
+        this.memPlcCfg = memPlcCfg;
+        this.dataRegionMetricsProvider = NO_OP_METRICS;
+
+        metricsEnabled = memPlcCfg.isMetricsEnabled();
+
+        persistenceEnabled = memPlcCfg.isPersistenceEnabled();
+
+        rateTimeInterval = memPlcCfg.getMetricsRateTimeInterval();
+
+        subInts = memPlcCfg.getMetricsSubIntervalCount();
+
+        this.totalAllocatedPages = new LongAdderMetricImpl("NO_OP", null);
+        this.largeEntriesPages = new LongAdderMetricImpl("NO_OP", null);
+        this.dirtyPages = new LongAdderMetricImpl("NO_OP", null);
+        this.readPages = new LongAdderMetricImpl("NO_OP", null);
+        this.writtenPages = new LongAdderMetricImpl("NO_OP", null);
+        this.replacedPages = new LongAdderMetricImpl("NO_OP", null);
+        this.offHeapSize = new LongMetricImpl("NO_OP", null);
+        this.checkpointBufferSize = new LongMetricImpl("NO_OP", null);
+        this.allocRate = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.evictRate = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.pageReplaceRate = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.pageReplaceAge = new HitRateMetric("NO_OP", null, 60_000, 5);
     }
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
-     * @param mreg Metrics registry.
+     * @param mmgr Metrics manager.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
-        MetricRegistry mreg,
+        GridMetricManager mmgr,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
@@ -141,78 +165,78 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         subInts = memPlcCfg.getMetricsSubIntervalCount();
 
-        MetricRegistry mset = mreg.withPrefix(DATAREGION_METRICS_PREFIX, memPlcCfg.getName());
+        MetricRegistry mreg = mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
 
-        totalAllocatedPages = mset.longAdderMetric("TotalAllocatedPages",
+        totalAllocatedPages = mreg.longAdderMetric("TotalAllocatedPages",
             "Total number of allocated pages.");
 
-        allocRate = mset.hitRateMetric("AllocationRate",
+        allocRate = mreg.hitRateMetric("AllocationRate",
             "Allocation rate (pages per second) averaged across rateTimeInternal.",
             60_000,
             5);
 
-        evictRate = mset.hitRateMetric("EvictionRate",
+        evictRate = mreg.hitRateMetric("EvictionRate",
             "Eviction rate (pages per second).",
             60_000,
             5);
 
-        pageReplaceRate = mset.hitRateMetric("PagesReplaceRate",
+        pageReplaceRate = mreg.hitRateMetric("PagesReplaceRate",
             "Rate at which pages in memory are replaced with pages from persistent storage (pages per second).",
             60_000,
             5);
 
-        pageReplaceAge = mset.hitRateMetric("PagesReplaceAge",
+        pageReplaceAge = mreg.hitRateMetric("PagesReplaceAge",
             "Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).",
             60_000,
             5);
 
-        largeEntriesPages = mset.longAdderMetric("LargeEntriesPagesCount",
+        largeEntriesPages = mreg.longAdderMetric("LargeEntriesPagesCount",
             "Count of pages that fully ocupied by large entries that go beyond page size");
 
-        dirtyPages = mset.longAdderMetric("DirtyPages",
+        dirtyPages = mreg.longAdderMetric("DirtyPages",
             "Number of pages in memory not yet synchronized with persistent storage.");
 
-        readPages = mset.longAdderMetric("PagesRead",
+        readPages = mreg.longAdderMetric("PagesRead",
             "Number of pages read from last restart.");
 
-        writtenPages = mset.longAdderMetric("PagesWritten",
+        writtenPages = mreg.longAdderMetric("PagesWritten",
             "Number of pages written from last restart.");
 
-        replacedPages = mset.longAdderMetric("PagesReplaced",
+        replacedPages = mreg.longAdderMetric("PagesReplaced",
             "Number of pages replaced from last restart.");
 
-        offHeapSize = mset.metric("OffHeapSize",
+        offHeapSize = mreg.metric("OffHeapSize",
             "Offheap size in bytes.");
 
-        checkpointBufferSize = mset.metric("CheckpointBufferSize",
+        checkpointBufferSize = mreg.metric("CheckpointBufferSize",
             "Checkpoint buffer size in bytes.");
 
-        mset.register("EmptyDataPages",
+        mreg.register("EmptyDataPages",
             dataRegionMetricsProvider::emptyDataPages,
             "Calculates empty data pages count for region. It counts only totally free pages that can be reused " +
                 "(e. g. pages that are contained in reuse bucket of free list).");
 
-        mset.register("PagesFillFactor",
+        mreg.register("PagesFillFactor",
             this::getPagesFillFactor,
             "The percentage of the used space.");
 
-        mset.register("PhysicalMemoryPages",
+        mreg.register("PhysicalMemoryPages",
             this::getPhysicalMemoryPages,
             "Number of pages residing in physical RAM.");
 
-        mset.register("OffheapUsedSize",
+        mreg.register("OffheapUsedSize",
             this::getOffheapUsedSize,
             "Offheap used size in bytes.");
 
-        mset.register("TotalAllocatedSize",
+        mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Gets a total size of memory allocated in the data region, in bytes");
 
-        mset.register("PhysicalMemorySize",
+        mreg.register("PhysicalMemorySize",
             this::getPhysicalMemorySize,
             "Gets total size of pages loaded to the RAM, in bytes");
 
-        mset.register("UsedCheckpointBufferSize",
+        mreg.register("UsedCheckpointBufferSize",
             this::getUsedCheckpointBufferSize,
             "Gets used checkpoint buffer size in bytes");
     }

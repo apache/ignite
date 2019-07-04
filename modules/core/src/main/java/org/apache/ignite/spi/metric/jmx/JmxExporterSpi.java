@@ -17,19 +17,17 @@
 package org.apache.ignite.spi.metric.jmx;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -43,51 +41,47 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
     /** Monitoring registry. */
     private ReadOnlyMetricRegistry mreg;
 
-    /** Set of already registered as MBean prefixes. */
-    private Set<String> metricSets = new HashSet<>();
-
     /** Metric filter. */
-    private @Nullable Predicate<Metric> filter;
+    private @Nullable Predicate<MetricRegistry> filter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        mreg.addMetricCreationListener(m -> {
-            if (filter != null && !filter.test(m))
-                return;
+        mreg.forEach(this::register);
 
-            MetricName n = parse(m.name());
+        mreg.addMetricRegistryCreationListener(this::register);
+    }
 
-            if (metricSets.contains(n.msetName()))
-                return;
+    private void register(MetricRegistry grp) {
+        if (filter != null && !filter.test(grp))
+            return;
+
+        if (log.isDebugEnabled())
+            log.debug("Found new metric registry [name=" + grp.name() + ']');
+
+        MetricUtils.MetricName n = parse(grp.name());
+
+        try {
+            MetricRegistryMBean mregBean = new MetricRegistryMBean(grp);
+
+            ObjectName mbean = U.registerMBean(
+                ignite().configuration().getMBeanServer(),
+                igniteInstanceName,
+                n.root(),
+                n.subName(),
+                mregBean,
+                MetricRegistryMBean.class);
+
+            mBeans.add(mbean);
 
             if (log.isDebugEnabled())
-                log.debug("Found new metric set [name=" + n.msetName() + ']');
-
-            metricSets.add(n.msetName());
-
-            try {
-                MetricSetMBean msetBean = new MetricSetMBean(n.msetName(), mreg, m);
-
-                ObjectName mbean = U.registerMBean(
-                    ignite().configuration().getMBeanServer(),
-                    igniteInstanceName,
-                    n.root(),
-                    n.subName(),
-                    msetBean,
-                    MetricSetMBean.class);
-
-                mBeans.add(mbean);
-
-                if (log.isDebugEnabled())
-                    log.debug("MetricSet JMX bean created. " + mbean);
-            }
-            catch (JMException e) {
-                log.error("MBean for " + n.msetName() + " can't be created.", e);
-            }
-        });
+                log.debug("MetricGroup JMX bean created. " + mbean);
+        }
+        catch (JMException e) {
+            log.error("MBean for " + grp.name() + " can't be created.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -118,7 +112,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<Metric> filter) {
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
         this.filter = filter;
     }
 }
