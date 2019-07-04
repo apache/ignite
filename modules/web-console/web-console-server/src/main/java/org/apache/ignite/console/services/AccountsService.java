@@ -22,6 +22,8 @@ import java.util.UUID;
 import org.apache.ignite.console.config.ActivationConfiguration;
 import org.apache.ignite.console.config.SignUpConfiguration;
 import org.apache.ignite.console.dto.Account;
+import org.apache.ignite.console.event.Event;
+import org.apache.ignite.console.event.EventPublisher;
 import org.apache.ignite.console.repositories.AccountsRepository;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.ChangeUserRequest;
@@ -37,29 +39,30 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
-import static org.apache.ignite.console.notification.NotificationDescriptor.ACTIVATION_LINK;
-import static org.apache.ignite.console.notification.NotificationDescriptor.PASSWORD_CHANGED;
-import static org.apache.ignite.console.notification.NotificationDescriptor.PASSWORD_RESET;
-import static org.apache.ignite.console.notification.NotificationDescriptor.WELCOME_LETTER;
+import static org.apache.ignite.console.event.AccountEventType.ACCOUNT_CREATE;
+import static org.apache.ignite.console.event.AccountEventType.ACCOUNT_UPDATE;
+import static org.apache.ignite.console.event.AccountEventType.PASSWORD_CHANGED;
+import static org.apache.ignite.console.event.AccountEventType.PASSWORD_RESET;
+import static org.apache.ignite.console.event.AccountEventType.RESET_ACTIVATION_TOKEN;
 
 /**
  * Service to handle accounts.
  */
 @Service
 public class AccountsService implements UserDetailsService {
-    /** */
+    /** Tx manager. */
     protected TransactionManager txMgr;
 
-    /** */
+    /** Accounts repository. */
     protected AccountsRepository accountsRepo;
 
-    /** */
+    /** Web socket manager. */
     protected WebSocketsManager wsm;
 
-    /** */
-    protected NotificationService notificationSrv;
+    /** Event publisher. */
+    protected EventPublisher evtPublisher;
 
-    /** */
+    /** Password encoder. */
     protected PasswordEncoder encoder;
 
     /** User details getChecker. */
@@ -81,7 +84,7 @@ public class AccountsService implements UserDetailsService {
      * @param wsm Websocket manager.
      * @param accountsRepo Accounts repository.
      * @param txMgr Transactions manager.
-     * @param notificationSrv Notification service.
+     * @param evtPublisher Event publisher.
      */
     public AccountsService(
         SignUpConfiguration signUpCfg,
@@ -90,7 +93,7 @@ public class AccountsService implements UserDetailsService {
         WebSocketsManager wsm,
         AccountsRepository accountsRepo,
         TransactionManager txMgr,
-        NotificationService notificationSrv
+        EventPublisher evtPublisher
     ) {
         disableSignup = !signUpCfg.isEnabled();
         userDetailsChecker = activationCfg.getChecker();
@@ -101,7 +104,7 @@ public class AccountsService implements UserDetailsService {
         this.wsm = wsm;
         this.accountsRepo = accountsRepo;
         this.txMgr = txMgr;
-        this.notificationSrv = notificationSrv;
+        this.evtPublisher = evtPublisher;
     }
 
     /** {@inheritDoc} */
@@ -148,12 +151,12 @@ public class AccountsService implements UserDetailsService {
         });
 
         if (activationEnabled) {
-            notificationSrv.sendEmail(ACTIVATION_LINK, acc);
+            evtPublisher.publish(new Event<>(RESET_ACTIVATION_TOKEN, acc));
 
             throw new MissingConfirmRegistrationException("Confirm your email", acc.getEmail());
         }
 
-        notificationSrv.sendEmail(WELCOME_LETTER, acc);
+        evtPublisher.publish(new Event<>(ACCOUNT_CREATE, acc));
     }
 
     /**
@@ -229,7 +232,7 @@ public class AccountsService implements UserDetailsService {
             return acc0;
         });
 
-        notificationSrv.sendEmail(ACTIVATION_LINK, acc);
+        evtPublisher.publish(new Event<>(RESET_ACTIVATION_TOKEN, acc));
     }
 
     /**
@@ -259,6 +262,8 @@ public class AccountsService implements UserDetailsService {
         if (!oldTok.equals(acc.getToken()))
             wsm.revokeToken(acc, oldTok);
 
+        evtPublisher.publish(new Event<>(ACCOUNT_UPDATE, acc));
+
         return acc;
     }
 
@@ -278,7 +283,7 @@ public class AccountsService implements UserDetailsService {
             return acc0;
         });
 
-        notificationSrv.sendEmail(PASSWORD_RESET, acc);
+        evtPublisher.publish(new Event<>(PASSWORD_RESET, acc));
     }
 
     /**
@@ -300,7 +305,7 @@ public class AccountsService implements UserDetailsService {
 
             accountsRepo.save(acc);
 
-            notificationSrv.sendEmail(PASSWORD_CHANGED, acc);
+            evtPublisher.publish(new Event<>(PASSWORD_CHANGED, acc));
         });
     }
 }

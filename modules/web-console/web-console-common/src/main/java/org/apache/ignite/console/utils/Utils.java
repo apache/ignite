@@ -18,7 +18,10 @@ package org.apache.ignite.console.utils;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.AbstractMap;
 import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
@@ -152,5 +155,22 @@ public class Utils {
         String causeMsg = F.isEmpty(e.getMessage()) ? e.getClass().getName() : e.getMessage();
 
         return prefix + ": " + causeMsg;
+    }
+
+    /**
+     * Simple entry generator.
+     *
+     * @param key Key.
+     * @param val Value.
+     */
+    public static <K, V> Map.Entry<K, V> entry(K key, V val) {
+        return new AbstractMap.SimpleEntry<>(key, val);
+    }
+
+    /**
+     * Collector.
+     */
+    public static <K, U> Collector<Map.Entry<K, U>, ?, Map<K, U>> entriesToMap() {
+        return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 }

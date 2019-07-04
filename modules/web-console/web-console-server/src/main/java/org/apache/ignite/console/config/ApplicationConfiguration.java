@@ -17,11 +17,17 @@
 package org.apache.ignite.console.config;
 
 import java.util.Map;
+import java.util.concurrent.Executor;
+
 import org.apache.ignite.console.web.security.PassportLocalPasswordEncoder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,5 +51,27 @@ public class ApplicationConfiguration {
         );
 
         return new DelegatingPasswordEncoder(encodingId, encoders);
+    }
+
+    /**
+     * @return Application event multicaster.
+     */
+    @Bean(name = "applicationEventMulticaster")
+    public ApplicationEventMulticaster simpleApplicationEventMulticaster(TaskExecutor executor) {
+        SimpleApplicationEventMulticaster evtMulticaster = new SimpleApplicationEventMulticaster();
+
+        evtMulticaster.setTaskExecutor(getThreadPoolTaskExecutor());
+        return evtMulticaster;
+    }
+
+    /**
+     * Thread pool task executor.
+     */
+    private Executor getThreadPoolTaskExecutor() {
+        ThreadPoolTaskExecutor pool = new ThreadPoolTaskExecutor();
+        pool.setMaxPoolSize(Math.max(8, Runtime.getRuntime().availableProcessors()));
+        pool.initialize();
+
+        return pool;
     }
 }
