@@ -105,7 +105,9 @@ import org.junit.runners.Suite;
 
     RebuildIndexLogMessageTest.class,
 
-    H2TreeCorruptedTreeExceptionTest.class
+    H2TreeCorruptedTreeExceptionTest.class,
+
+    RebuildIndexLogMessageTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }
