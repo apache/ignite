@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -85,8 +86,8 @@ public class MigrationFromMongo {
     protected MongoDatabase mongoDb;
 
     /** */
-    @Value("${migration.mongo.db.name:}")
-    private String mongoDbName;
+    @Value("${migration.mongo.db.url:}")
+    private String mongoDbUrl;
 
     /**
      * Initialize migration service.
@@ -117,8 +118,8 @@ public class MigrationFromMongo {
      * Migrate from Mongo to GridGain.
      */
     public void migrate() {
-        if (F.isEmpty(mongoDbName)) {
-            log.info("MongoDB database name was not specified. Migration disabled.");
+        if (F.isEmpty(mongoDbUrl)) {
+            log.info("MongoDB URL was not specified. Migration disabled.");
 
             return;
         }
@@ -131,10 +132,12 @@ public class MigrationFromMongo {
 
         log.info("Migration started...");
 
-        MongoClient mongoClient = MongoClients.create();
+        ConnectionString connStr = new ConnectionString(mongoDbUrl);
+
+        MongoClient mongoClient = MongoClients.create(connStr);
 
         try {
-            mongoDb = mongoClient.getDatabase(mongoDbName);
+            mongoDb = mongoClient.getDatabase(connStr.getDatabase());
 
             migrateAccounts();
 
