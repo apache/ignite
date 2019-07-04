@@ -133,14 +133,16 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
         doTestPutConcurrent(TX_CACHE, true);
     }
 
-    /** TODO https://issues.apache.org/jira/browse/IGNITE-11793 */
+    /** */
     public void testPutAtomicConcurrentPersistentWithIsolatedMode() throws Exception {
         // doTestPutConcurrent(ATOMIC_CACHE, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
-    /** TODO https://issues.apache.org/jira/browse/IGNITE-11793 */
+    /** */
     public void testPutTxConcurrentPersistentWithIsolatedMode() throws Exception {
         //doTestPutConcurrent(TX_CACHE, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
     /** */
@@ -163,14 +165,16 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
         doTestPutConcurrent(TX_CACHE_MEMORY, true);
     }
 
-    /** TODO https://issues.apache.org/jira/browse/IGNITE-11793 */
+    /** */
     public void testPutAtomicConcurrentVolatileWithIsolatedMode() throws Exception {
         // doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
-    /** TODO https://issues.apache.org/jira/browse/IGNITE-11793 */
+    /** */
     public void testPutTxConcurrentVolatileWithIsolatedMode() throws Exception {
         // doTestPutConcurrent(TX_CACHE_MEMORY, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
     /** */

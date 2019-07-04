@@ -1082,7 +1082,7 @@ public class GridDhtPartitionDemander {
             this.log = null;
             this.rebalanceId = -1;
             this.routines = 0;
-            this.cancelLock = new ReentrantReadWriteLock();
+            this.cancelLock = null;
         }
 
         /**
