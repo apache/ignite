@@ -75,6 +75,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.ExchangeType.ALL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -764,58 +765,61 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                for (int p = 0; p < partitions; p++) {
-                    GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
+                // Skip partition updates in case of not real exchange.
+                if (!ctx.localNode().isClient() && exchFut.exchangeType() == ALL) {
+                    for (int p = 0; p < partitions; p++) {
+                        GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
 
-                    if (partitionLocalNode(p, topVer)) {
-                        // Prepare partition to rebalance if it's not happened on full map update phase.
-                        if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
-                            locPart = rebalancePartition(p, true, exchFut);
+                        if (partitionLocalNode(p, topVer)) {
+                            // Prepare partition to rebalance if it's not happened on full map update phase.
+                            if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
+                                locPart = rebalancePartition(p, true, exchFut);
 
-                        GridDhtPartitionState state = locPart.state();
-
-                        if (state == MOVING) {
-                            if (grp.rebalanceEnabled()) {
-                                Collection<ClusterNode> owners = owners(p);
-
-                                // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
-                                if (!F.isEmpty(owners)) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Will not own partition (there are owners to rebalance from) " +
-                                            "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
-                                }
-
-                                // It's important to clear non empty moving partitions before full rebalancing.
-                                // Consider the scenario:
-                                // Node1 has keys k1 and k2 in the same partition.
-                                // Node2 started rebalancing from Node1.
-                                // Node2 received k1, k2 and failed before moving partition to OWNING state.
-                                // Node1 removes k2 but update has not been delivered to Node1 because of failure.
-                                // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
-                                // NOTE: avoid calling clearAsync for partition twice per topology version.
-                                // TODO FIXME clearing is not always needed see IGNITE-11799
-                                if (grp.persistenceEnabled() && !exchFut.isHistoryPartition(grp, locPart.id()) &&
-                                    !locPart.isClearing() && !locPart.isEmpty())
-                                    locPart.clearAsync();
-                            }
-                            else
-                                updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
-                        }
-                    }
-                    else {
-                        if (locPart != null) {
                             GridDhtPartitionState state = locPart.state();
 
                             if (state == MOVING) {
-                                locPart.rent(false);
+                                if (grp.rebalanceEnabled()) {
+                                    Collection<ClusterNode> owners = owners(p);
 
-                                updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
+                                    // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
+                                    if (!F.isEmpty(owners)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Will not own partition (there are owners to rebalance from) " +
+                                                "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
+                                    }
 
-                                changed = true;
+                                    // It's important to clear non empty moving partitions before full rebalancing.
+                                    // Consider the scenario:
+                                    // Node1 has keys k1 and k2 in the same partition.
+                                    // Node2 started rebalancing from Node1.
+                                    // Node2 received k1, k2 and failed before moving partition to OWNING state.
+                                    // Node1 removes k2 but update has not been delivered to Node1 because of failure.
+                                    // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
+                                    // NOTE: avoid calling clearAsync for partition twice per topology version.
+                                    // TODO FIXME clearing is not always needed see IGNITE-11799
+                                    if (grp.persistenceEnabled() && !exchFut.isHistoryPartition(grp, locPart.id()) &&
+                                        !locPart.isClearing() && !locPart.isEmpty())
+                                        locPart.clearAsync();
+                                }
+                                else
+                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
+                            }
+                        }
+                        else {
+                            if (locPart != null) {
+                                GridDhtPartitionState state = locPart.state();
 
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Evicting " + state + " partition (it does not belong to affinity) [" +
-                                        "grp=" + grp.cacheOrGroupName() + ", p=" + locPart.id() + ']');
+                                if (state == MOVING) {
+                                    locPart.rent(false);
+
+                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
+
+                                    changed = true;
+
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Evicting " + state + " partition (it does not belong to affinity) [" +
+                                            "grp=" + grp.cacheOrGroupName() + ", p=" + locPart.id() + ']');
+                                    }
                                 }
                             }
                         }
