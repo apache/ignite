@@ -110,6 +110,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
@@ -4055,12 +4056,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 err = spi.getSpiContext().validateNode(node);
 
-                if (err == null)
-                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(
-                        spi.marshaller(),
-                        U.resolveClassLoader(spi.ignite().configuration()),
-                        false,
-                        log));
+                if (err == null) {
+                    try {
+                        DiscoveryDataBag data = msg.gridDiscoveryData().unmarshalJoiningNodeData(
+                            spi.marshaller(),
+                            U.resolveClassLoader(spi.ignite().configuration()),
+                            false,
+                            log
+                        );
+
+                        err = spi.getSpiContext().validateNode(node, data);
+                    }
+                    catch (IgniteCheckedException e) {
+                        err = new IgniteNodeValidationResult(node.id(), e.getMessage());
+                    }
+                }
 
                 if (err != null) {
                     final IgniteNodeValidationResult err0 = err;
