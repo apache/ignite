@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import org.apache.ignite.console.websocket.WebSocketEvent;
+import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.Logger;
@@ -300,7 +300,7 @@ public class AgentUtils {
      * @param evt Event.
      * @throws Exception If failed to send event.
      */
-    public static void send(Session ses, WebSocketEvent evt) throws Exception {
+    public static void send(Session ses, WebSocketResponse evt) throws Exception {
         Future<Void> fut = ses.getRemote().sendStringByFuture(toJson(evt));
 
         try {

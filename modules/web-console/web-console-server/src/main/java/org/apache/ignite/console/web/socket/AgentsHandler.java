@@ -26,7 +26,7 @@ import org.apache.ignite.console.web.AbstractHandler;
 import org.apache.ignite.console.websocket.AgentHandshakeRequest;
 import org.apache.ignite.console.websocket.AgentHandshakeResponse;
 import org.apache.ignite.console.websocket.TopologySnapshot;
-import org.apache.ignite.console.websocket.WebSocketEvent;
+import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +87,7 @@ public class AgentsHandler extends AbstractHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void handleEvent(WebSocketSession ws, WebSocketEvent evt) throws IOException {
+    @Override public void handleEvent(WebSocketSession ws, WebSocketRequest evt) throws IOException {
         switch (evt.getEventType()) {
             case AGENT_HANDSHAKE:
                 try {

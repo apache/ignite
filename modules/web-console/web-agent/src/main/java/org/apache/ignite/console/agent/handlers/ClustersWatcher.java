@@ -32,7 +32,7 @@ import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.websocket.TopologySnapshot;
-import org.apache.ignite.console.websocket.WebSocketEvent;
+import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -117,7 +117,7 @@ public class ClustersWatcher implements Closeable {
      */
     private void sendTopology(Session ses, List<TopologySnapshot> tops) {
         try {
-            send(ses, new WebSocketEvent(CLUSTER_TOPOLOGY, tops));
+            send(ses, new WebSocketResponse(CLUSTER_TOPOLOGY, tops));
         }
         catch (Throwable e) {
             log.error("Failed to send topology to server");

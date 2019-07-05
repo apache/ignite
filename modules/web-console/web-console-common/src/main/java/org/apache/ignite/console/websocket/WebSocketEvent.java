@@ -16,123 +16,34 @@
 
 package org.apache.ignite.console.websocket;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import static org.apache.ignite.console.utils.Utils.toJson;
-import static org.apache.ignite.console.websocket.WebSocketEvents.ERROR;
-
-/**
- * Websocket event POJO.
- */
-public class WebSocketEvent {
-    /** */
-    private String reqId;
-
-    /** */
-    private String evtType;
-
-    /** */
-    private String payload;
-
-    /**
-     * Default constructor for serialization.
-     */
-    public WebSocketEvent() {
-        // No-op.
-    }
-
-    /**
-     * Constructor with auto generated ID.
-     *
-     * @param evtType Event type.
-     * @param payload Payload.
-     */
-    public WebSocketEvent(String evtType, Object payload) {
-        this(UUID.randomUUID().toString(), evtType, toJson(payload));
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param reqId Request ID.
-     * @param evtType Event type.
-     * @param payload Payload.
-     */
-    private WebSocketEvent(String reqId, String evtType, String payload) {
-        this.reqId = reqId;
-        this.evtType = evtType;
-        this.payload = payload;
-    }
-
+public interface WebSocketEvent<T> {
     /**
      * @return Request ID.
      */
-    public String getRequestId() {
-        return reqId;
-    }
+    public String getRequestId();
 
     /**
      * @param reqId New request ID.
      */
-    public void setRequestId(String reqId) {
-        this.reqId = reqId;
-    }
+    public void setRequestId(String reqId);
 
     /**
      * @return Event type.
      */
-    public String getEventType() {
-        return evtType;
-    }
+    public String getEventType();
 
     /**
      * @param evtType New event type.
      */
-    public void setEventType(String evtType) {
-        this.evtType = evtType;
-    }
+    public void setEventType(String evtType);
 
     /**
      * @return Payload.
      */
-    public String getPayload() {
-        return payload;
-    }
+    public T getPayload();
 
     /**
      * @param payload New payload.
      */
-    public void setPayload(String payload) {
-        this.payload = payload;
-    }
-
-    /**
-     * Create event with payload for response with same ID.
-     *
-     * @param payload Payload.
-     */
-    public WebSocketEvent withPayload(Object payload) {
-        return new WebSocketEvent(reqId, evtType, toJson(payload));
-    }
-
-    /**
-     * Create event with error for response with same ID.
-     *
-     * @param msg Message.
-     */
-    public WebSocketEvent withError(String msg) {
-        Map<String, String> err = new HashMap<>();
-
-        err.put("message", msg);
-
-        return new WebSocketEvent(reqId, ERROR, toJson(err));
-    }
-    
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(WebSocketEvent.class, this);
-    }
+    public void setPayload(T payload);
 }

@@ -249,11 +249,7 @@ export default class AgentManager {
                 if (__dbg)
                     console.log('[WS] Received: ', msg);
 
-                const evt = JSON.parse(msg.data);
-                const eventType = evt.eventType;
-                const payload = JSON.parse(evt.payload);
-
-                this.processWebSocketEvent(evt, eventType, payload);
+                this.processWebSocketEvent(msg.data);
             },
             onreconnect: (evt) => {
                 if (__dbg)
@@ -282,32 +278,42 @@ export default class AgentManager {
         });
     }
 
-    processWebSocketEvent(evt, eventType, payload) {
-        if (eventType === 'agent:status') {
-            const {clusters, count, hasDemo} = payload;
+    async processWebSocketEvent(data) {
+        const evt = await this.pool.postMessage(data);
 
-            const conn = this.connectionSbj.getValue();
+        const {requestId, eventType, payload} = evt;
 
-            conn.update(this.isDemoMode(), count, clusters, hasDemo);
+        switch (eventType) {
+            case 'agent:status':
+                const {clusters, count, hasDemo} = payload;
 
-            this.connectionSbj.next(conn);
-        }
-        else if (eventType === 'admin:announcement')
-            this.UserNotifications.announcement = payload;
-        else {
-            this.wsSubject.next({
-                requestId: evt.requestId,
-                eventType,
-                payload
-            });
+                const conn = this.connectionSbj.getValue();
+
+                conn.update(this.isDemoMode(), count, clusters, hasDemo);
+
+                this.connectionSbj.next(conn);
+
+                break;
+
+            case 'admin:announcement':
+                this.UserNotifications.announcement = payload;
+
+                break;
+
+            default:
+                this.wsSubject.next({
+                    requestId,
+                    eventType,
+                    payload
+                });
         }
     }
 
-    _sendWebSocketEvent(requestId, eventType, data) {
+    _sendWebSocketEvent(requestId, eventType, payload) {
         this.ws.json({
             requestId,
             eventType,
-            payload: JSON.stringify(data)
+            payload
         });
     }
 
@@ -466,7 +472,7 @@ export default class AgentManager {
      */
     _restOnActiveCluster(cluster, credentials, event, params) {
         return this._sendToAgent(event, {clusterId: cluster.id, params: _.merge({}, credentials, params)})
-            .then(async(res) => {
+            .then((res) => {
                 const {status = SuccessStatus.STATUS_SUCCESS} = res;
 
                 switch (status) {
@@ -474,13 +480,7 @@ export default class AgentManager {
                         if (cluster.secured)
                             this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
 
-                        const taskId = _.get(params, 'taskId', '');
-
-                        const useBigIntJson = taskId.startsWith('query');
-
-                        const data = await this.pool.postMessage({payload: res.data, useBigIntJson});
-
-                        return data;
+                        return res.data;
 
                     case SuccessStatus.STATUS_FAILED:
                         if (res.error.startsWith('Failed to handle request - unknown session token (maybe expired session)')) {
