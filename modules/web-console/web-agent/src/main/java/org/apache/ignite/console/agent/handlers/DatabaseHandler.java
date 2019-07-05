@@ -38,7 +38,7 @@ import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.agent.db.DbTable;
 import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.console.json.JsonObject;
-import org.apache.ignite.console.websocket.WebSocketEvent;
+import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
@@ -156,7 +156,7 @@ public class DatabaseHandler {
      * @param evt Websocket event.
      * @return DB schemas.
      */
-    public DbSchema collectDbSchemas(WebSocketEvent evt) throws SQLException {
+    public DbSchema collectDbSchemas(WebSocketRequest evt) throws SQLException {
         log.info("Collecting database schemas...");
 
         JsonObject args = fromJson(evt.getPayload());
@@ -187,7 +187,7 @@ public class DatabaseHandler {
      * @return DB metadata
      */
     @SuppressWarnings("unchecked")
-    public Collection<DbTable> collectDbMetadata(WebSocketEvent evt) throws SQLException {
+    public Collection<DbTable> collectDbMetadata(WebSocketRequest evt) throws SQLException {
         log.info("Collecting database metadata...");
 
         JsonObject args = fromJson(evt.getPayload());

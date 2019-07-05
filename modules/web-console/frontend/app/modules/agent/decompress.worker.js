@@ -21,9 +21,7 @@ import bigIntJSON from 'json-bigint';
 onmessage = function(e) {
     const data = e.data;
 
-    const res = data.useBigIntJson
-        ? bigIntJSON({storeAsString: true}).parse(data.payload)
-        : JSON.parse(data.payload);
+    const res = bigIntJSON({storeAsString: true}).parse(data);
 
     postMessage(res);
 };

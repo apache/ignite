@@ -33,7 +33,7 @@ export class WebSocket {
             const e = JSON.parse(msg);
 
             if (e.eventType === eventType) {
-                const res = listener(JSON.parse(e.payload));
+                const res = listener(e.payload);
 
                 if (res)
                     this.emit(e.eventType, res, e.requestId);
@@ -49,7 +49,7 @@ export class WebSocket {
      * @param {string} requestId
      */
     emit(eventType, payload, requestId = uuidv4()) {
-        this.socket.send(JSON.stringify({requestId, eventType, payload: JSON.stringify(payload)}));
+        this.socket.send(JSON.stringify({requestId, eventType, payload}));
 
         return this;
     }

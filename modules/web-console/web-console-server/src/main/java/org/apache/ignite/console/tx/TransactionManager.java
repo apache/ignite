@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static org.apache.ignite.console.web.errors.Errors.convertToDatabaseNotAvailableException;
 import static org.apache.ignite.console.web.errors.Errors.checkDatabaseNotAvailable;
+import static org.apache.ignite.console.web.errors.Errors.convertToDatabaseNotAvailableException;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 

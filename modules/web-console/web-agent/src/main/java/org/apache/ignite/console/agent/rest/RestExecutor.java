@@ -16,15 +16,6 @@
 
 package org.apache.ignite.console.agent.rest;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
@@ -35,16 +26,12 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.LoggerFactory;
 
-import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
-import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
-import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
  * API to execute REST requests to Ignite cluster.
@@ -81,15 +68,8 @@ public class RestExecutor implements AutoCloseable {
     private RestResult parseResponse(ContentResponse res) throws Exception {
         int code = res.getStatus();
 
-        if (code == HTTP_OK) {
-            RestResponseHolder holder = fromJson(res.getContent(), RestResponseHolder.class);
-
-            int status = holder.getSuccessStatus();
-
-            return status == STATUS_SUCCESS
-                ? RestResult.success(holder.getResponse(), holder.getSessionToken())
-                : RestResult.fail(status, holder.getError());
-        }
+        if (code == HTTP_OK)
+            return fromJson(res.getContent(), RestResult.class);
 
         if (code == HTTP_UNAUTHORIZED) {
             return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
@@ -123,171 +103,5 @@ public class RestExecutor implements AutoCloseable {
         ContentResponse res = req.send();
 
         return parseResponse(res);
-    }
-
-    /**
-     * REST response holder Java bean.
-     */
-    private static class RestResponseHolder {
-        /** Success flag */
-        private int successStatus;
-
-        /** Error. */
-        private String err;
-
-        /** Response. */
-        private String res;
-
-        /** Session token string representation. */
-        private String sesTok;
-
-        /**
-         * @return {@code True} if this request was successful.
-         */
-        public int getSuccessStatus() {
-            return successStatus;
-        }
-
-        /**
-         * @param successStatus Whether request was successful.
-         */
-        public void setSuccessStatus(int successStatus) {
-            this.successStatus = successStatus;
-        }
-
-        /**
-         * @return Error.
-         */
-        public String getError() {
-            return err;
-        }
-
-        /**
-         * @param err Error.
-         */
-        public void setError(String err) {
-            this.err = err;
-        }
-
-        /**
-         * @return Response object.
-         */
-        public String getResponse() {
-            return res;
-        }
-
-        /**
-         * @param res Response object.
-         */
-        @JsonDeserialize(using = RawContentDeserializer.class)
-        public void setResponse(String res) {
-            this.res = res;
-        }
-
-        /**
-         * @return String representation of session token.
-         */
-        public String getSessionToken() {
-            return sesTok;
-        }
-
-        /**
-         * @param sesTok String representation of session token.
-         */
-        public void setSessionToken(String sesTok) {
-            this.sesTok = sesTok;
-        }
-    }
-
-    /**
-     * Raw content deserializer that will deserialize any data as string.
-     */
-    private static class RawContentDeserializer extends JsonDeserializer<String> {
-        /** */
-        private final JsonFactory factory = new JsonFactory();
-
-        /**
-         * @param tok Token to process.
-         * @param p Parser.
-         * @param gen Generator.
-         */
-        private void writeToken(JsonToken tok, JsonParser p, JsonGenerator gen) throws IOException {
-            switch (tok) {
-                case FIELD_NAME:
-                    gen.writeFieldName(p.getText());
-                    break;
-
-                case START_ARRAY:
-                    gen.writeStartArray();
-                    break;
-
-                case END_ARRAY:
-                    gen.writeEndArray();
-                    break;
-
-                case START_OBJECT:
-                    gen.writeStartObject();
-                    break;
-
-                case END_OBJECT:
-                    gen.writeEndObject();
-                    break;
-
-                case VALUE_NUMBER_INT:
-                    gen.writeNumber(p.getBigIntegerValue());
-                    break;
-
-                case VALUE_NUMBER_FLOAT:
-                    gen.writeNumber(p.getDecimalValue());
-                    break;
-
-                case VALUE_TRUE:
-                    gen.writeBoolean(true);
-                    break;
-
-                case VALUE_FALSE:
-                    gen.writeBoolean(false);
-                    break;
-
-                case VALUE_NULL:
-                    gen.writeNull();
-                    break;
-
-                default:
-                    gen.writeString(p.getText());
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            JsonToken startTok = p.getCurrentToken();
-
-            if (startTok.isStructStart()) {
-                StringWriter wrt = new StringWriter(4096);
-
-                JsonGenerator gen = factory.createGenerator(wrt);
-
-                JsonToken tok = startTok, endTok = startTok == START_ARRAY ? END_ARRAY : END_OBJECT;
-
-                int cnt = 1;
-
-                while (cnt > 0) {
-                    writeToken(tok, p, gen);
-
-                    tok = p.nextToken();
-
-                    if (tok == startTok)
-                        cnt++;
-                    else if (tok == endTok)
-                        cnt--;
-                }
-
-                gen.close();
-
-                return wrt.toString();
-            }
-
-            return p.getValueAsString();
-        }
     }
 }

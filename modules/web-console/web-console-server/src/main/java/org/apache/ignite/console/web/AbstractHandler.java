@@ -21,7 +21,8 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.ignite.console.websocket.WebSocketEvent;
+import org.apache.ignite.console.websocket.WebSocketRequest;
+import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.TextMessage;
@@ -43,12 +44,12 @@ public abstract class AbstractHandler extends TextWebSocketHandler {
      * @param ws Websocket session.
      * @param evt Event.
      */
-    protected abstract void handleEvent(WebSocketSession ws, WebSocketEvent evt) throws Exception;
+    protected abstract void handleEvent(WebSocketSession ws, WebSocketRequest evt) throws Exception;
 
     /** {@inheritDoc} */
     @Override protected void handleTextMessage(WebSocketSession ws, TextMessage msg) {
         try {
-            WebSocketEvent evt = fromJson(msg.getPayload(), WebSocketEvent.class);
+            WebSocketRequest evt = fromJson(msg.getPayload(), WebSocketRequest.class);
 
             handleEvent(ws, evt);
         }
@@ -73,7 +74,7 @@ public abstract class AbstractHandler extends TextWebSocketHandler {
      * @param evt Event.
      * @throws IOException If failed to send message.
      */
-    private void sendMessage(WebSocketSession ws, WebSocketEvent evt) throws IOException {
+    private void sendMessage(WebSocketSession ws, WebSocketResponse evt) throws IOException {
         ws.sendMessage(new TextMessage(toJson(evt)));
     }
 
@@ -82,7 +83,7 @@ public abstract class AbstractHandler extends TextWebSocketHandler {
      * @param reqEvt Event .
      * @throws IOException If failed to send message.
      */
-    protected void sendResponse(WebSocketSession ws, WebSocketEvent reqEvt, Object payload) throws IOException {
+    protected void sendResponse(WebSocketSession ws, WebSocketRequest reqEvt, Object payload) throws IOException {
         sendMessage(ws, reqEvt.withPayload(payload));
     }
 
@@ -92,7 +93,7 @@ public abstract class AbstractHandler extends TextWebSocketHandler {
      * @param prefix Error message.
      * @param err Error.
      */
-    protected void sendError(WebSocketSession ws, WebSocketEvent evt, String prefix, Throwable err) {
+    protected void sendError(WebSocketSession ws, WebSocketRequest evt, String prefix, Throwable err) {
         try {
             sendMessage(ws, evt.withError(extractErrorMessage(prefix, err)));
         }

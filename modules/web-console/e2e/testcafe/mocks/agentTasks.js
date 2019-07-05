@@ -15,7 +15,7 @@
  */
 
 export const taskResult = (result) => ({
-    data: JSON.stringify({result}),
+    data: {result},
     error: null,
     sessionToken: null,
     status: 0

@@ -93,6 +93,16 @@ public class Utils {
     }
 
     /**
+     * @param json JSON.
+     * @param typeRef Type descriptor.
+     * @return Deserialized object.
+     * @throws IOException If deserialization failed.
+     */
+    public static <T> T fromJson(byte[] json, TypeReference<T> typeRef) throws IOException {
+        return MAPPER.readValue(json, typeRef);
+    }
+
+    /**
      * @param src source of JSON.
      * @param cls Object class.
      * @return Deserialized object.
@@ -123,6 +133,20 @@ public class Utils {
         }
         catch (Throwable e) {
             throw new IllegalStateException("Failed to deserialize object from JSON: " + json, e);
+        }
+    }
+
+    /**
+     * @param json JSON.
+     * @return Map with parameters.
+     * @throws IllegalStateException If deserialization failed.
+     */
+    public static JsonObject fromJson(byte[] json) {
+        try {
+            return MAPPER.readValue(json, JsonObject.class);
+        }
+        catch (Throwable e) {
+            throw new IllegalStateException("Failed to deserialize object from JSON", e);
         }
     }
 
