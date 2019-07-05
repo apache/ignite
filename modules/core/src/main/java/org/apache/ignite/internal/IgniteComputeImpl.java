@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDeploymentException;
@@ -60,8 +59,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 /**
  * {@link IgniteCompute} implementation.
  */
-public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
-    implements IgniteCompute, Externalizable {
+public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -90,21 +88,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param subjId Subject ID.
      */
     public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId) {
-        this(ctx, prj, subjId, false);
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param prj Projection.
-     * @param subjId Subject ID.
-     * @param async Async support flag.
-     */
-    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async) {
-        super(async);
-
-        this.ctx = ctx;
-        this.prj = prj;
-        this.subjId = subjId;
+        this(ctx, prj, subjId, null);
     }
 
     /**
@@ -113,22 +97,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param ctx Kernal context.
      * @param prj Projection.
      * @param subjId Subject ID.
-     * @param async Async support flag.
      * @param execName Custom executor name.
      */
-    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async,
-        String execName) {
-        super(async);
-
+    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, String execName) {
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
         this.execName = execName;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCompute createAsyncInstance() {
-        return new IgniteComputeImpl(ctx, prj, subjId, true);
     }
 
     /** {@inheritDoc} */
@@ -141,7 +116,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         CU.validateCacheName(cacheName);
 
         try {
-            saveOrGet(affinityRunAsync0(cacheName, affKey, job));
+            affinityRunAsync0(cacheName, affKey, job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -194,7 +169,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         CU.validateCacheNames(cacheNames);
 
         try {
-            saveOrGet(affinityRunAsync0(cacheNames, affKey, job));
+            affinityRunAsync0(cacheNames, affKey, job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -251,7 +226,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         CU.validateCacheNames(cacheNames);
 
         try {
-            saveOrGet(affinityRunAsync0(cacheNames, partId, job));
+            affinityRunAsync0(cacheNames, partId, job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -298,7 +273,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         CU.validateCacheName(cacheName);
 
         try {
-            return saveOrGet(affinityCallAsync0(cacheName, affKey, job));
+            return affinityCallAsync0(cacheName, affKey, job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -352,7 +327,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         CU.validateCacheNames(cacheNames);
 
         try {
-            return saveOrGet(affinityCallAsync0(cacheNames, affKey, job));
+            return affinityCallAsync0(cacheNames, affKey, job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -409,7 +384,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         CU.validateCacheNames(cacheNames);
 
         try {
-            return saveOrGet(affinityCallAsync0(cacheNames, partId, job));
+            return affinityCallAsync0(cacheNames, partId, job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -454,7 +429,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <T, R> R execute(String taskName, @Nullable T arg) {
         try {
-            return (R)saveOrGet(executeAsync0(taskName, arg));
+            return (R)executeAsync0(taskName, arg).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -492,7 +467,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         try {
-            return (R)saveOrGet(executeAsync0(taskCls, arg));
+            return executeAsync0(taskCls, arg).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -531,7 +506,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) {
         try {
-            return (R)saveOrGet(executeAsync0(task, arg));
+            return executeAsync0(task, arg).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -570,7 +545,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public void broadcast(IgniteRunnable job) {
         try {
-            saveOrGet(broadcastAsync0(job));
+            broadcastAsync0(job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -604,7 +579,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> Collection<R> broadcast(IgniteCallable<R> job) {
         try {
-            return saveOrGet(broadcastAsync0(job));
+            return broadcastAsync0(job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -638,7 +613,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) {
         try {
-            return saveOrGet(broadcastAsync0(job, arg));
+            return broadcastAsync0(job, arg).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -674,7 +649,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public void run(IgniteRunnable job) {
         try {
-            saveOrGet(runAsync0(job));
+            runAsync0(job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -708,7 +683,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public void run(Collection<? extends IgniteRunnable> jobs) {
         try {
-            saveOrGet(runAsync0(jobs));
+            runAsync0(jobs).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -743,7 +718,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) {
         try {
-            return saveOrGet(applyAsync0(job, arg));
+            return applyAsync0(job, arg).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -753,7 +728,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R, T> IgniteFuture<R> applyAsync(IgniteClosure<T, R> job, @Nullable T arg)
         throws IgniteException {
-        return (IgniteFuture<R>)createFuture(applyAsync0(job, arg));
+        return createFuture(applyAsync0(job, arg));
     }
 
     /**
@@ -779,7 +754,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> R call(IgniteCallable<R> job) {
         try {
-            return saveOrGet(callAsync0(job));
+            return callAsync0(job).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -788,7 +763,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> callAsync(IgniteCallable<R> job) throws IgniteException {
-        return (IgniteFuture<R>)createFuture(callAsync0(job));
+        return createFuture(callAsync0(job));
     }
 
     /**
@@ -813,7 +788,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) {
         try {
-            return saveOrGet(callAsync0(jobs));
+            return callAsync0(jobs).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -823,7 +798,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<Collection<R>> callAsync(
         Collection<? extends IgniteCallable<R>> jobs) throws IgniteException {
-        return (IgniteFuture<Collection<R>>)createFuture(callAsync0(jobs));
+        return createFuture(callAsync0(jobs));
     }
 
     /**
@@ -838,7 +813,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, (Collection<? extends Callable<R>>)jobs, prj.nodes(), execName);
+            return ctx.closure().callAsync(BALANCE, jobs, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -848,7 +823,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <T, R> Collection<R> apply(final IgniteClosure<T, R> job, @Nullable Collection<? extends T> args) {
         try {
-            return saveOrGet(applyAsync0(job, args));
+            return applyAsync0(job, args).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -858,7 +833,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <T, R> IgniteFuture<Collection<R>> applyAsync(IgniteClosure<T, R> job,
         Collection<? extends T> args) throws IgniteException {
-        return (IgniteFuture<Collection<R>>)createFuture(applyAsync0(job, args));
+        return createFuture(applyAsync0(job, args));
     }
 
     /**
@@ -886,7 +861,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc) {
         try {
-            return saveOrGet(callAsync0(jobs, rdc));
+            return callAsync0(jobs, rdc).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -896,7 +871,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R1, R2> IgniteFuture<R2> callAsync(Collection<? extends IgniteCallable<R1>> jobs,
         IgniteReducer<R1, R2> rdc) throws IgniteException {
-        return (IgniteFuture<R2>)createFuture(callAsync0(jobs, rdc));
+        return createFuture(callAsync0(jobs, rdc));
     }
 
     /**
@@ -925,7 +900,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     @Override public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
         IgniteReducer<R1, R2> rdc) {
         try {
-            return saveOrGet(applyAsync0(job, args, rdc));
+            return applyAsync0(job, args, rdc).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -1117,20 +1092,20 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         return execName == null ? prj.compute() : prj.compute().withExecutor(execName);
     }
 
-    /** {@inheritDoc} */
-    @Override protected <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
+    /**
+     * Extracts a public future from the given internal future.
+     *
+     * @param fut Future.
+     * @return Public future.
+     */
+    protected <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
         assert fut instanceof ComputeTaskInternalFuture : fut;
 
         return ((ComputeTaskInternalFuture<R>)fut).publicFuture();
     }
 
     /** {@inheritDoc} */
-    @Override public <R> ComputeTaskFuture<R> future() {
-        return (ComputeTaskFuture<R>)super.future();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(@NotNull String name) {
-        return new IgniteComputeImpl(ctx, prj, subjId, isAsync(), name);
+        return new IgniteComputeImpl(ctx, prj, subjId, name);
     }
 }

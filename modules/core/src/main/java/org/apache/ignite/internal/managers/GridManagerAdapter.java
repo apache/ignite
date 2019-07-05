@@ -420,7 +420,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             if (msg instanceof Message)
                                 ctx.io().sendToCustomTopic(node, topic, (Message)msg, SYSTEM_POOL);
                             else
-                                ctx.io().sendUserMessage(Collections.singletonList(node), msg, topic, false, 0, false);
+                                ctx.io().sendUserMessage(Collections.singletonList(node), msg, topic, false, 0);
                         }
                         catch (IgniteCheckedException e) {
                             throw unwrapException(e);

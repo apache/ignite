@@ -21,8 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -67,7 +65,7 @@ import org.jetbrains.annotations.Nullable;
  * messages for a given topic that have not arrived yet will be skipped. When (and if) expired messages
  * actually do arrive, they will be ignored.
  */
-public interface IgniteMessaging extends IgniteAsyncSupport {
+public interface IgniteMessaging {
     /**
      * Gets the cluster group to which this {@code GridMessaging} instance belongs.
      *
@@ -78,9 +76,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group.
      * <p>
-     * By default all local listeners will be executed in the calling thread, or if you use
-     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
-     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
+     * By default all local listeners will be executed in the public thread pool.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
@@ -92,9 +88,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     /**
      * Sends given messages with the specified topic to the nodes in the underlying cluster group.
      * <p>
-     * By default all local listeners will be executed in the calling thread, or if you use
-     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
-     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
+     * By default all local listeners will be executed in the public thread pool.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
@@ -108,7 +102,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * Sends given message with specified topic to the nodes in the underlying cluster group. Messages sent with
      * this method will arrive in the same order they were sent. Note that if a topic is used
      * for ordered messages, then it cannot be reused for non-ordered messages. Note that local listeners
-     * are always executed in public thread pool, no matter default or {@link #withAsync()} mode is used.
+     * are always executed in public thread pool.
      * <p>
      * The {@code timeout} parameter specifies how long an out-of-order message will stay in a queue,
      * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered
@@ -155,7 +149,6 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws IgniteException If failed to add listener.
      */
-    @IgniteAsyncSupported
     public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteException;
 
     /**
@@ -176,13 +169,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
 
     /**
      * Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Listen ID that was returned from {@link #remoteListen(Object, IgniteBiPredicate)} method.
      * @throws IgniteException If failed to unregister listeners.
      */
-    @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteException;
 
     /**
@@ -193,8 +183,4 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @throws IgniteException If failed to unregister listeners.
      */
     public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override IgniteMessaging withAsync();
 }

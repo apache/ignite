@@ -25,8 +25,6 @@ import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSpis;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -116,7 +114,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link ComputeTaskSpis} annotation. Refer to {@link ComputeTask} documentation for more information.
  */
 @SuppressWarnings("deprecation")
-public interface IgniteCompute extends IgniteAsyncSupport {
+public interface IgniteCompute {
     /**
      * Gets cluster group to which this {@code IgniteCompute} instance belongs.
      *
@@ -136,7 +134,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public void affinityRun(String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
 
     /**
@@ -166,7 +163,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public void affinityRun(@NotNull Collection<String> cacheNames, Object affKey, IgniteRunnable job)
         throws IgniteException;
 
@@ -197,7 +193,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public void affinityRun(@NotNull Collection<String> cacheNames, int partId, IgniteRunnable job)
         throws IgniteException;
 
@@ -229,7 +224,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public <R> R affinityCall(String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
 
     /**
@@ -259,7 +253,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public <R> R affinityCall(@NotNull Collection<String> cacheNames, Object affKey, IgniteCallable<R> job)
         throws IgniteException;
 
@@ -290,7 +283,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job)
         throws IgniteException;
 
@@ -320,7 +312,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteException If task failed.
      */
-    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) throws IgniteException;
 
     /**
@@ -348,7 +339,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteException If task failed.
      */
-    @IgniteAsyncSupported
     public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws IgniteException;
 
     /**
@@ -377,7 +367,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If task failed.
      * @see ComputeTask for information about task execution.
      */
-    @IgniteAsyncSupported
     public <T, R> R execute(String taskName, @Nullable T arg) throws IgniteException;
 
     /**
@@ -401,7 +390,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to broadcast to all cluster group nodes.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public void broadcast(IgniteRunnable job) throws IgniteException;
 
     /**
@@ -421,7 +409,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of results for this execution.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <R> Collection<R> broadcast(IgniteCallable<R> job) throws IgniteException;
 
     /**
@@ -444,7 +431,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of results for this execution.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
 
     /**
@@ -466,7 +452,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job closure to execute.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public void run(IgniteRunnable job) throws IgniteException;
 
     /**
@@ -484,7 +469,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param jobs Collection of jobs to execute.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public void run(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
 
     /**
@@ -505,7 +489,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <R> R call(IgniteCallable<R> job) throws IgniteException;
 
     /**
@@ -526,7 +509,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of job results for this execution.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) throws IgniteException;
 
     /**
@@ -549,7 +531,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc)
         throws IgniteException;
 
@@ -575,7 +556,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
 
     /**
@@ -600,7 +580,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of job results.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <T, R> Collection<R> apply(IgniteClosure<T, R> job, Collection<? extends T> args) throws IgniteException;
 
     /**
@@ -628,7 +607,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
         IgniteReducer<R1, R2> rdc) throws IgniteException;
 
@@ -758,14 +736,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException Thrown if undeploy failed.
      */
     public void undeployTask(String taskName) throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public <R> ComputeTaskFuture<R> future();
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public IgniteCompute withAsync();
 
     /**
      * Gets instance of the compute API associated with custom executor. All tasks and closures submitted to returned

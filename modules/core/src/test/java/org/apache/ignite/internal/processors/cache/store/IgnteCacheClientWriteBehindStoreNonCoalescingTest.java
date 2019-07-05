@@ -89,9 +89,8 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         assertEquals(cache.getConfiguration(CacheConfiguration.class).getCacheStoreFactory().getClass(),
             TestIncrementStoreFactory.class);
 
-        for (int i = 0; i < CacheConfiguration.DFLT_WRITE_BEHIND_FLUSH_SIZE * 2; i++) {
+        for (int i = 0; i < CacheConfiguration.DFLT_WRITE_BEHIND_FLUSH_SIZE * 2; i++)
             cache.put(i, i);
-        }
 
         Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
@@ -109,10 +108,8 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
      * @return IgniteFuture.
      */
     private IgniteFuture<?>  updateKey(IgniteCache<Integer, Integer> cache) {
-        IgniteCache asyncCache = cache.withAsync();
-
         // Using EntryProcessor.invokeAll to increment every value in place.
-        asyncCache.invoke(rnd.nextInt(100), new EntryProcessor<Integer, Integer, Object>() {
+        return cache.invokeAsync(rnd.nextInt(100), new EntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {
                 entry.setValue(entry.getValue() + 1);
@@ -120,8 +117,6 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
                 return null;
             }
         });
-
-        return asyncCache.future();
     }
 
     /**

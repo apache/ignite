@@ -59,19 +59,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     public void testLocalServer() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
-                localServerInternal(false);
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalServerAsync() throws Exception {
-        runInAllDataModes(new TestRunnable() {
-            @Override public void run() throws Exception {
-                localServerInternal(true);
+                localServerInternal();
             }
         });
     }
@@ -98,22 +86,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
-                serverClientMessage(false);
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServerClientMessageAsync() throws Exception {
-        if (!testsCfg.withClients())
-            return;
-
-        runInAllDataModes(new TestRunnable() {
-            @Override public void run() throws Exception {
-                serverClientMessage(true);
+                serverClientMessage();
             }
         });
     }
@@ -128,22 +101,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
-                clientClientMessage(false);
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientClientMessageAsync() throws Exception {
-        if (!testsCfg.withClients())
-            return;
-
-        runInAllDataModes(new TestRunnable() {
-            @Override public void run() throws Exception {
-                clientClientMessage(true);
+                clientClientMessage();
             }
         });
     }
@@ -158,22 +116,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
-                clientServerMessage(false);
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientServerMessageAsync() throws Exception {
-        if (!testsCfg.withClients())
-            return;
-
-        runInAllDataModes(new TestRunnable() {
-            @Override public void run() throws Exception {
-                clientServerMessage(true);
+                clientServerMessage();
             }
         });
     }
@@ -250,10 +193,9 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * Single server test.
      *
-     * @param async Async message send flag.
      * @throws Exception If failed.
      */
-    private void localServerInternal(boolean async) throws Exception {
+    private void localServerInternal() throws Exception {
         int messages = MSGS;
 
         Ignite ignite = grid(SERVER_NODE_IDX);
@@ -266,7 +208,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         try {
             for (int i = 0; i < messages; i++)
-                sendMessage(ignite, grp, value(i), async);
+                sendMessage(ignite, grp, value(i));
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
 
@@ -308,58 +250,54 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * Server sends a message and client receives it.
      *
-     * @param async Async message send flag.
      * @throws Exception If failed.
      */
-    private void serverClientMessage(boolean async) throws Exception {
+    private void serverClientMessage() throws Exception {
         Ignite ignite = grid(SERVER_NODE_IDX);
 
         ClusterGroup grp = ignite.cluster().forClients();
 
         assert !grp.nodes().isEmpty();
 
-        registerListenerAndSendMessages(ignite, grp, async);
+        registerListenerAndSendMessages(ignite, grp);
     }
 
     /**
      * Client sends a message and client receives it.
      *
-     * @param async Async message send flag.
      * @throws Exception If failed.
      */
-    private void clientClientMessage(boolean async) throws Exception {
+    private void clientClientMessage() throws Exception {
         Ignite ignite = grid(CLIENT_NODE_IDX);
 
         ClusterGroup grp = ignite.cluster().forClients();
 
         assert !grp.nodes().isEmpty();
 
-        registerListenerAndSendMessages(ignite, grp, async);
+        registerListenerAndSendMessages(ignite, grp);
     }
 
     /**
      * Client sends a message and client receives it.
      *
-     * @param async Async message send flag.
      * @throws Exception If failed.
      */
-    private void clientServerMessage(boolean async) throws Exception {
+    private void clientServerMessage() throws Exception {
         Ignite ignite = grid(CLIENT_NODE_IDX);
 
         ClusterGroup grp = ignite.cluster().forServers();
 
         assert !grp.nodes().isEmpty();
 
-        registerListenerAndSendMessages(ignite, grp, async);
+        registerListenerAndSendMessages(ignite, grp);
     }
 
     /**
      * @param ignite Ignite.
      * @param grp Cluster group.
-     * @param async Async message send flag.
      * @throws Exception If fail.
      */
-    private void registerListenerAndSendMessages(Ignite ignite, ClusterGroup grp, boolean async) throws Exception {
+    private void registerListenerAndSendMessages(Ignite ignite, ClusterGroup grp) throws Exception {
         int messages = MSGS;
 
         LATCH = new CountDownLatch(grp.nodes().size() * messages);
@@ -368,7 +306,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         try {
             for (int i = 0; i < messages; i++)
-                sendMessage(ignite, grp, value(i), async);
+                sendMessage(ignite, grp, value(i));
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
 
@@ -491,13 +429,9 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
      * @param nodeSnd Sender Ignite node.
      * @param grp Cluster group.
      * @param msg Message.
-     * @param async Async message send flag.
      */
-    private void sendMessage(Ignite nodeSnd, ClusterGroup grp, Object msg, boolean async) {
-        if (async)
-            nodeSnd.message(grp).withAsync().send(MESSAGE_TOPIC, msg);
-        else
-            nodeSnd.message(grp).send(MESSAGE_TOPIC, msg);
+    private void sendMessage(Ignite nodeSnd, ClusterGroup grp, Object msg) {
+        nodeSnd.message(grp).send(MESSAGE_TOPIC, msg);
     }
 
     /**

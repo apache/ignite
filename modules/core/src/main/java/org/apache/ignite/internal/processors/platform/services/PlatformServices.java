@@ -70,7 +70,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DESCRIPTORS = 5;
 
     /** */
-    private static final int OP_WITH_ASYNC = 6;
+    private static final int OP_RESERVED_1 = 6;
 
     /** */
     private static final int OP_WITH_SERVER_KEEP_BINARY = 7;
@@ -341,12 +341,6 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
-            case OP_WITH_ASYNC:
-                if (services.isAsync())
-                    return this;
-
-                return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
-
             case OP_WITH_SERVER_KEEP_BINARY:
                 return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);
         }

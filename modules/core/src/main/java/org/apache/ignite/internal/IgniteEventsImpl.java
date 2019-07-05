@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link IgniteEvents} implementation.
  */
-public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
+public class IgniteEventsImpl implements IgniteEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -62,11 +62,8 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
-     * @param async Async support flag.
      */
-    public IgniteEventsImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
-        super(async);
-
+    public IgniteEventsImpl(GridKernalContext ctx, ClusterGroupAdapter prj) {
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -83,7 +80,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         guard();
 
         try {
-            return saveOrGet(ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout));
+            return ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -134,13 +131,13 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
             GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
                 (IgnitePredicate<Event>)rmtFilter, types);
 
-            return saveOrGet(ctx.continuous().startRoutine(
+            return ctx.continuous().startRoutine(
                 hnd,
                 false,
                 bufSize,
                 interval,
                 autoUnsubscribe,
-                prj.predicate()));
+                prj.predicate()).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -186,7 +183,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         guard();
 
         try {
-            saveOrGet(ctx.continuous().stopRoutine(opId));
+            ctx.continuous().stopRoutine(opId).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -216,7 +213,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         guard();
 
         try {
-            return saveOrGet(ctx.event().waitForEvent(filter, types));
+            return ctx.event().waitForEvent(filter, types).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -377,11 +374,6 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
                     return false;
                 }
             };
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteEvents createAsyncInstance() {
-        return new IgniteEventsImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

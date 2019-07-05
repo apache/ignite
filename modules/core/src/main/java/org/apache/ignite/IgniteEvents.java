@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -67,7 +65,7 @@ import org.jetbrains.annotations.Nullable;
  * &lt;/property&gt;
  * </pre>
  */
-public interface IgniteEvents extends IgniteAsyncSupport {
+public interface IgniteEvents {
     /**
      * Gets cluster group to which this {@code IgniteEvents} instance belongs.
      *
@@ -85,7 +83,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return Collection of grid events returned from specified nodes.
      * @throws IgniteException If query failed.
      */
-    @IgniteAsyncSupported
     public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
         throws IgniteException;
 
@@ -126,7 +123,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * {@link #stopRemoteListenAsync(UUID)} methods to stop listening.
      * @throws IgniteException If failed to add listener.
      */
-    @IgniteAsyncSupported
     public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types)
@@ -166,8 +162,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * local node if it belongs to the cluster group as well). This means that all events occurring on
      * any node within this cluster group that pass remote filter will be sent to local node for
      * local listener notification.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param bufSize Remote events buffer size. Events from remote nodes won't be sent until buffer
      *      is full or time interval is exceeded.
@@ -198,7 +192,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @see #stopRemoteListen(UUID)
      * @see #stopRemoteListenAsync(UUID)
      */
-    @IgniteAsyncSupported
     public <T extends Event> UUID remoteListen(int bufSize,
         long interval,
         boolean autoUnsubscribe,
@@ -254,8 +247,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
      * operation ID on all nodes defined by {@link #clusterGroup()}.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Operation ID that was returned from
      *      {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)} method.
@@ -263,7 +254,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
      * @see #remoteListenAsync(int, long, boolean, IgniteBiPredicate, IgnitePredicate, int...)
      */
-    @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteException;
 
     /**
@@ -281,8 +271,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
 
     /**
      * Waits for the specified events.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param filter Optional filtering predicate. Only if predicates evaluates to {@code true} will the event
      *      end the wait.
@@ -290,7 +278,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return Grid event.
      * @throws IgniteException If wait was interrupted.
      */
-    @IgniteAsyncSupported
     public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
         throws IgniteException;
 
@@ -383,8 +370,4 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return {@code True} if event of passed in type is enabled.
      */
     public boolean isEnabled(int type);
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public IgniteEvents withAsync();
 }

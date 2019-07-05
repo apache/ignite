@@ -47,20 +47,19 @@ public class ComputeAsyncExample {
             System.out.println();
             System.out.println("Compute asynchronous example started.");
 
-            // Enable asynchronous mode.
-            IgniteCompute compute = ignite.compute().withAsync();
+            IgniteCompute compute = ignite.compute();
 
             Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
             // Iterate through all words in the sentence and create runnable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                compute.run(() -> {
+                IgniteFuture<Void> fut = compute.runAsync(() -> {
                     System.out.println();
                     System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });
 
-                futs.add(compute.future());
+                futs.add(fut);
             }
 
             // Wait for completion of all futures.

@@ -44,7 +44,7 @@ public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<
     private IgniteCompute compute;
 
     /** */
-    private IgniteCache asyncCache;
+    private IgniteCache<Integer, Object> cache;
 
     /** */
     private ThreadLocal<IgniteFuture> invokeFut = new ThreadLocal<>();
@@ -81,7 +81,7 @@ public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<
 
         compute = ignite().compute();
 
-        asyncCache = cache().withAsync();
+        cache = cache();
     }
 
     /** {@inheritDoc} */
@@ -94,9 +94,7 @@ public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<
             for (int i = 0; i < 3; i++)
                 keys.add(nextRandom(args.range()));
 
-            asyncCache.invokeAll(keys, new SlowEntryProcessor(0));
-
-            invokeFut.set(asyncCache.future());
+            invokeFut.set(cache.invokeAllAsync(keys, new SlowEntryProcessor(0)));
         }
 
         int key = nextRandom(args.range());

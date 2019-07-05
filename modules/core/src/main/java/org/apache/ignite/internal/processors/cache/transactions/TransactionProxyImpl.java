@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
@@ -62,12 +60,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     @GridToStringExclude
     private GridCacheSharedContext<K, V> cctx;
 
-    /** Async flag. */
-    private boolean async;
-
-    /** Async call result. */
-    private IgniteFuture asyncRes;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -78,15 +70,13 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     /**
      * @param tx Transaction.
      * @param cctx Shared context.
-     * @param async Async flag.
      */
-    public TransactionProxyImpl(GridNearTxLocal tx, GridCacheSharedContext<K, V> cctx, boolean async) {
+    public TransactionProxyImpl(GridNearTxLocal tx, GridCacheSharedContext<K, V> cctx) {
         assert tx != null;
         assert cctx != null;
 
         this.tx = tx;
         this.cctx = cctx;
-        this.async = async;
     }
 
     /**
@@ -147,73 +137,46 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public UUID nodeId() {
-        if (async)
-            save(tx.nodeId());
-
         return tx.nodeId();
     }
 
     /** {@inheritDoc} */
     @Override public long threadId() {
-        if (async)
-            save(tx.threadId());
-
         return tx.threadId();
     }
 
     /** {@inheritDoc} */
     @Override public long startTime() {
-        if (async)
-            save(tx.startTime());
-
         return tx.startTime();
     }
 
     /** {@inheritDoc} */
     @Override public TransactionIsolation isolation() {
-        if (async)
-            save(tx.isolation());
-
         return tx.isolation();
     }
 
     /** {@inheritDoc} */
     @Override public TransactionConcurrency concurrency() {
-        if (async)
-            save(tx.concurrency());
-
         return tx.concurrency();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInvalidate() {
-        if (async)
-            save(tx.isInvalidate());
-
         return tx.isInvalidate();
     }
 
     /** {@inheritDoc} */
     @Override public boolean implicit() {
-        if (async)
-            save(tx.implicit());
-
         return tx.implicit();
     }
 
     /** {@inheritDoc} */
     @Override public long timeout() {
-        if (async)
-            save(tx.timeout());
-
         return tx.timeout();
     }
 
     /** {@inheritDoc} */
     @Override public TransactionState state() {
-        if (async)
-            save(tx.state());
-
         return tx.state();
     }
 
@@ -233,32 +196,13 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String label() {
-        if (async)
-            save(tx.label());
-
+    @Override public @Nullable String label() {
         return tx.label();
     }
 
     /** {@inheritDoc} */
     @Override public long timeout(long timeout) {
         return tx.timeout(timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport withAsync() {
-        return new TransactionProxyImpl<>(tx, cctx, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return async;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <R> IgniteFuture<R> future() {
-        return asyncRes;
     }
 
     /** {@inheritDoc} */
@@ -278,9 +222,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         enter();
 
         try {
-            if (async)
-                save(tx.isRollbackOnly());
-
             return tx.isRollbackOnly();
         }
         finally {
@@ -295,10 +236,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         try {
             IgniteInternalFuture<IgniteInternalTx> commitFut = cctx.commitTxAsync(tx);
 
-            if (async)
-                saveFuture(commitFut);
-            else
-                commitFut.get();
+            commitFut.get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -342,10 +280,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         try {
             IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
 
-            if (async)
-                asyncRes = new IgniteFutureImpl(rollbackFut);
-            else
-                rollbackFut.get();
+            rollbackFut.get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -380,20 +315,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         finally {
             leave();
         }
-    }
-
-    /**
-     * @param res Result to convert to finished future.
-     */
-    private void save(Object res) {
-        asyncRes = new IgniteFinishedFutureImpl<>(res);
-    }
-
-    /**
-     * @param fut Internal future.
-     */
-    private void saveFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
-        asyncRes = createFuture(fut);
     }
 
     /**

@@ -17,7 +17,6 @@
 package org.apache.ignite.tests.utils;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
@@ -113,21 +112,6 @@ public class TestTransaction implements Transaction {
     /** {@inheritDoc} */
     @Override public void close() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport withAsync() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        return null;
     }
 
     /** {@inheritDoc} */

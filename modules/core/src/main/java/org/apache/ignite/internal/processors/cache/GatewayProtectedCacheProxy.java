@@ -47,7 +47,6 @@ import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -62,8 +61,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache proxy wrapper with gateway lock provided operations and possibility to change cache operation context.
  */
-public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
-    implements IgniteCacheProxy<K, V> {
+public class GatewayProtectedCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1636,21 +1634,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     /** {@inheritDoc} */
     @Override public void closeProxy() {
         delegate.closeProxy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAsync() {
-        return delegate.withAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return delegate.isAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        return delegate.future();
     }
 
     /** {@inheritDoc} */

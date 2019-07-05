@@ -26,8 +26,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
-import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * between job executions on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to
  * caching nodes, and get other useful information about topology.
  */
-public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
+public interface IgniteCluster extends ClusterGroup {
     /**
      * Gets local grid node.
      *
@@ -118,8 +116,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * successful attempt doesn't mean that node was actually started and joined topology. For large
      * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param file Configuration file.
      * @param restart Whether to stop existing nodes. If {@code true}, all existing
@@ -132,7 +128,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      and error message (if any).
      * @throws IgniteException In case of error.
      */
-    @IgniteAsyncSupported
     public Collection<ClusterStartNodeResult> startNodes(File file, boolean restart, int timeout,
         int maxConn) throws IgniteException;
 
@@ -246,8 +241,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * successful attempt doesn't mean that node was actually started and joined topology. For large
      * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param hosts Startup parameters.
      * @param dflts Default values.
@@ -261,7 +254,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      and error message (if any).
      * @throws IgniteException In case of error.
      */
-    @IgniteAsyncSupported
     public Collection<ClusterStartNodeResult> startNodes(Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
 
@@ -479,10 +471,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param topVer Topology version to set.
      */
     public void setBaselineTopology(long topVer);
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public IgniteCluster withAsync();
 
     /**
      * Disables write-ahead logging for specified cache. When WAL is disabled, changes are not logged to disk.

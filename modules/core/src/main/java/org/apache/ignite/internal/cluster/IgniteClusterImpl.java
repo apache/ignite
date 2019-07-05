@@ -76,7 +76,7 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.spe
 /**
  *
  */
-public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClusterEx, Externalizable {
+public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClusterEx {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -534,11 +534,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCluster withAsync() {
-        return new IgniteClusterAsyncImpl(this);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean enableWal(String cacheName) throws IgniteException {
         return changeWalMode(cacheName, true);
     }
@@ -640,16 +635,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** {@inheritDoc} */
     @Override public BaselineAutoAdjustStatus baselineAutoAdjustStatus(){
         return ctx.state().baselineAutoAdjustStatus();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 
     /**

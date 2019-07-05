@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -174,21 +173,6 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     /** {@inheritDoc} */
     @Nullable @Override public String label() {
         return tx().label();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport withAsync() {
-        throw new UnsupportedOperationException("Operation deprecated.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        throw new UnsupportedOperationException("Operation deprecated.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        throw new UnsupportedOperationException("Operation deprecated.");
     }
 
     /**

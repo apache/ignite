@@ -19,8 +19,6 @@ package org.apache.ignite.transactions;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -116,7 +114,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  */
-public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
+public interface Transaction extends AutoCloseable {
     /**
      * Gets unique identifier for this transaction.
      *
@@ -234,7 +232,6 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * and commit is optimistically failed.
      * @throws TransactionHeuristicException If transaction has entered an unknown state.
      */
-    @IgniteAsyncSupported
     public void commit() throws IgniteException;
 
     /**
@@ -263,7 +260,6 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      *
      * @throws IgniteException If rollback failed.
      */
-    @IgniteAsyncSupported
     public void rollback() throws IgniteException;
 
     /**

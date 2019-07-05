@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -156,11 +155,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             /** */
             @Override public void run() {
                 try {
-                    final IgniteCompute compute = ignite.compute().withAsync();
-
-                    compute.execute(new JobStealingTask(jobsPerTask), null);
-
-                    JobStealingResult res = (JobStealingResult)compute.future().get();
+                    JobStealingResult res = ignite.compute().executeAsync(new JobStealingTask(jobsPerTask), null).get();
 
                     info("Task result: " + res);
 

@@ -22,7 +22,6 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteFuture;
@@ -55,7 +54,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     public static final int OP_STOP_REMOTE_LISTEN = 7;
 
     /** */
-    public static final int OP_WITH_ASYNC = 8;
+    public static final int OP_RESERVED_1 = 8;
 
     /** */
     public static final int OP_REMOTE_LISTEN_ASYNC = 9;
@@ -191,18 +190,5 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
 
         return messaging.remoteListenAsync(topic, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
-        switch (type) {
-            case OP_WITH_ASYNC:
-                if (messaging.isAsync())
-                    return this;
-
-                return new PlatformMessaging (platformCtx, messaging.withAsync());
-        }
-
-        return super.processOutObject(type);
     }
 }

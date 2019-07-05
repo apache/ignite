@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -562,21 +561,6 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         /** {@inheritDoc} */
         @Override public void close() {
             // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport withAsync() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAsync() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
-            return null;
         }
 
         /** {@inheritDoc} */

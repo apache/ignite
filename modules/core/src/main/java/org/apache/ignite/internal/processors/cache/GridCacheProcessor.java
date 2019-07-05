@@ -1073,6 +1073,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param rmtNode Remote node to check.
      * @return Data storage configuration
      */
     private DataStorageConfiguration extractDataStorage(ClusterNode rmtNode) {
@@ -2936,7 +2937,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 GridCacheAdapter<?, ?> cache;
 
                 if (proxy == null && (cache = caches.get(cacheName)) != null) {
-                    proxy = new IgniteCacheProxyImpl(cache.context(), cache, false);
+                    proxy = new IgniteCacheProxyImpl(cache.context(), cache);
 
                     IgniteCacheProxyImpl<?, ?> oldProxy = jCacheProxies.putIfAbsent(cacheName, proxy);
 
@@ -3026,7 +3027,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (cacheCtx.startTopologyVersion().equals(startTopVer)) {
                 if (!jCacheProxies.containsKey(cacheCtx.name())) {
-                    IgniteCacheProxyImpl<?, ?> newProxy = new IgniteCacheProxyImpl(cache.context(), cache, false);
+                    IgniteCacheProxyImpl<?, ?> newProxy = new IgniteCacheProxyImpl(cache.context(), cache);
 
                     if (!cache.active())
                         newProxy.suspend();
@@ -3080,7 +3081,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cache != null : cctx.name();
 
-            jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
+            jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache));
 
             completeProxyInitialize(cctx.name());
         }
@@ -5080,7 +5081,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
 
                 if (cacheAdapter != null) {
-                    proxy = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
+                    proxy = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter);
 
                     IgniteCacheProxyImpl<?, ?> prev = addjCacheProxy(name, (IgniteCacheProxyImpl<?, ?>)proxy);
 
@@ -5339,7 +5340,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
 
             if (cacheAdapter != null) {
-                cache = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
+                cache = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter);
 
                 IgniteCacheProxyImpl<?, ?> prev = addjCacheProxy(name, (IgniteCacheProxyImpl<?, ?>)cache);
 

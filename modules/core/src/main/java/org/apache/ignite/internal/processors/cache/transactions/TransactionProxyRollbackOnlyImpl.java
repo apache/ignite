@@ -39,11 +39,10 @@ public class TransactionProxyRollbackOnlyImpl<K, V> extends TransactionProxyImpl
     /**
      * @param tx Tx.
      * @param cctx Cctx.
-     * @param async Async.
      */
     public TransactionProxyRollbackOnlyImpl(GridNearTxLocal tx,
-        GridCacheSharedContext<K, V> cctx, boolean async) {
-        super(tx, cctx, async);
+        GridCacheSharedContext<K, V> cctx) {
+        super(tx, cctx);
     }
 
     /** {@inheritDoc} */

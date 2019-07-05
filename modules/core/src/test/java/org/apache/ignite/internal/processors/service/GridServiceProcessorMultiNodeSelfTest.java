@@ -354,11 +354,9 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         srvcCfg.setTotalCount(totalInstances);
         srvcCfg.setService(new DummyService());
 
-        IgniteServices svcs = g.services().withAsync();
+        IgniteServices svcs = g.services();
 
-        svcs.deploy(srvcCfg);
-
-        IgniteFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.deployAsync(srvcCfg);
 
         info("Deployed service: " + name);
 

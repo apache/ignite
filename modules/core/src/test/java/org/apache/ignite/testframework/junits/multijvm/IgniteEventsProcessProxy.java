@@ -152,21 +152,6 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteEvents withAsync() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
     /**
      *
      */

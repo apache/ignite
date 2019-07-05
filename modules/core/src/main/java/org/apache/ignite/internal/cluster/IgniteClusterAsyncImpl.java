@@ -34,7 +34,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
-import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -44,8 +43,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
-    implements IgniteCluster, Externalizable {
+public class IgniteClusterAsyncImpl implements IgniteCluster, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,8 +61,6 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
      * @param cluster Cluster.
      */
     public IgniteClusterAsyncImpl(IgniteClusterImpl cluster) {
-        super(true);
-
         this.cluster = cluster;
     }
 
@@ -105,7 +101,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
         int maxConn)
     {
         try {
-            return saveOrGet(cluster.startNodesAsync0(file, restart, timeout, maxConn));
+            return cluster.startNodesAsync0(file, restart, timeout, maxConn).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -127,7 +123,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
         int maxConn)
     {
         try {
-            return saveOrGet(cluster.startNodesAsync0(hosts, dflts, restart, timeout, maxConn));
+            return cluster.startNodesAsync0(hosts, dflts, restart, timeout, maxConn).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

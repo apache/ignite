@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
 /**
- * Custom thread pool configuration for compute tasks. See {@link IgniteCompute#withAsync()} for more information.
+ * Custom thread pool configuration for compute tasks. See {@link IgniteCompute#withExecutor(String)} for more information.
  */
 public class ExecutorConfiguration {
     /** Thread pool name. */

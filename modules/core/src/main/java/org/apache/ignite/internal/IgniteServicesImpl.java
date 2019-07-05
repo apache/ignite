@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link org.apache.ignite.IgniteServices} implementation.
  */
-public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServices, Externalizable {
+public class IgniteServicesImpl implements IgniteServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -60,11 +60,8 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     /**
      * @param ctx Kernal context.
      * @param prj Projection.
-     * @param async Async support flag.
      */
-    public IgniteServicesImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
-        super(async);
-
+    public IgniteServicesImpl(GridKernalContext ctx, ClusterGroupAdapter prj) {
         this.ctx = ctx;
         this.prj = prj;
     }
@@ -82,7 +79,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().deployNodeSingleton(prj, name, svc));
+            ctx.service().deployNodeSingleton(prj, name, svc).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -115,7 +112,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().deployClusterSingleton(prj, name, svc));
+            ctx.service().deployClusterSingleton(prj, name, svc).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -148,7 +145,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt));
+            ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -184,7 +181,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey));
+            ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -233,7 +230,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().deployAll(prj, cfgs));
+            ctx.service().deployAll(prj, cfgs).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -264,7 +261,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().cancel(name));
+            ctx.service().cancel(name).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -293,7 +290,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().cancelAll(names));
+            ctx.service().cancelAll(names).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -320,7 +317,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().cancelAll());
+            ctx.service().cancelAll().get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -414,14 +411,6 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
      */
     private void unguard() {
         ctx.gateway().readUnlock();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteServices withAsync() {
-        if (isAsync())
-            return this;
-
-        return new IgniteServicesImpl(ctx, prj, true);
     }
 
     /** {@inheritDoc} */

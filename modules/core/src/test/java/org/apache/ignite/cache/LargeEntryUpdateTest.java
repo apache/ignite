@@ -104,7 +104,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
                 cache.put(0L, new byte[PAGE_SIZE * 2]);
             }
 
-            IgniteCompute compute = ignite.compute().withAsync();
+            IgniteCompute compute = ignite.compute();
 
             long endTime = System.currentTimeMillis() + WAIT_TIMEOUT;
 
@@ -118,11 +118,8 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
                 try {
                     List<IgniteFuture> futs = new ArrayList<>();
 
-                    for (int i = 0; i < THREAD_COUNT; ++i) {
-                        compute.run(new CacheUpdater());
-
-                        futs.add(compute.future());
-                    }
+                    for (int i = 0; i < THREAD_COUNT; ++i)
+                        futs.add(compute.runAsync(new CacheUpdater()));
 
                     Thread.sleep(30_000);
 

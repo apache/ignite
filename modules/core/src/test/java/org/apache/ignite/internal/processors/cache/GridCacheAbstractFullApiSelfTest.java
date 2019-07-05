@@ -125,7 +125,6 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
-import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 
 /**
  * Full API cache test.
@@ -710,36 +709,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @Test
-    public void testGetAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        cache.put("key1", 1);
-        cache.put("key2", 2);
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cacheAsync.get("key1");
-
-        IgniteFuture<Integer> fut1 = cacheAsync.future();
-
-        cacheAsync.get("key2");
-
-        IgniteFuture<Integer> fut2 = cacheAsync.future();
-
-        cacheAsync.get("wrongKey");
-
-        IgniteFuture<Integer> fut3 = cacheAsync.future();
-
-        assert fut1.get() == 1;
-        assert fut2.get() == 2;
-        assert fut3.get() == null;
-    }
-
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
     public void testGetAll() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -1031,38 +1000,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteFuture<Map<String, Integer>> fut2 = cache.getAllAsync(Collections.<String>emptySet());
 
         IgniteFuture<Map<String, Integer>> fut3 = cache.getAllAsync(ImmutableSet.of("key1", "key2"));
-
-        assert fut2.get().isEmpty();
-        assert fut3.get().size() == 2 : "Invalid map: " + fut3.get();
-        assert fut3.get().get("key1") == 1;
-        assert fut3.get().get("key2") == 2;
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
-    public void testGetAllAsyncOld() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
-
-        final IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cache.put("key1", 1);
-        cache.put("key2", 2);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                cacheAsync.getAll(null);
-
-                return null;
-            }
-        }, NullPointerException.class, null);
-
-        cacheAsync.getAll(Collections.<String>emptySet());
-        IgniteFuture<Map<String, Integer>> fut2 = cacheAsync.future();
-
-        cacheAsync.getAll(ImmutableSet.of("key1", "key2"));
-        IgniteFuture<Map<String, Integer>> fut3 = cacheAsync.future();
 
         assert fut2.get().isEmpty();
         assert fut3.get().size() == 2 : "Invalid map: " + fut3.get();
@@ -1690,33 +1627,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @Test
-    public void testGetAndPutAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cache.put("key1", 1);
-        cache.put("key2", 2);
-
-        cacheAsync.getAndPut("key1", 10);
-
-        IgniteFuture<Integer> fut1 = cacheAsync.future();
-
-        cacheAsync.getAndPut("key2", 11);
-
-        IgniteFuture<Integer> fut2 = cacheAsync.future();
-
-        assertEquals((Integer)1, fut1.get(5000));
-        assertEquals((Integer)2, fut2.get(5000));
-
-        assertEquals((Integer)10, cache.get("key1"));
-        assertEquals((Integer)11, cache.get("key2"));
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
     public void testGetAndPutAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -1738,25 +1648,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @Test
-    public void testPutAsyncOld0() throws Exception {
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
-
-        cacheAsync.getAndPut("key1", 0);
-
-        IgniteFuture<Integer> fut1 = cacheAsync.future();
-
-        cacheAsync.getAndPut("key2", 1);
-
-        IgniteFuture<Integer> fut2 = cacheAsync.future();
-
-        assert fut1.get(5000) == null;
-        assert fut2.get(5000) == null;
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
     public void testPutAsync0() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -1766,42 +1657,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert fut1.get(5000) == null;
         assert fut2.get(5000) == null;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testInvokeAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        assertNull(cacheAsync.invoke("key1", INCR_PROCESSOR));
-
-        IgniteFuture<?> fut0 = cacheAsync.future();
-
-        assertNull(cacheAsync.invoke("key2", INCR_PROCESSOR));
-
-        IgniteFuture<?> fut1 = cacheAsync.future();
-
-        assertNull(cacheAsync.invoke("key3", RMV_PROCESSOR));
-
-        IgniteFuture<?> fut2 = cacheAsync.future();
-
-        fut0.get();
-        fut1.get();
-        fut2.get();
-
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertNull(cache.get("key3"));
-
-        for (int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek("key3", ONHEAP));
     }
 
     /**
@@ -1928,52 +1783,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert cache.get("key1") == 1;
         assert cache.get("key2") == 2;
         assert cache.get("wrong") == null;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPutAsyncOld() throws Exception {
-        Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
-
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
-
-        try {
-            jcache().put("key2", 1);
-
-            cacheAsync.put("key1", 10);
-
-            IgniteFuture<?> fut1 = cacheAsync.future();
-
-            cacheAsync.put("key2", 11);
-
-            IgniteFuture<?> fut2 = cacheAsync.future();
-
-            IgniteFuture<Transaction> f = null;
-
-            if (tx != null) {
-                tx = (Transaction)tx.withAsync();
-
-                tx.commit();
-
-                f = tx.future();
-            }
-
-            assertNull(fut1.get());
-            assertNull(fut2.get());
-
-            assert f == null || f.get().state() == COMMITTED;
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        checkSize(F.asSet("key1", "key2"));
-
-        assert jcache().get("key1") == 10;
-        assert jcache().get("key2") == 11;
     }
 
     /**
@@ -2268,37 +2077,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @Test
-    public void testPutAllAsyncOld() throws Exception {
-        Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
-
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cacheAsync.putAll(map);
-
-        IgniteFuture<?> f1 = cacheAsync.future();
-
-        map.put("key1", 10);
-        map.put("key2", 20);
-
-        cacheAsync.putAll(map);
-
-        IgniteFuture<?> f2 = cacheAsync.future();
-
-        assertNull(f2.get());
-        assertNull(f1.get());
-
-        checkSize(F.asSet("key1", "key2"));
-
-        assert cache.get("key1") == 10;
-        assert cache.get("key2") == 20;
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
     public void testPutAllAsync() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
@@ -2386,79 +2164,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         try {
             assertEquals((Integer)1, cache.getAndPutIfAbsent("key2", 3));
-
-            if (tx != null)
-                tx.commit();
-
-            assertEquals((Integer)1, cache.get("key2"));
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testGetAndPutIfAbsentAsyncOld() throws Exception {
-        Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
-
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        try {
-            cacheAsync.getAndPutIfAbsent("key", 1);
-
-            IgniteFuture<Integer> fut1 = cacheAsync.future();
-
-            assertNull(fut1.get());
-            assertEquals((Integer)1, cache.get("key"));
-
-            cacheAsync.getAndPutIfAbsent("key", 2);
-
-            IgniteFuture<Integer> fut2 = cacheAsync.future();
-
-            assertEquals((Integer)1, fut2.get());
-            assertEquals((Integer)1, cache.get("key"));
-
-            if (tx != null)
-                tx.commit();
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        // Check swap.
-        cache.put("key2", 1);
-
-        cache.localEvict(Collections.singleton("key2"));
-
-        cacheAsync.getAndPutIfAbsent("key2", 3);
-
-        assertEquals((Integer)1, cacheAsync.<Integer>future().get());
-
-        // Check db.
-        if (!isMultiJvm()) {
-            storeStgy.putToStore("key3", 3);
-
-            cacheAsync.getAndPutIfAbsent("key3", 4);
-
-            assertEquals((Integer)3, cacheAsync.<Integer>future().get());
-        }
-
-        cache.localEvict(Collections.singleton("key2"));
-
-        // Same checks inside tx.
-        tx = txShouldBeUsed() ? transactions().txStart() : null;
-
-        try {
-            cacheAsync.getAndPutIfAbsent("key2", 3);
-
-            assertEquals(1, cacheAsync.future().get());
 
             if (tx != null)
                 tx.commit();
@@ -2600,77 +2305,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param inTx In tx flag.
      * @throws Exception If failed.
      */
-    private void checkPutxIfAbsentAsyncOld(boolean inTx) throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cacheAsync.putIfAbsent("key", 1);
-
-        IgniteFuture<Boolean> fut1 = cacheAsync.future();
-
-        assert fut1.get();
-        assert cache.get("key") != null && cache.get("key") == 1;
-
-        cacheAsync.putIfAbsent("key", 2);
-
-        IgniteFuture<Boolean> fut2 = cacheAsync.future();
-
-        assert !fut2.get();
-        assert cache.get("key") != null && cache.get("key") == 1;
-
-        // Check swap.
-        cache.put("key2", 1);
-
-        cache.localEvict(Collections.singleton("key2"));
-
-        cacheAsync.putIfAbsent("key2", 3);
-
-        assertFalse(cacheAsync.<Boolean>future().get());
-
-        // Check db.
-        if (!isMultiJvm()) {
-            storeStgy.putToStore("key3", 3);
-
-            cacheAsync.putIfAbsent("key3", 4);
-
-            assertFalse(cacheAsync.<Boolean>future().get());
-        }
-
-        cache.localEvict(Collections.singletonList("key2"));
-
-        // Same checks inside tx.
-        Transaction tx = inTx ? transactions().txStart() : null;
-
-        try {
-            cacheAsync.putIfAbsent("key2", 3);
-
-            assertFalse(cacheAsync.<Boolean>future().get());
-
-            if (!isMultiJvm()) {
-                cacheAsync.putIfAbsent("key3", 4);
-
-                assertFalse(cacheAsync.<Boolean>future().get());
-            }
-
-            if (tx != null)
-                tx.commit();
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        assertEquals((Integer)1, cache.get("key2"));
-
-        if (!isMultiJvm())
-            assertEquals((Integer)3, cache.get("key3"));
-    }
-
-    /**
-     * @param inTx In tx flag.
-     * @throws Exception If failed.
-     */
     private void checkPutxIfAbsentAsync(boolean inTx) throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -2721,25 +2355,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         if (!isMultiJvm())
             assertEquals((Integer)3, cache.get("key3"));
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
-    public void testPutIfAbsentAsyncConcurrentOld() throws Exception {
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
-
-        cacheAsync.putIfAbsent("key1", 1);
-
-        IgniteFuture<Boolean> fut1 = cacheAsync.future();
-
-        cacheAsync.putIfAbsent("key2", 2);
-
-        IgniteFuture<Boolean> fut2 = cacheAsync.future();
-
-        assert fut1.get();
-        assert fut2.get();
     }
 
     /**
@@ -2896,87 +2511,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     @Test
-    public void testGetAndReplaceAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cache.put("key", 1);
-
-        assert cache.get("key") == 1;
-
-        cacheAsync.getAndReplace("key", 2);
-
-        assert cacheAsync.<Integer>future().get() == 1;
-
-        assert cache.get("key") == 2;
-
-        cacheAsync.getAndReplace("wrong", 0);
-
-        assert cacheAsync.future().get() == null;
-
-        assert cache.get("wrong") == null;
-
-        cacheAsync.replace("key", 0, 3);
-
-        assert !cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key") == 2;
-
-        cacheAsync.replace("key", 0, 3);
-
-        assert !cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key") == 2;
-
-        cacheAsync.replace("key", 2, 3);
-
-        assert cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key") == 3;
-
-        cache.localEvict(Collections.singleton("key"));
-
-        cacheAsync.replace("key", 3, 4);
-
-        assert cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key") == 4;
-
-        if (!isMultiJvm()) {
-            storeStgy.putToStore("key2", 5);
-
-            cacheAsync.replace("key2", 5, 6);
-
-            assert cacheAsync.<Boolean>future().get();
-
-            assertEquals((Integer)6, cache.get("key2"));
-        }
-
-        cache.localEvict(Collections.singleton("key"));
-
-        Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
-
-        try {
-            cacheAsync.replace("key", 4, 5);
-
-            assert cacheAsync.<Boolean>future().get();
-
-            if (tx != null)
-                tx.commit();
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        assert cache.get("key") == 5;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testGetAndReplaceAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3024,69 +2558,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         try {
             assert cache.replaceAsync("key", 4, 5).get();
-
-            if (tx != null)
-                tx.commit();
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        assert cache.get("key") == 5;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReplacexAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cache.put("key", 1);
-
-        assert cache.get("key") == 1;
-
-        cacheAsync.replace("key", 2);
-
-        assert cacheAsync.<Boolean>future().get();
-
-        info("Finished replace.");
-
-        assertEquals((Integer)2, cache.get("key"));
-
-        cacheAsync.replace("wrond", 2);
-
-        assert !cacheAsync.<Boolean>future().get();
-
-        cache.localEvict(Collections.singleton("key"));
-
-        cacheAsync.replace("key", 4);
-
-        assert cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key") == 4;
-
-        if (!isMultiJvm()) {
-            storeStgy.putToStore("key2", 5);
-
-            cacheAsync.replace("key2", 6);
-
-            assert cacheAsync.<Boolean>future().get();
-
-            assert cache.get("key2") == 6;
-        }
-
-        cache.localEvict(Collections.singleton("key"));
-
-        Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
-
-        try {
-            cacheAsync.replace("key", 5);
-
-            assert cacheAsync.<Boolean>future().get();
 
             if (tx != null)
                 tx.commit();
@@ -3319,41 +2790,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @Test
-    public void testRemoveAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cache.put("key1", 1);
-        cache.put("key2", 2);
-
-        cacheAsync.remove("key1", 0);
-
-        assert !cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key1") != null && cache.get("key1") == 1;
-
-        cacheAsync.remove("key1", 1);
-
-        assert cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key1") == null;
-
-        cacheAsync.getAndRemove("key2");
-
-        assert cacheAsync.<Integer>future().get() == 2;
-
-        assert cache.get("key2") == null;
-
-        cacheAsync.getAndRemove("key2");
-
-        assert cacheAsync.future().get() == null;
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
     public void testRemoveAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3393,28 +2829,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @Test
-    public void testRemovexAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cache.put("key1", 1);
-
-        cacheAsync.remove("key1");
-
-        assert cacheAsync.<Boolean>future().get();
-
-        assert cache.get("key1") == null;
-
-        cacheAsync.remove("key1");
-
-        assert !cacheAsync.<Boolean>future().get();
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
     public void testRemovexAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3441,71 +2855,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     @Test
     public void testGlobalRemoveAllAsync() throws Exception {
         globalRemoveAll(true);
-    }
-
-    /**
-     * @param async If {@code true} uses asynchronous operation.
-     * @throws Exception In case of error.
-     */
-    private void globalRemoveAllOld(boolean async) throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        cache.put("key1", 1);
-        cache.put("key2", 2);
-        cache.put("key3", 3);
-
-        checkSize(F.asSet("key1", "key2", "key3"));
-
-        IgniteCache<String, Integer> asyncCache = cache.withAsync();
-
-        if (async) {
-            asyncCache.removeAll(F.asSet("key1", "key2"));
-
-            asyncCache.future().get();
-        }
-        else
-            cache.removeAll(F.asSet("key1", "key2"));
-
-        checkSize(F.asSet("key3"));
-
-        checkContainsKey(false, "key1");
-        checkContainsKey(false, "key2");
-        checkContainsKey(true, "key3");
-
-        // Put values again.
-        cache.put("key1", 1);
-        cache.put("key2", 2);
-        cache.put("key3", 3);
-
-        if (async) {
-            IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
-
-            asyncCache0.removeAll();
-
-            asyncCache0.future().get();
-        }
-        else
-            jcache(gridCount() > 1 ? 1 : 0).removeAll();
-
-        assertEquals(0, cache.localSize());
-        long entryCnt = hugeRemoveAllEntryCount();
-
-        for (int i = 0; i < entryCnt; i++)
-            cache.put(String.valueOf(i), i);
-
-        for (int i = 0; i < entryCnt; i++)
-            assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
-
-        if (async) {
-            asyncCache.removeAll();
-
-            asyncCache.future().get();
-        }
-        else
-            cache.removeAll();
-
-        for (int i = 0; i < entryCnt; i++)
-            assertNull(cache.get(String.valueOf(i)));
     }
 
     /**
@@ -3650,32 +2999,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     @Test
     public void testRemoveAllEmpty() throws Exception {
         jcache().removeAll();
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @Test
-    public void testRemoveAllAsyncOld() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
-
-        cache.put("key1", 1);
-        cache.put("key2", 2);
-        cache.put("key3", 3);
-
-        checkSize(F.asSet("key1", "key2", "key3"));
-
-        cacheAsync.removeAll(F.asSet("key1", "key2"));
-
-        assertNull(cacheAsync.future().get());
-
-        checkSize(F.asSet("key3"));
-
-        checkContainsKey(false, "key1");
-        checkContainsKey(false, "key2");
-        checkContainsKey(true, "key3");
     }
 
     /**
@@ -3935,15 +3258,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testGlobalClearAll() throws Exception {
-        globalClearAll(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testGlobalClearAllAsyncOld() throws Exception {
-        globalClearAll(true, true);
+        globalClearAll(false);
     }
 
     /**
@@ -3951,15 +3266,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testGlobalClearAllAsync() throws Exception {
-        globalClearAll(true, false);
+        globalClearAll(true);
     }
 
     /**
      * @param async If {@code true} uses async method.
-     * @param oldAsync Use old async API.
      * @throws Exception If failed.
      */
-    protected void globalClearAll(boolean async, boolean oldAsync) throws Exception {
+    protected void globalClearAll(boolean async) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
@@ -3967,16 +3281,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 jcache(i).put(key, 1);
         }
 
-        if (async) {
-            if(oldAsync) {
-                IgniteCache<String, Integer> asyncCache = jcache().withAsync();
-
-                asyncCache.clear();
-
-                asyncCache.future().get();
-            } else
-                jcache().clearAsync().get();
-        }
+        if (async)
+            jcache().clearAsync().get();
         else
             jcache().clear();
 
@@ -5332,15 +4638,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testGlobalClearKey() throws Exception {
-        testGlobalClearKey(false, Arrays.asList("key25"), false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testGlobalClearKeyAsyncOld() throws Exception {
-        testGlobalClearKey(true, Arrays.asList("key25"), true);
+        testGlobalClearKey(false, Arrays.asList("key25"));
     }
 
     /**
@@ -5348,7 +4646,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testGlobalClearKeyAsync() throws Exception {
-        testGlobalClearKey(true, Arrays.asList("key25"), false);
+        testGlobalClearKey(true, Arrays.asList("key25"));
     }
 
     /**
@@ -5356,15 +4654,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testGlobalClearKeys() throws Exception {
-        testGlobalClearKey(false, Arrays.asList("key25", "key100", "key150"), false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testGlobalClearKeysAsyncOld() throws Exception {
-        testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"), true);
+        testGlobalClearKey(false, Arrays.asList("key25", "key100", "key150"));
     }
 
     /**
@@ -5372,16 +4662,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testGlobalClearKeysAsync() throws Exception {
-        testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"), false);
+        testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"));
     }
 
     /**
      * @param async If {@code true} uses async method.
      * @param keysToRmv Keys to remove.
-     * @param oldAsync Use old async API.
      * @throws Exception If failed.
      */
-    protected void testGlobalClearKey(boolean async, Collection<String> keysToRmv, boolean oldAsync) throws Exception {
+    protected void testGlobalClearKey(boolean async, Collection<String> keysToRmv) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < 500; ++i) {
@@ -5393,22 +4682,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         if (async) {
-            if (oldAsync) {
-                IgniteCache<String, Integer> asyncCache = jcache().withAsync();
-
-                if (keysToRmv.size() == 1)
-                    asyncCache.clear(F.first(keysToRmv));
-                else
-                    asyncCache.clearAll(new HashSet<>(keysToRmv));
-
-                asyncCache.future().get();
-            } else {
-
-                if (keysToRmv.size() == 1)
-                    jcache().clearAsync(F.first(keysToRmv)).get();
-                else
-                    jcache().clearAllAsync(new HashSet<>(keysToRmv)).get();
-            }
+            if (keysToRmv.size() == 1)
+                jcache().clearAsync(F.first(keysToRmv)).get();
+            else
+                jcache().clearAllAsync(new HashSet<>(keysToRmv)).get();
         }
         else {
             if (keysToRmv.size() == 1)
@@ -6154,14 +5431,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteCache<String, Integer> cache = jcache();
         Ignite ignite = ignite(0);
 
-        doTransformResourceInjection(ignite, cache, false, false);
-        doTransformResourceInjection(ignite, cache, true, false);
-        doTransformResourceInjection(ignite, cache, true, true);
+        doTransformResourceInjection(ignite, cache, false);
+        doTransformResourceInjection(ignite, cache, true);
 
         if (txEnabled()) {
-            doTransformResourceInjectionInTx(ignite, cache, false, false);
-            doTransformResourceInjectionInTx(ignite, cache, true, false);
-            doTransformResourceInjectionInTx(ignite, cache, true, true);
+            doTransformResourceInjectionInTx(ignite, cache, false);
+            doTransformResourceInjectionInTx(ignite, cache, true);
         }
     }
 
@@ -6169,17 +5444,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param ignite Node.
      * @param cache Cache.
      * @param async Use async API.
-     * @param oldAsync Use old async API.
-     * @throws Exception If failed.
      */
-    private void doTransformResourceInjectionInTx(Ignite ignite, IgniteCache<String, Integer> cache, boolean async,
-        boolean oldAsync) throws Exception {
+    private void doTransformResourceInjectionInTx(Ignite ignite, IgniteCache<String, Integer> cache, boolean async) {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 IgniteTransactions txs = ignite.transactions();
 
                 try (Transaction tx = txs.txStart(concurrency, isolation)) {
-                    doTransformResourceInjection(ignite, cache, async, oldAsync);
+                    doTransformResourceInjection(ignite, cache, async);
 
                     tx.commit();
                 }
@@ -6191,11 +5463,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param ignite Node.
      * @param cache Cache.
      * @param async Use async API.
-     * @param oldAsync Use old async API.
-     * @throws Exception If failed.
      */
-    private void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache, boolean async,
-        boolean oldAsync) throws Exception {
+    private void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache, boolean async) {
         final Collection<ResourceType> required = Arrays.asList(ResourceType.IGNITE_INSTANCE,
             ResourceType.CACHE_NAME,
             ResourceType.LOGGER);
@@ -6207,11 +5476,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
 
         try {
-            checkResourceInjectionOnInvoke(cache, required, async, oldAsync);
+            checkResourceInjectionOnInvoke(cache, required, async);
 
-            checkResourceInjectionOnInvokeAll(cache, required, async, oldAsync);
+            checkResourceInjectionOnInvokeAll(cache, required, async);
 
-            checkResourceInjectionOnInvokeAllMap(cache, required, async, oldAsync);
+            checkResourceInjectionOnInvokeAllMap(cache, required, async);
         }
         finally {
             evts.stopRemoteListen(opId);
@@ -6224,10 +5493,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cache Cache.
      * @param required Expected injected resources.
      * @param async Use async API.
-     * @param oldAsync Use old async API.
      */
     private void checkResourceInjectionOnInvokeAllMap(IgniteCache<String, Integer> cache,
-        Collection<ResourceType> required, boolean async, boolean oldAsync) {
+        Collection<ResourceType> required, boolean async) {
         Map<String, EntryProcessorResult<Integer>> results;
 
         Map<String, EntryProcessor<String, Integer, Integer>> map = new HashMap<>();
@@ -6237,19 +5505,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
         map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
 
-        if (async) {
-            if (oldAsync) {
-                IgniteCache<String, Integer> acache = cache.withAsync();
-
-                acache.invokeAll(map);
-
-                results = acache.<Map<String, EntryProcessorResult<Integer>>>future().get();
-            }
-            else
-                results = cache.invokeAllAsync(map).get();
-        }
-        else
-            results = cache.invokeAll(map);
+        results = async ? cache.invokeAllAsync(map).get() : cache.invokeAll(map);
 
         assertEquals(map.size(), results.size());
 
@@ -6267,10 +5523,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cache Cache.
      * @param required Expected injected resources.
      * @param async Use async API.
-     * @param oldAsync Use old async API.
      */
     private void checkResourceInjectionOnInvokeAll(IgniteCache<String, Integer> cache,
-        Collection<ResourceType> required, boolean async, boolean oldAsync) {
+        Collection<ResourceType> required, boolean async) {
         Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
@@ -6278,19 +5533,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Map<String, EntryProcessorResult<Integer>> results;
 
-        if (async) {
-            if (oldAsync) {
-                IgniteCache<String, Integer> acache = cache.withAsync();
-
-                acache.invokeAll(keys, new ResourceInjectionEntryProcessor());
-
-                results = acache.<Map<String, EntryProcessorResult<Integer>>>future().get();
-            }
-            else
-                results = cache.invokeAllAsync(keys, new ResourceInjectionEntryProcessor()).get();
-        }
-        else
-            results = cache.invokeAll(keys, new ResourceInjectionEntryProcessor());
+        results = async ?
+            cache.invokeAllAsync(keys, new ResourceInjectionEntryProcessor()).get() :
+            cache.invokeAll(keys, new ResourceInjectionEntryProcessor());
 
         assertEquals(keys.size(), results.size());
 
@@ -6308,32 +5553,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cache Cache.
      * @param required Expected injected resources.
      * @param async Use async API.
-     * @param oldAsync Use old async API.
      */
     private void checkResourceInjectionOnInvoke(IgniteCache<String, Integer> cache,
-        Collection<ResourceType> required, boolean async, boolean oldAsync) {
+        Collection<ResourceType> required, boolean async) {
 
         String key = UUID.randomUUID().toString();
 
         Integer flags;
 
-        if (async) {
-            if (oldAsync) {
-                IgniteCache<String, Integer> acache = cache.withAsync();
-
-                acache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
-
-                flags = acache.<Integer>future().get();
-            }
-            else
-                flags = cache.invokeAsync(key,
-                    new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor()).get();
-        }
-        else
-            flags = cache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
-
-        if (cache.isAsync())
-            flags = cache.<Integer>future().get();
+        flags = async ? cache.invokeAsync(key, new ResourceInjectionEntryProcessor()).get() :
+            cache.invoke(key, new ResourceInjectionEntryProcessor());
 
         assertTrue("Processor result is null", flags != null);
 

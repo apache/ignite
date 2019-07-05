@@ -20,8 +20,6 @@ import java.util.Collection;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
-import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -132,7 +130,7 @@ import org.jetbrains.annotations.Nullable;
  * svcs.deployClusterSingleton("mySingleton", new MyIgniteService());
  * </pre>
  */
-public interface IgniteServices extends IgniteAsyncSupport {
+public interface IgniteServices {
     /**
      * Gets the cluster group to which this {@code IgniteServices} instance belongs.
      *
@@ -158,7 +156,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws ServiceDeploymentException If failed to deploy service.
      */
-    @IgniteAsyncSupported
     public void deployClusterSingleton(String name, Service svc) throws ServiceDeploymentException;
 
     /**
@@ -195,7 +192,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws ServiceDeploymentException If failed to deploy service.
      */
-    @IgniteAsyncSupported
     public void deployNodeSingleton(String name, Service svc) throws ServiceDeploymentException;
 
     /**
@@ -245,7 +241,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param affKey Affinity cache key.
      * @throws ServiceDeploymentException If failed to deploy service.
      */
-    @IgniteAsyncSupported
     public void deployKeyAffinitySingleton(String name, Service svc, @Nullable String cacheName, Object affKey)
         throws ServiceDeploymentException;
 
@@ -313,7 +308,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
      * @throws ServiceDeploymentException If failed to deploy service.
      */
-    @IgniteAsyncSupported
     public void deployMultiple(String name, Service svc, int totalCnt, int maxPerNodeCnt)
         throws ServiceDeploymentException;
 
@@ -388,7 +382,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param cfg Service configuration.
      * @throws ServiceDeploymentException If failed to deploy service.
      */
-    @IgniteAsyncSupported
     public void deploy(ServiceConfiguration cfg) throws ServiceDeploymentException;
 
     /**
@@ -478,13 +471,10 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * {@link org.apache.ignite.services.Service#execute(org.apache.ignite.services.ServiceContext)}
      * method whenever {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)}
      * is called. It is up to the user to  make sure that the service code properly reacts to cancellations.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Name of service to cancel.
      * @throws IgniteException If failed to cancel service.
      */
-    @IgniteAsyncSupported
     public void cancel(String name) throws IgniteException;
 
     /**
@@ -508,13 +498,10 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * Note that depending on user logic, it may still take extra time for a service to
      * finish execution, even after it was cancelled.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param names Names of services to cancel.
      * @throws IgniteException If failed to cancel services.
      */
-    @IgniteAsyncSupported
     public void cancelAll(Collection<String> names) throws IgniteException;
 
     /**
@@ -533,12 +520,9 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * Note that depending on user logic, it may still take extra time for a service to
      * finish execution, even after it was cancelled.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @throws IgniteException If failed to cancel services.
      */
-    @IgniteAsyncSupported
     public void cancelAll() throws IgniteException;
 
     /**
@@ -606,8 +590,4 @@ public interface IgniteServices extends IgniteAsyncSupport {
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public IgniteServices withAsync();
 }
