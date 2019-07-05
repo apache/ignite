@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestor
 import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
@@ -177,6 +178,7 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(GridMBeansTest.class));
         suite.addTest(new JUnit4TestAdapter(TransactionsMXBeanImplTest.class));
         suite.addTest(new JUnit4TestAdapter(SetTxTimeoutOnPartitionMapExchangeTest.class));
+        suite.addTest(new JUnit4TestAdapter(DiscoveryDataDeserializationFailureHanderTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteExceptionInNioWorkerSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteLocalNodeMapBeforeStartTest.class));

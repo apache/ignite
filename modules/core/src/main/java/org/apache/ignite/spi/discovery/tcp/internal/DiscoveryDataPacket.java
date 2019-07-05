@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -137,11 +138,11 @@ public class DiscoveryDataPacket implements Serializable {
         ClassLoader clsLdr,
         boolean clientNode,
         IgniteLogger log
-    ) {
+    ) throws IgniteCheckedException {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (commonData != null && !commonData.isEmpty())
-            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log));
+            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log, true));
 
         if (nodeSpecificData != null && !nodeSpecificData.isEmpty()) {
             Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = U.newLinkedHashMap(nodeSpecificData.size());
@@ -154,7 +155,7 @@ public class DiscoveryDataPacket implements Serializable {
 
                 unmarshNodeSpecData.put(
                     nodeBinEntry.getKey(),
-                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log)
+                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log, true)
                 );
             }
 
@@ -169,17 +170,60 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clsLdr Class loader.
      * @param clientNode Client node.
      * @param log Logger.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
     public DiscoveryDataBag unmarshalJoiningNodeData(
         Marshaller marsh,
         ClassLoader clsLdr,
         boolean clientNode,
         IgniteLogger log
+    ) throws IgniteCheckedException {
+        return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, true);
+    }
+
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
+     */
+    public DiscoveryDataBag unmarshalJoiningNodeDataSilently(
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
+        try {
+            return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, false);
+        }
+        catch (IgniteCheckedException impossible) {
+            assert false : impossible;
+
+            log.error("Failed to unmarshal joining node data", impossible);
+
+            throw new IgniteException(impossible);
+        }
+    }
+
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
+     * @param panic Throw unmarshalling if {@code true}.
+     * @throws IgniteCheckedException If {@code panic} is {@code true} and unmarshalling failed.
+     */
+    private DiscoveryDataBag unmarshalJoiningNodeData(
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log,
+        boolean panic
+    ) throws IgniteCheckedException {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log);
+            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log, panic);
 
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
         }
@@ -278,15 +322,19 @@ public class DiscoveryDataPacket implements Serializable {
      * @param src Source.
      * @param marsh Marsh.
      * @param clsLdr Class loader.
+     * @param clientNode Client node.
      * @param log Logger.
+     * @param panic Throw unmarshalling if {@code true}.
+     * @throws IgniteCheckedException If {@code panic} is {@true} and unmarshalling failed.
      */
     private Map<Integer, Serializable> unmarshalData(
         Map<Integer, byte[]> src,
         Marshaller marsh,
         ClassLoader clsLdr,
         boolean clientNode,
-        IgniteLogger log
-    ) {
+        IgniteLogger log,
+        boolean panic
+    ) throws IgniteCheckedException {
         Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
@@ -298,10 +346,17 @@ public class DiscoveryDataPacket implements Serializable {
             }
             catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
-                    X.hasCause(e, ClassNotFoundException.class) && clientNode)
+                    X.hasCause(e, ClassNotFoundException.class) && clientNode
+                ) {
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
+
+                    continue;
+                }
                 else
                     U.error(log, "Failed to unmarshal discovery data for component: "  + binEntry.getKey(), e);
+
+                if (panic)
+                    throw e;
             }
         }
 
