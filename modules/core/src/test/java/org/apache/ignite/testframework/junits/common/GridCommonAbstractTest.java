@@ -106,6 +106,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -2334,22 +2335,26 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
         PartitionUpdateCounter cntr0 = null;
 
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.configuration().isClientMode())
+        List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
+            !ignite.configuration().isClientMode()).map(ignite ->
+            new T3<>(ignite.name(), counter(partId, ignite.name()),
+                ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.cluster().localNode(), Integer.valueOf(partId)))).collect(Collectors.toList());
+
+        for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
+            if (cntr.get2() == null)
                 continue;
 
-            PartitionUpdateCounter cntr = counter(partId, ignite.name());
-
-            log.info("node=" + ignite.name() + ", cntr=" + cntr);
-
             if (cntr0 != null) {
-                assertEquals("Expecting same counters [partId=" + partId + ']', cntr0, cntr);
+                assertEquals("Expecting same counters [partId=" + partId +
+                    ", cntrs=" + cntrMap + ']', cntr0, cntr.get2());
 
                 if (withReserveCntr)
-                    assertEquals("Expecting same reservation counters", cntr0.reserved(), cntr.reserved());
+                    assertEquals("Expecting same reservation counters [partId=" + partId +
+                            ", cntrs=" + cntrMap + ']',
+                        cntr0.reserved(), cntr.get2().reserved());
             }
 
-            cntr0 = cntr;
+            cntr0 = cntr.get2();
         }
     }
 }

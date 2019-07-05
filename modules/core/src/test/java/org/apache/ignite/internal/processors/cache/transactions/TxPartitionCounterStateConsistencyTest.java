@@ -436,6 +436,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         fut2.get();
 
         log.info("TX: puts=" + puts.sum() + ", restarts=" + restarts.sum() + ", size=" + cache.size());
+
+        assertPartitionsSame(idleVerify(client));
     }
 
     /**
@@ -453,6 +455,10 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         Ignite client = startGrid("client");
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        // Put one key per partition.
+        for (int k = 0; k < PARTS_CNT; k++)
+            cache.put(k, 0);
 
         IgniteEx grid = grid(1);
         Integer key0 = primaryKey(grid.cache(DEFAULT_CACHE_NAME));
@@ -526,6 +532,100 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         fut.get();
 
         awaitPartitionMapExchange();
+
+        // Check if reserved counter is correct on both primary nodes after PME.
+        for (int p = 0; p < PARTS_CNT; p++)
+            assertCountersSame(p, true);
+    }
+
+    /**
+     * Tests tx load concurrently with PME switching late affinity.
+     */
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_LateAffinitySwitch() throws Exception {
+        backups = 1;
+
+        Ignite crd = startGrid(0);
+        startGrid(1);
+        startGrid(2);
+
+        crd.cluster().active(true);
+
+        Integer key = movingKeysAfterJoin(crd, DEFAULT_CACHE_NAME, 1).get(0);
+
+        Ignite client = startGrid("client");
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        // Put one key per partition.
+        for (int k = 0; k < PARTS_CNT; k++)
+            cache.put(k, 0);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+
+        // Delay late affinity switch.
+        spi.blockMessages((node, message) -> {
+            if (message instanceof GridDhtPartitionsFullMessage) {
+                GridDhtPartitionsFullMessage tmp = (GridDhtPartitionsFullMessage)message;
+
+                return tmp.exchangeId() != null && tmp.exchangeId().topologyVersion().minorTopologyVersion() > 0;
+            }
+
+            return false;
+        });
+
+        // Locks mapped wait.
+        CountDownLatch l = new CountDownLatch(1);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            U.awaitQuiet(l);
+
+            try {
+                startGrid(SERVER_NODES);
+
+                resetBaselineTopology();
+            }
+            catch (Exception e) {
+                fail(X.getFullStackTrace(e));
+            }
+        });
+
+        TestRecordingCommunicationSpi cliSpi = TestRecordingCommunicationSpi.spi(client);
+        cliSpi.blockMessages((node, message) -> {
+            // Block second lock map req.
+            return message instanceof GridNearLockRequest && node.order() == crd.cluster().localNode().order();
+        });
+
+        IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
+            try(Transaction tx = client.transactions().txStart()) {
+                cache.put(key, key);
+
+                tx.commit(); //  Will start preparing in the middle of PME.
+            }
+        });
+
+        IgniteInternalFuture crdFut = GridTestUtils.runAsync(() -> {
+            try {
+                cliSpi.waitForBlocked(); // Delay first before PME.
+
+                l.countDown();
+
+                spi.waitForBlocked(); // Block PME after finish on crd and wait on others.
+
+                cliSpi.stopBlock(); // Start remote lock mapping.
+            }
+            catch (InterruptedException e) {
+                fail();
+            }
+        });
+
+        txFut.get();
+        crdFut.get();
+        spi.stopBlock();
+        fut.get();
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
     }
 
     /**

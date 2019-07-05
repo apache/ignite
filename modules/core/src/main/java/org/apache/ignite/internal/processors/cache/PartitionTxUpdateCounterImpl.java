@@ -87,7 +87,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         cntr.set(initUpdCntr);
 
-        initCntr = initUpdCntr;
+        reserveCntr.set(initCntr = initUpdCntr);
 
         queue = fromBytes(cntrUpdData);
     }
