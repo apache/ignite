@@ -110,7 +110,6 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
                 throw e;
             }
 
-
             assert msg != null;
         }
 
