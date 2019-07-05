@@ -57,8 +57,8 @@ public class BPlusMetaIO extends PageIO {
     /** */
     private static final long FLAG_INLINE_OBJECT_SUPPORTED = 2L;
 
-    /** */
-    public static final long FLAGS_DEFAULT = FLAG_UNWRAPPED_PK | FLAG_INLINE_OBJECT_SUPPORTED;
+    /** FLAG_UNWRAPPED_PK - not set because unwrap PK not supported by 8.5.x versions. */
+    public static final long FLAGS_DEFAULT = FLAG_INLINE_OBJECT_SUPPORTED;
 
     /** */
     private final int refsOff;
