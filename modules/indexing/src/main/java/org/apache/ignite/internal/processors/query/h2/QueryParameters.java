@@ -94,7 +94,7 @@ public class QueryParameters {
             qry.isLazy(),
             qry.getPageSize(),
             maxMem,
-            qry.isDataPageScanEnabled(),
+            null,
             nestedTxMode,
             autoCommit,
             batchedArgs,

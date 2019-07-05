@@ -970,9 +970,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
 
-        if (cliCtx.dataPageScanEnabled() != null)
-            qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
-
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());
     }
