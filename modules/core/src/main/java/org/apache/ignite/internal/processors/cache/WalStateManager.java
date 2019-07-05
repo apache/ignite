@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
@@ -459,10 +461,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
 
         for (Integer grpId : grpsToEnableWal)
-            cctx.cache().cacheGroup(grpId).localWalEnabled(true);
+            cctx.cache().cacheGroup(grpId).localWalEnabled(true, true);
 
         for (Integer grpId : grpsToDisableWal)
-            cctx.cache().cacheGroup(grpId).localWalEnabled(false);
+            cctx.cache().cacheGroup(grpId).localWalEnabled(false, true);
     }
 
     /**
@@ -490,7 +492,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     assert grp != null;
 
                     if (!grp.localWalEnabled())
-                        grp.localWalEnabled(true);
+                        grp.localWalEnabled(true, false);
                 }
 
                 tmpDisabledWal = null;
@@ -505,7 +507,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             // It's safe to switch partitions to owning state only if checkpoint was successfully finished.
             cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) {
+                    if (X.hasCause(future.error(), NodeStoppingException.class))
+                        return;
+
                     for (Integer grpId0 : session0.disabledGrps) {
+                        cctx.database().walEnabled(grpId0, true, true);
+
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
                         if (grp != null)

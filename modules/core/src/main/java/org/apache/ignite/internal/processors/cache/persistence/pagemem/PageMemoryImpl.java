@@ -1639,12 +1639,13 @@ public class PageMemoryImpl implements PageMemoryEx {
         finally {
             long pageId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
-            assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
-            assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, fullId.groupId());
-            assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
-
             try {
+                assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
+
                 rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+
+                assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, fullId.groupId());
+                assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
 
                 if (throttlingPlc != ThrottlingPolicy.DISABLED && !restore && markDirty && !wasDirty)
                     writeThrottle.onMarkDirty(isInCheckpoint(fullId));
