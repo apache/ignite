@@ -288,6 +288,8 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(1, 3);
 
+            awaitPartitionMapExchange();
+
             CountDownLatch latch = new CountDownLatch(1);
             for (Ignite ignite : G.allGrids()) {
                 if (ignite.cluster().localNode().order() == 9) {
