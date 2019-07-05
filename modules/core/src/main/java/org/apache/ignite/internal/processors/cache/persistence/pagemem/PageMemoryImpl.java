@@ -47,6 +47,8 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -75,8 +77,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingP
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -1639,12 +1639,13 @@ public class PageMemoryImpl implements PageMemoryEx {
         finally {
             long pageId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
-            assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
-            assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, fullId.groupId());
-            assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
-
             try {
+                assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
+
                 rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+
+                assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, fullId.groupId());
+                assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
 
                 if (throttlingPlc != ThrottlingPolicy.DISABLED && !restore && markDirty && !wasDirty)
                     writeThrottle.onMarkDirty(isInCheckpoint(fullId));
