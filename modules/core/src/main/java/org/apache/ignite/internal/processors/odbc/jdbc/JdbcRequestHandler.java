@@ -975,9 +975,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setSchema(schemaName);
         qry.setMaxMemory(cliCtx.maxMemory());
 
-        if (cliCtx.dataPageScanEnabled() != null)
-            qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
-
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());
     }

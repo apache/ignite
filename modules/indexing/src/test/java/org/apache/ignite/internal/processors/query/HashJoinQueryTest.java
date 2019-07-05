@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -132,6 +133,7 @@ public class HashJoinQueryTest extends AbstractIndexingCommonTest {
      * Test local query execution.
      */
     @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
     public void testHashJoinPlanWithEnabledHashJoin() {
         // Change max table size limit to reduce test table size (A table must not be hashed)
         GridTestUtils.setFieldValue(H2Utils.class, "hashJoinMaxTableSize", 1000);
@@ -284,6 +286,7 @@ public class HashJoinQueryTest extends AbstractIndexingCommonTest {
      *
      */
     @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
     public void testDisableHashJoin() {
         // Optimizer doesn't use HASH_JOIN_IDX.
         assertPlanDoesntContain("HASH_JOIN_IDX [fillFromIndex=_key_PK_hash__SCAN_, hashedCols=[A_JID]]",
