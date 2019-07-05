@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -44,6 +46,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -52,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -567,18 +571,14 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             if (message instanceof GridDhtPartitionsFullMessage) {
                 GridDhtPartitionsFullMessage tmp = (GridDhtPartitionsFullMessage)message;
 
-                return tmp.exchangeId() != null && tmp.exchangeId().topologyVersion().minorTopologyVersion() > 0;
+                return tmp.exchangeId() != null && tmp.exchangeId().topologyVersion().minorTopologyVersion() == 1 && !node.isClient();
             }
 
             return false;
         });
 
         // Locks mapped wait.
-        CountDownLatch l = new CountDownLatch(1);
-
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            U.awaitQuiet(l);
-
             try {
                 startGrid(SERVER_NODES);
 
@@ -589,37 +589,22 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         });
 
-        TestRecordingCommunicationSpi cliSpi = TestRecordingCommunicationSpi.spi(client);
-        cliSpi.blockMessages((node, message) -> {
-            // Block second lock map req.
-            return message instanceof GridNearLockRequest && node.order() == crd.cluster().localNode().order();
-        });
+        spi.waitForBlocked();
 
-        IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
-            try(Transaction tx = client.transactions().txStart()) {
-                cache.put(key, key);
+        doSleep(3000); // Need to wait while client will change top.
 
-                tx.commit(); //  Will start preparing in the middle of PME.
-            }
-        });
+        try(Transaction tx = client.transactions().txStart()) {
+            List<ClusterNode> nodes = new ArrayList<>(client.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key));
 
-        IgniteInternalFuture crdFut = GridTestUtils.runAsync(() -> {
-            try {
-                cliSpi.waitForBlocked(); // Delay first before PME.
+            // Expecting late affinity.
+            assertEquals(grid(0).localNode().id(), nodes.get(0).id());
+            assertEquals(grid(3).localNode().id(), nodes.get(1).id());
 
-                l.countDown();
+            cache.put(key, key);
 
-                spi.waitForBlocked(); // Block PME after finish on crd and wait on others.
+            tx.commit(); //  Will start preparing in the middle of PME.
+        }
 
-                cliSpi.stopBlock(); // Start remote lock mapping.
-            }
-            catch (InterruptedException e) {
-                fail();
-            }
-        });
-
-        txFut.get();
-        crdFut.get();
         spi.stopBlock();
         fut.get();
 
