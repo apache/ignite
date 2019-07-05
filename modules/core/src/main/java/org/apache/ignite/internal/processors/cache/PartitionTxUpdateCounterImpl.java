@@ -74,6 +74,9 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /** HWM. */
     protected final AtomicLong reserveCntr = new AtomicLong();
 
+    /** */
+    private boolean first = true;
+
     /**
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
@@ -138,13 +141,23 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
         // If some holes are present at this point, thar means some update were missed on recovery and will be restored
         // during rebalance. All gaps are safe to "forget".
-        if (!queue.isEmpty())
-            queue.clear();
+        // Should only do it for first PME.
+        if (first) {
+            if (!queue.isEmpty())
+                queue.clear();
+
+            first = false;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
+
+        long hwm = start + delta;
+
+        if (reserveCntr.get() < hwm)
+            reserveCntr.set(hwm);
 
         if (cur > start)
             return false;
@@ -218,7 +231,10 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public void updateInitial(long start, long delta) {
         update(start, delta);
 
-        reserveCntr.set(initCntr = get());
+        initCntr = get();
+
+        if (reserveCntr.get() < initCntr)
+            reserveCntr.set(initCntr);
     }
 
     /** */
