@@ -31,6 +31,7 @@ import org.apache.ignite.console.web.model.SignUpRequest;
 import org.apache.ignite.console.web.security.MissingConfirmRegistrationException;
 import org.apache.ignite.console.web.socket.WebSocketsManager;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -242,22 +243,23 @@ public class AccountsService implements UserDetailsService {
      * @param changes Changes to apply to user.
      */
     public Account save(UUID accId, ChangeUserRequest changes) {
-        Account acc = txMgr.doInTransaction(() -> {
-            Account acc0 = accountsRepo.getById(accId);
+        T2<Account, String> res = txMgr.doInTransaction(() -> {
+            Account acc = accountsRepo.getById(accId);
 
-            acc0.update(changes);
+            acc.update(changes);
 
             String pwd = changes.getPassword();
 
             if (!F.isEmpty(pwd))
-                acc0.setPassword(encoder.encode(pwd));
+                acc.setPassword(encoder.encode(pwd));
 
-            accountsRepo.save(acc0);
-            
-            return acc0;
+            Account oldAcc = accountsRepo.save(acc);
+
+            return new T2<>(acc, oldAcc.getToken());
         });
 
-        String oldTok = acc.getToken();
+        Account acc = res.get1();
+        String oldTok = res.get2();
 
         if (!oldTok.equals(acc.getToken()))
             wsm.revokeToken(acc, oldTok);
