@@ -19,6 +19,7 @@ package org.apache.ignite.console.demo.service;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.compute.ComputeTaskCancelledException;
 import org.apache.ignite.console.demo.AgentDemoUtils;
 import org.apache.ignite.console.demo.task.DemoCancellableTask;
 import org.apache.ignite.console.demo.task.DemoComputeTask;
@@ -50,27 +51,29 @@ public class DemoComputeLoadService implements Service {
 
     /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) {
-        computePool.scheduleWithFixedDelay(new Runnable() {
-            @Override public void run() {
-                try {
-                    ignite.compute().withNoFailover()
-                        .execute(DemoComputeTask.class, null);
-                }
-                catch (Throwable e) {
-                    ignite.log().error("Task execution error", e);
-                }
+        computePool.scheduleWithFixedDelay(() -> {
+            try {
+                ignite.compute().withNoFailover()
+                    .execute(DemoComputeTask.class, null);
+            }
+            catch (ComputeTaskCancelledException ignore) {
+                // No-op.
+            }
+            catch (Throwable e) {
+                ignite.log().error("Task execution error", e);
             }
         }, 10, 3, TimeUnit.SECONDS);
 
-        computePool.scheduleWithFixedDelay(new Runnable() {
-            @Override public void run() {
-                try {
-                    ignite.compute().withNoFailover()
-                        .execute(DemoCancellableTask.class, null);
-                }
-                catch (Throwable e) {
-                    ignite.log().error("DemoCancellableTask execution error", e);
-                }
+        computePool.scheduleWithFixedDelay(() -> {
+            try {
+                ignite.compute().withNoFailover()
+                    .execute(DemoCancellableTask.class, null);
+            }
+            catch (ComputeTaskCancelledException ignore) {
+                // No-op.
+            }
+            catch (Throwable e) {
+                ignite.log().error("DemoCancellableTask execution error", e);
             }
         }, 10, 30, TimeUnit.SECONDS);
     }

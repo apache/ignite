@@ -94,20 +94,15 @@ public class ClusterHandler extends AbstractClusterHandler {
                 RestResult res = restExecutor.sendRequest(nodeUrl, params);
 
                 // If first attempt failed then throttling should be cleared.
-                if (i > 0)
-                    LT.clear();
-
-                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
+                if (i > 0 || !startIdxs.containsKey(nodeURIs))
+                    log.info("Connected to node [url=" + nodeUrl + "]");
 
                 startIdxs.put(nodeURIs, currIdx);
 
                 return res;
             }
-            catch (Throwable e) {
-                if (log.isDebugEnabled())
-                    log.error("Failed connect to cluster [url=" + nodeUrl + "]", e);
-                else
-                    LT.warn(log, "Failed connect to cluster [url=" + nodeUrl + "]");
+            catch (Throwable ignored) {
+                // No-op.
             }
         }
 
