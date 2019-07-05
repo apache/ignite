@@ -2207,7 +2207,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                if (serverNodeDiscoveryEvent() || localJoinExchange())
+                boolean locNodeNotCrd = crd == null || !crd.isLocal();
+
+                if (locNodeNotCrd && (serverNodeDiscoveryEvent() || localJoinExchange()))
                     detectLostPartitions(res);
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
@@ -3477,8 +3479,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
                     assignPartitionsStates();
             }
-            else if (exchCtx.events().hasServerJoin())
-                assignPartitionsStates();
+            else {
+                if (exchCtx.events().hasServerJoin())
+                    assignPartitionsStates();
+            }
 
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment) {
