@@ -1091,10 +1091,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (!stop) {
                 stopFuts.remove(routineId);
 
-                    fut.onDone();
+                fut.onDone();
 
-                    return fut;
-                }
+                return fut;
+            }
 
             try {
                 ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
