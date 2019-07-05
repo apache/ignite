@@ -2054,6 +2054,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 dumpPartitionsInfo(cctx, log);
             }
 
+            // Should flush all data in buffers before read last WAL pointer.
+            // Iterator read records only from files.
+            cctx.wal().flush(null, true);
+
             // We must return null for NULL_PTR record, because FileWriteAheadLogManager.resumeLogging
             // can't write header without that condition.
             WALPointer lastReadPointer = logicalState.lastReadRecordPointer();
@@ -2189,7 +2193,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             while (it.hasNextX()) {
                 if (applyError.get() != null)
-                    throw applyError.get();
+                    break;
 
                 WALRecord rec = restoreBinaryState.next();
 
@@ -2297,9 +2301,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             it.close();
-        }
 
-        awaitApplyComplete(exec, applyError);
+            awaitApplyComplete(exec, applyError);
+        }
 
         if (!finalizeState)
             return null;
@@ -2356,21 +2360,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         StripedExecutor exec,
         AtomicReference<IgniteCheckedException> applyError
     ) throws IgniteCheckedException {
-        if (applyError.get() != null)
-            throw applyError.get(); // Fail-fast check.
-        else {
-            try {
-                // Await completion apply tasks in all stripes.
-                exec.awaitComplete();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedException(e);
-            }
-
-            // Checking error after all task applied.
-            if (applyError.get() != null)
-                throw applyError.get();
+        try {
+            // Await completion apply tasks in all stripes.
+            exec.awaitComplete();
         }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
+        }
+
+        // Checking error after all task applied.
+        if (applyError.get() != null)
+            throw applyError.get();
     }
 
     /**
@@ -3484,7 +3484,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
-            if (sched.nextCpNanos <= nextNanos)
+            if (sched.nextCpNanos - nextNanos <= 0)
                 return new CheckpointProgressSnapshot(sched);
 
             CheckpointProgressSnapshot ret;

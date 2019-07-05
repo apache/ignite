@@ -1596,18 +1596,20 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         long pageId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
+        try {
             assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
+
+            rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+
             assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, fullId.groupId());
             assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
-
-        try {
-            rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
             if (throttlingPlc != ThrottlingPolicy.DISABLED && !restore && markDirty && !wasDirty)
                 writeThrottle.onMarkDirty(isInCheckpoint(fullId));
         }
         catch (AssertionError ex) {
-            U.error(log, "Failed to unlock page [fullPageId=" + fullId + ", binPage=" + U.toHexString(page, systemPageSize()) + ']');
+            U.error(log, "Failed to unlock page [fullPageId=" + fullId +
+                ", binPage=" + U.toHexString(page, systemPageSize()) + ']');
 
             throw ex;
         }
