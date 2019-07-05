@@ -766,7 +766,7 @@ public class IgniteConfiguration {
      * Also, it allows to get (check state, stop) node by name via {@link Ignition} methods.
      *
      *
-     * @param nodeName Node name to set. Can be {@code null}. which is default.
+     * @param nodeName Node name to set. Can be {@code null}, which is default.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setIgniteInstanceName(String nodeName) {
