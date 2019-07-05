@@ -19,12 +19,17 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -55,7 +60,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     }
 
     /** */
-    private GridStringLogger log;
+    private IgniteLogger log;
 
     /** */
     private boolean clientMode;
@@ -157,16 +162,23 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         executeContinuousQuery(ignite0.cache("simple"));
 
-        log = new GridStringLogger();
+        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+
+        log = listeningLogger;
+
+        LogListener lsnr = LogListener.matches(logStr ->
+            logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
+                "Failed to find class with given class loader for unmarshalling")
+                || logStr.contains("Failed to unmarshal continuous routine handler"
+            )).build();
+
+        listeningLogger.registerListener(lsnr);
+
         setExternalLoader = false;
 
-        startGrid(2);
+        GridTestUtils.assertThrows(log, () -> startGrid(2), IgniteCheckedException.class, "Failed to start");
 
-        String logStr = log.toString();
-
-        assertTrue(logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
-            "Failed to find class with given class loader for unmarshalling")
-            || logStr.contains("Failed to unmarshal continuous routine handler"));
+        assertTrue(lsnr.check());
     }
 
     /**

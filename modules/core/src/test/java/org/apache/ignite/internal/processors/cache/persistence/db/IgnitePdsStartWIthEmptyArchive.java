@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
@@ -49,6 +50,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-11908")
 public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
     /** Mapping of WAL segment idx to WalSegmentArchivedEvent. */
     private final Map<Long, WalSegmentArchivedEvent> evts = new ConcurrentHashMap<>();

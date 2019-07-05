@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -159,7 +160,18 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         print(printer, false);
 
         if (!F.isEmpty(exceptions)) {
-            File f = new File(IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
+            File wd = null;
+
+            try {
+                wd = U.resolveWorkDirectory(U.defaultWorkDirectory(), "", false);
+            }
+            catch (IgniteCheckedException e) {
+                printer.accept("Can't find work directory. " + e.getMessage() + "\n");
+
+                e.printStackTrace();
+            }
+
+            File f = new File(wd, IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
             try (PrintWriter pw = new PrintWriter(f)) {
                 print(pw::write, true);
@@ -220,24 +232,25 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             }
         }
         else {
-            printer.accept("idle_verify failed.");
+            printer.accept("\nidle_verify failed.\n");
 
             if (noMatchingCaches)
-                printer.accept("There are no caches matching given filter options.");
+                printer.accept("\nThere are no caches matching given filter options.\n");
         }
 
         if (!F.isEmpty(exceptions())) {
-            printer.accept("Idle verify failed on nodes:\n");
+            printer.accept("\nIdle verify failed on nodes:\n");
 
             for (Map.Entry<ClusterNode, Exception> e : exceptions().entrySet()) {
                 ClusterNode n = e.getKey();
 
-                printer.accept("Node ID: " + n.id() + " " + n.addresses() + " consistent ID: " + n.consistentId() + "\n");
+                printer.accept("\nNode ID: " + n.id() + " " + n.addresses() + "\nConsistent ID: " + n.consistentId() + "\n");
 
                 if (printExceptionMessages) {
-                    printer.accept("Exception message:" + "\n");
+                    String msg = e.getValue().getMessage();
 
-                    printer.accept(e.getValue().getMessage() + "\n");
+                    printer.accept("Exception: " + e.getValue().getClass().getCanonicalName() + "\n");
+                    printer.accept(msg == null ? "" : msg + "\n");
                 }
             }
         }

@@ -53,11 +53,13 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -440,6 +442,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 );
 
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
+                cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
                 return cfg;
             }
@@ -450,6 +453,10 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
             @Override public GridEventStorageManager event() {
                 return new GridEventStorageManager(this);
+            }
+
+            @Override public GridMetricManager metric() {
+                return new GridMetricManager(this);
             }
         };
 

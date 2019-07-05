@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains transaction-related classes.
  */
+
 package org.apache.ignite.transactions;

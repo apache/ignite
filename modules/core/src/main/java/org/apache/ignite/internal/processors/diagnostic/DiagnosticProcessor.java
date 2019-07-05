@@ -46,11 +46,12 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     /** Value of the system property that enables page locks dumping on failure. */
     private static final boolean IGNITE_DUMP_PAGE_LOCK_ON_FAILURE =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE, true);
+
     /** Time formatter for dump file name. */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
 
     /** Folder name for store diagnostic info. **/
-    static final String DEFAULT_TARGET_FOLDER = "diagnostic";
+    public static final String DEFAULT_TARGET_FOLDER = "diagnostic";
 
     /** File format. */
     static final String FILE_FORMAT = ".txt";
@@ -61,6 +62,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     /** Full path for store dubug info. */
     private final Path diagnosticPath;
 
+    /** */
     private final PageHistoryDiagnoster pageHistoryDiagnoster;
 
     /**

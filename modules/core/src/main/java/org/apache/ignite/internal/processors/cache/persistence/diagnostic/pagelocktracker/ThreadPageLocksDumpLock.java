@@ -50,12 +50,16 @@ public class ThreadPageLocksDumpLock implements PageLockDump {
     public static class ThreadState {
         /** */
         public final long threadId;
+
         /** */
         public final String threadName;
+
         /** */
         public final Thread.State state;
+
         /** */
         public final PageLockDump pageLockDump;
+
         /** */
         public final InvalidContext<? extends PageLockDump> invalidContext;
 

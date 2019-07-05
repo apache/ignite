@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,6 +36,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 public abstract class PageLockStackTest extends AbstractPageLockTest {
     /** */
     protected static final int STRUCTURE_ID = 123;
+
     /** */
     protected abstract LockStack createLockStackTracer(String name);
 
@@ -672,7 +674,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         long page = 2;
         long pageAddr = 3;
 
-        int cntDumps = 5_000;
+        int cntDumps = SF.applyLB(5_000, 1_000);
 
         AtomicBoolean done = new AtomicBoolean();
 
@@ -748,5 +750,4 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         System.out.println(">>> Avarage time dump creation:" + (totalExecutionTime / cntDumps) + " ns");
     }
-
 }

@@ -111,6 +111,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
@@ -496,8 +497,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        U.cancel(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null)
+            tcpSrvr.stop();
 
         tcpSrvr = null;
 
@@ -1747,8 +1748,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
-        U.cancel(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null) {
+            tcpSrvr.stop();
+
+            tcpSrvr = null;
+        }
 
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
@@ -2987,6 +2991,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage)
                 processRingLatencyCheckMessage((TcpDiscoveryRingLatencyCheckMessage)msg);
 
+            else if (msg instanceof TcpDiscoveryAuthFailedMessage)
+                processAuthFailedMessage((TcpDiscoveryAuthFailedMessage)msg);
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
@@ -3008,6 +3014,23 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             spi.stats.onMessageProcessingFinished(msg);
+        }
+
+        /**
+         * Processes authentication failed message.
+         *
+         * @param authFailedMsg Authentication failed message.
+         */
+        private void processAuthFailedMessage(TcpDiscoveryAuthFailedMessage authFailedMsg) {
+            try {
+                sendDirectlyToClient(authFailedMsg.getTargetNodeId(), authFailedMsg);
+            }
+            catch (IgniteSpiException ex) {
+                log.warning(
+                    "Skipping send auth failed message to client due to some trouble with connection detected: "
+                    + ex.getMessage()
+                );
+            }
         }
 
         /** {@inheritDoc} */
@@ -3932,8 +3955,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     U.addressesAsString(node));
 
                             try {
-                                trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
-                                    spi.locHost));
+                                trySendMessageDirectly(
+                                    node,
+                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id())
+                                );
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -3968,8 +3993,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", addrs=" + U.addressesAsString(node));
 
                                 try {
-                                    trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
-                                        spi.locHost));
+                                    trySendMessageDirectly(
+                                        node,
+                                        new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id())
+                                    );
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())
@@ -4009,12 +4036,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 err = spi.getSpiContext().validateNode(node);
 
-                if (err == null)
-                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(
-                        spi.marshaller(),
-                        U.resolveClassLoader(spi.ignite().configuration()),
-                        false,
-                        log));
+                if (err == null) {
+                    try {
+                        DiscoveryDataBag data = msg.gridDiscoveryData().unmarshalJoiningNodeData(
+                            spi.marshaller(),
+                            U.resolveClassLoader(spi.ignite().configuration()),
+                            false,
+                            log
+                        );
+
+                        err = spi.getSpiContext().validateNode(node, data);
+                    }
+                    catch (IgniteCheckedException e) {
+                        err = new IgniteNodeValidationResult(node.id(), e.getMessage());
+                    }
+                }
 
                 if (err != null) {
                     final IgniteNodeValidationResult err0 = err;
@@ -4384,14 +4420,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteSpiException("Router node is a client node: " + node);
 
                 if (routerNode.id().equals(getLocalNodeId())) {
-                    ClientMessageWorker worker = clientMsgWorkers.get(node.id());
-
-                    if (worker == null)
-                        throw new IgniteSpiException("Client node already disconnected: " + node);
-
-                    msg.verify(getLocalNodeId()); // Client worker require verified messages.
-
-                    worker.addMessage(msg);
+                    sendDirectlyToClient(node.id(), msg);
 
                     return;
                 }
@@ -4422,6 +4451,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (ex != null)
                 throw ex;
+        }
+
+        /**
+         * @param clientNodeId Client node id.
+         * @param msg Message to send.
+         * @throws IgniteSpiException Last failure if all attempts failed.
+         */
+        private void sendDirectlyToClient(UUID clientNodeId, TcpDiscoveryAbstractMessage msg) {
+            ClientMessageWorker worker = clientMsgWorkers.get(clientNodeId);
+
+            if (worker == null)
+                throw new IgniteSpiException("Client node already disconnected: " + clientNodeId);
+
+            msg.verify(getLocalNodeId()); // Client worker require verified messages.
+
+            worker.addMessage(msg);
         }
 
         /**
@@ -4576,8 +4621,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         if (authFailed) {
                             try {
-                                trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
-                                    spi.locHost));
+                                trySendMessageDirectly(
+                                    node,
+                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id())
+                                );
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -4641,7 +4688,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
                                 TcpDiscoveryAbstractMessage authFail =
-                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
+                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id());
 
                                 try {
                                     ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
@@ -6032,13 +6079,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override protected void body() throws InterruptedException {
             worker.run();
         }
-
-        /** {@inheritDoc} */
-        @Override public void interrupt() {
-            super.interrupt();
-
-            worker.onInterruption();
-        }
     }
 
     /**
@@ -6181,8 +6221,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        public void onInterruption() {
+        public void stop() {
+            cancel();
+
             U.close(srvrSock, log);
+
+            U.join(TcpServer.this, log);
         }
     }
 
@@ -6621,10 +6665,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
                             synchronized (mux) {
                                 if (spiState == CONNECTING) {
                                     joinRes.set(msg);
@@ -6634,15 +6674,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     mux.notifyAll();
                                 }
                                 else {
-                                    ignored = true;
+                                    UUID targetNode = ((TcpDiscoveryAuthFailedMessage)msg).getTargetNodeId();
 
-                                    state = spiState;
+                                    if (targetNode == null || targetNode.equals(locNodeId)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Auth failed message has been ignored [msg=" + msg +
+                                                ", spiState=" + spiState + ']');
+                                    }
+                                    else
+                                        //It can happen when current node is router node and target node is client.
+                                        msgWorker.addMessage(msg);
                                 }
                             }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Auth failed message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
 
                             continue;
                         }

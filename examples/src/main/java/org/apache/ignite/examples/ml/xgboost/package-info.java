@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * XGBoost model inference examples.
  */
+
 package org.apache.ignite.examples.ml.xgboost;
