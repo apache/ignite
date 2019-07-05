@@ -207,7 +207,7 @@ final class ReliableChannel implements AutoCloseable {
 
     /** */
     private synchronized void changeServer(ClientChannel oldCh) {
-        if (oldCh == ch && ch != null) {
+        if (oldCh == ch) {
             if (!backups.isEmpty()) {
                 backups.addLast(primary);
 

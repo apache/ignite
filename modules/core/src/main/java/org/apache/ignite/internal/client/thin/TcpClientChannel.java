@@ -73,6 +73,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
@@ -137,7 +138,7 @@ class TcpClientChannel implements ClientChannel {
             dataInput = dis;
         }
         catch (IOException e) {
-            throw new ClientConnectionException(e);
+            throw handleIOError("addr=" + cfg.getAddress(), e);
         }
 
         handshake(cfg.getUserName(), cfg.getUserPassword());
@@ -158,7 +159,7 @@ class TcpClientChannel implements ClientChannel {
         Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
         long id = send(op, payloadWriter);
 
-        return receive(op, id, payloadReader);
+        return receive(id, payloadReader);
     }
 
     /**
@@ -202,12 +203,11 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /**
-     * @param op Operation.
      * @param reqId ID of the request to receive the response for.
      * @param payloadReader Payload reader from stream.
      * @return Received operation payload or {@code null} if response has no payload.
      */
-    private <T> T receive(ClientOperation op, long reqId, Function<PayloadInputChannel, T> payloadReader)
+    private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
         throws ClientConnectionException, ClientAuthorizationException {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
@@ -274,7 +274,7 @@ class TcpClientChannel implements ClientChannel {
         if (pendingReq == null)
             throw new ClientProtocolError(String.format("Unexpected response ID [%s]", resId));
 
-        int status = 0;
+        int status;
 
         BinaryInputStream resIn;
 
@@ -423,7 +423,7 @@ class TcpClientChannel implements ClientChannel {
                 }
             }
             catch (IOException e) {
-                throw new ClientConnectionException(e);
+                throw handleIOError(e);
             }
         }
     }
@@ -439,11 +439,11 @@ class TcpClientChannel implements ClientChannel {
                 bytesNum = in.read(bytes, readBytesNum, len - readBytesNum);
             }
             catch (IOException e) {
-                throw new ClientConnectionException(e);
+                throw handleIOError(e);
             }
 
             if (bytesNum < 0)
-                throw new ClientConnectionException();
+                throw handleIOError(null);
 
             readBytesNum += bytesNum;
         }
@@ -465,7 +465,7 @@ class TcpClientChannel implements ClientChannel {
             return val;
         }
         catch (IOException e) {
-            throw new ClientConnectionException(e);
+            throw handleIOError(e);
         }
     }
 
@@ -481,7 +481,7 @@ class TcpClientChannel implements ClientChannel {
             return val;
         }
         catch (IOException e) {
-            throw new ClientConnectionException(e);
+            throw handleIOError(e);
         }
     }
 
@@ -497,7 +497,7 @@ class TcpClientChannel implements ClientChannel {
             return val;
         }
         catch (IOException e) {
-            throw new ClientConnectionException(e);
+            throw handleIOError(e);
         }
     }
 
@@ -508,8 +508,23 @@ class TcpClientChannel implements ClientChannel {
             out.flush();
         }
         catch (IOException e) {
-            throw new ClientConnectionException(e);
+            throw handleIOError(e);
         }
+    }
+
+    /**
+     * @param ex IO exception (cause).
+     */
+    private ClientException handleIOError(@Nullable IOException ex) {
+        return handleIOError("sock=" + sock, ex);
+    }
+
+    /**
+     * @param chInfo Additional channel info
+     * @param ex IO exception (cause).
+     */
+    private ClientException handleIOError(String chInfo, @Nullable IOException ex) {
+        return new ClientConnectionException("Ignite cluster is unavailable [" + chInfo + ']', ex);
     }
 
     /**
