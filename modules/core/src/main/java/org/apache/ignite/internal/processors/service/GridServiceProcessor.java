@@ -563,7 +563,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             if (err == null) {
                 try {
-                    ctx.security().authorize(cfg.getName(), SecurityPermission.SERVICE_DEPLOY, null);
+                    ctx.security().authorize(cfg.getName(), SecurityPermission.SERVICE_DEPLOY);
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to authorize service creation [name=" + cfg.getName() +
@@ -900,7 +900,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     private CancelResult removeServiceFromCache(String name) throws IgniteCheckedException {
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_CANCEL, null);
+            ctx.security().authorize(name, SecurityPermission.SERVICE_CANCEL);
         }
         catch (SecurityException e) {
             return new CancelResult(new GridFinishedFuture<>(e), false);
@@ -1013,7 +1013,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     @SuppressWarnings("unchecked")
     public <T> T service(String name) {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         Collection<ServiceContextImpl> ctxs;
 
@@ -1079,7 +1079,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     @SuppressWarnings("unchecked")
     public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -1120,7 +1120,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     @SuppressWarnings("unchecked")
     public <T> Collection<T> services(String name) {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         Collection<ServiceContextImpl> ctxs;
 

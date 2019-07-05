@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -795,7 +796,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         // Check index create.
         reconnectClientNode(srv, cli, restartCache, dynamicCache, new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 addCols(srv, schemaName, cols).get();
 
                 dropCols(srv, schemaName, "NAME").get();
@@ -1217,19 +1218,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             cfg.setUserAttributes(Collections.singletonMap(ATTR_FILTERED, true));
 
         return cfg;
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        @SuppressWarnings("UnnecessaryInterfaceModifier")
-        public void run() throws Exception;
     }
 
     /**

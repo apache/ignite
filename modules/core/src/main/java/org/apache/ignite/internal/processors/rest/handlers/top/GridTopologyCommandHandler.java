@@ -57,7 +57,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_ADDR
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
@@ -293,7 +292,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
             attrs.remove(ATTR_CACHE);
             attrs.remove(ATTR_TX_CONFIG);
-            attrs.remove(ATTR_SECURITY_SUBJECT);
             attrs.remove(ATTR_SECURITY_SUBJECT_V2);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
             attrs.remove(ATTR_BINARY_CONFIGURATION);

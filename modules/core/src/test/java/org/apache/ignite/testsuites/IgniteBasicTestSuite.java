@@ -137,6 +137,8 @@ public class IgniteBasicTestSuite {
 
         suite.addTest(IgnitePlatformsTestSuite.suite());
 
+        suite.addTest(new JUnit4TestAdapter(SecurityTestSuite.class));
+
         suite.addTest(new JUnit4TestAdapter(GridSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(ClusterGroupHostsSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteMessagingWithClientTest.class));
