@@ -161,8 +161,7 @@ public class CacheGroupMetricsImpl {
     }
 
     /**
-     * Commit the complete index building for partition.
-     * @return Decrement number of partitions need processed for finished indexes create or rebuilding.
+     * Decrement number of partitions need processed for finished indexes create or rebuilding.
      */
     public void decrementIndexBuildCountPartitionsLeft() {
         idxBuildCntPartitionsLeft.decrement();

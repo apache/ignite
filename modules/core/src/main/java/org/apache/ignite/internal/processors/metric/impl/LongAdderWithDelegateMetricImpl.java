@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.LongConsumer;
 import org.jetbrains.annotations.Nullable;
 

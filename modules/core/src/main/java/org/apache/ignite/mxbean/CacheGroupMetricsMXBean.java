@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * This interface defines JMX view on {@link CacheGroupContext}.
