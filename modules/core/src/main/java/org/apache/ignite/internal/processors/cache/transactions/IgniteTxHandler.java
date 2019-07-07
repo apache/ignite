@@ -707,13 +707,17 @@ public class IgniteTxHandler {
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             GridCacheContext ctx = e.context();
 
-            assert e.key().partition() != -1;
+            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
+            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
+
+            if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
+                return true;
 
             try {
-                List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(e.key().partition());
-                List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(e.key().partition());
+                List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
+                List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
 
-                if (!aff1.containsAll(aff2) || aff2.isEmpty() ||!aff1.get(0).equals(aff2.get(0)))
+                if (!aff1.equals(aff2))
                     return true;
             }
             catch (IllegalStateException ignored) {

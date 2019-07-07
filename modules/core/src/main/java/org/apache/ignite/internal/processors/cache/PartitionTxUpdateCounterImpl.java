@@ -154,11 +154,6 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
 
-        long hwm = start + delta;
-
-        if (reserveCntr.get() < hwm)
-            reserveCntr.set(hwm);
-
         if (cur > start)
             return false;
 
