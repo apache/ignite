@@ -52,7 +52,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     private final LongAdderMetricImpl fails;
 
     /**
-     * @param mreg Metric registry.
+     * @param mmgr Metrics manager.
      * @param cacheName Cache name.
      * @param isNear Is near flag.
      */
