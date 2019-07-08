@@ -356,7 +356,12 @@ public interface Ignite extends AutoCloseable {
         throws CacheException;
 
     /**
-     * Stops cache and clean up its data.
+     * Destroys a cache with the given name and cleans data that was written to the cache. The call will
+     * deallocate all resources associated with the given cache on all nodes in the cluster. There is no way
+     * to undo the action and recover destroyed data.
+     * <p>
+     * All existing instances of {@link IgniteCache} will be invalidated, subsequent calls to the API
+     * will throw exceptions.
      * <p>
      * If a cache with the specified name does not exist in the grid, the operation has no effect.
      *
@@ -366,10 +371,15 @@ public interface Ignite extends AutoCloseable {
     public void destroyCache(String cacheName) throws CacheException;
 
     /**
-     * Stops caches and clean up their data.
+     * Destroys caches with the given names and cleans data that was written to the caches. The call will
+     * deallocate all resources associated with the given caches on all nodes in the cluster. There is no way
+     * to undo the action and recover destroyed data.
+     * <p>
+     * All existing instances of {@link IgniteCache} will be invalidated, subsequent calls to the API
+     * will throw exceptions.
      * <p>
      * If the specified collection contains {@code null} or an empty value,
-     * this method will throw {@link IllegalArgumentException} and the caches will not be stopped.
+     * this method will throw {@link IllegalArgumentException} and the caches will not be destroyed.
      * <p>
      * If a cache with the specified name does not exist in the grid, the specified value will be skipped.
      *
