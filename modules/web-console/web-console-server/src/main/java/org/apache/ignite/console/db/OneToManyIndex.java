@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.Function;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.dto.AbstractDto;
 import org.apache.ignite.internal.util.typedef.F;
@@ -30,8 +32,8 @@ import static java.util.stream.Collectors.toSet;
  * Index for one to many relation.
  */
 public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
-    /** */
-    private static final String ERR_DATA_ACCESS_VIOLATION = "Data access violation";
+    /** Message generator function */
+    private final Function<T, String> msgGenerator;
 
     /**
      * Constructor.
@@ -39,8 +41,10 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param ignite Ignite.
      * @param idxName Index name.
      */
-    public OneToManyIndex(Ignite ignite, String idxName) {
+    public OneToManyIndex(Ignite ignite, String idxName, Function<T, String> msgGenerator) {
         super(ignite, idxName);
+
+        this.msgGenerator = msgGenerator;
     }
 
     /**
@@ -135,7 +139,7 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
         Set<UUID> children = load(parent);
 
         if (!children.contains(child))
-            throw new IllegalStateException(ERR_DATA_ACCESS_VIOLATION);
+            throw new IllegalStateException(message(parent));
     }
 
     /**
@@ -162,7 +166,7 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
         Set<UUID> allChildren = load(parent);
 
         if (!allChildren.containsAll(children))
-            throw new IllegalStateException(ERR_DATA_ACCESS_VIOLATION);
+            throw new IllegalStateException(message(parent));
     }
 
     /**
@@ -178,5 +182,14 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
             return;
 
         validateAll(parent, existing);
+    }
+
+    /**
+     * @param val Value.
+     *
+     * @return Message.
+     */
+    public String message(T val) {
+        return msgGenerator.apply(val);
     }
 }

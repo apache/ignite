@@ -22,10 +22,12 @@ import javax.validation.Valid;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Announcement;
 import org.apache.ignite.console.json.JsonArray;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.services.AdminService;
 import org.apache.ignite.console.web.model.PeriodFilterRequest;
 import org.apache.ignite.console.web.model.SignUpRequest;
 import org.apache.ignite.console.web.model.ToggleRequest;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,6 +49,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class AdminController {
     /** */
     private final AdminService adminSrv;
+
+    /** Messages accessor. */
+    private final MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
     /**
      * @param adminSrv Admin service.
@@ -79,7 +84,7 @@ public class AdminController {
         boolean admin = params.isAdmin();
 
         if (acc.getId().equals(accId) && !admin)
-            throw new IllegalStateException("Self revoke of administrator rights is prohibited");
+            throw new IllegalStateException(messages.getMessage("err.prohibited-revoke-admin-rights"));
 
         adminSrv.toggle(accId, admin);
 
@@ -117,4 +122,5 @@ public class AdminController {
         adminSrv.updateAnnouncement(ann);
 
         return ResponseEntity.ok().build();
-    }}
+    }
+}

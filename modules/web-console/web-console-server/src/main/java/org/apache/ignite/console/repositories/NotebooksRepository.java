@@ -23,7 +23,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.db.Table;
 import org.apache.ignite.console.dto.Notebook;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.tx.TransactionManager;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -48,9 +50,15 @@ public class NotebooksRepository {
         this.txMgr = txMgr;
 
         txMgr.registerStarter("notebooks", () -> {
+            MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
+
             notebooksTbl = new Table<>(ignite, "wc_notebooks");
 
-            notebooksIdx = new OneToManyIndex<>(ignite, "wc_account_notebooks_idx");
+            notebooksIdx = new OneToManyIndex<>(
+                    ignite,
+                    "wc_account_notebooks_idx",
+                    (key) -> messages.getMessage("err.data-access-violation")
+            );
         });
     }
 

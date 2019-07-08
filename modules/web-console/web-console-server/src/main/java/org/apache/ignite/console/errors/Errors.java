@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.console.web.errors;
+package org.apache.ignite.console.errors;
 
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -26,9 +26,6 @@ import org.apache.ignite.IgniteException;
 public class Errors {
     /** */
     public static final int ERR_EMAIL_NOT_CONFIRMED = 10104;
-
-    /** */
-    public static final String ERR_DB_NOT_AVAILABLE = "Database not available";
 
     /**
      * @param e Exception to check.
@@ -49,11 +46,13 @@ public class Errors {
             msg.startsWith("Cannot start/stop cache within lock or transaction");
     }
 
+
     /**
-     * @param e Exception to check.
+     * @param e Exception.
+     * @param msg Message.
      * @return Exception to throw.
      */
-    public static RuntimeException convertToDatabaseNotAvailableException(RuntimeException e) {
-        return checkDatabaseNotAvailable(e) ? new DatabaseNotAvailableException() : e;
+    public static RuntimeException convertToDatabaseNotAvailableException(RuntimeException e, String msg) {
+        return checkDatabaseNotAvailable(e) ? new DatabaseNotAvailableException(msg) : e;
     }
 }

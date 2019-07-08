@@ -32,8 +32,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
@@ -45,9 +45,9 @@ import static org.mockito.Mockito.when;
 /**
  * Test configuration with mocks.
  */
-@Configuration
+@TestConfiguration
 @Import(Application.class)
-public class TestConfiguration {
+public class MockConfiguration {
     /**
      * @return Application event multicaster.
      */
@@ -55,7 +55,6 @@ public class TestConfiguration {
     public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
         return new SimpleApplicationEventMulticaster();
     }
-
     /** Announcement mock. */
     @Bean
     public AnnouncementRepository announcementRepository() {

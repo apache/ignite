@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.console.db.NestedTransaction;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -30,10 +31,11 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Service;
 
-import static org.apache.ignite.console.web.errors.Errors.checkDatabaseNotAvailable;
-import static org.apache.ignite.console.web.errors.Errors.convertToDatabaseNotAvailableException;
+import static org.apache.ignite.console.errors.Errors.checkDatabaseNotAvailable;
+import static org.apache.ignite.console.errors.Errors.convertToDatabaseNotAvailableException;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -47,6 +49,9 @@ public class TransactionManager {
 
     /** */
     private final Ignite ignite;
+
+    /** Messages accessor. */
+    private final MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
     /** */
     private final Map<String, Runnable> cachesStarters = new ConcurrentHashMap<>();
@@ -158,11 +163,11 @@ public class TransactionManager {
                     recreateCaches();
                 }
                 catch (IgniteException re) {
-                    throw convertToDatabaseNotAvailableException(re);
+                    throw convertToDatabaseNotAvailableException(re, messages.getMessage("err.db-not-available"));
                 }
 
                 if (tx() instanceof NestedTransaction)
-                    throw new IllegalStateException("Database connection was lost during transaction");
+                    throw new IllegalStateException(messages.getMessage("err.db-lost-connection-during-tx"));
 
                 return doInTransaction0(act);
             }
@@ -191,6 +196,6 @@ public class TransactionManager {
      */
     public void checkInTransaction() {
         if (tx() == null)
-            throw new IllegalStateException("No active transaction was found");
+            throw new IllegalStateException(messages.getMessage("err.active-tx-not-found"));
     }
 }

@@ -20,12 +20,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.session.ExpiringSession;
 import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 
-import static org.apache.ignite.console.web.errors.Errors.convertToDatabaseNotAvailableException;
+import static org.apache.ignite.console.errors.Errors.convertToDatabaseNotAvailableException;
 
 /**
  * A {@link SessionRepository} backed by a Apache Ignite and that uses a {@link MapSession}.
@@ -33,6 +35,9 @@ import static org.apache.ignite.console.web.errors.Errors.convertToDatabaseNotAv
 public class IgniteSessionRepository implements SessionRepository<ExpiringSession> {
     /** */
     private final Ignite ignite;
+
+    /** Messages accessor. */
+    private final MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
     /** If non-null, this value is used to override {@link ExpiringSession#setMaxInactiveIntervalInSeconds(int)}. */
     private Integer dfltMaxInactiveInterval;
@@ -86,7 +91,7 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
             cache().put(ses.getId(), new MapSession(ses));
         }
         catch (RuntimeException e) {
-            throw convertToDatabaseNotAvailableException(e);
+            throw convertToDatabaseNotAvailableException(e, messages.getMessage("err.db-not-available"));
         }
     }
 
@@ -107,7 +112,7 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
             return ses;
         }
         catch (RuntimeException e) {
-            throw convertToDatabaseNotAvailableException(e);
+            throw convertToDatabaseNotAvailableException(e, messages.getMessage("err.db-not-available"));
         }
     }
 
@@ -117,7 +122,7 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
             cache().remove(id);
         }
         catch (RuntimeException e) {
-            throw convertToDatabaseNotAvailableException(e);
+            throw convertToDatabaseNotAvailableException(e, messages.getMessage("err.db-not-available"));
         }
     }
 }

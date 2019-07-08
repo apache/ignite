@@ -16,7 +16,7 @@
 
 package org.apache.ignite.console.services;
 
-import org.apache.ignite.console.TestConfiguration;
+import org.apache.ignite.console.MockConfiguration;
 import org.apache.ignite.console.dto.Activity;
 import org.apache.ignite.console.event.Event;
 import org.apache.ignite.console.event.EventPublisher;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
  * Acctivities service test.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {TestConfiguration.class})
+@SpringBootTest(classes = {MockConfiguration.class})
 public class ActivitiesServiceTest {
     /** Activities service. */
     @Autowired

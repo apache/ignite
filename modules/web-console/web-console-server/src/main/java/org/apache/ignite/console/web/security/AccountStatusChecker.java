@@ -28,7 +28,7 @@ import org.springframework.security.core.userdetails.UserDetailsChecker;
  * Checker for status of the loaded <tt>UserDetails</tt> object.
  */
 public class AccountStatusChecker implements UserDetailsChecker {
-    /** */
+    /** Messages accessor. */
     private final MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
 
     /** Activation enabled. */

@@ -30,6 +30,8 @@ import org.apache.ignite.console.dto.DataObject;
 import org.apache.ignite.console.dto.Model;
 import org.apache.ignite.console.json.JsonArray;
 import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.apache.ignite.internal.util.typedef.F;
@@ -50,6 +52,9 @@ import static org.apache.ignite.console.utils.Utils.toJson;
 public class ConfigurationsRepository {
     /** */
     protected final TransactionManager txMgr;
+
+    /** Messages accessor. */
+    private final WebConsoleMessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
     /** */
     private Table<Cluster> clustersTbl;
@@ -84,11 +89,29 @@ public class ConfigurationsRepository {
             cachesTbl = new Table<>(ignite, "wc_cluster_caches");
             modelsTbl = new Table<>(ignite, "wc_cluster_models");
 
-            cachesIdx = new OneToManyIndex<>(ignite, "wc_cluster_caches_idx");
-            modelsIdx = new OneToManyIndex<>(ignite, "wc_cluster_models_idx");
+            cachesIdx = new OneToManyIndex<>(
+                    ignite,
+                    "wc_cluster_caches_idx",
+                    (key) -> messages.getMessage("err.data-access-violation")
+            );
 
-            clustersIdx = new OneToManyIndex<>(ignite, "wc_account_clusters_idx");
-            cfgIdx = new OneToManyIndex<>(ignite, "wc_account_configs_idx");
+            modelsIdx = new OneToManyIndex<>(
+                    ignite,
+                    "wc_cluster_models_idx",
+                    (key) -> messages.getMessage("err.data-access-violation")
+            );
+
+            clustersIdx = new OneToManyIndex<>(
+                    ignite,
+                    "wc_account_clusters_idx",
+                    (key) -> messages.getMessage("err.data-access-violation")
+            );
+
+            cfgIdx = new OneToManyIndex<>(
+                    ignite,
+                    "wc_account_configs_idx",
+                    (key) -> messages.getMessage("err.data-access-violation")
+            );
         });
     }
 
@@ -102,7 +125,7 @@ public class ConfigurationsRepository {
             Cluster cluster = clustersTbl.load(clusterId);
 
             if (cluster == null)
-                throw new IllegalStateException("Cluster not found for ID: " + clusterId);
+                throw new IllegalStateException(messages.getMessageWithArgs("err.cluster-not-found-by-id", clusterId));
 
             clustersIdx.validate(key, clusterId);
 
@@ -162,7 +185,7 @@ public class ConfigurationsRepository {
             Cluster cluster = clustersTbl.load(clusterId);
 
             if (cluster == null)
-                throw new IllegalStateException("Cluster not found for ID: " + clusterId);
+                throw new IllegalStateException(messages.getMessageWithArgs("err.cluster-not-found-by-id", clusterId));
 
             clustersIdx.validate(key, clusterId);
 
@@ -180,7 +203,7 @@ public class ConfigurationsRepository {
             Cache cache = cachesTbl.load(cacheId);
 
             if (cache == null)
-                throw new IllegalStateException("Cache not found for ID: " + cacheId);
+                throw new IllegalStateException(messages.getMessageWithArgs("err.cache-not-found-by-id", cacheId));
 
             cfgIdx.validate(key, cacheId);
 
@@ -198,7 +221,7 @@ public class ConfigurationsRepository {
             Model mdl = modelsTbl.load(mdlId);
 
             if (mdl == null)
-                throw new IllegalStateException("Model not found for ID: " + mdlId);
+                throw new IllegalStateException(messages.getMessageWithArgs("err.model-not-found-by-id", mdlId));
 
             cfgIdx.validate(key, mdlId);
 

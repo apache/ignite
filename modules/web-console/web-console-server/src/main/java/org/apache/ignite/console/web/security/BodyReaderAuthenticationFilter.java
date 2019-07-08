@@ -20,7 +20,9 @@ import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.web.model.SignInRequest;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -35,6 +37,9 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 public class BodyReaderAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     /** */
     protected ObjectMapper objMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /** Messages accessor. */
+    protected final MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
     /** {@inheritDoc} */
     @Override public Authentication attemptAuthentication(HttpServletRequest req,
@@ -53,7 +58,7 @@ public class BodyReaderAuthenticationFilter extends UsernamePasswordAuthenticati
             return getAuthenticationManager().authenticate(tok);
         }
         catch (IOException e) {
-            throw new PreAuthenticatedCredentialsNotFoundException("Failed to parse signin request", e);
+            throw new PreAuthenticatedCredentialsNotFoundException(messages.getMessage("err.parse-signin-req-failed"), e);
         }
     }
 }
