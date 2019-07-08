@@ -161,7 +161,7 @@ public class IgnitePdsRestartAfterFailedToWriteMetaPageTest extends GridCommonAb
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
 
-            if (file.getAbsolutePath().contains("IgnitePdsRestartAfterRebalancingTest1")) {
+            if (file.getAbsolutePath().contains(IgnitePdsRestartAfterFailedToWriteMetaPageTest.class.getSimpleName())) {
                 if (failNextCheckpoint && file.getName().contains("-START.bin"))
                     cpCnt.incrementAndGet();
                 else if (file.getName().contains("part-") && !file.getAbsolutePath().contains("metastorage")) {

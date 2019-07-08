@@ -117,6 +117,10 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        fileIoBlockingSemaphore.drainPermits();
+
+        fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+
         stopAllGrids();
 
         cleanPersistenceDir();
