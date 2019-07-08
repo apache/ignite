@@ -98,8 +98,8 @@ public enum IgniteFeatures {
         if (ctx != null) {
             RollingUpgradeStatus status = ctx.rollingUpgrade().getStatus();
 
-            if (status.isEnabled() && !status.isForcedModeEnabled())
-                return status.getSupportedFeatures().contains(feature);
+            if (status.enabled() && !status.forcedModeEnabled())
+                return status.supportedFeatures().contains(feature);
         }
 
         return nodeSupports(clusterNode.attribute(ATTR_IGNITE_FEATURES), feature);
@@ -141,8 +141,8 @@ public enum IgniteFeatures {
         if (ctx != null && nodes.iterator().hasNext()) {
             RollingUpgradeStatus status = ctx.rollingUpgrade().getStatus();
 
-            if (status.isEnabled() && !status.isForcedModeEnabled())
-                return status.getSupportedFeatures().contains(feature);
+            if (status.enabled() && !status.forcedModeEnabled())
+                return status.supportedFeatures().contains(feature);
         }
 
         for (ClusterNode next : nodes) {

@@ -33,7 +33,7 @@ public class RollingUpgradeModeChangeResult extends IgniteDataTransferObject {
     /**
      * Overall status of the operation.
      */
-    public enum Status {
+    public enum Result {
         /**
          * The changing of rolling upgrade mode successfully done.
          */
@@ -45,7 +45,7 @@ public class RollingUpgradeModeChangeResult extends IgniteDataTransferObject {
         FAIL;
 
         /** Enumerated values. */
-        private static final Status[] VALS = values();
+        private static final Result[] VALS = values();
 
         /**
          * Efficiently gets enumerated value from its ordinal.
@@ -53,13 +53,16 @@ public class RollingUpgradeModeChangeResult extends IgniteDataTransferObject {
          * @param ord Ordinal value.
          * @return Enumerated value or {@code null} if ordinal out of range.
          */
-        @Nullable public static Status fromOrdinal(int ord) {
+        @Nullable public static Result fromOrdinal(int ord) {
             return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
         }
     }
 
     /** Overall status. */
-    private Status status;
+    private Result result;
+
+    /** Rolling Upgrade status. */
+    private RollingUpgradeStatus status;
 
     /** The reason why the operation was failed. */
     private Exception cause;
@@ -73,29 +76,42 @@ public class RollingUpgradeModeChangeResult extends IgniteDataTransferObject {
     /**
      * Creates a new instance with the given {@code status}.
      *
-     * @param status status of the operation.
+     * @param result status of the operation.
+     * @param status Rolling upgrade status.
      */
-    public RollingUpgradeModeChangeResult(Status status) {
+    public RollingUpgradeModeChangeResult(Result result, RollingUpgradeStatus status) {
+        this.result = result;
         this.status = status;
     }
 
     /**
      * Creates a new instance with the given {@code status} and {@code cause}.
      *
-     * @param status status of the operation.
+     * @param result status of the operation.
      * @param cause cause of failure.
+     * @param status Rolling upgrade status.
      */
-    public RollingUpgradeModeChangeResult(Status status, Exception cause) {
-        this.status = status;
+    public RollingUpgradeModeChangeResult(Result result, Exception cause, RollingUpgradeStatus status) {
+        this.result = result;
         this.cause = cause;
+        this.status = status;
     }
 
     /**
      * Returns overall status of the operation.
      *
-     * @return status of the operation.
+     * @return Status of the operation.
      */
-    public Status status() {
+    public Result result() {
+        return result;
+    }
+
+    /**
+     * Returns rolling upgrade status.
+     *
+     * @return Rolling upgrade status.
+     */
+    public RollingUpgradeStatus status() {
         return status;
     }
 
@@ -110,14 +126,16 @@ public class RollingUpgradeModeChangeResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, status);
+        U.writeEnum(out, result);
+        out.writeObject(status);
         out.writeObject(cause);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in)
         throws IOException, ClassNotFoundException {
-        status = Status.fromOrdinal(in.readByte());
+        result = Result.fromOrdinal(in.readByte());
+        status = (RollingUpgradeStatus)in.readObject();
         cause = (Exception)in.readObject();
     }
 

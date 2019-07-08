@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.ru.RollingUpgradeStatus;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeChangeModeTask;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeChangeModeTaskArg;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeOperation;
+import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatusResult;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatusTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.ROLLING_UPGRADE;
@@ -44,7 +45,7 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             if (RollingUpgradeSubCommands.STATUS == rollingUpgradeArgs.command()) {
-                RollingUpgradeStatus status = executeTask(
+                VisorRollingUpgradeStatusResult status = executeTask(
                     client,
                     VisorRollingUpgradeStatusTask.class,
                     null,
@@ -127,15 +128,27 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
     /**
      * Prints the given rolling upgrade status.
      *
-     * @param status Rolling upgrade status.
+     * @param res Rolling upgrade status.
      */
-    private void printRollingUpgradeStatus(Logger log, RollingUpgradeStatus status) {
-        log.info("Rolling upgrade is " + (status.isEnabled()? "enabled" : "disabled"));
-        log.info("Initial version: " + status.getInitialVersion());
-        log.info("Update version: " + status.getUpdateVersion());
+    private void printRollingUpgradeStatus(Logger log, VisorRollingUpgradeStatusResult res) {
+        RollingUpgradeStatus status = res.status();
 
-        if (status.isForcedModeEnabled())
+        log.info("Rolling upgrade is " + (status.enabled()? "enabled" : "disabled"));
+        log.info("Initial version: " + status.initialVersion());
+        log.info("Target version: " + ((status.targetVersion() != null)? status.targetVersion(): "N/A"));
+
+        if (status.forcedModeEnabled())
             log.info("Forced mode is enabled.");
+
+        if (status.enabled()) {
+            log.info("List of alive nodes in the cluster that are not updated yet:");
+
+            res.initialVerNodes().forEach(id -> log.info(CommandLogger.INDENT + id));
+
+            log.info("List of alive nodes in the cluster that are updated:");
+
+            res.updateVerNodes().forEach(id -> log.info(CommandLogger.INDENT + id));
+        }
     }
 
     /**
@@ -144,7 +157,7 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
      * @param res Mode change result.
      */
     private void printRollingUpgradeChangeModeResult(Logger log, RollingUpgradeModeChangeResult res) {
-        if (RollingUpgradeModeChangeResult.Status.SUCCESS == res.status())
+        if (RollingUpgradeModeChangeResult.Result.SUCCESS == res.result())
             log.info("Rolling upgrade mode successfully " +
                 (RollingUpgradeSubCommands.ENABLE == rollingUpgradeArgs.command()? "enabled." : "disabled."));
         else

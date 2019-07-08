@@ -33,7 +33,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
-import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Status.FAIL;
+import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Result.FAIL;
 
 /**
  * Node validation.
@@ -86,12 +86,21 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             FAIL,
             new UnsupportedOperationException("Local node does not support Rolling Upgrade "
                 + "[locNodeId=" + locNode.id() + ", locNodeAddrs=" + U.addressesAsString(locNode)
-                + ", locBuildVer=" + locNode.attribute(ATTR_BUILD_VER) + ']'));
+                + ", locBuildVer=" + locNode.attribute(ATTR_BUILD_VER) + ']'),
+            getStatus());
     }
 
     /** {@inheritDoc} */
-    @Override public void enableForcedMode() {
-        throw new UnsupportedOperationException("Forced mode of Rolling Upgrade is not supported.");
+    @Override public RollingUpgradeModeChangeResult enableForcedMode() {
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        return new RollingUpgradeModeChangeResult(
+            FAIL,
+            new UnsupportedOperationException("Local node does not support forced mode of Rolling Upgrade "
+                + "[locNodeId=" + locNode.id() + ", locNodeAddrs=" + U.addressesAsString(locNode)
+                + ", locBuildVer=" + locNode.attribute(ATTR_BUILD_VER)
+            ),
+            getStatus());
     }
 
     /** {@inheritDoc} */

@@ -30,33 +30,35 @@ public interface RollingUpgradeStatus extends Serializable {
      *
      * @return {@code true} if Rolling Upgrade is enabled.
      */
-    public boolean isEnabled();
+    public boolean enabled();
 
     /**
-     * @return {@code true} if strict mode is enabled.
+     * @return {@code true} if strict mode is disabled.
      */
-    public boolean isForcedModeEnabled();
+    public boolean forcedModeEnabled();
 
     /**
      * Returns the version that is used as starting point for Rolling Upgrade.
      *
      * @return Initial version.
      */
-    public IgniteProductVersion getInitialVersion();
+    public IgniteProductVersion initialVersion();
 
     /**
-     * Returns the resulting version.
+     * Returns the target version.
      * The returned value can be {@code null} if Rolling Upgrade is not in progress
-     * or resulting version is not determined yet.
+     * or target version is not determined yet.
      *
-     * @return Resulting version.
+     * This method makes sense only for the case when the {@code forced} mode is disabled.
+     *
+     * @return Target version.
      */
-    public @Nullable IgniteProductVersion getUpdateVersion();
+    public @Nullable IgniteProductVersion targetVersion();
 
     /**
      * Returns a set of features that is supported by all nodes in the cluster.
      *
      * @return Feature set supported by all cluster nodes.
      */
-    public Set<IgniteFeatures> getSupportedFeatures();
+    public Set<IgniteFeatures> supportedFeatures();
 }
