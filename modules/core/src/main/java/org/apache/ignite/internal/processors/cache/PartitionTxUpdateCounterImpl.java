@@ -120,6 +120,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
+        // Reserved update counter is updated only on exchange.
         long cur = get();
 
         // Always set reserved counter equal to max known counter.
@@ -139,9 +140,9 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
         cntr.set(val);
 
-        // If some holes are present at this point, thar means some update were missed on recovery and will be restored
-        // during rebalance. All gaps are safe to "forget".
-        // Should only do it for first PME.
+        /** If some holes are present at this point, thar means some update were missed on recovery and will be restored
+         * during rebalance. All gaps are safe to "forget".
+         * Should only do it for first PME (later missed updates on node left are reset in {@link #finalizeUpdateCounters}. */
         if (first) {
             if (!queue.isEmpty())
                 queue.clear();
