@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -207,7 +207,19 @@ public abstract class WALRecord {
         MVCC_DATA_RECORD (LOGICAL),
 
         /** Mvcc Tx state change record. */
-        MVCC_TX_RECORD (LOGICAL);
+        MVCC_TX_RECORD (LOGICAL),
+
+        /** Consistent cut record. */
+        CONSISTENT_CUT,
+
+        /** Rollback tx record. */
+        ROLLBACK_TX_RECORD (LOGICAL),
+
+        /** */
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (PHYSICAL),
+
+        /** Init root meta page (with flags and created version)*/
+        BTREE_META_PAGE_INIT_ROOT_V3 (PHYSICAL);
 
         /**
          * When you're adding a new record don't forget to choose record purpose explicitly
