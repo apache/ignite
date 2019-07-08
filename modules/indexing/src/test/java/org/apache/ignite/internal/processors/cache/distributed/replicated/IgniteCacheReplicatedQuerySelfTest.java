@@ -51,6 +51,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
@@ -346,14 +347,13 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-613", forceFailure = true)
     public void testNodeLeft() throws Exception {
-        Ignite g = startGrid("client");
+        Ignite client = startGrid("client");
 
         try {
-            assertTrue(g.configuration().isClientMode());
+            assertTrue(client.configuration().isClientMode());
 
-            IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
+            IgniteCache<Integer, Integer> cache = jcache(client, Integer.class, Integer.class);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
@@ -373,18 +373,21 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             assertEquals(1, mapNode1.size() + mapNode2.size() + mapNode3.size());
 
-            final UUID nodeId = g.cluster().localNode().id();
+            final UUID nodeId = client.cluster().localNode().id();
 
-            final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(3);
 
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    if (((DiscoveryEvent)evt).eventNode().id().equals(nodeId))
-                        latch.countDown();
+            // Add listeners on all nodes.
+            for (int i = 0; i < 3; i++) {
+                grid(i).events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (((DiscoveryEvent)evt).eventNode().id().equals(nodeId))
+                            latch.countDown();
 
-                    return true;
-                }
-            }, EVT_NODE_LEFT);
+                        return true;
+                    }
+                }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+            }
 
             stopGrid("client");
 
