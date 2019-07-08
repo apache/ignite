@@ -61,7 +61,7 @@ public abstract class TableStatisticsAbstractTest extends GridCommonAbstractTest
 
         Collections.reverse(dirOrdTbls);
 
-        log.error("debug: dirOrdTbls=" + dirOrdTbls + ", directOrder=" + directOrder);
+        log.warning("debug: dirOrdTbls=" + dirOrdTbls + ", directOrder=" + directOrder);
 
         String reversedOrder = replaceTablePlaceholders(sql, (String[]) dirOrdTbls.toArray());
 
