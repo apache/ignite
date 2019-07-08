@@ -15,19 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheEntrySetAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-
 /**
  *
  */
-public class GridCacheReplicatedEntrySetSelfTest extends GridCacheEntrySetAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
-}
+
+/**
+ * <!-- Package description. -->
+ * Contains Sql view metric exporter implementation.
+ */
+package org.apache.ignite.spi.metric.sql;
