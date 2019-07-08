@@ -17,6 +17,8 @@
 package org.apache.ignite.internal.commandline.baseline;
 
 import java.util.List;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * This class contains all possible arguments after parsing baseline command input.
@@ -34,6 +36,7 @@ public class BaselineArguments {
     /** Requested topology version. */
     private long topVer = -1;
     /** List of consistent ids for operation. */
+    @GridToStringInclude
     List<String> consistentIds;
 
     /**
@@ -86,6 +89,11 @@ public class BaselineArguments {
      */
     public List<String> getConsistentIds() {
         return consistentIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BaselineArguments.class, this);
     }
 
     /**

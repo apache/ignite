@@ -15,12 +15,14 @@
  */
 package org.apache.ignite.internal.commandline.ru;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * This class contains all possible arguments after parsing rolling-upgrade command input.
  */
 public class RollingUpgradeArguments {
     /** */
-    private final RollingUpgradeSubCommands cmd;
+    private final RollingUpgradeSubCommands subcommand;
 
     /** */
     private final boolean forcedMode;
@@ -31,7 +33,7 @@ public class RollingUpgradeArguments {
      * @param builder Rolling upgrade arguments.
      */
     public RollingUpgradeArguments(Builder builder) {
-        cmd = builder.cmd;
+        subcommand = builder.cmd;
         forcedMode = builder.forcedMode;
     }
 
@@ -39,14 +41,19 @@ public class RollingUpgradeArguments {
      * @return Rolling upgrade command.
      */
     public RollingUpgradeSubCommands command() {
-        return cmd;
+        return subcommand;
     }
 
     /**
      * @return {@code true} if strict mode enabled.
      */
     public boolean isForcedMode() {
-        return RollingUpgradeSubCommands.ENABLE == cmd && forcedMode;
+        return RollingUpgradeSubCommands.ENABLE == subcommand && forcedMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RollingUpgradeArguments.class, this);
     }
 
     /** */

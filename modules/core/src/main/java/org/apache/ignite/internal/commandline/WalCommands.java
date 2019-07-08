@@ -138,6 +138,11 @@ public class WalCommands implements Command<T2<String, String>> {
         return new T2<>(walAct, walArgs);
     }
 
+    /** {@inheritDoc} */
+    @Override public String argumentString() {
+        return "walAction=" + walAct + ", walArgs=" + walArgs;
+    }
+
     /**
      * Execute delete unused WAL segments task.
      *  @param client Client.
