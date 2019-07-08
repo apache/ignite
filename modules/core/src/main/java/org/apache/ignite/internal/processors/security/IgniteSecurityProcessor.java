@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -256,7 +257,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
         String locCls = secPrc.getClass().getName();
 
-        if (!F.eq(locCls, rmtCls)) {
+        boolean securityMsgSupported = IgniteFeatures.allNodesSupports(
+            ctx,
+            ctx.discovery().allNodes(),
+            IgniteFeatures.IGNITE_SECURITY_PROCESSOR
+        );
+
+        if (securityMsgSupported && !F.eq(locCls, rmtCls)) {
             return new IgniteNodeValidationResult(node.id(),
                 String.format(MSG_SEC_PROC_CLS_IS_INVALID, ctx.localNodeId(), node.id(), locCls, rmtCls),
                 String.format(MSG_SEC_PROC_CLS_IS_INVALID, node.id(), ctx.localNodeId(), rmtCls, locCls));

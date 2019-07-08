@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -171,8 +172,18 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     private IgniteNodeValidationResult validateSecProcClass(ClusterNode node){
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
 
-        if(processor != null) {
+        boolean securityMsgSupported = IgniteFeatures.allNodesSupports(
+            ctx,
+            ctx.discovery().allNodes(),
+            IgniteFeatures.IGNITE_SECURITY_PROCESSOR
+        );
+
+        if(securityMsgSupported && processor != null) {
             String locCls = processor.getClass().getName();
+
+            // Compatibility. It allows connect an old node to a new cluster.
+            if (!processor.enabled() && rmtCls == null)
+                return null;
 
             if (!F.eq(locCls, rmtCls) && !F.eq(getClass().getName(), rmtCls)) {
                 return new IgniteNodeValidationResult(node.id(),
@@ -183,7 +194,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
             return null;
         }
 
-        if (rmtCls != null && !rmtCls.equals(getClass().getName())) {
+        if (securityMsgSupported && rmtCls != null && !rmtCls.equals(getClass().getName())) {
             ClusterNode locNode = ctx.discovery().localNode();
 
             return new IgniteNodeValidationResult(
