@@ -32,6 +32,7 @@ import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
@@ -145,6 +146,11 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
          * @return Full config flag.
          */
         public boolean fullConfig(){ return fullConfig; }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Arguments.class, this);
+        }
     }
 
     /** Command parsed arguments */
