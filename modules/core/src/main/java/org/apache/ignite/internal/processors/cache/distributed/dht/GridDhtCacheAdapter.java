@@ -1585,21 +1585,54 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (curVer.compareTo(lastAffChangedTopVer) >= 0 && curVer.compareTo(expVer) <= 0)
             return false;
 
-        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
-        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
+        // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
 
-        if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
-            return true;
+        for (KeyCacheObject key : keys) {
+            assert key.partition() != -1;
 
-        try {
-            List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
-            List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
+            try {
+                List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(key.partition());
+                List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(key.partition());
 
-            return !aff1.equals(aff2);
+                boolean bad1 = !aff1.containsAll(aff2) || aff2.isEmpty() || !aff1.get(0).equals(aff2.get(0));
+
+                Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
+                Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
+
+                AffinityTopologyVersion affVer = ctx.affinity().affinityTopologyVersion();
+
+                boolean bad2 = !cacheNodes0.equals(cacheNodes1) || affVer.compareTo(curVer) < 0;
+
+                if (bad1 != bad2) {
+                    log.info("DBG: lock1 grpId=" + ctx.groupId() + ", partId=" + key.partition() +
+                        ", affVer=" + affVer + ", expVer=" + expVer + ", curVer=" + curVer +
+                        ", lastAffChangedTopVer=" + lastAffChangedTopVer +
+                        ", cacheNodes0=" + cacheNodes0 + ", cacheNodes1=" + cacheNodes1 +
+                        ", aff1=" + aff1 + ", aff2=" + aff2);
+                }
+
+                List<List<ClusterNode>> aff1Full = ctx.affinity().assignments(expVer);
+                List<List<ClusterNode>> aff2Full = ctx.affinity().assignments(curVer);
+
+                boolean bad3 = !aff1Full.equals(aff2Full);
+
+                if (bad1 != bad3) {
+                    log.info("DBG: lock2 grpId=" + ctx.groupId() + ", partId=" + key.partition() +
+                        ", affVer=" + affVer + ", expVer=" + expVer + ", curVer=" + curVer +
+                        ", lastAffChangedTopVer=" + lastAffChangedTopVer +
+                        ", aff1=" + aff1 + ", aff2=" + aff2 +
+                        ", aff1Full=" + aff1Full + ", aff2Full=" + aff2Full);
+                }
+
+                if (bad1)
+                    return true;
+            }
+            catch (IllegalStateException ignored) {
+                return true;
+            }
         }
-        catch (IllegalStateException ignored) {
-            return true;
-        }
+
+        return false;
     }
 
     /**

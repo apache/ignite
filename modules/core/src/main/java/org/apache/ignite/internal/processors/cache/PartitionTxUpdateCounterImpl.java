@@ -129,7 +129,8 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         if (reserveCntr.get() < max)
             reserveCntr.set(max);
 
-        if (val < cur) // Outdated counter (txs are possible before current topology future is finished).
+        // Outdated counter (txs are possible before current topology future is finished if primary is not changed).
+        if (val < cur)
             return;
 
         // Absolute counter should be not less than last applied update.

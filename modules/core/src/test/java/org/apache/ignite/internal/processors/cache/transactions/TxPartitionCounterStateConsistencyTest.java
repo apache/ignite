@@ -511,15 +511,15 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         });
 
         IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
-            try(Transaction tx = client.transactions().txStart()) {
+            try (Transaction tx = client.transactions().txStart()) {
                 Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                map.put(key, key); // clientFirst=true
-                map.put(key0, key0); // clientFirst=false
+                map.put(key, key); // clientFirst=true in lockAll.
+                map.put(key0, key0); // clientFirst=false in lockAll.
 
                 cache.putAll(map);
 
-                tx.commit(); //  Will start preparing in the middle of PME.
+                tx.commit(); // Will start preparing in the middle of PME.
             }
         });
 
