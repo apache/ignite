@@ -122,7 +122,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
-import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Status.FAIL;
+import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Result.FAIL;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -2728,7 +2728,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         RollingUpgradeModeChangeResult res = hnd.getLastOperationResult();
 
-        assertTrue("Enabling rolling upgrade should fail [res=" + res + ']', FAIL == res.status());
+        assertTrue("Enabling rolling upgrade should fail [res=" + res + ']', FAIL == res.result());
         assertTrue(
             "The cause of the failure should be UnsupportedOperationException [cause=" + res.cause() + ']',
             X.hasCause(res.cause(), UnsupportedOperationException.class));
@@ -2737,7 +2737,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         res = hnd.getLastOperationResult();
 
-        assertTrue("Disabling rolling upgrade should fail [res=" + res + ']', FAIL == res.status());
+        assertTrue("Disabling rolling upgrade should fail [res=" + res + ']', FAIL == res.result());
         assertTrue(
             "The cause of the failure should be UnsupportedOperationException [cause=" + res.cause() + ']',
             X.hasCause(res.cause(), UnsupportedOperationException.class));

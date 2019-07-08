@@ -24,8 +24,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
-import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Status.SUCCESS;
-
 /**
  * The task that represents enabling/disabling rolling upgrade mode.
  */
@@ -61,11 +59,8 @@ public class VisorRollingUpgradeChangeModeTask extends VisorOneNodeTask<VisorRol
         ) throws IgniteException {
             switch (arg.operation()) {
                 case ENABLE:
-                    if (arg.isForcedMode()) {
-                        ignite.context().rollingUpgrade().enableForcedMode();
-
-                        return new RollingUpgradeModeChangeResult(SUCCESS);
-                    }
+                    if (arg.isForcedMode())
+                        return ignite.context().rollingUpgrade().enableForcedMode();
 
                     return ignite.context().rollingUpgrade().setMode(true);
 
