@@ -25,6 +25,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -44,6 +45,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests for dynamic index creation.
@@ -203,7 +206,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1_ESCAPED));
 
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false, 0);
             }
         }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
@@ -446,7 +449,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, randomString(), idx, false, 0);
             }
         }, IgniteQueryErrorCode.TABLE_NOT_FOUND);
@@ -522,7 +525,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_1, field(randomString()));
 
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false, 0);
             }
         }, IgniteQueryErrorCode.COLUMN_NOT_FOUND);
@@ -597,7 +600,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         initialize(mode, atomicityMode, near);
 
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_2_ESCAPED));
 
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false, 0);
@@ -735,7 +738,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     private void checkNoIndexIsCreatedForInlineSize(final int inlineSize, int igniteQryErrorCode) throws Exception {
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
                 idx.setInlineSize(inlineSize);
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false, 0);
@@ -866,7 +869,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     private void checkNoIndexIsCreatedForParallelism(final int parallel, int igniteQryErrorCode) throws Exception {
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false, parallel);
             }
@@ -1037,7 +1040,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         initialize(mode, atomicityMode, near);
 
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false);
             }
         }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
@@ -1146,7 +1149,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true, 0);
             }
         }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -1154,7 +1157,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         assertIgniteSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 dynamicIndexDrop(CACHE_NAME, IDX_NAME_LOCAL, true);
             }
         }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
