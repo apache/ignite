@@ -737,7 +737,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             }
         }
 
-        String uniqueIdxName = "[cache=" + ctx.name() + ", idx=" + idx.getName() + "]";
+        String uniqueIdxName = "[cacheGroup=" + ctx.group().name() + ", cache=" + ctx.name() + ", idx=" + idx.getName() + "]";
 
         processedIndexes.incrementAndGet();
 
