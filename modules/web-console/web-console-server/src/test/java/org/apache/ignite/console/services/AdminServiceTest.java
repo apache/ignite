@@ -17,7 +17,7 @@
 package org.apache.ignite.console.services;
 
 
-import org.apache.ignite.console.TestConfiguration;
+import org.apache.ignite.console.MockConfiguration;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.event.Event;
 import org.apache.ignite.console.event.EventPublisher;
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
  * Admin service test.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {TestConfiguration.class})
+@SpringBootTest(classes = {MockConfiguration.class})
 public class AdminServiceTest {
     /** Activities service. */
     @Autowired

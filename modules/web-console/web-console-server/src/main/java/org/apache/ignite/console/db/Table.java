@@ -182,7 +182,8 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
     @Nullable public T delete(UUID id) {
         T val = cache().getAndRemove(id);
 
-        cache.removeAll(uniqueIndexes.stream().map(idx -> idx.key(val)).collect(toSet()));
+        if (val != null)
+            cache.removeAll(uniqueIndexes.stream().map(idx -> idx.key(val)).collect(toSet()));
 
         return val;
     }

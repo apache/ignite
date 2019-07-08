@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.Set;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.ignite.console.dto.Account;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.repositories.AccountsRepository;
 import org.apache.ignite.console.web.AbstractHandler;
 import org.apache.ignite.console.websocket.AgentHandshakeRequest;
@@ -54,6 +56,9 @@ public class AgentsHandler extends AbstractHandler {
     /** */
     private WebSocketsManager wsm;
 
+    /** Messages accessor. */
+    private WebConsoleMessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
+
     /**
      * @param accRepo Repository to work with accounts.
      * @param wsm Web sockets manager.
@@ -68,10 +73,10 @@ public class AgentsHandler extends AbstractHandler {
      */
     private void validateAgentHandshake(AgentHandshakeRequest req) {
         if (F.isEmpty(req.getTokens()))
-            throw new IllegalArgumentException("Tokens not specified in agent handshake request");
+            throw new IllegalArgumentException(messages.getMessage("err.tokens-no-specified-in-agent-handshake-req"));
 
         if (!SUPPORTED_VERS.contains(req.getVersion()))
-            throw new IllegalArgumentException("Unsupported version of the agent: " + req.getVersion());
+            throw new IllegalArgumentException(messages.getMessageWithArgs("err.agent-unsupport-version", req.getVersion()));
     }
 
     /**
@@ -81,7 +86,7 @@ public class AgentsHandler extends AbstractHandler {
         Collection<Account> accounts = accRepo.getAllByTokens(tokens);
 
         if (accounts.isEmpty())
-            throw new IllegalArgumentException("Failed to authenticate with token(s): " + tokens);
+            throw new IllegalArgumentException(messages.getMessageWithArgs("err.failed-auth-with-tokens", tokens));
 
         return accounts;
     }

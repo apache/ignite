@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.console.web.errors;
+package org.apache.ignite.console.errors;
 
 import org.eclipse.jetty.http.BadMessageException;
 
-import static org.apache.ignite.console.web.errors.Errors.ERR_DB_NOT_AVAILABLE;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 /**
@@ -28,7 +27,7 @@ public class DatabaseNotAvailableException extends BadMessageException {
     /**
      * Default constructor.
      */
-    public DatabaseNotAvailableException() {
-        super(SERVICE_UNAVAILABLE.value(), ERR_DB_NOT_AVAILABLE);
+    public DatabaseNotAvailableException(String message) {
+        super(SERVICE_UNAVAILABLE.value(), message);
     }
 }

@@ -18,6 +18,7 @@ package org.apache.ignite.console.config;
 
 import javax.activation.MimeType;
 import javax.mail.internet.MimeMessage;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.services.IMailService;
 import org.apache.ignite.console.services.MailService;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
@@ -28,7 +29,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.javamail.JavaMailSender;
 
@@ -38,9 +38,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 @ConditionalOnClass({ MimeMessage.class, MimeType.class, MailSender.class, MailService.class })
 @EnableConfigurationProperties(MailPropertiesEx.class)
 public class MailServiceAutoConfiguration {
-    /** Message source. */
-    private MessageSourceAccessor accessor;
-
     /** JavaMail sender. */
     private JavaMailSender mailSnd;
 
@@ -73,12 +70,10 @@ public class MailServiceAutoConfiguration {
     }
 
     /**
-     * @param accessor Message source accessor.
      * @param mailSnd Mail send.
      * @param props Properties.
      */
-    public MailServiceAutoConfiguration(MessageSourceAccessor accessor, JavaMailSender mailSnd, MailPropertiesEx props) {
-        this.accessor = accessor;
+    public MailServiceAutoConfiguration(JavaMailSender mailSnd, MailPropertiesEx props) {
         this.mailSnd = mailSnd;
         this.props = props;
     }
@@ -87,6 +82,6 @@ public class MailServiceAutoConfiguration {
     @Bean
     @Primary
     public IMailService mailService() {
-        return new MailService(accessor, mailSnd, props);
+        return new MailService(WebConsoleMessageSource.getAccessor(), mailSnd, props);
     }
 }

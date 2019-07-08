@@ -18,7 +18,9 @@ package org.apache.ignite.console.dto;
 
 import java.util.UUID;
 import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.internal.util.typedef.F;
+import org.springframework.context.support.MessageSourceAccessor;
 
 import static org.apache.ignite.console.utils.Utils.toJson;
 
@@ -38,24 +40,25 @@ public class Cluster extends DataObject {
      */
     public static Cluster fromJson(JsonObject json) {
         UUID id = json.getUuid("id");
+        MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
         if (id == null)
-            throw new IllegalStateException("Cluster ID not found");
+            throw new IllegalStateException(messages.getMessage("err.cluster-id-not-found"));
 
         String name = json.getString("name");
 
         if (F.isEmpty(name))
-            throw new IllegalStateException("Cluster name is empty");
+            throw new IllegalStateException(messages.getMessage("err.cluster-name-is-empty"));
 
         JsonObject discovery = json.getJsonObject("discovery");
 
         if (discovery == null)
-            throw new IllegalStateException("Cluster discovery not found");
+            throw new IllegalStateException(messages.getMessage("err.cluster-discovery-not-found"));
 
         String discoveryKind = discovery.getString("kind");
 
         if (F.isEmpty(discoveryKind))
-            throw new IllegalStateException("Cluster discovery kind not found");
+            throw new IllegalStateException(messages.getMessage("err.cluster-discovery-kind-not-found"));
 
         return new Cluster(
             id,

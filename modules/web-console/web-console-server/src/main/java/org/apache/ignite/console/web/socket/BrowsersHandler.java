@@ -27,6 +27,8 @@ import java.util.stream.Stream;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.json.JsonArray;
 import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.web.AbstractHandler;
 import org.apache.ignite.console.web.model.VisorTaskDescriptor;
 import org.apache.ignite.console.websocket.WebSocketRequest;
@@ -64,6 +66,9 @@ public class BrowsersHandler extends AbstractHandler {
     /** */
     private final WebSocketsManager wsm;
 
+    /** Messages accessor. */
+    private WebConsoleMessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
+
     /**
      * @param wsm Web sockets manager.
      */
@@ -91,7 +96,7 @@ public class BrowsersHandler extends AbstractHandler {
                 return (Account)tp;
         }
 
-        throw new IllegalStateException("Account can't be found [session=" + ws + "]");
+        throw new IllegalStateException(messages.getMessageWithArgs("err.account-cant-be-found-in-ws-session", ws));
     }
 
     /** {@inheritDoc} */
@@ -123,7 +128,7 @@ public class BrowsersHandler extends AbstractHandler {
                     String clusterId = payload.getString("clusterId");
 
                     if (F.isEmpty(clusterId))
-                        throw new IllegalStateException("Missing cluster id parameter.");
+                        throw new IllegalStateException(messages.getMessage("err.missing-cluster-id-param"));
 
                     WebSocketResponse reqEvt = evt.getEventType().equals(NODE_REST) ?
                         evt.response() : evt.withPayload(prepareNodeVisorParams(payload));
@@ -133,7 +138,7 @@ public class BrowsersHandler extends AbstractHandler {
                     break;
 
                 default:
-                    throw new IllegalStateException("Unknown event: " + evt);
+                    throw new IllegalStateException(messages.getMessageWithArgs("err.unknown-evt", evt));
             }
         }
         catch (IllegalStateException e) {
@@ -247,14 +252,14 @@ public class BrowsersHandler extends AbstractHandler {
         String taskId = params.getString("taskId");
 
         if (F.isEmpty(taskId))
-            throw new IllegalStateException("Task ID not specified [evt=" + payload + "]");
+            throw new IllegalStateException(messages.getMessageWithArgs("err.not-specified-task-id", payload));
 
         String nids = params.getString("nids");
 
         VisorTaskDescriptor desc = visorTasks.get(taskId);
 
         if (desc == null)
-            throw new IllegalStateException("Unknown task  [taskId=" + taskId + ", evt=" + payload + "]");
+            throw new IllegalStateException(messages.getMessageWithArgs("err.unknown-task", taskId, payload));
 
         JsonObject exeParams =  new JsonObject()
             .add("cmd", "exe")

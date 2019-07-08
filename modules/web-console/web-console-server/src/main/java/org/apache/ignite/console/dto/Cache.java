@@ -20,6 +20,8 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.springframework.context.support.MessageSourceAccessor;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,9 +49,10 @@ public class Cache extends DataObject {
      */
     public static Cache fromJson(JsonObject json) {
         UUID id = json.getUuid("id");
+        MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
         if (id == null)
-            throw new IllegalStateException("Cache ID not found");
+            throw new IllegalStateException(messages.getMessage("err.cache-id-not-found"));
 
         return new Cache(
             id,

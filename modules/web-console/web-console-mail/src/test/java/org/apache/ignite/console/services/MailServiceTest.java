@@ -23,6 +23,7 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import org.apache.ignite.console.config.MailPropertiesEx;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.notification.INotificationDescriptor;
 import org.apache.ignite.console.notification.IRecipient;
 import org.apache.ignite.console.notification.Notification;
@@ -34,13 +35,10 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,10 +48,6 @@ import static org.mockito.Mockito.when;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class MailServiceTest {
-    /** Message source. */
-    @Mock
-    private MessageSourceAccessor accessor;
-
     /** JavaMail sender. */
     @Mock
     private JavaMailSender mailSnd;
@@ -72,13 +66,10 @@ public class MailServiceTest {
     /** */
     @Before
     public void setup() {
-        when(accessor.getMessage(anyString(), isNull(Object[].class), anyString()))
-            .thenAnswer(invocation -> invocation.getArguments()[2]);
-
         when(mailSnd.createMimeMessage())
             .thenReturn(new MimeMessage(Session.getDefaultInstance(new Properties())));
 
-        srvc = new MailService(accessor, mailSnd, props);
+        srvc = new MailService(WebConsoleMessageSource.getAccessor(), mailSnd, props);
     }
 
     /** Test send e-mail. */
@@ -86,11 +77,11 @@ public class MailServiceTest {
     public void shouldSendEmail() throws MessagingException, IOException {
         INotificationDescriptor desc = new INotificationDescriptor() {
             @Override public String subjectCode() {
-                return "subject";
+                return "notifications.simple.subject";
             }
 
             @Override public String messageCode() {
-                return "text";
+                return "notifications.simple.body";
             }
         };
 
@@ -117,11 +108,11 @@ public class MailServiceTest {
     public void shouldSendEmailWithExpressionInSubject() throws MessagingException, IOException {
         INotificationDescriptor desc = new INotificationDescriptor() {
             @Override public String subjectCode() {
-                return "Hello ${recipient.firstName} ${recipient.lastName}! subject";
+                return "notifications.spel.subject";
             }
 
             @Override public String messageCode() {
-                return "text";
+                return "notifications.spel.body";
             }
         };
 
