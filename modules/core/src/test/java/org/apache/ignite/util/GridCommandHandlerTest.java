@@ -1229,7 +1229,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         // Ignite instase 1 can be logged only in arguments list.
         boolean isInstanse1Found = Arrays.stream(testOutStr.split("\n"))
-                                        .filter(s -> s.contains("Arguments:"))
+                                        .filter(s -> s.contains("Command arguments:"))
                                         .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
@@ -2034,7 +2034,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         ignite.cluster().active(true);
 
-        injectTestSystemOut();
+        if (!isSystemOutAlreadyInjected())
+            injectTestSystemOut();
 
         // Adding some assignments without deployments.
         for (int i = 0; i < 100; i++) {

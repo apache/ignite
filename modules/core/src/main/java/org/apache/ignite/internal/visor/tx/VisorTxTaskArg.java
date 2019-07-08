@@ -34,7 +34,7 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private VisorTxOperation op;
+    private VisorTxOperation operation;
 
     /** */
     @Nullable private Integer limit;
@@ -85,12 +85,12 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
      * @param sortOrder Sort order.
      * @param txInfoArg TX info arg.
      */
-    public VisorTxTaskArg(VisorTxOperation op, @Nullable Integer limit, @Nullable Long minDuration,
+    public VisorTxTaskArg(VisorTxOperation operation, @Nullable Integer limit, @Nullable Long minDuration,
         @Nullable Integer minSize,
         @Nullable TransactionState state, @Nullable VisorTxProjection proj, @Nullable List<String> consistentIds,
         @Nullable String xid, @Nullable String lbRegex, @Nullable VisorTxSortOrder sortOrder,
         @Nullable TxVerboseId txInfoArg) {
-        this.op = op;
+        this.operation = operation;
         this.limit = limit;
         this.minDuration = minDuration;
         this.minSize = minSize;
@@ -105,7 +105,7 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
 
     /** */
     public VisorTxOperation getOperation() {
-        return op;
+        return operation;
     }
 
     /** */
@@ -181,7 +181,7 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, op);
+        U.writeEnum(out, operation);
         out.writeInt(limit == null ? -1 : limit);
         out.writeLong(minDuration == null ? -1 : minDuration);
         out.writeInt(minSize == null ? -1 : minSize);
@@ -199,7 +199,7 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        op = VisorTxOperation.fromOrdinal(in.readByte());
+        operation = VisorTxOperation.fromOrdinal(in.readByte());
         limit = fixNull(in.readInt());
         minDuration = fixNull(in.readLong());
         minSize = fixNull(in.readInt());
