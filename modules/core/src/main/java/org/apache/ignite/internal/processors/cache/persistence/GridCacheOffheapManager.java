@@ -1590,7 +1590,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * in accordance with the value of {@code lastThrottledCacheId}.
          * Used for fine-grained throttling on per-partition basis.
          */
-        private volatile long nextStoreCleanTime;
+        private volatile long nextStoreCleanTimeNanos;
 
         /** */
         private PartitionMetaStorage<SimpleDataRow> partStorage;
@@ -2621,9 +2621,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
-            long now = U.currentTimeMillis();
+            long nowNanos = System.nanoTime();
 
-            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTime > now))
+            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTimeNanos - nowNanos > 0))
                 return 0;
 
             assert pendingTree != null : "Partition data store was not initialized.";
@@ -2634,7 +2634,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (cleared < amount) {
                 lastThrottledCacheId = cctx.cacheId();
 
-                nextStoreCleanTime = now + unwindThrottlingTimeout;
+                nextStoreCleanTimeNanos = nowNanos + U.millisToNanos(unwindThrottlingTimeout);
             }
 
             return cleared;
