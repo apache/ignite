@@ -17,15 +17,15 @@
 
 package org.apache.ignite.spi.metric.jmx;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -34,38 +34,18 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
-
 /**
- * MBean for exporting values of metric set.
+ * MBean for exporting values of metric registry.
  */
-public class MetricSetMBean implements DynamicMBean {
-    /** Metric set name. */
-    private final String msetName;
-
-    /** Metric set. */
-    private final Map<String, Metric> mset = new HashMap<>();
+public class MetricRegistryMBean implements DynamicMBean {
+    /** Metric registry. */
+    MetricRegistry mreg;
 
     /**
-     * @param msetName Metrics set name.
-     * @param mreg Metrics registry.
-     * @param first First set entry.
+     * @param mreg Metric registry.
      */
-    public MetricSetMBean(String msetName, ReadOnlyMetricRegistry mreg, Metric first) {
-        this.msetName = msetName;
-
-        mreg.addMetricCreationListener(m -> {
-            if (m.name().startsWith(msetName)) {
-                MetricName parsed = parse(m.name());
-
-                if (!parsed.msetName().equals(msetName))
-                    return;
-
-                mset.put(parsed.mname(), m);
-            }
-        });
-
-        mset.put(parse(first.name()).mname(), first);
+    public MetricRegistryMBean(MetricRegistry mreg) {
+        this.mreg = mreg;
     }
 
     /** {@inheritDoc} */
@@ -73,7 +53,7 @@ public class MetricSetMBean implements DynamicMBean {
         if (attribute.equals("MBeanInfo"))
             return getMBeanInfo();
 
-        Metric metric = mset.get(attribute);
+        Metric metric = mreg.findMetric(attribute);
 
         if (metric == null)
             return null;
@@ -94,27 +74,24 @@ public class MetricSetMBean implements DynamicMBean {
 
     /** {@inheritDoc} */
     @Override public MBeanInfo getMBeanInfo() {
-        Iterator<Metric> iter = mset.values().iterator();
+        Iterator<Metric> iter = mreg.iterator();
 
-        MBeanAttributeInfo[] attributes = new MBeanAttributeInfo[mset.size()];
+        List<MBeanAttributeInfo> attributes = new ArrayList<>();
 
-        int sz = attributes.length;
-        for (int i = 0; i < sz; i++) {
-            Metric metric = iter.next();
-
-            attributes[i] = new MBeanAttributeInfo(
-                metric.name().substring(msetName.length() + 1),
+        iter.forEachRemaining(metric -> {
+            attributes.add(new MBeanAttributeInfo(
+                metric.name().substring(mreg.name().length() + 1),
                 metricClass(metric),
                 metric.name(),
                 true,
                 false,
-                false);
-        }
+                false));
+        });
 
         return new MBeanInfo(
             ReadOnlyMetricRegistry.class.getName(),
-            msetName,
-            attributes,
+            mreg.name(),
+            attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
             null,
             null,
             null);
