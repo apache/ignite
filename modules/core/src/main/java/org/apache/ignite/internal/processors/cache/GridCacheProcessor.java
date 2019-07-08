@@ -3235,7 +3235,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             SecurityContext secCtx = null;
 
-            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+            if (ctx.security().enabled()) {
                 try {
                     secCtx = nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node);
                 }
