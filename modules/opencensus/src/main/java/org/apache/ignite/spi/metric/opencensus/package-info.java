@@ -15,24 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+/**
+ *
+ */
+package org.apache.ignite.spi.metric.opencensus;
 
 /**
- * Test for asynchronous cache entry lock with timeout.
+ * <!-- Package description. -->
+ * Contains Opencensus based implementation of MetricExporterSpi.
  */
-public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-}

@@ -33,6 +33,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -116,6 +117,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Used when persistence enabled.
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
+    /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind
+     * if there is nothing to clean yet.
+     */
+    private final long unwindThrottlingTimeout = Long.getLong(
+        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
+
     /** */
     private IndexStorage indexStorage;
 
@@ -2627,7 +2635,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (cleared < amount) {
                 lastThrottledCacheId = cctx.cacheId();
 
-                nextStoreCleanTimeNanos = nowNanos + U.millisToNanos(UNWIND_THROTTLING_TIMEOUT);
+                nextStoreCleanTimeNanos = nowNanos + U.millisToNanos(unwindThrottlingTimeout);
             }
 
             return cleared;
