@@ -174,36 +174,6 @@
         </profile>
     </profiles>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-aws</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-hibernate_5.1</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-urideploy</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>
