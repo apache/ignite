@@ -370,7 +370,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean skipVals,
         boolean needVer
     ) throws IgniteCheckedException {
-        ctx.checkCachePermission(GET);
+        ctx.checkPermission(GET);
 
         if (F.isEmpty(keys))
             return Collections.emptyMap();
@@ -857,7 +857,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        ctx.checkCachePermission(op == DELETE ? REMOVE : PUT);
+        ctx.checkPermission(op == DELETE ? REMOVE : PUT);
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 

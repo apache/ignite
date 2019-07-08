@@ -411,7 +411,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean skipVals,
         boolean needVer
     ) {
-        ctx.checkCachePermission(CachePermission.GET);
+        ctx.checkPermission(CachePermission.GET);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());

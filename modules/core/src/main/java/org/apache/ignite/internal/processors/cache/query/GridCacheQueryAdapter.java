@@ -513,7 +513,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
         }
 
-        cctx.checkCachePermission(CachePermission.GET);
+        cctx.checkPermission(CachePermission.GET);
 
         if (nodes.isEmpty())
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());
@@ -557,7 +557,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
-        cctx.checkCachePermission(CachePermission.GET);
+        cctx.checkPermission(CachePermission.GET);
 
         if (nodes.isEmpty()) {
             if (part != null) {

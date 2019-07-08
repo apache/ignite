@@ -725,7 +725,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         final boolean keepBinary,
         boolean onStart) throws IgniteCheckedException
     {
-        cctx.checkCachePermission(CachePermission.GET);
+        cctx.checkPermission(CachePermission.GET);
 
         int taskNameHash = !internal && cctx.kernalContext().security().enabled() ?
             cctx.kernalContext().job().currentTaskNameHash() : 0;

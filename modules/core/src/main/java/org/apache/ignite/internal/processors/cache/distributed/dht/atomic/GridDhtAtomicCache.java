@@ -460,7 +460,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkCachePermission(GET);
+        ctx.checkPermission(GET);
 
         if (keyCheck)
             validateCacheKey(key);
@@ -551,7 +551,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean needVer,
         boolean asyncOp
     ) {
-        ctx.checkCachePermission(GET);
+        ctx.checkPermission(GET);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -1025,7 +1025,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(map.keySet());
 
-        ctx.checkCachePermission(PUT);
+        ctx.checkPermission(PUT);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -1138,7 +1138,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         validateCacheKey(key);
 
-        ctx.checkCachePermission(PUT);
+        ctx.checkPermission(PUT);
 
         final GridNearAtomicAbstractUpdateFuture updateFut =
             createSingleUpdateFuture(key, val, proc, invokeArgs, retval, filter);
@@ -1173,7 +1173,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean async) {
         assert ctx.updatesAllowed();
 
-        ctx.checkCachePermission(REMOVE);
+        ctx.checkPermission(REMOVE);
 
         final GridNearAtomicAbstractUpdateFuture updateFut = createSingleUpdateFuture(key,
             null,
@@ -1327,7 +1327,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        ctx.checkCachePermission(REMOVE);
+        ctx.checkPermission(REMOVE);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 

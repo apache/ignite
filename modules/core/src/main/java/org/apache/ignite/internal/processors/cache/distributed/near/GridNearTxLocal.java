@@ -1673,7 +1673,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        cacheCtx.checkCachePermission(REMOVE);
+        cacheCtx.checkPermission(REMOVE);
 
         if (retval)
             needReturnValue(true);
@@ -2483,7 +2483,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
 
-        cacheCtx.checkCachePermission(GET);
+        cacheCtx.checkPermission(GET);
 
         boolean single = keysCnt == 1;
 
@@ -4738,7 +4738,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         checkUpdatesAllowed(cacheCtx);
 
-        cacheCtx.checkCachePermission(PUT);
+        cacheCtx.checkPermission(PUT);
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
@@ -4762,7 +4762,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         checkUpdatesAllowed(cacheCtx);
 
-        cacheCtx.checkCachePermission(REMOVE);
+        cacheCtx.checkPermission(REMOVE);
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);

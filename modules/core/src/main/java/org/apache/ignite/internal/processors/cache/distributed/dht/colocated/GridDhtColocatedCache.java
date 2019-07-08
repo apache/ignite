@@ -184,7 +184,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean deserializeBinary,
         final boolean skipVals,
         final boolean needVer) {
-        ctx.checkCachePermission(CachePermission.GET);
+        ctx.checkPermission(CachePermission.GET);
 
         if (keyCheck)
             validateCacheKey(key);
@@ -304,7 +304,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkCachePermission(CachePermission.GET);
+        ctx.checkPermission(CachePermission.GET);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());

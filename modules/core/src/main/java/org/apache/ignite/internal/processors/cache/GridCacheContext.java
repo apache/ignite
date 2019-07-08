@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
@@ -278,6 +279,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
 
+    /** Permissions to check cache operations. */
+    private Map<String, CachePermission> perms;
+
     /** */
     private final boolean disableTriggeringCacheInterceptorOnConflict =
         Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
@@ -414,6 +418,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.recoveryMode = recoveryMode;
 
         statisticsEnabled(statisticsEnabled);
+
+        if (ctx.security().enabled())
+            perms = new ConcurrentHashMap<>();
 
         assert kernalContext().recoveryMode() == recoveryMode;
 
@@ -814,9 +821,12 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /** . */
-    public void checkCachePermission(String actions) throws SecurityException {
-        if (!CU.isSystemCache(name()))
-            ctx.security().checkPermission(new CachePermission(name(), actions));
+    public void checkPermission(String actions) throws SecurityException {
+        if (!CU.isSystemCache(name())) {
+            CachePermission p = perms.computeIfAbsent(actions, (a) -> new CachePermission(name(), actions));
+
+            ctx.security().checkPermission(p);
+        }
     }
 
     /**

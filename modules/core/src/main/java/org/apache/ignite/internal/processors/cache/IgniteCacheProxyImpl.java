@@ -755,7 +755,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         A.notNull(qry, "qry");
         try {
-            ctx.checkCachePermission(GET);
+            ctx.checkPermission(GET);
 
             validate(qry);
 
@@ -781,7 +781,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         A.notNull(qry, "qry");
         try {
-            ctx.checkCachePermission(GET);
+            ctx.checkPermission(GET);
 
             validate(qry);
 
@@ -828,7 +828,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             throw new UnsupportedOperationException("Transformers are supported only for SCAN queries.");
 
         try {
-            ctx.checkCachePermission(GET);
+            ctx.checkPermission(GET);
 
             validate(qry);
 

@@ -124,7 +124,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkCachePermission(CachePermission.GET);
+        ctx.checkPermission(CachePermission.GET);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());

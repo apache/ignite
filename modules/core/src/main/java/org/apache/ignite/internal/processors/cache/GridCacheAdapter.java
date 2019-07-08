@@ -771,7 +771,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         CachePeekMode[] peekModes) throws IgniteCheckedException {
         assert peekModes != null;
 
-        ctx.checkCachePermission(GET);
+        ctx.checkPermission(GET);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -835,7 +835,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.checkCachePermission(GET);
+        ctx.checkPermission(GET);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -1137,7 +1137,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
-        ctx.checkCachePermission(REMOVE);
+        ctx.checkPermission(REMOVE);
 
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
@@ -1918,7 +1918,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkCachePermission(GET);
+        ctx.checkPermission(GET);
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -4656,7 +4656,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
 
-        ctx.checkCachePermission(REMOVE);
+        ctx.checkPermission(REMOVE);
 
         if (keyCheck)
             validateCacheKey(key);
