@@ -64,6 +64,12 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     }
 
     /** {@inheritDoc} */
+    @Override public String argumentString() {
+        return "diagnosticSubcommand=" + subcommand.name() +
+            (subcommand.subcommand() == null ? "" : ", " + subcommand.subcommand().argumentString());
+    }
+
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         if (!argIter.hasNextSubArg()) {
             subcommand = HELP;
