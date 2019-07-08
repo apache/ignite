@@ -58,11 +58,13 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -2102,6 +2104,18 @@ public class ZookeeperDiscoveryImpl {
             return new ZkNodeValidateResult("Authentication failed");
         }
 
+        try {
+            // Stick in authentication subject to node (use security-safe attributes for copy).
+            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, marshalWithSecurityVersion(subj, 1));
+
+            node.setAttributes(attrs);
+        } catch (IgniteCheckedException e) {
+            U.warn(log, "Security subject cannot be created.", e);
+        }
+
         if (!(subj instanceof Serializable)) {
             U.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
                 ", addrs=" + U.addressesAsString(node) + ']');
@@ -2121,6 +2135,22 @@ public class ZookeeperDiscoveryImpl {
         }
 
         return new ZkNodeValidateResult(secSubjZipBytes);
+    }
+
+    /**
+     * @param obj Object.
+     * @param ver Security serialize version.
+     * @return Marshaled object.
+     */
+    private byte[] marshalWithSecurityVersion(Object obj, int ver) throws IgniteCheckedException {
+        try {
+            SecurityUtils.serializeVersion(ver);
+
+            return U.marshal(marsh, obj);
+        }
+        finally {
+            SecurityUtils.restoreDefaultSerializeVersion();
+        }
     }
 
     /**
