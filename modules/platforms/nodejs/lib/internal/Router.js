@@ -26,11 +26,6 @@ const BinaryObject = require('../BinaryObject');
 const ArgumentChecker = require('./ArgumentChecker');
 const Logger = require('./Logger');
 
-// Number of tries to get cache partitions info
-const GET_CACHE_PARTITIONS_RETRIES = 3;
-// Delay (in milliseconds) between tries to get cache partitions info
-const GET_CACHE_PARTITIONS_DELAY = 100;
-
 class Router {
 
     constructor(onStateChanged) {
@@ -410,11 +405,7 @@ class Router {
         this._runBackgroundConnect();
     }
 
-    async _getCachePartitions(cacheId, tries = GET_CACHE_PARTITIONS_RETRIES) {
-        if (tries <= 0) {
-            return;
-        }
-
+    async _getCachePartitions(cacheId) {
         Logger.logDebug('Getting cache partitions info...');
 
         try {
@@ -428,14 +419,7 @@ class Router {
                 this._handleCachePartitions.bind(this));
         }
         catch (err) {
-            if (err instanceof Errors.LostConnectionError) {
-                return;
-            }
-
-            // Retries in case of an error (most probably
-            // "Getting affinity for topology version earlier than affinity is calculated")
-            await this._sleep(GET_CACHE_PARTITIONS_DELAY);
-            this._getCachePartitions(cacheId, tries - 1);
+            Logger.logDebug('Could not get partitions info: ' + err.message);
         }
     }
 
