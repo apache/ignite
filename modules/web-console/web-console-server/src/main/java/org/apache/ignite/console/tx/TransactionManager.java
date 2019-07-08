@@ -76,9 +76,6 @@ public class TransactionManager {
     private Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         Transaction curTx = tx();
 
-        if (curTx instanceof NestedTransaction)
-            return curTx;
-
         return curTx == null ? ignite.transactions().txStart(concurrency, isolation) : new NestedTransaction(curTx);
     }
 
