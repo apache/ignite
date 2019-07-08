@@ -42,6 +42,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.commandline.cache.IdleVerify.logParsedArgs;
@@ -78,7 +79,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         VisorIdleVerifyTaskArg arg
     ) throws IgniteException {

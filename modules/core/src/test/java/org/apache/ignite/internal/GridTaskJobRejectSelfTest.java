@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -122,7 +123,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
         final ClusterNode node = grid(1).localNode();
 
         ComputeTaskFuture<?> fut = grid(1).compute().executeAsync(new ComputeTaskAdapter<Void, Void>() {
-            @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
                 @Nullable Void arg) {
                 return F.asMap(new SleepJob(), node, new SleepJob(), node);
             }
