@@ -99,7 +99,7 @@ final class ReliableChannel implements AutoCloseable {
             } catch (ClientConnectionException e) {
                 lastEx = e;
 
-                changeServer(ch);
+                rollAddress();
             }
         }
 
@@ -199,20 +199,33 @@ final class ReliableChannel implements AutoCloseable {
         if (closed)
             throw new ClientException("Channel is closed");
 
-        if (ch == null)
-            ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
+        if (ch == null) {
+            try {
+                ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
+            }
+            catch (ClientConnectionException e) {
+                rollAddress();
+
+                throw e;
+            }
+        }
 
         return ch;
     }
 
     /** */
-    private synchronized void changeServer(ClientChannel oldCh) {
-        if (oldCh == ch) {
-            if (!backups.isEmpty()) {
-                backups.addLast(primary);
+    private void rollAddress() {
+        if (!backups.isEmpty()) {
+            backups.addLast(primary);
 
-                primary = backups.removeFirst();
-            }
+            primary = backups.removeFirst();
+        }
+    }
+
+    /** */
+    private synchronized void changeServer(ClientChannel oldCh) {
+        if (oldCh == ch && ch != null) {
+            rollAddress();
 
             U.closeQuiet(ch);
 
