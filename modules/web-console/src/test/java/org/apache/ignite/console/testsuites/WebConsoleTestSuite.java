@@ -16,12 +16,7 @@
 
 package org.apache.ignite.console.testsuites;
 
-import org.apache.ignite.console.listener.NotificationEventListenerTest;
-import org.apache.ignite.console.db.TableSelfTest;
-import org.apache.ignite.console.services.AccountServiceTest;
-import org.apache.ignite.console.services.ActivitiesServiceTest;
-import org.apache.ignite.console.services.AdminServiceTest;
-import org.apache.ignite.console.web.security.PasswordEncoderTest;
+import org.apache.ignite.console.configuration.WebConsoleConfigurationSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,12 +25,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    AccountServiceTest.class,
-    PasswordEncoderTest.class,
-    TableSelfTest.class,
-    ActivitiesServiceTest.class,
-    AdminServiceTest.class,
-    NotificationEventListenerTest.class
+    WebConsoleConfigurationSelfTest.class,
 })
 public class WebConsoleTestSuite {
 }

@@ -223,6 +223,8 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgPropsExcl.add("autoActivationEnabled");
         igniteCfgPropsExcl.add("igniteHome");
         igniteCfgPropsExcl.add("platformConfiguration");
+        // TODO GG-20376 Implement configurator for metricExporterSpi.
+        igniteCfgPropsExcl.add("metricExporterSpi");
 
         metadata.put(IgniteConfiguration.class,
             new MetadataInfo(igniteCfgProps, igniteCfgPropsDep, igniteCfgPropsExcl));
