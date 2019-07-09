@@ -45,6 +45,7 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
 import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
@@ -201,6 +202,8 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(SecurityPermissionSetBuilderTest.class));
 
         suite.addTest(new JUnit4TestAdapter(AttributeNodeFilterSelfTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(WALRecordTest.class));
 
         // Basic DB data structures.
         suite.addTest(new JUnit4TestAdapter(BPlusTreeSelfTest.class));
