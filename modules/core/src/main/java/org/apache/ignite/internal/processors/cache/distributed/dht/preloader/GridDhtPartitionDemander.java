@@ -970,7 +970,8 @@ public class GridDhtPartitionDemander {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
                 part.dataStore().allocateRows(batch, new IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow>() {
-                    @Override public boolean applyx(GridCacheEntryInfo info, CacheDataRow row) throws IgniteCheckedException {
+                    @Override public boolean applyx(GridCacheEntryInfo info, CacheDataRow row)
+                        throws IgniteCheckedException {
                         GridCacheContext cctx = resolveCacheContext(info);
 
                         return cctx != null && preloadEntry(from, p, info, topVer, cctx, row);
