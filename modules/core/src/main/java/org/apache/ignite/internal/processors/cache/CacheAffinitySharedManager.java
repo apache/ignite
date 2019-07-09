@@ -173,7 +173,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
             return;
 
-        if (isNotBaselineServerJoinOrLeave(discoCache, node, type))
+        if (isNotBaselineServerJoinOrLeft(discoCache, node, type))
             return;
 
         if ((!node.isClient() && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
@@ -196,14 +196,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param type Event type.
      * @return {@code true} true if the event causes PME without affinity changing.
      */
-    public boolean isNotBaselineServerJoinOrLeave(DiscoCache discoCache, ClusterNode evtNode, int type) {
+    public boolean isNotBaselineServerJoinOrLeft(DiscoCache discoCache, ClusterNode evtNode, int type) {
         // Joining server should not have new caches. Otherwise, it can map a transaction to a server node
         // which has not started the required cache yet.
-        boolean joinNotBltNode = type == EVT_NODE_JOINED && !cctx.cache().hasCachesReceivedFromJoin(evtNode);
+        boolean srvJoin = type == EVT_NODE_JOINED && !cctx.cache().hasCachesReceivedFromJoin(evtNode);
 
-        boolean leaveNotBltNode = type == EVT_NODE_LEFT || type == EVT_NODE_FAILED;
+        boolean srvLeft = type == EVT_NODE_LEFT || type == EVT_NODE_FAILED;
 
-        if (evtNode.isClient() || evtNode.isDaemon() || !(joinNotBltNode || leaveNotBltNode))
+        if (evtNode.isClient() || evtNode.isDaemon() || !(srvJoin || srvLeft))
             return false;
 
         DiscoveryDataClusterState state = discoCache.state();

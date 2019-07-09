@@ -359,7 +359,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private volatile boolean affinityChanged;
 
     /** True if this exchange triggered by server not from baseline join/left. */
-    private volatile boolean notBaselineServerJoinOrLeave;
+    private volatile boolean notBaselineServerJoinOrLeft;
 
     /**
      * @param cctx Cache context.
@@ -579,7 +579,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         evtLatch.countDown();
 
-        notBaselineServerJoinOrLeave = cctx.affinity().isNotBaselineServerJoinOrLeave(firstEvtDiscoCache,
+        notBaselineServerJoinOrLeft = cctx.affinity().isNotBaselineServerJoinOrLeft(firstEvtDiscoCache,
             firstDiscoEvt.eventNode(), firstDiscoEvt.type());
 
         affinityChanged = isAffinityChanged();
@@ -592,7 +592,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert firstDiscoEvt != null;
 
         return firstDiscoEvt.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
-            || !(firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave)
+            || !(firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeft)
             || firstDiscoEvt.eventNode().isLocal()
             || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
             cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
@@ -845,7 +845,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (localJoinExchange()) {
                         if (cctx.kernalContext().clientNode())
                             exchange = ExchangeType.CLIENT;
-                        else if (notBaselineServerJoinOrLeave)
+                        else if (notBaselineServerJoinOrLeft)
                             exchange = ExchangeType.NOT_BASELINE_SERVER;
                         else {
                             onServerNodeEvent(crdNode);
@@ -854,7 +854,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
                     }
                     else {
-                        if (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave) {
+                        if (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeft) {
                             assert !firstDiscoEvt.eventNode().isLocal();
 
                             exchange = ExchangeType.NONE;
@@ -870,7 +870,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         exchange = onServerNodeEvent(crdNode);
                 }
 
-                if (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave)
+                if (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeft)
                     cctx.affinity().onClientEvent(this, crdNode);
             }
 
@@ -1943,7 +1943,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 resetLostPartitions(caches);
         }
 
-        if (cctx.kernalContext().clientNode() || notBaselineServerJoinOrLeave ||
+        if (cctx.kernalContext().clientNode() || notBaselineServerJoinOrLeft ||
             (dynamicCacheStartExchange() && exchangeLocE != null)) {
             msg = new GridDhtPartitionsSingleMessage(exchangeId(),
                 cctx.kernalContext().clientNode(),
@@ -2879,7 +2879,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (finishState0 == null) {
                     assert firstDiscoEvt.type() == EVT_NODE_JOINED &&
-                        (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave) : fut;
+                        (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeft) : fut;
 
                     ClusterNode node = cctx.node(nodeId);
 
@@ -2913,7 +2913,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Partition single message.
      */
     private void processSingleMessage(UUID nodeId, GridDhtPartitionsSingleMessage msg) {
-        if (msg.client() || notBaselineServerJoinOrLeave) {
+        if (msg.client() || notBaselineServerJoinOrLeft) {
             waitAndReplyToNode(nodeId, msg);
 
             return;
@@ -5190,7 +5190,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          */
         NOT_BASELINE_SERVER,
 
-        /** Case for client or server not from baseline topology leave/node events. Exchange is completed locally. */
+        /**
+         * Case for client or server not from baseline topology join/left node events. Exchange is completed locally.
+         */
         NONE
     }
 

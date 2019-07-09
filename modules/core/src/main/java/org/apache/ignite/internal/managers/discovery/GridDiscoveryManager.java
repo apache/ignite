@@ -712,7 +712,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
-                // Shoud be called after possible discovery cache relculculation to provide correct cluster state.
+                // Should be called after possible discovery cache relculculation to provide correct cluster state.
                 if (verChanged)
                     ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, discoCache);
 
