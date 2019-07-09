@@ -31,16 +31,18 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** Password. */
     private final String pwd;
 
-    private final Permissions permissions;
+    /** Permissions. */
+    private final Permissions perms;
 
     /** Users security data. */
     private final TestSecurityData[] clientData;
 
-    public TestSecurityPluginProvider(String login, String pwd, Permissions permissions,
+    /** */
+    public TestSecurityPluginProvider(String login, String pwd, Permissions perms,
         TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;
-        this.permissions = permissions;
+        this.perms = perms;
         this.clientData = clientData.clone();
     }
 

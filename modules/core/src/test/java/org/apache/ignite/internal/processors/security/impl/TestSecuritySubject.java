@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.security.impl;
 import java.net.InetSocketAddress;
 import java.security.Permissions;
 import java.util.UUID;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 
@@ -39,8 +40,6 @@ public class TestSecuritySubject implements SecuritySubject {
     /** Address. */
     private InetSocketAddress addr;
 
-    private Permissions permissions;
-
     /**
      * Default constructor.
      */
@@ -55,12 +54,10 @@ public class TestSecuritySubject implements SecuritySubject {
      */
     public TestSecuritySubject(UUID id,
         Object login,
-        InetSocketAddress addr,
-        Permissions permissions) {
+        InetSocketAddress addr) {
         this.id = id;
         this.login = login;
         this.addr = addr;
-        this.permissions = permissions;
     }
 
     /** {@inheritDoc} */
@@ -119,14 +116,9 @@ public class TestSecuritySubject implements SecuritySubject {
         return this;
     }
 
-    @Override public Permissions permissions() {
-        return permissions;
-    }
-
-    public TestSecuritySubject setPermissions(Permissions permissions){
-        this.permissions = permissions;
-
-        return this;
+    /** {@inheritDoc} */
+    @Override public SecurityPermissionSet permissions() {
+        return null;
     }
 
     /** {@inheritDoc} */

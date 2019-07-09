@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.io.Serializable;
-import java.security.Permission;
-import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.plugin.security.SecurityException;
+import java.security.Permissions;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
@@ -37,10 +36,6 @@ public class TestSecurityContext implements SecurityContext, Serializable {
         this.subject = subject;
     }
 
-    @Override public boolean implies(Permission perm) throws SecurityException {
-        return subject.permissions().implies(perm);
-    }
-
     /** {@inheritDoc} */
     @Override public SecuritySubject subject() {
         return subject;
@@ -48,6 +43,8 @@ public class TestSecurityContext implements SecurityContext, Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "TestSecurityContext{" + "subject=" + subject + '}';
+        return "TestSecurityContext{" +
+            "subject=" + subject +
+            '}';
     }
 }

@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
+import org.apache.ignite.internal.processors.task.permission.TaskPermission;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,8 +59,10 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
     private void testCrudCachePermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             PermissionsBuilder.create(!isClient)
-                .add(new CachePermission(CACHE_NAME, CachePermission.ALL))
-                .add(new CachePermission(FORBIDDEN_CACHE, "create,destroy")).get(), isClient);
+                .add(new CachePermission(CACHE_NAME, "create,get,put,remove"))
+                .add(new CachePermission(FORBIDDEN_CACHE, "create"))
+                .add(new TaskPermission("*", "execute"))
+                .get(), isClient);
 
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(CACHE_NAME));

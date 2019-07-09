@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
-import java.security.Permission;
 import java.security.Permissions;
 import java.util.Collection;
 import java.util.UUID;
@@ -129,7 +128,8 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
             return null;
         }
 
-        @Override public Permissions permissions() {
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet permissions() {
             return null;
         }
     }

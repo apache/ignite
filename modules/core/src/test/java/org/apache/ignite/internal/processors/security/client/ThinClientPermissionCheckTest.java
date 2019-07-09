@@ -57,6 +57,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** Client that has system permissions. */
     private static final String CLIENT_SYS_PERM = "client_sys_perm";
 
+    /** Client that has system permissions. */
+    private static final String CLIENT_CACHE_TASK_OPER = "client_task_oper";
+
     /** Cache. */
     private static final String CACHE = "TEST_CACHE";
 
@@ -65,6 +68,14 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** Cache to test system oper permissions. */
     private static final String DYNAMIC_CACHE = "DYNAMIC_TEST_CACHE";
+
+    /** Remove all task name. */
+    public static final String REMOVE_ALL_TASK =
+        "org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter$RemoveAllTask";
+
+    /** Clear task name. */
+    public static final String CLEAR_TASK =
+        "org.apache.ignite.internal.processors.cache.GridCacheAdapter$ClearTask";
 
     /**
      * @param clientData Array of client security data.
@@ -96,13 +107,17 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             getConfiguration(
                 new TestSecurityData(CLIENT,
                     PermissionsBuilder.create()
-                        .add(new CachePermission(CACHE, "get,put,remove"))
-                        .get()
+                        .add(new CachePermission(CACHE, "get,put,remove")).get()
                 ),
                 new TestSecurityData(CLIENT_SYS_PERM,
                     PermissionsBuilder.create()
-                        .add(new CachePermission(DYNAMIC_CACHE, "create,destroy"))
-                        .get()
+                        .add(new CachePermission("*", "create,destroy")).get()
+                ),
+                new TestSecurityData(CLIENT_CACHE_TASK_OPER,
+                    PermissionsBuilder.create()
+                        .add(new CachePermission(CACHE, "remove"))
+                        .add(new TaskPermission(REMOVE_ALL_TASK, "execute"))
+                        .add(new TaskPermission(CLEAR_TASK, "execute")).get()
                 )
             )
         );
@@ -120,9 +135,30 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             assertThrowsWithCause(() -> runOperation(CLIENT, t), ClientAuthorizationException.class);
     }
 
+    /**
+     * That test shows the wrong case when a client has permission for a remove operation but a removeAll operation is
+     * forbidden for it. To have permission for the removeAll (clear) operation a client need to have the permission to
+     * execute {@link #REMOVE_ALL_TASK} ({@link #CLEAR_TASK}) task.
+     *
+     * @throws Exception If error occurs.
+     */
+    @Test
+    public void testCacheTaskPermOperations() throws Exception {
+        List<IgniteBiTuple<Consumer<IgniteClient>, String>> ops = Arrays.asList(
+            t(c -> c.cache(CACHE).removeAll(), "removeAll"),
+            t(c -> c.cache(CACHE).clear(), "clear")
+        );
+
+        for (IgniteBiTuple<Consumer<IgniteClient>, String> op : ops) {
+            runOperation(CLIENT_CACHE_TASK_OPER, op);
+
+            assertThrowsWithCause(() -> runOperation(CLIENT, op), ClientAuthorizationException.class);
+        }
+    }
+
     /** */
     @Test
-    public void testCreateAndDestroyOperations() throws Exception {
+    public void testSysOperation() throws Exception {
         try (IgniteClient sysPrmClnt = startClient(CLIENT_SYS_PERM)) {
             sysPrmClnt.createCache(DYNAMIC_CACHE);
 
@@ -153,8 +189,6 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             t(c -> c.cache(cacheName).getAll(Collections.singleton("key")), "getAll"),
             t(c -> c.cache(cacheName).containsKey("key"), "containsKey"),
             t(c -> c.cache(cacheName).remove("key"), "remove"),
-            t(c -> c.cache(cacheName).removeAll(), "removeAll"),
-            t(c -> c.cache(cacheName).clear(), "clear"),
             t(c -> c.cache(cacheName).replace("key", "value"), "replace"),
             t(c -> c.cache(cacheName).putIfAbsent("key", "value"), "putIfAbsent"),
             t(c -> c.cache(cacheName).getAndPut("key", "value"), "getAndPut"),

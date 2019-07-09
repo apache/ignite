@@ -22,9 +22,6 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Common security exception for the grid.
- *
- * todo MY_TODO нужно переименовать в IgniteSecurityException иначе путаница с уже существующим
- * классом исключения джава.
  */
 public class SecurityException extends IgniteException {
     /** */

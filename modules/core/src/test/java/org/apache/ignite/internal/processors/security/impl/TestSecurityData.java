@@ -30,7 +30,8 @@ public class TestSecurityData {
     /** Password. */
     private String pwd;
 
-    private Permissions permissions;
+    /** Security permission set. */
+    private Permissions perms;
 
     /**
      * Default constructor.
@@ -39,18 +40,37 @@ public class TestSecurityData {
         // No-op.
     }
 
-    public TestSecurityData(String login, String pwd, Permissions permissions) {
+    /**
+     * @param login Login.
+     * @param pwd Password.
+     * @param perms Permissions.
+     */
+    public TestSecurityData(String login, String pwd, Permissions perms) {
         this.login = login;
         this.pwd = pwd;
-        this.permissions = permissions;
+        this.perms = perms;
     }
 
-    public TestSecurityData(String login, Permissions permissions) {
-        this(login, "", permissions);
+    /**
+     * @param login Login.
+     * @param perms Permissions.
+     */
+    public TestSecurityData(String login, Permissions perms) {
+        this(login, "", perms);
     }
 
-    public Permissions getPermissions(){
-        return permissions;
+    /**
+     * Getting security permission set.
+     */
+    public Permissions getPermissions() {
+        return perms;
+    }
+
+    /** . */
+    public TestSecurityData setPermissions(Permissions perms) {
+        this.perms = perms;
+
+        return this;
     }
 
     /**
