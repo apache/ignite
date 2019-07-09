@@ -821,6 +821,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject value() {
         assert val != null : "Value is not ready: " + this;
 

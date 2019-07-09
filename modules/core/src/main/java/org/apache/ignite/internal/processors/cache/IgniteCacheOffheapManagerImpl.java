@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,6 +137,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.EMPTY_CURSOR;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
+import static org.apache.ignite.internal.util.IgniteTree.OperationType.IN_PLACE;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 
@@ -177,6 +179,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
+    /** */
+    private CacheObject NULL_VAL;
+
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
         return globalRmvId;
@@ -198,6 +203,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (grp.isLocal())
                     locCacheDataStore = createCacheDataStore(0);
+
+                NULL_VAL = new CacheObjectImpl(null, ctx.marshaller().marshal(null));
             }
             finally {
                 ctx.database().checkpointReadUnlock();
@@ -621,6 +628,35 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public void removeWithTombstone(
+        GridCacheContext cctx,
+        KeyCacheObject key,
+        GridCacheVersion ver,
+        int partId,
+        GridDhtLocalPartition part) throws IgniteCheckedException {
+        dataStore(part).removeWithTombstone(cctx, key, ver, partId);
+    }
+
+    @Override public boolean isTombstone(CacheDataRow row) throws IgniteCheckedException {
+        if (row == null || !grp.supportsTombstone())
+            return false;
+
+        CacheObject val = row.value();
+
+        assert val != null : row;
+
+        if (val.cacheObjectType() == CacheObject.TYPE_REGULAR) {
+            byte[] null_bytes = NULL_VAL.valueBytes(null);
+            byte[] bytes = val.valueBytes(null);
+
+            if (Arrays.equals(null_bytes, bytes))
+                return true;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public CacheDataRow read(GridCacheMapEntry entry)
         throws IgniteCheckedException {
         KeyCacheObject key = entry.key();
@@ -685,18 +721,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridDhtLocalPartition part = grp.topology().localPartition(cctx.affinity().partition(key), null, false);
 
         return part != null ? dataStore(part) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean containsKey(GridCacheMapEntry entry) {
-        try {
-            return read(entry) != null;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to read value", e);
-
-            return false;
-        }
     }
 
     /** {@inheritDoc} */
@@ -1624,9 +1648,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
-            // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
-            boolean sizeWithCacheId = grp.sharedGroup();
-
             int oldLen = oldRow.size();
 
             if (oldLen > updateValSizeThreshold)
@@ -1679,13 +1700,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 case REMOVE: {
                     CacheDataRow oldRow = c.oldRow();
 
-                    finishRemove(cctx, row.key(), oldRow);
+                    finishRemove(cctx, row.key(), oldRow, true);
 
                     break;
                 }
 
-                case NOOP:
                 case IN_PLACE:
+                    if (isTombstone(c.newRow()))
+                        decrementSize(cctx.cacheId());
+
+                    if (isTombstone(c.oldRow()))
+                        incrementSize(cctx.cacheId());
+
+                    break;
+
+                case NOOP:
                     break;
 
                 default:
@@ -1703,6 +1732,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
+            // Set real stored cacheId to properly calculate row size.
+            if (oldRow != null)
+                oldRow.cacheId(cacheId);
+
             DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
             if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData()))
@@ -1718,8 +1751,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             assert dataRow.link() != 0 : dataRow;
 
-            if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                dataRow.cacheId(cctx.cacheId());
+            if (grp.sharedGroup()) {
+                if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
+                    dataRow.cacheId(cctx.cacheId());
+
+                if (oldRow != null && oldRow.cacheId() == CU.UNDEFINED_CACHE_ID)
+                    oldRow.cacheId(cctx.cacheId());
+            }
 
             return dataRow;
         }
@@ -2554,7 +2592,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
             throws IgniteCheckedException {
-            if (oldRow == null)
+            boolean oldNull = oldRow == null || isTombstone(oldRow);
+
+            if (oldNull)
                 incrementSize(cctx.cacheId());
 
             KeyCacheObject key = newRow.key();
@@ -2562,9 +2602,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.store(newRow, oldRow, true);
+                qryMgr.store(newRow, oldNull ? null : oldRow, true);
 
-            updatePendingEntries(cctx, newRow, oldRow);
+            updatePendingEntries(cctx, newRow, oldNull ? null : oldRow);
 
             if (oldRow != null) {
                 assert oldRow.link() != 0 : oldRow;
@@ -2573,7 +2613,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     rowStore.removeRow(oldRow.link(), grp.statisticsHolderData());
             }
 
-            updateIgfsMetrics(cctx, key, (oldRow != null ? oldRow.value() : null), newRow.value());
+            updateIgfsMetrics(cctx, key, (oldNull ? null : oldRow.value()), newRow.value());
         }
 
         /**
@@ -2616,7 +2656,84 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 CacheDataRow oldRow = dataTree.remove(new SearchRow(cacheId, key));
 
-                finishRemove(cctx, key, oldRow);
+                finishRemove(cctx, key, oldRow, true);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+
+        /**
+         *
+         */
+        private class RemoveWithTombstone implements IgniteCacheOffheapManager.OffheapInvokeClosure {
+            /** */
+            private final GridCacheContext cctx;
+
+            /** */
+            private final KeyCacheObject key;
+
+            /** */
+            private final GridCacheVersion ver;
+
+            /** */
+            private CacheDataRow oldRow;
+
+            /** */
+            private CacheDataRow newRow;
+
+            RemoveWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver) {
+                this.cctx = cctx;
+                this.key = key;
+                this.ver = ver;
+            }
+
+            /** {@inheritDoc} */
+            @Override public CacheDataRow oldRow() {
+                return oldRow;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+                if (oldRow != null)
+                    oldRow.key(key);
+
+                this.oldRow = oldRow;
+
+                newRow = createRow(cctx, key, NULL_VAL, ver, 0, oldRow);
+            }
+
+            /** {@inheritDoc} */
+            @Override public CacheDataRow newRow() {
+                return newRow;
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteTree.OperationType operationType() {
+                if (oldRow != null && oldRow.link() == newRow.link())
+                    return IgniteTree.OperationType.IN_PLACE;
+
+                return PUT;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, int partId) throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            try {
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+                RemoveWithTombstone c = new RemoveWithTombstone(cctx, key, ver);
+
+                dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
+
+                assert c.operationType() == PUT || c.operationType() == IN_PLACE : c.operationType();
+
+                finishRemove(cctx, key, c.oldRow, c.operationType() == PUT);
             }
             finally {
                 busyLock.leaveBusy();
@@ -2629,8 +2746,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRow Removed row.
          * @throws IgniteCheckedException If failed.
          */
-        private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            if (oldRow != null) {
+        private void finishRemove(GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheDataRow oldRow,
+            boolean removeFromStore) throws IgniteCheckedException {
+            boolean oldNull = oldRow == null || isTombstone(oldRow);
+
+            if (!oldNull) {
                 clearPendingEntries(cctx, oldRow);
 
                 decrementSize(cctx.cacheId());
@@ -2639,12 +2761,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.remove(key, oldRow);
+                qryMgr.remove(key, oldNull ? null : oldRow);
 
-            if (oldRow != null)
+            if (oldRow != null && removeFromStore)
                 rowStore.removeRow(oldRow.link(), grp.statisticsHolderData());
 
-            updateIgfsMetrics(cctx, key, (oldRow != null ? oldRow.value() : null), null);
+            updateIgfsMetrics(cctx, key, (oldNull ? null : oldRow.value()), null);
         }
 
         /**
@@ -2662,6 +2784,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             if (pendingTree() != null && oldRow.expireTime() != 0)
                 pendingTree().removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
+        }
+
+        @Nullable private CacheDataRow checkTombstone(@Nullable CacheDataRow row) throws IgniteCheckedException {
+            return grp.offheap().isTombstone(row) ? null : row;
         }
 
         /** {@inheritDoc} */
@@ -2683,8 +2809,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 row = clo.row();
             }
-            else
+            else {
                 row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
+
+                row = checkTombstone(row);
+            }
 
             afterRowFound(row, key);
 
@@ -2783,18 +2912,44 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException {
-            return dataTree.find(null, null);
+            return cursorSkipTombstone(dataTree.find(null, null));
+        }
+
+        private GridCursor<? extends CacheDataRow> cursorSkipTombstone(final GridCursor<? extends CacheDataRow> cur) {
+            if (!grp.supportsTombstone())
+                return cur;
+
+            return new GridCursor<CacheDataRow>() {
+                CacheDataRow next;
+
+                @Override public boolean next() throws IgniteCheckedException {
+                    while (cur.next()) {
+                        CacheDataRow next = cur.get();
+
+                        if (!isTombstone(next)) {
+                            this.next = next;
+
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                @Override public CacheDataRow get() {
+                    return next;
+                }
+            };
         }
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
-            return dataTree.find(null, null, x);
+            return cursorSkipTombstone(dataTree.find(null, null, x));
         }
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(MvccSnapshot mvccSnapshot)
             throws IgniteCheckedException {
-
             GridCursor<? extends CacheDataRow> cursor;
             if (mvccSnapshot != null) {
                 assert grp.mvccEnabled();
@@ -2803,7 +2958,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     new MvccFirstVisibleRowTreeClosure(grp.singleCacheContext(), mvccSnapshot), null);
             }
             else
-                cursor = dataTree.find(null, null);
+                cursor = cursorSkipTombstone(dataTree.find(null, null));
 
             return cursor;
         }
@@ -2816,7 +2971,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-            return cursor(cacheId, null, null, null, mvccSnapshot);
+            return cursor(cacheId, null, null, null, mvccSnapshot, false);
         }
 
         /** {@inheritDoc} */
@@ -2828,12 +2983,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper, Object x) throws IgniteCheckedException {
-            return cursor(cacheId, lower, upper, null, null);
+            return cursor(cacheId, lower, upper, null, null, false);
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
-            KeyCacheObject upper, Object x, MvccSnapshot snapshot) throws IgniteCheckedException {
+        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
+            KeyCacheObject lower,
+            KeyCacheObject upper,
+            Object x,
+            MvccSnapshot snapshot,
+            boolean withTombstones) throws IgniteCheckedException {
             SearchRow lowerRow;
             SearchRow upperRow;
 
@@ -2857,8 +3016,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 cursor = dataTree.find(lowerRow, upperRow, new MvccFirstVisibleRowTreeClosure(cctx, snapshot), x);
             }
-            else
+            else {
                 cursor = dataTree.find(lowerRow, upperRow, x);
+
+                if (!withTombstones)
+                    cursor = cursorSkipTombstone(cursor);
+            }
 
             return cursor;
         }
@@ -2899,7 +3062,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             Exception ex = null;
 
             GridCursor<? extends CacheDataRow> cur =
-                cursor(cacheId, null, null, CacheDataRowAdapter.RowData.KEY_ONLY);
+                cursor(cacheId, null, null, CacheDataRowAdapter.RowData.KEY_ONLY, null, true);
 
             while (cur.next()) {
                 CacheDataRow row = cur.get();

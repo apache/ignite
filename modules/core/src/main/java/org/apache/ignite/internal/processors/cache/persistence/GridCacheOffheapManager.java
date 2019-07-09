@@ -1487,6 +1487,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void cacheId(int cacheId) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public long mvccCoordinatorVersion() {
             return 0; // TODO IGNITE-7384
         }
@@ -2418,6 +2423,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, int partId) throws IgniteCheckedException {
+            assert ctx.database().checkpointLockIsHeldByThread();
+
+            CacheDataStore delegate = init0(false);
+
+            delegate.removeWithTombstone(cctx, key, ver, partId);
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
@@ -2524,12 +2538,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             KeyCacheObject lower,
             KeyCacheObject upper,
             Object x,
-            MvccSnapshot mvccSnapshot)
+            MvccSnapshot mvccSnapshot,
+            boolean withTombstones)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.cursor(cacheId, lower, upper, x, mvccSnapshot);
+                return delegate.cursor(cacheId, lower, upper, x, mvccSnapshot, withTombstones);
 
             return EMPTY_CURSOR;
         }

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -1297,6 +1298,14 @@ public class CacheGroupContext {
      */
     public boolean hasAtomicCaches() {
         return hasAtomicCaches;
+    }
+
+    public boolean supportsTombstone() {
+        return !hasAtomicCaches && !mvccEnabled && !isLocal();
+    }
+
+    public boolean createTombstone(@Nullable GridDhtLocalPartition part) {
+        return part != null && supportsTombstone();
     }
 
     /**

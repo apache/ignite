@@ -158,11 +158,6 @@ public interface IgniteCacheOffheapManager {
     public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException;
 
     /**
-     * TODO: GG-10884, used on only from initialValue.
-     */
-    public boolean containsKey(GridCacheMapEntry entry);
-
-    /**
      * @param cctx Cache context.
      * @param c Closure.
      * @param amount Limit of processed entries by single call, {@code -1} for no limit.
@@ -399,6 +394,23 @@ public interface IgniteCacheOffheapManager {
         int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException;
+
+    /**
+     * @param cctx Cache context.
+     * @param key Key.
+     * @param partId Partition number.
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void removeWithTombstone(
+        GridCacheContext cctx,
+        KeyCacheObject key,
+        GridCacheVersion ver,
+        int partId,
+        GridDhtLocalPartition part
+    ) throws IgniteCheckedException;
+
+    public boolean isTombstone(@Nullable CacheDataRow row) throws IgniteCheckedException;
 
     /**
      * @param ldr Class loader.
@@ -707,7 +719,7 @@ public interface IgniteCacheOffheapManager {
          *
          * @param cctx Cache context.
          * @param row Row.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
         public void updateTxState(GridCacheContext cctx, CacheSearchRow row)
             throws IgniteCheckedException;
@@ -880,7 +892,7 @@ public interface IgniteCacheOffheapManager {
          * @param ver Version.
          * @param expireTime Expire time.
          * @param mvccVer Mvcc version.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
         void mvccApplyUpdate(GridCacheContext cctx,
             KeyCacheObject key,
@@ -897,6 +909,15 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException;
+
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @param ver Version.
+         * @param partId Partition number.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, int partId) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -1004,8 +1025,12 @@ public interface IgniteCacheOffheapManager {
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
-        public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
-            KeyCacheObject upper, Object x, MvccSnapshot snapshot) throws IgniteCheckedException;
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId,
+            KeyCacheObject lower,
+            KeyCacheObject upper,
+            Object x,
+            MvccSnapshot snapshot,
+            boolean withTombstones) throws IgniteCheckedException;
 
         /**
          * Destroys the tree associated with the store.
