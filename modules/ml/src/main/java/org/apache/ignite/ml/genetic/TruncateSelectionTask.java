@@ -35,6 +35,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Responsible for performing truncate selection.
@@ -108,7 +109,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     }
 
     /** {@inheritDoc} */
-    @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
+    @NotNull @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
         Affinity affinity = ignite.affinity(GAGridConstants.POPULATION_CACHE);
 

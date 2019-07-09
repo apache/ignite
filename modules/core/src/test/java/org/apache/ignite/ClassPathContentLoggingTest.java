@@ -28,11 +28,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  *
  */
 @WithSystemProperty(key = IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, value = "true")
+@WithSystemProperty(key = IGNITE_QUIET, value = "false")
 public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);

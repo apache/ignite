@@ -38,7 +38,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     private final long totalTimeout;
 
     /** Timestamp of operation start to check totalTimeout. */
-    private final long start;
+    private final long startNanos;
 
     /** Current calculated timeout, ms. */
     private long currTimeout;
@@ -92,12 +92,12 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
 
         currTimeout = startTimeout;
 
-        start = U.currentTimeMillis();
+        startNanos = System.nanoTime();
     }
 
     /** {@inheritDoc} */
     @Override public long nextTimeout(long timeout) throws IgniteSpiOperationTimeoutException {
-        long remainingTime = remainingTime(U.currentTimeMillis());
+        long remainingTime = remainingTime(System.nanoTime());
 
         if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Operation timed out [timeoutStrategy= " +this +"]");
@@ -119,16 +119,16 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /**
      * Returns remaining time for current totalTimeout chunk.
      *
-     * @param curTs Current timestamp.
+     * @param curNanos Current timestamp.
      * @return Time to wait in millis.
      */
-    public long remainingTime(long curTs) {
-        return totalTimeout - (curTs - start);
+    private long remainingTime(long curNanos) {
+        return totalTimeout - U.nanosToMillis(curNanos - startNanos);
     }
 
     /** {@inheritDoc} */
     @Override public boolean checkTimeout(long timeInFut) {
-        return remainingTime(U.currentTimeMillis() + timeInFut) <= 0;
+        return remainingTime(System.nanoTime() + U.millisToNanos(timeInFut)) <= 0;
     }
 
     /** {@inheritDoc} */
