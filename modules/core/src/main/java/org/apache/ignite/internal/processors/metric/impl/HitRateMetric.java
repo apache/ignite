@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicLongArray;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
 public class HitRateMetric extends AbstractMetric implements LongMetric {
+    /** Exception message with format description. */
+    private static final String EXP_FMT_MSG = "Expected 2 numbers array separated by commas \"rateTimeInterval,size\"";
+
     /** Metric instance. */
     private volatile HitRateMetricImpl cntr;
 
@@ -81,6 +85,43 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
     /** {@inheritDoc} */
     @Override public long value() {
         return cntr.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void configure(String cfg) throws IgniteException {
+        if (cfg == null || "".equals(cfg))
+            throw new IgniteException(name() + ". Config is empty. " + EXP_FMT_MSG);
+
+        String[] numberStr = cfg.split(",");
+
+        if (numberStr.length != 2)
+            throw new IgniteException(name() + ". Wrong numbers array size " + numberStr.length + ". " + EXP_FMT_MSG);
+
+        long rateTimeInterval = 0;
+
+        try {
+            rateTimeInterval = Long.valueOf(numberStr[0].trim());
+
+            if (rateTimeInterval <= 0)
+                throw new IgniteException(name() + ". rateTimeInterval should be positive." + rateTimeInterval + ". " + EXP_FMT_MSG);
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException(name() + ". Wrong rateTimeInterval parameter " + numberStr[0] + ". " + EXP_FMT_MSG, e);
+        }
+
+        int size = 0;
+
+        try {
+            size = Integer.valueOf(numberStr[1].trim());
+
+            if (size < 2)
+                throw new IgniteException(name() + ". Minimum value for size is 2. " + size + ". " + EXP_FMT_MSG);
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException(name() + ". Wrong size parameter " + numberStr[1] + ". " + EXP_FMT_MSG, e);
+        }
+
+        reset(rateTimeInterval, size);
     }
 
     /**
