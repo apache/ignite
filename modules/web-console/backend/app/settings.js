@@ -50,7 +50,6 @@ module.exports = {
         const packaged = __dirname.startsWith('/snapshot/') || __dirname.startsWith('C:\\snapshot\\');
 
         const dfltAgentDists = packaged ? 'libs/agent_dists' : 'agent_dists';
-        const dfltHost = packaged ? '0.0.0.0' : '127.0.0.1';
         const dfltPort = packaged ? 80 : 3000;
 
         // We need this function because nconf() can return String or Boolean.
@@ -75,7 +74,7 @@ module.exports = {
             },
             packaged,
             server: {
-                host: nconf.get('server:host') || dfltHost,
+                host: nconf.get('server:host') || '0.0.0.0',
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
                 disableSignup: _isTrue('server:disable:signup')
             },
