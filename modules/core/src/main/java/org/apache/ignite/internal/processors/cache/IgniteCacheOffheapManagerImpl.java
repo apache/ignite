@@ -109,7 +109,6 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
-import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1748,11 +1747,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                rowStore.addRows(F.view(rows, Objects::nonNull), new CAX() {
-                    @Override public void applyx() throws IgniteCheckedException {
-                        grp.shared().database().ensureFreeSpace(grp.dataRegion());
-                    }
-                }, grp.statisticsHolderData());
+                rowStore.addRows(F.view(rows, Objects::nonNull), grp.statisticsHolderData());
             }
             finally {
                 busyLock.leaveBusy();

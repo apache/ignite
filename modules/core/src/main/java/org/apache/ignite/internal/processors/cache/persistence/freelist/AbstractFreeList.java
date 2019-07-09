@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -44,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -88,6 +89,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** */
+    private final DataRegion region;
 
     /**
      *
@@ -369,6 +373,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         rmvRow = new RemoveRowHandler(cacheId == 0);
 
+        region = memPlc;
+
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
@@ -553,13 +559,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * current one.
      *
      * @param rows Rows.
-     * @param checkFreeSpace Called on each acquiring of the memory page and should evict a necessary number of data
-     * pages if per-page eviction is configured.
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
     @Override public void insertDataRows(Collection<T> rows,
-        GridAbsClosureX checkFreeSpace, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
             Iterator<T> iter = rows.iterator();
 
@@ -568,7 +572,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written = COMPLETE;
 
             while (iter.hasNext() || written != COMPLETE) {
-                checkFreeSpace.applyx();
+                ensureFreeSpace();
 
                 if (written == COMPLETE) {
                     row = iter.next();
@@ -891,6 +895,40 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to count recycled pages", t);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean ensureFreeSpace() throws IgniteCheckedException {
+        DataRegionConfiguration plcCfg = region.config();
+
+        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plcCfg.isPersistenceEnabled())
+            return false;
+
+        long memorySize = plcCfg.getMaxSize();
+
+        int sysPageSize = pageMem.systemPageSize();
+
+        boolean evicted = false;
+
+        for (;;) {
+            long allocatedPagesCnt = pageMem.loadedPages();
+
+            int emptyDataPagesCnt = emptyDataPages();
+
+            boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
+                emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
+
+            if (shouldEvict) {
+                evictionTracker.evictDataPage();
+
+                memMetrics.updateEvictionRate();
+
+                evicted = true;
+            } else
+                break;
+        }
+
+        return evicted;
     }
 
     /** {@inheritDoc} */
