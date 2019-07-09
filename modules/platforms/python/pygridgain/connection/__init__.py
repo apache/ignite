@@ -21,7 +21,7 @@ as well as GridGain protocol handshaking.
 
 from collections import OrderedDict
 import socket
-from threading import Lock, Timer
+from threading import Lock
 from typing import Union
 
 from pygridgain.constants import *
@@ -30,7 +30,7 @@ from pygridgain.exceptions import (
 )
 from pygridgain.datatypes import Byte, Int, Short, String, UUIDObject
 from pygridgain.datatypes.internal import Struct
-from pygridgain.utils import select_version
+from pygridgain.utils import DaemonicTimer, select_version
 
 from .handshake import HandshakeRequest
 from .ssl import wrap
@@ -62,6 +62,7 @@ class Connection:
     username = None
     password = None
     ssl_params = {}
+    uuid = None
 
     @staticmethod
     def _check_ssl_params(params):
@@ -260,6 +261,8 @@ class Connection:
                 raise e
 
         # connection is ready for end user
+        self.uuid = result.get('node_uuid', None)  # version-specific (1.4+)
+
         self._failed = False
         return result
 
@@ -334,7 +337,7 @@ class Connection:
         self._reconnect()
 
         if self.failed:
-            Timer(
+            DaemonicTimer(
                 RECONNECT_BACKOFF_SEQUENCE[seq_no],
                 self.reconnect,
                 kwargs={'seq_no': seq_no + 1},
@@ -477,7 +480,10 @@ class Connection:
         garbage-collected.
         """
         if release:
-            self._in_use.release()
+            try:
+                self._in_use.release()
+            except RuntimeError:
+                pass
 
         if self._socket:
             try:
