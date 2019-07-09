@@ -1069,6 +1069,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startGrid(SRVS + CLIENTS + 1);
 
+        // There is no distributed PME in the case of not from baseline node join.
         if (!persistenceEnabled())
             checkRecordedMessages(true);
 
