@@ -32,126 +32,126 @@ public abstract class WALRecord {
      */
     public enum RecordType {
         /** */
-        TX_RECORD,
+        TX_RECORD (0),
 
         /** */
-        PAGE_RECORD,
+        PAGE_RECORD (1),
 
         /** */
-        DATA_RECORD,
+        DATA_RECORD (2),
 
         /** Checkpoint (begin) record */
-        CHECKPOINT_RECORD,
+        CHECKPOINT_RECORD (3),
 
         /** WAL segment header record. */
-        HEADER_RECORD,
+        HEADER_RECORD (4),
 
         // Delta records.
 
         /** */
-        INIT_NEW_PAGE_RECORD,
+        INIT_NEW_PAGE_RECORD (5),
 
         /** */
-        DATA_PAGE_INSERT_RECORD,
+        DATA_PAGE_INSERT_RECORD (6),
 
         /** */
-        DATA_PAGE_INSERT_FRAGMENT_RECORD,
+        DATA_PAGE_INSERT_FRAGMENT_RECORD (7),
 
         /** */
-        DATA_PAGE_REMOVE_RECORD,
+        DATA_PAGE_REMOVE_RECORD (8),
 
         /** */
-        DATA_PAGE_SET_FREE_LIST_PAGE,
+        DATA_PAGE_SET_FREE_LIST_PAGE (9),
 
         /** */
-        BTREE_META_PAGE_INIT_ROOT,
+        BTREE_META_PAGE_INIT_ROOT (10),
 
         /** */
-        BTREE_META_PAGE_ADD_ROOT,
+        BTREE_META_PAGE_ADD_ROOT (11),
 
         /** */
-        BTREE_META_PAGE_CUT_ROOT,
+        BTREE_META_PAGE_CUT_ROOT (12),
 
         /** */
-        BTREE_INIT_NEW_ROOT,
+        BTREE_INIT_NEW_ROOT (13),
 
         /** */
-        BTREE_PAGE_RECYCLE,
+        BTREE_PAGE_RECYCLE (14),
 
         /** */
-        BTREE_PAGE_INSERT,
+        BTREE_PAGE_INSERT (15),
 
         /** */
-        BTREE_FIX_LEFTMOST_CHILD,
+        BTREE_FIX_LEFTMOST_CHILD (16),
 
         /** */
-        BTREE_FIX_COUNT,
+        BTREE_FIX_COUNT (17),
 
         /** */
-        BTREE_PAGE_REPLACE,
+        BTREE_PAGE_REPLACE (18),
 
         /** */
-        BTREE_PAGE_REMOVE,
+        BTREE_PAGE_REMOVE (19),
 
         /** */
-        BTREE_PAGE_INNER_REPLACE,
+        BTREE_PAGE_INNER_REPLACE (20),
 
         /** */
-        BTREE_FIX_REMOVE_ID,
+        BTREE_FIX_REMOVE_ID (21),
 
         /** */
-        BTREE_FORWARD_PAGE_SPLIT,
+        BTREE_FORWARD_PAGE_SPLIT (22),
 
         /** */
-        BTREE_EXISTING_PAGE_SPLIT,
+        BTREE_EXISTING_PAGE_SPLIT (23),
 
         /** */
-        BTREE_PAGE_MERGE,
+        BTREE_PAGE_MERGE (24),
 
         /** */
-        PAGES_LIST_SET_NEXT,
+        PAGES_LIST_SET_NEXT (25),
 
         /** */
-        PAGES_LIST_SET_PREVIOUS,
+        PAGES_LIST_SET_PREVIOUS (26),
 
         /** */
-        PAGES_LIST_INIT_NEW_PAGE,
+        PAGES_LIST_INIT_NEW_PAGE (27),
 
         /** */
-        PAGES_LIST_ADD_PAGE,
+        PAGES_LIST_ADD_PAGE (28),
 
         /** */
-        PAGES_LIST_REMOVE_PAGE,
+        PAGES_LIST_REMOVE_PAGE (29),
 
         /** */
-        META_PAGE_INIT,
+        META_PAGE_INIT (30),
 
         /** */
-        PARTITION_META_PAGE_UPDATE_COUNTERS,
+        PARTITION_META_PAGE_UPDATE_COUNTERS (31),
 
         /** Memory recovering start marker */
-        MEMORY_RECOVERY,
+        MEMORY_RECOVERY (32),
 
         /** */
-        TRACKING_PAGE_DELTA,
+        TRACKING_PAGE_DELTA (33),
 
         /** Meta page update last successful snapshot id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID,
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID (34),
 
         /** Meta page update last successful full snapshot id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID,
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID (35),
 
         /** Meta page update next snapshot id. */
-        META_PAGE_UPDATE_NEXT_SNAPSHOT_ID,
+        META_PAGE_UPDATE_NEXT_SNAPSHOT_ID (36),
 
         /** Meta page update last allocated index. */
-        META_PAGE_UPDATE_LAST_ALLOCATED_INDEX,
+        META_PAGE_UPDATE_LAST_ALLOCATED_INDEX (37),
 
         /** Partition meta update state. */
-        PART_META_UPDATE_STATE,
+        PART_META_UPDATE_STATE (38),
 
         /** Page list meta reset count record. */
-        PAGE_LIST_META_RESET_COUNT_RECORD,
+        PAGE_LIST_META_RESET_COUNT_RECORD (39),
 
         /** Switch segment record.
          *  Marker record for indicate end of segment.
@@ -160,44 +160,74 @@ public abstract class WALRecord {
          *  that one byte in the end,then we write SWITCH_SEGMENT_RECORD as marker end of segment.
          *  No need write CRC or WAL pointer for this record. It is byte marker record.
          *  */
-        SWITCH_SEGMENT_RECORD,
+        SWITCH_SEGMENT_RECORD (40),
 
         /** */
-        DATA_PAGE_UPDATE_RECORD,
+        DATA_PAGE_UPDATE_RECORD (41),
 
         /** init */
-        BTREE_META_PAGE_INIT_ROOT2,
+        BTREE_META_PAGE_INIT_ROOT2 (42),
 
         /** Partition destroy. */
-        PARTITION_DESTROY,
+        PARTITION_DESTROY (43),
 
         /** Snapshot record. */
-        SNAPSHOT,
+        SNAPSHOT (44),
 
         /** Metastore data record. */
-        METASTORE_DATA_RECORD,
+        METASTORE_DATA_RECORD (45),
 
         /** Exchange record. */
-        EXCHANGE,
+        EXCHANGE (46),
 
         /** Reserved for future record. */
-        RESERVED,
+        RESERVED (47),
 
         /** Rollback tx record. */
-        ROLLBACK_TX_RECORD,
+        ROLLBACK_TX_RECORD (57),
 
         /** */
-        PARTITION_META_PAGE_UPDATE_COUNTERS_V2,
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58),
 
         /** Init root meta page (with flags and created version) */
-        BTREE_META_PAGE_INIT_ROOT_V3;
+        BTREE_META_PAGE_INIT_ROOT_V3 (59);
+
+        /** Index for serialization. Should be consistent throughout all versions. */
+        private final int idx;
+
+        /**
+         * @param idx Index for serialization.
+         */
+        RecordType(int idx) {
+            this.idx = idx;
+        }
+
+        /**
+         * @return Index for serialization.
+         */
+        public int index() {
+            return idx;
+        }
 
         /** */
-        private static final RecordType[] VALS = RecordType.values();
+        private static final RecordType[] VALS;
+
+        static {
+            RecordType[] recordTypes = RecordType.values();
+
+            int maxIdx = 0;
+            for (RecordType recordType : recordTypes)
+                maxIdx = Math.max(maxIdx, recordType.idx);
+
+            VALS = new RecordType[maxIdx + 1];
+
+            for (RecordType recordType : recordTypes)
+                VALS[recordType.idx] = recordType;
+        }
 
         /** */
-        public static RecordType fromOrdinal(int ord) {
-            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
+        public static RecordType fromIndex(int idx) {
+            return idx < 0 || idx >= VALS.length ? null : VALS[idx];
         }
 
         /**
