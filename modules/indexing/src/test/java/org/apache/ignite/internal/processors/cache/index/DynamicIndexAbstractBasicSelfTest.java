@@ -1388,22 +1388,15 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         try {
             r.run();
         }
+        catch (IgniteException ie){
+            assertTrue("Unexpected exception: " + ie, ie.getCause() instanceof CacheException);
+
+            checkCacheException(msg, expCode, (CacheException)ie.getCause());
+
+            return;
+        }
         catch (CacheException e) {
-            Throwable cause = e.getCause();
-
-            assertTrue(cause != null);
-            assertTrue("Unexpected cause: " + cause.getClass().getName(), cause instanceof IgniteSQLException);
-
-            IgniteSQLException cause0 = (IgniteSQLException)cause;
-
-            int code = cause0.statusCode();
-
-            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
-                ", msg=" + cause.getMessage() + ']', expCode, code);
-
-            if (msg != null)
-                assertEquals("Unexpected error message [expected=" + msg + ", actual=" + cause0.getMessage() + ']',
-                    msg, cause0.getMessage());
+            checkCacheException(msg, expCode, e);
 
             return;
         }
@@ -1412,6 +1405,25 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         }
 
         fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+    }
+
+    /** */
+    private static void checkCacheException(String msg, int expCode, CacheException e) {
+        Throwable cause = e.getCause();
+
+        assertTrue(cause != null);
+        assertTrue("Unexpected cause: " + cause.getClass().getName(), cause instanceof IgniteSQLException);
+
+        IgniteSQLException cause0 = (IgniteSQLException)cause;
+
+        int code = cause0.statusCode();
+
+        assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
+            ", msg=" + cause.getMessage() + ']', expCode, code);
+
+        if (msg != null)
+            assertEquals("Unexpected error message [expected=" + msg + ", actual=" + cause0.getMessage() + ']',
+                msg, cause0.getMessage());
     }
 
     /**
