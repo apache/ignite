@@ -44,7 +44,7 @@ public class SecureComputeJob implements ComputeJob {
     /** {@inheritDoc} */
     @Override public Object execute() throws IgniteException {
         try {
-            return ctx.security().doAsCurrentSubject(original::execute);
+            return ctx.security().execute(original::execute);
         }
         catch (Exception e) {
             if (e instanceof IgniteException)

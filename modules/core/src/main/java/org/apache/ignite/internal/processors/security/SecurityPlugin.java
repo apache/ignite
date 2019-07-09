@@ -23,16 +23,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
-/**
- * This interface defines a grid authentication processor.
- */
-@Deprecated
-public interface GridSecurityProcessor extends GridProcessor {
+public interface SecurityPlugin extends GridProcessor {
     /**
      * Authenticates grid node with it's attributes via underlying Authenticator.
      *
@@ -41,7 +36,8 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws IgniteCheckedException If error occurred.
      */
-    public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException;
+    public IgniteSecurityContext authenticateNode(ClusterNode node,
+        SecurityCredentials cred) throws IgniteCheckedException;
 
     /**
      * Gets flag indicating whether all nodes or coordinator only should run the authentication for joining node.
@@ -57,7 +53,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws IgniteCheckedException If error occurred.
      */
-    public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
+    public IgniteSecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
 
     /**
      * Gets collection of authenticated nodes.
@@ -77,27 +73,9 @@ public interface GridSecurityProcessor extends GridProcessor {
     public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
-     * Authorizes grid operation.
-     *
-     * @param name Cache name or task class name.
-     * @param perm Permission to authorize.
-     * @param securityCtx Optional security context.
-     * @throws SecurityException If security check failed.
-     */
-    public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
-        throws SecurityException;
-
-    /**
      * Callback invoked when subject session got expired.
      *
      * @param subjId Subject ID.
      */
     public void onSessionExpired(UUID subjId);
-
-    /**
-     * @return GridSecurityProcessor is enable.
-     * @deprecated To determine the security mode use {@link IgniteSecurity#enabled()}.
-     */
-    @Deprecated
-    public boolean enabled();
 }

@@ -21,7 +21,7 @@ import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.SecurityPlugin;
 
 /** */
 public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
@@ -47,9 +47,9 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-        return new TestSecurityProcessor(ctx,
-            new TestSecurityData(login, pwd, permissions),
+    @Override protected SecurityPlugin securityProcessor(GridKernalContext ctx) {
+        return new TestSecurityPlugin(ctx,
+            new TestSecurityData(login, pwd, perms),
             Arrays.asList(clientData));
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
-import java.security.Permissions;
 import java.util.UUID;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;

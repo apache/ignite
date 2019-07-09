@@ -20,12 +20,13 @@ package org.apache.ignite.spi.discovery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
+import org.apache.ignite.internal.processors.security.SecurityPlugin;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 
 /** */
 public class TestReconnectSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
     /** {@inheritDoc} */
-    @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
+    @Override protected SecurityPlugin securityProcessor(GridKernalContext ctx) {
         return new TestReconnectProcessor(ctx);
     }
 }

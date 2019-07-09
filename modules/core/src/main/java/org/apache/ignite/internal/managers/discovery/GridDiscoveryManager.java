@@ -108,6 +108,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -464,7 +465,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ctx.addNodeAttribute(ATTR_SECURITY_COMPATIBILITY_MODE, true);
 
             spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-                @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+                @Override public IgniteSecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
                     try {
                         return ctx.security().authenticateNode(node, cred);
                     }

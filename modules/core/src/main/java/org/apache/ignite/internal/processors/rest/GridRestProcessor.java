@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityConstants;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.task.permission.TaskPermission;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -86,6 +85,7 @@ import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.thread.IgniteThread;
@@ -274,7 +274,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     "[clientId=" + req.clientId() + ", sesTok=" + Arrays.toString(req.sessionToken()) + "]");
 
             if (securityEnabled) {
-                SecurityContext secCtx0 = ses.secCtx;
+                IgniteSecurityContext secCtx0 = ses.secCtx;
 
                 try {
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
@@ -793,7 +793,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Authentication subject context.
      * @throws IgniteCheckedException If authentication failed.
      */
-    private SecurityContext authenticate(GridRestRequest req, Session ses) throws IgniteCheckedException {
+    private IgniteSecurityContext authenticate(GridRestRequest req, Session ses) throws IgniteCheckedException {
         assert req.clientId() != null;
 
         AuthenticationContext authCtx = new AuthenticationContext();
@@ -816,7 +816,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.credentials(creds);
 
-        SecurityContext subjCtx = ctx.security().authenticate(authCtx);
+        IgniteSecurityContext subjCtx = ctx.security().authenticate(authCtx);
 
         ses.lastInvalidateTime.set(U.currentTimeMillis());
 
@@ -1063,7 +1063,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         private final AtomicLong lastInvalidateTime = new AtomicLong(U.currentTimeMillis());
 
         /** Security context. */
-        private volatile SecurityContext secCtx;
+        private volatile IgniteSecurityContext secCtx;
 
         /** Authorization context. */
         private volatile AuthorizationContext authCtx;

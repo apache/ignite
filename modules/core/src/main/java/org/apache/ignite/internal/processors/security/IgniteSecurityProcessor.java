@@ -42,6 +42,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -64,39 +65,36 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
 
     /** Current security context. */
-    private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
+    private final ThreadLocal<IgniteSecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
     /** Grid kernal context. */
     private final GridKernalContext ctx;
 
-    /** Security processor. */
-    private final GridSecurityProcessor secPrc;
+    /** Security plugin. */
+    private final SecurityPlugin secPlg;
 
     /** Must use JDK marshaller for Security Subject. */
     private final JdkMarshaller marsh;
 
     /** Map of security contexts. Key is the node's id. */
-    private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
+    private final Map<UUID, IgniteSecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Grid kernal context.
-     * @param secPrc Security processor.
+     * @param secPlg Security processor.
      */
-    public IgniteSecurityProcessor(GridKernalContext ctx, GridSecurityProcessor secPrc) {
-        assert ctx != null;
-        assert secPrc != null;
-
-        this.ctx = ctx;
-        this.secPrc = secPrc;
+    public IgniteSecurityProcessor(GridKernalContext ctx, SecurityPlugin secPlg) {
+        this.ctx = Objects.requireNonNull(ctx);
+        this.secPlg = Objects.requireNonNull(secPlg);
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
     }
 
     /** {@inheritDoc} */
-    @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
+    @Override public OperationSecurityContext withContext(IgniteSecurityContext secCtx) {
         assert secCtx != null;
 
-        SecurityContext old = curSecCtx.get();
+        IgniteSecurityContext old = curSecCtx.get();
 
         curSecCtx.set(secCtx);
 
@@ -115,8 +113,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext securityContext() {
-        SecurityContext res = curSecCtx.get();
+    @Override public IgniteSecurityContext securityContext() {
+        IgniteSecurityContext res = curSecCtx.get();
 
         assert res != null;
 
@@ -124,51 +122,51 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
+    @Override public IgniteSecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
         throws IgniteCheckedException {
-        return secPrc.authenticateNode(node, cred);
+        return secPlg.authenticateNode(node, cred);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isGlobalNodeAuthentication() {
-        return secPrc.isGlobalNodeAuthentication();
+        return secPlg.isGlobalNodeAuthentication();
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
-        return secPrc.authenticate(ctx);
+    @Override public IgniteSecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
+        return secPlg.authenticate(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
-        return secPrc.authenticatedSubjects();
+        return secPlg.authenticatedSubjects();
     }
 
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
-        return secPrc.authenticatedSubject(subjId);
+        return secPlg.authenticatedSubject(subjId);
     }
 
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
-        secPrc.onSessionExpired(subjId);
+        secPlg.onSessionExpired(subjId);
     }
 
     @Override public void checkPermission(Permission perm) throws SecurityException {
         Objects.requireNonNull(perm);
 
-        SecurityContext secCtx = curSecCtx.get();
+        IgniteSecurityContext secCtx = curSecCtx.get();
 
         assert secCtx != null;
 
-        if (!secCtx.implies(perm))
+        if (!secCtx.permissions().implies(perm))
             throw new SecurityException("Authorization is failed [perm=" + perm + ']');
     }
 
-    @Override public <T> T doAsCurrentSubject(Callable<T> c) throws Exception {
+    @Override public <T> T execute(Callable<T> c) throws Exception {
         Objects.requireNonNull(c);
 
-        final SecurityContext secCtx = curSecCtx.get();
+        final IgniteSecurityContext secCtx = curSecCtx.get();
 
         assert secCtx != null;
 
@@ -182,7 +180,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
                 @Override public AccessControlContext run() {
                     return new AccessControlContext
                         (new AccessControlContext(NULL_PD_ARRAY),
-                            new IgniteSubjectDomainCombainer(subject, secCtx.subject().permissions()));
+                            new IgniteSubjectDomainCombainer(subject, secCtx.permissions()));
                 }
             });
 
@@ -201,14 +199,14 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
+        ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPlg.getClass().getName());
 
-        secPrc.start();
+        secPlg.start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        secPrc.stop(cancel);
+        secPlg.stop(cancel);
     }
 
     /** {@inheritDoc} */
@@ -217,44 +215,44 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
         );
 
-        secPrc.onKernalStart(active);
+        secPlg.onKernalStart(active);
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        secPrc.onKernalStop(cancel);
+        secPlg.onKernalStop(cancel);
     }
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        secPrc.collectJoiningNodeData(dataBag);
+        secPlg.collectJoiningNodeData(dataBag);
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        secPrc.collectGridNodeData(dataBag);
+        secPlg.collectGridNodeData(dataBag);
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        secPrc.onGridDataReceived(data);
+        secPlg.onGridDataReceived(data);
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        secPrc.onJoiningNodeDataReceived(data);
+        secPlg.onJoiningNodeDataReceived(data);
     }
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
-        secPrc.printMemoryStats();
+        secPlg.printMemoryStats();
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         IgniteNodeValidationResult res = validateSecProcClass(node);
 
-        return res != null ? res : secPrc.validateNode(node);
+        return res != null ? res : secPlg.validateNode(node);
     }
 
     /** {@inheritDoc} */
@@ -262,23 +260,23 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         IgniteNodeValidationResult res = validateSecProcClass(node);
 
-        return res != null ? res : secPrc.validateNode(node, discoData);
+        return res != null ? res : secPlg.validateNode(node, discoData);
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
-        return secPrc.discoveryDataType();
+        return secPlg.discoveryDataType();
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        secPrc.onDisconnected(reconnectFut);
+        secPlg.onDisconnected(reconnectFut);
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable IgniteInternalFuture<?> onReconnected(
         boolean clusterRestarted) throws IgniteCheckedException {
-        return secPrc.onReconnected(clusterRestarted);
+        return secPlg.onReconnected(clusterRestarted);
     }
 
     /**
@@ -286,7 +284,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      *
      * @return Security context of local node.
      */
-    private SecurityContext localSecurityContext() {
+    private IgniteSecurityContext localSecurityContext() {
         return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
     }
 
@@ -299,7 +297,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     private IgniteNodeValidationResult validateSecProcClass(ClusterNode node) {
         //todo MY_TODO валидаию нужно делать с учетом версии плагина безопасности, а не только по его классу
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
-        String locCls = secPrc.getClass().getName();
+        String locCls = secPlg.getClass().getName();
 
         if (!F.eq(locCls, rmtCls)) {
             return new IgniteNodeValidationResult(node.id(),

@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityConstants;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.security.adapter.IgniteSecurityContextAdapter;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -107,6 +108,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -1091,14 +1093,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         assert locCred != null;
 
         try {
-            SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
+            IgniteSecurityContext secCtx = spi.nodeAuth.authenticateNode(locNode, locCred);
 
-            if (subj == null)
+            if (secCtx == null)
                 throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
 
             Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), secCtx));
 
             locNode.setAttributes(attrs);
 
@@ -3942,9 +3944,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
 
-                        SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
+                        IgniteSecurityContext secCtx = spi.nodeAuth.authenticateNode(node, cred);
 
-                        if (subj == null) {
+                        if (secCtx == null) {
                             // Node has not pass authentication.
                             LT.warn(log, "Authentication failed [nodeId=" + node.id() +
                                 ", addrs=" + U.addressesAsString(node) + ']');
@@ -3975,7 +3977,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             String authFailedMsg = null;
 
-                            if (!(subj instanceof Serializable)) {
+                            if (!(secCtx instanceof Serializable)) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
@@ -3983,7 +3985,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 authFailedMsg = "Authentication subject is not serializable";
                             }
                             else if (node.clientRouterNodeId() == null) {
-                                if (!subj.implies(SecurityConstants.JOIN_AS_SERVER_PERMISSION))
+                                if (!secCtx.permissions().implies(SecurityConstants.JOIN_AS_SERVER_PERMISSION))
                                     authFailedMsg = "Node is not authorised to join as a server node";
                             }
 
@@ -4012,7 +4014,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Stick in authentication subject to node (use security-safe attributes for copy).
                             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
+                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), secCtx));
 
                             node.setAttributes(attrs);
                         }
@@ -4595,14 +4597,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             authFailed = false;
                         }
                         else {
-                            SecurityContext locSubj = spi.nodeAuth.authenticateNode(node, cred);
+                            IgniteSecurityContext locSubj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            SecurityContext rmtSubj = nodeSecurityContext(
+                            IgniteSecurityContext rmtSubj = nodeSecurityContext(
                                 spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
                             );
                             //todo MY_TODO нужен тест
-                            if (!localPermissionsImplyRemotePermissions(locSubj.subject().permissions(),
-                                rmtSubj.subject().permissions())) {
+                            if (!localPermissionsImplyRemotePermissions(locSubj.permissions(),
+                                rmtSubj.permissions())) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication failed [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
@@ -4695,17 +4697,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 try {
                                     ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
 
-                                    SecurityContext rmCrd = nodeSecurityContext(
+                                    IgniteSecurityContext rmCrd = nodeSecurityContext(
                                         spi.marshaller(), ldr, node
                                     );
 
-                                    SecurityContext locCrd = nodeSecurityContext(
+                                    IgniteSecurityContext locCrd = nodeSecurityContext(
                                         spi.marshaller(), ldr, locNode
                                     );
 
                                     //todo MY_TODO нужен тест
-                                    if (!localPermissionsImplyRemotePermissions(locCrd.subject().permissions(),
-                                        rmCrd.subject().permissions())) {
+                                    if (!localPermissionsImplyRemotePermissions(locCrd.permissions(),
+                                        rmCrd.permissions())) {
                                         // Node has not pass authentication.
                                         LT.warn(log,
                                             "Failed to authenticate local node " +

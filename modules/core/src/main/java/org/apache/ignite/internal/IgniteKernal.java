@@ -173,6 +173,8 @@ import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.SecurityPlugin;
+import org.apache.ignite.internal.processors.security.adapter.SecurityPluginAdapter;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -1420,10 +1422,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @return IgniteSecurity.
      */
     private GridProcessor securityProcessor() throws IgniteCheckedException {
-        GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
+        SecurityPlugin secPlg = createComponent(SecurityPlugin.class, ctx);
 
-        return prc != null && prc.enabled()
-            ? new IgniteSecurityProcessor(ctx, prc)
+        if (secPlg == null) {
+            GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
+
+            if (prc != null && prc.enabled())
+                secPlg = new SecurityPluginAdapter(prc);
+
+        }
+
+        return secPlg != null
+            ? new IgniteSecurityProcessor(ctx, secPlg)
             : new NoOpIgniteSecurityProcessor(ctx);
     }
 
@@ -4297,7 +4307,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
 
-        if(cls.equals(GridSecurityProcessor.class))
+        if(cls.equals(GridSecurityProcessor.class) || cls.equals(SecurityPlugin.class))
             return null;
 
         Class<T> implCls = null;

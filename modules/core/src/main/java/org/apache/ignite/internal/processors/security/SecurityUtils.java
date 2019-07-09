@@ -101,7 +101,7 @@ public class SecurityUtils {
      * @param node Node.
      * @return Node's security context.
      */
-    public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
+    public static IgniteSecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
         byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
 
         if (subjBytes == null)

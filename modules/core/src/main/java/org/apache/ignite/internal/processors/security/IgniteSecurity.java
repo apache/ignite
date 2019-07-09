@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -47,6 +48,7 @@ public interface IgniteSecurity {
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
     /**
+     * todo MY_TODO rewrite
      * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
      * holder {@link OperationSecurityContext} will be closed.
@@ -54,9 +56,10 @@ public interface IgniteSecurity {
      * @param secCtx Security Context.
      * @return Security context holder.
      */
-    public OperationSecurityContext withContext(SecurityContext secCtx);
+    public OperationSecurityContext withContext(IgniteSecurityContext secCtx);
 
     /**
+     * todo MY_TODO rewrite
      * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
      * the node with given nodeId until holder {@link OperationSecurityContext} will be closed.
@@ -69,13 +72,13 @@ public interface IgniteSecurity {
     /**
      * @return SecurityContext of holder {@link OperationSecurityContext}.
      */
-    public SecurityContext securityContext();
+    public IgniteSecurityContext securityContext();
 
     /**
      * Delegates call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,
      * org.apache.ignite.plugin.security.SecurityCredentials)}
      */
-    public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException;
+    public IgniteSecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException;
 
     /**
      * Delegates call to {@link GridSecurityProcessor#isGlobalNodeAuthentication()}
@@ -85,7 +88,7 @@ public interface IgniteSecurity {
     /**
      * Delegates call to {@link GridSecurityProcessor#authenticate(AuthenticationContext)}
      */
-    public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
+    public IgniteSecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
 
     /**
      * Delegates call to {@link GridSecurityProcessor#authenticatedSubjects()}
@@ -111,15 +114,15 @@ public interface IgniteSecurity {
      * @param <T>
      * @return
      */
-    public <T> T doAsCurrentSubject(Callable<T> c) throws Exception;
+    public <T> T execute(Callable<T> c) throws Exception;
 
     /**
      * todo MY_TODO
      *
      * @param r
      */
-    public default void doAsCurrentSubject(Runnable r) throws Exception {
-        doAsCurrentSubject(() -> {
+    public default void execute(Runnable r) throws Exception {
+        execute(() -> {
             r.run();
 
             return null;

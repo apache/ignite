@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 
 /**
@@ -35,7 +35,7 @@ public interface DiscoverySpiNodeAuthenticator {
      * @throws IgniteException If authentication process failed
      *      (invalid credentials should not lead to this exception).
      */
-    public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteException;
+    public IgniteSecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteException;
 
     /**
      * Gets global node authentication flag.

@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 public abstract class AbstractTestSecurityPluginProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Override public String name() {
-        return "TestSecurityProcessorProvider";
+        return "TestSecurityPluginProvider";
     }
 
     /** {@inheritDoc} */
@@ -64,7 +64,7 @@ public abstract class AbstractTestSecurityPluginProvider implements PluginProvid
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
-        if (cls.isAssignableFrom(GridSecurityProcessor.class))
+        if (cls.isAssignableFrom(SecurityPlugin.class))
             return securityProcessor(((IgniteEx)ctx.grid()).context());
 
         return null;
@@ -72,9 +72,9 @@ public abstract class AbstractTestSecurityPluginProvider implements PluginProvid
 
     /**
      * @param ctx Grid kernal context.
-     * @return {@link GridSecurityProcessor} istance.
+     * @return {@link SecurityPlugin} instance.
      */
-    protected abstract GridSecurityProcessor securityProcessor(GridKernalContext ctx);
+    protected abstract SecurityPlugin securityProcessor(GridKernalContext ctx);
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {

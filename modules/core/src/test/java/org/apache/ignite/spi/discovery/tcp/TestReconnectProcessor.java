@@ -27,19 +27,19 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityPlugin;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 
 /**
  * Updates node attributes on disconnect.
  */
-public class TestReconnectProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
+public class TestReconnectProcessor extends GridProcessorAdapter implements SecurityPlugin {
     /**
      * @param ctx Kernal context.
      */
@@ -53,7 +53,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node,
+    @Override public IgniteSecurityContext authenticateNode(ClusterNode node,
         SecurityCredentials cred) throws IgniteCheckedException {
         return new TestSecurityContext(new TestSecuritySubject(ctx.localNodeId()));
     }
@@ -64,7 +64,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
+    @Override public IgniteSecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
         return null;
     }
 
@@ -81,11 +81,6 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
 
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enabled() {
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -137,7 +132,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /**
      *
      */
-    private static class TestSecurityContext implements SecurityContext, Serializable {
+    private static class TestSecurityContext implements IgniteSecurityContext, Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -156,8 +151,9 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
             return subj;
         }
 
-        @Override public boolean implies(Permission perm) throws SecurityException {
-            return true;
+        /** {@inheritDoc} */
+        @Override public Permissions permissions() {
+            return null;
         }
     }
 }

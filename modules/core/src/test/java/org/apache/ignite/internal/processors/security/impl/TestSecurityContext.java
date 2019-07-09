@@ -25,20 +25,27 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 /**
  * Security context for tests.
  */
-public class TestSecurityContext implements SecurityContext, Serializable {
-    /** Subject. */
+public class TestSecurityContext implements IgniteSecurityContext, Serializable {
+    /** . */
     private final SecuritySubject subject;
 
-    /**
-     * @param subject Subject.
-     */
-    public TestSecurityContext(SecuritySubject subject) {
+    /** . */
+    private final Permissions perms;
+
+    /** . */
+    public TestSecurityContext(SecuritySubject subject, Permissions perms) {
         this.subject = subject;
+        this.perms = perms;
     }
 
     /** {@inheritDoc} */
     @Override public SecuritySubject subject() {
         return subject;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Permissions permissions() {
+        return perms;
     }
 
     /** {@inheritDoc} */

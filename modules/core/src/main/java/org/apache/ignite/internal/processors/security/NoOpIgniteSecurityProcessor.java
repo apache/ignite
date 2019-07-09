@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -49,7 +50,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
+    @Override public OperationSecurityContext withContext(IgniteSecurityContext secCtx) {
         return opSecCtx;
     }
 
@@ -59,12 +60,12 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext securityContext() {
+    @Override public IgniteSecurityContext securityContext() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+    @Override public IgniteSecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
         return null;
     }
 
@@ -74,7 +75,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) {
+    @Override public IgniteSecurityContext authenticate(AuthenticationContext ctx) {
         return null;
     }
 
@@ -99,7 +100,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T doAsCurrentSubject(Callable<T> c) throws Exception {
+    @Override public <T> T execute(Callable<T> c) throws Exception {
         return c.call();
     }
 

@@ -30,10 +30,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityPlugin;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.IgniteSecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
@@ -42,9 +42,9 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 /**
  * Security processor for test.
  */
-public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
-
-    private static final Map<SecurityCredentials, Permissions> PERMISSIONS = new ConcurrentHashMap<>();
+public class TestSecurityPlugin extends GridProcessorAdapter implements SecurityPlugin {
+    /** Permissions. */
+    private static final Map<SecurityCredentials, Permissions> PERMS = new ConcurrentHashMap<>();
 
     /** Node security data. */
     private final TestSecurityData nodeSecData;
@@ -52,10 +52,8 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** Users security data. */
     private final Collection<TestSecurityData> predefinedAuthData;
 
-    /**
-     * Constructor.
-     */
-    public TestSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
+    /** . */
+    public TestSecurityPlugin(GridKernalContext ctx, TestSecurityData nodeSecData,
         Collection<TestSecurityData> predefinedAuthData) {
         super(ctx);
 
@@ -66,14 +64,14 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+    @Override public IgniteSecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
-                .setLogin(cred.getLogin())
-                .setPermissions(PERMISSIONS.get(cred))
+                .setLogin(cred.getLogin()),
+            PERMS.get(cred)
         );
     }
 
@@ -83,14 +81,14 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) {
+    @Override public IgniteSecurityContext authenticate(AuthenticationContext ctx) {
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(ctx.subjectType())
                 .setId(ctx.subjectId())
                 .setAddr(ctx.address())
-                .setLogin(ctx.credentials().getLogin())
-                .setPermissions(PERMISSIONS.get(ctx.credentials()))
+                .setLogin(ctx.credentials().getLogin()),
+            PERMS.get(ctx.credentials())
         );
     }
 
@@ -110,29 +108,24 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enabled() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        PERMISSIONS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
+        PERMS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
 
         for (TestSecurityData data : predefinedAuthData)
-            PERMISSIONS.put(data.credentials(), data.getPermissions());
+            PERMS.put(data.credentials(), data.getPermissions());
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        PERMISSIONS.remove(nodeSecData.credentials());
+        PERMS.remove(nodeSecData.credentials());
 
         for (TestSecurityData data : predefinedAuthData)
-            PERMISSIONS.remove(data.credentials());
+            PERMS.remove(data.credentials());
     }
 }

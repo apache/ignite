@@ -23,7 +23,6 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
-import java.security.Permission;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -97,7 +96,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -109,7 +107,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
-import org.apache.ignite.internal.processors.security.permission.PermissionSupplier;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -6714,8 +6711,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Clear task.
      */
     @GridInternal
-    private static class ClearTask<K> extends ComputeTaskAdapter<Object, Object>
-        implements PermissionSupplier {
+    private static class ClearTask<K> extends ComputeTaskAdapter<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6742,10 +6738,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             this.topVer = topVer;
             this.keys = keys;
             this.near = near;
-        }
-
-        @Override public Permission permission() {
-            return new CachePermission(cacheName, REMOVE);
         }
 
         /** {@inheritDoc} */
