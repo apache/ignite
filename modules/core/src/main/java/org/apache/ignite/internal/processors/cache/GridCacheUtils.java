@@ -54,6 +54,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1996,6 +1997,16 @@ public class GridCacheUtils {
      */
     public static boolean isCacheTemplateName(String cacheName) {
         return cacheName.endsWith("*");
+    }
+
+    /**
+     * Check whether in-memory eviction disabled.
+     *
+     * @param memPlcCfg Data region configuration.
+     * @return {@code True} if eviction policy disabled or native persistence is enabled.
+     */
+    public static boolean isEvictionDisabled(DataRegionConfiguration memPlcCfg) {
+        return memPlcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || memPlcCfg.isPersistenceEnabled();
     }
 
     /**

@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
@@ -572,8 +571,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written = COMPLETE;
 
             while (iter.hasNext() || written != COMPLETE) {
-                ensureFreeSpace();
-
                 if (written == COMPLETE) {
                     row = iter.next();
 
@@ -895,38 +892,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to count recycled pages", t);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean ensureFreeSpace() throws IgniteCheckedException {
-        if (regCfg.isPersistenceEnabled() || regCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
-            return false;
-
-        long memorySize = regCfg.getMaxSize();
-
-        int sysPageSize = pageMem.systemPageSize();
-
-        boolean evicted = false;
-
-        for (;;) {
-            long allocatedPagesCnt = pageMem.loadedPages();
-
-            int emptyDataPagesCnt = emptyDataPages();
-
-            boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * regCfg.getEvictionThreshold()) &&
-                emptyDataPagesCnt < regCfg.getEmptyPagesPoolSize();
-
-            if (shouldEvict) {
-                evictionTracker.evictDataPage();
-
-                memMetrics.updateEvictionRate();
-
-                evicted = true;
-            } else
-                break;
-        }
-
-        return evicted;
     }
 
     /** {@inheritDoc} */

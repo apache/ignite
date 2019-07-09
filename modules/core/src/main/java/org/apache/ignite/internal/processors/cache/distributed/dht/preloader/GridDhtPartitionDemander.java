@@ -777,6 +777,8 @@ public class GridDhtPartitionDemander {
                                 try {
                                     if (grp.mvccEnabled())
                                         mvccPreloadEntries(topVer, node, p, infos);
+                                    if (CU.isEvictionDisabled(grp.dataRegion().config()))
+                                        preloadEntriesBatched(topVer, node, p, infos);
                                     else
                                         preloadEntries(topVer, node, p, infos);
                                 }
@@ -946,13 +948,54 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * Adds entries to partition p.
+     *
+     * @param topVer Topology version.
+     * @param node Node which sent entry.
+     * @param p Partition id.
+     * @param infos Entries info for preload.
+     *
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    private void preloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
+        List<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+        GridCacheContext cctx = null;
+
+        Iterator<GridCacheEntryInfo> iter = infos.iterator();
+
+        // Loop through all received entries and try to preload them.
+        while (iter.hasNext()) {
+            ctx.database().checkpointReadLock();
+
+            try {
+                for (int i = 0; i < CHECKPOINT_THRESHOLD; i++) {
+                    if (!iter.hasNext())
+                        break;
+
+                    GridCacheEntryInfo entry = iter.next();
+
+                    if (cctx == null || (grp.sharedGroup() && entry.cacheId() != cctx.cacheId()))
+                        cctx = resolveCacheContext(entry);
+
+                    preloadEntry(node, p, entry, topVer, cctx, null);
+                }
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
+        }
+    }
+
+    /**
+     * Adds entries to partition p in batch mode.
+     *
      * @param topVer Topology version.
      * @param from Node which sent entry.
      * @param p Partition id.
      * @param infos Preloaded entries.
      * @throws IgniteCheckedException If failed.
      */
-    private void preloadEntries(
+    private void preloadEntriesBatched(
         AffinityTopologyVersion topVer,
         ClusterNode from,
         int p,

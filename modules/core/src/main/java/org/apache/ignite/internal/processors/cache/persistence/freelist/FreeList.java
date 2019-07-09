@@ -74,11 +74,4 @@ public interface FreeList<T extends Storable> {
      * @param log Logger.
      */
     public void dumpStatistics(IgniteLogger log);
-
-    /**
-     * Evicts necessary number of data pages if per-page eviction is configured.
-     *
-     * @return {@code True} If at least one page has been evicted.
-     */
-    public boolean ensureFreeSpace() throws IgniteCheckedException;
 }
