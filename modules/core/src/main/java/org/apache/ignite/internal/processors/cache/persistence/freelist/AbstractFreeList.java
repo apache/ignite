@@ -91,7 +91,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final PageEvictionTracker evictionTracker;
 
     /** */
-    private final DataRegion region;
+    private final DataRegionConfiguration regCfg;
 
     /**
      *
@@ -373,7 +373,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         rmvRow = new RemoveRowHandler(cacheId == 0);
 
-        region = memPlc;
+        regCfg = memPlc.config();
 
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
@@ -899,12 +899,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public boolean ensureFreeSpace() throws IgniteCheckedException {
-        DataRegionConfiguration plcCfg = region.config();
-
-        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plcCfg.isPersistenceEnabled())
+        if (regCfg.isPersistenceEnabled() || regCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return false;
 
-        long memorySize = plcCfg.getMaxSize();
+        long memorySize = regCfg.getMaxSize();
 
         int sysPageSize = pageMem.systemPageSize();
 
@@ -915,8 +913,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             int emptyDataPagesCnt = emptyDataPages();
 
-            boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
-                emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
+            boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * regCfg.getEvictionThreshold()) &&
+                emptyDataPagesCnt < regCfg.getEmptyPagesPoolSize();
 
             if (shouldEvict) {
                 evictionTracker.evictDataPage();

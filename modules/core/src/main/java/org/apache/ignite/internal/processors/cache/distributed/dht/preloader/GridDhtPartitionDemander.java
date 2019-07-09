@@ -972,9 +972,7 @@ public class GridDhtPartitionDemander {
                 part.dataStore().allocateRows(batch, new IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow>() {
                     @Override public boolean applyx(GridCacheEntryInfo info, CacheDataRow row)
                         throws IgniteCheckedException {
-                        GridCacheContext cctx = resolveCacheContext(info);
-
-                        return cctx != null && preloadEntry(from, p, info, topVer, cctx, row);
+                        return preloadEntry(from, p, info, topVer, resolveCacheContext(info), row);
                     }
                 });
             }
@@ -1007,6 +1005,9 @@ public class GridDhtPartitionDemander {
         assert ctx.database().checkpointLockIsHeldByThread();
 
         try {
+            if (cctx == null)
+                return false;
+
             GridCacheEntryEx cached = null;
 
             try {
@@ -1048,8 +1049,6 @@ public class GridDhtPartitionDemander {
                         log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
                             ", part=" + p + ']');
                 }
-
-                updateCacheMetrics();
             }
             catch (GridCacheEntryRemovedException ignored) {
                 if (log.isTraceEnabled())
@@ -1063,6 +1062,8 @@ public class GridDhtPartitionDemander {
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
                 ctx.localNode() + ", node=" + from.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
+        } finally {
+            updateCacheMetrics();
         }
 
         return false;

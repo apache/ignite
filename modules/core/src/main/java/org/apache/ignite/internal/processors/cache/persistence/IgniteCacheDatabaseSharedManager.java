@@ -991,7 +991,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memPlc data region.
      */
     public void ensureFreeSpace(DataRegion memPlc) throws IgniteCheckedException {
-        if (memPlc == null)
+        if (memPlc == null || memPlc.config().isPersistenceEnabled())
             return;
 
         CacheFreeList freeList = freeListMap.get(memPlc.config().getName());
