@@ -1468,8 +1468,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
 
-        globalState.localBaselineAutoAdjustment(false);
-
         return false;
     }
 
