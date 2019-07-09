@@ -323,7 +323,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (queue == null) {
                 queue = new GridCacheQueueProxy(cctx, cctx.atomic() ? new GridAtomicCacheQueueImpl<>(name, hdr, cctx) :
-                    new GridTransactionalCacheQueueImpl<>(name, hdr, cctx));
+                    new GridTransactionalCacheQueueImpl<>(name, hdr, cctx), cctx.operationContextPerCall());
 
                 GridCacheQueueProxy old = queuesMap.putIfAbsent(hdr.id(), queue);
 
