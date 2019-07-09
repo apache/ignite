@@ -42,7 +42,7 @@ the local (class-wise) registry for GridGain Complex objects.
 
 from collections import defaultdict, OrderedDict
 import random
-from typing import Dict, Iterable, Optional, Tuple, Type, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Type, Union
 
 from .api.binary import get_binary_type, put_binary_type
 from .api.cache_config import cache_get_names
@@ -80,10 +80,10 @@ class Client:
     _compact_footer: bool = None
     _connection_args: Dict = None
     _current_node: int = None
-    _nodes: Union[Iterable[Connection], Dict['UUID', Connection]] = None
+    _nodes: List[Connection] = None
 
-    affinity_version: Tuple = None
-    protocol_version = None
+    affinity_version: Optional[Tuple] = None
+    protocol_version: Optional[Tuple] = None
 
     def __init__(
         self, compact_footer: bool = None, affinity_aware: bool = False,
@@ -106,6 +106,7 @@ class Client:
         """
         self._compact_footer = compact_footer
         self._connection_args = kwargs
+        self._nodes = []
         self._current_node = 0
         self._affinity_aware = affinity_aware
         self.affinity_version = (0, 0)
@@ -125,43 +126,6 @@ class Client:
     @property
     def affinity_aware(self):
         return self._affinity_aware
-
-    @select_version
-    def _add_node(
-        self, host: str = None, port: int = None,
-        conn: Connection = None, node_uuid: 'UUID' = None,
-    ) -> 'UUID':
-        """
-        Opens a connection to GridGain server and adds it to the nodes'
-        collection (connection pool).
-        """
-        if self._nodes is None:
-            self._nodes = {}
-
-        if conn is None:
-            conn = Connection(self, **self._connection_args)
-            hs_response = conn.connect(host, port)
-            node_uuid = hs_response['node_uuid']
-
-        if node_uuid:
-            self._nodes[node_uuid] = conn
-        return node_uuid
-
-    def _add_node_130(
-        self, host: str = None, port: int = None, conn: Connection = None,
-        *args, **kwargs,
-    ):
-        if self._nodes is None:
-            self._nodes = []
-
-        if conn is None:
-            conn = Connection(self, **self._connection_args)
-            conn.host = host
-            conn.port = port
-
-        self._nodes.append(conn)
-
-    _add_node_120 = _add_node_130
 
     def connect(self, *args):
         """
@@ -185,35 +149,50 @@ class Client:
         else:
             raise ConnectionError('Connection parameters are not valid.')
 
-        nodes = iter(nodes)
+        # the following code is quite twisted, because the protocol version
+        # is initially unknown
+
         # TODO: open first node in foregroung, others − in background
+        for i, node in enumerate(nodes):
+            host, port = node
+            conn = Connection(self, **self._connection_args)
+            conn.host = host
+            conn.port = port
 
-        first_node = Connection(self, **self._connection_args)
+            try:
+                if (
+                    self.protocol_version is None
+                    or self.protocol_version >= (1, 4, 0)
+                ):
+                    # open connection before adding to the pool
+                    conn.connect(host, port)
 
-        # now we know protocol version
-        self._add_node(
-            conn=first_node,
-            node_uuid=first_node.connect(*next(nodes)).get('node_uuid', None),
-        )
+                    # now we have the protocol version
+                    if self.protocol_version < (1, 4, 0):
+                        # do not try to open more nodes
+                        self._current_node = i
+                    else:
+                        # take a chance to schedule the reconnection
+                        # for all the failed connections, that was probed
+                        # before this
+                        for failed_node in self._nodes[:i]:
+                            failed_node.reconnect()
 
-        for host, port in nodes:
-            self._add_node(host, port)
+            except connection_errors:
+                conn._fail()
+                if (
+                    self.protocol_version
+                    and self.protocol_version >= (1, 4, 0)
+                ):
+                    # schedule the reconnection
+                    conn.reconnect()
 
-    @select_version
+            self._nodes.append(conn)
+
     def close(self):
-        """
-        Close all connections to the server and clean the connection pool.
-        """
-        for conn in self._nodes.values():
-            conn.close()
-        self._nodes.clear()
-
-    def close_130(self):
         for conn in self._nodes:
             conn.close()
         self._nodes.clear()
-
-    close_120 = close_130
 
     @property
     @select_version
@@ -227,7 +206,7 @@ class Client:
         """
         try:
             return random.choice(
-                list(n for n in self._nodes.values() if n.alive)
+                list(n for n in self._nodes if n.alive)
             )
         except IndexError:
             # cannot choose from an empty sequence

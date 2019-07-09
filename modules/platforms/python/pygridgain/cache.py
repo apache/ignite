@@ -313,7 +313,9 @@ class Cache:
                     in self.affinity['node_mapping'].items()
                     if part in p
                 )
-                best_conn = conn.client._nodes[node_uuid]
+                best_conn = next(
+                    n for n in conn.client._nodes if n.uuid == node_uuid
+                )
                 if best_conn.alive:
                     conn = best_conn
             except (StopIteration, KeyError):
