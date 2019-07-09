@@ -2068,6 +2068,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
                 boolean readNoEntry = ctx.readNoEntry(expiry, readerArgs != null);
+
                 for (KeyCacheObject key : keys) {
                     while (true) {
                         try {

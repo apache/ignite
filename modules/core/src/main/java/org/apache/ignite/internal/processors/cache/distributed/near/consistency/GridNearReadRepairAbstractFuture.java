@@ -74,7 +74,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /** Deserialize binary flag. */
     protected final boolean deserializeBinary;
 
-    /** Recovery flag.. */
+    /** Recovery flag. */
     protected final boolean recovery;
 
     /** Expiry policy flag. */
