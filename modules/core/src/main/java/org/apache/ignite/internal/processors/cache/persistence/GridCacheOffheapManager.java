@@ -1698,7 +1698,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         freeListName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
-                        null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated(),
