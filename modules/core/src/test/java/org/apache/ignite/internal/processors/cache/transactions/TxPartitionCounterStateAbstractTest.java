@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,7 +25,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +33,6 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -74,9 +69,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -97,7 +90,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
  */
 public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int MB = 1024 * 1024;
@@ -124,13 +117,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(100000000L);
-        cfg.setClientFailureDetectionTimeout(100000000L);
-
-        cfg.setConsistentId(igniteInstanceName);
+        cfg.setConsistentId("node" + igniteInstanceName);
         cfg.setFailureHandler(new StopNodeFailureHandler());
         cfg.setRebalanceThreadPoolSize(4); // Necessary to reproduce some issues.
-        cfg.setDiscoverySpi(new DelayedTcpDiscoverySpi());
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -182,7 +171,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         stopAllGrids();
 
-        //cleanPersistenceDir();
+        cleanPersistenceDir();
     }
 
     /**
@@ -1088,51 +1077,5 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** Prepare. */ PREPARE,
         /** Assign. */ ASSIGN,
         /** Commit. */COMMIT
-    }
-
-    /** Discovery SPI delayed TcpDiscoveryNodeAddFinishedMessage. */
-    protected static class DelayedTcpDiscoverySpi extends TcpDiscoverySpi {
-        public volatile CountDownLatch l;
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
-                                               TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryCustomEventMessage && l != null)
-                U.awaitQuiet(l);
-
-            super.writeToSocket(node, sock, out, msg, timeout);
-        }
-
-        @Override
-        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
-            if (msg instanceof TcpDiscoveryCustomEventMessage && l != null)
-                U.awaitQuiet(l);
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        @Override
-        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryCustomEventMessage && l != null)
-                U.awaitQuiet(l);
-
-            super.writeToSocket(sock, msg, timeout);
-        }
-
-        @Override
-        protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryCustomEventMessage && l != null)
-                U.awaitQuiet(l);
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-
-        @Override
-        protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout) throws IOException {
-            if (msg instanceof TcpDiscoveryCustomEventMessage && l != null)
-                U.awaitQuiet(l);
-
-            super.writeToSocket(msg, sock, res, timeout);
-        }
     }
 }
