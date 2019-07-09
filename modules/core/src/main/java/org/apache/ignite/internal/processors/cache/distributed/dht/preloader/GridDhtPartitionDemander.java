@@ -35,14 +35,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -62,14 +60,13 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -77,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
@@ -781,9 +777,6 @@ public class GridDhtPartitionDemander {
                                 try {
                                     if (grp.mvccEnabled())
                                         mvccPreloadEntries(topVer, node, p, infos);
-                                    else if (CU.isEvictionDisabled(grp.dataRegion().config()) ||
-                                        isEnoughSpace(grp.dataRegion(), supplyMsg.messageSize()))
-                                        preloadEntriesBatched(topVer, node, p, infos);
                                     else
                                         preloadEntries(topVer, node, p, infos);
                                 }
@@ -953,59 +946,13 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Adds entries with theirs history to partition p.
-     *
-     * @param node Node which sent entry.
-     * @param p Partition id.
-     * @param infos Entries info for preload.
-     * @param topVer Topology version.
-     * @throws IgniteInterruptedCheckedException If interrupted.
-     */
-    private void preloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
-        List<GridCacheEntryInfo> infos) throws IgniteCheckedException {
-        GridCacheContext cctx = null;
-
-        Iterator<GridCacheEntryInfo> iter = infos.iterator();
-
-        // Loop through all received entries and try to preload them.
-        while (iter.hasNext()) {
-            ctx.database().checkpointReadLock();
-
-            try {
-                for (int i = 0; i < CHECKPOINT_THRESHOLD; i++) {
-                    if (!iter.hasNext())
-                        break;
-
-                    GridCacheEntryInfo entry = iter.next();
-
-                    if (cctx == null || (grp.sharedGroup() && entry.cacheId() != cctx.cacheId())) {
-                        cctx = grp.sharedGroup() ? grp.shared().cacheContext(entry.cacheId()) : grp.singleCacheContext();
-
-                        if (cctx == null)
-                            continue;
-                        else if (cctx.isNear())
-                            cctx = cctx.dhtCache().context();
-                    }
-
-                    preloadEntry(node, p, entry, topVer, cctx, null);
-
-                    updateCacheMetrics();
-                }
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
-    }
-
-    /**
      * @param topVer Topology version.
      * @param from Node which sent entry.
      * @param p Partition id.
      * @param infos Preloaded entries.
      * @throws IgniteCheckedException If failed.
      */
-    private void preloadEntriesBatched(
+    private void preloadEntries(
         AffinityTopologyVersion topVer,
         ClusterNode from,
         int p,
@@ -1022,27 +969,13 @@ public class GridDhtPartitionDemander {
             try {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-                // Create data rows on data pages before getting locks on cache entries.
-                try (GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> iter =
-                         part.dataStore().allocateRows(batch)) {
-                    while (iter.hasNext()) {
-                        IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> tup = iter.next();
-
-                        GridCacheEntryInfo info = tup.get1();
-                        CacheDataRow row = tup.get2();
-
+                part.dataStore().allocateRows(batch, new IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow>() {
+                    @Override public boolean applyx(GridCacheEntryInfo info, CacheDataRow row) throws IgniteCheckedException {
                         GridCacheContext cctx = resolveCacheContext(info);
 
-                        if (cctx == null)
-                            part.dataStore().removeRow(row);
-                        else {
-                            if (!preloadEntry(from, p, info, topVer, cctx, row))
-                                part.dataStore().removeRow(row);
-
-                            updateCacheMetrics();
-                        }
+                        return cctx != null && preloadEntry(from, p, info, topVer, cctx, row);
                     }
-                }
+                });
             }
             finally {
                 ctx.database().checkpointReadUnlock();
@@ -1114,6 +1047,8 @@ public class GridDhtPartitionDemander {
                         log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
                             ", part=" + p + ']');
                 }
+
+                updateCacheMetrics();
             }
             catch (GridCacheEntryRemovedException ignored) {
                 if (log.isTraceEnabled())
@@ -1238,37 +1173,6 @@ public class GridDhtPartitionDemander {
             if (cctx0.statisticsEnabled())
                 cctx0.cache().metrics0().onRebalanceKeyReceived();
         }
-    }
-
-    /**
-     * Calculates whether there is enough free space in the current memory region for the specified amount of data.
-     *
-     * @param dataRegion Data region.
-     * @param size Data size in bytes.
-     * @return {@code True} if a specified amount of data can be stored in the memory region without evictions.
-     */
-    private boolean isEnoughSpace(DataRegion dataRegion, long size) {
-        assert size >= 0 : size;
-
-        DataRegionConfiguration cfg = dataRegion.config();
-
-        PageMemory pageMem = dataRegion.pageMemory();
-
-        int sysPageSize = pageMem.systemPageSize();
-
-        long pagesRequired = (long)Math.ceil(size / (double)sysPageSize);
-
-        long maxPages = cfg.getMaxSize() / sysPageSize;
-
-        // There are enough pages left.
-        if (pagesRequired < maxPages - pageMem.loadedPages())
-            return true;
-
-        // Empty pages pool size restricted.
-        if (pagesRequired > cfg.getEmptyPagesPoolSize())
-            return false;
-
-        return pagesRequired < Math.round(maxPages * (1.0d - cfg.getEvictionThreshold()));
     }
 
     /** {@inheritDoc} */

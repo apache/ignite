@@ -101,9 +101,9 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwar
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -2386,15 +2386,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void removeRow(CacheDataRow row) throws IgniteCheckedException {
-            assert ctx.database().checkpointLockIsHeldByThread();
-
-            CacheDataStore delegate = init0(false);
-
-            delegate.removeRow(row);
-        }
-
-        /** {@inheritDoc} */
         @Override public int cleanup(GridCacheContext cctx,
             @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
@@ -2420,14 +2411,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> allocateRows(
-            Collection<GridCacheEntryInfo> infos
-        ) throws IgniteCheckedException {
+        @Override public void allocateRows(Collection<GridCacheEntryInfo> infos,
+            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
-            return delegate.allocateRows(infos);
+            delegate.allocateRows(infos, rmvPred);
         }
 
         /** {@inheritDoc} */

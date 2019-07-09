@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvi
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
+import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -135,11 +137,15 @@ public class JmhCacheFreelistBenchmark {
     }
 
     /**
-     * Check {@link FreeList#insertDataRows(Collection, IoStatisticsHolder)} performance.
+     * Check {@link FreeList#insertDataRows(Collection, GridAbsClosureX, IoStatisticsHolder)} performance.
      */
     @Benchmark
     public void insertRows(FreeListProvider provider, Data rows) throws IgniteCheckedException {
-        provider.freeList.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
+        provider.freeList.insertDataRows(rows, new CAX() {
+            @Override public void applyx() {
+                // No-op.
+            }
+        }, IoStatisticsHolderNoOp.INSTANCE);
     }
 
     /** */

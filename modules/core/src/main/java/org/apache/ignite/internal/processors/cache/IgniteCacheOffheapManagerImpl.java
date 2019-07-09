@@ -108,6 +108,8 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
+import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1729,9 +1731,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> allocateRows(
-            Collection<GridCacheEntryInfo> infos
-        ) throws IgniteCheckedException {
+        @Override public void allocateRows(Collection<GridCacheEntryInfo> infos,
+            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
             Collection<DataRow> rows = new ArrayList<>(infos.size());
 
             for (GridCacheEntryInfo info : infos) {
@@ -1747,48 +1748,34 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                rowStore.addRows(F.view(rows, Objects::nonNull), grp.statisticsHolderData());
-
-                Iterator<GridCacheEntryInfo> iter = infos.iterator();
-
-                if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
-                    for (DataRow row : rows) {
-                        GridCacheEntryInfo info = iter.next();
-
-                        if (row != null)
-                            row.cacheId(info.cacheId());
+                rowStore.addRows(F.view(rows, Objects::nonNull), new CAX() {
+                    @Override public void applyx() throws IgniteCheckedException {
+                        grp.shared().database().ensureFreeSpace(grp.dataRegion());
                     }
-                }
+                }, grp.statisticsHolderData());
             }
             finally {
                 busyLock.leaveBusy();
             }
 
-            return new GridCloseableIteratorAdapter<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>>() {
-                private final Iterator<? extends CacheDataRow> rowsIter = rows.iterator();
-                private final Iterator<GridCacheEntryInfo> infosIter = infos.iterator();
+            Iterator<DataRow> iter = rows.iterator();
 
-                @Override protected IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> onNext() {
-                    return new IgniteBiTuple<>(infosIter.next(), rowsIter.next());
+            try {
+                for (GridCacheEntryInfo info : infos) {
+                    DataRow row = iter.next();
+
+                    if (row != null && grp.sharedGroup() && row.cacheId() == CU.UNDEFINED_CACHE_ID)
+                        row.cacheId(info.cacheId());
+
+                    if (!rmvPred.apply(info, row) && row != null)
+                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
-
-                @Override protected boolean onHasNext() {
-                    return rowsIter.hasNext() && infosIter.hasNext();
-                }
-
-                @Override protected void onClose() throws IgniteCheckedException {
-                    while (rowsIter.hasNext())
-                        removeRow(rowsIter.next());
-                }
-            };
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeRow(CacheDataRow row) throws IgniteCheckedException {
-            if (row == null)
-                return;
-
-            rowStore.removeRow(row.link(), grp.statisticsHolderData());
+            }
+            finally {
+                // Clean up unprocessed rows.
+                while (iter.hasNext())
+                    rowStore.removeRow(iter.next().link(), grp.statisticsHolderData());
+            }
         }
 
         /**

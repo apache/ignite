@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -120,13 +121,16 @@ public class RowStore {
 
     /**
      * @param rows Rows.
+     * @param checkFreeSpace Called on each acquiring of the memory page and should evict a necessary number of data
+     * pages if per-page eviction is configured.
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void addRows(Collection<? extends CacheDataRow> rows,
+        GridAbsClosureX checkFreeSpace, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
 
-        freeList.insertDataRows(rows, statHolder);
+        freeList.insertDataRows(rows, checkFreeSpace, statHolder);
     }
 
     /**

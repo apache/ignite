@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 
 /**
  */
@@ -36,10 +37,13 @@ public interface FreeList<T extends Storable> {
 
     /**
      * @param rows Rows.
+     * @param checkFreeSpace Called on each acquiring of the memory page and should evict a necessary number of data
+     * pages if per-page eviction is configured.
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    public void insertDataRows(Collection<T> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public void insertDataRows(Collection<T> rows,
+        GridAbsClosureX checkFreeSpace, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
      * @param link Row link.

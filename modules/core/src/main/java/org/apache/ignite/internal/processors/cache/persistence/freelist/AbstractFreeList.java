@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -42,8 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -552,11 +553,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * current one.
      *
      * @param rows Rows.
+     * @param checkFreeSpace Called on each acquiring of the memory page and should evict a necessary number of data
+     * pages if per-page eviction is configured.
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
     @Override public void insertDataRows(Collection<T> rows,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        GridAbsClosureX checkFreeSpace, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
             Iterator<T> iter = rows.iterator();
 
@@ -565,6 +568,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written = COMPLETE;
 
             while (iter.hasNext() || written != COMPLETE) {
+                checkFreeSpace.applyx();
+
                 if (written == COMPLETE) {
                     row = iter.next();
 

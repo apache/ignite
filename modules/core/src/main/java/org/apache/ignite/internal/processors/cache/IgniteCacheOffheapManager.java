@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -696,22 +697,14 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
-         * @param row Row removed from cache.
-         */
-        public void removeRow(CacheDataRow row) throws IgniteCheckedException;
-
-        /**
-         * Create a batch of data rows in page memory which is not associated with the cache entries.
+         * Create data rows.
          *
          * @param infos Entry infos.
-         * @return {@link AutoCloseable} iterator with the mapping of source entry info to created cache data row (row
-         * can be {@code null} if the source value is {@code null}). Iterator automatically removes unprocessed data
-         * rows from page memory on close.
+         * @param rmvPred Applied to all created rows. Each row that does not match the predicate is removed.
          * @throws IgniteCheckedException If failed.
          */
-        public GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> allocateRows(
-            Collection<GridCacheEntryInfo> infos
-        ) throws IgniteCheckedException;
+        public void allocateRows(Collection<GridCacheEntryInfo> infos,
+            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
