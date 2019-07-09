@@ -355,10 +355,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partitions scheduled for historical reblanace for this topology version. */
     private Map<Integer, Set<Integer>> histPartitions;
 
-    /** True if this exchange changed affinity. */
+    /** {@code True} if this exchange changed affinity. */
     private volatile boolean affinityChanged;
 
-    /** True if this exchange triggered by server not from baseline join/left. */
+    /** {@code True} if this exchange triggered by server not from baseline join/left. */
     private volatile boolean notBaselineServerJoinOrLeft;
 
     /**
