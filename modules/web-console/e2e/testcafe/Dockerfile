@@ -23,8 +23,6 @@ COPY . .
 
 ENV NPM_CONFIG_LOGLEVEL error
 
-RUN npm install --production && \
- npm cache verify --force && \
- rm -rf /tmp/*
+RUN npm install
 
 ENTRYPOINT ["node", "./index.js"]
