@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides interface for {@link GridComponent} to collect and exchange discovery data both on
@@ -79,7 +78,7 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Serializable joiningNodeData() {
+        @Override public Serializable joiningNodeData() {
             return joiningNodeData.get(cmpId);
         }
 
@@ -108,7 +107,7 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Serializable commonData() {
+        @Override public Serializable commonData() {
             if (commonData != null)
                 return commonData.get(cmpId);
 
@@ -309,7 +308,7 @@ public class DiscoveryDataBag {
     /**
      *
      */
-    @Nullable public Map<Integer, Serializable> localNodeSpecificData() {
+    public Map<Integer, Serializable> localNodeSpecificData() {
         return nodeSpecificData.get(DEFAULT_KEY);
     }
 

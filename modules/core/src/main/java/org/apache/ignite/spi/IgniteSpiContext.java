@@ -31,7 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * SPI context provides common functionality for all SPI implementations.
@@ -89,7 +88,7 @@ public interface IgniteSpiContext {
      * @return Node for a given ID or {@code null} is such not has not been discovered.
      * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
-    @Nullable public ClusterNode node(UUID nodeId);
+    public ClusterNode node(UUID nodeId);
 
     /**
      * Pings a remote node. The underlying communication is provided via
@@ -121,18 +120,18 @@ public interface IgniteSpiContext {
      * Register an local message listener to receive messages sent by remote nodes. The underlying
      * communication mechanism is defined by {@link org.apache.ignite.spi.communication.CommunicationSpi} implementation used.
      *
-     * @param topic Topic to subscribe to.
+     * @param topic Topic to subscribe to ({@code null} for default topic).
      * @param p Message predicate.
      */
-    public void addLocalMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
+    public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Removes a previously registered local message listener.
      *
-     * @param topic Topic to unsubscribe from.
+     * @param topic Topic to unsubscribe from ({@code null} for default topic).
      * @param p Message predicate.
      */
-    public void removeLocalMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
+    public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Register a message listener to receive messages sent by remote nodes. The underlying
@@ -221,10 +220,10 @@ public interface IgniteSpiContext {
      *
      * @param cacheName Cache name.
      * @param key Object key.
-     * @return Cached object.
+     * @return Cached object, possibly {@code null}.
      * @throws CacheException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V get(String cacheName, K key) throws CacheException;
+    public <K, V> V get(String cacheName, K key) throws CacheException;
 
     /**
      * Puts object in cache.
@@ -238,7 +237,7 @@ public interface IgniteSpiContext {
      * @return Previous value associated with specified key, possibly {@code null}.
      * @throws CacheException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V put(String cacheName, K key, V val, long ttl) throws CacheException;
+    public <K, V> V put(String cacheName, K key, V val, long ttl) throws CacheException;
 
     /**
      * Puts object into cache if there was no previous object associated with
@@ -253,7 +252,7 @@ public interface IgniteSpiContext {
      * @return Either existing value or {@code null} if there was no value for given key.
      * @throws CacheException If put failed.
      */
-    @Nullable public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws CacheException;
+    public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws CacheException;
 
     /**
      * Removes object from cache.
@@ -265,7 +264,7 @@ public interface IgniteSpiContext {
      * @return Previous value associated with specified key, possibly {@code null}.
      * @throws CacheException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V remove(String cacheName, K key) throws CacheException;
+    public <K, V> V remove(String cacheName, K key) throws CacheException;
 
     /**
      * Returns {@code true} if this cache contains a mapping for the specified key.
@@ -288,18 +287,21 @@ public interface IgniteSpiContext {
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator
-     * node before new node joins topology.
+     * node before new node joins topology and before joining node discovery data is unmarshalled.
      *
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
+    public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
+     * Validates that new node can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
+     *
      * @param node Node.
      * @param discoData Disco data.
      */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
+    public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
 
     /**
      * Gets collection of authenticated subjects together with their permissions.
@@ -339,16 +341,16 @@ public interface IgniteSpiContext {
 
     /**
      * @param nodeId Node ID.
-     * @param warning Warning to be shown on all cluster nodes.
+     * @param warning Optional warning to be shown on all cluster nodes.
      * @return If node was failed.
      */
-    public boolean tryFailNode(UUID nodeId, @Nullable String warning);
+    public boolean tryFailNode(UUID nodeId, String warning);
 
     /**
      * @param nodeId Node ID.
-     * @param warning Warning to be shown on all cluster nodes.
+     * @param warning Optional warning to be shown on all cluster nodes.
      */
-    public void failNode(UUID nodeId, @Nullable String warning);
+    public void failNode(UUID nodeId, String warning);
 
     /**
      * @param c Timeout object.

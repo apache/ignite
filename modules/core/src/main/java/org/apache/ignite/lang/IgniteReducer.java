@@ -18,7 +18,6 @@ package org.apache.ignite.lang;
 
 import java.io.Serializable;
 import java.util.Collection;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines generic reducer that collects multiple values and reduces them into one.
@@ -34,11 +33,11 @@ public interface IgniteReducer<E, R> extends Serializable {
      * will be called right away. Otherwise caller will continue collecting until all
      * values are processed.
      *
-     * @param e Value to collect.
+     * @param e Value to collect returned from a compute job.
      * @return {@code true} to continue collecting, {@code false} to instruct caller to stop
      *      collecting and call {@link #reduce()} method.
      */
-    public boolean collect(@Nullable E e);
+    public boolean collect(E e);
 
     /**
      * Reduces collected values into one.

@@ -25,7 +25,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface defines a set of operations available to failover SPI
@@ -66,10 +65,11 @@ public interface FailoverContext {
     public int partition();
 
     /**
-     * Returns affinity cache name {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}
-     * and {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)}.
+     * Returns affinity cache name if the task was launched using
+     * {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)} or
+     * {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)} calls.
      *
-     * @return Cache name.
+     * @return Cache name or {@code null} if task was not an affinity-aware task.
      */
-    @Nullable public String affinityCacheName();
+    public String affinityCacheName();
 }

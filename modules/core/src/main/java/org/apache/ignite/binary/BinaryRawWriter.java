@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Raw writer for binary object. Raw writer does not write field name hash codes, therefore,
@@ -83,145 +82,145 @@ public interface BinaryRawWriter {
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeDecimal(@Nullable BigDecimal val) throws BinaryObjectException;
+    public void writeDecimal(BigDecimal val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeString(@Nullable String val) throws BinaryObjectException;
+    public void writeString(String val) throws BinaryObjectException;
 
     /**
      * @param val UUID to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeUuid(@Nullable UUID val) throws BinaryObjectException;
+    public void writeUuid(UUID val) throws BinaryObjectException;
 
     /**
      * @param val Date to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeDate(@Nullable Date val) throws BinaryObjectException;
+    public void writeDate(Date val) throws BinaryObjectException;
 
     /**
      * @param val Timestamp to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeTimestamp(@Nullable Timestamp val) throws BinaryObjectException;
+    public void writeTimestamp(Timestamp val) throws BinaryObjectException;
 
     /**
      * @param val Time to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeTime(@Nullable Time val) throws BinaryObjectException;
+    public void writeTime(Time val) throws BinaryObjectException;
 
     /**
      * @param obj Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeObject(@Nullable Object obj) throws BinaryObjectException;
+    public void writeObject(Object obj) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeByteArray(@Nullable byte[] val) throws BinaryObjectException;
+    public void writeByteArray(byte[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeShortArray(@Nullable short[] val) throws BinaryObjectException;
+    public void writeShortArray(short[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeIntArray(@Nullable int[] val) throws BinaryObjectException;
+    public void writeIntArray(int[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeLongArray(@Nullable long[] val) throws BinaryObjectException;
+    public void writeLongArray(long[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeFloatArray(@Nullable float[] val) throws BinaryObjectException;
+    public void writeFloatArray(float[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeDoubleArray(@Nullable double[] val) throws BinaryObjectException;
+    public void writeDoubleArray(double[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeCharArray(@Nullable char[] val) throws BinaryObjectException;
+    public void writeCharArray(char[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeBooleanArray(@Nullable boolean[] val) throws BinaryObjectException;
+    public void writeBooleanArray(boolean[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeDecimalArray(@Nullable BigDecimal[] val) throws BinaryObjectException;
+    public void writeDecimalArray(BigDecimal[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeStringArray(@Nullable String[] val) throws BinaryObjectException;
+    public void writeStringArray(String[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeUuidArray(@Nullable UUID[] val) throws BinaryObjectException;
+    public void writeUuidArray(UUID[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeDateArray(@Nullable Date[] val) throws BinaryObjectException;
+    public void writeDateArray(Date[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeTimestampArray(@Nullable Timestamp[] val) throws BinaryObjectException;
+    public void writeTimestampArray(Timestamp[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeTimeArray(@Nullable Time[] val) throws BinaryObjectException;
+    public void writeTimeArray(Time[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
-    public void writeObjectArray(@Nullable Object[] val) throws BinaryObjectException;
+    public void writeObjectArray(Object[] val) throws BinaryObjectException;
 
     /**
      * @param col Collection to write.
      * @throws BinaryObjectException In case of error.
      */
-    public <T> void writeCollection(@Nullable Collection<T> col) throws BinaryObjectException;
+    public <T> void writeCollection(Collection<T> col) throws BinaryObjectException;
 
     /**
      * @param map Map to write.
      * @throws BinaryObjectException In case of error.
      */
-    public <K, V> void writeMap(@Nullable Map<K, V> map) throws BinaryObjectException;
+    public <K, V> void writeMap(Map<K, V> map) throws BinaryObjectException;
 
     /**
      * @param val Value to write.

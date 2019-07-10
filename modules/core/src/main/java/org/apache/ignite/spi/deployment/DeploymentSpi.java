@@ -18,7 +18,6 @@ package org.apache.ignite.spi.deployment;
 
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid deployment SPI is in charge of deploying tasks and classes from different
@@ -102,5 +101,5 @@ public interface DeploymentSpi extends IgniteSpi {
      *
      * @param lsnr Listener for deployment events. {@code null} to unset the listener.
      */
-    public void setListener(@Nullable DeploymentListener lsnr);
+    public void setListener(DeploymentListener lsnr);
 }

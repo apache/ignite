@@ -19,7 +19,6 @@ package org.apache.ignite.compute;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Context attached to every job executed on the grid. Note that unlike
@@ -66,9 +65,9 @@ public interface ComputeJobContext extends ComputeJobContinuation {
      * Sets an attribute into this job context.
      *
      * @param key Attribute key.
-     * @param val Attribute value.
+     * @param val Attribute value, may be {@code null}.
      */
-    public void setAttribute(Object key, @Nullable Object val);
+    public void setAttribute(Object key, Object val);
 
     /**
      * Sets map of attributes into this job context.

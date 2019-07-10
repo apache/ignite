@@ -60,7 +60,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
@@ -586,7 +585,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @return {@link DataRegionConfiguration} name.
      */
-    @Nullable public String getDataRegionName() {
+    public String getDataRegionName() {
         return memPlcName;
     }
 
@@ -601,11 +600,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets a name of {@link DataRegionConfiguration} for this cache.
      *
-     * @param dataRegionName DataRegionConfiguration name. Can be null (default DataRegionConfiguration will be used)
-     *                   but should not be empty.
+     * @param dataRegionName DataRegionConfiguration name. Can be {@code null} (default DataRegionConfiguration
+     * will be used), but should not be an empty string.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setDataRegionName(@Nullable String dataRegionName) {
+    public CacheConfiguration<K, V> setDataRegionName(String dataRegionName) {
         A.ensure(dataRegionName == null || !dataRegionName.isEmpty(), "Name cannot be empty.");
 
         this.memPlcName = dataRegionName;
@@ -631,20 +630,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     @Deprecated
     @SuppressWarnings({"unchecked"})
-    @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
+    public EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
     }
 
     /**
      * Sets cache eviction policy.
      *
-     * @param evictPlc Cache eviction policy.
+     * @param evictPlc Cache eviction policy. If {@code null}, will clear prevously set eviction policy.
      * @return {@code this} for chaining.
      *
      * @deprecated Use {@link #setEvictionPolicyFactory(Factory)} instead.
      */
     @Deprecated
-    public CacheConfiguration<K, V> setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
+    public CacheConfiguration<K, V> setEvictionPolicy(EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
 
         return this;
@@ -657,7 +656,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache eviction policy factory or {@code null} if evictions should be disabled
      * or if {@link #getEvictionPolicy()} should be used instead.
      */
-    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+    public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
         return evictPlcFactory;
     }
 
@@ -665,11 +664,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache eviction policy factory.
      * Note: Eviction policy factory should be {@link Serializable}.
      *
-     * @param evictPlcFactory Cache eviction policy factory.
+     * @param evictPlcFactory Cache eviction policy factory. If {@code null}, will clear previously set
+     *      eviction policy factory.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setEvictionPolicyFactory(
-        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
+        Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
         this.evictPlcFactory = evictPlcFactory;
 
         return this;
@@ -1683,7 +1683,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @Nullable public CacheInterceptor<K, V> getInterceptor() {
+    public CacheInterceptor<K, V> getInterceptor() {
         return interceptor;
     }
 
@@ -1771,7 +1771,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Classes with SQL functions.
      */
-    @Nullable public Class<?>[] getSqlFunctionClasses() {
+    public Class<?>[] getSqlFunctionClasses() {
         return sqlFuncCls;
     }
 
@@ -1829,7 +1829,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Schema name for current cache according to SQL ANSI-99. Could be {@code null}.
      */
-    @Nullable public String getSqlSchema() {
+    public String getSqlSchema() {
         return sqlSchema;
     }
 

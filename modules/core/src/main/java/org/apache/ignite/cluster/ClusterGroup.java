@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines a cluster group which contains all or a subset of cluster nodes.
@@ -131,10 +130,11 @@ public interface ClusterGroup {
      * for more information.
      *
      * @param name Name of the attribute.
-     * @param val Optional attribute value to match.
+     * @param val Optional attribute value to match. If {@code null}, all nodes with the given attribute set will match.
      * @return Cluster group for nodes containing specified attribute.
+     * @throws NullPointerException if {@code name} is {@code null}.
      */
-    public ClusterGroup forAttribute(String name, @Nullable Object val);
+    public ClusterGroup forAttribute(String name, Object val);
 
     /**
      * Creates a cluster group of nodes started in server mode.

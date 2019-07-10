@@ -21,7 +21,6 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache interceptor. Cache interceptor can be used for getting callbacks before
@@ -46,11 +45,12 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * This method should not throw any exception.
      *
      * @param key Key.
-     * @param val Value mapped to {@code key} at the moment of {@code get()} operation.
-     * @return The new value to be returned as result of {@code get()} operation.
+     * @param val Value mapped to {@code key} at the moment of {@code get()} operation
+     *            ({@code null} if no mapping was present).
+     * @return The new value to be returned as result of {@code get()} operation (may be {@code null}).
      * @see Cache#get(Object)
      */
-    @Nullable public V onGet(K key, @Nullable V val);
+    public V onGet(K key, V val);
 
     /**
      * This method is called within {@link IgniteCache#put(Object, Object)}
@@ -73,7 +73,7 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * @return Value to be put to cache. Returning {@code null} cancels the update.
      * @see IgniteCache#put(Object, Object)
      */
-    @Nullable public V onBeforePut(Cache.Entry<K, V> entry, V newVal);
+    public V onBeforePut(Cache.Entry<K, V> entry, V newVal);
 
     /**
      * This method is called after new value has been stored.
@@ -108,7 +108,7 @@ public interface CacheInterceptor<K, V> extends Serializable {
      *      may be {@code null}.
      * @see IgniteCache#remove(Object)
      */
-    @Nullable public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry);
+    public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry);
 
     /**
      * This method is called after value has been removed.

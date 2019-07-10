@@ -23,7 +23,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.scheduler.SchedulerFuture;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Provides functionality for scheduling jobs locally using UNIX cron-based syntax.
@@ -55,23 +54,25 @@ public interface IgniteScheduler {
      * Note that class {@link IgniteRunnable} implements {@link Runnable} and class {@link IgniteOutClosure}
      * implements {@link Callable} interface.
      *
-     * @param r Not null runnable to execute.
+     * @param r Not {@code null} runnable to execute.
      * @return Future for this execution.
+     * @throws NullPointerException if {@code r} is {@code null}.
      * @see #callLocal(Callable)
      * @see org.apache.ignite.lang.IgniteClosure
      */
-    public IgniteFuture<?> runLocal(@NotNull Runnable r);
+    public IgniteFuture<?> runLocal(Runnable r);
 
     /**
      * Executes given closure after the delay.
      * <p>
      * Note that class {@link IgniteRunnable} implements {@link Runnable}
-     * @param r Not null runnable to execute.
+     * @param r Not {@code null} runnable to execute.
      * @param delay Initial delay.
      * @param timeUnit Time granularity.
      * @return java.io.Closeable which can be used to cancel execution.
+     * @throws NullPointerException if {@code r} is {@code null}.
      */
-    public Closeable runLocal(@NotNull Runnable r, long delay, TimeUnit timeUnit);
+    public Closeable runLocal(Runnable r, long delay, TimeUnit timeUnit);
 
     /**
      * Executes given callable on internal system thread pool asynchronously.
@@ -79,33 +80,36 @@ public interface IgniteScheduler {
      * Note that class {@link IgniteRunnable} implements {@link Runnable} and class {@link IgniteOutClosure}
      * implements {@link Callable} interface.
      *
-     * @param c Not null callable to execute.
-     * @return Future for this execution.
      * @param <R> Type of the return value for the closure.
+     * @param c Not {@code null} callable to execute.
+     * @return Future for this execution.
+     * @throws NullPointerException if {@code r} is {@code null}.
      * @see #runLocal(Runnable)
      * @see IgniteOutClosure
      */
-    public <R> IgniteFuture<R> callLocal(@NotNull Callable<R> c);
+    public <R> IgniteFuture<R> callLocal(Callable<R> c);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.
      *
-     * @param job Not null job to schedule to run as a background cron-based job.
+     * @param job Not {@code null} job to schedule to run as a background cron-based job.
      * @param ptrn Scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
+     * @throws NullPointerException if {@code job} is {@code null}.
      */
-    public SchedulerFuture<?> scheduleLocal(@NotNull Runnable job, String ptrn);
+    public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.
      *
-     * @param job Not null job to schedule to run as a background cron-based job.
+     * @param job Not {@code null} job to schedule to run as a background cron-based job.
      * @param ptrn Scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
+     * @throws NullPointerException if {@code job} is {@code null}.
      */
-    public <R> SchedulerFuture<R> scheduleLocal(@NotNull Callable<R> job, String ptrn);
+    public <R> SchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn);
 }

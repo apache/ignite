@@ -29,8 +29,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines binary objects functionality. With binary objects you are able to:
@@ -314,17 +312,18 @@ public interface IgniteBinary {
      *
      * @param typeName Type name.
      * @return Type ID which a type would have had if it has been registered in Ignite.
+     * @throws NullPointerException if {@code typeName} is {@code null}.
      */
-    public int typeId(@NotNull String typeName);
+    public int typeId(String typeName);
 
     /**
      * Converts provided object to instance of {@link org.apache.ignite.binary.BinaryObject}.
      *
-     * @param obj Object to convert.
+     * @param obj Object to convert (may be {@code null}).
      * @return Converted object or {@code null} if obj is null.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException;
+    public <T> T toBinary(Object obj) throws BinaryObjectException;
 
     /**
      * Creates new binary builder.

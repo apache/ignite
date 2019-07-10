@@ -24,7 +24,6 @@ import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * REST access configuration.
@@ -202,7 +201,7 @@ public class ConnectorConfiguration {
      * @param secretKey REST secret key.
      * @return {@code this} for chaining.
      */
-    public ConnectorConfiguration setSecretKey(@Nullable String secretKey) {
+    public ConnectorConfiguration setSecretKey(String secretKey) {
         this.secretKey = secretKey;
 
         return this;
@@ -215,7 +214,7 @@ public class ConnectorConfiguration {
      * @see IgniteSystemProperties#IGNITE_JETTY_HOST
      * @see IgniteSystemProperties#IGNITE_JETTY_PORT
      */
-    @Nullable public String getSecretKey() {
+    public String getSecretKey() {
         return secretKey;
     }
 
@@ -599,7 +598,7 @@ public class ConnectorConfiguration {
      * @see ConnectorMessageInterceptor
      * @return Interceptor.
      */
-    @Nullable public ConnectorMessageInterceptor getMessageInterceptor() {
+    public ConnectorMessageInterceptor getMessageInterceptor() {
         return msgInterceptor;
     }
 

@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication SPI is responsible for data exchange between nodes.
@@ -107,5 +106,5 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
      *
      * @param lsnr Listener to set or {@code null} to unset the listener.
      */
-    public void setListener(@Nullable CommunicationListener<T> lsnr);
+    public void setListener(CommunicationListener<T> lsnr);
 }

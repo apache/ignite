@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Raw reader for binary objects. Raw reader does not use field name hash codes, therefore,
@@ -83,170 +82,170 @@ public interface BinaryRawReader {
      * @return Decimal value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BigDecimal readDecimal() throws BinaryObjectException;
+    public BigDecimal readDecimal() throws BinaryObjectException;
 
     /**
      * @return String value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public String readString() throws BinaryObjectException;
+    public String readString() throws BinaryObjectException;
 
     /**
      * @return UUID.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public UUID readUuid() throws BinaryObjectException;
+    public UUID readUuid() throws BinaryObjectException;
 
     /**
      * @return Date.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Date readDate() throws BinaryObjectException;
+    public Date readDate() throws BinaryObjectException;
 
     /**
      * @return Timestamp.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Timestamp readTimestamp() throws BinaryObjectException;
+    public Timestamp readTimestamp() throws BinaryObjectException;
 
     /**
      * @return Time.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Time readTime() throws BinaryObjectException;
+    public Time readTime() throws BinaryObjectException;
 
     /**
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T> T readObject() throws BinaryObjectException;
+    public <T> T readObject() throws BinaryObjectException;
 
     /**
      * @return Byte array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public byte[] readByteArray() throws BinaryObjectException;
+    public byte[] readByteArray() throws BinaryObjectException;
 
     /**
      * @return Short array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public short[] readShortArray() throws BinaryObjectException;
+    public short[] readShortArray() throws BinaryObjectException;
 
     /**
      * @return Integer array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public int[] readIntArray() throws BinaryObjectException;
+    public int[] readIntArray() throws BinaryObjectException;
 
     /**
      * @return Long array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public long[] readLongArray() throws BinaryObjectException;
+    public long[] readLongArray() throws BinaryObjectException;
 
     /**
      * @return Float array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public float[] readFloatArray() throws BinaryObjectException;
+    public float[] readFloatArray() throws BinaryObjectException;
 
     /**
      * @return Byte array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public double[] readDoubleArray() throws BinaryObjectException;
+    public double[] readDoubleArray() throws BinaryObjectException;
 
     /**
      * @return Char array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public char[] readCharArray() throws BinaryObjectException;
+    public char[] readCharArray() throws BinaryObjectException;
 
     /**
      * @return Boolean array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public boolean[] readBooleanArray() throws BinaryObjectException;
+    public boolean[] readBooleanArray() throws BinaryObjectException;
 
     /**
      * @return Decimal array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BigDecimal[] readDecimalArray() throws BinaryObjectException;
+    public BigDecimal[] readDecimalArray() throws BinaryObjectException;
 
     /**
      * @return String array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public String[] readStringArray() throws BinaryObjectException;
+    public String[] readStringArray() throws BinaryObjectException;
 
     /**
      * @return UUID array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public UUID[] readUuidArray() throws BinaryObjectException;
+    public UUID[] readUuidArray() throws BinaryObjectException;
 
     /**
      * @return Date array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Date[] readDateArray() throws BinaryObjectException;
+    public Date[] readDateArray() throws BinaryObjectException;
 
     /**
      * @return Timestamp array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Timestamp[] readTimestampArray() throws BinaryObjectException;
+    public Timestamp[] readTimestampArray() throws BinaryObjectException;
 
     /**
      * @return Time array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Time[] readTimeArray() throws BinaryObjectException;
+    public Time[] readTimeArray() throws BinaryObjectException;
 
     /**
      * @return Object array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Object[] readObjectArray() throws BinaryObjectException;
+    public Object[] readObjectArray() throws BinaryObjectException;
 
     /**
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection() throws BinaryObjectException;
+    public <T> Collection<T> readCollection() throws BinaryObjectException;
 
     /**
      * @param factory Collection factory.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection(BinaryCollectionFactory<T> factory)
+    public <T> Collection<T> readCollection(BinaryCollectionFactory<T> factory)
         throws BinaryObjectException;
 
     /**
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap() throws BinaryObjectException;
+    public <K, V> Map<K, V> readMap() throws BinaryObjectException;
 
     /**
      * @param factory Map factory.
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap(BinaryMapFactory<K, V> factory) throws BinaryObjectException;
+    public <K, V> Map<K, V> readMap(BinaryMapFactory<K, V> factory) throws BinaryObjectException;
 
     /**
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T extends Enum<?>> T readEnum() throws BinaryObjectException;
+    public <T extends Enum<?>> T readEnum() throws BinaryObjectException;
 
     /**
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T extends Enum<?>> T[] readEnumArray() throws BinaryObjectException;
+    public <T extends Enum<?>> T[] readEnumArray() throws BinaryObjectException;
 }

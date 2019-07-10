@@ -22,11 +22,9 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides functionality for local and remote event notifications on nodes defined by {@link #clusterGroup()}.
@@ -81,12 +79,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *
      * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
-     * @param types Event types to be queried.
+     * @param types Event types to be queried.  If not provided, all events will be passed to the filter.
      * @return Collection of grid events returned from specified nodes.
      * @throws IgniteException If query failed.
      */
-    @IgniteAsyncSupported
-    public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
+    public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, int... types)
         throws IgniteException;
 
     /**
@@ -95,13 +92,13 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *
      * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
-     * @param types Event types to be queried.
+     * @param types Event types to be queried.  If not provided, all events will be passed to the filter.
      * @return a Future representing pending completion of the query. The completed future contains
      *      collection of grid events returned from specified nodes.
      * @throws IgniteException If query failed.
      */
     public <T extends Event> IgniteFuture<List<T>> remoteQueryAsync(IgnitePredicate<T> p, long timeout,
-        @Nullable int... types) throws IgniteException;
+        int... types) throws IgniteException;
 
     /**
      * Adds event listener for specified events to all nodes in the cluster group (possibly including
@@ -126,10 +123,9 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * {@link #stopRemoteListenAsync(UUID)} methods to stop listening.
      * @throws IgniteException If failed to add listener.
      */
-    @IgniteAsyncSupported
-    public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types)
+    public <T extends Event> UUID remoteListen(IgniteBiPredicate<UUID, T> locLsnr,
+        IgnitePredicate<T> rmtFilter,
+        int... types)
         throws IgniteException;
 
     /**
@@ -156,9 +152,9 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      {@link #stopRemoteListenAsync(UUID)} methods to stop listening.
      * @throws IgniteException If failed to add listener.
      */
-    public <T extends Event> IgniteFuture<UUID> remoteListenAsync(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types)
+    public <T extends Event> IgniteFuture<UUID> remoteListenAsync(IgniteBiPredicate<UUID, T> locLsnr,
+        IgnitePredicate<T> rmtFilter,
+        int... types)
         throws IgniteException;
 
     /**
@@ -198,13 +194,12 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @see #stopRemoteListen(UUID)
      * @see #stopRemoteListenAsync(UUID)
      */
-    @IgniteAsyncSupported
     public <T extends Event> UUID remoteListen(int bufSize,
         long interval,
         boolean autoUnsubscribe,
-        @Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types)
+        IgniteBiPredicate<UUID, T> locLsnr,
+        IgnitePredicate<T> rmtFilter,
+        int... types)
         throws IgniteException;
 
     /**
@@ -246,9 +241,9 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     public <T extends Event> IgniteFuture<UUID> remoteListenAsync(int bufSize,
         long interval,
         boolean autoUnsubscribe,
-        @Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types)
+        IgniteBiPredicate<UUID, T> locLsnr,
+        IgnitePredicate<T> rmtFilter,
+        int... types)
         throws IgniteException;
 
     /**
@@ -263,7 +258,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
      * @see #remoteListenAsync(int, long, boolean, IgniteBiPredicate, IgnitePredicate, int...)
      */
-    @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteException;
 
     /**
@@ -290,8 +284,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return Grid event.
      * @throws IgniteException If wait was interrupted.
      */
-    @IgniteAsyncSupported
-    public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
+    public <T extends Event> T waitForLocal(IgnitePredicate<T> filter, int... types)
         throws IgniteException;
 
     /**
@@ -303,18 +296,18 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the operation. The completed future contains grid event.
      * @throws IgniteException If wait was interrupted.
      */
-    public <T extends Event> IgniteFuture<T> waitForLocalAsync(@Nullable IgnitePredicate<T> filter,
-        @Nullable int... types) throws IgniteException;
+    public <T extends Event> IgniteFuture<T> waitForLocalAsync(IgnitePredicate<T> filter,
+        int... types) throws IgniteException;
 
     /**
      * Queries local node for events using passed-in predicate filter for event selection.
      *
      * @param p Predicate to filter events. All predicates must be satisfied for the
      *      event to be returned.
-     * @param types Event types to be queried.
+     * @param types Event types to be queried.  If not provided, all events will be passed to the predicate.
      * @return Collection of grid events found on local node.
      */
-    public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types);
+    public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, int... types);
 
     /**
      * Records customer user generated event. All registered local listeners will be notified.
@@ -349,7 +342,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      then listener will be removed for all types it was registered for.
      * @return {@code true} if listener was removed, {@code false} otherwise.
      */
-    public boolean stopLocalListen(IgnitePredicate<? extends Event> lsnr, @Nullable int... types);
+    public boolean stopLocalListen(IgnitePredicate<? extends Event> lsnr, int... types);
 
     /**
      * Enables provided events. Allows to start recording events that

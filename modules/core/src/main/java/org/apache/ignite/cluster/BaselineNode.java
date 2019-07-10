@@ -18,7 +18,6 @@ package org.apache.ignite.cluster;
 
 import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface representing a single node from baseline topology.
@@ -48,9 +47,8 @@ public interface BaselineNode {
      * @param <T> Attribute Type.
      * @param name Attribute name. <b>Note</b> that attribute names starting with
      *      {@code org.apache.ignite} are reserved for internal use.
-     * @return Attribute value or {@code null}.
+     * @return Attribute value or {@code null} if such an attribute does not exist.
      */
-    @Nullable
     public <T> T attribute(String name);
 
     /**

@@ -58,7 +58,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -68,7 +67,6 @@ import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
@@ -197,8 +195,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
-    @IgniteAsyncSupported
-    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
+    public void loadCache(IgniteBiPredicate<K, V> p, Object... args) throws CacheException;
 
     /**
      * Asynchronously executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -210,7 +207,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return a Future representing pending completion of the cache loading.
      * @throws CacheException If loading failed.
      */
-    public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+    public IgniteFuture<Void> loadCacheAsync(IgniteBiPredicate<K, V> p, Object... args)
         throws CacheException;
 
     /**
@@ -234,8 +231,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
-    @IgniteAsyncSupported
-    public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
+    public void localLoadCache(IgniteBiPredicate<K, V> p, Object... args) throws CacheException;
 
     /**
      * Asynchronously loads state from the underlying persistent storage by delegating
@@ -259,7 +255,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return a Future representing pending completion of the cache loading.
      * @throws CacheException If loading failed.
      */
-    public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+    public IgniteFuture<Void> localLoadCacheAsync(IgniteBiPredicate<K, V> p, Object... args)
         throws CacheException;
 
     /**
@@ -289,7 +285,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws CacheException If put operation failed.
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     public V getAndPutIfAbsent(K key, V val) throws CacheException, TransactionException;
 
     /**
@@ -464,7 +459,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache size across all nodes.
      * @throws CacheException On error.
      */
-    @IgniteAsyncSupported
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -491,7 +485,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache size across all nodes.
      * @throws CacheException On error.
      */
-    @IgniteAsyncSupported
     public long sizeLong(CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -519,7 +512,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Partition cache size across all nodes.
      * @throws CacheException On error.
      */
-    @IgniteAsyncSupported
     public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -598,7 +590,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      <code>null</code> value for a key.
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) throws TransactionException;
 
@@ -618,7 +609,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public V get(K key) throws TransactionException;
 
     /**
@@ -650,7 +640,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * configured for the {@link Cache}.
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     public CacheEntry<K, V> getEntry(K key) throws TransactionException;
 
     /**
@@ -676,7 +665,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys) throws TransactionException;
 
     /**
@@ -715,7 +703,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * configured for the {@link Cache}.
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) throws TransactionException;
 
     /**
@@ -746,7 +733,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The keys whose associated values are to be returned.
      * @return A map of entries that were found for the given keys.
      */
-    @IgniteAsyncSupported
     public Map<K, V> getAllOutTx(Set<? extends K> keys);
 
     /**
@@ -762,7 +748,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public boolean containsKey(K key) throws TransactionException;
 
     /**
@@ -785,7 +770,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return {@code True} if this cache contains a mapping for the specified keys.
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     public boolean containsKeys(Set<? extends K> keys) throws TransactionException;
 
     /**
@@ -801,7 +785,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public void put(K key, V val) throws TransactionException;
 
     /**
@@ -823,7 +806,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public V getAndPut(K key, V val) throws TransactionException;
 
     /**
@@ -850,7 +832,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public void putAll(Map<? extends K, ? extends V> map) throws TransactionException;
 
     /**
@@ -886,7 +867,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public boolean putIfAbsent(K key, V val) throws TransactionException;
 
     /**
@@ -911,7 +891,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public boolean remove(K key) throws TransactionException;
 
     /**
@@ -944,7 +923,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public boolean remove(K key, V oldVal) throws TransactionException;
 
     /**
@@ -967,7 +945,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public V getAndRemove(K key) throws TransactionException;
 
     /**
@@ -990,7 +967,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public boolean replace(K key, V oldVal, V newVal) throws TransactionException;
 
     /**
@@ -1013,7 +989,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public boolean replace(K key, V val) throws TransactionException;
 
     /**
@@ -1031,7 +1006,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public V getAndReplace(K key, V val) throws TransactionException;
 
     /**
@@ -1051,7 +1025,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public void removeAll(Set<? extends K> keys) throws TransactionException;
 
     /**
@@ -1095,7 +1068,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see #clear()
      * @see CacheWriter#deleteAll
      */
-    @IgniteAsyncSupported
     @Override public void removeAll();
 
     /**
@@ -1122,7 +1094,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<Void> removeAllAsync();
 
     /** {@inheritDoc} */
-    @IgniteAsyncSupported
     @Override public void clear();
 
     /**
@@ -1142,7 +1113,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws IllegalStateException if the cache is {@link #isClosed()}
      * @throws CacheException        if there is a problem during the clear
      */
-    @IgniteAsyncSupported
     public void clear(K key);
 
     /**
@@ -1166,7 +1136,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws IllegalStateException if the cache is {@link #isClosed()}
      * @throws CacheException        if there is a problem during the clear
      */
-    @IgniteAsyncSupported
     public void clearAll(Set<? extends K> keys);
 
     /**
@@ -1215,7 +1184,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments)
         throws TransactionException;
 
@@ -1267,7 +1235,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionException If operation within transaction is failed.
      * @see CacheEntryProcessor
      */
-    @IgniteAsyncSupported
     public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments)
         throws TransactionException;
 
@@ -1309,7 +1276,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @throws TransactionException If operation within transaction is failed.
      */
-    @IgniteAsyncSupported
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException;
 
@@ -1385,7 +1351,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionException If operation within transaction is failed.
      * @see CacheEntryProcessor
      */
-    @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException;
 

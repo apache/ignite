@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.stream.StreamReceiver;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Data streamer is responsible for streaming external data into cache. It achieves it by
@@ -358,7 +357,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded.
      * @see #allowOverwrite()
      */
-    public IgniteFuture<?> addData(K key, @Nullable V val) throws CacheException, IgniteInterruptedException,
+    public IgniteFuture<?> addData(K key, V val) throws CacheException, IgniteInterruptedException,
         IllegalStateException, IgniteDataStreamerTimeoutException;
 
     /**

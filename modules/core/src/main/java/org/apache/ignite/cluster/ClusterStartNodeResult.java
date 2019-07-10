@@ -16,8 +16,6 @@
 
 package org.apache.ignite.cluster;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Cluster start node result information.
  */
@@ -39,7 +37,7 @@ public interface ClusterStartNodeResult {
     /**
      * Gets error message if any.
      *
-     * @return Error massage.
+     * @return Error massage or {@code null} if start node result is success.
      */
-    @Nullable public String getError();
+    public String getError();
 }

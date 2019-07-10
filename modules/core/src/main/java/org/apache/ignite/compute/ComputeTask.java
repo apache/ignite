@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid task interface defines a task that can be executed on the grid. Grid task
@@ -240,11 +238,11 @@ public interface ComputeTask<T, R> extends Serializable {
      *      you simply iterate through grid nodes, the order of nodes will be random which
      *      over time should result into all nodes being used equally.
      * @return Map of grid jobs assigned to subgrid node. Unless {@link ComputeTaskContinuousMapper} is
-     *      injected into task, if {@code null} or empty map is returned, exception will be thrown.
+     *      injected into task, if {@code null} or empty map is returned, exception will be thrown to the user.
      * @throws IgniteException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @NotNull public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteException;
+    public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg) throws IgniteException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is
@@ -277,5 +275,5 @@ public interface ComputeTask<T, R> extends Serializable {
      * @throws IgniteException If reduction or results caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public R reduce(List<ComputeJobResult> results) throws IgniteException;
+    public R reduce(List<ComputeJobResult> results) throws IgniteException;
 }

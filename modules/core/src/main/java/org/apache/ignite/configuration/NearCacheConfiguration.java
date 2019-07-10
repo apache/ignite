@@ -21,7 +21,6 @@ import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START_SIZE;
 
@@ -101,7 +100,7 @@ public class NearCacheConfiguration<K, V> implements Serializable {
      *
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
-    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getNearEvictionPolicyFactory() {
+    public Factory<EvictionPolicy<? super K, ? super V>> getNearEvictionPolicyFactory() {
         return nearEvictPlcFactory;
     }
 
@@ -109,11 +108,12 @@ public class NearCacheConfiguration<K, V> implements Serializable {
      * Sets cache eviction policy factory.
      * Note: Eviction policy factory should be {@link Serializable}.
      *
-     * @param nearEvictPlcFactory Cache expiration policy.
+     * @param nearEvictPlcFactory Cache expiration policy. If {@code null}, will clear previously set eviction
+     *      policy factory.
      * @return {@code this} for chaining.
      */
     public NearCacheConfiguration<K, V> setNearEvictionPolicyFactory(
-        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> nearEvictPlcFactory) {
+        Factory<? extends EvictionPolicy<? super K, ? super V>> nearEvictPlcFactory) {
         this.nearEvictPlcFactory = nearEvictPlcFactory;
 
         return this;

@@ -16,8 +16,6 @@
 
 package org.apache.ignite.compute;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Defines continuation support for grid job context.
  */
@@ -50,7 +48,7 @@ public interface ComputeJobContinuation {
      * @return Always returns {@code null} for convenience to be used in code with return statement.
      * @throws IllegalStateException If job has been already held before.
      */
-    @Nullable public <T> T holdcc();
+    public <T> T holdcc();
 
     /**
      * Holds (suspends) a given job for specified timeout or until {@link #callcc()} is called.
@@ -73,7 +71,7 @@ public interface ComputeJobContinuation {
      * @return Always returns {@code null} for convenience to be used in code with return statement.
      * @throws IllegalStateException If job has been already held before
      */
-    @Nullable public <T> T holdcc(long timeout);
+    public <T> T holdcc(long timeout);
 
     /**
      * Resumes job if it was held by {@link #holdcc()} method. Resuming job means that

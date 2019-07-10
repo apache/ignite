@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines a distributed session for particular task execution.
@@ -181,10 +180,10 @@ public interface ComputeTaskSession {
      *
      *
      * @param jobId Job ID to get the sibling for.
-     * @return Grid job sibling for a given ID.
+     * @return Grid job sibling for a given ID or {@code null} if no job siblings with the given ID found.
      * @throws IgniteException If job sibling can not be received from task node.
      */
-    @Nullable public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteException;
+    public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteException;
 
     /**
      * Sets session attributed. Note that task session is distributed and
@@ -199,7 +198,7 @@ public interface ComputeTaskSession {
      * @param val Attribute value. Can be {@code null}.
      * @throws IgniteException If sending of attribute message failed.
      */
-    public void setAttribute(Object key, @Nullable Object val) throws IgniteException;
+    public void setAttribute(Object key, Object val) throws IgniteException;
 
     /**
      * Gets an attribute set by {@link #setAttribute(Object, Object)} or {@link #setAttributes(Map)}
@@ -213,7 +212,7 @@ public interface ComputeTaskSession {
      * @param <V> Attribute value type.
      * @return Gets task attribute for given name.
      */
-    @Nullable public <K, V> V getAttribute(K key);
+    public <K, V> V getAttribute(K key);
 
     /**
      * Sets task attributes. This method exists so one distributed replication
@@ -282,7 +281,7 @@ public interface ComputeTaskSession {
      * @return Whether or not specified key/value pair has been set.
      * @throws InterruptedException Thrown if wait was interrupted.
      */
-    public <K, V> boolean waitForAttribute(K key, @Nullable V val, long timeout) throws InterruptedException;
+    public <K, V> boolean waitForAttribute(K key, V val, long timeout) throws InterruptedException;
 
     /**
      * Waits for the specified attributes to be set. If these attributes are already in session
@@ -407,7 +406,7 @@ public interface ComputeTaskSession {
      * @see #removeCheckpoint(String)
      * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
-    @Nullable public <T> T loadCheckpoint(String key) throws IgniteException;
+    public <T> T loadCheckpoint(String key) throws IgniteException;
 
     /**
      * Removes previously saved job's state for a given {@code key} from an underlying storage.
