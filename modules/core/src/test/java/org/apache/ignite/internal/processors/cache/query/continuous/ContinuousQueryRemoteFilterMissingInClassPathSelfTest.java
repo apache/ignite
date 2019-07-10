@@ -223,6 +223,8 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         try {
             executeContinuousQuery(ign1.cache(DEFAULT_CACHE_NAME));
+
+            fail("Exception is expected");
         }
         catch (Exception e) {
             assertTrue(X.hasCause(e, EXT_FILTER_CLASS, ClassNotFoundException.class));

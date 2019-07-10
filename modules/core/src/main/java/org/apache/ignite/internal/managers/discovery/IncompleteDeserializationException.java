@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.jetbrains.annotations.NotNull;
 
-// t0d0 test
 /**
  * Exception which can be used to access a message which failed to be deserialized completely using Java serialization.
  * Throwed from deserialization methods it can be caught by a caller.
