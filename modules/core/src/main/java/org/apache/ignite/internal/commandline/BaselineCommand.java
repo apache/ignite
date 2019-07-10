@@ -31,7 +31,6 @@ import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.baseline.BaselineSubcommands;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
@@ -123,11 +122,20 @@ public class BaselineCommand implements Command<BaselineArguments> {
      * @return Task argument.
      */
     private VisorBaselineTaskArg toVisorArguments(BaselineArguments args) {
-        VisorBaselineAutoAdjustSettings settings = args.getCmd() == BaselineSubcommands.AUTO_ADJUST
-            ? new VisorBaselineAutoAdjustSettings(args.getEnableAutoAdjust(), args.getSoftBaselineTimeout())
-            : null;
+        if (args.getCmd() == BaselineSubcommands.AUTO_ADJUST) {
+            return new VisorBaselineTaskArg(
+                args.getCmd().visorBaselineOperation(),
+                args.getTopVer(),
+                args.getConsistentIds(),
+                args.getEnableAutoAdjust(),
+                args.getSoftBaselineTimeout()
+            );
+        }
 
-        return new VisorBaselineTaskArg(args.getCmd().visorBaselineOperation(), args.getTopVer(), args.getConsistentIds(), settings);
+        return new VisorBaselineTaskArg(
+            args.getCmd().visorBaselineOperation(),
+            args.getTopVer(),
+            args.getConsistentIds());
     }
 
     /**
@@ -138,21 +146,20 @@ public class BaselineCommand implements Command<BaselineArguments> {
     private void baselinePrint0(VisorBaselineTaskResult res, Logger logger) {
         logger.info("Cluster state: " + (res.isActive() ? "active" : "inactive"));
         logger.info("Current topology version: " + res.getTopologyVersion());
-        VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
-        if (autoAdjustSettings != null) {
-            logger.info("Baseline auto adjustment " + (TRUE.equals(autoAdjustSettings.getEnabled()) ? "enabled" : "disabled")
-                + ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
+        if (res.isAutoAdjustEnabled() != null) {
+            logger.info("Baseline auto adjustment " + (TRUE.equals(res.isAutoAdjustEnabled()) ? "enabled" : "disabled") +
+                ": softTimeout=" + res.getAutoAdjustAwaitingTime()
             );
-        }
 
-        if (autoAdjustSettings.enabled) {
-            if (res.isBaselineAdjustInProgress())
-                logger.info("Baseline auto-adjust is in progress");
-            else if (res.getRemainingTimeToBaselineAdjust() < 0)
-                logger.info("Baseline auto-adjust are not scheduled");
-            else
-                logger.info("Baseline auto-adjust will happen in '" + res.getRemainingTimeToBaselineAdjust() + "' ms");
+            if (res.isAutoAdjustEnabled()) {
+                if (res.isBaselineAdjustInProgress())
+                    logger.info("Baseline auto-adjust is in progress");
+                else if (res.getRemainingTimeToBaselineAdjust() < 0)
+                    logger.info("Baseline auto-adjust are not scheduled");
+                else
+                    logger.info("Baseline auto-adjust will happen in '" + res.getRemainingTimeToBaselineAdjust() + "' ms");
+            }
         }
 
         logger.info("");

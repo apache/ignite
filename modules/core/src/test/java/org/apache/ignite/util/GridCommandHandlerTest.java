@@ -536,6 +536,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         assertFalse(cl.isBaselineAutoAdjustEnabled());
 
+        assertEquals(timeout + 1, cl.baselineAutoAdjustTimeout());
+
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust"));
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust", "true"));

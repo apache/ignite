@@ -78,11 +78,6 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
 
             Collection<? extends BaselineNode> srvrs = cluster.forServers().nodes();
 
-            VisorBaselineAutoAdjustSettings autoAdjustSettings = new VisorBaselineAutoAdjustSettings(
-                cluster.isBaselineAutoAdjustEnabled(),
-                cluster.baselineAutoAdjustTimeout()
-            );
-
             BaselineAutoAdjustStatus adjustStatus = cluster.baselineAutoAdjustStatus();
 
             return new VisorBaselineTaskResult(
@@ -90,7 +85,8 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 cluster.topologyVersion(),
                 F.isEmpty(baseline) ? null : baseline,
                 srvrs,
-                autoAdjustSettings,
+                cluster.isBaselineAutoAdjustEnabled(),
+                cluster.baselineAutoAdjustTimeout(),
                 adjustStatus.getTimeUntilAutoAdjust(),
                 adjustStatus.getTaskState() == BaselineAutoAdjustStatus.TaskState.IN_PROGRESS
             );
@@ -231,12 +227,12 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param settings Baseline autoAdjustment settings.
          * @return New baseline.
          */
-        private VisorBaselineTaskResult updateAutoAdjustmentSettings(VisorBaselineAutoAdjustSettings settings) {
-            if (settings.getSoftTimeout() != null)
-                ignite.cluster().baselineAutoAdjustTimeout(settings.getSoftTimeout());
+        private VisorBaselineTaskResult updateAutoAdjustmentSettings(VisorBaselineTaskArg settings) {
+            if (settings.isAutoAdjustEnabled() != null)
+                ignite.cluster().baselineAutoAdjustEnabled(settings.isAutoAdjustEnabled());
 
-            if (settings.getEnabled() != null)
-                ignite.cluster().baselineAutoAdjustEnabled(settings.getEnabled());
+            if (settings.getAutoAdjustAwaitingTime() != null)
+                ignite.cluster().baselineAutoAdjustTimeout(settings.getAutoAdjustAwaitingTime());
 
             return collect();
         }
@@ -257,7 +253,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                     return version(arg.getTopologyVersion());
 
                 case AUTOADJUST:
-                    return updateAutoAdjustmentSettings(arg.getAutoAdjustSettings());
+                    return updateAutoAdjustmentSettings(arg);
 
                 default:
                     return collect();
