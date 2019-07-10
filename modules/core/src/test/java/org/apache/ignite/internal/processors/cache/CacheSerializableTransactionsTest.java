@@ -58,6 +58,8 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.CacheConsistencyViolationEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -66,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -83,6 +86,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -104,6 +108,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CLIENTS = 3;
+
+    /** */
+    private static final AtomicInteger REPAIRS = new AtomicInteger();
 
     /** */
     private boolean client;
@@ -4133,6 +4140,17 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         final boolean readRepair) throws Exception {
         final Ignite srv = ignite(1);
 
+        if (readRepair)
+            srv.events().remoteListen(null,
+                (IgnitePredicate<Event>)e -> {
+                    assert e instanceof CacheConsistencyViolationEvent;
+
+                    REPAIRS.incrementAndGet();
+
+                    return true;
+                },
+                EVT_CONSISTENCY_VIOLATION);
+
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
 
         final String cacheName = srv.createCache(ccfg).getName();
@@ -4380,9 +4398,13 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 assertEquals(ACCOUNTS * VAL_PER_ACCOUNT, sum);
             }
+
+            assertEquals(0, REPAIRS.get());
         }
         finally {
             destroyCache(cacheName);
+
+            REPAIRS.set(0);
         }
     }
 
