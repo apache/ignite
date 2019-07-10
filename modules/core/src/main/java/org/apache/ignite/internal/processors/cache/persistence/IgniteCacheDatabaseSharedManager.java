@@ -994,35 +994,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (memPlc == null)
             return;
 
-        DataRegionConfiguration plcCfg = memPlc.config();
+        while (memPlc.evictionTracker().evictionRequired()) {
+            warnFirstEvict(memPlc.config());
 
-        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plcCfg.isPersistenceEnabled())
-            return;
+            memPlc.evictionTracker().evictDataPage();
 
-        long memorySize = plcCfg.getMaxSize();
-
-        PageMemory pageMem = memPlc.pageMemory();
-
-        int sysPageSize = pageMem.systemPageSize();
-
-        CacheFreeList freeList = freeListMap.get(plcCfg.getName());
-
-        for (;;) {
-            long allocatedPagesCnt = pageMem.loadedPages();
-
-            int emptyDataPagesCnt = freeList.emptyDataPages();
-
-            boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
-                emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
-
-            if (shouldEvict) {
-                warnFirstEvict(plcCfg);
-
-                memPlc.evictionTracker().evictDataPage();
-
-                memPlc.memoryMetrics().updateEvictionRate();
-            } else
-                break;
+            memPlc.memoryMetrics().updateEvictionRate();
         }
     }
 

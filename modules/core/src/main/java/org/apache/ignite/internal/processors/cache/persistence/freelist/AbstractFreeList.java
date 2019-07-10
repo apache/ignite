@@ -571,6 +571,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written = COMPLETE;
 
             while (iter.hasNext() || written != COMPLETE) {
+                while (evictionTracker.evictionRequired()) {
+                    evictionTracker.evictDataPage();
+
+                    memMetrics.updateEvictionRate();
+                }
+
                 if (written == COMPLETE) {
                     row = iter.next();
 
@@ -627,6 +633,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         // Fill the page up to the end.
                         while (iter.hasNext() || written != COMPLETE) {
                             if (written == COMPLETE) {
+                                if (evictionTracker.evictionRequired())
+                                    break;
+
                                 row = iter.next();
 
                                 // If the data row was completely written without remainder, proceed to the next.
