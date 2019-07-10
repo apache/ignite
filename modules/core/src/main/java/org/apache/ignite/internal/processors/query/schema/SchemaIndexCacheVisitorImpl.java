@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -38,6 +39,7 @@ import org.apache.ignite.thread.IgniteThread;
 
 import java.util.List;
 
+import static org.apache.ignite.IgniteSystemProperties.INDEX_REBUILDING_PARALLELISM;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -49,8 +51,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Default degree of parallelism. */
-    private static final int DFLT_PARALLELISM =
-        Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+    private static final int DFLT_PARALLELISM;
 
     /** Count of rows, being processed within a single checkpoint lock. */
     private static final int BATCH_SIZE = 1000;
@@ -69,6 +70,15 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
     /** Whether to stop the process. */
     private volatile boolean stop;
+
+    static {
+        int parallelism = IgniteSystemProperties.getInteger(INDEX_REBUILDING_PARALLELISM, 0);
+
+        if (parallelism > 0)
+            DFLT_PARALLELISM = Math.min(parallelism, Runtime.getRuntime().availableProcessors());
+        else
+            DFLT_PARALLELISM = Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+    }
 
     /**
      * Constructor.
@@ -94,7 +104,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         if (parallelism > 0)
             this.parallelism = Math.min(Runtime.getRuntime().availableProcessors(), parallelism);
         else
-            this.parallelism =  DFLT_PARALLELISM;
+            this.parallelism = DFLT_PARALLELISM;
 
         if (cctx.isNear())
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
