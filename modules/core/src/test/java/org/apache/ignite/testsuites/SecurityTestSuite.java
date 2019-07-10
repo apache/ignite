@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionCheckTest;
@@ -31,34 +32,40 @@ import org.apache.ignite.internal.processors.security.compute.closure.ExecutorSe
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 import static org.apache.ignite.internal.IgniteFeatures.IGNITE_SECURITY_PROCESSOR;
 
 /**
  * Security test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    CacheOperationPermissionCheckTest.class,
-    DataStreamerPermissionCheckTest.class,
-    ScanQueryPermissionCheckTest.class,
-    EntryProcessorPermissionCheckTest.class,
-    ComputePermissionCheckTest.class,
-
-    DistributedClosureRemoteSecurityContextCheckTest.class,
-    ComputeTaskRemoteSecurityContextCheckTest.class,
-    ExecutorServiceRemoteSecurityContextCheckTest.class,
-    ScanQueryRemoteSecurityContextCheckTest.class,
-    EntryProcessorRemoteSecurityContextCheckTest.class,
-    DataStreamerRemoteSecurityContextCheckTest.class,
-    CacheLoadRemoteSecurityContextCheckTest.class,
-    ThinClientPermissionCheckTest.class,
-})
-public class SecurityTestSuite {
+public class SecurityTestSuite extends TestSuite {
     @BeforeClass
     public static void setUp() {
         System.setProperty(IGNITE_SECURITY_PROCESSOR.name(), "true");
+    }
+
+    /**
+     * @return Test suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite security suite.");
+
+        suite.addTestSuite(CacheOperationPermissionCheckTest.class);
+        suite.addTestSuite(DataStreamerPermissionCheckTest.class);
+        suite.addTestSuite(ScanQueryPermissionCheckTest.class);
+        suite.addTestSuite(EntryProcessorPermissionCheckTest.class);
+        suite.addTestSuite(ComputePermissionCheckTest.class);
+
+        suite.addTestSuite(DistributedClosureRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ComputeTaskRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ExecutorServiceRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ScanQueryRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(EntryProcessorRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(DataStreamerRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(CacheLoadRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ThinClientPermissionCheckTest.class);
+
+        return suite;
     }
 }
