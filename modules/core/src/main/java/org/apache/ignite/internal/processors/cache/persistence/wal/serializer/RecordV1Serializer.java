@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
  * Record V1 serializer.
  * Stores records in following format:
  * <ul>
- *     <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
+ *     <li>Record type from {@link RecordType#index()} incremented by 1</li>
  *     <li>WAL pointer to double check consistency</li>
  *     <li>Data</li>
  *     <li>CRC or zero padding</li>
@@ -265,7 +265,7 @@ public class RecordV1Serializer implements RecordSerializer {
             if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
                 throw new SegmentEofException("Reached logical end of the segment", null);
 
-            WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
+            WALRecord.RecordType type = WALRecord.RecordType.fromIndex(recordType - 1);
 
             if (type != WALRecord.RecordType.HEADER_RECORD)
                 throw new IOException("Can't read serializer version", null);
@@ -330,7 +330,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param rec WAL record.
      */
     static void putRecordType(ByteBuffer buf, WALRecord rec) {
-        buf.put((byte)(rec.type().ordinal() + 1));
+        buf.put((byte)(rec.type().index() + 1));
     }
 
     /**
@@ -347,7 +347,7 @@ public class RecordV1Serializer implements RecordSerializer {
         if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
             throw new SegmentEofException("Reached logical end of the segment", null);
 
-        return RecordType.fromOrdinal(type - 1);
+        return RecordType.fromIndex(type - 1);
     }
 
     /**
