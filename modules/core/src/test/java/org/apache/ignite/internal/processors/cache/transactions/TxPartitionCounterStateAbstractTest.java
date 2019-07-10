@@ -90,7 +90,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
  */
 public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int MB = 1024 * 1024;
@@ -171,7 +171,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         stopAllGrids();
 
-        //cleanPersistenceDir();
+        cleanPersistenceDir();
     }
 
     /**
