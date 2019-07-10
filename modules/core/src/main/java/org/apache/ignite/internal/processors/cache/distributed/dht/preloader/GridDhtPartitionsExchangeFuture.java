@@ -1381,6 +1381,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        timeBag.finishGlobalStage("Preloading notification");
+
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
@@ -1389,6 +1391,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
         }
+
+        timeBag.finishGlobalStage("After states restored callback");
 
         assert crd != null && !crd.isLocal() : crd;
 
