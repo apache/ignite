@@ -39,17 +39,14 @@ import static org.apache.ignite.internal.IgniteFeatures.IGNITE_SECURITY_PROCESSO
  * Security test suite.
  */
 public class SecurityTestSuite extends TestSuite {
-    @BeforeClass
-    public static void setUp() {
-        System.setProperty(IGNITE_SECURITY_PROCESSOR.name(), "true");
-    }
-
     /**
      * @return Test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite security suite.");
+
+        System.setProperty(IGNITE_SECURITY_PROCESSOR.name(), "true");
 
         suite.addTestSuite(CacheOperationPermissionCheckTest.class);
         suite.addTestSuite(DataStreamerPermissionCheckTest.class);
