@@ -4075,7 +4075,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTx1() throws Exception {
-        accountTx(false, false, false, false);
+        accountTx(false, false, false, false, false);
     }
 
     /**
@@ -4083,7 +4083,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTx2() throws Exception {
-        accountTx(true, false, false, false);
+        accountTx(true, false, false, false, false);
     }
 
     /**
@@ -4091,7 +4091,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTxWithNonSerializable() throws Exception {
-        accountTx(false, false, true, false);
+        accountTx(false, false, true, false, false);
     }
 
     /**
@@ -4099,7 +4099,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTxNearCache() throws Exception {
-        accountTx(false, true, false, false);
+        accountTx(false, true, false, false, false);
     }
 
     /**
@@ -4107,7 +4107,15 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTxNodeRestart() throws Exception {
-        accountTx(false, false, false, true);
+        accountTx(false, false, false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAccountTxNodeRestartWithReadRepair() throws Exception {
+        accountTx(false, false, false, true, true);
     }
 
     /**
@@ -4115,12 +4123,14 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @param nearCache If {@code true} near cache is enabled.
      * @param nonSer If {@code true} starts threads executing non-serializable transactions.
      * @param restart If {@code true} restarts one node.
+     * @param readRepair If {@code true} uses withReadRepair proxy.
      * @throws Exception If failed.
      */
     private void accountTx(final boolean getAll,
         final boolean nearCache,
         final boolean nonSer,
-        final boolean restart) throws Exception {
+        final boolean restart,
+        final boolean readRepair) throws Exception {
         final Ignite srv = ignite(1);
 
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
@@ -4161,9 +4171,12 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         final IgniteTransactions txs = node.transactions();
 
-                        final IgniteCache<Integer, Account> cache =
+                        IgniteCache<Integer, Account> cache =
                             nearCache ? node.createNearCache(cacheName, new NearCacheConfiguration<Integer, Account>()) :
                                 node.<Integer, Account>cache(cacheName);
+
+                        if (readRepair)
+                            cache = cache.withReadRepair();
 
                         assertNotNull(cache);
 
@@ -4219,9 +4232,12 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                     final IgniteTransactions txs = node.transactions();
 
-                    final IgniteCache<Integer, Account> cache =
+                    IgniteCache<Integer, Account> cache =
                         nearCache ? node.createNearCache(cacheName, new NearCacheConfiguration<Integer, Account>()) :
                             node.<Integer, Account>cache(cacheName);
+
+                    if (readRepair)
+                        cache = cache.withReadRepair();
 
                     assertNotNull(cache);
 
