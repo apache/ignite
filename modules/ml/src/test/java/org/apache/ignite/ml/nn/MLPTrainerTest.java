@@ -50,10 +50,10 @@ public class MLPTrainerTest {
     @RunWith(Parameterized.class)
     public static class ComponentParamTests {
         /** Number of parts to be tested. */
-        private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
+        private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 7};
 
         /** Batch sizes to be tested. */
-        private static final int[] batchSizesToBeTested = new int[] {1, 2, 3, 4};
+        private static final int[] batchSizesToBeTested = new int[] {1, 3, 4};
 
         /** Parameters. */
         @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
@@ -104,7 +104,7 @@ public class MLPTrainerTest {
         @Test
         public void testXORNesterov() {
             xorTest(new UpdatesStrategy<>(
-                new NesterovUpdateCalculator<MultilayerPerceptron>(0.1, 0.7),
+                new NesterovUpdateCalculator<MultilayerPerceptron>(0.2, 0.7),
                 NesterovParameterUpdate::sum,
                 NesterovParameterUpdate::avg
             ));
@@ -130,10 +130,10 @@ public class MLPTrainerTest {
                 arch,
                 LossFunctions.MSE,
                 updatesStgy,
-                3000,
+                1000,
                 batchSize,
-                50,
-                123L
+                5,
+                0L
             );
 
             MultilayerPerceptron mlp = trainer.fit(xorData, parts, new LabeledDummyVectorizer<>());

@@ -46,9 +46,9 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
-            .withMaxIterations(100000)
-            .withLocIterations(100)
-            .withBatchSize(14)
+            .withMaxIterations(100)
+            .withLocIterations(10)
+            .withBatchSize(15)
             .withSeed(123L);
 
         LogisticRegressionModel mdl = trainer.fit(cacheMock, parts, new DoubleArrayVectorizer<Integer>().labeled(0));
@@ -68,9 +68,9 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
-            .withMaxIterations(100000)
-            .withLocIterations(100)
-            .withBatchSize(10)
+            .withMaxIterations(5)
+            .withLocIterations(5)
+            .withBatchSize(100)
             .withSeed(123L);
 
         LogisticRegressionModel originalMdl = trainer.fit(
@@ -89,7 +89,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
 
         LogisticRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

@@ -58,11 +58,11 @@ public class BaggingTest extends TrainerTest {
     static {
         firstModelWeights = new HashMap<>();
 
-        firstModelWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
-        firstModelWeights.put(2, VectorUtils.of(0.37824664453495443, 2.9422474282114495));
-        firstModelWeights.put(3, VectorUtils.of(-1.584467989609169, 2.8467326345685824));
-        firstModelWeights.put(4, VectorUtils.of(-2.543461229777167, 0.1317660102621108));
-        firstModelWeights.put(13, VectorUtils.of(-1.6329364937353634, 0.39278455436019116));
+        firstModelWeights.put(1, VectorUtils.of(-3.0795685746731336, 0.6908197336720343));
+        firstModelWeights.put(2, VectorUtils.of(-0.13300127943684079, 1.2397066577627445));
+        firstModelWeights.put(3, VectorUtils.of(-0.9760119677053329, 1.8079165456559014));
+        firstModelWeights.put(4, VectorUtils.of(-0.17368069135892716, 1.2648696891901872));
+        firstModelWeights.put(13, VectorUtils.of(-0.26763950833158445, 1.071807771444856));
     }
 
     /**
@@ -92,9 +92,9 @@ public class BaggingTest extends TrainerTest {
             new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
-                .withMaxIterations(30000)
-                .withLocIterations(100)
-                .withBatchSize(10)
+                .withMaxIterations(100)
+                .withLocIterations(10)
+                .withBatchSize(15)
                 .withSeed(123L);
 
         BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
@@ -112,8 +112,8 @@ public class BaggingTest extends TrainerTest {
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
-        Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
-            .model()).innerModel()).submodels().get(0)).innerModel()).weights();
+        Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)
+            ((AdaptableDatasetModel)mdl.model()).innerModel()).submodels().get(0)).innerModel()).weights();
 
         TestUtils.assertEquals(firstModelWeights.get(parts), weights, 0.0);
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);

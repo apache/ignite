@@ -41,7 +41,7 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testFit() {
-        int sampleSize = 1000;
+        int sampleSize = 500;
         Map<Integer, LabeledVector<Double>> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
             double x1 = i;
@@ -69,7 +69,7 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testUpdate() {
-        int sampleSize = 1000;
+        int sampleSize = 500;
         Map<Integer, LabeledVector<Double>> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
             double x1 = i;
@@ -84,7 +84,7 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
         DatasetTrainer<ModelsComposition, Double> trainer = new RandomForestClassifierTrainer(meta)
-            .withAmountOfTrees(100)
+            .withAmountOfTrees(32)
             .withFeaturesCountSelectionStrgy(x -> 2)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 

@@ -72,10 +72,10 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
     public void testBigDataFit() {
         Random rnd = new Random(0);
         Map<Integer, double[]> data = new HashMap<>();
-        double[] coef = new double[100];
+        double[] coef = new double[64];
         double intercept = rnd.nextDouble() * 10;
 
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10_000; i++) {
             double[] x = new double[coef.length + 1];
 
             for (int j = 0; j < coef.length; j++)
@@ -104,10 +104,10 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
     public void testUpdate() {
         Random rnd = new Random(0);
         Map<Integer, double[]> data = new HashMap<>();
-        double[] coef = new double[100];
+        double[] coef = new double[64];
         double intercept = rnd.nextDouble() * 10;
 
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10_000; i++) {
             double[] x = new double[coef.length + 1];
 
             for (int j = 0; j < coef.length; j++)

@@ -39,7 +39,7 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testFit() {
-        int sampleSize = 1000;
+        int sampleSize = 100;
         Map<Double, LabeledVector<Double>> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
             double x1 = i;
@@ -65,7 +65,7 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testUpdate() {
-        int sampleSize = 1000;
+        int sampleSize = 100;
         Map<Double, LabeledVector<Double>> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
             double x1 = i;

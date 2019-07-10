@@ -51,7 +51,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
-            .withMaxIterations(1000)
+            .withMaxIterations(100)
             .withLocIterations(10)
             .withBatchSize(100)
             .withSeed(123L);
@@ -82,9 +82,9 @@ public class OneVsRestTrainerTest extends TrainerTest {
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
-            .withMaxIterations(1000)
+            .withMaxIterations(100)
             .withLocIterations(10)
-            .withBatchSize(100)
+            .withBatchSize(50)
             .withSeed(123L);
 
         OneVsRestTrainer<LogisticRegressionModel> trainer = new OneVsRestTrainer<>(binaryTrainer);

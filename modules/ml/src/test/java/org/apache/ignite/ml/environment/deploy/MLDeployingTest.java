@@ -94,7 +94,7 @@ public class MLDeployingTest extends GridCommonAbstractTest {
 
     /** */
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         stopAllGrids();
     }
 
@@ -224,7 +224,7 @@ public class MLDeployingTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteCache<Integer, Vector> prepareCache(Ignite ignite, String cacheName) {
-        IgniteCache<Integer, Vector> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Vector>(cacheName));
+        IgniteCache<Integer, Vector> cache = ignite.getOrCreateCache(new CacheConfiguration<>(cacheName));
 
         for (int i = 0; i < xor.length; i++)
             cache.put(i, VectorUtils.of(xor[i]));

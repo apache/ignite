@@ -23,8 +23,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,21 +36,34 @@ import static org.junit.Assert.assertEquals;
 /**
  * Initialize Gene and Chromosome Test
  */
-public class GAGridInitializePopulationTest {
-    /** Ignite instance */
-    private Ignite ignite = null;
+public class GAGridInitializePopulationTest extends GridCommonAbstractTest {
+    /** Number of nodes in grid. */
+    private static final int NODE_COUNT = 1;
+
+    /** Ignite instance. */
+    private Ignite ignite;
 
     /** GAGrid **/
-    private GAGrid gaGrid = null;
+    private GAGrid gaGrid;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() {
+        /* Grid instance. */
+        ignite = grid(NODE_COUNT);
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+    }
 
     @Before
     public void initialize() {
 
         try {
-
-            // Create an Ignite instance as you would in any other use case.
-            ignite = Ignition.start();
-
             // Create GAConfiguration
             /* GAConfiguraton */ /** GAConfiguraton */GAConfiguration gaCfg = new GAConfiguration();
 

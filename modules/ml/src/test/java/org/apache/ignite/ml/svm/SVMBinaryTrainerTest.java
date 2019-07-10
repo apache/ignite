@@ -41,7 +41,8 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
         SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
-            .withSeed(1234L);
+            .withAmountOfIterations(32)
+            .withSeed(123L);
 
         SVMLinearClassificationModel mdl = trainer.fit(
             cacheMock, parts,
@@ -61,8 +62,8 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
         SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
-            .withAmountOfIterations(1000)
-            .withSeed(1234L);
+            .withAmountOfIterations(16)
+            .withSeed(123L);
 
         Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         SVMLinearClassificationModel originalMdl = trainer.fit(
@@ -79,7 +80,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
 
         SVMLinearClassificationModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );
