@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// The default concurrency level.
         /// </summary>
-        public const int DefaultConcurrencyLevel = 0;
+        public static readonly int DefaultConcurrencyLevel = Environment.ProcessorCount;
 
         /// <summary>
         /// Default value for <see cref="MaxWalArchiveSize"/>.
@@ -203,6 +203,7 @@ namespace Apache.Ignite.Core.Configuration
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
             MaxWalArchiveSize = DefaultMaxWalArchiveSize;
             WalPageCompression = DefaultWalPageCompression;
+            ConcurrencyLevel = DefaultConcurrencyLevel;
         }
 
         /// <summary>
@@ -494,7 +495,6 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the number of concurrent segments in Ignite internal page mapping tables.
         /// </summary>
-        [DefaultValue(DefaultConcurrencyLevel)]
         public int ConcurrencyLevel { get; set; }
 
         /// <summary>
