@@ -1553,6 +1553,8 @@ public class GridCacheUtils {
      * @throws IllegalArgumentException In case the name is not valid.
      */
     public static void validateCacheNames(Collection<String> cacheNames) throws IllegalArgumentException {
+        A.notNull(cacheNames, "cacheNames");
+
         for (String name : cacheNames)
             validateCacheName(name);
     }

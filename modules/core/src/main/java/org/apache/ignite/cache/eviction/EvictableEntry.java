@@ -17,7 +17,6 @@
 package org.apache.ignite.cache.eviction;
 
 import javax.cache.Cache;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Evictable cache entry passed into {@link EvictionPolicy}.
@@ -53,9 +52,9 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Gets metadata added by eviction policy.
      *
-     * @return Metadata value or {@code null}.
+     * @return Metadata value or {@code null} if no metadata was added by eviction policy.
      */
-    @Nullable public <T> T meta();
+    public <T> T meta();
 
     /**
      * Adds a new metadata.
@@ -64,7 +63,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
      * @return Metadata previously added, or
      *      {@code null} if there was none.
      */
-    @Nullable public <T> T addMeta(T val);
+    public <T> T addMeta(T val);
 
     /**
      * Adds given metadata value only if it was absent.
@@ -72,7 +71,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
      * @param val Value to add if it's not attached already.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
-    @Nullable public <T> T putMetaIfAbsent(T val);
+    public <T> T putMetaIfAbsent(T val);
 
     /**
      * Replaces given metadata with new {@code newVal} value only if its current value
@@ -87,9 +86,9 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Removes metadata by name.
      *
-     * @return Value of removed metadata or {@code null}.
+     * @return Value of removed metadata or {@code null} if no metadata was added by eviction policy.
      */
-    @Nullable public <T> T removeMeta();
+    public <T> T removeMeta();
 
     /**
      * Removes metadata only if its current value is equal to {@code val} passed in.

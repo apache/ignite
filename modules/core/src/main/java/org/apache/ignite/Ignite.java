@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Main entry-point for all Ignite APIs.
@@ -480,12 +479,12 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
      * @param name Atomic reference name.
-     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
+     * @param initVal Initial value for atomic reference (may be {@code null}). Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic reference for the given name.
      * @throws IgniteException If atomic reference could not be fetched or created.
      */
-    public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+    public <T> IgniteAtomicReference<T> atomicReference(String name, T initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -494,12 +493,12 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name Atomic reference name.
      * @param cfg Configuration.
-     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
+     * @param initVal Initial value for atomic reference (may be {@code null}). Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic reference for the given name.
      * @throws IgniteException If atomic reference could not be fetched or created.
      */
-    public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg, @Nullable T initVal, boolean create)
+    public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg, T initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -507,14 +506,14 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}.
      *
      * @param name Atomic stamped name.
-     * @param initVal Initial value for atomic stamped. Ignored if {@code create} flag is {@code false}.
-     * @param initStamp Initial stamp for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param initVal Initial value for atomic stamped (may be {@code null}). Ignored if {@code create} flag is {@code false}.
+     * @param initStamp Initial stamp for atomic stamped (may be {@code null}). Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic stamped for the given name.
      * @throws IgniteException If atomic stamped could not be fetched or created.
      */
-    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
-        @Nullable S initStamp, boolean create) throws IgniteException;
+    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, T initVal,
+        S initStamp, boolean create) throws IgniteException;
 
     /**
      * Will get a atomic stamped from cache and create one if it has not been created yet and {@code create} flag
@@ -522,14 +521,14 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name Atomic stamped name.
      * @param cfg Configuration.
-     * @param initVal Initial value for atomic stamped. Ignored if {@code create} flag is {@code false}.
-     * @param initStamp Initial stamp for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param initVal Initial value for atomic stamped (may be {@code null}). Ignored if {@code create} flag is {@code false}.
+     * @param initStamp Initial stamp for atomic stamped (may be {@code null}). Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic stamped for the given name.
      * @throws IgniteException If atomic stamped could not be fetched or created.
      */
-    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg, @Nullable T initVal,
-        @Nullable S initStamp, boolean create) throws IgniteException;
+    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg, T initVal,
+        S initStamp, boolean create) throws IgniteException;
 
     /**
      * Gets or creates count down latch. If count down latch is not found in cache and {@code create} flag
@@ -591,11 +590,12 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name Name of queue.
      * @param cap Capacity of queue, {@code 0} for unbounded queue. Ignored if {@code cfg} is {@code null}.
-     * @param cfg Queue configuration if new queue should be created.
-     * @return Queue with given properties.
+     * @param cfg Queue configuration if new queue should be created. If {@code null}, will try to return
+     *            an existing queue.
+     * @return Queue with given properties or {@code null} if queue was not created and does not exist.
      * @throws IgniteException If queue could not be fetched or created.
      */
-    public <T> IgniteQueue<T> queue(String name, int cap, @Nullable CollectionConfiguration cfg)
+    public <T> IgniteQueue<T> queue(String name, int cap, CollectionConfiguration cfg)
         throws IgniteException;
 
     /**
@@ -603,11 +603,12 @@ public interface Ignite extends AutoCloseable {
      * {@code null}.
      *
      * @param name Set name.
-     * @param cfg Set configuration if new set should be created.
+     * @param cfg Set configuration if new set should be created. If {@code null}, will try to return
+     *            an existing set.
      * @return Set with given properties.
      * @throws IgniteException If set could not be fetched or created.
      */
-    public <T> IgniteSet<T> set(String name, @Nullable CollectionConfiguration cfg) throws IgniteException;
+    public <T> IgniteSet<T> set(String name, CollectionConfiguration cfg) throws IgniteException;
 
     /**
      * Gets an instance of deployed Ignite plugin.
@@ -682,7 +683,7 @@ public interface Ignite extends AutoCloseable {
      * @deprecated Use {@link #dataRegionMetrics(String)} instead.
      */
     @Deprecated
-    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
+    public MemoryMetrics memoryMetrics(String memPlcName);
 
     /**
      * @return {@link PersistenceMetrics} snapshot.
@@ -711,7 +712,7 @@ public interface Ignite extends AutoCloseable {
      * @param memPlcName Name of memory region configured with {@link DataRegionConfiguration config}.
      * @return {@link DataRegionMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      */
-    @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
+    public DataRegionMetrics dataRegionMetrics(String memPlcName);
 
     /**
      * @return {@link DataStorageMetrics} snapshot.

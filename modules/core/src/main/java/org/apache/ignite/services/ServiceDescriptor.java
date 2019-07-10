@@ -19,7 +19,6 @@ package org.apache.ignite.services;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Service deployment descriptor. Contains all service deployment configuration, and also
@@ -62,7 +61,7 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Cache name, possibly {@code null}.
      */
-    @Nullable public String cacheName();
+    public String cacheName();
 
     /**
      * Gets affinity key used for key-to-node affinity calculation. This parameter is optional
@@ -70,7 +69,7 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Affinity key, possibly {@code null}.
      */
-    @Nullable public <K> K affinityKey();
+    public <K> K affinityKey();
 
     /**
      * Gets ID of grid node that initiated the service deployment.

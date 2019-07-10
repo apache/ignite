@@ -773,6 +773,11 @@
                             <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
+                        <configuration>
+                            <stylesheetfile>
+                                ${project.basedir}/${project.parent.relativePath}/../assembly/docfiles/css/stylesheet.css
+                            </stylesheetfile>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -20,7 +20,6 @@ import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Affinity function context. This context is passed to {@link AffinityFunction} for
@@ -35,7 +34,7 @@ public interface AffinityFunctionContext {
      * @return List of nodes assigned to given partition on previous topology version or {@code null}
      *      if this information is not available.
      */
-    @Nullable public List<ClusterNode> previousAssignment(int part);
+    public List<ClusterNode> previousAssignment(int part);
 
     /**
      * Gets number of backups for new assignment.
@@ -66,5 +65,5 @@ public interface AffinityFunctionContext {
      * @return Discovery event caused latest topology change or {@code null} if this information is
      *      not available.
      */
-    @Nullable public DiscoveryEvent discoveryEvent();
+    public DiscoveryEvent discoveryEvent();
 }

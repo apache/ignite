@@ -18,7 +18,6 @@ package org.apache.ignite.spi;
 
 import java.util.Map;
 import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface defines life-cycle of SPI implementation. Every SPI implementation should implement
@@ -62,7 +61,7 @@ public interface IgniteSpi {
      *    ({@code null} for default Ignite instance).
      * @throws IgniteSpiException Throws in case of any error during SPI start.
      */
-    public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
+    public void spiStart(String igniteInstanceName) throws IgniteSpiException;
 
     /**
      * Callback invoked when SPI context is initialized. SPI implementation

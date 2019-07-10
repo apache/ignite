@@ -21,7 +21,6 @@ import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Indexing SPI allows user to index cache content. Using indexing SPI user can index data in cache and run queries.
@@ -70,8 +69,8 @@ public interface IndexingSpi extends IgniteSpi {
      * @return Query result. If the iterator implements {@link AutoCloseable} it will be correctly closed.
      * @throws IgniteSpiException If failed.
      */
-    public Iterator<Cache.Entry<?,?>> query(@Nullable String cacheName, Collection<Object> params,
-        @Nullable IndexingQueryFilter filters) throws IgniteSpiException;
+    public Iterator<Cache.Entry<?,?>> query(String cacheName, Collection<Object> params,
+        IndexingQueryFilter filters) throws IgniteSpiException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
@@ -83,7 +82,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteSpiException If failed.
      */
-    public void store(@Nullable String cacheName, Object key, Object val, long expirationTime) throws IgniteSpiException;
+    public void store(String cacheName, Object key, Object val, long expirationTime) throws IgniteSpiException;
 
     /**
      * Removes index entry by key.
@@ -92,5 +91,5 @@ public interface IndexingSpi extends IgniteSpi {
      * @param key Key.
      * @throws IgniteSpiException If failed.
      */
-    public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException;
+    public void remove(String cacheName, Object key) throws IgniteSpiException;
 }

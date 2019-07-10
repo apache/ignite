@@ -20,7 +20,6 @@ import java.io.Serializable;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Message to send across ring.
@@ -33,7 +32,7 @@ public interface DiscoverySpiCustomMessage extends Serializable {
      *
      * @return Ack message or {@code null} if ack is not required.
      */
-    @Nullable public DiscoverySpiCustomMessage ackMessage();
+    public DiscoverySpiCustomMessage ackMessage();
 
     /**
      * @return {@code True} if message can be modified during listener notification. Changes will be send to next nodes.

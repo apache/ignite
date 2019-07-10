@@ -16,8 +16,6 @@
 
 package org.apache.ignite.spi.metric;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Base interface for all metrics.
  */
@@ -29,7 +27,7 @@ public interface Metric {
     public String description();
 
     /** @return String representation of metric value. */
-    @Nullable public String getAsString();
+    public String getAsString();
 
     /** Resets metric state. */
     public default void reset() {

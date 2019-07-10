@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Pluggable Ignite component.
@@ -69,9 +68,9 @@ public interface PluginProvider<C extends PluginConfiguration> {
      *
      * @param ctx Plugin context.
      * @param cls Ignite component class.
-     * @return Ignite component or {@code null} if component is not supported.
+     * @return Ignite component or {@code null} if component is not supported (default Ignite component will be used).
      */
-    @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
+    public <T> T createComponent(PluginContext ctx, Class<T> cls);
 
     /**
      * Creates cache plugin provider.
@@ -121,7 +120,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Discovery data object or {@code null} if there is nothing
      *      to send for this component.
      */
-    @Nullable public Serializable provideDiscoveryData(UUID nodeId);
+    public Serializable provideDiscoveryData(UUID nodeId);
 
     /**
      * Receives plugin discovery data object from remote nodes (called

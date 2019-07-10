@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.LoggerResource;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -173,7 +172,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * <p>
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      */
-    public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public RendezvousAffinityFunction(int parts, IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this(false, parts, backupFilter);
     }
 
@@ -240,7 +239,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      *
      * @return Optional backup filter.
      */
-    @Nullable public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
+    public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
         return backupFilter;
     }
 
@@ -257,7 +256,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      */
     @Deprecated
     public RendezvousAffinityFunction setBackupFilter(
-        @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
 
         return this;
@@ -272,7 +271,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      *
      * @return Optional backup filter.
      */
-    @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+    public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
         return affinityBackupFilter;
     }
 
@@ -289,7 +288,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * @return {@code this} for chaining.
      */
     public RendezvousAffinityFunction setAffinityBackupFilter(
-        @Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+        IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
         this.affinityBackupFilter = affinityBackupFilter;
 
         return this;
@@ -342,7 +341,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     public List<ClusterNode> assignPartition(int part,
         List<ClusterNode> nodes,
         int backups,
-        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
+        Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
         if (nodes.size() <= 1)
             return nodes;
 

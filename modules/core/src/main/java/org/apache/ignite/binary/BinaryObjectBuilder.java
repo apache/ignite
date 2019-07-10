@@ -16,8 +16,6 @@
 
 package org.apache.ignite.binary;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Binary object builder. Provides ability to build binary objects dynamically without having class definitions.
  * <p>
@@ -101,11 +99,11 @@ public interface BinaryObjectBuilder {
      * Field type is needed for proper metadata update.
      *
      * @param name Field name.
-     * @param val Field value.
+     * @param val Field value (may be {@code null}).
      * @param type Field type.
      * @see BinaryObject#type()
      */
-    public <T> BinaryObjectBuilder setField(String name, @Nullable T val, Class<? super T> type);
+    public <T> BinaryObjectBuilder setField(String name, T val, Class<? super T> type);
 
     /**
      * Sets field value.
@@ -113,9 +111,9 @@ public interface BinaryObjectBuilder {
      * This method should be used if field is binary object.
      *
      * @param name Field name.
-     * @param builder Builder for object field.
+     * @param builder Builder for object field (may be {@code null}).
      */
-    public BinaryObjectBuilder setField(String name, @Nullable BinaryObjectBuilder builder);
+    public BinaryObjectBuilder setField(String name, BinaryObjectBuilder builder);
 
     /**
      * Removes field from this builder.

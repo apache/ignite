@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
@@ -341,7 +340,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Gets partitions for query, in ascending order.
      */
-    @Nullable public int[] getPartitions() {
+    public int[] getPartitions() {
         return parts;
     }
 
@@ -354,7 +353,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @param parts Partitions.
      * @return {@code this} for chaining.
      */
-    public SqlFieldsQuery setPartitions(@Nullable int... parts) {
+    public SqlFieldsQuery setPartitions(int... parts) {
         this.parts = prepare(parts);
 
         return this;
@@ -365,9 +364,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * If not set, current cache name is used, which means you can
      * omit schema name for tables within the current cache.
      *
-     * @return Schema. Null if schema is not set.
+     * @return Schema. {@code null} if schema is not set.
      */
-    @Nullable public String getSchema() {
+    public String getSchema() {
         return schema;
     }
 
@@ -376,10 +375,10 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * If not set, current cache name is used, which means you can
      * omit schema name for tables within the current cache.
      *
-     * @param schema Schema. Null to unset schema.
+     * @param schema Schema. {@code null} to unset schema.
      * @return {@code this} for chaining.
      */
-    public SqlFieldsQuery setSchema(@Nullable String schema) {
+    public SqlFieldsQuery setSchema(String schema) {
         this.schema = schema;
 
         return this;

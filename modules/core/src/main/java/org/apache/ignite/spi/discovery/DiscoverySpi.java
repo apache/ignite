@@ -25,7 +25,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid discovery SPI allows to discover remote nodes in grid.
@@ -52,7 +51,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @return Consistent ID of this Ignite instance or {@code null} if not applicable.
      * @throws IgniteSpiException If failed.
      */
-    @Nullable public Serializable consistentId() throws IgniteSpiException;
+    public Serializable consistentId() throws IgniteSpiException;
 
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.
@@ -74,7 +73,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param nodeId Node ID.
      * @return Node with given ID or {@code null} if node is not found.
      */
-    @Nullable public ClusterNode getNode(UUID nodeId);
+    public ClusterNode getNode(UUID nodeId);
 
     /**
      * Pings the remote node to see if it's alive.
@@ -103,7 +102,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param lsnr Listener to discovery events or {@code null} to unset the listener.
      */
     @Deprecated
-    public void setListener(@Nullable DiscoverySpiListener lsnr);
+    public void setListener(DiscoverySpiListener lsnr);
 
     /**
      * Sets a handler for initial data exchange between Ignite nodes.
@@ -158,9 +157,9 @@ public interface DiscoverySpi extends IgniteSpi {
      * Initiates failure of provided node.
      *
      * @param nodeId Node ID.
-     * @param warning Warning to be shown on all cluster nodes.
+     * @param warning Optional warning to be shown on all cluster nodes.
      */
-    public void failNode(UUID nodeId, @Nullable String warning);
+    public void failNode(UUID nodeId, String warning);
 
     /**
      * Whether or not discovery is started in client mode.

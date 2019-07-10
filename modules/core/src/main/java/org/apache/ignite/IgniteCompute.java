@@ -38,8 +38,6 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.failover.FailoverSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines compute grid functionality for executing tasks and closures over nodes
@@ -161,9 +159,10 @@ public interface IgniteCompute {
      *                   affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public void affinityRun(@NotNull Collection<String> cacheNames, Object affKey, IgniteRunnable job)
+    public void affinityRun(Collection<String> cacheNames, Object affKey, IgniteRunnable job)
         throws IgniteException;
 
     /**
@@ -176,9 +175,10 @@ public interface IgniteCompute {
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return a Future representing pending completion of the affinity run.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, Object affKey,
+    public IgniteFuture<Void> affinityRunAsync(Collection<String> cacheNames, Object affKey,
         IgniteRunnable job) throws IgniteException;
 
     /**
@@ -191,9 +191,10 @@ public interface IgniteCompute {
      *                   affinity co-location.
      * @param partId Partition number.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public void affinityRun(@NotNull Collection<String> cacheNames, int partId, IgniteRunnable job)
+    public void affinityRun(Collection<String> cacheNames, int partId, IgniteRunnable job)
         throws IgniteException;
 
     /**
@@ -206,9 +207,10 @@ public interface IgniteCompute {
      * @param partId Partition number.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return a Future representing pending completion of the affinity run.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, int partId,
+    public IgniteFuture<Void> affinityRunAsync(Collection<String> cacheNames, int partId,
         IgniteRunnable job) throws IgniteException;
 
     /**
@@ -251,9 +253,10 @@ public interface IgniteCompute {
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public <R> R affinityCall(@NotNull Collection<String> cacheNames, Object affKey, IgniteCallable<R> job)
+    public <R> R affinityCall(Collection<String> cacheNames, Object affKey, IgniteCallable<R> job)
         throws IgniteException;
 
     /**
@@ -266,9 +269,10 @@ public interface IgniteCompute {
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return a Future representing pending completion of the affinity call.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, Object affKey,
+    public <R> IgniteFuture<R> affinityCallAsync(Collection<String> cacheNames, Object affKey,
         IgniteCallable<R> job) throws IgniteException;
 
     /**
@@ -281,9 +285,10 @@ public interface IgniteCompute {
      * @param partId Partition to reserve.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job)
+    public <R> R affinityCall(Collection<String> cacheNames, int partId, IgniteCallable<R> job)
         throws IgniteException;
 
     /**
@@ -296,9 +301,10 @@ public interface IgniteCompute {
      * @param partId Partition to reserve.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return a Future representing pending completion of the affinity call.
+     * @throws NullPointerException if {@code cacheNames} is {@code null}.
      * @throws IgniteException If job failed.
      */
-    public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, int partId,
+    public <R> IgniteFuture<R> affinityCallAsync(Collection<String> cacheNames, int partId,
         IgniteCallable<R> job) throws IgniteException;
 
     /**
@@ -312,7 +318,7 @@ public interface IgniteCompute {
      * @return Task result.
      * @throws IgniteException If task failed.
      */
-    public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) throws IgniteException;
+    public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, T arg) throws IgniteException;
 
     /**
      * Executes given task asynchronously on within the cluster group. For step-by-step explanation of task execution
@@ -325,7 +331,7 @@ public interface IgniteCompute {
      * @return a Future representing pending completion of the task.
      * @throws IgniteException If task failed.
      */
-    public <T, R> ComputeTaskFuture<R> executeAsync(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg)
+    public <T, R> ComputeTaskFuture<R> executeAsync(Class<? extends ComputeTask<T, R>> taskCls, T arg)
         throws IgniteException;
 
     /**
@@ -339,7 +345,7 @@ public interface IgniteCompute {
      * @return Task result.
      * @throws IgniteException If task failed.
      */
-    public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws IgniteException;
+    public <T, R> R execute(ComputeTask<T, R> task, T arg) throws IgniteException;
 
     /**
      * Executes given task asynchronously within the cluster group. For step-by-step explanation of task execution
@@ -352,7 +358,7 @@ public interface IgniteCompute {
      * @return a Future representing pending completion of the task.
      * @throws IgniteException If task failed.
      */
-    public <T, R> ComputeTaskFuture<R> executeAsync(ComputeTask<T, R> task, @Nullable T arg) throws IgniteException;
+    public <T, R> ComputeTaskFuture<R> executeAsync(ComputeTask<T, R> task, T arg) throws IgniteException;
 
     /**
      * Executes given task within the cluster group. For step-by-step explanation of task execution process
@@ -367,7 +373,7 @@ public interface IgniteCompute {
      * @throws IgniteException If task failed.
      * @see ComputeTask for information about task execution.
      */
-    public <T, R> R execute(String taskName, @Nullable T arg) throws IgniteException;
+    public <T, R> R execute(String taskName, T arg) throws IgniteException;
 
     /**
      * Executes given task asynchronously within the cluster group. For step-by-step explanation of task execution
@@ -382,7 +388,7 @@ public interface IgniteCompute {
      * @throws IgniteException If task failed.
      * @see ComputeTask for information about task execution.
      */
-    public <T, R> ComputeTaskFuture<R> executeAsync(String taskName, @Nullable T arg) throws IgniteException;
+    public <T, R> ComputeTaskFuture<R> executeAsync(String taskName, T arg) throws IgniteException;
 
     /**
      * Broadcasts given job to all nodes in the cluster group.
@@ -431,7 +437,7 @@ public interface IgniteCompute {
      * @return Collection of results for this execution.
      * @throws IgniteException If execution failed.
      */
-    public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
+    public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, T arg) throws IgniteException;
 
     /**
      * Broadcasts given closure job asynchronously with passed in argument to all nodes in the cluster group.
@@ -443,7 +449,7 @@ public interface IgniteCompute {
      * @return a Future representing pending completion of the broadcast execution of the job.
      * @throws IgniteException If execution failed.
      */
-    public <R, T> IgniteFuture<Collection<R>> broadcastAsync(IgniteClosure<T, R> job, @Nullable T arg)
+    public <R, T> IgniteFuture<Collection<R>> broadcastAsync(IgniteClosure<T, R> job, T arg)
         throws IgniteException;
 
     /**
@@ -556,7 +562,7 @@ public interface IgniteCompute {
      * @return Job result.
      * @throws IgniteException If execution failed.
      */
-    public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
+    public <R, T> R apply(IgniteClosure<T, R> job, T arg) throws IgniteException;
 
     /**
      * Executes provided closure job asynchronously on a node within the underlying cluster group.
@@ -568,7 +574,7 @@ public interface IgniteCompute {
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
-    public <R, T> IgniteFuture<R> applyAsync(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
+    public <R, T> IgniteFuture<R> applyAsync(IgniteClosure<T, R> job, T arg) throws IgniteException;
 
     /**
      * Executes provided closure job on nodes within the underlying cluster group. A new job is executed for
@@ -744,8 +750,9 @@ public interface IgniteCompute {
      * <p>
      * Executor should be defined in {@link IgniteConfiguration#setExecutorConfiguration(ExecutorConfiguration...)}.
      *
-     * @param name Custom executor name.
+     * @param name Custom executor name. If {@code null}, the returned instance will execute tasks in
+     *      default thread pool.
      * @return Instance of compute API associated with custom executor.
      */
-    public IgniteCompute withExecutor(@NotNull String name);
+    public IgniteCompute withExecutor(String name);
 }

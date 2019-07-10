@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for grid node discovery events. See
@@ -46,8 +45,8 @@ public interface DiscoverySpiListener {
      * @param node Node affected (e.g. newly joined node, left node, failed node or local node).
      * @param topSnapshot Topology snapshot after event has been occurred (e.g. if event is
      *      {@code EVT_NODE_JOINED}, then joined node will be in snapshot).
-     * @param topHist Topology snapshots history.
-     * @param data Data for custom event.
+     * @param topHist Topology snapshots history, {@code null} if first discovery event.
+     * @param data Data for custom event, {@code null} if not a discovery event.
      *
      * @return A future that will be completed when notification process has finished.
      */
@@ -56,6 +55,6 @@ public interface DiscoverySpiListener {
         long topVer,
         ClusterNode node,
         Collection<ClusterNode> topSnapshot,
-        @Nullable Map<Long, Collection<ClusterNode>> topHist,
-        @Nullable DiscoverySpiCustomMessage data);
+        Map<Long, Collection<ClusterNode>> topHist,
+        DiscoverySpiCustomMessage data);
 }

@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface representing a single cluster node. Use {@link #attribute(String)} or
@@ -130,9 +129,9 @@ public interface ClusterNode extends BaselineNode {
      * @param <T> Attribute Type.
      * @param name Attribute name. <b>Note</b> that attribute names starting with
      *      {@code org.apache.ignite} are reserved for internal use.
-     * @return Attribute value or {@code null}.
+     * @return Attribute value or {@code null} if such an attribute does not exist.
      */
-    @Override @Nullable public <T> T attribute(String name);
+    @Override public <T> T attribute(String name);
 
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated

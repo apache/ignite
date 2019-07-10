@@ -16,8 +16,6 @@
 
 package org.apache.ignite.spi.metric;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Interface for the metrics that holds typed value.
  */
@@ -29,7 +27,7 @@ public interface ObjectMetric<T> extends Metric {
     public Class<T> type();
 
     /** {@inheritDoc} */
-    @Override @Nullable default String getAsString() {
+    @Override public default String getAsString() {
         T val = value();
 
         if (val == null)

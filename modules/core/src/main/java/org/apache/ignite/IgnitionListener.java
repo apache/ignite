@@ -17,7 +17,6 @@
 package org.apache.ignite;
 
 import java.util.EventListener;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for gird state change notifications. Use
@@ -31,5 +30,5 @@ public interface IgnitionListener extends EventListener {
      * @param name Ignite instance name ({@code null} for default un-named Ignite instance).
      * @param state New state.
      */
-    public void onStateChange(@Nullable String name, IgniteState state);
+    public void onStateChange(String name, IgniteState state);
 }

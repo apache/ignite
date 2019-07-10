@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
@@ -180,7 +179,7 @@ public class Ignition {
      *      default no-name Ignite instance is returned.
      * @return Ignite instance state.
      */
-    public static IgniteState state(@Nullable String name) {
+    public static IgniteState state(String name) {
         return IgnitionEx.state(name);
     }
 
@@ -218,7 +217,7 @@ public class Ignition {
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      */
-    public static boolean stop(@Nullable String name, boolean cancel) {
+    public static boolean stop(String name, boolean cancel) {
         return IgnitionEx.stop(name, cancel, false);
     }
 
@@ -524,7 +523,7 @@ public class Ignition {
      * @throws IgniteIllegalStateException Thrown if default Ignite instance was not properly
      *      initialized or Ignite instance was stopped or was not started.
      */
-    public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
+    public static Ignite ignite(String name) throws IgniteIllegalStateException {
         return IgnitionEx.grid(name);
     }
 

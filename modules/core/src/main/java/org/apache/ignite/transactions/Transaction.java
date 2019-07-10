@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
@@ -290,7 +289,7 @@ public interface Transaction extends AutoCloseable {
      * <p>
      * Use {@link IgniteTransactions#withLabel(java.lang.String)} to assign a label to a newly created transaction.
      *
-     * @return Label.
+     * @return Label or {@code null} if no label was assigned to the transaction.
      */
-    @Nullable public String label();
+    public String label();
 }

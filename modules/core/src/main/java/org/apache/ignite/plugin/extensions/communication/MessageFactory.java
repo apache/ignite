@@ -17,7 +17,6 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.plugin.Extension;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Factory for communication messages.
@@ -36,5 +35,5 @@ public interface MessageFactory extends Extension {
      * @param type Message type.
      * @return Message instance.
      */
-    @Nullable public Message create(short type);
+    public Message create(short type);
 }

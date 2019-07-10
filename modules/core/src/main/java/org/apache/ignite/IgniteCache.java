@@ -66,7 +66,6 @@ import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
@@ -191,7 +190,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V> {
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
-    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
+    public void loadCache(IgniteBiPredicate<K, V> p, Object... args) throws CacheException;
 
     /**
      * Asynchronously executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -203,7 +202,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V> {
      * @return a Future representing pending completion of the cache loading.
      * @throws CacheException If loading failed.
      */
-    public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+    public IgniteFuture<Void> loadCacheAsync(IgniteBiPredicate<K, V> p, Object... args)
         throws CacheException;
 
     /**
@@ -227,7 +226,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V> {
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
-    public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
+    public void localLoadCache(IgniteBiPredicate<K, V> p, Object... args) throws CacheException;
 
     /**
      * Asynchronously loads state from the underlying persistent storage by delegating
@@ -251,7 +250,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V> {
      * @return a Future representing pending completion of the cache loading.
      * @throws CacheException If loading failed.
      */
-    public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+    public IgniteFuture<Void> localLoadCacheAsync(IgniteBiPredicate<K, V> p, Object... args)
         throws CacheException;
 
     /**

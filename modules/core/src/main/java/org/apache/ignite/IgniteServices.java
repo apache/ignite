@@ -25,7 +25,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines functionality necessary to deploy distributed services on the grid.
@@ -236,12 +235,11 @@ public interface IgniteServices {
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @param cacheName Name of the cache on which affinity for key should be calculated, {@code null} for
-     *      default cache.
+     * @param cacheName Name of the cache on which affinity for key should be calculated.
      * @param affKey Affinity cache key.
      * @throws ServiceDeploymentException If failed to deploy service.
      */
-    public void deployKeyAffinitySingleton(String name, Service svc, @Nullable String cacheName, Object affKey)
+    public void deployKeyAffinitySingleton(String name, Service svc, String cacheName, Object affKey)
         throws ServiceDeploymentException;
 
     /**
@@ -270,12 +268,11 @@ public interface IgniteServices {
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @param cacheName Name of the cache on which affinity for key should be calculated, {@code null} for
-     *      default cache.
+     * @param cacheName Name of the cache on which affinity for key should be calculated.
      * @param affKey Affinity cache key.
      * @return a Future representing pending completion of the operation.
      */
-    public IgniteFuture<Void> deployKeyAffinitySingletonAsync(String name, Service svc, @Nullable String cacheName,
+    public IgniteFuture<Void> deployKeyAffinitySingletonAsync(String name, Service svc, String cacheName,
         Object affKey);
 
     /**

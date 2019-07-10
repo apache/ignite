@@ -19,7 +19,6 @@ package org.apache.ignite.plugin.security;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Security permission set for authorized security subjects. Permission set
@@ -67,7 +66,7 @@ public interface SecurityPermissionSet extends Serializable {
     /**
      * Collection of system-wide permissions (events enable/disable, Visor task execution).
      *
-     * @return Collection of system-wide permissions.
+     * @return Collection of system-wide permissions ({@code null} if none).
      */
-    @Nullable public Collection<SecurityPermission> systemPermissions();
+    public Collection<SecurityPermission> systemPermissions();
 }

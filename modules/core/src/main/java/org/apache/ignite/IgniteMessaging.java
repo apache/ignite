@@ -23,7 +23,6 @@ import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides functionality for topic-based message exchange among nodes defined by {@link #clusterGroup()}.
@@ -83,7 +82,7 @@ public interface IgniteMessaging {
      * @throws IgniteException If failed to send a message to any of the nodes.
      * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
-    public void send(@Nullable Object topic, Object msg) throws IgniteException;
+    public void send(Object topic, Object msg) throws IgniteException;
 
     /**
      * Sends given messages with the specified topic to the nodes in the underlying cluster group.
@@ -96,7 +95,7 @@ public interface IgniteMessaging {
      * @throws IgniteException If failed to send a message to any of the nodes.
      * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
-    public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteException;
+    public void send(Object topic, Collection<?> msgs) throws IgniteException;
 
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group. Messages sent with
@@ -116,26 +115,26 @@ public interface IgniteMessaging {
      * @throws IgniteException If failed to send a message to any of the nodes.
      * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
-    public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws IgniteException;
+    public void sendOrdered(Object topic, Object msg, long timeout) throws IgniteException;
 
     /**
      * Adds local listener for given topic on local node only. This listener will be notified whenever any
      * node within the cluster group will send a message for a given topic to this node. Local listen
      * subscription will happen regardless of whether local node belongs to this cluster group or not.
      *
-     * @param topic Topic to subscribe to.
+     * @param topic Topic to subscribe to ({@code null} for default topic).
      * @param p Predicate that is called on each received message. If predicate returns {@code false},
      *      then it will be unsubscribed from any further notifications.
      */
-    public void localListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
+    public void localListen(Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Unregisters local listener for given topic on local node only.
      *
-     * @param topic Topic to unsubscribe from.
+     * @param topic Topic to unsubscribe from ({@code null} for default topic).
      * @param p Listener predicate.
      */
-    public void stopLocalListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
+    public void stopLocalListen(Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Adds a message listener for a given topic to all nodes in the cluster group (possibly including
@@ -149,7 +148,7 @@ public interface IgniteMessaging {
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws IgniteException If failed to add listener.
      */
-    public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteException;
+    public UUID remoteListen(Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteException;
 
     /**
      * Asynchronously adds a message listener for a given topic to all nodes in the cluster group (possibly including
@@ -164,7 +163,7 @@ public interface IgniteMessaging {
      *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws IgniteException If failed to add listener.
      */
-    public IgniteFuture<UUID> remoteListenAsync(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p)
+    public IgniteFuture<UUID> remoteListenAsync(Object topic, IgniteBiPredicate<UUID, ?> p)
         throws IgniteException;
 
     /**

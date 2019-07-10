@@ -23,7 +23,6 @@ import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Management bean for {@link TcpDiscoverySpi}.
@@ -217,10 +216,10 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     /**
      * Gets current coordinator.
      *
-     * @return Gets current coordinator.
+     * @return Gets current coordinator ({@code null} if for some reason coordintator cannot be reported).
      */
     @MXBeanDescription("Coordinator node ID.")
-    @Override @Nullable public UUID getCoordinator();
+    @Override public UUID getCoordinator();
 
     /**
      * Gets message acknowledgement timeout.

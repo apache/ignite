@@ -78,7 +78,6 @@ import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
@@ -3164,10 +3163,11 @@ public class IgniteConfiguration {
     /**
      * Sets client connector configuration.
      *
-     * @param cliConnCfg Client connector configuration.
+     * @param cliConnCfg Client connector configuration. If {@code null}, will clear
+     *      previously set connector configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setClientConnectorConfiguration(@Nullable ClientConnectorConfiguration cliConnCfg) {
+    public IgniteConfiguration setClientConnectorConfiguration(ClientConnectorConfiguration cliConnCfg) {
         this.cliConnCfg = cliConnCfg;
 
         return this;
@@ -3199,7 +3199,7 @@ public class IgniteConfiguration {
      *
      * @return Client connector configuration.
      */
-    @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
+    public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
     }
 

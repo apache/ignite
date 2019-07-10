@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides affinity information to detect which node is primary and which nodes are
@@ -175,8 +174,9 @@ public interface Affinity<K> {
      * @param key Keys to map to a node.
      * @return Primary node for the key.
      * @throws IgniteException If there are no alive nodes for this cache.
+     * @throws NullPointerException if {@code key} is {@code null}.
      */
-    @Nullable public ClusterNode mapKeyToNode(K key);
+    public ClusterNode mapKeyToNode(K key);
 
     /**
      * Gets primary and backup nodes for the key. Note that primary node is always
