@@ -32,12 +32,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -70,11 +75,27 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     /** */
     private boolean forceServerMode;
 
+    /** */
+    private boolean testCommunicationSpi;
+
+    /** */
+    private IgniteBiPredicate<ClusterNode, Message> spiBlockPred;
+
+    /** */
+    private volatile TestRecordingCommunicationSpi spi;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
+
+        if (testCommunicationSpi) {
+            spi = new TestRecordingCommunicationSpi();
+            spi.blockMessages(spiBlockPred);
+
+            cfg.setCommunicationSpi(spi);
+        }
 
         if (!client) {
             CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
@@ -151,8 +172,9 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-20801")
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
-    public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
+    public void testClientInForceServerModeStopsOnExchangeHistoryExhaustionManyClients() throws Exception {
         startGrids(SRV_CNT);
 
         client = true;
@@ -173,6 +195,54 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         int topSize = G.allGrids().size();
 
         assertTrue("Actual size: " + topSize, topSize < SRV_CNT + clientNodes);
+    }
+
+    /**
+     * Verifies that in case of exchange history exhaustion
+     * (refer to javadoc at {@link #testClientReconnectOnExchangeHistoryExhaustion()} for more info about it)
+     * clients with forceServerMode=true flag don't try to reconnect to the cluster and stop.
+     *
+     * @throws Exception If failed
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
+    public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
+        testCommunicationSpi = true;
+
+        startGrids(SRV_CNT);
+
+        awaitPartitionMapExchange();
+
+        client = true;
+
+        forceServerMode = true;
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        spiBlockPred = (n,m) -> {
+            if (m.getClass() == GridDhtPartitionsSingleMessage.class) {
+                latch.countDown();
+
+                return true;
+            }
+
+            return false;
+        };
+
+        IgniteInternalFuture<IgniteEx> fut = GridTestUtils.runAsync(() -> startGrid(SRV_CNT));
+
+        assertTrue(latch.await(5000, MILLISECONDS));
+
+        TestRecordingCommunicationSpi spi = this.spi;
+
+        spiBlockPred = null;
+
+        startGrid(SRV_CNT + 1);
+        startGrid(SRV_CNT + 2);
+
+        spi.stopBlock();
+
+        GridTestUtils.assertThrows(log(), () -> fut.get(5000), IgniteCheckedException.class, "Client node in forceServerMode is not allowed to reconnect to the cluster and will be stopped.");
     }
 
     /**
