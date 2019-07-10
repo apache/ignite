@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteEx;
@@ -339,7 +340,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         awaitExchange((IgniteEx)ignite);
 
-        doLoad(cache, 4, 10_000);
+        // Ensure each partition has received an update.
+        for (int k = 0; k < RendezvousAffinityFunction.DFLT_PARTITION_COUNT; k++)
+            cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(2);
 
