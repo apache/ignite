@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -88,9 +87,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
-
-    /** */
-    private final DataRegionConfiguration regCfg;
 
     /**
      *
@@ -371,8 +367,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, lockLsnr);
 
         rmvRow = new RemoveRowHandler(cacheId == 0);
-
-        regCfg = memPlc.config();
 
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;

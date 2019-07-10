@@ -2411,13 +2411,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void allocateRows(Collection<GridCacheEntryInfo> infos,
+        @Override public void insertRows(Collection<GridCacheEntryInfo> infos,
             IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
-            delegate.allocateRows(infos, rmvPred);
+            delegate.insertRows(infos, rmvPred);
         }
 
         /** {@inheritDoc} */

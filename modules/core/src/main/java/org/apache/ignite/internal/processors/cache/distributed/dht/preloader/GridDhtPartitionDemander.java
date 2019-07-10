@@ -971,10 +971,10 @@ public class GridDhtPartitionDemander {
             try {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-                part.dataStore().allocateRows(batch, new IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow>() {
+                part.dataStore().insertRows(batch, new IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow>() {
                     @Override public boolean applyx(GridCacheEntryInfo info, CacheDataRow row)
                         throws IgniteCheckedException {
-                        return preloadEntry(from, p, info, topVer, resolveCacheContext(info), row);
+                        return !preloadEntry(from, p, info, topVer, resolveCacheContext(info), row);
                     }
                 });
             }

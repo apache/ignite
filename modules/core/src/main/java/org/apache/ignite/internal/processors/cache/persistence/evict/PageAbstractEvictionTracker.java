@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
@@ -80,18 +80,11 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /** {@inheritDoc} */
     @Override public boolean evictionRequired() {
-        CacheFreeList freeList = (CacheFreeList)sharedCtx.database().freeList(regCfg.getName());
+        AbstractFreeList freeList = (AbstractFreeList)sharedCtx.database().freeList(regCfg.getName());
 
-        int emptyDataPagesCnt = freeList.emptyDataPages();
+        double pagesThreshold = regCfg.getEvictionThreshold() * regCfg.getMaxSize() / pageMem.systemPageSize();
 
-        long memorySize = regCfg.getMaxSize();
-
-        int sysPageSize = pageMem.systemPageSize();
-
-        long allocatedPagesCnt = pageMem.loadedPages();
-
-        return allocatedPagesCnt > (memorySize / sysPageSize * regCfg.getEvictionThreshold()) &&
-            emptyDataPagesCnt < regCfg.getEmptyPagesPoolSize();
+        return pageMem.loadedPages() > pagesThreshold && freeList.emptyDataPages() < regCfg.getEmptyPagesPoolSize();
     }
 
     /**

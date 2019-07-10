@@ -700,10 +700,10 @@ public interface IgniteCacheOffheapManager {
          * Create data rows.
          *
          * @param infos Entry infos.
-         * @param rmvPred Applied to all created rows. Each row that does not match the predicate is removed.
+         * @param rmvPred Applied to all created rows. Each row that matches the predicate is removed.
          * @throws IgniteCheckedException If failed.
          */
-        public void allocateRows(Collection<GridCacheEntryInfo> infos,
+        public void insertRows(Collection<GridCacheEntryInfo> infos,
             IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException;
 
         /**
