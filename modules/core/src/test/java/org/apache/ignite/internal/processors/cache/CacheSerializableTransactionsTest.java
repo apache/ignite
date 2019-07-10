@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -4140,22 +4141,24 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         final boolean readRepair) throws Exception {
         final Ignite srv = ignite(1);
 
-        if (readRepair)
-            srv.events().remoteListen(null,
-                (IgnitePredicate<Event>)e -> {
-                    assert e instanceof CacheConsistencyViolationEvent;
-
-                    REPAIRS.incrementAndGet();
-
-                    return true;
-                },
-                EVT_CONSISTENCY_VIOLATION);
+        UUID rrLsnr = null;
 
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
 
         final String cacheName = srv.createCache(ccfg).getName();
 
         try {
+            if (readRepair)
+                rrLsnr = srv.events().remoteListen(null,
+                    (IgnitePredicate<Event>)e -> {
+                        assert e instanceof CacheConsistencyViolationEvent;
+
+                        REPAIRS.incrementAndGet();
+
+                        return true;
+                    },
+                    EVT_CONSISTENCY_VIOLATION);
+
             final List<Ignite> clients = clients();
 
             final int ACCOUNTS = SF.applyLB(100, 10);
@@ -4403,6 +4406,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         }
         finally {
             destroyCache(cacheName);
+
+            if (rrLsnr != null)
+                srv.events().stopRemoteListen(rrLsnr);
 
             REPAIRS.set(0);
         }
