@@ -1748,32 +1748,32 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             try {
                 rowStore.addRows(F.view(rows, Objects::nonNull), grp.statisticsHolderData());
+
+                Iterator<DataRow> iter = rows.iterator();
+
+                try {
+                    for (GridCacheEntryInfo info : infos) {
+                        DataRow row = iter.next();
+
+                        if (row != null && grp.sharedGroup() && row.cacheId() == CU.UNDEFINED_CACHE_ID)
+                            row.cacheId(info.cacheId());
+
+                        if (rmvPred.apply(info, row) && row != null)
+                            rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                    }
+                }
+                finally {
+                    // Clean up unprocessed rows.
+                    while (iter.hasNext()) {
+                        DataRow row = iter.next();
+
+                        if (row != null)
+                            rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                    }
+                }
             }
             finally {
                 busyLock.leaveBusy();
-            }
-
-            Iterator<DataRow> iter = rows.iterator();
-
-            try {
-                for (GridCacheEntryInfo info : infos) {
-                    DataRow row = iter.next();
-
-                    if (row != null && grp.sharedGroup() && row.cacheId() == CU.UNDEFINED_CACHE_ID)
-                        row.cacheId(info.cacheId());
-
-                    if (rmvPred.apply(info, row) && row != null)
-                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
-                }
-            }
-            finally {
-                // Clean up unprocessed rows.
-                while (iter.hasNext()) {
-                    DataRow row = iter.next();
-
-                    if (row != null)
-                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
-                }
             }
         }
 

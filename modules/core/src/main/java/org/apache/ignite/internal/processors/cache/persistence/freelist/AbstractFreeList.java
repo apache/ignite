@@ -565,6 +565,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written = COMPLETE;
 
             while (iter.hasNext() || written != COMPLETE) {
+                // If eviction is required - free up memory before locking the next page.
                 while (evictionTracker.evictionRequired()) {
                     evictionTracker.evictDataPage();
 
@@ -627,6 +628,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         // Fill the page up to the end.
                         while (iter.hasNext() || written != COMPLETE) {
                             if (written == COMPLETE) {
+                                // If eviction is required - unlock current page and free up memory.
                                 if (evictionTracker.evictionRequired())
                                     break;
 
