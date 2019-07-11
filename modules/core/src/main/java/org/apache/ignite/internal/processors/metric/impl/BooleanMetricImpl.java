@@ -25,33 +25,16 @@ import org.jetbrains.annotations.Nullable;
  * Metric that holds boolean primitive.
  */
 public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric {
-    /** No-op instance. */
-    public static final BooleanMetricImpl NO_OP = new BooleanMetricImpl("NO_OP", null) {
-        /** {@inheritDoc} */
-        @Override public void value(boolean val) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean value() {
-            return false;
-        }
-    };
-
     /** Value. */
     private volatile boolean val;
 
     /**
      * @param name Name.
      * @param desc Description.
+     * @param disabled Disabled flag.
      */
-    public BooleanMetricImpl(String name, @Nullable String desc) {
-        super(name, desc);
+    public BooleanMetricImpl(String name, @Nullable String desc, boolean disabled) {
+        super(name, desc, disabled);
     }
 
     /**
@@ -60,16 +43,25 @@ public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric {
      * @param val Value.
      */
     public void value(boolean val) {
+        if (disabled)
+            return;
+
         this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        if (disabled)
+            return;
+
         val = false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean value() {
+        if (disabled)
+            return false;
+
         return val;
     }
 }

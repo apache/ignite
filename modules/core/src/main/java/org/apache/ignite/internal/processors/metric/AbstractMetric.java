@@ -30,16 +30,21 @@ public abstract class AbstractMetric implements Metric {
     /** Description. */
     @Nullable private final String desc;
 
+    /** Disabled flag. */
+    protected volatile boolean disabled;
+
     /**
      * @param name Name.
      * @param desc Description.
+     * @param disabled Disabled flag.
      */
-    public AbstractMetric(String name, String desc) {
+    public AbstractMetric(String name, String desc, boolean disabled) {
         assert name != null;
         assert !name.isEmpty();
 
         this.name = name;
         this.desc = desc;
+        this.disabled = disabled;
     }
 
     /** {@inheritDoc} */
@@ -50,6 +55,11 @@ public abstract class AbstractMetric implements Metric {
     /** {@inheritDoc} */
     @Override @Nullable public String description() {
         return desc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disabled(boolean disabled) {
+        this.disabled = disabled;
     }
 
     /** {@inheritDoc} */

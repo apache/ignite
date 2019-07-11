@@ -26,29 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Long metric implementation.
  */
 public class LongMetricImpl extends AbstractMetric implements LongMetric {
-    /** No-op instance. */
-    public static final LongMetricImpl NO_OP = new LongMetricImpl("NO_OP", null) {
-        /** {@inheritDoc} */
-        @Override public void add(long x) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void value(long val) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long value() {
-            return 0;
-        }
-    };
-
     /** Field updater. */
     static final AtomicLongFieldUpdater<LongMetricImpl> updater =
         AtomicLongFieldUpdater.newUpdater(LongMetricImpl.class, "val");
@@ -59,9 +36,10 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric {
     /**
      * @param name Name.
      * @param desc Description.
+     * @param disabled Disabled flag.
      */
-    public LongMetricImpl(String name, @Nullable String desc) {
-        super(name, desc);
+    public LongMetricImpl(String name, @Nullable String desc, boolean disabled) {
+        super(name, desc, disabled);
     }
 
     /**
@@ -70,6 +48,9 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric {
      * @param x Value to be added.
      */
     public void add(long x) {
+        if (disabled)
+            return;
+
         updater.getAndAdd(this, x);
     }
 
@@ -85,11 +66,17 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric {
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        if (disabled)
+            return;
+
         updater.set(this, 0);
     }
 
     /** {@inheritDoc} */
     @Override public long value() {
+        if (disabled)
+            return 0;
+
         return val;
     }
 
@@ -99,6 +86,9 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric {
      * @param val Value.
      */
     public void value(long val) {
+        if (disabled)
+            return;
+
         this.val = val;
     }
 }

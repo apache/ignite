@@ -26,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class LongGauge extends AbstractMetric implements LongMetric {
-    /** No-op instance. */
-    public static final LongGauge NO_OP = new LongGauge("NO_OP", null, () -> 0);
-
     /** Value supplier. */
     private final LongSupplier val;
 
@@ -36,15 +33,19 @@ public class LongGauge extends AbstractMetric implements LongMetric {
      * @param name Name.
      * @param desc Description.
      * @param val Supplier.
+     * @param disabled Disabled flag.
      */
-    public LongGauge(String name, @Nullable String desc, LongSupplier val) {
-        super(name, desc);
+    public LongGauge(String name, @Nullable String desc, LongSupplier val, boolean disabled) {
+        super(name, desc, disabled);
 
         this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public long value() {
+        if (disabled)
+            return 0;
+
         return val.getAsLong();
     }
 }

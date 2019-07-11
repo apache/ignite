@@ -114,7 +114,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
             final AtomicBoolean run = new AtomicBoolean(true);
 
-            final HitRateMetric getRate = new HitRateMetric("getRate", "", 5000, 5);
+            final HitRateMetric getRate = new HitRateMetric("getRate", "", 5000, 5, false);
 
             GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -132,7 +132,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                 }
             }, 2, "read-loader");
 
-            final HitRateMetric putRate = new HitRateMetric("putRate", "", 1000, 5);
+            final HitRateMetric putRate = new HitRateMetric("putRate", "", 1000, 5, false);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {

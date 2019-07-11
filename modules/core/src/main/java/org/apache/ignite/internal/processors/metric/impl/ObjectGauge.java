@@ -26,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T> {
-    /** No-op instance. */
-    public static final ObjectGauge NO_OP = new ObjectGauge("NO_OP", null, () -> null, Object.class);
-
     /** Value supplier. */
     private final Supplier<T> val;
 
@@ -40,9 +37,10 @@ public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T> {
      * @param desc Description.
      * @param val Supplier.
      * @param type Type.
+     * @param disabled Disabled flag.
      */
-    public ObjectGauge(String name, @Nullable String desc, Supplier<T> val, Class<T> type) {
-        super(name, desc);
+    public ObjectGauge(String name, @Nullable String desc, Supplier<T> val, Class<T> type, boolean disabled) {
+        super(name, desc, disabled);
 
         this.val = val;
         this.type = type;
@@ -50,6 +48,9 @@ public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T> {
 
     /** {@inheritDoc} */
     @Override public T value() {
+        if (disabled)
+            return null;
+
         return val.get();
     }
 

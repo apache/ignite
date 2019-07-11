@@ -133,18 +133,18 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         subInts = memPlcCfg.getMetricsSubIntervalCount();
 
-        this.totalAllocatedPages = new LongAdderMetricImpl("NO_OP", null);
-        this.largeEntriesPages = new LongAdderMetricImpl("NO_OP", null);
-        this.dirtyPages = new LongAdderMetricImpl("NO_OP", null);
-        this.readPages = new LongAdderMetricImpl("NO_OP", null);
-        this.writtenPages = new LongAdderMetricImpl("NO_OP", null);
-        this.replacedPages = new LongAdderMetricImpl("NO_OP", null);
-        this.offHeapSize = new LongMetricImpl("NO_OP", null);
-        this.checkpointBufferSize = new LongMetricImpl("NO_OP", null);
-        this.allocRate = new HitRateMetric("NO_OP", null, 60_000, 5);
-        this.evictRate = new HitRateMetric("NO_OP", null, 60_000, 5);
-        this.pageReplaceRate = new HitRateMetric("NO_OP", null, 60_000, 5);
-        this.pageReplaceAge = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.totalAllocatedPages = new LongAdderMetricImpl("NO_OP", null, true);
+        this.largeEntriesPages = new LongAdderMetricImpl("NO_OP", null, true);
+        this.dirtyPages = new LongAdderMetricImpl("NO_OP", null, true);
+        this.readPages = new LongAdderMetricImpl("NO_OP", null, true);
+        this.writtenPages = new LongAdderMetricImpl("NO_OP", null, true);
+        this.replacedPages = new LongAdderMetricImpl("NO_OP", null, true);
+        this.offHeapSize = new LongMetricImpl("NO_OP", null, true);
+        this.checkpointBufferSize = new LongMetricImpl("NO_OP", null, true);
+        this.allocRate = new HitRateMetric("NO_OP", null, 60_000, 5, true);
+        this.evictRate = new HitRateMetric("NO_OP", null, 60_000, 5, true);
+        this.pageReplaceRate = new HitRateMetric("NO_OP", null, 60_000, 5, true);
+        this.pageReplaceAge = new HitRateMetric("NO_OP", null, 60_000, 5, true);
     }
 
     /**

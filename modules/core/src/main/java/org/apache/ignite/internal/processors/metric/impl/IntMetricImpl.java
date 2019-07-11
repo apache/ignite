@@ -26,29 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Int metric implementation.
  */
 public class IntMetricImpl extends AbstractMetric implements IntMetric {
-    /** No-op instance. */
-    public static final IntMetricImpl NO_OP = new IntMetricImpl("NO_OP", null) {
-        /** {@inheritDoc} */
-        @Override public void add(int x) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void value(int val) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int value() {
-            return 0;
-        }
-    };
-
     /** Field updater. */
     private static final AtomicIntegerFieldUpdater<IntMetricImpl> updater =
         AtomicIntegerFieldUpdater.newUpdater(IntMetricImpl.class, "val");
@@ -59,9 +36,10 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
     /**
      * @param name Name.
      * @param desc Description.
+     * @param disabled Disabled flag.
      */
-    public IntMetricImpl(String name, @Nullable String desc) {
-        super(name, desc);
+    public IntMetricImpl(String name, @Nullable String desc, boolean disabled) {
+        super(name, desc, disabled);
     }
 
     /**
@@ -70,6 +48,9 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
      * @param x Value to be added.
      */
     public void add(int x) {
+        if (disabled)
+            return;
+
         updater.addAndGet(this, x);
     }
 
@@ -79,16 +60,25 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
      * @param val Value.
      */
     public void value(int val) {
+        if (disabled)
+            return;
+
         this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        if (disabled)
+            return;
+
         updater.set(this, 0);
     }
 
     /** {@inheritDoc} */
     @Override public int value() {
+        if (disabled)
+            return 0;
+
         return val;
     }
 }

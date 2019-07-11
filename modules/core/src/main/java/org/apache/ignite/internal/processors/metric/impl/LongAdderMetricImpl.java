@@ -26,33 +26,16 @@ import org.jetbrains.annotations.Nullable;
  * Long metric implementation based on {@link LongAdder}.
  */
 public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
-    /** No-op instance. */
-    public static final LongAdderMetricImpl NO_OP = new LongAdderMetricImpl("NO_OP", null) {
-        /** {@inheritDoc} */
-        @Override public void add(long x) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long value() {
-            return 0;
-        }
-    };
-
     /** Field value. */
     private volatile LongAdder val = new LongAdder();
 
     /**
      * @param name Name.
      * @param desc Description.
+     * @param disabled Disabled flag.
      */
-    public LongAdderMetricImpl(String name, @Nullable String desc) {
-        super(name, desc);
+    public LongAdderMetricImpl(String name, @Nullable String desc, boolean disabled) {
+        super(name, desc, disabled);
     }
 
     /**
@@ -61,6 +44,9 @@ public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
      * @param x Value to be added.
      */
     public void add(long x) {
+        if (disabled)
+            return;
+
         val.add(x);
     }
 
@@ -76,11 +62,17 @@ public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        if (disabled)
+            return;
+
         val = new LongAdder();
     }
 
     /** {@inheritDoc} */
     @Override public long value() {
+        if (disabled)
+            return 0;
+
         return val.longValue();
     }
 }

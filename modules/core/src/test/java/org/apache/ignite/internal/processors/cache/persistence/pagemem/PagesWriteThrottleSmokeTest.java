@@ -128,9 +128,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
             final AtomicBoolean zeroDropdown = new AtomicBoolean(false);
 
-            final HitRateMetric putRate10secs = new HitRateMetric("putRate10secs", "", 10_000, 20);
+            final HitRateMetric putRate10secs = new HitRateMetric("putRate10secs", "", 10_000, 20, false);
 
-            final HitRateMetric putRate1sec = new HitRateMetric("putRate1sec", "", 1_000, 20);
+            final HitRateMetric putRate1sec = new HitRateMetric("putRate1sec", "", 1_000, 20, false);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {

@@ -238,10 +238,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     public MetricRegistry registry(String name) {
         return registries.computeIfAbsent(name, n -> {
-            if (disabledRegistries.contains(name))
-                return new NoOpMetricRegistry(name);
+            boolean disabled = disabledRegistries.contains(name);
 
-            MetricRegistry mreg = new MetricRegistryImpl(name, log);
+            MetricRegistry mreg = new MetricRegistry(name, disabled, log);
 
             notifyListeners(mreg, metricRegCreationLsnrs);
 

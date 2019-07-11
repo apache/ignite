@@ -30,26 +30,8 @@ import org.jetbrains.annotations.Nullable;
  * Last element will contains count of measurements bigger then most right value of bounds.
  */
 public class HistogramMetric extends AbstractMetric implements ObjectMetric<long[]> {
-    /** No-op instance. */
-    public static final HistogramMetric NO_OP = new HistogramMetric("NO_OP", null, new long[] {1}) {
-        /** Empty value. */
-        private final long[] EMPTY_VAL = new long[0];
-
-        /** {@inheritDoc} */
-        @Override public void value(long x) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset(long[] bounds) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long[] value() {
-            return EMPTY_VAL;
-        }
-    };
+    /** Value for disabled metric */
+    private static final long[] EMPTY_VAL = new long[0];
 
     /** Exception message with format description. */
     private static final String EXP_FMT_MSG = "Expected positive numbers array separated by commas \"x,y,z\"";
@@ -61,9 +43,10 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
      * @param name Name.
      * @param desc Description.
      * @param bounds Bounds.
+     * @param disabled Disabled flag.
      */
-    public HistogramMetric(String name, @Nullable String desc, long[] bounds) {
-        super(name, desc);
+    public HistogramMetric(String name, @Nullable String desc, long[] bounds, boolean disabled) {
+        super(name, desc, disabled);
 
         holder = new HistogramHolder(bounds);
     }
@@ -75,6 +58,9 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
      */
     public void value(long x) {
         assert x >= 0;
+
+        if (disabled)
+            return;
 
         HistogramHolder h = holder;
 
@@ -96,6 +82,9 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
      * @param bounds Bounds.
      */
     public void reset(long[] bounds) {
+        if (disabled)
+            return;
+
         holder = new HistogramHolder(bounds);
     }
 
@@ -106,6 +95,9 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
 
     /** {@inheritDoc} */
     @Override public long[] value() {
+        if (disabled)
+            return EMPTY_VAL;
+
         HistogramHolder h = holder;
 
         long[] res = new long[h.measurements.length()];

@@ -25,19 +25,6 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link ObjectMetric}.
  */
 public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<T> {
-    /** No-op instance. */
-    public static final ObjectMetricImpl NO_OP = new ObjectMetricImpl("NO_OP", null, Object.class) {
-        /** {@inheritDoc} */
-        @Override public Object value() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void value(Object val) {
-            // No-op.
-        }
-    };
-
     /** Value. */
     private volatile T val;
 
@@ -48,15 +35,19 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
      * @param name Name.
      * @param desc Description.
      * @param type Type.
+     * @param disabled Disabled flag.
      */
-    public ObjectMetricImpl(String name, @Nullable String desc, Class<T> type) {
-        super(name, desc);
+    public ObjectMetricImpl(String name, @Nullable String desc, Class<T> type, boolean disabled) {
+        super(name, desc, disabled);
 
         this.type = type;
     }
 
     /** {@inheritDoc} */
     @Override public T value() {
+        if (disabled)
+            return null;
+
         return val;
     }
 
@@ -71,6 +62,9 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
      * @param val Value.
      */
     public void value(T val) {
+        if (disabled)
+            return;
+
         this.val = val;
     }
 }

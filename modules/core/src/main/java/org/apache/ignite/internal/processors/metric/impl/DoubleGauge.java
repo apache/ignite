@@ -26,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class DoubleGauge extends AbstractMetric implements DoubleMetric {
-    /** No-op instance. */
-    public static final DoubleGauge NO_OP = new DoubleGauge("NO_OP", null, () -> 0);
-
     /** Value supplier. */
     private final DoubleSupplier val;
 
@@ -36,15 +33,19 @@ public class DoubleGauge extends AbstractMetric implements DoubleMetric {
      * @param name Name.
      * @param desc Description.
      * @param val Supplier.
+     * @param disabled Disabled flag.
      */
-    public DoubleGauge(String name, @Nullable String desc, DoubleSupplier val) {
-        super(name, desc);
+    public DoubleGauge(String name, @Nullable String desc, DoubleSupplier val, boolean disabled) {
+        super(name, desc, disabled);
 
         this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public double value() {
+        if (disabled)
+            return 0;
+
         return val.getAsDouble();
     }
 }

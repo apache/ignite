@@ -35,24 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
 public class HitRateMetric extends AbstractMetric implements LongMetric {
-    /** No-op instance. */
-    public static final HitRateMetric NO_OP = new HitRateMetric("NO_OP", null, 1000, 2) {
-        /** {@inheritDoc} */
-        @Override public void reset(long rateTimeInterval, int size) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(long x) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long value() {
-            return 0;
-        }
-    };
-
     /** Exception message with format description. */
     private static final String EXP_FMT_MSG = "Expected 2 numbers array separated by commas \"rateTimeInterval,size\"";
 
@@ -64,9 +46,10 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
      * @param desc Description.
      * @param rateTimeInterval Rate time interval.
      * @param size Counters array size.
+     * @param disabled Disabled flag.
      */
-    public HitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
-        super(name, desc);
+    public HitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size, boolean disabled) {
+        super(name, desc, disabled);
 
         cntr = new HitRateMetricImpl(rateTimeInterval, size);
     }
@@ -83,6 +66,9 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
      * @param size New counters array size.
      */
     public void reset(long rateTimeInterval, int size) {
+        if (disabled)
+            return;
+
         cntr = new HitRateMetricImpl(rateTimeInterval, size);
     }
 
@@ -92,6 +78,9 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
      * @param x Value to be added.
      */
     public void add(long x) {
+        if (disabled)
+            return;
+
         cntr.add(x);
     }
 
@@ -102,6 +91,9 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
 
     /** {@inheritDoc} */
     @Override public long value() {
+        if (disabled)
+            return 0;
+
         return cntr.value();
     }
 

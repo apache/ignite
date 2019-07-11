@@ -26,38 +26,16 @@ import org.jetbrains.annotations.Nullable;
  * Double metric.
  */
 public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric {
-    /** No-op instance. */
-    public static final DoubleMetricImpl NO_OP = new DoubleMetricImpl("NO_OP", null) {
-        /** {@inheritDoc} */
-        @Override public void add(double x) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void value(double val) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public double value() {
-            return 0;
-        }
-    };
-
     /** Value. */
     private volatile DoubleAccumulator val;
 
     /**
      * @param name Name.
      * @param desc Description.
+     * @param disabled Disabled flag.
      */
-    public DoubleMetricImpl(String name, @Nullable String desc) {
-        super(name, desc);
+    public DoubleMetricImpl(String name, @Nullable String desc, boolean disabled) {
+        super(name, desc, disabled);
 
         this.val = new DoubleAccumulator(Double::sum, 0d);
     }
@@ -68,6 +46,9 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric {
      * @param x Value to be added.
      */
     public void add(double x) {
+        if (disabled)
+            return;
+
         val.accumulate(x);
     }
 
@@ -77,16 +58,25 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric {
      * @param val Value.
      */
     public void value(double val) {
+        if (disabled)
+            return;
+
         this.val = new DoubleAccumulator(Double::sum, val);
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        if (disabled)
+            return;
+
         val.reset();
     }
 
     /** {@inheritDoc} */
     @Override public double value() {
+        if (disabled)
+            return 0;
+
         return val.doubleValue();
     }
 }

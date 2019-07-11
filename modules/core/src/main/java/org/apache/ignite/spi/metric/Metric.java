@@ -30,6 +30,9 @@ public interface Metric {
     /** @return Description of the metric. */
     public String description();
 
+    /** Sets this {@code disabled} state. */
+    public void disabled(boolean disabled);
+
     /** @return String representation of metric value. */
     @Nullable public String getAsString();
 

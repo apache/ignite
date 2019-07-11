@@ -17,18 +17,12 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.lang.management.ManagementFactory;
 import java.util.Arrays;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,7 +37,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHitRateMetric() throws Exception {
-        HitRateMetric hitRateMetric = new HitRateMetric("test", null, 1000, 3);
+        HitRateMetric hitRateMetric = new HitRateMetric("test", null, 1000, 3, false);
 
         assertThrowsWithCause(() -> hitRateMetric.configure(null), IgniteException.class);
 
@@ -79,7 +73,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogramConfiguration() throws Exception {
-        HistogramMetric histogramMetric = new HistogramMetric("test", null, new long[] {0, 50, 100, 250});
+        HistogramMetric histogramMetric = new HistogramMetric("test", null, new long[] {0, 50, 100, 250}, false);
 
         assertThrowsWithCause(() -> histogramMetric.configure(null), IgniteException.class);
 
@@ -107,14 +101,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     public void testJMXConfiguration() throws Exception {
         Ignite g = startGrid();
 
-        ObjectName mbeanName = U.makeMBeanName(g.name(), "Kernal", IgniteKernal.class.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        IgniteMXBean bean = MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, IgniteMXBean.class, false);
+        IgniteMXBean bean = (IgniteMXBean)g;
 
         //Expected exception on LongMetricImpl configuration
         assertThrowsWithCause(

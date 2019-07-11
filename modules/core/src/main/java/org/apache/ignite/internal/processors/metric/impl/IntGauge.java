@@ -26,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class IntGauge extends AbstractMetric implements IntMetric {
-    /** No-op instance. */
-    public static final IntGauge NO_OP = new IntGauge("NO_OP", null, () -> 0);
-
     /** Value supplier. */
     private final IntSupplier val;
 
@@ -36,15 +33,19 @@ public class IntGauge extends AbstractMetric implements IntMetric {
      * @param name Name.
      * @param desc Description.
      * @param val Supplier.
+     * @param disabled Disabled flag.
      */
-    public IntGauge(String name, @Nullable String desc, IntSupplier val) {
-        super(name, desc);
+    public IntGauge(String name, @Nullable String desc, IntSupplier val, boolean disabled) {
+        super(name, desc, disabled);
 
         this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public int value() {
+        if (disabled)
+            return 0;
+
         return val.getAsInt();
     }
 }

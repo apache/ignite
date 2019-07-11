@@ -517,4 +517,24 @@ public interface IgniteMXBean {
     @MXBeanParametersNames({"registry", "name", "config"})
     @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "Configuration string."})
     public void configureMetric(String registry, String name, String config);
+
+    /**
+     * Enable metric registry.
+     *
+     * @param registry Metrics registry name.
+     */
+    @MXBeanDescription("Disable metric registry.")
+    @MXBeanParametersNames("registry")
+    @MXBeanParametersDescriptions("Registry name.")
+    public void disableMericRegistry(String registry);
+
+    /**
+     * Enable metric registry.
+     *
+     * @param registry Metrics registry name.
+     */
+    @MXBeanDescription("Enable metric registry.")
+    @MXBeanParametersNames("registry")
+    @MXBeanParametersDescriptions("Registry name.")
+    public void enableMericRegistry(String registry);
 }
