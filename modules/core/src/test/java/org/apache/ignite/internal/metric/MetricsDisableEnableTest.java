@@ -54,6 +54,9 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
 
         IgniteMXBean bean = (IgniteMXBean)g;
 
+        bean.disableMetricRegistry("unknown-registry");
+        bean.enableMetricRegistry("unknown-registry-2");
+
         bean.disableMetricRegistry(DEFAULT_CACHE_REGISTRY);
 
         assertTrue("Default cache registry should be disabled.",

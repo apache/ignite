@@ -158,6 +158,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
+    /** Disabled registries names. */
     private final Set<String> disabledRegistries = new HashSet<>();
 
     /** Metrics update worker. */
@@ -269,14 +270,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param registry Registry name.
      */
     public void disableRegistry(String reg) {
-        disabledRegistries.add(reg);
+        registries.compute(reg, (n, mreg) -> {
+            disabledRegistries.add(reg);
 
-        MetricRegistry mreg = registries.get(reg);
+            if (mreg == null)
+                return null;
 
-        if (mreg == null)
-            return;
+            mreg.disabled(true);
 
-        mreg.disabled(true);
+            return mreg;
+        });
+
     }
 
     /**
@@ -286,14 +290,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param registry Registry name.
      */
     public void enableRegistry(String reg) {
-        disabledRegistries.remove(reg);
+        registries.compute(reg, (n, mreg) -> {
+            disabledRegistries.remove(reg);
 
-        MetricRegistry mreg = registries.get(reg);
+            if (mreg == null)
+                return null;
 
-        if (mreg == null)
-            return;
+            mreg.disabled(false);
 
-        mreg.disabled(false);
+            return mreg;
+        });
+
     }
 
     /**
