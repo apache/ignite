@@ -158,7 +158,7 @@ public class AgentUtils {
         String trustStorePwd,
         List<String> ciphers
     ) {
-        SslContextFactory sslCtxFactory = new SslContextFactory();
+        SslContextFactory sslCtxFactory = new SslContextFactory.Client();
 
         if (!F.isEmpty(keyStore)) {
             sslCtxFactory.setKeyStorePath(keyStore);
@@ -298,13 +298,15 @@ public class AgentUtils {
      *
      * @param ses Websocket session.
      * @param evt Event.
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of the timeout argument
      * @throws Exception If failed to send event.
      */
-    public static void send(Session ses, WebSocketResponse evt) throws Exception {
+    public static void send(Session ses, WebSocketResponse evt, long timeout, TimeUnit unit) throws Exception {
         Future<Void> fut = ses.getRemote().sendStringByFuture(toJson(evt));
 
         try {
-            fut.get(10L, TimeUnit.SECONDS);
+            fut.get(timeout, unit);
         }
         catch (TimeoutException e) {
             fut.cancel(true);
