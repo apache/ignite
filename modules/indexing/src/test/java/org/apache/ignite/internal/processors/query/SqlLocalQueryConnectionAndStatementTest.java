@@ -51,13 +51,17 @@ public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCom
             for (int i = 0; i < 10; i++)
                 sql("insert into repl_tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
 
-            Iterator<List<?>> it0 = sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).iterator();
+            try (FieldsQueryCursor<List<?>> cur = sql(
+                new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?")
+                    .setArgs(1))) {
+                Iterator<List<?>> it0 = cur.iterator();
 
-            it0.next();
+                it0.next();
 
-            sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).getAll();
+                sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).getAll();
 
-            it0.next();
+                it0.next();
+            }
         }
         finally {
             sql("DROP TABLE repl_tbl").getAll();
@@ -74,17 +78,19 @@ public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCom
             for (int i = 0; i < 10; i++)
                 sql("insert into tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
 
-            Iterator<List<?>> it0 = sql(
+            try (FieldsQueryCursor<List<?>> cur = sql(
                 new SqlFieldsQuery("SELECT * FROM tbl where id > ?")
                     .setArgs(1)
-                    .setLocal(true))
-                .iterator();
+                    .setLocal(true))) {
 
-            it0.next();
+                Iterator<List<?>> it0 = cur.iterator();
 
-            sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1).setLocal(true)).getAll();
+                it0.next();
 
-            it0.next();
+                sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1).setLocal(true)).getAll();
+
+                it0.next();
+            }
         }
         finally {
             sql("DROP TABLE tbl").getAll();

@@ -599,22 +599,20 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /**
      * JUnit.
-     *
-     * @throws Exception In case of error.
      */
     @Test
-    public void testSelectQuery() throws Exception {
+    public void testSelectQuery() {
         IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
 
         cache.put(10, "value");
 
-        QueryCursor<Cache.Entry<Integer, String>> qry =
-            cache.query(new SqlQuery<Integer, String>(String.class, "true"));
+        try (QueryCursor<Cache.Entry<Integer, String>> qry = cache.query(new SqlQuery<>(String.class, "true"))) {
 
-        Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
+            Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
 
-        assert iter != null;
-        assert iter.next() != null;
+            assert iter != null;
+            assert iter.next() != null;
+        }
     }
 
     /**
@@ -734,41 +732,42 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /**
      * JUnit.
-     *
-     * @throws Exception In case of error.
      */
     @Test
-    public void testObjectQuery() throws Exception {
+    public void testObjectQuery() {
         IgniteCache<Integer, ObjectValue> cache = jcache(Integer.class, ObjectValue.class);
 
         ObjectValue val = new ObjectValue("test", 0);
 
         cache.put(1, val);
 
-        QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
-            cache.query(new SqlQuery<Integer, ObjectValue>(ObjectValue.class, "_val=?").setArgs(val));
-
-        Iterator<Cache.Entry<Integer, ObjectValue>> iter = qry.iterator();
-
-        assert iter != null;
-
         int expCnt = 1;
 
-        for (int i = 0; i < expCnt; i++)
-            assert iter.next() != null;
+        try (QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
+            cache.query(new SqlQuery<Integer, ObjectValue>(ObjectValue.class, "_val=?").setArgs(val))) {
 
-        assert !iter.hasNext();
+            Iterator<Cache.Entry<Integer, ObjectValue>> iter = qry.iterator();
 
-        qry = cache.query(new TextQuery<Integer, ObjectValue>(ObjectValue.class, "test"));
+            assert iter != null;
 
-        iter = qry.iterator();
+            for (int i = 0; i < expCnt; i++)
+                assert iter.next() != null;
 
-        assert iter != null;
+            assert !iter.hasNext();
+        }
 
-        for (int i = 0; i < expCnt; i++)
-            assert iter.next() != null;
+        try (QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
+            cache.query(new TextQuery<>(ObjectValue.class, "test"))) {
 
-        assert !iter.hasNext();
+            Iterator<Cache.Entry<Integer, ObjectValue>> iter = qry.iterator();
+
+            assert iter != null;
+
+            for (int i = 0; i < expCnt; i++)
+                assert iter.next() != null;
+
+            assert !iter.hasNext();
+        }
     }
 
     /**
