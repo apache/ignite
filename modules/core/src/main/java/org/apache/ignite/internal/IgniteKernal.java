@@ -4548,7 +4548,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void disableMericRegistry(String registry) {
+    @Override public void disableMetricRegistry(String registry) {
         assert registry != null;
 
         ctx.metric().addDisabledRegistry(registry);
@@ -4562,7 +4562,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void enableMericRegistry(String registry) {
+    @Override public void enableMetricRegistry(String registry) {
         assert registry != null;
 
         ctx.metric().removeDisabledRegistry(registry);

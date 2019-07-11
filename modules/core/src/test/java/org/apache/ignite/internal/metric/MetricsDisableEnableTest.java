@@ -44,8 +44,6 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDisabledMetricRegistries(DEFAULT_CACHE_REGISTRY, SYS_METRICS);
-
         return cfg;
     }
 
@@ -56,7 +54,9 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
 
         IgniteMXBean bean = (IgniteMXBean)g;
 
-        assertTrue("Default cache registry disabled in config.",
+        bean.disableMetricRegistry(DEFAULT_CACHE_REGISTRY);
+
+        assertTrue("Default cache registry should be disabled.",
             g.context().metric().registry(DEFAULT_CACHE_REGISTRY).disabled());
 
         g.createCache(SOME_CACHE);
@@ -64,23 +64,25 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
         assertFalse("\"some-cache\" registry should be enabled.",
             g.context().metric().registry(cacheMetricsRegistryName(SOME_CACHE, false)).disabled());
 
+        bean.disableMetricRegistry(SYS_METRICS);
+
         MetricRegistry mreg = g.context().metric().registry(SYS_METRICS);
 
-        assertTrue("Sys registry disabled in config.", mreg.disabled());
+        assertTrue("Sys registry should be disabled.", mreg.disabled());
 
         LongGauge upTime = (LongGauge)mreg.findMetric(UP_TIME);
 
         assertEquals("Disabled metric should always return 0", 0, upTime.value());
 
-        bean.enableMericRegistry(SYS_METRICS);
+        bean.enableMetricRegistry(SYS_METRICS);
 
         assertTrue("Enabled metric should return its value", upTime.value() > 0);
 
-        bean.disableMericRegistry(SYS_METRICS);
+        bean.disableMetricRegistry(SYS_METRICS);
 
         assertEquals("Disabled metric should always return 0", 0, upTime.value());
 
-        bean.disableMericRegistry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false));
+        bean.disableMetricRegistry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false));
 
         g.createCache(SOME_OTHER_CACHE);
 
@@ -89,7 +91,7 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
 
         g.destroyCache(SOME_OTHER_CACHE);
 
-        bean.enableMericRegistry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false));
+        bean.enableMetricRegistry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false));
 
         g.createCache(SOME_OTHER_CACHE);
 
