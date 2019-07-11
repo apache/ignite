@@ -268,6 +268,24 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /**
+     * Add registry to disabled set.
+     *
+     * @param registry Registry name.
+     */
+    public void addDisabledRegistry(String registry) {
+        disabledRegistries.add(registry);
+    }
+
+    /**
+     * Remove registry from disabled set.
+     *
+     * @param registry Registry name.
+     */
+    public void removeDisabledRegistry(String registry) {
+        disabledRegistries.remove(registry);
+    }
+
+    /**
      * @param t Consumed object.
      * @param lsnrs Listeners.
      * @param <T> Type of consumed object.

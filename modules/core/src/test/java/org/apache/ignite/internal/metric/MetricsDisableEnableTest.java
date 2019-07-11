@@ -34,6 +34,12 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
     /** */
     public static final String DEFAULT_CACHE_REGISTRY = cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false);
 
+    /** */
+    public static final String SOME_OTHER_CACHE = "some-other-cache";
+
+    /** */
+    public static final String SOME_CACHE = "some-cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -50,15 +56,17 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
 
         IgniteMXBean bean = (IgniteMXBean)g;
 
-        assertTrue(g.context().metric().registry(DEFAULT_CACHE_REGISTRY).disabled());
+        assertTrue("Default cache registry disabled in config.",
+            g.context().metric().registry(DEFAULT_CACHE_REGISTRY).disabled());
 
-        g.createCache("some-cache");
+        g.createCache(SOME_CACHE);
 
-        assertFalse(g.context().metric().registry(cacheMetricsRegistryName("some-cache", false)).disabled());
+        assertFalse("\"some-cache\" registry should be enabled.",
+            g.context().metric().registry(cacheMetricsRegistryName(SOME_CACHE, false)).disabled());
 
         MetricRegistry mreg = g.context().metric().registry(SYS_METRICS);
 
-        assertTrue(mreg.disabled());
+        assertTrue("Sys registry disabled in config.", mreg.disabled());
 
         LongGauge upTime = (LongGauge)mreg.findMetric(UP_TIME);
 
@@ -71,5 +79,12 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
         bean.disableMericRegistry(SYS_METRICS);
 
         assertEquals("Disabled metric should always return 0", 0, upTime.value());
+
+        bean.disableMericRegistry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false));
+
+        g.createCache(SOME_OTHER_CACHE);
+
+        assertTrue("\"some-other-cache\" registry disabled in runtime.",
+            g.context().metric().registry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false)).disabled());
     }
 }

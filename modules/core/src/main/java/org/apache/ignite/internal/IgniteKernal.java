@@ -4551,14 +4551,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public void disableMericRegistry(String registry) {
         assert registry != null;
 
+        ctx.metric().addDisabledRegistry(registry);
+
         MetricRegistry mreg = ctx.metric().registry(registry);
 
-        if (mreg == null) {
-            if (log.isInfoEnabled())
-                log.info("\"" + registry + "\" not found.");
-
-            throw new IgniteException("\"" + registry + "\" not found.");
-        }
+        if (mreg == null)
+            return;
 
         mreg.disabled(true);
     }
@@ -4567,14 +4565,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public void enableMericRegistry(String registry) {
         assert registry != null;
 
+        ctx.metric().removeDisabledRegistry(registry);
+
         MetricRegistry mreg = ctx.metric().registry(registry);
 
-        if (mreg == null) {
-            if (log.isInfoEnabled())
-                log.info("\"" + registry + "\" not found.");
-
-            throw new IgniteException("\"" + registry + "\" not found.");
-        }
+        if (mreg == null)
+            return;
 
         mreg.disabled(false);
     }
