@@ -408,6 +408,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean readRepair,
         boolean skipVals,
         boolean needVer
     ) {

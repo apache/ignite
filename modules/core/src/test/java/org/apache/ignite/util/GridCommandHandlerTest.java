@@ -90,7 +90,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -365,18 +364,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      * @return Local node consistent ID.
      */
     private String consistentIds(Ignite... ignites) {
-        String res = "";
+        StringBuilder res = new StringBuilder();
 
         for (Ignite ignite : ignites) {
             String consistentId = ignite.cluster().localNode().consistentId().toString();
 
-            if (!F.isEmpty(res))
-                res += ", ";
+            if (res.length() != 0)
+                res.append(", ");
 
-            res += consistentId;
+            res.append(consistentId);
         }
 
-        return res;
+        return res.toString();
     }
 
     /**
@@ -391,6 +390,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add", "non-existent-id"));
 
         Ignite other = startGrid(2);
 
@@ -1193,7 +1196,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
                 getTestIgniteInstanceName(2) + "," +
                 getTestIgniteInstanceName(3);
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add", consistentIDs));
 
         String testOutStr = testOut.toString();
 
@@ -1227,6 +1230,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
                         assertTrue(cmd + " " + arg, output.contains(arg.toString()));
 
             }
+            else {
+                assertContains(log, output, CommandHandler.UTILITY_NAME);
+
+                assertNotContains(log, output, "control.sh");
+            }
         }
     }
 
@@ -1257,6 +1265,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         for (CommandList cmd : CommandList.values())
             assertContains(log, testOutStr, cmd.toString());
+
+        assertContains(log, testOutStr, "Control utility script");
+        assertContains(log, testOutStr, CommandHandler.UTILITY_NAME);
+
+        assertNotContains(log, testOutStr, "Control.sh");
     }
 
     /**
@@ -2191,6 +2204,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         Pattern fileNamePattern = Pattern.compile(".*VisorIdleVerifyDumpTask successfully written output to '(.*)'");
 
         return fileNamePattern.matcher(testOut.toString());
+    }
+
+    /** */
+    @Test
+    public void testPrintTimestampAtEndsOfExecution() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute());
+
+        String testOutStr = testOut.toString();
+
+        assertContains(log, testOutStr, "Control utility has completed execution at: ");
     }
 
     /**

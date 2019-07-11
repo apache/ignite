@@ -216,7 +216,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             SORTED_INDEX,
             cctx.name(),
             idxName,
-            ctx.metric().registry());
+            ctx.metric());
 
         for (int i = 0; i < segments.length; i++) {
             db.checkpointReadLock();

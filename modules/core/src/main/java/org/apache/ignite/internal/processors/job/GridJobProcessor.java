@@ -119,7 +119,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
 
     /** Metrics prefix. */
-    public static final String JOBS = metricName("compute", "jobs");
+    public static final String JOBS_METRICS = metricName("compute", "jobs");
 
     /** Started jobs metric name. */
     public static final String STARTED = "Started";
@@ -302,9 +302,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
 
-        cpuLoadMetric = (DoubleMetric)ctx.metric().registry().findMetric(metricName(SYS_METRICS, CPU_LOAD));
+        cpuLoadMetric = (DoubleMetric)ctx.metric().registry(SYS_METRICS).findMetric(CPU_LOAD);
 
-        MetricRegistry mreg = ctx.metric().registry().withPrefix(JOBS);
+        MetricRegistry mreg = ctx.metric().registry(JOBS_METRICS);
 
         startedJobsMetric = mreg.metric(STARTED, "Number of started jobs.");
 

@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -153,7 +154,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
      */
     private static class TestTask1 extends ComputeTaskAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
             throws IgniteException {
             Map<TestJob, ClusterNode> jobs = new HashMap<>();
 
@@ -174,7 +175,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
      */
     private static class TestTask2 implements ComputeTask<Void, Void> {
         /** {@inheritDoc} */
-        @Override @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
             throws IgniteException {
             Map<TestJob, ClusterNode> jobs = new HashMap<>();
 

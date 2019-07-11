@@ -46,7 +46,8 @@ public class StateCommand implements Command<Void> {
             logger.info("Cluster is " + (state.active() ? "active" : "inactive"));
         }
         catch (Throwable e) {
-            logger.severe("Failed to get cluster state.");
+            if (!CommandHandler.isAuthError(e))
+                logger.severe("Failed to get cluster state.");
 
             throw e;
         }

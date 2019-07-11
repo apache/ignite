@@ -294,7 +294,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V get0(
+    @Override protected V get(
         final K key,
         String taskName,
         boolean deserializeBinary,
@@ -312,8 +312,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public final Map<K, V> getAll0(Collection<? extends K> keys, boolean deserializeBinary, boolean needVer)
-        throws IgniteCheckedException {
+    @Override public final Map<K, V> getAll(
+        Collection<? extends K> keys,
+        boolean deserializeBinary,
+        boolean needVer,
+        boolean recovery,
+        boolean readRepair) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -336,6 +340,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         boolean recovery,
+        boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -537,6 +542,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            false,
             /*force primary*/false,
             expiry,
             skipVals,

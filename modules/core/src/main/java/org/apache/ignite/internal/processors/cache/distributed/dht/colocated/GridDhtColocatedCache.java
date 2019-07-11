@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -194,6 +195,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean recovery = opCtx != null && opCtx.recovery();
+        final boolean readRepair = opCtx != null && opCtx.readRepair();
 
         // Get operation bypass Tx in Mvcc mode.
         if (!ctx.mvccEnabled() && tx != null && !tx.implicit() && !skipTx) {
@@ -207,6 +209,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
+                        readRepair,
                         needVer);
 
                     return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
@@ -260,6 +263,21 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         else
             topVer = ctx.affinity().affinityTopologyVersion();
 
+        if (readRepair) {
+            return new GridNearReadRepairCheckOnlyFuture(
+                ctx,
+                Collections.singleton(ctx.toCacheKeyObject(key)),
+                opCtx == null || !opCtx.skipStore(),
+                taskName,
+                deserializeBinary,
+                recovery,
+                skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
+                skipVals,
+                needVer,
+                false,
+                tx).single();
+        }
+
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
             ctx.toCacheKeyObject(key),
             topVer,
@@ -301,6 +319,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -329,6 +348,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
+                        readRepair,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
@@ -364,6 +384,21 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             topVer = mvccTracker.topologyVersion();
         else
             topVer = ctx.affinity().affinityTopologyVersion();
+
+        if (readRepair) {
+            return new GridNearReadRepairCheckOnlyFuture(
+                ctx,
+                ctx.cacheKeysView(keys),
+                opCtx == null || !opCtx.skipStore(),
+                taskName,
+                deserializeBinary,
+                recovery,
+                skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
+                skipVals,
+                needVer,
+                false,
+                tx).multi();
+        }
 
         IgniteInternalFuture<Map<K, V>> fut = loadAsync(
             ctx.cacheKeysView(keys),
@@ -669,7 +704,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             keepCacheObj,
             txLbl,
-            mvccSnapshot);
+            mvccSnapshot,
+            null);
 
         fut.init(topVer);
 
