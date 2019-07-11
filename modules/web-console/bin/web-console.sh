@@ -28,6 +28,30 @@ fi
 # Web Console command line loader.
 #
 
+#
+# The function exports IGNITE_HOME variable with path to Web Console home directory.
+#
+
+setWebConsoleHome() {
+    #
+    # Set IGNITE_HOME, if needed.
+    #
+    IGNITE_HOME="$(cd "$(dirname "$0")"; "pwd")";
+
+    #
+    # Check IGNITE_HOME is valid.
+    #
+    if [ ! -d "${IGNITE_HOME}/agent_dists" ]; then
+        echo $0", ERROR:"
+        echo "Web Console installation folder is incorrect."
+        echo "Please run web-console.sh from Web Console installation folder."
+
+        exit 1
+    fi
+}
+
+setWebConsoleHome
+
 javaVersion() {
     version=$("$1" -version 2>&1 | awk -F '"' '/version/ {print $2}')
 }
@@ -121,4 +145,4 @@ elif [ $version -ge 11 ] ; then
         ${JVM_OPTS}"
 fi
 
-"$JAVA" ${JVM_OPTS} -jar ./ignite-web-console-*.jar
+"$JAVA" -DIGNITE_HOME="${IGNITE_HOME}" ${JVM_OPTS} -jar "${IGNITE_HOME}"/ignite-web-console-*.jar
