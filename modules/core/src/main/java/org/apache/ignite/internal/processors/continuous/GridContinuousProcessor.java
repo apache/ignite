@@ -1073,37 +1073,37 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     doStop = true;
             }
 
-        if (doStop) {
-            boolean stop = false;
+            if (doStop) {
+                boolean stop = false;
 
-            // Unregister routine locally.
-            LocalRoutineInfo routine = locInfos.remove(routineId);
+                // Unregister routine locally.
+                LocalRoutineInfo routine = locInfos.remove(routineId);
 
-            if (routine != null) {
-                stop = true;
+                if (routine != null) {
+                    stop = true;
 
-                // Unregister handler locally.
-                unregisterHandler(routineId, routine.hnd, true);
-            }
+                    // Unregister handler locally.
+                    unregisterHandler(routineId, routine.hnd, true);
+                }
 
-            if (!stop && discoProtoVer == 2)
-                stop = routinesInfo.routineExists(routineId);
+                if (!stop && discoProtoVer == 2)
+                    stop = routinesInfo.routineExists(routineId);
 
-            // Finish if routine is not found (wrong ID is provided).
-            if (!stop) {
-                stopFuts.remove(routineId);
+                // Finish if routine is not found (wrong ID is provided).
+                if (!stop) {
+                    stopFuts.remove(routineId);
 
                     fut.onDone();
 
                     return fut;
                 }
 
-            try {
-                ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
-            }
-            catch (IgniteCheckedException e) {
-                fut.onDone(e);
-            }
+                try {
+                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onDone(e);
+                }
 
                 if (ctx.isStopping())
                     fut.onDone();
@@ -1362,9 +1362,20 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param req Start request.
      */
     private void processStartRequest(ClusterNode node, StartRoutineDiscoveryMessage req) {
-        UUID routineId = req.routineId();
         if (node.id().equals(ctx.localNodeId()))
             return;
+
+        UUID routineId = req.routineId();
+
+        if (req.deserializationException() != null && checkNodeFilter(req)) {
+            IgniteCheckedException err = new IgniteCheckedException(req.deserializationException());
+
+            req.addError(node.id(), err);
+
+            U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', err);
+
+            return;
+        }
 
         StartRequestData data = req.startRequestData();
 
@@ -1459,6 +1470,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (err != null)
             req.addError(ctx.localNodeId(), err);
+    }
+
+    /** */
+    private boolean checkNodeFilter(StartRoutineDiscoveryMessage req) {
+        StartRequestData reqData = req.startRequestData();
+        IgnitePredicate<ClusterNode> prjPred;
+
+        return reqData == null || (prjPred = reqData.projectionPredicate()) == null
+            || prjPred.apply(ctx.discovery().localNode());
     }
 
     /**
