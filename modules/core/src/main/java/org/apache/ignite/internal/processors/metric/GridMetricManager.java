@@ -264,20 +264,36 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /**
      * Add registry to disabled set.
+     * Disable it if exists.
      *
      * @param registry Registry name.
      */
-    public void addDisabledRegistry(String registry) {
-        disabledRegistries.add(registry);
+    public void disableRegistry(String reg) {
+        disabledRegistries.add(reg);
+
+        MetricRegistry mreg = registries.get(reg);
+
+        if (mreg == null)
+            return;
+
+        mreg.disabled(true);
     }
 
     /**
-     * Remove registry from disabled set.
+     * Remove registry from disabled.
+     * Enable it if exists.
      *
      * @param registry Registry name.
      */
-    public void removeDisabledRegistry(String registry) {
-        disabledRegistries.remove(registry);
+    public void enableRegistry(String reg) {
+        disabledRegistries.remove(reg);
+
+        MetricRegistry mreg = registries.get(reg);
+
+        if (mreg == null)
+            return;
+
+        mreg.disabled(false);
     }
 
     /**
