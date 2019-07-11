@@ -593,6 +593,7 @@ public class IgniteConfiguration {
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
         metricExporterSpi = cfg.getMetricExporterSpi();
+        disabledMetricRegistries = cfg.getDisabledMetricRegistries();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 

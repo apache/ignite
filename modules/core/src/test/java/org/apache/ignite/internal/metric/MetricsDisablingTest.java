@@ -29,10 +29,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cach
 
 /** */
 public class MetricsDisablingTest extends GridCommonAbstractTest {
+    /** */
     public static final String DEFAULT_CACHE_REGISTRY = cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false);
 
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setDisabledMetricRegistries(DEFAULT_CACHE_REGISTRY);
 
@@ -42,7 +44,7 @@ public class MetricsDisablingTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMetricDisabling() throws Exception {
-        IgniteEx g = startGrid();
+        IgniteEx g = startGrid("test");
 
         MetricRegistry mreg = g.context().metric().registry(DEFAULT_CACHE_REGISTRY);
 
