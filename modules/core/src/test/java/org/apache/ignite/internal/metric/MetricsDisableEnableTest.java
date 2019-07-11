@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.UP_TIME;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class MetricsDisableEnableTest extends GridCommonAbstractTest {
@@ -53,6 +55,9 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
         IgniteEx g = startGrid();
 
         IgniteMXBean bean = (IgniteMXBean)g;
+
+        assertThrowsWithCause(() -> bean.disableMetricRegistry(null), IgniteException.class);
+        assertThrowsWithCause(() -> bean.enableMetricRegistry(null), IgniteException.class);
 
         bean.disableMetricRegistry("unknown-registry");
         bean.enableMetricRegistry("unknown-registry-2");

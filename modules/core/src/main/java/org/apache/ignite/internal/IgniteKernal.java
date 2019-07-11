@@ -4549,14 +4549,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void disableMetricRegistry(String registry) {
-        assert registry != null;
+        if(registry == null)
+            throw new IgniteException("Registry shouldn't be null.");
 
         ctx.metric().disableRegistry(registry);
     }
 
     /** {@inheritDoc} */
     @Override public void enableMetricRegistry(String registry) {
-        assert registry != null;
+        if(registry == null)
+            throw new IgniteException("Registry shouldn't be null.");
 
         ctx.metric().enableRegistry(registry);
     }
