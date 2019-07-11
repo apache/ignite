@@ -30,6 +30,27 @@ import org.jetbrains.annotations.Nullable;
  * Last element will contains count of measurements bigger then most right value of bounds.
  */
 public class HistogramMetric extends AbstractMetric implements ObjectMetric<long[]> {
+    /** No-op instance. */
+    public static final HistogramMetric NO_OP = new HistogramMetric("NO_OP", null, new long[] {1}) {
+        /** Empty value. */
+        private final long[] EMPTY_VAL = new long[0];
+
+        /** {@inheritDoc} */
+        @Override public void value(long x) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset(long[] bounds) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public long[] value() {
+            return EMPTY_VAL;
+        }
+    };
+
     /** Exception message with format description. */
     private static final String EXP_FMT_MSG = "Expected positive numbers array separated by commas \"x,y,z\"";
 

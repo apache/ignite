@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class IntGauge extends AbstractMetric implements IntMetric {
+    /** No-op instance. */
+    public static final IntGauge NO_OP = new IntGauge("NO_OP", null, () -> 0);
+
     /** Value supplier. */
     private final IntSupplier val;
 

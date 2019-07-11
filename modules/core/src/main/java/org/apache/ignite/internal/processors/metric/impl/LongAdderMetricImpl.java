@@ -26,6 +26,24 @@ import org.jetbrains.annotations.Nullable;
  * Long metric implementation based on {@link LongAdder}.
  */
 public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
+    /** No-op instance. */
+    public static final LongAdderMetricImpl NO_OP = new LongAdderMetricImpl("NO_OP", null) {
+        /** {@inheritDoc} */
+        @Override public void add(long x) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public long value() {
+            return 0;
+        }
+    };
+
     /** Field value. */
     private volatile LongAdder val = new LongAdder();
 

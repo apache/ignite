@@ -26,6 +26,29 @@ import org.jetbrains.annotations.Nullable;
  * Int metric implementation.
  */
 public class IntMetricImpl extends AbstractMetric implements IntMetric {
+    /** No-op instance. */
+    public static final IntMetricImpl NO_OP = new IntMetricImpl("NO_OP", null) {
+        /** {@inheritDoc} */
+        @Override public void add(int x) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void value(int val) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int value() {
+            return 0;
+        }
+    };
+
     /** Field updater. */
     private static final AtomicIntegerFieldUpdater<IntMetricImpl> updater =
         AtomicIntegerFieldUpdater.newUpdater(IntMetricImpl.class, "val");

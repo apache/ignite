@@ -25,6 +25,7 @@ import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
@@ -57,7 +58,7 @@ public class MetricsSelfTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistry("group", null);
+        mreg = new MetricRegistryImpl("group", null);
     }
 
     /** */
@@ -267,7 +268,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistryImpl("group", null);
 
         mreg.metric("test1", "");
         mreg.metric("test2", "");
@@ -288,7 +289,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistryImpl("group", null);
 
         LongMetricImpl cntr = mreg.metric("my.name", null);
         LongMetricImpl cntr2 = mreg.metric("my.name.x", null);

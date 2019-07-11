@@ -24,10 +24,13 @@ import java.lang.management.MemoryUsage;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +54,7 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.EMPTY_SET;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -156,6 +160,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
+    private final Set<String> disabledRegistries;
+
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
 
@@ -176,6 +182,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     public GridMetricManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getMetricExporterSpi());
+
+        this.disabledRegistries = ctx.config().getDisabledMetricRegistries() == null ? EMPTY_SET :
+            new HashSet<>(Arrays.asList(ctx.config().getDisabledMetricRegistries()));
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
@@ -229,7 +238,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     public MetricRegistry registry(String name) {
         return registries.computeIfAbsent(name, n -> {
-            MetricRegistry mreg = new MetricRegistry(name, log);
+            if (disabledRegistries.contains(name))
+                return new NoOpMetricRegistry(name);
+
+            MetricRegistry mreg = new MetricRegistryImpl(name, log);
 
             notifyListeners(mreg, metricRegCreationLsnrs);
 

@@ -25,6 +25,19 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link ObjectMetric}.
  */
 public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<T> {
+    /** No-op instance. */
+    public static final ObjectMetricImpl NO_OP = new ObjectMetricImpl("NO_OP", null, Object.class) {
+        /** {@inheritDoc} */
+        @Override public Object value() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void value(Object val) {
+            // No-op.
+        }
+    };
+
     /** Value. */
     private volatile T val;
 

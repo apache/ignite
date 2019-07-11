@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class BooleanGauge extends AbstractMetric implements BooleanMetric {
+    /** No-op instance. */
+    public static final BooleanGauge NO_OP = new BooleanGauge("NO_OP", null, () -> false);
+
     /** Value supplier. */
     private final BooleanSupplier val;
 

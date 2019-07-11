@@ -25,6 +25,24 @@ import org.jetbrains.annotations.Nullable;
  * Metric that holds boolean primitive.
  */
 public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric {
+    /** No-op instance. */
+    public static final BooleanMetricImpl NO_OP = new BooleanMetricImpl("NO_OP", null) {
+        /** {@inheritDoc} */
+        @Override public void value(boolean val) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean value() {
+            return false;
+        }
+    };
+
     /** Value. */
     private volatile boolean val;
 

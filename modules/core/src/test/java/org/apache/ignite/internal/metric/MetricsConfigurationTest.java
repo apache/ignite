@@ -39,7 +39,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /** */
-public class MetricsConfigurationSelfTest extends GridCommonAbstractTest {
+public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHitRateMetric() throws Exception {
@@ -64,6 +64,7 @@ public class MetricsConfigurationSelfTest extends GridCommonAbstractTest {
         checkHitRate(hitRateMetric, 5000, 42);
     }
 
+    /** */
     private void checkHitRate(HitRateMetric hitRateMetric, long expRateTimeInterval, int expSize) {
         Object hitRateMetricImpl = getFieldValue(hitRateMetric, "cntr");
 

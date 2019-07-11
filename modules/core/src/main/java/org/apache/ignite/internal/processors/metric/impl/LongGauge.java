@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class LongGauge extends AbstractMetric implements LongMetric {
+    /** No-op instance. */
+    public static final LongGauge NO_OP = new LongGauge("NO_OP", null, () -> 0);
+
     /** Value supplier. */
     private final LongSupplier val;
 

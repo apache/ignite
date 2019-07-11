@@ -400,6 +400,9 @@ public class IgniteConfiguration {
     /** Metric exporter SPI. */
     private MetricExporterSpi[] metricExporterSpi;
 
+    /** Disabled metric registries. */
+    private String[] disabledMetricRegistries;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -2353,6 +2356,29 @@ public class IgniteConfiguration {
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;
+    }
+
+    /**
+     * Gets disabled metric registries.
+     *
+     * @return Disabled metric registries.
+     */
+    public String[] getDisabledMetricRegistries() {
+        return disabledMetricRegistries;
+    }
+
+    /**
+     * Sets disabled metric registries.
+     * NoOp implementation will be used for disabled registries.
+     *
+     * @param disabledMetricRegistries Disabled metric registries.
+     * @see IgniteConfiguration#getMetricExporterSpi()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDisabledMetricRegistries(String... disabledMetricRegistries) {
+        this.disabledMetricRegistries = disabledMetricRegistries;
+
+        return this;
     }
 
     /**

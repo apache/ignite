@@ -26,6 +26,29 @@ import org.jetbrains.annotations.Nullable;
  * Double metric.
  */
 public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric {
+    /** No-op instance. */
+    public static final DoubleMetricImpl NO_OP = new DoubleMetricImpl("NO_OP", null) {
+        /** {@inheritDoc} */
+        @Override public void add(double x) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void value(double val) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public double value() {
+            return 0;
+        }
+    };
+
     /** Value. */
     private volatile DoubleAccumulator val;
 
