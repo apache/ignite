@@ -197,6 +197,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                 break;
 
             InlineIndexHelper idx = new InlineIndexHelper(
+                col.column.getName(),
                 col.column.getType(),
                 col.column.getColumnId(),
                 col.sortType,
@@ -262,11 +263,11 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
+
+            InlineIndexHelper.setCurrentInlineIndexes(tree.inlineIndexes());
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -550,6 +551,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         for (int pos = 0; pos < inlineHelpers.size(); ++pos)
             inlineIdxs.set(pos, inlineHelpers.get(pos));
+
+        for (H2Tree seg : segments)
+            seg.refreshColumnIds(inlineIdxs);
     }
 
     /**

@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -42,7 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineFlagsCreatedVersionRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
@@ -711,9 +712,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             io.initRoot(pageAddr, rootId, pageSize());
             io.setInlineSize(pageAddr, inlineSize);
+            io.initFlagsAndVersion(pageAddr, BPlusMetaIO.FLAGS_DEFAULT, IgniteVersionUtils.VER);
 
             if (needWalDeltaRecord(metaId, metaPage, walPlc))
-                wal.log(new MetaPageInitRootInlineRecord(cacheId, metaId, rootId, inlineSize));
+                wal.log(new MetaPageInitRootInlineFlagsCreatedVersionRecord(cacheId, metaId, rootId, inlineSize));
 
             assert io.getRootLevel(pageAddr) == 0;
             assert io.getFirstPageId(pageAddr, 0) == rootId;
@@ -1033,43 +1035,104 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** {@inheritDoc} */
     @Override public T findFirst() throws IgniteCheckedException {
+        return findFirst(null);
+    }
+
+    /**
+     * Returns a value mapped to the lowest key, or {@code null} if tree is empty or no entry matches the passed filter.
+     * @param filter Filter closure.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T findFirst(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
         checkDestroyed();
 
         long curPageId = 0L;
         long nextPageId = 0L;
 
         try {
-            long firstPageId;
+            for (;;) {
 
-            long metaPage = acquirePage(metaPageId);
-            try {
-                firstPageId = getFirstPageId(metaPageId, metaPage, 0);
-            }
-            finally {
-                releasePage(metaPageId, metaPage);
-            }
-
-            long page = acquirePage(firstPageId);
-
-            try {
-                long pageAddr = readLock(firstPageId, page);
+                long metaPage = acquirePage(metaPageId);
 
                 try {
-                    BPlusIO<L> io = io(pageAddr);
-
-                    int cnt = io.getCount(pageAddr);
-
-                    if (cnt == 0)
-                        return null;
-
-                    return getRow(io, pageAddr, 0);
+                    curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
                 }
                 finally {
-                    readUnlock(firstPageId, page, pageAddr);
+                    releasePage(metaPageId, metaPage);
                 }
-            }
-            finally {
-                releasePage(firstPageId, page);
+
+                long curPage = acquirePage(curPageId);
+                try {
+                    long curPageAddr = readLock(curPageId, curPage);
+
+                    if (curPageAddr == 0)
+                        continue; // The first page has gone: restart scan.
+
+                    try {
+                        BPlusIO<L> io = io(curPageAddr);
+
+                        assert io.isLeaf();
+
+                        for (;;) {
+                            int cnt = io.getCount(curPageAddr);
+
+                            for (int i = 0; i < cnt; ++i) {
+                                if (filter == null || filter.apply(this, io, curPageAddr, i))
+                                    return getRow(io, curPageAddr, i);
+                            }
+
+                            nextPageId = io.getForward(curPageAddr);
+
+                            if (nextPageId == 0)
+                                return null;
+
+                            long nextPage = acquirePage(nextPageId);
+
+                            try {
+                                long nextPageAddr = readLock(nextPageId, nextPage);
+
+                                // In the current implementation the next page can't change when the current page is locked.
+                                assert nextPageAddr != 0 : nextPageAddr;
+
+                                try {
+                                    long pa = curPageAddr;
+                                    curPageAddr = 0; // Set to zero to avoid double unlocking in finalizer.
+
+                                    readUnlock(curPageId, curPage, pa);
+
+                                    long p = curPage;
+                                    curPage = 0; // Set to zero to avoid double release in finalizer.
+
+                                    releasePage(curPageId, p);
+
+                                    curPageId = nextPageId;
+                                    curPage = nextPage;
+                                    curPageAddr = nextPageAddr;
+
+                                    nextPage = 0;
+                                    nextPageAddr = 0;
+                                }
+                                finally {
+                                    if (nextPageAddr != 0)
+                                        readUnlock(nextPageId, nextPage, nextPageAddr);
+                                }
+                            }
+                            finally {
+                                if (nextPage != 0)
+                                    releasePage(nextPageId, nextPage);
+                            }
+                        }
+                    }
+                    finally {
+                        if (curPageAddr != 0)
+                            readUnlock(curPageId, curPage, curPageAddr);
+                    }
+                }
+                finally {
+                    if (curPage != 0)
+                        releasePage(curPageId, curPage);
+                }
             }
         }
         catch (IgniteCheckedException e) {
@@ -1082,6 +1145,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             checkDestroyed();
         }
     }
+
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -4556,7 +4620,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Full detached data row.
      * @throws IgniteCheckedException If failed.
      */
-    protected final T getRow(BPlusIO<L> io, long pageAddr, int idx) throws IgniteCheckedException {
+    public final T getRow(BPlusIO<L> io, long pageAddr, int idx) throws IgniteCheckedException {
         return getRow(io, pageAddr, idx, null);
     }
 

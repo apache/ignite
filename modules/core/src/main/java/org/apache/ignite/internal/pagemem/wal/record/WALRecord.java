@@ -181,7 +181,10 @@ public abstract class WALRecord {
         EXCHANGE,
 
         /** Reserved for future record. */
-        RESERVED;
+        RESERVED,
+
+        /** Init root meta page (with flags and created version) */
+        BTREE_META_PAGE_INIT_ROOT_V3;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
