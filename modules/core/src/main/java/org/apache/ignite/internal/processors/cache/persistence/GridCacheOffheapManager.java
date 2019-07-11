@@ -2476,11 +2476,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException {
+        @Override public GridCursor<? extends CacheDataRow> cursor(boolean withTombstones) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.cursor();
+                return delegate.cursor(withTombstones);
 
             return EMPTY_CURSOR;
         }
@@ -2555,11 +2555,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException {
+        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, boolean withTombstones) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.cursor(cacheId);
+                return delegate.cursor(cacheId, withTombstones);
 
             return EMPTY_CURSOR;
         }

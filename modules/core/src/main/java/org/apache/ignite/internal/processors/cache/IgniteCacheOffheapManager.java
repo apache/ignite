@@ -452,7 +452,7 @@ public interface IgniteCacheOffheapManager {
      * @return Iterator for given partition.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException;
+    public GridIterator<CacheDataRow> partitionIterator(final int part, boolean withTombstones) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -963,7 +963,7 @@ public interface IgniteCacheOffheapManager {
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
-        public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
+        public GridCursor<? extends CacheDataRow> cursor(boolean withTombstones) throws IgniteCheckedException;
 
         /**
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
@@ -984,7 +984,7 @@ public interface IgniteCacheOffheapManager {
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
-        public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException;
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId, boolean withTombstones) throws IgniteCheckedException;
 
         /**
          * @param cacheId Cache ID.

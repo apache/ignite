@@ -1666,17 +1666,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         for (int p = 0; p < aff.partitions(); p++) {
             if (srv1Parts.contains(p)) {
-                GridIterator<CacheDataRow> it = grpSrv0.offheap().partitionIterator(p);
+                GridIterator<CacheDataRow> it = grpSrv0.offheap().partitionIterator(p, false);
                 assertFalse(it.hasNext());
 
-                it = grpSrv1.offheap().partitionIterator(p);
+                it = grpSrv1.offheap().partitionIterator(p, false);
                 assertTrue(it.hasNext());
             }
             else {
-                GridIterator<CacheDataRow> it = grpSrv0.offheap().partitionIterator(p);
+                GridIterator<CacheDataRow> it = grpSrv0.offheap().partitionIterator(p, false);
                 assertTrue(it.hasNext());
 
-                it = grpSrv1.offheap().partitionIterator(p);
+                it = grpSrv1.offheap().partitionIterator(p, false);
                 assertFalse(it.hasNext());
             }
         }
@@ -3919,7 +3919,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Integer cacheId = null;
 
-        GridIterator<CacheDataRow> it = grp.offheap().partitionIterator(0);
+        GridIterator<CacheDataRow> it = grp.offheap().partitionIterator(0, false);
 
         int c = 0;
 

@@ -178,7 +178,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
 
                 partSize = part.dataStore().fullSize();
 
-                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
+                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id(), false);
 
                 partEntryHashRecords = new ArrayList<>();
 

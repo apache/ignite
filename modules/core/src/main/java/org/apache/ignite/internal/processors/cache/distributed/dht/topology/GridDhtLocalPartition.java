@@ -1143,7 +1143,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
         try {
-            GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
+            GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id, true);
 
             while (it0.hasNext()) {
                 ctx.database().checkpointReadLock();
