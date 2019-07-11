@@ -31,10 +31,9 @@ public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param disabled Disabled flag.
      */
-    public BooleanMetricImpl(String name, @Nullable String desc, boolean disabled) {
-        super(name, desc, disabled);
+    public BooleanMetricImpl(String name, @Nullable String desc) {
+        super(name, desc);
     }
 
     /**

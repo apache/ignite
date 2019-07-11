@@ -36,15 +36,13 @@ public abstract class AbstractMetric implements Metric {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param disabled Disabled flag.
      */
-    public AbstractMetric(String name, String desc, boolean disabled) {
+    public AbstractMetric(String name, String desc) {
         assert name != null;
         assert !name.isEmpty();
 
         this.name = name;
         this.desc = desc;
-        this.disabled = disabled;
     }
 
     /** {@inheritDoc} */

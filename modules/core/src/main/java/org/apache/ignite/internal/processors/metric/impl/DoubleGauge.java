@@ -33,10 +33,9 @@ public class DoubleGauge extends AbstractMetric implements DoubleMetric {
      * @param name Name.
      * @param desc Description.
      * @param val Supplier.
-     * @param disabled Disabled flag.
      */
-    public DoubleGauge(String name, @Nullable String desc, DoubleSupplier val, boolean disabled) {
-        super(name, desc, disabled);
+    public DoubleGauge(String name, @Nullable String desc, DoubleSupplier val) {
+        super(name, desc);
 
         this.val = val;
     }

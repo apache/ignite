@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.metric;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
@@ -64,6 +66,9 @@ public class MetricRegistry implements Iterable<Metric> {
     /** Registered metrics. */
     private final ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
 
+    /** Lock to prevent concurrent adds and disable/enable operations. */
+    private final ReadWriteLock disableLock = new ReentrantReadWriteLock();
+
     /**
      * @param regName Group name.
      * @param disabled Disabled flag.
@@ -99,7 +104,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link ObjectMetricImpl}
      */
     public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
-        return addMetric(name, new ObjectMetricImpl<>(metricName(regName, name), desc, type, disabled));
+        return addMetric(name, new ObjectMetricImpl<>(metricName(regName, name), desc, type));
     }
 
     /** {@inheritDoc} */
@@ -133,8 +138,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
-        addMetric(name,
-            new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), disabled));
+        addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -145,8 +149,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
-        addMetric(name,
-            new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), disabled));
+        addMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -157,7 +160,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public void register(String name, IntSupplier supplier, @Nullable String desc) {
-        addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), disabled));
+        addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -168,7 +171,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public void register(String name, LongSupplier supplier, @Nullable String desc) {
-        addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), disabled));
+        addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -180,8 +183,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
-        addMetric(name,
-            new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type, disabled));
+        addMetric(name, new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type));
     }
 
     /**
@@ -193,7 +195,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link DoubleMetricImpl}.
      */
     public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
-        return addMetric(name, new DoubleMetricImpl(metricName(regName, name), desc, disabled));
+        return addMetric(name, new DoubleMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -205,7 +207,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link IntMetricImpl}.
      */
     public IntMetricImpl intMetric(String name, @Nullable String desc) {
-        return addMetric(name, new IntMetricImpl(metricName(regName, name), desc, disabled));
+        return addMetric(name, new IntMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -217,7 +219,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link LongMetricImpl}.
      */
     public LongMetricImpl metric(String name, @Nullable String desc) {
-        return addMetric(name, new LongMetricImpl(metricName(regName, name), desc, disabled));
+        return addMetric(name, new LongMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -229,7 +231,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link LongAdderMetricImpl}.
      */
     public LongAdderMetricImpl longAdderMetric(String name, @Nullable String desc) {
-        return addMetric(name, new LongAdderMetricImpl(metricName(regName, name), desc, disabled));
+        return addMetric(name, new LongAdderMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -244,7 +246,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @see HitRateMetric
      */
     public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
-        return addMetric(name, new HitRateMetric(metricName(regName, name), desc, rateTimeInterval, size, disabled));
+        return addMetric(name, new HitRateMetric(metricName(regName, name), desc, rateTimeInterval, size));
     }
 
     /**
@@ -256,7 +258,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link BooleanMetricImpl}
      */
     public BooleanMetricImpl booleanMetric(String name, @Nullable String desc) {
-        return addMetric(name, new BooleanMetricImpl(metricName(regName, name), desc, disabled));
+        return addMetric(name, new BooleanMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -268,7 +270,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link HistogramMetric}
      */
     public HistogramMetric histogram(String name, long[] bounds, @Nullable String desc) {
-        return addMetric(name, new HistogramMetric(metricName(regName, name), desc, bounds, disabled));
+        return addMetric(name, new HistogramMetric(metricName(regName, name), desc, bounds));
     }
 
     /**
@@ -280,15 +282,24 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return Registered metric.
      */
     private <T extends Metric> T addMetric(String name, T metric) {
-        T old = (T)metrics.putIfAbsent(name, metric);
+        disableLock.readLock().lock();
 
-        if(old != null)
-            return old;
+        try {
+            metric.disabled(disabled);
 
-        return metric;
+            T old = (T)metrics.putIfAbsent(name, metric);
+
+            if(old != null)
+                return old;
+
+            return metric;
+        }
+        finally {
+            disableLock.readLock().unlock();
+        }
     }
 
-    /** @return {@code True} if this registry disabled. {@code False} otherwise. */
+    /** @return {@code True} if this registry disabled {@code false} otherwise. */
     public boolean disabled() {
         return disabled;
     }
@@ -300,8 +311,15 @@ public class MetricRegistry implements Iterable<Metric> {
     public void disabled(boolean disabled) {
         this.disabled = disabled;
 
-        for (Metric m : metrics.values())
-            m.disabled(disabled);
+        disableLock.writeLock().lock();
+
+        try {
+            metrics.forEach((n, m) -> m.disabled(disabled));
+        }
+        finally {
+            disableLock.writeLock().unlock();
+        }
+
     }
 
     /** @return Registry name. */

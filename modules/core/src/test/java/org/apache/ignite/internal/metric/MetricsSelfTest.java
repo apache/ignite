@@ -119,7 +119,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        LongMetricImpl l = new LongMetricImpl("rtest", "test", false);
+        LongMetricImpl l = new LongMetricImpl("rtest", "test");
 
         mreg.register(l);
 

@@ -32,10 +32,9 @@ public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param disabled Disabled flag.
      */
-    public LongAdderMetricImpl(String name, @Nullable String desc, boolean disabled) {
-        super(name, desc, disabled);
+    public LongAdderMetricImpl(String name, @Nullable String desc) {
+        super(name, desc);
     }
 
     /**

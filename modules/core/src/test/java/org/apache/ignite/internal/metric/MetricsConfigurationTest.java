@@ -37,7 +37,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHitRateMetric() throws Exception {
-        HitRateMetric hitRateMetric = new HitRateMetric("test", null, 1000, 3, false);
+        HitRateMetric hitRateMetric = new HitRateMetric("test", null, 1000, 3);
 
         assertThrowsWithCause(() -> hitRateMetric.configure(null), IgniteException.class);
 
@@ -73,7 +73,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogramConfiguration() throws Exception {
-        HistogramMetric histogramMetric = new HistogramMetric("test", null, new long[] {0, 50, 100, 250}, false);
+        HistogramMetric histogramMetric = new HistogramMetric("test", null, new long[] {0, 50, 100, 250});
 
         assertThrowsWithCause(() -> histogramMetric.configure(null), IgniteException.class);
 
