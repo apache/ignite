@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -69,11 +70,21 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
             }
         });
 
-        cfg.setCacheConfiguration(
-            new CacheConfiguration(ATOMIC.name()).setAtomicityMode(ATOMIC),
-            new CacheConfiguration(TRANSACTIONAL.name()).setAtomicityMode(TRANSACTIONAL));
+        cfg.setCacheConfiguration(cacheConfiguration(ATOMIC), cacheConfiguration(TRANSACTIONAL));
 
         return cfg;
+    }
+
+    /**
+     * Creates a new cache configuration with the given cache atomicity mode.
+     *
+     * @param mode Cache atomicity mode.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfiguration(CacheAtomicityMode mode) {
+        return new CacheConfiguration(mode.name())
+            .setAtomicityMode(mode)
+            .setAffinity(new RendezvousAffinityFunction(false, 32));
     }
 
     /** {@inheritDoc} */
@@ -116,7 +127,7 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
         for (int i = 0; i < attempts; ++i) {
             try {
                 for (int key = 0; key < 500_000; ++key)
-                    cache.put(key, "abc");
+                    cache.put(key, new byte[4096]);
 
                 fail("OutOfMemoryException hasn't been thrown");
             }
