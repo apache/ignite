@@ -22,6 +22,7 @@ import org.apache.ignite.console.db.TableSelfTest;
 import org.apache.ignite.console.services.AccountServiceTest;
 import org.apache.ignite.console.services.ActivitiesServiceTest;
 import org.apache.ignite.console.services.AdminServiceTest;
+import org.apache.ignite.console.services.NotificationServiceTest;
 import org.apache.ignite.console.web.security.PasswordEncoderTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -38,7 +39,8 @@ import org.junit.runners.Suite;
     AdminServiceTest.class,
     NotificationEventListenerTest.class,
     NotificationEventListenerTest.class,
-    AccountsRepositoryTest.class
+    AccountsRepositoryTest.class,
+    NotificationServiceTest.class
 })
 public class WebConsoleTestSuite {
 }
