@@ -1010,16 +1010,14 @@ public class GridDhtPartitionDemander {
             if (cctx == null)
                 return false;
 
-            GridCacheEntryEx cached = null;
+            GridCacheEntryEx cached = cctx.cache().entryEx(entry.key(), topVer);
+
+            if (log.isTraceEnabled()) {
+                log.trace("Rebalancing key [key=" + entry.key() + ", part=" + p + ", fromNode=" +
+                    from.id() + ", grpId=" + grp.groupId() + ']');
+            }
 
             try {
-                cached = cctx.cache().entryEx(entry.key(), topVer);
-
-                if (log.isTraceEnabled()) {
-                    log.trace("Rebalancing key [key=" + entry.key() + ", part=" + p + ", fromNode=" +
-                        from.id() + ", grpId=" + grp.groupId() + ']');
-                }
-
                 if (cached.initialValue(
                     entry.value(),
                     entry.version(),
