@@ -280,7 +280,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
             return mreg;
         });
-
     }
 
     /**
@@ -300,7 +299,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
             return mreg;
         });
-
     }
 
     /**

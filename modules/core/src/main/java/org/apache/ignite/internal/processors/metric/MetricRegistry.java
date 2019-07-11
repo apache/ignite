@@ -319,7 +319,6 @@ public class MetricRegistry implements Iterable<Metric> {
         finally {
             disableLock.writeLock().unlock();
         }
-
     }
 
     /** @return Registry name. */
