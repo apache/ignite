@@ -58,6 +58,28 @@ if %MAJOR_JAVA_VER% LSS 8 (
 	goto error_finish
 )
 
+:: Check IGNITE_HOME.
+:checkIgniteHome1
+pushd "%~dp0"
+set IGNITE_HOME=%CD%
+popd
+goto :checkIgniteHome2
+
+:checkIgniteHome2
+set WEB_CONSOLE_AGENT=%IGNITE_HOME%\agent_dists\*
+
+if not exist "%WEB_CONSOLE_AGENT%" (
+    echo Web Console installation folder is incorrect.
+    echo Please run web-console.bat from Web Console installation folder.
+    goto :eof
+)
+
+goto run_java
+
+:removeTrailingSlash
+set IGNITE_HOME=%IGNITE_HOME:~0,-1%
+goto checkIgniteHome2
+
 :run_java
 
 ::
@@ -97,6 +119,6 @@ if %MAJOR_JAVA_VER% GEQ 11 (
 for %%f in (ignite-web-console-*.jar) do set "JAR_FILE=%%f" & goto :run
 
 :run
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -jar %JAR_FILE%
+"%JAVA_HOME%\bin\java.exe" -DIGNITE_HOME="%IGNITE_HOME%" %JVM_OPTS% -jar "%JAR_FILE%"
 
 :finish
