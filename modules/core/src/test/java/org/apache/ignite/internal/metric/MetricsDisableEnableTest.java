@@ -86,5 +86,14 @@ public class MetricsDisableEnableTest extends GridCommonAbstractTest {
 
         assertTrue("\"some-other-cache\" registry disabled in runtime.",
             g.context().metric().registry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false)).disabled());
+
+        g.destroyCache(SOME_OTHER_CACHE);
+
+        bean.enableMericRegistry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false));
+
+        g.createCache(SOME_OTHER_CACHE);
+
+        assertFalse("\"some-other-cache\" registry enabled in runtime.",
+            g.context().metric().registry(cacheMetricsRegistryName(SOME_OTHER_CACHE, false)).disabled());
     }
 }
