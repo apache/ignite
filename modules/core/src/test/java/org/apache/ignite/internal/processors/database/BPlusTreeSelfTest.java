@@ -94,7 +94,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final short LONG_LEAF_IO = 30001;
 
     /** */
-    protected static final int PAGE_SIZE = 256;
+    protected static final int PAGE_SIZE = 512;
 
     /** */
     protected static final long MB = 1024 * 1024;
@@ -140,6 +140,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      */
     protected void assertNoLocks() {
         assertTrue(TestPageLockListener.checkNoLocks());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 15 * 60 * 1000L;
     }
 
     /** {@inheritDoc} */
