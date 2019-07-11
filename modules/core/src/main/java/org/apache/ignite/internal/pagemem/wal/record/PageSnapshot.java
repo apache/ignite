@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     @GridToStringExclude
-    private ByteBuffer pageData;
+    private byte[] pageDataBytes;
 
     /** */
     private FullPageId fullPageId;
@@ -49,13 +49,13 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
      */
     public PageSnapshot(FullPageId fullId, byte[] arr, int realPageSize) {
         this.fullPageId = fullId;
-        this.pageData = ByteBuffer.wrap(arr).order(ByteOrder.nativeOrder());
+        this.pageDataBytes = arr;
         this.realPageSize = realPageSize;
     }
 
     /**
-     * This constructor doesn't actually create a page snapshot (copy), it creates a wrapper over page memory region.
-     * A created record should not be used after WAL manager writes it to log, since page content can be modified.
+     * This constructor doesn't actually create a page snapshot (copy), it creates a wrapper over page memory region. A
+     * created record should not be used after WAL manager writes it to log, since page content can be modified.
      *
      * @param fullPageId Full page ID.
      * @param ptr Pointer to wrap.
@@ -66,7 +66,7 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
         this.fullPageId = fullPageId;
         this.realPageSize = realPageSize;
 
-        pageData = GridUnsafe.wrapPointer(ptr, pageSize);
+        pageDataBytes = toBytes(GridUnsafe.wrapPointer(ptr, pageSize));
     }
 
     /** {@inheritDoc} */
@@ -75,11 +75,11 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
     }
 
     /**
-     * @return Snapshot of page data.
+     * @return Bytes which was copied from given byte buffer.
      */
-    public byte[] pageData() {
+    private byte[] toBytes(ByteBuffer pageData) {
         if (!pageData.isDirect())
-            return pageData.array();
+            return Arrays.copyOf(pageData.array(), pageData.limit());
 
         // In case of direct buffer copy buffer content to new array.
         byte[] arr = new byte[pageData.limit()];
@@ -91,19 +91,28 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
     }
 
     /**
+     * @return Snapshot of page data.
+     */
+    public byte[] pageData() {
+        return pageDataBytes;
+    }
+
+    /**
      * @return Size of page data.
      */
     public int pageDataSize() {
-        return pageData.limit();
+        return pageDataBytes.length;
     }
 
     /**
      * @return Page data byte buffer.
      */
     public ByteBuffer pageDataBuffer() {
-        pageData.rewind();
+        ByteBuffer buf = ByteBuffer.wrap(pageDataBytes).order(ByteOrder.nativeOrder());
 
-        return pageData;
+        buf.rewind();
+
+        return buf;
     }
 
     /**
@@ -127,13 +136,9 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        ByteBuffer buf = pageData;
-
-        if (!pageData.isDirect()) {
-            buf = ByteBuffer.allocateDirect(pageDataSize());
-            buf.order(ByteOrder.nativeOrder());
-            buf.put(pageData);
-        }
+        ByteBuffer buf = ByteBuffer.allocateDirect(pageDataSize());
+        buf.order(ByteOrder.nativeOrder());
+        buf.put(pageDataBytes);
 
         long addr = GridUnsafe.bufferAddress(buf);
 
@@ -148,8 +153,7 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
                 ", pageData = " + Arrays.toString(pageData()) + ", super=" + super.toString() + "]";
         }
         finally {
-            if (!pageData.isDirect())
-                GridUnsafe.cleanDirectBuffer(buf);
+            GridUnsafe.cleanDirectBuffer(buf);
         }
     }
 }

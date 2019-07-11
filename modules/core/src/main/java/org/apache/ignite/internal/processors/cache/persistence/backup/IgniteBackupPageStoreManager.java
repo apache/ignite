@@ -59,9 +59,8 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
 
     /**
      * @param backupName Unique backup name.
-     * @param cctx Cache context to use to.
      */
-    public void stopCacheBackup(String backupName, GridCacheContext cctx);
+    public void stopCacheBackup(String backupName);
 
     /**
      * @param pairId Cache group, partition identifiers pair.

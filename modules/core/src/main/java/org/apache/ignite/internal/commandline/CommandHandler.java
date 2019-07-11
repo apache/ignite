@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.File;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -102,7 +103,7 @@ public class CommandHandler {
     private static final Scanner IN = new Scanner(System.in);
 
     /** Utility name. */
-    public static final String UTILITY_NAME = "control.sh";
+    public static final String UTILITY_NAME = "control.(sh|bat)";
 
     /** */
     public static final String NULL = "null";
@@ -205,12 +206,14 @@ public class CommandHandler {
      * @return Exit code.
      */
     public int execute(List<String> rawArgs) {
+        LocalDateTime startTime = LocalDateTime.now();
+
         Thread.currentThread().setName("session=" + ses);
 
         logger.info("Control utility [ver. " + ACK_VER_STR + "]");
         logger.info(COPYRIGHT);
         logger.info("User: " + System.getProperty("user.name"));
-        logger.info("Time: " + LocalDateTime.now());
+        logger.info("Time: " + startTime);
 
         String commandName = "";
 
@@ -232,48 +235,50 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            boolean tryConnectAgain = true;
-
             int tryConnectMaxCount = 3;
 
             boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
             GridClientConfiguration clientCfg = getClientConfiguration(args);
 
-            while (tryConnectAgain) {
-                tryConnectAgain = false;
+            logger.info("Command [" + commandName + "] started");
+            logger.info("Arguments: " + String.join(" ", rawArgs));
+            logger.info(DELIM);
 
+            boolean credentialsRequested = false;
+
+            while (true) {
                 try {
-                    logger.info("Command [" + commandName + "] started");
-                    logger.info("Arguments: " + String.join(" ", rawArgs));
-                    logger.info(DELIM);
                     lastOperationRes = command.execute(clientCfg, logger);
+
+                    break;
                 }
                 catch (Throwable e) {
-                    if (tryConnectMaxCount > 0 && isAuthError(e)) {
-                        logger.info(suppliedAuth ?
-                            "Authentication error, please try again." :
-                            "This cluster requires authentication.");
-
-                        String user = clientCfg.getSecurityCredentialsProvider() == null ?
-                            requestDataFromConsole("user: ") :
-                            (String)clientCfg.getSecurityCredentialsProvider().credentials().getLogin();
-
-                        clientCfg = getClientConfiguration(user, new String(requestPasswordFromConsole("password: ")),  args);
-
-                        tryConnectAgain = true;
-
-                        suppliedAuth = true;
-
-                        tryConnectMaxCount--;
-                    }
-                    else {
-                        if (tryConnectMaxCount == 0)
-                            throw new GridClientAuthenticationException("Authentication error, maximum number of " +
-                                "retries exceeded");
-
+                    if (!isAuthError(e))
                         throw e;
+
+                    if (suppliedAuth)
+                        throw new GridClientAuthenticationException("Wrong credentials.");
+
+                    if (tryConnectMaxCount == 0) {
+                        throw new GridClientAuthenticationException("Maximum number of " +
+                            "retries exceeded");
                     }
+
+                    logger.info(credentialsRequested ?
+                        "Authentication error, please try again." :
+                        "This cluster requires authentication.");
+
+                    if (credentialsRequested)
+                        tryConnectMaxCount--;
+
+                    String user = retrieveUserName(args, clientCfg);
+
+                    String pwd = new String(requestPasswordFromConsole("password: "));
+
+                    clientCfg = getClientConfiguration(user, pwd,  args);
+
+                    credentialsRequested = true;
                 }
             }
 
@@ -298,11 +303,25 @@ public class CommandHandler {
             }
 
             if (isConnectionError(e)) {
+                IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
+
+                if (cause != null && cause.getMessage() != null && cause.getMessage().contains("SSL"))
+                    e = cause;
+
                 logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
 
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 return EXIT_CODE_CONNECTION_FAILED;
+            }
+
+            if (X.hasCause(e, IllegalArgumentException.class)) {
+                IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
+
+                logger.severe("Check arguments. " + CommandLogger.errorMessage(iae));
+                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+
+                return EXIT_CODE_INVALID_ARGUMENTS;
             }
 
             logger.severe(CommandLogger.errorMessage(e));
@@ -311,10 +330,41 @@ public class CommandHandler {
             return EXIT_CODE_UNEXPECTED_ERROR;
         }
         finally {
+            LocalDateTime endTime = LocalDateTime.now();
+
+            Duration diff = Duration.between(startTime, endTime);
+
+            logger.info("Control utility has completed execution at: " + endTime);
+            logger.info("Execution time: " + diff.toMillis() + " ms");
+
             Arrays.stream(logger.getHandlers())
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
         }
+    }
+
+    /**
+     * Does one of three things:
+     * <ul>
+     *     <li>returns user name from connection parameters if it is there;</li>
+     *     <li>returns user name from client configuration if it is there;</li>
+     *     <li>requests user input and returns entered name.</li>
+     * </ul>
+     *
+     * @param args Connection parameters.
+     * @param clientCfg Client configuration.
+     * @throws IgniteCheckedException If security credetials cannot be provided from client configuration.
+     */
+    private String retrieveUserName(
+        ConnectionAndSslParameters args,
+        GridClientConfiguration clientCfg
+    ) throws IgniteCheckedException {
+        if (!F.isEmpty(args.userName()))
+            return args.userName();
+        else if (clientCfg.getSecurityCredentialsProvider() == null)
+            return requestDataFromConsole("user: ");
+        else
+            return (String)clientCfg.getSecurityCredentialsProvider().credentials().getLogin();
     }
 
     /**
@@ -464,7 +514,7 @@ public class CommandHandler {
      * @param e Exception to check.
      * @return {@code true} if specified exception is {@link GridClientAuthenticationException}.
      */
-    private static boolean isAuthError(Throwable e) {
+    public static boolean isAuthError(Throwable e) {
         return X.hasCause(e, GridClientAuthenticationException.class);
     }
 
@@ -530,7 +580,7 @@ public class CommandHandler {
 
     /** */
     private void printHelp() {
-        logger.info("Control.sh is used to execute admin commands on cluster or get common cluster info. " +
+        logger.info("Control utility script is used to execute admin commands on cluster or get common cluster info. " +
             "The command has the following syntax:");
         logger.info("");
 

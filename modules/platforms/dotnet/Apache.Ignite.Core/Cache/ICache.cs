@@ -85,6 +85,11 @@ namespace Apache.Ignite.Core.Cache
         bool IsKeepBinary { get; }
 
         /// <summary>
+        /// Gets a value indicating whether to consistency should be checked and fixed if necessary.
+        /// </summary>
+        bool IsReadRepair { get; }
+
+        /// <summary>
         /// Gets a value indicating whether to allow use atomic operations in transactions.
         /// </summary>
         bool IsAllowAtomicOpsInTx { get; }
@@ -122,6 +127,14 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <returns>Cache allowed to use in transactions.</returns>
         ICache<TK, TV> WithAllowAtomicOpsInTx();
+
+        /// <summary>
+        /// Gets cache with Consistency mode enabled.
+        /// Each explicit get operation will check data is consistent over the topology, each backup value
+        /// will be compared with primary and fixed in case consistency violation found.
+        /// </summary>
+        /// <returns>Cache instance with consistency mode enabled.</returns>
+        ICache<TK, TV> WithReadRepair();
 
         /// <summary>
         /// Executes <see cref="LocalLoadCache"/> on all cache nodes.

@@ -15,19 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheEntrySetAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-
 /**
  *
  */
-public class GridCacheReplicatedEntrySetSelfTest extends GridCacheEntrySetAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
-}
+package org.apache.ignite.spi.metric.opencensus;
+
+/**
+ * <!-- Package description. -->
+ * Contains Opencensus based implementation of MetricExporterSpi.
+ */

@@ -283,7 +283,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void stopCacheBackup(String backupName, GridCacheContext cctx) {
+    @Override public void stopCacheBackup(String backupName) {
 
     }
 
