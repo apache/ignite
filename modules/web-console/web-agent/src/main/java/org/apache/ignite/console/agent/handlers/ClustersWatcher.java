@@ -117,7 +117,7 @@ public class ClustersWatcher implements Closeable {
      */
     private void sendTopology(Session ses, List<TopologySnapshot> tops) {
         try {
-            send(ses, new WebSocketResponse(CLUSTER_TOPOLOGY, tops));
+            send(ses, new WebSocketResponse(CLUSTER_TOPOLOGY, tops), 10L, TimeUnit.SECONDS);
         }
         catch (Throwable e) {
             log.error("Failed to send topology to server");

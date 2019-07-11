@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,13 +40,18 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.core.Is;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockserver.integration.ClientAndServer;
 
 import static org.apache.ignite.console.agent.AgentUtils.sslContextFactory;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 
 /**
  * Test for RestExecutor.
@@ -351,16 +357,78 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-   public void testHttps() throws Throwable {
-       checkRest(
-           nodeConfiguration(JETTY_WITH_HTTPS),
-           HTTPS_URI,
-           null,
-           null,
-           true,
-           null,
-           null,
-           null
-       );
-   }
+    public void testHttps() throws Throwable {
+        checkRest(
+            nodeConfiguration(JETTY_WITH_HTTPS),
+            HTTPS_URI,
+            null,
+            null,
+            true,
+            null,
+            null,
+            null
+        );
+    }
+
+    /** */
+    @Test
+    public void testRequestWithManyParams() throws Throwable {
+        try(Ignite ignored = Ignition.getOrStart(nodeConfiguration(""))) {
+            RestExecutor exec = new RestExecutor(new SslContextFactory.Client());
+
+            JsonObject params = new JsonObject()
+                .add("cmd", "top")
+                .add("attr", false)
+                .add("mtr", false)
+                .add("caches", false);
+
+            for (int i = 0; i < 1000; i++) {
+                String param = UUID.randomUUID().toString();
+
+                params.add(param, param);
+            }
+
+            RestResult res = exec.sendRequest(HTTP_URI, params);
+
+            JsonNode json = toJson(res);
+
+            Assert.assertTrue(json.isArray());
+
+            for (JsonNode item : json) {
+                Assert.assertTrue(item.get("attributes").isNull());
+                Assert.assertTrue(item.get("metrics").isNull());
+                Assert.assertTrue(item.get("caches").isNull());
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testLargeResponse() throws Throwable {
+        ClientAndServer mockSrv = null;
+
+        try {
+            mockSrv = startClientAndServer(8080);
+
+            char[] chars = new char[3 * 1024 * 1024];
+            
+            Arrays.fill(chars, 'a');
+
+            String err = new String(chars);
+
+            mockSrv
+                .when(request().withPath("/ignite"))
+                .respond(response().withStatusCode(200).withBody(Utils.toJson(RestResult.fail(1, err))));
+
+            RestExecutor exec = new RestExecutor(new SslContextFactory.Client());
+
+            RestResult res = exec.sendRequest(HTTP_URI, new JsonObject());
+
+            Assert.assertEquals(err, res.getError());
+        }
+        finally {
+            if (mockSrv != null)
+                mockSrv.stop();
+        }
+    }
 }

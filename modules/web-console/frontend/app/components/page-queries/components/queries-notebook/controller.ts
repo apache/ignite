@@ -1538,6 +1538,12 @@ export class NotebookCtrl {
                 );
         };
 
+        const dfltErrorHandler = (err: any) => {
+            Messages.showError(err);
+
+            return of(err);
+        };
+
         /**
          * @param {string} name Cache name.
          * @param {boolean} local Local query.
@@ -1556,8 +1562,7 @@ export class NotebookCtrl {
                     }
 
                     return nids[_.random(0, nids.length - 1)];
-                })
-                .catch(Messages.showError);
+                });
         };
 
         const _executeRefresh = (paragraph) => {
@@ -1593,6 +1598,7 @@ export class NotebookCtrl {
                         }
                     );
                 }),
+                catchError(dfltErrorHandler),
                 finalize(() => paragraph.showLoading(false))
             ).toPromise();
         };
@@ -1727,6 +1733,7 @@ export class NotebookCtrl {
                         }
                     );
                 }),
+                catchError(dfltErrorHandler),
                 finalize(() => paragraph.showLoading(false))
             ).toPromise();
         };
@@ -1786,6 +1793,7 @@ export class NotebookCtrl {
                         }
                     );
                 }),
+                catchError(dfltErrorHandler),
                 finalize(() => paragraph.showLoading(false))
             ).toPromise();
         };
@@ -1831,6 +1839,7 @@ export class NotebookCtrl {
                         (err) => paragraph.setError(err)
                     );
                 }),
+                catchError(dfltErrorHandler),
                 finalize(() => paragraph.showLoading(false))
             ).toPromise();
         };
@@ -1990,11 +1999,9 @@ export class NotebookCtrl {
                     arg,
                     (res) => _initExportResult(paragraph, res),
                     (res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows),
-                    (err) => {
-                        Messages.showError(err);
-                        return of(err);
-                    }
+                    dfltErrorHandler
                 )),
+                catchError(dfltErrorHandler),
                 finalize(() => paragraph.csvIsPreparing = false)
             ).toPromise();
         };
