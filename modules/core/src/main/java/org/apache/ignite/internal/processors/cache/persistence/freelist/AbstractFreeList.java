@@ -173,16 +173,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
 
-            if (putPageIntoFreeList) {
-                // Reread free space after update.
-                int newFreeSpace = io.getFreeSpace(pageAddr);
-
-                if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
-                    int bucket = bucket(newFreeSpace, false);
-
-                    put(null, pageId, page, pageAddr, bucket, statHolder);
-                }
-            }
+            if (putPageIntoFreeList)
+                putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
 
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
@@ -536,11 +528,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         continue;
                 }
 
-                int remaining = row.size() - written;
-
-                long pageId = takePage(remaining, row, statHolder);
-
                 AbstractDataPageIO initIo = null;
+
+                long pageId = takePage(row.size() - written, row, statHolder);
 
                 if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
@@ -588,14 +578,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                             assert written == COMPLETE;
                         }
 
-                        int freeSpace = io.getFreeSpace(pageAddr);
-
-                        // Put page into the free list if needed.
-                        if (freeSpace > MIN_PAGE_FREE_SPACE) {
-                            int bucket = bucket(freeSpace, false);
-
-                            put(null, pageId, page, pageAddr, bucket, statHolder);
-                        }
+                        putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
 
                         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
                     }
@@ -696,6 +679,24 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             return initReusedPage(row, pageId, statHolder);
         else // Page is taken from free space bucket. For in-memory mode partition must be changed.
             return PageIdUtils.changePartitionId(pageId, row.partition());
+    }
+
+    /**
+     * Put page into the free list if needed.
+     *
+     * @param freeSpace Page free space.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param pageAddr Page address.
+     * @param statHolder Statistics holder to track IO operations.
+     */
+    private void putPage(int freeSpace, long pageId, long page, long pageAddr, IoStatisticsHolder statHolder)
+        throws IgniteCheckedException {
+        if (freeSpace > MIN_PAGE_FREE_SPACE) {
+            int bucket = bucket(freeSpace, false);
+
+            put(null, pageId, page, pageAddr, bucket, statHolder);
+        }
     }
 
     /**
