@@ -23,8 +23,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,10 +32,9 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Adds failover abd thread-safety to {@link ClientChannel}.
@@ -46,8 +43,8 @@ final class ReliableChannel implements AutoCloseable {
     /** Raw channel. */
     private final Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory;
 
-    /** Service lock. */
-    private final Lock svcLock = new ReentrantLock();
+    /** Servers count. */
+    private final int srvCnt;
 
     /** Primary server. */
     private InetSocketAddress primary;
@@ -56,10 +53,13 @@ final class ReliableChannel implements AutoCloseable {
     private final Deque<InetSocketAddress> backups = new LinkedList<>();
 
     /** Channel. */
-    private ClientChannel ch = null;
+    private ClientChannel ch;
 
     /** Ignite config. */
     private final ClientConfiguration clientCfg;
+
+    /** Channel is closed. */
+    private boolean closed;
 
     /**
      * Constructor.
@@ -79,11 +79,13 @@ final class ReliableChannel implements AutoCloseable {
 
         List<InetSocketAddress> addrs = parseAddresses(clientCfg.getAddresses());
 
+        srvCnt = addrs.size();
+
         primary = addrs.get(new Random().nextInt(addrs.size())); // we already verified there is at least one address
 
         for (InetSocketAddress a : addrs) {
             if (a != primary)
-                this.backups.add(a);
+                backups.add(a);
         }
 
         ClientConnectionException lastEx = null;
@@ -96,7 +98,7 @@ final class ReliableChannel implements AutoCloseable {
             } catch (ClientConnectionException e) {
                 lastEx = e;
 
-                changeServer();
+                rollAddress();
             }
         }
 
@@ -104,7 +106,9 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public synchronized void close() throws Exception {
+        closed = true;
+
         if (ch != null) {
             ch.close();
 
@@ -113,58 +117,40 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
-     * Send request and handle response. The method is synchronous and single-threaded.
+     * Send request and handle response.
      */
     public <T> T service(
         ClientOperation op,
-        Consumer<BinaryOutputStream> payloadWriter,
-        Function<BinaryInputStream, T> payloadReader
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException {
         ClientConnectionException failure = null;
 
-        T res = null;
+        for (int i = 0; i < srvCnt; i++) {
+            ClientChannel ch = null;
 
-        int totalSrvs = 1 + backups.size();
+            try {
+                ch = channel();
 
-        svcLock.lock();
-        try {
-            for (int i = 0; i < totalSrvs; i++) {
-                try {
-                    if (ch == null)
-                        ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
+                return ch.service(op, payloadWriter, payloadReader);
+            }
+            catch (ClientConnectionException e) {
+                if (failure == null)
+                    failure = e;
+                else
+                    failure.addSuppressed(e);
 
-                    long id = ch.send(op, payloadWriter);
-
-                    res = ch.receive(op, id, payloadReader);
-
-                    failure = null;
-
-                    break;
-                }
-                catch (ClientConnectionException e) {
-                    if (failure == null)
-                        failure = e;
-                    else
-                        failure.addSuppressed(e);
-
-                    changeServer();
-                }
+                changeServer(ch);
             }
         }
-        finally {
-            svcLock.unlock();
-        }
 
-        if (failure != null)
-            throw failure;
-
-        return res;
+        throw failure;
     }
 
     /**
      * Send request without payload and handle response.
      */
-    public <T> T service(ClientOperation op, Function<BinaryInputStream, T> payloadReader)
+    public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
         return service(op, null, payloadReader);
     }
@@ -172,15 +158,8 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Send request and handle response without payload.
      */
-    public void request(ClientOperation op, Consumer<BinaryOutputStream> payloadWriter) throws ClientException {
+    public void request(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter) throws ClientException {
         service(op, payloadWriter, null);
-    }
-
-    /**
-     * @return Server version.
-     */
-    public ProtocolVersion serverVersion() {
-        return ch.serverVersion();
     }
 
     /**
@@ -215,19 +194,41 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /** */
-    private void changeServer() {
+    private synchronized ClientChannel channel() {
+        if (closed)
+            throw new ClientException("Channel is closed");
+
+        if (ch == null) {
+            try {
+                ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
+            }
+            catch (ClientConnectionException e) {
+                rollAddress();
+
+                throw e;
+            }
+        }
+
+        return ch;
+    }
+
+    /** */
+    private void rollAddress() {
         if (!backups.isEmpty()) {
             backups.addLast(primary);
 
             primary = backups.removeFirst();
         }
+    }
 
-        try {
-            ch.close();
-        }
-        catch (Exception ignored) {
-        }
+    /** */
+    private synchronized void changeServer(ClientChannel oldCh) {
+        if (oldCh == ch && ch != null) {
+            rollAddress();
 
-        ch = null;
+            U.closeQuiet(ch);
+
+            ch = null;
+        }
     }
 }
