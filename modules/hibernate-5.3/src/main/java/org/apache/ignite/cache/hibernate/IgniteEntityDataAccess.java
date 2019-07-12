@@ -26,7 +26,9 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 
-/** */
+/**
+ * Ignite implementation of {@code EntityDataAccess} for Hibernate integration.
+ */
 public class IgniteEntityDataAccess extends IgniteCachedDomainDataAccess implements EntityDataAccess {
     /** */
     private final AccessType accessType;
