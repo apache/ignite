@@ -95,40 +95,42 @@ public class TestHashJoin {
     public void testHashJoin() throws Exception {
 //        sql("SET TRACE_LEVEL_SYSTEM_OUT 10");
 
-        String plan = sqlStr("EXPLAIN SELECT * FROM A, B USE INDEX (HASH_JOIN_IDX) WHERE A.JID=B.A_JID");
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]]"));
+        String plan = null;
+
+        plan = sqlStr("EXPLAIN SELECT * FROM A, B USE INDEX (HASH_JOIN_IDX) WHERE A.JID=B.A_JID");
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]]"));
 
         plan = sqlStr("EXPLAIN SELECT * FROM A, B USE INDEX (HASH_JOIN_IDX), C USE INDEX (HASH_JOIN_IDX) " +
             "WHERE A.JID=B.A_JID AND A.JID=C.A_JID");
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]]"));
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[A_JID]]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[A_JID]]"));
 
         plan = sqlStr("EXPLAIN SELECT * FROM A, B USE INDEX (HASH_JOIN_IDX), C " +
             "WHERE A.JID=B.A_JID AND A.JID=C.A_JID");
 
-        assertTrue(plan.contains("PUBLIC.C_A_JID: A_JID = A.JID"));
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("PUBLIC.C_A_JID: A_JID = A.JID"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]]"));
 
         plan = sqlStr("EXPLAIN SELECT * FROM A, B, C USE INDEX (HASH_JOIN_IDX) " +
             "WHERE A.JID=B.A_JID AND A.JID=C.A_JID");
-        assertTrue(plan.contains("PUBLIC.B_A_JID: A_JID = A.JID"));
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[A_JID]]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("PUBLIC.B_A_JID: A_JID = A.JID"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[A_JID]]"));
 
         plan = sqlStr("EXPLAIN SELECT * FROM A, B USE INDEX (HASH_JOIN_IDX), C USE INDEX (HASH_JOIN_IDX) " +
             "WHERE A.JID=B.A_JID AND B.ID=C.ID");
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]"));
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[ID]]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[ID]]"));
 
 
         plan = sqlStr("EXPLAIN SELECT * FROM A, B USE INDEX (HASH_JOIN_IDX), C " +
             "WHERE A.JID=B.A_JID AND B.VAL0=C.VAL0");
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]"));
-        assertTrue(plan.contains("PUBLIC.C_VAL0: VAL0 = B.VAL0"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=B_DATA, hashedCols=[A_JID]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("PUBLIC.C_VAL0: VAL0 = B.VAL0"));
 
         plan = sqlStr("EXPLAIN SELECT * FROM A, B, C USE INDEX (HASH_JOIN_IDX) " +
             "WHERE A.JID=B.A_JID AND B.VAL0=C.VAL0");
-        assertTrue(plan.contains("PUBLIC.B_A_JID: A_JID = A.JID"));
-        assertTrue(plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[VAL0]]"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("PUBLIC.B_A_JID: A_JID = A.JID"));
+        assertTrue("Unexpected plan: " + plan, plan.contains("HASH_JOIN_IDX [fillFromIndex=C_DATA, hashedCols=[VAL0]]"));
     }
 
     /**
@@ -287,6 +289,38 @@ public class TestHashJoin {
         }
     }
 
+    /**
+     * @throws Exception On error.
+     */
+    @Test
+    public void testDifferetColumnTypes() throws Exception {
+        sql("CREATE TABLE TEST_1 (ID LONG PRIMARY KEY, VAL VARCHAR(80))");
+        sql("CREATE TABLE TEST_2 (ID INT PRIMARY KEY, VAL VARCHAR(80))");
+
+        sql("INSERT INTO TEST_1 VALUES (0, 'val_0')");
+        sql("INSERT INTO TEST_1 VALUES (1, 'Val_1')");
+        sql("INSERT INTO TEST_1 VALUES (2, 'VAL_2')");
+
+
+        sql("INSERT INTO TEST_2 VALUES (0, 'val_0')");
+        sql("INSERT INTO TEST_2 VALUES (1, 'val_1')");
+        sql("INSERT INTO TEST_2 VALUES (2, 'val_2')");
+
+        List<List<Object>> resExpected = sql("SELECT * FROM TEST_1, TEST_2 " +
+            "WHERE TEST_1.ID = TEST_2.ID");
+
+        // Convert value on build.
+        List<List<Object>> resHj = sql("SELECT * FROM TEST_1, TEST_2 USE INDEX (HASH_JOIN_IDX) " +
+            "WHERE TEST_1.ID = TEST_2.ID");
+
+        assertEquals(resExpected.size(), resHj.size());
+
+        // Convert value on find.
+        resHj = sql("SELECT * FROM TEST_2, TEST_1 USE INDEX (HASH_JOIN_IDX) " +
+            "WHERE TEST_1.ID = TEST_2.ID");
+
+        assertEquals(resExpected.size(), resHj.size());
+    }
 
     /**
      * @param sql SQL query.

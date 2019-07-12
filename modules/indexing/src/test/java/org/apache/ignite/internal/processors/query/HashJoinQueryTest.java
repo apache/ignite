@@ -42,7 +42,7 @@ public class HashJoinQueryTest extends AbstractIndexingCommonTest {
     /** Keys counts at the RIGHT table. */
     private static final int RIGHT_CNT = 100;
 
-    /** Multiplier: one row at the RIGHT table is related to MULT  rows at the LEFT table. */
+    /** Multiplier: one row at the RIGHT table is related to MULT rows at the LEFT table. */
     private static final int MULT = 500;
 
     /** Keys counts at the LEFT table. */
