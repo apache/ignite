@@ -216,38 +216,6 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
         pageTrackErrors.clear();
     }
 
-    /**
-     * @param dir Backup directory to save intermeidate results.
-     * @param cctx Cache context to setup cache backup context.
-     * @param parts Collection of cache partition to be backuped.
-     * @return Configured cache backup context.
-     * @throws IgniteCheckedException If fails.
-     */
-    private static CacheBackupContext createCacheBackupContext(
-        File dir,
-        GridCacheContext cctx,
-        Set<Integer> parts
-    ) throws IgniteCheckedException {
-        CacheBackupContext result = new CacheBackupContext();
-
-        for (int partId : parts) {
-            result.partSizes.put(partId, 0L);
-
-            // Create cache backup directory if not.
-            File grpDir = U.resolveWorkDirectory(dir.getAbsolutePath(),
-                cacheDirName(cctx.config()), false);
-
-            U.ensureDirectory(grpDir, "temporary directory for cache group: " + cctx.groupId(), null);
-
-            result.partDeltaStores.put(partId,
-                new PartitionDeltaPageStore(getPartionDeltaFile(grpDir, partId),
-                    ioFactory,
-                    cctx.shared().gridConfig().getDataStorageConfiguration().getPageSize()));
-        }
-
-        return result;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> createLocalBackup(
         String backupName,
@@ -280,6 +248,38 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
         // Submit to executor service.
 
         return result.setupFut;
+    }
+
+    /**
+     * @param dir Backup directory to save intermeidate results.
+     * @param cctx Cache context to setup cache backup context.
+     * @param parts Collection of cache partition to be backuped.
+     * @return Configured cache backup context.
+     * @throws IgniteCheckedException If fails.
+     */
+    private static CacheBackupContext createCacheBackupContext(
+        File dir,
+        GridCacheContext cctx,
+        Set<Integer> parts
+    ) throws IgniteCheckedException {
+        CacheBackupContext result = new CacheBackupContext();
+
+        for (int partId : parts) {
+            result.partSizes.put(partId, 0L);
+
+            // Create cache backup directory if not.
+            File grpDir = U.resolveWorkDirectory(dir.getAbsolutePath(),
+                cacheDirName(cctx.config()), false);
+
+            U.ensureDirectory(grpDir, "temporary directory for cache group: " + cctx.groupId(), null);
+
+            result.partDeltaStores.put(partId,
+                new PartitionDeltaPageStore(getPartionDeltaFile(grpDir, partId),
+                    ioFactory,
+                    cctx.shared().gridConfig().getDataStorageConfiguration().getPageSize()));
+        }
+
+        return result;
     }
 
     /** {@inheritDoc} */
@@ -606,11 +606,6 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
 
         /** Future will be completed when all the scheduled partitions are ready to be copied. */
         private final GridFutureAdapter<Void> setupFut = new GridFutureAdapter<>();
-
-        /** Future will be completed when cache backups are created. */
-        private final GridFutureAdapter<Void> completeFut = new GridFutureAdapter<>();
-
-
 
         /** */
         private final AtomicBoolean inited = new AtomicBoolean();
