@@ -120,11 +120,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
         }
     }
 
-    /**
-     * Merge with given metrics.
-     *
-     * @return Copy.
-     */
+    /** @return Current metrics values. */
     public QueryMetrics snapshot() {
         long minTimeVal = minTime.longValue();
 
@@ -156,26 +152,32 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Minimal query execution time. */
         private long minTime;
 
-        /** */
+        /** Maximum query execution time. */
         private long maxTime;
 
-        /** */
+        /** Average query execution time. */
         private double avgTime;
 
-        /** */
+        /** Count of executed queries. */
         private int execs;
 
-        /** */
+        /** Count of failed queries. */
         private int fails;
 
-        /** */
+        /** Required by {@link Externalizable}. */
         public QueryMetricsSnapshot() {
         }
 
-        /** */
+        /**
+         * @param minTime Minimal query execution time.
+         * @param maxTime Maximum query execution time.
+         * @param avgTime Average query execution time.
+         * @param execs  Count of executed queries.
+         * @param fails Count of failed queries.
+         */
         public QueryMetricsSnapshot(long minTime, long maxTime, double avgTime, int execs, int fails) {
             this.minTime = minTime;
             this.maxTime = maxTime;
