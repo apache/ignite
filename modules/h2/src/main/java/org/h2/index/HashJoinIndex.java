@@ -17,12 +17,12 @@
 package org.h2.index;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.internal.processors.query.h2.H2MemoryTracker;
 import org.h2.command.dml.AllColumnsForPlan;
@@ -44,7 +44,6 @@ import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
-import org.h2.value.ValueStringIgnoreCase;
 
 /**
  * Termporary index based on an in-memory hash map that is built on fly.
@@ -59,11 +58,8 @@ public class HashJoinIndex extends BaseIndex {
     /** Hash table by column specified by colId. */
     private Map<Value, List<Row>> hashTbl;
 
-    /** Key columns to build hash table. */
-    private int[] colIds;
-
-    /** Ignorecase flags for each column of EQUI join. */
-    private boolean[] ignorecase;
+    /** Hashed (key) columns info. */
+    private HashColumn[] hashColumns;
 
     /** Index to fill hash table. */
     private Index fillFromIndex;
@@ -264,11 +260,11 @@ public class HashJoinIndex extends BaseIndex {
         builder.append("[fillFromIndex=").append(fillFromIndex.getName());
 
         builder.append(", hashedCols=[");
-        for (int i = 0; i < colIds.length; ++i) {
+        for (int i = 0; i < hashColumns.length; ++i) {
             if (i > 0)
                 builder.append(", ");
 
-            builder.append(table.getColumn(colIds[i]).getName());
+            builder.append(table.getColumn(hashColumns[i].colId).getName());
         }
         builder.append("]");
 
@@ -306,34 +302,29 @@ public class HashJoinIndex extends BaseIndex {
     public void prepare(Session ses, ArrayList<IndexCondition> indexConditions) {
         assert hashTbl == null;
 
-        List<Integer> ids = new ArrayList<>();
+        List<HashColumn> hashCols = new ArrayList<>();
 
         filterIdxCond = new ArrayList<>();
 
         for (IndexCondition idxCond : indexConditions) {
             if (isEquiJoinCondition(idxCond)) {
-                if (!ids.contains(idxCond.getColumn().getColumnId()))
-                    ids.add(idxCond.getColumn().getColumnId());
+                int colType = idxCond.getColumn().getType().getValueType();
+                int expType = idxCond.getExpression().getType().getValueType();
+
+                int targetType = Value.getHigherOrder(expType, colType);
+
+                HashColumn col = new HashColumn(idxCond.getColumn().getColumnId(), targetType);
+
+                if (!hashCols.contains(col))
+                    hashCols.add(col);
             }
             else if (!idxCond.isAlwaysFalse())
                 filterIdxCond.add(idxCond);
         }
 
-        assert !ids.isEmpty() : "The set of join columns is empty for table '" + table.getName() + '\'';
+        assert !hashCols.isEmpty() : "The set of join columns is empty for table '" + table.getName() + '\'';
 
-        colIds = new int[ids.size()];
-        ignorecase = new boolean[ids.size()];
-
-        Column[] cols = new Column[ids.size()];
-
-        // Prepare join col IDs and ignorecase flags.
-        for (int i = 0; i < colIds.length; ++i) {
-            colIds[i] = ids.get(i);
-
-            ignorecase[i] |= table.getColumn(colIds[i]).getType().getValueType() == Value.STRING_IGNORECASE;
-
-            cols[i] = table.getColumn(colIds[i]);
-        }
+        hashColumns = hashCols.toArray(new HashColumn[0]);
 
         prepareFillFromIndex(ses);
 
@@ -435,9 +426,6 @@ public class HashJoinIndex extends BaseIndex {
         hashTbl = new HashMap<>();
 
         // Don't use ignorecase on build.
-        boolean [] ignorecase_bak = Arrays.copyOf(ignorecase, ignorecase.length);
-        Arrays.fill(ignorecase, false);
-
         H2MemoryTracker memTracker = ses.queryMemoryTracker();
 
         while (cur.next()) {
@@ -472,9 +460,6 @@ public class HashJoinIndex extends BaseIndex {
             }
         }
 
-        // Restore ignorecase flags.
-        ignorecase = ignorecase_bak;
-
         Trace t = ses.getTrace();
 
         if (t.isDebugEnabled()) {
@@ -488,24 +473,18 @@ public class HashJoinIndex extends BaseIndex {
      * @return Hash key.
      */
     private Value hashKey(SearchRow r) {
-        if (colIds.length == 1)
-            return ignorecaseIfNeed(r.getValue(colIds[0]), ignorecase[0]);
+        if (hashColumns.length == 1)
+            return r.getValue(hashColumns[0].colId).convertTo(hashColumns[0].targetType);
 
-        Value[] key = new Value[colIds.length];
+        Value[] key = new Value[hashColumns.length];
 
-        for (int i = 0; i < colIds.length; ++i)
-            key[i] = ignorecaseIfNeed(r.getValue(colIds[i]), ignorecase[i]);
+        for (int i = 0; i < hashColumns.length; ++i) {
+            HashColumn col = hashColumns[i];
+
+            key[i] = r.getValue(col.colId).convertTo(col.targetType);
+        }
 
         return ValueArray.get(key);
-    }
-
-    /**
-     * @param key Key value.
-     * @param ignorecase Flag to ignorecase.
-     * @return Ignorecase wrapper Value.
-     */
-    private static Value ignorecaseIfNeed(Value key, boolean ignorecase) {
-        return ignorecase ? ValueStringIgnoreCase.get(key.getString()) : key;
     }
 
     /**
@@ -735,6 +714,44 @@ public class HashJoinIndex extends BaseIndex {
         /** {@inheritDoc} */
         @Override boolean checkValue(Table tbl, Value o) {
             return tbl.compareValues(o, v) <= 0;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class HashColumn {
+        /** Column ID. */
+        private final int colId;
+
+        /** Target type. */
+        private final int targetType;
+
+        /**
+         * @param colId Column ID
+         * @param targetType target type.
+         */
+        private HashColumn(int colId, int targetType) {
+            this.colId = colId;
+            this.targetType = targetType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            HashColumn column = (HashColumn)o;
+
+            return colId == column.colId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return colId;
         }
     }
 }
