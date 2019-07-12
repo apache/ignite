@@ -610,6 +610,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         if (resp.successStatus() == GridClientResponse.STATUS_AUTH_FAILURE)
             fut.onDone(new GridClientAuthenticationException("Client authentication failed [clientId=" + clientId +
                 ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+        else if (resp.successStatus() == GridClientResponse.STATUS_ILLEGAL_ARGUMENT)
+            fut.onDone(new IllegalArgumentException(resp.errorMessage()));
         else if (resp.errorMessage() != null)
             fut.onDone(new GridClientException(resp.errorMessage()));
         else

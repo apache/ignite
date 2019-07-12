@@ -63,6 +63,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: partition recover.*/
         private readonly bool _flagPartitionRecover;
 
+        /** Flag: consistency.*/
+        private readonly bool _flagReadRepair;
+
         /** Transaction manager. */
         private readonly CacheTransactionManager _txManager;
 
@@ -77,16 +80,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
+        /// <param name="flagReadRepair">Read Repair mode flag.</param>
         /// <param name="flagAllowAtomicOpsInTx">Allow atomic operations in transactions flag.</param>
         public CacheImpl(IPlatformTargetInternal target,
             bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover,
-            bool flagAllowAtomicOpsInTx) : base(target)
+            bool flagReadRepair, bool flagAllowAtomicOpsInTx) : base(target)
         {
             _ignite = target.Marshaller.Ignite;
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
             _flagPartitionRecover = flagPartitionRecover;
+            _flagReadRepair = flagReadRepair;
             _flagAllowAtomicOpsInTx = flagAllowAtomicOpsInTx;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
@@ -178,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithSkipStore),
-                true, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                true, _flagKeepBinary, true, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /// <summary>
@@ -202,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new CacheImpl<TK1, TV1>(DoOutOpObject((int) CacheOp.WithKeepBinary),
-                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -212,7 +217,17 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int)CacheOp.WithSkipStore),
-                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, true);
+                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, _flagReadRepair, true);
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithReadRepair()
+        {
+            if (_flagReadRepair)
+                return this;
+
+            return new CacheImpl<TK, TV>(DoOutOpObject((int)CacheOp.WithReadRepair),
+                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, true, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -223,13 +238,18 @@ namespace Apache.Ignite.Core.Impl.Cache
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
             return new CacheImpl<TK, TV>(cache0, _flagSkipStore, _flagKeepBinary, 
-                _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                _flagNoRetries, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
         public bool IsKeepBinary
         {
             get { return _flagKeepBinary; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsReadRepair {
+            get { return _flagReadRepair; }
         }
 
         /** <inheritDoc /> */
@@ -1139,7 +1159,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithNoRetries),
-                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -1149,7 +1169,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithPartitionRecover),
-                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true, _flagAllowAtomicOpsInTx);
+                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */

@@ -137,6 +137,41 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withPartitionRecover();
 
     /**
+     * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
+     * <p>
+     * Read Repair means that each backup node will be checked to have the same entry as primary node has,
+     * and in case consistency violation found:
+     * <ul>
+     *  <li>for transactional caches:
+     *  <p>values across the topology will be replaced by latest versioned value:
+     *  <ul>
+     *      <li>automaticaly for OPTIMISTIC || READ_COMMITTED transactions</li>
+     *      <li>at commit() for PESSIMISTIC && !READ_COMMITTED transactions</li>
+     *  </ul>
+     *  <p>consistency violation event will be recorded in case it's configured as recordable</li>
+     *  <li>for atomic caches: consistency violation exception will be thrown.</li>
+     * </ul>
+     * <p>
+     * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
+     * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
+     * cached value, for example already read the value or performed a write, you'll gain the cached value.
+     * <p>
+     * Local caches and caches without backups, obviously, can not be checked using this feature.
+     * <p>
+     * Full list of repairable methods:
+     * <ul>
+     * <li>{@link IgniteCache#containsKey} && {@link IgniteCache#containsKeyAsync}</li>
+     * <li>{@link IgniteCache#containsKeys} && {@link IgniteCache#containsKeysAsync}</li>
+     * <li>{@link IgniteCache#getEntry} && {@link IgniteCache#getEntryAsync}</li>
+     * <li>{@link IgniteCache#getEntries} && {@link IgniteCache#getEntriesAsync}</li>
+     * <li>{@link IgniteCache#get} && {@link IgniteCache#getAsync}</li>
+     * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
+     * </ul>
+     * @return Cache with explicit consistency check on each read and repair if necessary.
+     */
+    public IgniteCache<K, V> withReadRepair();
+
+    /**
      * Returns cache that will operate with binary objects.
      * <p>
      * Cache returned by this method will not be forced to deserialize binary objects,
