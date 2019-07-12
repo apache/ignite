@@ -18,30 +18,23 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientAuthorizationException;
+import org.apache.ignite.client.ClientConnectionException;
 
 /**
  * Processing thin client requests and responses.
  */
 interface ClientChannel extends AutoCloseable {
     /**
+     * Send request and handle response for client operation.
+     *
      * @param op Operation.
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
-     * @return Request ID.
-     */
-    public long send(ClientOperation op, Consumer<BinaryOutputStream> payloadWriter) throws ClientConnectionException;
-
-    /**
-     * @param op Operation.
-     * @param reqId ID of the request to receive the response for.
      * @param payloadReader Payload reader from stream.
      * @return Received operation payload or {@code null} if response has no payload.
      */
-    public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
-        throws ClientConnectionException, ClientAuthorizationException;
+    public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException;
 
     /**
      * @return Server version.

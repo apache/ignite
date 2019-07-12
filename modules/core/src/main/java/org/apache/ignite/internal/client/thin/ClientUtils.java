@@ -54,9 +54,8 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
 
 /**
  * Shared serialization/deserialization utils.
@@ -233,7 +232,7 @@ final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ClientListenerProtocolVersion ver) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolVersion ver) {
         try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             int origPos = out.position();
 
@@ -312,7 +311,7 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
 
-                                if (ver.compareTo(VER_1_2_0) >= 0) {
+                                if (ver.compareTo(V1_2_0) >= 0) {
                                     w.writeInt(qf.getPrecision());
                                     w.writeInt(qf.getScale());
                                 }
@@ -348,7 +347,7 @@ final class ClientUtils {
     }
 
     /** Deserialize configuration from stream. */
-    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ClientListenerProtocolVersion ver)
+    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolVersion ver)
         throws IOException {
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
@@ -393,7 +392,7 @@ final class ClientUtils {
                             .setKeyFieldName(reader.readString())
                             .setValueFieldName(reader.readString());
 
-                        boolean isCliVer1_2 = ver.compareTo(VER_1_2_0) >= 0;
+                        boolean isCliVer1_2 = ver.compareTo(V1_2_0) >= 0;
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,

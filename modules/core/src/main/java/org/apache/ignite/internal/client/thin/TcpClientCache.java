@@ -39,7 +39,6 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 import static java.util.AbstractMap.SimpleEntry;
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
@@ -82,7 +81,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
+                writeObject(req, key);
             },
             this::readObject
         );
@@ -100,8 +99,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_PUT,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
-                serDes.writeObject(req, val);
+                writeObject(req, key);
+                writeObject(req, val);
             }
         );
     }
@@ -115,9 +114,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_CONTAINS_KEY,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
+                writeObject(req, key);
             },
-            BinaryInputStream::readBoolean
+            res -> res.in().readBoolean()
         );
     }
 
@@ -133,7 +132,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             this::writeCacheInfo,
             res -> {
                 try {
-                    return serDes.cacheConfiguration(res, DEFAULT_VER);
+                    return serDes.cacheConfiguration(res.in(), res.clientChannel().serverVersion());
                 }
                 catch (IOException e) {
                     return null;
@@ -148,9 +147,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET_SIZE,
             req -> {
                 writeCacheInfo(req);
-                ClientUtils.collection(peekModes, req, (out, m) -> out.writeByte((byte)m.ordinal()));
+                ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
             },
-            res -> (int)res.readLong()
+            res -> (int)res.in().readLong()
         );
     }
 
@@ -166,10 +165,10 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET_ALL,
             req -> {
                 writeCacheInfo(req);
-                ClientUtils.collection(keys, req, serDes::writeObject);
+                ClientUtils.collection(keys, req.out(), serDes::writeObject);
             },
             res -> ClientUtils.collection(
-                res,
+                res.in(),
                 in -> new SimpleEntry<K, V>(readObject(in), readObject(in))
             )
         ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
@@ -189,7 +188,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                 writeCacheInfo(req);
                 ClientUtils.collection(
                     map.entrySet(),
-                    req,
+                    req.out(),
                     (out, e) -> {
                         serDes.writeObject(out, e.getKey());
                         serDes.writeObject(out, e.getValue());
@@ -213,11 +212,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_REPLACE_IF_EQUALS,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
-                serDes.writeObject(req, oldVal);
-                serDes.writeObject(req, newVal);
+                writeObject(req, key);
+                writeObject(req, oldVal);
+                writeObject(req, newVal);
             },
-            BinaryInputStream::readBoolean
+            res -> res.in().readBoolean()
         );
     }
 
@@ -233,10 +232,10 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_REPLACE,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
-                serDes.writeObject(req, val);
+                writeObject(req, key);
+                writeObject(req, val);
             },
-            BinaryInputStream::readBoolean
+            res -> res.in().readBoolean()
         );
     }
 
@@ -249,9 +248,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_REMOVE_KEY,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
+                writeObject(req, key);
             },
-            BinaryInputStream::readBoolean
+            res -> res.in().readBoolean()
         );
     }
 
@@ -267,10 +266,10 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_REMOVE_IF_EQUALS,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
-                serDes.writeObject(req, oldVal);
+                writeObject(req, key);
+                writeObject(req, oldVal);
             },
-            BinaryInputStream::readBoolean
+            res -> res.in().readBoolean()
         );
     }
 
@@ -286,7 +285,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_REMOVE_KEYS,
             req -> {
                 writeCacheInfo(req);
-                ClientUtils.collection(keys, req, serDes::writeObject);
+                ClientUtils.collection(keys, req.out(), serDes::writeObject);
             }
         );
     }
@@ -308,8 +307,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET_AND_PUT,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
-                serDes.writeObject(req, val);
+                writeObject(req, key);
+                writeObject(req, val);
             },
             this::readObject
         );
@@ -324,7 +323,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET_AND_REMOVE,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
+                writeObject(req, key);
             },
             this::readObject
         );
@@ -342,8 +341,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET_AND_REPLACE,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
-                serDes.writeObject(req, val);
+                writeObject(req, key);
+                writeObject(req, val);
             },
             this::readObject
         );
@@ -361,10 +360,10 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_PUT_IF_ABSENT,
             req -> {
                 writeCacheInfo(req);
-                serDes.writeObject(req, key);
-                serDes.writeObject(req, val);
+                writeObject(req, key);
+                writeObject(req, val);
             },
-            BinaryInputStream::readBoolean
+            res -> res.in().readBoolean()
         );
     }
 
@@ -424,9 +423,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (qry == null)
             throw new NullPointerException("qry");
 
-        Consumer<BinaryOutputStream> qryWriter = out -> {
-            writeCacheInfo(out);
-            serDes.write(qry, out);
+        Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
+            writeCacheInfo(payloadCh);
+            serDes.write(qry, payloadCh.out());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
@@ -441,8 +440,10 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** Handle scan query. */
     private QueryCursor<Cache.Entry<K, V>> scanQuery(ScanQuery<K, V> qry) {
-        Consumer<BinaryOutputStream> qryWriter = out -> {
-            writeCacheInfo(out);
+        Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
+            writeCacheInfo(payloadCh);
+
+            BinaryOutputStream out = payloadCh.out();
 
             if (qry.getFilter() == null)
                 out.writeByte(GridBinaryMarshaller.NULL);
@@ -468,8 +469,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** Handle SQL query. */
     private QueryCursor<Cache.Entry<K, V>> sqlQuery(SqlQuery qry) {
-        Consumer<BinaryOutputStream> qryWriter = out -> {
-            writeCacheInfo(out);
+        Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
+            writeCacheInfo(payloadCh);
+
+            BinaryOutputStream out = payloadCh.out();
+
             serDes.writeObject(out, qry.getType());
             serDes.writeObject(out, qry.getSql());
             ClientUtils.collection(qry.getArgs(), out, serDes::writeObject);
@@ -491,7 +495,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** Write cache ID and flags. */
-    private void writeCacheInfo(BinaryOutputStream out) {
+    private void writeCacheInfo(PayloadOutputChannel payloadCh) {
+        BinaryOutputStream out = payloadCh.out();
+
         out.writeInt(cacheId);
         out.writeByte((byte)(keepBinary ? 1 : 0));
     }
@@ -499,5 +505,15 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** */
     private <T> T readObject(BinaryInputStream in) {
         return serDes.readObject(in, keepBinary);
+    }
+
+    /** */
+    private <T> T readObject(PayloadInputChannel payloadCh) {
+        return readObject(payloadCh.in());
+    }
+
+    /** */
+    private void writeObject(PayloadOutputChannel payloadCh, Object obj) {
+        serDes.writeObject(payloadCh.out(), obj);
     }
 }

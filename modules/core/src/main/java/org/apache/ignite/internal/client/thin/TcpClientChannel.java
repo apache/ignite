@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.io.DataInput;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,7 +34,11 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -48,41 +53,44 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
 
 /**
  * Implements {@link ClientChannel} over TCP.
  */
 class TcpClientChannel implements ClientChannel {
-    /** Protocol version: 1.2.0. */
-    private static final ProtocolVersion V1_2_0 = new ProtocolVersion((short)1, (short)2, (short)0);
-    
-    /** Protocol version: 1.1.0. */
-    private static final ProtocolVersion V1_1_0 = new ProtocolVersion((short)1, (short)1, (short)0);
-
-    /** Protocol version 1 0 0. */
-    private static final ProtocolVersion V1_0_0 = new ProtocolVersion((short)1, (short)0, (short)0);
-
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
-        V1_2_0, 
+        V1_2_0,
         V1_1_0, 
         V1_0_0
     );
+
+    /** Timeout before next attempt to lock channel and process next response by current thread. */
+    private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
 
     /** Protocol version agreed with the server. */
     private ProtocolVersion ver = V1_2_0;
@@ -96,8 +104,23 @@ class TcpClientChannel implements ClientChannel {
     /** Input stream. */
     private final InputStream in;
 
+    /** Data input. */
+    private final DataInput dataInput;
+
+    /** Total bytes read by channel. */
+    private long totalBytesRead;
+
     /** Request id. */
     private final AtomicLong reqId = new AtomicLong(1);
+
+    /** Send lock. */
+    private final Lock sndLock = new ReentrantLock();
+
+    /** Receive lock. */
+    private final Lock rcvLock = new ReentrantLock();
+
+    /** Pending requests. */
+    private final Map<Long, ClientRequestFuture> pendingReqs = new ConcurrentHashMap<>();
 
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg) throws ClientConnectionException, ClientAuthenticationException {
@@ -108,9 +131,13 @@ class TcpClientChannel implements ClientChannel {
 
             out = sock.getOutputStream();
             in = sock.getInputStream();
+
+            GridUnsafeDataInput dis = new GridUnsafeDataInput();
+            dis.inputStream(in);
+            dataInput = dis;
         }
         catch (IOException e) {
-            throw new ClientConnectionException(e);
+            throw handleIOError("addr=" + cfg.getAddress(), e);
         }
 
         handshake(cfg.getUserName(), cfg.getUserPassword());
@@ -121,71 +148,157 @@ class TcpClientChannel implements ClientChannel {
         in.close();
         out.close();
         sock.close();
+
+        for (ClientRequestFuture pendingReq : pendingReqs.values())
+            pendingReq.onDone(new ClientConnectionException("Channel is closed"));
     }
 
     /** {@inheritDoc} */
-    @Override public long send(ClientOperation op, Consumer<BinaryOutputStream> payloadWriter)
+    @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
+        long id = send(op, payloadWriter);
+
+        return receive(id, payloadReader);
+    }
+
+    /**
+     * @param op Operation.
+     * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
+     * @return Request ID.
+     */
+    private long send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
         throws ClientConnectionException {
         long id = reqId.getAndIncrement();
 
-        try (BinaryOutputStream req = new BinaryHeapOutputStream(1024)) {
-            req.writeInt(0); // reserve an integer for the request size
+        // Only one thread at a time can have access to write to the channel.
+        sndLock.lock();
+
+        try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
+            pendingReqs.put(id, new ClientRequestFuture());
+
+            BinaryOutputStream req = payloadCh.out();
+
+            req.writeInt(0); // Reserve an integer for the request size.
             req.writeShort(op.code());
             req.writeLong(id);
 
             if (payloadWriter != null)
-                payloadWriter.accept(req);
+                payloadWriter.accept(payloadCh);
 
-            req.writeInt(0, req.position() - 4); // actual size
+            req.writeInt(0, req.position() - 4); // Actual size.
 
             write(req.array(), req.position());
+        }
+        catch (Throwable t) {
+            pendingReqs.remove(id);
+
+            throw t;
+        }
+        finally {
+            sndLock.unlock();
         }
 
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
+    /**
+     * @param reqId ID of the request to receive the response for.
+     * @param payloadReader Payload reader from stream.
+     * @return Received operation payload or {@code null} if response has no payload.
+     */
+    private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
         throws ClientConnectionException, ClientAuthorizationException {
+        ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
-        final int MIN_RES_SIZE = 8 + 4; // minimal response size: long (8 bytes) ID + int (4 bytes) status
+        assert pendingReq != null : "Pending request future not found for request " + reqId;
 
-        int resSize = new BinaryHeapInputStream(read(4)).readInt();
+        // Each thread creates a future on request sent and returns a response when this future is completed.
+        // Only one thread at a time can have access to read from the channel. This thread reads the next available
+        // response and complete corresponding future. All other concurrent threads wait for their own futures with
+        // a timeout and periodically try to lock the channel to process the next response.
+        try {
+            while (true) {
+                if (rcvLock.tryLock()) {
+                    try {
+                        if (!pendingReq.isDone())
+                            processNextResponse();
+                    }
+                    finally {
+                        rcvLock.unlock();
+                    }
+                }
 
-        if (resSize < 0)
+                try {
+                    byte[] payload = pendingReq.get(PAYLOAD_WAIT_TIMEOUT);
+
+                    if (payload == null || payloadReader == null)
+                        return null;
+
+                    return payloadReader.apply(new PayloadInputChannel(this, payload));
+                }
+                catch (IgniteFutureTimeoutCheckedException ignore) {
+                    // Next cycle if timed out.
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            if (e.getCause() instanceof ClientError)
+                throw (ClientError)e.getCause();
+
+            if (e.getCause() instanceof ClientException)
+                throw (ClientException)e.getCause();
+
+            throw new ClientException(e.getMessage(), e);
+        }
+        finally {
+            pendingReqs.remove(reqId);
+        }
+    }
+
+    /**
+     * Process next response from the input stream and complete corresponding future.
+     */
+    private void processNextResponse() throws ClientProtocolError, ClientConnectionException {
+        int resSize = readInt();
+
+        if (resSize <= 0)
             throw new ClientProtocolError(String.format("Invalid response size: %s", resSize));
 
-        if (resSize == 0)
-            return null;
+        long bytesReadOnStartReq = totalBytesRead;
 
-        BinaryInputStream resIn = new BinaryHeapInputStream(read(MIN_RES_SIZE));
+        long resId = readLong();
 
-        long resId = resIn.readLong();
+        ClientRequestFuture pendingReq = pendingReqs.get(resId);
 
-        if (resId != reqId)
-            throw new ClientProtocolError(String.format("Unexpected response ID [%s], [%s] was expected", resId, reqId));
+        if (pendingReq == null)
+            throw new ClientProtocolError(String.format("Unexpected response ID [%s]", resId));
 
-        int status = resIn.readInt();
+        int status;
 
-        if (status != 0) {
-            resIn = new BinaryHeapInputStream(read(resSize - MIN_RES_SIZE));
+        BinaryInputStream resIn;
+
+        status = readInt();
+
+        int hdrSize = (int)(totalBytesRead - bytesReadOnStartReq);
+
+        if (status == 0) {
+            if (resSize <= hdrSize)
+                pendingReq.onDone();
+            else
+                pendingReq.onDone(read(resSize - hdrSize));
+        }
+        else {
+            resIn = new BinaryHeapInputStream(read(resSize - hdrSize));
 
             String err = new BinaryReaderExImpl(null, resIn, null, true).readString();
 
             switch (status) {
                 case ClientStatus.SECURITY_VIOLATION:
-                    throw new ClientAuthorizationException();
+                    pendingReq.onDone(new ClientAuthorizationException());
                 default:
-                    throw new ClientServerError(err, status, reqId);
+                    pendingReq.onDone(new ClientServerError(err, status, resId));
             }
         }
-
-        if (resSize <= MIN_RES_SIZE || payloadReader == null)
-            return null;
-
-        BinaryInputStream payload = new BinaryHeapInputStream(read(resSize - MIN_RES_SIZE));
-
-        return payloadReader.apply(payload);
     }
 
     /** {@inheritDoc} */
@@ -248,7 +361,7 @@ class TcpClientChannel implements ClientChannel {
 
     /** Send handshake request. */
     private void handshakeReq(String user, String pwd) throws ClientConnectionException {
-        try (BinaryOutputStream req = new BinaryOffheapOutputStream(32)) {
+        try (BinaryOutputStream req = new BinaryHeapOutputStream(32)) {
             req.writeInt(0); // reserve an integer for the request size
             req.writeByte((byte)1); // handshake code, always 1
             req.writeShort(ver.major());
@@ -270,7 +383,7 @@ class TcpClientChannel implements ClientChannel {
     /** Receive and handle handshake response. */
     private void handshakeRes(String user, String pwd)
         throws ClientConnectionException, ClientAuthenticationException {
-        int resSize = new BinaryHeapInputStream(read(4)).readInt();
+        int resSize = readInt();
 
         if (resSize <= 0)
             throw new ClientProtocolError(String.format("Invalid handshake response size: %s", resSize));
@@ -309,7 +422,7 @@ class TcpClientChannel implements ClientChannel {
                 }
             }
             catch (IOException e) {
-                throw new ClientConnectionException(e);
+                throw handleIOError(e);
             }
         }
     }
@@ -325,16 +438,66 @@ class TcpClientChannel implements ClientChannel {
                 bytesNum = in.read(bytes, readBytesNum, len - readBytesNum);
             }
             catch (IOException e) {
-                throw new ClientConnectionException(e);
+                throw handleIOError(e);
             }
 
             if (bytesNum < 0)
-                throw new ClientConnectionException();
+                throw handleIOError(null);
 
             readBytesNum += bytesNum;
         }
 
+        totalBytesRead += readBytesNum;
+
         return bytes;
+    }
+
+    /**
+     * Read long value from input stream.
+     */
+    private long readLong() {
+        try {
+            long val = dataInput.readLong();
+
+            totalBytesRead += Long.BYTES;
+
+            return val;
+        }
+        catch (IOException e) {
+            throw handleIOError(e);
+        }
+    }
+
+    /**
+     * Read int value from input stream.
+     */
+    private int readInt() {
+        try {
+            int val = dataInput.readInt();
+
+            totalBytesRead += Integer.BYTES;
+
+            return val;
+        }
+        catch (IOException e) {
+            throw handleIOError(e);
+        }
+    }
+
+    /**
+     * Read short value from input stream.
+     */
+    private short readShort() {
+        try {
+            short val = dataInput.readShort();
+
+            totalBytesRead += Short.BYTES;
+
+            return val;
+        }
+        catch (IOException e) {
+            throw handleIOError(e);
+        }
     }
 
     /** Write bytes to the output stream. */
@@ -344,8 +507,29 @@ class TcpClientChannel implements ClientChannel {
             out.flush();
         }
         catch (IOException e) {
-            throw new ClientConnectionException(e);
+            throw handleIOError(e);
         }
+    }
+
+    /**
+     * @param ex IO exception (cause).
+     */
+    private ClientException handleIOError(@Nullable IOException ex) {
+        return handleIOError("sock=" + sock, ex);
+    }
+
+    /**
+     * @param chInfo Additional channel info
+     * @param ex IO exception (cause).
+     */
+    private ClientException handleIOError(String chInfo, @Nullable IOException ex) {
+        return new ClientConnectionException("Ignite cluster is unavailable [" + chInfo + ']', ex);
+    }
+
+    /**
+     *
+     */
+    private static class ClientRequestFuture extends GridFutureAdapter<byte[]> {
     }
 
     /** SSL Socket Factory. */
