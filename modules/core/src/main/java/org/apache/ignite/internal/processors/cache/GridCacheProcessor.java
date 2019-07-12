@@ -16,10 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.configuration.FactoryBuilder;
-import javax.cache.expiry.EternalExpiryPolicy;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,6 +37,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -2449,23 +2449,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean affNode = checkForAffinityNode(desc, reqNearCfg, ccfg);
 
-        CacheGroupContext grp = getOrCreateCacheGroupContext(desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName(), false);
+        ctx.cache().context().database().checkpointReadLock();
 
-        GridCacheContext cacheCtx = createCacheContext(ccfg,
-            grp,
-            null,
-            desc,
-            exchTopVer,
-            cacheObjCtx,
-            affNode,
-            true,
-            disabledAfterStart,
-            false
-        );
+        try {
+            CacheGroupContext grp = getOrCreateCacheGroupContext(
+                desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName(), false);
 
-        initCacheContext(cacheCtx, ccfg);
+            GridCacheContext cacheCtx = createCacheContext(ccfg,
+                grp,
+                null,
+                desc,
+                exchTopVer,
+                cacheObjCtx,
+                affNode,
+                true,
+                disabledAfterStart,
+                false
+            );
 
-        return cacheCtx;
+            initCacheContext(cacheCtx, ccfg);
+
+            return cacheCtx;
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -2728,28 +2736,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         preparePageStore(desc, true);
 
-        CacheGroupContext grp = getOrCreateCacheGroupContext(
-            desc,
-            AffinityTopologyVersion.NONE,
-            cacheObjCtx,
-            true,
-            cfg.getGroupName(),
-            true
-        );
+        CacheGroupContext grpCtx;
+        GridCacheContext cacheCtx;
 
-        GridCacheContext cacheCtx = createCacheContext(cfg,
-            grp,
-            null,
-            desc,
-            AffinityTopologyVersion.NONE,
-            cacheObjCtx,
-            true,
-            true,
-            false,
-            true
-        );
+        ctx.cache().context().database().checkpointReadLock();
 
-        initCacheContext(cacheCtx, cfg);
+        try {
+            grpCtx = getOrCreateCacheGroupContext(
+                desc,
+                AffinityTopologyVersion.NONE,
+                cacheObjCtx,
+                true,
+                cfg.getGroupName(),
+                true
+            );
+
+            cacheCtx = createCacheContext(cfg,
+                grpCtx,
+                null,
+                desc,
+                AffinityTopologyVersion.NONE,
+                cacheObjCtx,
+                true,
+                true,
+                false,
+                true
+            );
+
+            initCacheContext(cacheCtx, cfg);
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
 
         cacheCtx.onStarted();
 
@@ -2758,7 +2776,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (dataRegion == null && ctx.config().getDataStorageConfiguration() != null)
             dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
-        grp.onCacheStarted(cacheCtx);
+        grpCtx.onCacheStarted(cacheCtx);
 
         ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, false),
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
