@@ -27,7 +27,9 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 
-/** */
+/**
+ * Ignite implementation of {@code NaturalIdDataAccess} for Hibernate integration.
+ */
 public class IgniteNaturalIdDataAccess extends IgniteCachedDomainDataAccess implements NaturalIdDataAccess {
     /** */
     private final AccessType accessType;
