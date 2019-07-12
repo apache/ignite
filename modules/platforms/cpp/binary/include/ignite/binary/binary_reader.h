@@ -366,6 +366,14 @@ namespace ignite
             BinaryStringArrayReader ReadStringArray(const char* fieldName);
 
             /**
+             * Read enum entry.
+             *
+             * @param fieldName Field name.
+             * @return Enum entry.
+             */
+            BinaryEnumEntry ReadBinaryEnum(const char* fieldName);
+
+            /**
              * Start array read.
              *
              * Every time you get a BinaryArrayReader from BinaryReader you
@@ -464,11 +472,26 @@ namespace ignite
              *
              * @param fieldName Field name.
              * @return Object.
+             *
+             * @trapam T Object type. BinaryType class template should be specialized for the type.
              */
             template<typename T>
             T ReadObject(const char* fieldName)
             {
                 return impl->ReadObject<T>(fieldName);
+            }
+
+            /**
+             * Read enum value.
+             *
+             * @return Enum value.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            T ReadEnum(const char* fieldName)
+            {
+                return impl->ReadEnum<T>(fieldName);
             }
 
             /**
