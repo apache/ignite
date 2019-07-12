@@ -1565,8 +1565,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @param msg Message.
      */
-    private static void fail(Object msg) {
-        throw new AssertionError(msg);
+    private void fail(Object msg) {
+        AssertionError err = new AssertionError(msg);
+
+        if (failureProcessor != null)
+            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, err));
+
+        throw err;
     }
 
     /**
