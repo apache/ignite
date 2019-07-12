@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import static org.apache.ignite.console.websocket.WebSocketEvents.ERROR;
 
 /**
- * Websocket event POJO.
+ * Websocket request POJO.
  */
 public class WebSocketRequest implements WebSocketEvent<String> {
     /** */
@@ -38,54 +38,35 @@ public class WebSocketRequest implements WebSocketEvent<String> {
     /** */
     private String payload;
 
-    /**
-     * Default constructor for deserialization.
-     */
-    public WebSocketRequest() {
-        // No-op.
-    }
-
-    /**
-     * @return Request ID.
-     */
-    public String getRequestId() {
+    /** {@inheritDoc} */
+    @Override public String getRequestId() {
         return reqId;
     }
 
-    /**
-     * @param reqId New request ID.
-     */
-    public void setRequestId(String reqId) {
+    /** {@inheritDoc} */
+    @Override public void setRequestId(String reqId) {
         this.reqId = reqId;
     }
 
-    /**
-     * @return Event type.
-     */
-    public String getEventType() {
+    /** {@inheritDoc} */
+    @Override public String getEventType() {
         return evtType;
     }
 
-    /**
-     * @param evtType New event type.
-     */
-    public void setEventType(String evtType) {
+    /** {@inheritDoc} */
+    @Override public void setEventType(String evtType) {
         this.evtType = evtType;
     }
 
-    /**
-     * @return Payload.
-     */
+    /** {@inheritDoc} */
     @JsonRawValue
-    public String getPayload() {
+    @Override public String getPayload() {
         return payload;
     }
 
-    /**
-     * @param payload New payload.
-     */
+    /** {@inheritDoc} */
     @JsonDeserialize(using = RawContentDeserializer.class)
-    public void setPayload(String payload) {
+    @Override public void setPayload(String payload) {
         this.payload = payload;
     }
 
