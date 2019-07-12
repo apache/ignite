@@ -16,12 +16,9 @@
 
 package org.apache.ignite.examples;
 
-import org.junit.Ignore;
-
 /**
  * ContinuousMapperExample multi-node self test.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class ContinuousMapperExamplesMultiNodeSelfTest extends ContinuationExamplesSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
