@@ -15,31 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client.thin;
+
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 
 /**
- * Indicates all the Ignite servers specified in the client configuration are no longer available.
+ * Thin client payload input channel.
  */
-public class ClientConnectionException extends ClientException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+class PayloadInputChannel {
+    /** Client channel. */
+    private final ClientChannel ch;
+
+    /** Input stream. */
+    private final BinaryInputStream in;
 
     /**
-     * Constructs a new exception with the specified detail message.
-     *
-     * @param msg the detail message.
+     * Constructor.
      */
-    public ClientConnectionException(String msg) {
-        super(msg);
+    PayloadInputChannel(ClientChannel ch, byte[] payload) {
+        in = new BinaryHeapInputStream(payload);
+        this.ch = ch;
     }
 
     /**
-     * Constructs a new exception with the specified cause and detail message.
-     *
-     * @param msg the detail message.
-     * @param cause the cause.
+     * Gets client channel.
      */
-    public ClientConnectionException(String msg, Throwable cause) {
-        super(msg, cause);
+    public ClientChannel clientChannel() {
+        return ch;
+    }
+
+    /**
+     * Gets input stream.
+     */
+    public BinaryInputStream in() {
+        return in;
     }
 }

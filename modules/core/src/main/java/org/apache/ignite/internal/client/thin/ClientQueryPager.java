@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import javax.cache.Cache;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
  * Client query pager.
@@ -38,7 +37,7 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
         ReliableChannel ch,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
-        Consumer<BinaryOutputStream> qryWriter,
+        Consumer<PayloadOutputChannel> qryWriter,
         boolean keepBinary,
         ClientBinaryMarshaller marsh
     ) {
@@ -50,7 +49,9 @@ class ClientQueryPager<K, V> extends GenericQueryPager<Cache.Entry<K, V>> {
     }
 
     /** {@inheritDoc} */
-    @Override Collection<Cache.Entry<K, V>> readEntries(BinaryInputStream in) {
+    @Override Collection<Cache.Entry<K, V>> readEntries(PayloadInputChannel paloadCh) {
+        BinaryInputStream in = paloadCh.in();
+
         return ClientUtils.collection(
             in,
             ignored -> new ClientCacheEntry<>(serDes.readObject(in, keepBinary), serDes.readObject(in, keepBinary))
