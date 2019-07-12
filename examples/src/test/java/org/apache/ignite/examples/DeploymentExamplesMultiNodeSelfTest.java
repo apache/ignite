@@ -17,17 +17,14 @@
 
 package org.apache.ignite.examples;
 
-import org.junit.jupiter.api.Test;
-
 /**
  * Deployment examples multi-node self test.
  */
 public class DeploymentExamplesMultiNodeSelfTest extends DeploymentExamplesSelfTest {
     /** {@inheritDoc} */
-    @Test
-    @Override public void testDeploymentExample() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         startRemoteNodes();
 
-        super.testDeploymentExample();
+        super.beforeTest();
     }
 }
