@@ -322,10 +322,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Collection<IgniteInternalTx> active = activeTransactions();
 
         for (IgniteInternalTx tx : active) {
-            for (IgniteTxEntry e : tx.allEntries()) {
+            IgniteTxState state = tx.txState();
+
+            Collection<IgniteTxEntry> txEntries =
+                state instanceof IgniteTxStateImpl ? ((IgniteTxStateImpl)state).allEntriesCopy() : state.allEntries();
+
+            for (IgniteTxEntry e : txEntries) {
                 if (e.context().cacheId() == cacheToStop) {
                     compFut.add(failTxOnPreparing(tx));
-
                     break;
                 }
             }
