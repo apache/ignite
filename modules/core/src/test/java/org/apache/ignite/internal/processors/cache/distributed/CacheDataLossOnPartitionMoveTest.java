@@ -141,7 +141,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
             ignite.cluster().active(true);
 
             List<Integer> toCp = movingKeysAfterJoin(ignite, DEFAULT_CACHE_NAME, 1,
-                node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP));
+                node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP), null);
 
             int blockPartId = ignite.affinity(DEFAULT_CACHE_NAME).partition(toCp.get(0));
 
