@@ -16,10 +16,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -38,7 +34,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -47,17 +42,11 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -348,73 +337,6 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
         }
 
         return builder.build();
-    }
-
-    /**
-     * Discovery SPI which can simulate network split.
-     */
-    protected class BlockTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** Closure. */
-        private volatile IgniteBiClosure<ClusterNode, DiscoveryCustomMessage, Void> clo;
-
-        /**
-         * @param clo Closure.
-         */
-        public void setClosure(IgniteBiClosure<ClusterNode, DiscoveryCustomMessage, Void> clo) {
-            this.clo = clo;
-        }
-
-        /**
-         * @param addr Address.
-         * @param msg Message.
-         */
-        private synchronized void apply(ClusterNode addr, TcpDiscoveryAbstractMessage msg) {
-            if (!(msg instanceof TcpDiscoveryCustomEventMessage))
-                return;
-
-            TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
-
-            DiscoveryCustomMessage delegate;
-
-            try {
-                DiscoverySpiCustomMessage custMsg = cm.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
-
-                assertNotNull(custMsg);
-
-                delegate = ((CustomMessageWrapper)custMsg).delegate();
-
-            }
-            catch (Throwable throwable) {
-                throw new RuntimeException(throwable);
-            }
-
-            if (clo != null)
-                clo.apply(addr, delegate);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            byte[] data,
-            long timeout
-        ) throws IOException {
-            if (spiCtx != null)
-                apply(spiCtx.localNode(), msg);
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (spiCtx != null)
-                apply(spiCtx.localNode(), msg);
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
     }
 
     /** {@inheritDoc} */

@@ -73,6 +73,9 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /** HWM. */
     protected final AtomicLong reserveCntr = new AtomicLong();
 
+    /** */
+    private boolean first = true;
+
     /**
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
@@ -83,7 +86,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         cntr.set(initUpdCntr);
 
-        initCntr = initUpdCntr;
+        reserveCntr.set(initCntr = initUpdCntr);
 
         queue = fromBytes(cntrUpdData);
     }
@@ -119,11 +122,14 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         // Reserved update counter is updated only on exchange.
         long cur = get();
 
-        // Special case: single node in topology.
-        if (val == 0)
-            reserveCntr.set(cur);
+        // Always set reserved counter equal to max known counter.
+        long max = Math.max(val, cur);
 
-        if (val < cur) // Outdated counter (txs are possible before current topology future is finished).
+        if (reserveCntr.get() < max)
+            reserveCntr.set(max);
+
+        // Outdated counter (txs are possible before current topology future is finished if primary is not changed).
+        if (val < cur)
             return;
 
         // Absolute counter should be not less than last applied update.
@@ -132,15 +138,17 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         if (val < highestAppliedCounter())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
-        if (reserveCntr.get() < val)
-            reserveCntr.set(val); // Adjust counter on new primary.
-
         cntr.set(val);
 
-        // If some holes are present at this point, thar means some update were missed on recovery and will be restored
-        // during rebalance. All gaps are safe to "forget".
-        if (!queue.isEmpty())
-            queue.clear();
+        /** If some holes are present at this point, thar means some update were missed on recovery and will be restored
+         * during rebalance. All gaps are safe to "forget".
+         * Should only do it for first PME (later missed updates on node left are reset in {@link #finalizeUpdateCounters}. */
+        if (first) {
+            if (!queue.isEmpty())
+                queue.clear();
+
+            first = false;
+        }
     }
 
     /** {@inheritDoc} */
@@ -219,7 +227,10 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public void updateInitial(long start, long delta) {
         update(start, delta);
 
-        reserveCntr.set(initCntr = get());
+        initCntr = get();
+
+        if (reserveCntr.get() < initCntr)
+            reserveCntr.set(initCntr);
     }
 
     /** */
