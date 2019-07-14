@@ -30,6 +30,11 @@ public interface IgniteTxLocalState extends IgniteTxState {
     public void addEntry(IgniteTxEntry entry);
 
     /**
+     * @param key Key.
+     */
+    public void removeEntry(IgniteTxKey key);
+
+    /**
      * @param txSize Transaction size.
      * @return {@code True} if transaction was successfully  started.
      */

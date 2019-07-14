@@ -37,6 +37,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -89,6 +90,7 @@ public class IgniteErrorOnRebalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9842")
     @Test
     public void testErrorOnRebalance() throws Exception {
         Ignite srv0 = startGrid(0);
