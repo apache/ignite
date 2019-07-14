@@ -94,6 +94,32 @@ public class MetricUtils {
     }
 
     /**
+     * Update metrics value only if current value if less then {@code update}.
+     *
+     * @param m Metric to update.
+     * @param update New value.
+     */
+    public static void setIfLess(LongMetricImpl m, long update) {
+        long v = m.value();
+
+        while (v > update && !LongMetricImpl.updater.compareAndSet(m, v, update))
+            v = m.value();
+    }
+
+    /**
+     * Update metrics value only if current value if greater then {@code update}.
+     *
+     * @param m Metric to update.
+     * @param update New value.
+     */
+    public static void setIfGreater(LongMetricImpl m, long update) {
+        long v = m.value();
+
+        while (v < update && !LongMetricImpl.updater.compareAndSet(m, v, update))
+            v = m.value();
+    }
+
+    /**
      * Asserts all arguments are not empty.
      *
      * @param names Names.

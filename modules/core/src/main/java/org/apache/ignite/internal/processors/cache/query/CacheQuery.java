@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -256,18 +255,6 @@ public interface CacheQuery<T> {
      * @return Future for the query result.
      */
     public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
-
-    /**
-     * Gets metrics for this query.
-     *
-     * @return Query metrics.
-     */
-    public QueryMetrics metrics();
-
-    /**
-     * Resets metrics for this query.
-     */
-    public void resetMetrics();
 
     /**
      * @return Scan query iterator.
