@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -44,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -132,35 +133,31 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
-    /** Write handler which puts memory page into the free list after an update. */
-    private final PageHandler<T, Integer> writeRow = new WriteRowHandler(true);
+    /** Write a single row on a single page. */
+    private final PageHandler<T, Integer> writeRow = new WriteRowHandler();
 
-    /** Write handler which doesn't put memory page into the free list after an update. */
-    private final PageHandler<T, Integer> writeRowKeepPage = new WriteRowHandler(false);
+    /** Write multiple rows on a single page. */
+    private final PageHandler<GridCursor<T>, Integer> writeRows = new WriteRowsHandler();
 
     /** */
-    private final class WriteRowHandler extends PageHandler<T, Integer> {
-        /** */
-        private final boolean putPageIntoFreeList;
-
+    private abstract class AbstractWriteRowHandler<X> extends PageHandler<X, Integer> {
         /**
-         * @param putPageIntoFreeList Put page into the free list after an update.
+         * @param pageId Page ID.
+         * @param page Page absolute pointer.
+         * @param pageAddr Page address.
+         * @param iox IO.
+         * @param row Row to write.
+         * @param written Written size.
+         * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
+         * @throws IgniteCheckedException If failed.
          */
-        WriteRowHandler(boolean putPageIntoFreeList) {
-            this.putPageIntoFreeList = putPageIntoFreeList;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer run(
-            int cacheId,
+        protected Integer run0(
             long pageId,
             long page,
             long pageAddr,
             PageIO iox,
-            Boolean walPlc,
             T row,
-            int written,
-            IoStatisticsHolder statHolder)
+            int written)
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
@@ -172,9 +169,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             // If the full row does not fit into this page write only a fragment.
             written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
-
-            if (putPageIntoFreeList)
-                putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
 
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
@@ -193,7 +187,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
          * @return Written size which is always equal to row size here.
          * @throws IgniteCheckedException If failed.
          */
-        private int addRow(
+        protected int addRow(
             long pageId,
             long page,
             long pageAddr,
@@ -233,7 +227,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
          * @return Updated written size.
          * @throws IgniteCheckedException If failed.
          */
-        private int addRowFragment(
+        protected int addRowFragment(
             long pageId,
             long page,
             long pageAddr,
@@ -261,6 +255,88 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
 
             return written + payloadSize;
+        }
+
+        /**
+         * Put page into the free list if needed.
+         *
+         * @param freeSpace Page free space.
+         * @param pageId Page ID.
+         * @param page Page pointer.
+         * @param pageAddr Page address.
+         * @param statHolder Statistics holder to track IO operations.
+         */
+        protected void putPage(int freeSpace, long pageId, long page, long pageAddr, IoStatisticsHolder statHolder)
+            throws IgniteCheckedException {
+            if (freeSpace > MIN_PAGE_FREE_SPACE) {
+                int bucket = bucket(freeSpace, false);
+
+                put(null, pageId, page, pageAddr, bucket, statHolder);
+            }
+        }
+    }
+
+    /** */
+    private final class WriteRowHandler extends AbstractWriteRowHandler<T> {
+        /** {@inheritDoc} */
+        @Override public Integer run(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PageIO iox,
+            Boolean walPlc,
+            T row,
+            int written,
+            IoStatisticsHolder statHolder)
+            throws IgniteCheckedException {
+            written = run0(pageId, page, pageAddr, iox, row, written);
+
+            putPage(((AbstractDataPageIO)iox).getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
+
+            return written;
+        }
+    }
+
+    /** */
+    private final class WriteRowsHandler extends AbstractWriteRowHandler<GridCursor<T>> {
+        /** {@inheritDoc} */
+        @Override public Integer run(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PageIO iox,
+            Boolean walPlc,
+            GridCursor<T> cur,
+            int written,
+            IoStatisticsHolder statHolder)
+            throws IgniteCheckedException {
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
+
+            // Fill the page up to the end.
+            while (written != COMPLETE || (!evictionTracker.evictionRequired() && cur.next())) {
+                T row = cur.get();
+
+                if (written == COMPLETE) {
+                    // If the data row was completely written without remainder, proceed to the next.
+                    if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                        continue;
+
+                    if (io.getFreeSpace(pageAddr) < row.size() - written)
+                        break;
+                }
+
+                written = run0(pageId, page, pageAddr, io, row, written);
+
+                assert written == COMPLETE;
+
+                evictionTracker.touchPage(pageId);
+            }
+
+            putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
+
+            return written;
         }
     }
 
@@ -481,14 +557,22 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        try {
-            int written = writeWholePages(row, statHolder);
+        int written = 0;
 
-            if (written != COMPLETE)
-                write(row, written, statHolder);
+        try {
+            do {
+                if (written != 0)
+                    memMetrics.incrementLargeEntriesPages();
+
+                written = write(row, written, statHolder);
+            }
+            while (written != COMPLETE);
         }
-        catch (RuntimeException e) {
-            throw new CorruptedFreeListException("Failed to insert data rows", e);
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to insert data row", t);
         }
     }
 
@@ -506,13 +590,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void insertDataRows(Collection<T> rows,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
-            Iterator<T> iter = rows.iterator();
-
-            T row = null;
+            GridCursor<T> cur = new GridCursorIteratorWrapper<>(rows.iterator());
 
             int written = COMPLETE;
 
-            while (iter.hasNext() || written != COMPLETE) {
+            while (written != COMPLETE || cur.next()) {
+                T row = cur.get();
+
                 // If eviction is required - free up memory before locking the next page.
                 while (evictionTracker.evictionRequired()) {
                     evictionTracker.evictDataPage();
@@ -520,13 +604,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     memMetrics.updateEvictionRate();
                 }
 
-                if (written == COMPLETE) {
-                    row = iter.next();
-
-                    // If the data row was completely written without remainder, proceed to the next.
-                    if ((written = writeWholePages(row, statHolder)) == COMPLETE)
-                        continue;
-                }
+                if (written == COMPLETE && (written = writeWholePages(row, statHolder)) == COMPLETE)
+                    continue;
 
                 AbstractDataPageIO initIo = null;
 
@@ -538,60 +617,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     initIo = row.ioVersions().latest();
                 }
 
-                // Acquire and lock page.
-                long page = acquirePage(pageId, statHolder);
-
-                try {
-                    long pageAddr = writeLock(pageId, page);
-
-                    assert pageAddr != 0;
-
-                    boolean dirty = false;
-
-                    try {
-                        AbstractDataPageIO io = initIo == null ? PageIO.getPageIO(pageAddr) : initIo;
-
-                        // Fill the page up to the end.
-                        while (iter.hasNext() || written != COMPLETE) {
-                            if (written == COMPLETE) {
-                                // If eviction is required - unlock current page and free up memory.
-                                if (evictionTracker.evictionRequired())
-                                    break;
-
-                                row = iter.next();
-
-                                // If the data row was completely written without remainder, proceed to the next.
-                                if ((written = writeWholePages(row, statHolder)) == COMPLETE)
-                                    continue;
-
-                                if (io.getFreeSpace(pageAddr) < row.size() - written)
-                                    break;
-                            }
-
-                            written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, lockLsnr,
-                                writeRowKeepPage, initIo, wal, null, row, written, statHolder);
-
-                            initIo = null;
-
-                            dirty = true;
-
-                            assert written == COMPLETE;
-                        }
-
-                        putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
-
-                        assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
-                    }
-                    finally {
-                        // Should always unlock data page after an update.
-                        assert writeRowKeepPage.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
-
-                        writeUnlock(pageId, page, pageAddr, dirty);
-                    }
-                }
-                finally {
-                    releasePage(pageId, page);
-                }
+                written = write(pageId, writeRows, initIo, cur, written, FAIL_I, statHolder);
             }
         }
         catch (RuntimeException e) {
@@ -679,24 +705,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             return initReusedPage(row, pageId, statHolder);
         else // Page is taken from free space bucket. For in-memory mode partition must be changed.
             return PageIdUtils.changePartitionId(pageId, row.partition());
-    }
-
-    /**
-     * Put page into the free list if needed.
-     *
-     * @param freeSpace Page free space.
-     * @param pageId Page ID.
-     * @param page Page pointer.
-     * @param pageAddr Page address.
-     * @param statHolder Statistics holder to track IO operations.
-     */
-    private void putPage(int freeSpace, long pageId, long page, long pageAddr, IoStatisticsHolder statHolder)
-        throws IgniteCheckedException {
-        if (freeSpace > MIN_PAGE_FREE_SPACE) {
-            int bucket = bucket(freeSpace, false);
-
-            put(null, pageId, page, pageAddr, bucket, statHolder);
-        }
     }
 
     /**
