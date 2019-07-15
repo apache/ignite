@@ -30,6 +30,7 @@ import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.File;
@@ -75,15 +76,11 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
-
-        System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cleanPersistenceDir();
-
-        System.clearProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
     }
 
     /**
@@ -92,6 +89,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "2")
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
         try {
             IgniteEx ig0 = (IgniteEx)startGrids(4);
