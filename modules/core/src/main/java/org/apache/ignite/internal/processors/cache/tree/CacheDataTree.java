@@ -47,6 +47,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.TestOnly;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -61,7 +62,7 @@ import static org.apache.ignite.internal.util.GridArrays.clearTail;
  */
 public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** */
-    private static CacheDataRow[] EMPTY_ROWS = {};
+    private static final CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
     private static Boolean lastFindWithDataPageScan;
@@ -136,6 +137,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /**
      * @return {@code true} If the last observed call to the method {@code find(...)} used data page scan.
      */
+    @TestOnly
     public static Boolean isLastFindWithDataPageScan() {
         Boolean res = lastFindWithDataPageScan;
         lastFindWithDataPageScan = null;
@@ -236,6 +238,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                         try {
+                            // TODO https://ggsystems.atlassian.net/browse/GG-20800.
+                            // Here we should also exclude fragmented pages that don't contain the head of the entry.
                             if (PageIO.getType(pageAddr) != T_DATA)
                                 continue; // Not a data page.
 

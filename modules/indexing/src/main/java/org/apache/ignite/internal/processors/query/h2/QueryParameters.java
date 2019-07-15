@@ -90,7 +90,7 @@ public class QueryParameters {
             qry.getTimeout(),
             qry.isLazy(),
             qry.getPageSize(),
-            qry.isDataPageScanEnabled(),
+            null,
             nestedTxMode,
             autoCommit,
             batchedArgs,
