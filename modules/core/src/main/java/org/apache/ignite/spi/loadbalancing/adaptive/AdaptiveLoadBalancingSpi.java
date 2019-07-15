@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.LoggerResource;
@@ -54,7 +56,6 @@ import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -342,6 +343,25 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
+        if (!getSpiContext().isEventRecordable(
+            EVT_NODE_METRICS_UPDATED,
+            EVT_NODE_FAILED,
+            EVT_NODE_JOINED,
+            EVT_NODE_LEFT,
+            EVT_TASK_FINISHED,
+            EVT_TASK_FAILED,
+            EVT_JOB_MAPPED
+        )) {
+            throw new IgniteSpiException("Required event types are disabled: " +
+                U.gridEventName(EVT_NODE_METRICS_UPDATED) + ", " +
+                U.gridEventName(EVT_NODE_FAILED) + ", " +
+                U.gridEventName(EVT_NODE_JOINED) + ", " +
+                U.gridEventName(EVT_NODE_LEFT) + ", " +
+                U.gridEventName(EVT_TASK_FINISHED) + ", " +
+                U.gridEventName(EVT_TASK_FAILED) + ", " +
+                U.gridEventName(EVT_JOB_MAPPED));
+        }
+
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 switch (evt.type()) {
