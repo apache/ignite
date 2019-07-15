@@ -106,64 +106,70 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
         /** {@inheritDoc} */
         @Override protected VisorCacheRebalanceCollectorJobResult run(VisorCacheRebalanceCollectorTaskArg arg) {
             VisorCacheRebalanceCollectorJobResult res = new VisorCacheRebalanceCollectorJobResult();
+            res.setBaseline(BASELINE_NOT_AVAILABLE);
 
             long start0 = U.currentTimeMillis();
 
-            try {
-                int partitions = 0;
-                double total = 0;
-                double ready = 0;
 
-                GridCacheProcessor cacheProc = ignite.context().cache();
+            if (ignite.cluster().active()) {
+                try {
+                    int partitions = 0;
+                    double total = 0;
+                    double ready = 0;
 
-                boolean rebalanceInProgress = false;
+                    GridCacheProcessor cacheProc = ignite.context().cache();
 
-                for (CacheGroupContext grp: cacheProc.cacheGroups()) {
-                    String cacheName = grp.config().getName();
+                    boolean rebalanceInProgress = false;
 
-                    if (isProxyCache(ignite, cacheName) || isRestartingCache(ignite, cacheName))
-                        continue;
+                    for (CacheGroupContext grp: cacheProc.cacheGroups()) {
+                        String cacheName = grp.config().getName();
 
-                    try {
-                        GridCacheAdapter ca = cacheProc.internalCache(cacheName);
-
-                        if (ca == null || !ca.context().started())
+                        if (isProxyCache(ignite, cacheName) || isRestartingCache(ignite, cacheName))
                             continue;
 
-                        CacheMetrics cm = ca.localMetrics();
+                        try {
+                            GridCacheAdapter ca = cacheProc.internalCache(cacheName);
 
-                        partitions += cm.getTotalPartitionsCount();
+                            if (ca == null || !ca.context().started())
+                                continue;
 
-                        long keysTotal = cm.getEstimatedRebalancingKeys();
-                        long keysReady = cm.getRebalancedKeys();
+                            CacheMetrics cm = ca.localMetrics();
 
-                        if (keysReady >= keysTotal)
-                            keysReady = Math.max(keysTotal - 1, 0);
+                            partitions += cm.getTotalPartitionsCount();
 
-                        total += keysTotal;
-                        ready += keysReady;
+                            long keysTotal = cm.getEstimatedRebalancingKeys();
+                            long keysReady = cm.getRebalancedKeys();
 
-                        if (cm.getRebalancingPartitionsCount() > 0)
-                            rebalanceInProgress = true;
+                            if (keysReady >= keysTotal)
+                                keysReady = Math.max(keysTotal - 1, 0);
+
+                            total += keysTotal;
+                            ready += keysReady;
+
+                            if (cm.getRebalancingPartitionsCount() > 0)
+                                rebalanceInProgress = true;
+                        }
+                        catch(IllegalStateException | IllegalArgumentException e) {
+                            if (debug && ignite.log() != null)
+                                ignite.log().error("Ignored cache group: " + grp.cacheOrGroupName(), e);
+                        }
                     }
-                    catch(IllegalStateException | IllegalArgumentException e) {
-                        if (debug && ignite.log() != null)
-                            ignite.log().error("Ignored cache group: " + grp.cacheOrGroupName(), e);
-                    }
+
+                    if (partitions == 0)
+                        res.setRebalance(NOTHING_TO_REBALANCE);
+                    else if (total == 0 && rebalanceInProgress)
+                        res.setRebalance(MINIMAL_REBALANCE);
+                    else
+                        res.setRebalance(total > 0 && rebalanceInProgress ? Math.max(ready / total, MINIMAL_REBALANCE) : REBALANCE_COMPLETE);
                 }
+                catch (Exception e) {
+                    res.setRebalance(REBALANCE_NOT_AVAILABLE);
 
-                if (partitions == 0)
-                    res.setRebalance(NOTHING_TO_REBALANCE);
-                else if (total == 0 && rebalanceInProgress)
-                    res.setRebalance(MINIMAL_REBALANCE);
-                else
-                    res.setRebalance(total > 0 && rebalanceInProgress ? Math.max(ready / total, MINIMAL_REBALANCE) : REBALANCE_COMPLETE);
+                    ignite.log().error("Failed to collect rebalance metrics", e);
+                }
             }
-            catch (Exception e) {
+            else
                 res.setRebalance(REBALANCE_NOT_AVAILABLE);
-
-                ignite.log().error("Failed to collect rebalance metrics", e);
-            }
 
             if (GridCacheUtils.isPersistenceEnabled(ignite.configuration())) {
                 IgniteClusterEx cluster = ignite.cluster();
@@ -177,11 +183,7 @@ public class VisorCacheRebalanceCollectorTask extends VisorMultiNodeTask<VisorCa
 
                     res.setBaseline(inBaseline ? NODE_IN_BASELINE : NODE_NOT_IN_BASELINE);
                 }
-                else
-                    res.setBaseline(BASELINE_NOT_AVAILABLE);
             }
-            else
-                res.setBaseline(BASELINE_NOT_AVAILABLE);
 
             if (debug)
                 log(ignite.log(), "Collected rebalance metrics", getClass(), start0);
