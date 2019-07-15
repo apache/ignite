@@ -155,12 +155,12 @@ public class GridDhtPartitionDemander {
 
         rebalanceTopics = tops;
 
-       rebalancePool = new ThreadPoolExecutor(
+        rebalancePool = new ThreadPoolExecutor(
             0,
             ctx.gridConfig().getRebalanceThreadPoolSize(),
             30,
             TimeUnit.SECONDS,
-           new LinkedBlockingQueue<>());
+            new LinkedBlockingQueue<>());
     }
 
     /**
