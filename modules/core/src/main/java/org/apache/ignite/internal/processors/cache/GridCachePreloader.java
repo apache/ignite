@@ -174,7 +174,7 @@ public interface GridCachePreloader {
      * @param id Node Id.
      * @param s Supply message.
      */
-    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s);
+    public void applySupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s);
 
     /**
      * Handles Demand message.

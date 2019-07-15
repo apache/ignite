@@ -27,8 +27,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -118,6 +123,9 @@ public class GridDhtPartitionDemander {
     /** Cached rebalance topics. */
     private final Map<Integer, Object> rebalanceTopics;
 
+    /** Thread pool. */
+    private final ThreadPoolExecutor rebalancePool;
+
     /**
      * @param grp Ccahe group.
      */
@@ -146,6 +154,13 @@ public class GridDhtPartitionDemander {
             tops.put(idx, GridCachePartitionExchangeManager.rebalanceTopic(idx));
 
         rebalanceTopics = tops;
+
+       rebalancePool = new ThreadPoolExecutor(
+            0,
+            ctx.gridConfig().getRebalanceThreadPoolSize(),
+            30,
+            TimeUnit.SECONDS,
+           new LinkedBlockingQueue<>());
     }
 
     /**
@@ -312,6 +327,8 @@ public class GridDhtPartitionDemander {
                 forcedRebFut.add(fut);
 
             rebalanceFut = fut;
+
+            rebalancePool.purge();
 
             for (final GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
@@ -646,6 +663,30 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * @param topicId Topic id.
+     * @param nodeId Node id.
+     * @param supplyMsg Supply message.
+     */
+    public void applySupplyMessage(
+        int topicId,
+        final UUID nodeId,
+        final GridDhtPartitionSupplyMessage supplyMsg) {
+        final RebalanceFuture fut = rebalanceFut;
+
+        // Topology already changed (for the future that supply message based on).
+        if (!topologyChanged(fut) && fut.isActual(supplyMsg.rebalanceId())) {
+            for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
+                int p = e.getKey();
+
+                fut.queued.computeIfAbsent(p, (ignored) -> new LongAdder()).increment();
+                fut.processed.putIfAbsent(p, new LongAdder());
+            }
+
+            rebalancePool.execute(() -> handleSupplyMessage(topicId, nodeId, supplyMsg));
+        }
+    }
+
+    /**
      * Handles supply message from {@code nodeId} with specified {@code topicId}.
      *
      * Supply message contains entries to populate rebalancing partitions.
@@ -790,6 +831,12 @@ public class GridDhtPartitionDemander {
                                 // If message was last for this partition,
                                 // then we take ownership.
                                 if (last) {
+                                    long queued = fut.queued.get(p).sum();
+
+                                    while (!fut.isDone() &&
+                                        fut.processed.get(p).sum() != (queued - 1))
+                                        U.sleep(1);
+
                                     fut.partitionDone(nodeId, p, true);
 
                                     if (log.isDebugEnabled())
@@ -800,6 +847,8 @@ public class GridDhtPartitionDemander {
                             finally {
                                 part.unlock();
                                 part.release();
+
+                                fut.processed.get(p).increment();
                             }
                         }
                         else {
@@ -1221,6 +1270,12 @@ public class GridDhtPartitionDemander {
          * Otherwise partition clearing could start on still rebalancing partition resulting in eviction of
          * partition in OWNING state. */
         private final ReentrantReadWriteLock cancelLock;
+
+        /** Entries queued. */
+        private final Map<Integer, LongAdder> queued = new ConcurrentHashMap<>();
+
+        /** Entries processed. */
+        private final Map<Integer, LongAdder> processed = new ConcurrentHashMap<>();
 
         /**
          * @param grp Cache group.

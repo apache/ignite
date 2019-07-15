@@ -448,7 +448,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             if (grp != null) {
                                 if (m instanceof GridDhtPartitionSupplyMessage) {
-                                    grp.preloader().handleSupplyMessage(idx, id, (GridDhtPartitionSupplyMessage) m);
+                                    grp.preloader().applySupplyMessage(idx, id, (GridDhtPartitionSupplyMessage) m);
 
                                     return;
                                 }
