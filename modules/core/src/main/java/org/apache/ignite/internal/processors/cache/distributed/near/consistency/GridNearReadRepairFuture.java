@@ -41,7 +41,17 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  */
 public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /**
+     * Creates a new instance of  GridNearReadRepairFuture.
      *
+     * @param topVer Affinity topology version.
+     * @param ctx Cache context.
+     * @param keys Keys.
+     * @param readThrough Read-through flag.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Partition recovery flag.
+     * @param expiryPlc Expiry policy.
+     * @param tx Transaction.
      */
     public GridNearReadRepairFuture(
         AffinityTopologyVersion topVer,
@@ -157,7 +167,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             }
         }
 
-        evtMgr.record(new CacheConsistencyViolationEvent(
+        evtMgr.record(new CacheConsistencyViolationEvent<>(
             ctx.discovery().localNode(),
             "Consistency violation fixed.",
             originalMap,

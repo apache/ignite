@@ -47,7 +47,19 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     private boolean keepCacheObjects;
 
     /**
+     * Creates a new instance of  GridNearReadRepairCheckOnlyFuture.
      *
+     * @param ctx Cache context.
+     * @param keys Keys.
+     * @param readThrough Read-through flag.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Partition recovery flag.
+     * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
+     * @param needVer Need version flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param tx Transaction. Can be {@code null} in case of atomic cache.
      */
     public GridNearReadRepairCheckOnlyFuture(
         GridCacheContext ctx,
@@ -103,7 +115,9 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     }
 
     /**
-     * Produces 1 entry's value.
+     * Returns a future represents 1 entry's value.
+     *
+     * @return Future represents 1 entry's value.
      */
     public <K, V> IgniteInternalFuture<V> single() {
         return chain((fut) -> {
@@ -142,7 +156,9 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     }
 
     /**
-     * Produces entry map.
+     * Returns a future represents entries map.
+     *
+     * @return Future represents entries map.
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> multi() {
         return chain((fut) -> {
