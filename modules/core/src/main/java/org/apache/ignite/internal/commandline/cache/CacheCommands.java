@@ -155,7 +155,7 @@ public class CacheCommands implements Command<CacheSubcommands> {
         Map<String, String> paramsDesc,
         String... args
     ) {
-        logger.info(INDENT + DELIM);
+        logger.info("");
         logger.info(INDENT + CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)));
         logger.info(DOUBLE_INDENT + description);
 
