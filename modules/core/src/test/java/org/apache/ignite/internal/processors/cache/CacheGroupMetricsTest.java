@@ -197,7 +197,8 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
      * @param cacheOrGrpName Cache group name.
      * @return MBean instance and MetricRegistry for the specified group.
      */
-    protected T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean(int nodeIdx, String cacheOrGrpName) throws MalformedObjectNameException {
+    protected T2<CacheGroupMetricsMXBean, MetricRegistry> cacheGroupMetrics(int nodeIdx, String cacheOrGrpName)
+        throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
@@ -268,11 +269,11 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         awaitPartitionMapExchange(true, false, null);
 
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = mxBean(0, "group1");
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp2 = mxBean(0, "group2");
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp3 = mxBean(0, "cache4");
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean1Grp1 = mxBean(1, "group1");
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean2Grp1 = mxBean(2, "group1");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = cacheGroupMetrics(0, "group1");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp2 = cacheGroupMetrics(0, "group2");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp3 = cacheGroupMetrics(0, "cache4");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean1Grp1 = cacheGroupMetrics(1, "group1");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean2Grp1 = cacheGroupMetrics(2, "group1");
 
         assertEquals("group1", mxBean0Grp1.get1().getGroupName());
         assertEquals(null, mxBean0Grp3.get1().getGroupName());
@@ -386,9 +387,9 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         ignite.cluster().active(true);
 
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = mxBean(0, "group1");
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp2 = mxBean(0, "group2");
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp3 = mxBean(0, "cache4");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = cacheGroupMetrics(0, "group1");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp2 = cacheGroupMetrics(0, "group2");
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp3 = cacheGroupMetrics(0, "cache4");
 
         GridMetricManager mmgr = ignite.context().metric();
 

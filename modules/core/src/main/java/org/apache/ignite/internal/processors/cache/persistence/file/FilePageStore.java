@@ -787,7 +787,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                allocatedTracker.add(1);
+                allocatedTracker.increment();
 
                 break;
             }

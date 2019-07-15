@@ -163,10 +163,9 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().active(true);
 
-        MetricRegistry grpMreg = mxBean(0, GROUP_NAME).get2();
+        MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME).get2();
 
-        LongMetric indexBuildCountPartitionsLeft =
-            (LongMetric)grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
         Assert.assertTrue("Timeout wait start rebuild index",
             waitForCondition(() -> indexBuildCountPartitionsLeft.value() > 0, 30_000));
@@ -204,7 +203,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        MetricRegistry grpMreg = mxBean(0, GROUP_NAME).get2();
+        MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME).get2();
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -218,8 +217,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             Assert.assertEquals("Index not found", 1, all.size());
         });
 
-        LongMetric indexBuildCountPartitionsLeft =
-            (LongMetric)grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
         Assert.assertTrue("Timeout wait start rebuild index",
             waitForCondition(() -> indexBuildCountPartitionsLeft.value() > 0, 30_000));

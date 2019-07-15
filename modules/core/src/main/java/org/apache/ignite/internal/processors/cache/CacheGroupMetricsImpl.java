@@ -144,7 +144,7 @@ public class CacheGroupMetricsImpl {
             DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
 
             this.groupPageAllocationTracker =
-                dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId(), ctx.cacheOrGroupName());
+                dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.cacheOrGroupName());
         }
         else
             this.groupPageAllocationTracker = new LongAdderMetricImpl("NO_OP", null);

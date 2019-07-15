@@ -76,8 +76,8 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param name Name of the metric.
      * @return Metric with specified name if exists. Null otherwise.
      */
-    @Nullable public Metric findMetric(String name) {
-        return metrics.get(name);
+    @Nullable public <M extends Metric> M findMetric(String name) {
+        return (M)metrics.get(name);
     }
 
     /** Resets state of this metric set. */

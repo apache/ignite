@@ -137,7 +137,7 @@ public class MetricsSelfTest {
 
         mreg.register("bmtest", () -> v[0], "test");
 
-        BooleanMetric m = (BooleanMetric)mreg.findMetric("bmtest");
+        BooleanMetric m = mreg.findMetric("bmtest");
 
         assertEquals(v[0], m.value());
 
@@ -153,7 +153,7 @@ public class MetricsSelfTest {
 
         mreg.register("dmtest", () -> v[0], "test");
 
-        DoubleMetric m = (DoubleMetric)mreg.findMetric("dmtest");
+        DoubleMetric m = mreg.findMetric("dmtest");
 
         assertEquals(v[0], m.value(), 0);
 
@@ -169,7 +169,7 @@ public class MetricsSelfTest {
 
         mreg.register("imtest", () -> v[0], "test");
 
-        IntMetric m = (IntMetric)mreg.findMetric("imtest");
+        IntMetric m = mreg.findMetric("imtest");
 
         assertEquals(v[0], m.value());
 
@@ -185,7 +185,7 @@ public class MetricsSelfTest {
 
         mreg.register("lmtest", () -> v[0], "test");
 
-        LongMetric m = (LongMetric)mreg.findMetric("lmtest");
+        LongMetric m = mreg.findMetric("lmtest");
 
         assertEquals(v[0], m.value());
 
@@ -201,7 +201,7 @@ public class MetricsSelfTest {
 
         mreg.register("omtest", () -> v[0], String.class, "test");
 
-        ObjectMetric<String> m = (ObjectMetric<String>)mreg.findMetric("omtest");
+        ObjectMetric<String> m = mreg.findMetric("omtest");
 
         assertEquals(v[0], m.value());
 

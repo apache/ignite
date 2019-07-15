@@ -639,10 +639,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         DataRegionMetricsImpl regionMetrics = cctx.database().dataRegion(dataRegionName).memoryMetrics();
 
-        int grpId = CU.cacheId(grpDesc.cacheOrGroupName());
-
         LongAdderMetricImpl allocatedTracker =
-            regionMetrics.getOrAllocateGroupPageAllocationTracker(grpId, grpDesc.cacheOrGroupName());
+            regionMetrics.getOrAllocateGroupPageAllocationTracker(grpDesc.cacheOrGroupName());
 
         return initDir(
             cacheWorkDir,

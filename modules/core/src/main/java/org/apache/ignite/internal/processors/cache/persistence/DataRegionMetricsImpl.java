@@ -52,7 +52,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final LongAdderMetricImpl totalAllocatedPages;
 
     /** */
-    private final ConcurrentMap<Integer, LongAdderMetricImpl> grpAllocationTrackers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, LongAdderMetricImpl> grpAllocationTrackers = new ConcurrentHashMap<>();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
@@ -502,11 +502,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Get or allocate group allocation tracker.
      *
-     * @param grpId Group id.
+     * @param grpName Group name.
      * @return Group allocation tracker.
      */
-    public LongAdderMetricImpl getOrAllocateGroupPageAllocationTracker(int grpId, String grpName) {
-        return grpAllocationTrackers.computeIfAbsent(grpId,
+    public LongAdderMetricImpl getOrAllocateGroupPageAllocationTracker(String grpName) {
+        return grpAllocationTrackers.computeIfAbsent(grpName,
             id -> mmgr.registry(metricName(CACHE_GROUP_METRICS_PREFIX, grpName)).longAdderMetric(
                 "TotalAllocatedPages",
                 totalAllocatedPages::add,
