@@ -181,6 +181,8 @@ public class GridDhtPartitionDemander {
         lastTimeoutObj.set(null);
 
         syncFut.onDone();
+
+        rebalancePool.shutdown();
     }
 
     /**
