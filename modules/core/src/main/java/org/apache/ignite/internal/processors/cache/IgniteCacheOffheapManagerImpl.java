@@ -1730,7 +1730,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void insertRows(Collection<GridCacheEntryInfo> infos,
+        @Override public void createRows(Collection<GridCacheEntryInfo> infos,
             IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
             Collection<DataRow> rows = new ArrayList<>(infos.size());
 
