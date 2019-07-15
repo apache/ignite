@@ -1829,6 +1829,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             nodeAddedMsg.topology(null);
             nodeAddedMsg.topologyHistory(null);
             nodeAddedMsg.messages(null, null, null);
+            nodeAddedMsg.clearUnmarshalledDiscoveryData();
         }
     }
 
