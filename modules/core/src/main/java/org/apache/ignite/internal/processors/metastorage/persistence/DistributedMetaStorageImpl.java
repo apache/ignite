@@ -740,11 +740,33 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
 
+            if (errorMsg == null)
+                errorMsg = validatePayload(joiningData);
+
             return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg);
         }
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /**
+     * @param joiningData Joining data to validate.
+     * @return {@code null} if contained data is valid otherwise error message.
+     */
+    private String validatePayload(DistributedMetaStorageJoiningNodeData joiningData) {
+        for (DistributedMetaStorageHistoryItem item : joiningData.hist) {
+            for (int i = 0; i < item.keys.length; i++) {
+                try {
+                    unmarshal(marshaller, item.valBytesArray[i]);
+                }
+                catch (IgniteCheckedException e) {
+                    return "Unable to unmarshal key=" + item.keys[i];
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -1087,6 +1109,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     " feature and this node has not empty distributed metastorage data");
             }
         }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException("Cannot join the cluster", ex);
+        }
         finally {
             lock.writeLock().unlock();
         }
@@ -1406,6 +1431,19 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         assert startupExtras != null;
 
         startupExtras.deferredUpdates.add(update);
+
+        for (int i = 0; i < update.keys.length; i++) {
+            try {
+                notifyListeners(
+                    update.keys[i],
+                    bridge.read(update.keys[i], true),
+                    unmarshal(marshaller, update.valBytesArray[i])
+                );
+            }
+            catch (IgniteCheckedException ex) {
+                log.error("Unable to unmarshal new metastore data. key=" + update.keys[i], ex);
+            }
+        }
     }
 
     /**
@@ -1452,21 +1490,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         for (DistributedMetaStorageHistoryItem histItem : startupExtras.deferredUpdates)
             completeWrite(bridge, histItem, true, false);
-
-        notifyListenersBeforeReadyForWrite(bridge);
     }
 
     /**
      * Notify listeners at the end of activation. Even if there was no data restoring.
      *
-     * @param bridge Bridge to access data storage.
+     * @param newData Data about which listeners should be notified.
      */
     private void notifyListenersBeforeReadyForWrite(
-        DistributedMetaStorageBridge bridge
+        DistributedMetaStorageKeyValuePair[] newData
     ) throws IgniteCheckedException {
         DistributedMetaStorageKeyValuePair[] oldData = this.bridge.localFullData();
-
-        DistributedMetaStorageKeyValuePair[] newData = bridge.localFullData();
 
         int oldIdx = 0, newIdx = 0;
 
@@ -1514,12 +1548,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *
      * @param nodeData Data received from remote node.
      */
-    private void writeFullDataLater(DistributedMetaStorageClusterNodeData nodeData) {
+    private void writeFullDataLater(
+        @NotNull DistributedMetaStorageClusterNodeData nodeData
+    ) throws IgniteCheckedException {
         assert nodeData.fullData != null;
 
         startupExtras.fullNodeData = nodeData;
 
         startupExtras.deferredUpdates.clear();
+
+        notifyListenersBeforeReadyForWrite(nodeData.fullData);
 
         if (nodeData.updates != null) {
             for (DistributedMetaStorageHistoryItem update : nodeData.updates)
