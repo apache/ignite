@@ -15,11 +15,15 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.logger.NullLogger;
@@ -28,7 +32,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static java.lang.Thread.State.TIMED_WAITING;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -223,6 +230,60 @@ public class IgniteThrottlingUnitTest {
         System.err.println(time);
 
         assertTrue(time == 0);
+    }
+
+    /** */
+    @Test
+    public void wakeupThrottledThread() throws IgniteInterruptedCheckedException, InterruptedException {
+        PagesWriteThrottlePolicy plc = new PagesWriteThrottle(pageMemory2g, null, stateChecker, true, log);
+
+        AtomicBoolean stopLoad = new AtomicBoolean();
+        List<Thread> loadThreads = new ArrayList<>();
+
+        for (int i=0; i<3; i++) {
+            loadThreads.add(new Thread(
+                ()->{
+                    while(!stopLoad.get())
+                        plc.onMarkDirty(true);
+                },
+                "load-" + i
+            ));
+        }
+
+        when(pageMemory2g.checkpointBufferPagesSize()).thenReturn(100);
+        when(pageMemory2g.checkpointBufferPagesCount()).thenReturn(70);
+
+        try {
+            loadThreads.forEach(Thread::start);
+
+            for (int i = 0; i < 100_000; i++)
+                loadThreads.forEach(LockSupport::unpark);
+
+            // Awaiting that all load threads are parked.
+            for (Thread t : loadThreads)
+                assertTrue(t.getName(), waitForCondition(() -> t.getState() == TIMED_WAITING, 500L));
+
+            plc.tryWakeupThrottledThreads();
+
+            // Threads shouldn't wakeup because of throttling enabled.
+            for (Thread t : loadThreads)
+                assertEquals(t.getName(), TIMED_WAITING, t.getState());
+
+            // Disable throttling
+            when(pageMemory2g.checkpointBufferPagesCount()).thenReturn(50);
+
+            plc.tryWakeupThrottledThreads();
+
+            // Awaiting that all load threads are unparked.
+            for (Thread t : loadThreads)
+                assertTrue(t.getName(), waitForCondition(() -> t.getState() != TIMED_WAITING, 500L));
+
+            for (Thread t : loadThreads)
+                assertNotEquals(t.getName(), TIMED_WAITING, t.getState());
+        }
+        finally {
+            stopLoad.set(true);
+        }
     }
 
     /**
