@@ -22,14 +22,12 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.console.db.Table;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.tx.TransactionManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Repository;
@@ -184,12 +182,7 @@ public class AccountsRepository {
      * @return List of accounts.
      */
     public List<Account> list() {
-        try {
-            return accountsTbl.loadAll();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        return accountsTbl.loadAll();
     }
 
 
