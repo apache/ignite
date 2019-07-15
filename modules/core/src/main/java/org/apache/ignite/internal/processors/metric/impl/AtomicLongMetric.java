@@ -25,10 +25,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Long metric implementation.
  */
-public class LongMetricImpl extends AbstractMetric implements LongMetric {
+public class AtomicLongMetric extends AbstractMetric implements LongMetric {
     /** Field updater. */
-    static final AtomicLongFieldUpdater<LongMetricImpl> updater =
-        AtomicLongFieldUpdater.newUpdater(LongMetricImpl.class, "val");
+    static final AtomicLongFieldUpdater<AtomicLongMetric> updater =
+        AtomicLongFieldUpdater.newUpdater(AtomicLongMetric.class, "val");
 
     /** Field value. */
     private volatile long val;
@@ -37,7 +37,7 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric {
      * @param name Name.
      * @param desc Description.
      */
-    public LongMetricImpl(String name, @Nullable String desc) {
+    public AtomicLongMetric(String name, @Nullable String desc) {
         super(name, desc);
     }
 

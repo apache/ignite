@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -209,10 +209,10 @@ public class MetricRegistry implements Iterable<Metric> {
      *
      * @param name Name.
      * @param desc Description.
-     * @return {@link LongMetricImpl}.
+     * @return {@link AtomicLongMetric}.
      */
-    public LongMetricImpl metric(String name, @Nullable String desc) {
-        return addMetric(name, new LongMetricImpl(metricName(grpName, name), desc));
+    public AtomicLongMetric longMetric(String name, @Nullable String desc) {
+        return addMetric(name, new AtomicLongMetric(metricName(grpName, name), desc));
     }
 
     /**

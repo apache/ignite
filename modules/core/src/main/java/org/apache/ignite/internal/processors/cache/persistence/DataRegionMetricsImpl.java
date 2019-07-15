@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.spi.metric.Metric;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
@@ -72,10 +72,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final LongAdderMetricImpl replacedPages;
 
     /** */
-    private final LongMetricImpl offHeapSize;
+    private final AtomicLongMetric offHeapSize;
 
     /** */
-    private final LongMetricImpl checkpointBufferSize;
+    private final AtomicLongMetric checkpointBufferSize;
 
     /** */
     private volatile boolean metricsEnabled;
@@ -147,8 +147,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         this.readPages = new LongAdderMetricImpl("NO_OP", null);
         this.writtenPages = new LongAdderMetricImpl("NO_OP", null);
         this.replacedPages = new LongAdderMetricImpl("NO_OP", null);
-        this.offHeapSize = new LongMetricImpl("NO_OP", null);
-        this.checkpointBufferSize = new LongMetricImpl("NO_OP", null);
+        this.offHeapSize = new AtomicLongMetric("NO_OP", null);
+        this.checkpointBufferSize = new AtomicLongMetric("NO_OP", null);
         this.evictRate = new HitRateMetric("NO_OP", null, 60_000, 5);
         this.pageReplaceRate = new HitRateMetric("NO_OP", null, 60_000, 5);
         this.pageReplaceAge = new HitRateMetric("NO_OP", null, 60_000, 5);
@@ -215,10 +215,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         replacedPages = mreg.longAdderMetric("PagesReplaced",
             "Number of pages replaced from last restart.");
 
-        offHeapSize = mreg.metric("OffHeapSize",
+        offHeapSize = mreg.longMetric("OffHeapSize",
             "Offheap size in bytes.");
 
-        checkpointBufferSize = mreg.metric("CheckpointBufferSize",
+        checkpointBufferSize = mreg.longMetric("CheckpointBufferSize",
             "Checkpoint buffer size in bytes.");
 
         mreg.register("EmptyDataPages",

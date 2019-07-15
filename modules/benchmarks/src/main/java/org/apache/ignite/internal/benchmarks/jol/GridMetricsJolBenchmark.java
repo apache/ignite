@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.openjdk.jol.info.GraphLayout;
 
 /**
@@ -93,7 +93,7 @@ public class GridMetricsJolBenchmark {
         start += INT_CNT;
 
         for(int i=0; i<LONG_CNT; i++)
-            metrics[start + i] = new LongMetricImpl(LONG_METRIC + i, null);
+            metrics[start + i] = new AtomicLongMetric(LONG_METRIC + i, null);
 
         start += LONG_CNT;
 
@@ -123,10 +123,10 @@ public class GridMetricsJolBenchmark {
             mreg.doubleMetric(INT_METRIC + i, null);
 
         for(int i=0; i<LONG_CNT; i++)
-            mreg.metric(LONG_METRIC + i, null);
+            mreg.longMetric(LONG_METRIC + i, null);
 
         for(int i=0; i<LONG_ADDER_CNT; i++)
-            mreg.metric(LONG_ADDER_METRIC + i, null);
+            mreg.longMetric(LONG_ADDER_METRIC + i, null);
 
         long sz = GraphLayout.parseInstance(mreg).totalSize();
 

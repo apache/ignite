@@ -63,7 +63,7 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
         MetricRegistry mreg = mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), cacheName));
 
-        mreg.metric("startTime", null).value(U.currentTimeMillis());
+        mreg.longMetric("startTime", null).value(U.currentTimeMillis());
         mreg.objectMetric("name", String.class, null).value(cacheName);
         mreg.intMetric("grpId", null).value(grpId);
 

@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -51,7 +51,7 @@ public class CacheGroupMetricsImpl {
     public static final String CACHE_GROUP_METRICS_PREFIX = "cacheGroups";
 
     /** Number of partitions need processed for finished indexes create or rebuilding. */
-    private final LongMetricImpl idxBuildCntPartitionsLeft;
+    private final AtomicLongMetric idxBuildCntPartitionsLeft;
 
     /** Cache group context. */
     private final CacheGroupContext ctx;
@@ -134,7 +134,7 @@ public class CacheGroupMetricsImpl {
             this::getSparseStorageSize,
             "Storage space allocated for group adjusted for possible sparsity, in bytes.");
 
-        idxBuildCntPartitionsLeft = mreg.metric("IndexBuildCountPartitionsLeft",
+        idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
 
         DataRegion region = ctx.dataRegion();
