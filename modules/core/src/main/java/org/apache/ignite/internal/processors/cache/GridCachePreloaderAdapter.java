@@ -130,7 +130,12 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void applySupplyMessage(int idx, UUID id, GridDhtPartitionSupplyMessage s) {
+    @Override public boolean registerSupplyMessage(GridDhtPartitionSupplyMessage s) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void handleSupplyMessage(int idx, UUID id, GridDhtPartitionSupplyMessage s) {
         // No-op.
     }
 

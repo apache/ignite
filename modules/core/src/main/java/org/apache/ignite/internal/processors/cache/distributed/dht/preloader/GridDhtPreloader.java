@@ -363,7 +363,27 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void applySupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
+    @Override public boolean registerSupplyMessage(final GridDhtPartitionSupplyMessage s) {
+        if (!enterBusy())
+            return false;
+
+        try {
+            demandLock.readLock().lock();
+
+            try {
+               return demander.registerSupplyMessage(s);
+            }
+            finally {
+                demandLock.readLock().unlock();
+            }
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
         if (!enterBusy())
             return;
 
@@ -374,7 +394,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (paused)
                     pausedDemanderQueue.add(F.t(idx, id, s));
                 else
-                    demander.applySupplyMessage(idx, id, s);
+                    demander.handleSupplyMessage(idx, id, s);
             }
             finally {
                 demandLock.readLock().unlock();
@@ -608,7 +628,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             final GridDhtPreloader preloader = this;
 
             ctx.kernalContext().closure().runLocalSafe(() -> msgToProc.forEach(
-                m -> preloader.applySupplyMessage(m.get1(), m.get2(), m.get3())
+                m -> preloader.handleSupplyMessage(m.get1(), m.get2(), m.get3())
             ), GridIoPolicy.SYSTEM_POOL);
 
             paused = false;

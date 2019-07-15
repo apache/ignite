@@ -168,13 +168,20 @@ public interface GridCachePreloader {
     public void unwindUndeploys();
 
     /**
+     * Registers Supply message.
+     *
+     * @param s Supply message.
+     */
+    public boolean registerSupplyMessage(final GridDhtPartitionSupplyMessage s);
+
+    /**
      * Handles Supply message.
      *
      * @param idx Index.
      * @param id Node Id.
      * @param s Supply message.
      */
-    public void applySupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s);
+    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s);
 
     /**
      * Handles Demand message.

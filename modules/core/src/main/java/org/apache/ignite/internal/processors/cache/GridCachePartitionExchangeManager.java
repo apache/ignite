@@ -38,6 +38,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -262,6 +264,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
+    /** Rebalance thread pool. */
+    private ThreadPoolExecutor rebalancePool;
+
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache cache) {
@@ -362,6 +367,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
 
+        rebalancePool = new ThreadPoolExecutor(
+            0,
+            cctx.gridConfig().getRebalanceThreadPoolSize(),
+            30,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>());
+
         cctx.io().addCacheHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
@@ -448,7 +460,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             if (grp != null) {
                                 if (m instanceof GridDhtPartitionSupplyMessage) {
-                                    grp.preloader().applySupplyMessage(idx, id, (GridDhtPartitionSupplyMessage) m);
+                                    GridDhtPartitionSupplyMessage supplyMsg = (GridDhtPartitionSupplyMessage)m;
+
+                                    if (grp.preloader().registerSupplyMessage(supplyMsg))
+                                        rebalancePool.execute(
+                                            () -> grp.preloader().handleSupplyMessage(idx, id, supplyMsg));
 
                                     return;
                                 }
@@ -863,6 +879,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (resendTimeoutObj != null)
             cctx.time().removeTimeoutObject(resendTimeoutObj);
+
+        rebalancePool.shutdown();
     }
 
     /** {@inheritDoc} */

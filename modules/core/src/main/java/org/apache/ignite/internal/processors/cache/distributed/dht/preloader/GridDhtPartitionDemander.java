@@ -27,9 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -121,9 +118,6 @@ public class GridDhtPartitionDemander {
     /** Cache rebalance topic. */
     private final Object rebalanceTopic;
 
-    /** Thread pool. */
-    private final ThreadPoolExecutor rebalancePool;
-
     /**
      * @param grp Ccahe group.
      */
@@ -149,13 +143,6 @@ public class GridDhtPartitionDemander {
         Map<Integer, Object> tops = new HashMap<>();
 
         rebalanceTopic = GridCachePartitionExchangeManager.rebalanceTopic(0);
-
-        rebalancePool = new ThreadPoolExecutor(
-            0,
-            ctx.gridConfig().getRebalanceThreadPoolSize(),
-            30,
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>());
     }
 
     /**
@@ -181,8 +168,6 @@ public class GridDhtPartitionDemander {
         lastTimeoutObj.set(null);
 
         syncFut.onDone();
-
-        rebalancePool.shutdown();
     }
 
     /**
@@ -324,8 +309,6 @@ public class GridDhtPartitionDemander {
                 forcedRebFut.add(fut);
 
             rebalanceFut = fut;
-
-            rebalancePool.purge();
 
             for (final GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
@@ -632,13 +615,9 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param topicId Topic id.
-     * @param nodeId Node id.
      * @param supplyMsg Supply message.
      */
-    public void applySupplyMessage(
-        int topicId,
-        final UUID nodeId,
+    public boolean registerSupplyMessage(
         final GridDhtPartitionSupplyMessage supplyMsg) {
         final RebalanceFuture fut = rebalanceFut;
 
@@ -651,8 +630,10 @@ public class GridDhtPartitionDemander {
                 fut.processed.putIfAbsent(p, new LongAdder());
             }
 
-            rebalancePool.execute(() -> handleSupplyMessage(topicId, nodeId, supplyMsg));
+            return true;
         }
+
+        return false;
     }
 
     /**
