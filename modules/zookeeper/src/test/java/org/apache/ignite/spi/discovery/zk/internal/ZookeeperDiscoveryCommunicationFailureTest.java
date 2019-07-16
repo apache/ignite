@@ -398,7 +398,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         int nodeIdx = 10;
 
-        for (int i = 0; i < GridTestUtils.SF.applyLB(10, 2); i++) {
+        for (int i = 0; i < GridTestUtils.SF.applyLB(4, 2); i++) {
             info("Iteration: " + i);
 
             for (Ignite node : G.allGrids())

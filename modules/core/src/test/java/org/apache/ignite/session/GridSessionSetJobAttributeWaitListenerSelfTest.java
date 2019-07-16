@@ -42,6 +42,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     public static final int SPLIT_COUNT = 5;
 
     /** */
-    private static final long WAIT_TIME = 20000;
+    private static final long WAIT_TIME = SF.applyLB(10_000, 5_000);
 
     /** */
     private static volatile CountDownLatch startSignal;

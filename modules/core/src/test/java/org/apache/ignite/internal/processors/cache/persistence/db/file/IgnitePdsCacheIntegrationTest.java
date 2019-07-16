@@ -169,7 +169,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
     private void checkPutGetSql(Ignite ig, boolean write) {
         IgniteCache<Integer, DbValue> cache = ig.cache(CACHE_NAME);
 
-        int entryCnt = 50_000;
+        int entryCnt = GridTestUtils.SF.apply(50_000);
 
         if (write) {
             try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(CACHE_NAME)) {
@@ -195,20 +195,20 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
             assertEquals("i = " + i, new DbValue(i, "value-" + i, i), cache.get(i));
 
         List<List<?>> res = cache.query(new SqlFieldsQuery("select ival from dbvalue where ival < ? order by ival asc")
-            .setArgs(10_000)).getAll();
+            .setArgs(2_000)).getAll();
 
-        assertEquals(10_000, res.size());
+        assertEquals(2_000, res.size());
 
-        for (int i = 0; i < 10_000; i++) {
+        for (int i = 0; i < 2_000; i++) {
             assertEquals(1, res.get(i).size());
             assertEquals(i, res.get(i).get(0));
         }
 
-        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
-        assertEquals(5000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 10000"))
+        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 799")).getAll().size());
+        assertEquals(500, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 500 and ival < 1000"))
             .getAll().size());
 
-        for (int i = 0; i < 10_000; i++)
+        for (int i = 0; i < 1_000; i++)
             assertEquals(new DbValue(i, "value-" + i, i), cache.get(i));
     }
 

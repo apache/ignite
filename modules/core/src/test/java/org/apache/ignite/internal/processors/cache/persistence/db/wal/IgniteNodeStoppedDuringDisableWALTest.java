@@ -22,6 +22,8 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -37,9 +39,12 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
@@ -54,7 +59,25 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 /***
  *
  */
+@RunWith(Parameterized.class)
 public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTest {
+
+    /** Crash point. */
+    private NodeStopPoint nodeStopPoint;
+
+    /**
+     * Default constructor to avoid BeforeFirstAndAfterLastTestRule.
+     */
+    private IgniteNodeStoppedDuringDisableWALTest() {
+    }
+
+    /**
+     * @param nodeStopPoint Crash point.
+     */
+    public IgniteNodeStoppedDuringDisableWALTest(NodeStopPoint nodeStopPoint) {
+        this.nodeStopPoint = nodeStopPoint;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -88,13 +111,11 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      */
     @Test
     public void test() throws Exception {
-        for (NodeStopPoint nodeStopPoint : NodeStopPoint.values()) {
-            testStopNodeWithDisableWAL(nodeStopPoint);
+        testStopNodeWithDisableWAL(nodeStopPoint);
 
-            stopAllGrids();
+        stopAllGrids();
 
-            cleanPersistenceDir();
-        }
+        cleanPersistenceDir();
     }
 
     /**
@@ -163,7 +184,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         try (IgniteDataStreamer<Integer, Integer> st = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
 
-            for (int i = 0; i < 10_000; i++)
+            for (int i = 0; i < GridTestUtils.SF.apply(10_000); i++)
                 st.addData(i, -i);
         }
 
@@ -235,6 +256,14 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         stopGrid(0, true);
 
         throw new IgniteCheckedException(nodeStopPoint.toString());
+    }
+
+    /**
+     * @return Node stop point.
+     */
+    @Parameterized.Parameters(name = "{0}")
+    public static Iterable<Object[]> providedTestData() {
+        return Arrays.stream(NodeStopPoint.values()).map(it -> new Object[] {it}).collect(Collectors.toList());
     }
 
     /**
