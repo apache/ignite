@@ -182,7 +182,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     public void testClientInForceServerModeStopsOnExchangeHistoryExhaustionManyClients() throws Exception {
-        fail("https://ggsystems.atlassian.net/browse/GG-20801");
+        fail("https://ggsystems.atlassian.net/browse/GG-20850");
 
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 
