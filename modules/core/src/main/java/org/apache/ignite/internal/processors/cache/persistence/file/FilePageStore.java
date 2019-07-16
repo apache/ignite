@@ -117,7 +117,9 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public boolean exists() {
-        return Files.exists(pathProvider.apply());
+        File file = pathProvider.apply().toFile();
+
+        return file.exists() && file.length() > headerSize();
     }
 
     /**
