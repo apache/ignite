@@ -25,9 +25,11 @@ import org.apache.ignite.console.json.JsonArray;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestWrapper;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import static org.apache.ignite.console.utils.Utils.fromJson;
+import static org.springframework.security.web.authentication.switchuser.SwitchUserFilter.ROLE_PREVIOUS_ADMINISTRATOR;
 
 /**
  * Utilities.
@@ -124,5 +126,14 @@ public class Utils {
             .replacePath(null)
             .build()
             .toString();
+    }
+
+    /**
+     * Is switch user used.
+     * @param req Request wrapper.
+     * @return Switch user used flag.
+     */
+    public static boolean isBecomeUsed(SecurityContextHolderAwareRequestWrapper req) {
+        return req.isUserInRole(ROLE_PREVIOUS_ADMINISTRATOR);
     }
 }
