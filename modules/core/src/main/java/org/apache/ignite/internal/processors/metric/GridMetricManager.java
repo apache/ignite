@@ -318,11 +318,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         monitorExecutor("GridClassLoadingExecutor", p2pExecSvc);
         monitorExecutor("GridManagementExecutor", mgmtExecSvc);
         monitorExecutor("GridIgfsExecutor", igfsExecSvc);
-        monitorExecutor("GridDataStreamExecutor", dataStreamExecSvc);
         monitorExecutor("GridAffinityExecutor", affExecSvc);
         monitorExecutor("GridCallbackExecutor", callbackExecSvc);
         monitorExecutor("GridQueryExecutor", qryExecSvc);
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
+
+        monitorStripedPool("GridDataStreamExecutor", dataStreamExecSvc);
 
         if (idxExecSvc != null)
             monitorExecutor("GridIndexingExecutor", idxExecSvc);
@@ -332,7 +333,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         if (stripedExecSvc != null) {
             // Striped executor uses a custom adapter.
-            monitorStripedPool(stripedExecSvc);
+            monitorStripedPool("StripedExecutor", stripedExecSvc);
         }
 
         if (customExecSvcs != null) {
@@ -397,10 +398,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /**
      * Creates a MetricSet for an stripped executor.
      *
+     * @param name name of the bean to register
      * @param svc Executor.
      */
-    private void monitorStripedPool(StripedExecutor svc) {
-        MetricRegistry mreg = registry(metricName(THREAD_POOLS, "StripedExecutor"));
+    private void monitorStripedPool(String name, StripedExecutor svc) {
+        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
 
         mreg.register("DetectStarvation",
             svc::detectStarvation,
