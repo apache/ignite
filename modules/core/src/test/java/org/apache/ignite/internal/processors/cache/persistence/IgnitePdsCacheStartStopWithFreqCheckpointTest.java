@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -46,7 +47,7 @@ import org.junit.Test;
  */
 public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbstractTest {
     /** Caches. */
-    private static final int CACHES = 10;
+    private static final int CACHES = SF.applyLB(10, 3);
 
     /** Cache name. */
     private static final String CACHE_NAME = "test";
@@ -151,7 +152,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
             }
         });
 
-        U.sleep(60_000);
+        U.sleep(SF.applyLB(60_000, 10_000));
 
         log.info("Stopping caches start/stop process.");
 

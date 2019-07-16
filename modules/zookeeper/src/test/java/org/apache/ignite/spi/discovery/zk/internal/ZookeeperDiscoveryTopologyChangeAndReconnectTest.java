@@ -110,7 +110,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         if (closeClientSock)
             testSockNio = true;
 
-        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 5_000);
+        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(30_000, 5_000);
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -846,7 +846,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         int nextNodeIdx = 0;
         int nextCacheIdx = 0;
 
-        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 5_000);
+        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(30_000, 5_000);
 
         int MAX_NODES = 20;
         int MAX_CACHES = 10;

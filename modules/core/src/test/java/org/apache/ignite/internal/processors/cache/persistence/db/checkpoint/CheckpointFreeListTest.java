@@ -54,6 +54,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -72,7 +73,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cacheOne";
     /** Cache size */
-    public static final int CACHE_SIZE = 30000;
+    public static final int CACHE_SIZE = SF.apply(30000);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -123,7 +124,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             .setAtomicityMode(mode)
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setAffinity(new RendezvousAffinityFunction(false, 1024))
+            .setAffinity(new RendezvousAffinityFunction(false, SF.apply(1024)))
             .setIndexedTypes(String.class, String.class);
     }
 
@@ -154,7 +155,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Object> cache = igniteClient.cache(CACHE_NAME);
 
         for (int j = 0; j < CACHE_SIZE; j++) {
-            cache.put(j, new byte[random.nextInt(3072)]);
+            cache.put(j, new byte[random.nextInt(SF.apply(3072))]);
 
             if (random.nextBoolean())
                 cache.remove(j);
@@ -221,7 +222,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Object> cache = ignite0.cache(CACHE_NAME);
 
         for (int j = 0; j < CACHE_SIZE; j++) {
-            byte[] val = new byte[random.nextInt(3072)];
+            byte[] val = new byte[random.nextInt(SF.apply(3072))];
 
             cache.put(j, val);
 
@@ -254,7 +255,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         CyclicBarrier nodeStartBarrier = new CyclicBarrier(2);
 
-        int approximateIterationCount = 10;
+        int approximateIterationCount = SF.applyLB(10, 6);
 
         //Approximate count of entries to put per one iteration.
         int iterationDataCount = entriesToRemove.size() / approximateIterationCount;

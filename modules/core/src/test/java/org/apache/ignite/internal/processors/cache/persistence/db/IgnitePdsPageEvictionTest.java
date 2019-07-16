@@ -18,20 +18,23 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.io.Serializable;
 import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,7 +43,7 @@ import org.junit.Test;
  */
 public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
     /** Test entry count. */
-    public static final int ENTRY_CNT = 1_000_000;
+    public static final int ENTRY_CNT = SF.applyLB(300_000, 100_000);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -108,14 +111,17 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
         IgniteCache<DbKey, DbValue> cache = ignite(0).cache(CACHE_NAME);
 
-        for (int i = 0; i < ENTRY_CNT; i++) {
-            assertEquals(Long.MAX_VALUE - i, cache.get(new DbKey(i)).lVal);
+        int i = 0;
+        for (Cache.Entry<DbKey, DbValue> entry : cache.query(new ScanQuery<DbKey, DbValue>())) {
+            assertEquals(Long.MAX_VALUE - entry.getKey().val, entry.getValue().lVal);
 
             if (i > 0 && i % 10_000 == 0)
                 info("Done get: " + i);
+
+            i++;
         }
 
-        for (int i = 0; i < ENTRY_CNT; i++) {
+        for (i = 0; i < ENTRY_CNT; i++) {
             List<List<?>> rows = cache.query(
                 new SqlFieldsQuery("select lVal from DbValue where iVal=?").setArgs(i)
             ).getAll();

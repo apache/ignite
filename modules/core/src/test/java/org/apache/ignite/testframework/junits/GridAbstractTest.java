@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -2577,7 +2578,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         @Override public Statement apply(Statement base, Description desc) {
             return new Statement() {
                 @Override public void evaluate() throws Throwable {
-                    GridAbstractTest fixtureInstance = (GridAbstractTest)desc.getTestClass().newInstance();
+                    Constructor<?> testConstructor = desc.getTestClass().getDeclaredConstructor();
+
+                    testConstructor.setAccessible(true);
+
+                    GridAbstractTest fixtureInstance = (GridAbstractTest)testConstructor.newInstance();
 
                     fixtureInstance.evaluateInsideFixture(base);
                 }
