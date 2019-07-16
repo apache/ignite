@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,7 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import com.google.common.collect.Lists;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -43,6 +42,7 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -51,10 +51,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -323,10 +325,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         final int entriesCnt = 10_000;
         final int maxNodesCnt = 4;
-        final int topChanges = 25;
+        final int topChanges = SF.applyLB(15, 5);
         final boolean allowRemoves = true;
 
-        final AtomicLong orderCounter = new AtomicLong();
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicBoolean suspend = new AtomicBoolean();
         final AtomicBoolean suspended = new AtomicBoolean();
@@ -337,16 +338,16 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite.cluster().active(true);
 
+        try (IgniteDataStreamer<Integer, TestValue> ds = ignite.dataStreamer(INDEXED_CACHE)) {
+            for (int i = 0; i < entriesCnt; i++) {
+                ds.addData(i, new TestValue(i, i, i));
+                map.put(i, new TestValue(i, i, i));
+            }
+        }
+
         IgniteCache<Integer, TestValue> cache = ignite.cache(INDEXED_CACHE);
 
-        for (int i = 0; i < entriesCnt; i++) {
-            long order = orderCounter.get();
-
-            cache.put(i, new TestValue(order, i, i));
-            map.put(i, new TestValue(order, i, i));
-
-            orderCounter.incrementAndGet();
-        }
+        final AtomicLong orderCounter = new AtomicLong(entriesCnt);
 
         final AtomicInteger nodesCnt = new AtomicInteger(4);
 
@@ -445,7 +446,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 if (U.currentTimeMillis() > timeOut)
                     break;
 
-                U.sleep(3_000);
+                U.sleep(SF.applyLB(3_000, 500));
 
                 boolean addNode;
 
@@ -581,7 +582,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      */
     @Test
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
-        final Ignite ig = startGrids(4);
+        Ignite ig = startGridsMultiThreaded(4);
 
         ig.cluster().active(true);
 
@@ -596,23 +597,25 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         assertPartitionsSame(idleVerify(grid(0), CACHE));
 
-        for (int it = 0; it < 10; it++) {
+        for (int it = 0; it < SF.applyLB(10, 3); it++) {
             final int it0 = it;
 
             IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
                 try {
+                    int dataLoadTimeout = SF.applyLB(500, 250);
+
                     stopGrid(3);
 
-                    U.sleep(500); // Wait for data load.
+                    U.sleep(dataLoadTimeout); // Wait for data load.
 
                     startGrid(3);
 
-                    U.sleep(500); // Wait for data load.
+                    U.sleep(dataLoadTimeout); // Wait for data load.
 
                     if (it0 % 2 != 0) {
                         stopGrid(2);
 
-                        U.sleep(500); // Wait for data load.
+                        U.sleep(dataLoadTimeout); // Wait for data load.
 
                         startGrid(2);
                     }
@@ -651,8 +654,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         cntrs.put(part.id(), part.updateCounter());
                 }
 
-                for (int k0 = 0; k0 < keys; k0++)
-                    assertEquals(String.valueOf(k0) + " " + g, k0, ig0.cache(CACHE).get(k0));
+                IgniteCache<Integer, String> ig0cache = ig0.cache(CACHE);
+
+                for (Cache.Entry<Integer, String> entry : ig0cache.query(new ScanQuery<Integer, String>()))
+                    assertEquals(entry.getKey() + " " + g, entry.getKey(), entry.getValue());
             }
 
             assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
@@ -720,12 +725,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     private static class CoordinatorNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            try {
-                return node.order() > 1;
-            }
-            catch (UnsupportedOperationException e) {
-                return false;
-            }
+            // Do not start cache on coordinator.
+            return !node.<String>attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME).endsWith("0");
         }
     }
 }
