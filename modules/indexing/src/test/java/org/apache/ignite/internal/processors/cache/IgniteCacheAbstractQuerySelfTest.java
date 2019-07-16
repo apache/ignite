@@ -619,6 +619,23 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * JUnit.
      */
     @Test
+    public void testSelectQueryNoClose() {
+        IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
+
+        cache.put(10, "value");
+
+        QueryCursor<Cache.Entry<Integer, String>> qry = cache.query(new SqlQuery<>(String.class, "true"));
+
+        Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
+
+        assert iter != null;
+        assert iter.next() != null;
+    }
+
+    /**
+     * JUnit.
+     */
+    @Test
     public void testSimpleCustomTableName() {
         CacheConfiguration<Integer, Object> cacheConf = new CacheConfiguration<Integer, Object>(cacheConfiguration())
             .setName(DEFAULT_CACHE_NAME)

@@ -539,7 +539,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         Connection conn0 = conn.object().connection(qryDesc.schemaName());
 
                         H2Utils.setupConnection(conn0,
-                            qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy());
+                            qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy() && select.splitNeeded());
 
                         List<Object> args = F.asList(qryParams.arguments());
 
