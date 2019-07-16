@@ -464,7 +464,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                     if (grp.preloader().registerSupplyMessage(supplyMsg))
                                         rebalancePool.execute(
-                                            () -> grp.preloader().handleSupplyMessage(idx, id, supplyMsg));
+                                            () -> grp.preloader().handleSupplyMessage(id, supplyMsg));
 
                                     return;
                                 }

@@ -45,9 +45,8 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,7 +87,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     private boolean paused;
 
     /** */
-    private Queue<GridTuple3<Integer, UUID, GridDhtPartitionSupplyMessage>> pausedDemanderQueue = new ConcurrentLinkedQueue<>();
+    private Queue<T2<UUID, GridDhtPartitionSupplyMessage>> pausedDemanderQueue = new ConcurrentLinkedQueue<>();
 
     /** */
     private boolean stopped;
@@ -383,7 +382,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
+    @Override public void handleSupplyMessage(UUID id, final GridDhtPartitionSupplyMessage s) {
         if (!enterBusy())
             return;
 
@@ -392,9 +391,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             try {
                 if (paused)
-                    pausedDemanderQueue.add(F.t(idx, id, s));
+                    pausedDemanderQueue.add(new T2<>(id, s));
                 else
-                    demander.handleSupplyMessage(idx, id, s);
+                    demander.handleSupplyMessage(id, s);
             }
             finally {
                 demandLock.readLock().unlock();
@@ -620,7 +619,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         demandLock.writeLock().lock();
 
         try {
-            final List<GridTuple3<Integer, UUID, GridDhtPartitionSupplyMessage>> msgToProc =
+            final List<T2<UUID, GridDhtPartitionSupplyMessage>> msgToProc =
                 new ArrayList<>(pausedDemanderQueue);
 
             pausedDemanderQueue.clear();
@@ -628,7 +627,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             final GridDhtPreloader preloader = this;
 
             ctx.kernalContext().closure().runLocalSafe(() -> msgToProc.forEach(
-                m -> preloader.handleSupplyMessage(m.get1(), m.get2(), m.get3())
+                m -> preloader.handleSupplyMessage(m.get1(), m.get2())
             ), GridIoPolicy.SYSTEM_POOL);
 
             paused = false;

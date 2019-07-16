@@ -646,12 +646,10 @@ public class GridDhtPartitionDemander {
      * If not all partitions specified in {@link #rebalanceFut} were rebalanced or marked as missed
      * send new Demand message to request next batch of entries.
      *
-     * @param topicId Topic id.
      * @param nodeId Node id.
      * @param supplyMsg Supply message.
      */
     public void handleSupplyMessage(
-        int topicId,
         final UUID nodeId,
         final GridDhtPartitionSupplyMessage supplyMsg
     ) {
@@ -666,7 +664,7 @@ public class GridDhtPartitionDemander {
 
             if (node == null) {
                 if (log.isDebugEnabled())
-                    log.debug("Supply message ignored (supplier has left cluster) [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
+                    log.debug("Supply message ignored (supplier has left cluster) [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
 
                 return;
             }
@@ -674,17 +672,17 @@ public class GridDhtPartitionDemander {
             // Topology already changed (for the future that supply message based on).
             if (topologyChanged(fut) || !fut.isActual(supplyMsg.rebalanceId())) {
                 if (log.isDebugEnabled())
-                    log.debug("Supply message ignored (topology changed) [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
+                    log.debug("Supply message ignored (topology changed) [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
 
                 return;
             }
 
             if (log.isDebugEnabled())
-                log.debug("Received supply message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
+                log.debug("Received supply message [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
 
             // Check whether there were error during supply message unmarshalling process.
             if (supplyMsg.classError() != null) {
-                U.warn(log, "Rebalancing from node cancelled [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]" +
+                U.warn(log, "Rebalancing from node cancelled [" + demandRoutineInfo(nodeId, supplyMsg) + "]" +
                     ". Supply message couldn't be unmarshalled: " + supplyMsg.classError());
 
                 fut.cancel(nodeId);
@@ -694,7 +692,7 @@ public class GridDhtPartitionDemander {
 
             // Check whether there were error during supplying process.
             if (supplyMsg.error() != null) {
-                U.warn(log, "Rebalancing from node cancelled [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]" +
+                U.warn(log, "Rebalancing from node cancelled [" + demandRoutineInfo(nodeId, supplyMsg) + "]" +
                     "]. Supplier has failed with error: " + supplyMsg.error());
 
                 fut.cancel(nodeId);
@@ -791,7 +789,7 @@ public class GridDhtPartitionDemander {
 
                                     if (log.isDebugEnabled())
                                         log.debug("Finished rebalancing partition: " +
-                                            "[" + demandRoutineInfo(topicId, nodeId, supplyMsg) + ", p=" + p + "]");
+                                            "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + "]");
                                 }
                             }
                             finally {
@@ -807,7 +805,7 @@ public class GridDhtPartitionDemander {
 
                             if (log.isDebugEnabled())
                                 log.debug("Skipping rebalancing partition (state is not MOVING): " +
-                                    "[" + demandRoutineInfo(topicId, nodeId, supplyMsg) + ", p=" + p + "]");
+                                    "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + "]");
                         }
                     }
                     else {
@@ -815,7 +813,7 @@ public class GridDhtPartitionDemander {
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (affinity changed): " +
-                                "[" + demandRoutineInfo(topicId, nodeId, supplyMsg) + ", p=" + p + "]");
+                                "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + "]");
                     }
                 }
 
@@ -844,22 +842,22 @@ public class GridDhtPartitionDemander {
                             d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.preloader().timeout());
 
                         if (log.isDebugEnabled())
-                            log.debug("Send next demand message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
+                            log.debug("Send next demand message [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
                     }
                     catch (ClusterTopologyCheckedException e) {
                         if (log.isDebugEnabled())
-                            log.debug("Supplier has left [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
+                            log.debug("Supplier has left [" + demandRoutineInfo(nodeId, supplyMsg) +
                                 ", errMsg=" + e.getMessage() + ']');
                     }
                 }
                 else {
                     if (log.isDebugEnabled())
-                        log.debug("Will not request next demand message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
+                        log.debug("Will not request next demand message [" + demandRoutineInfo(nodeId, supplyMsg) +
                             ", topChanged=" + topologyChanged(fut) + ", rebalanceFuture=" + fut + "]");
                 }
             }
             catch (IgniteSpiException | IgniteCheckedException e) {
-                LT.error(log, e, "Error during rebalancing [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
+                LT.error(log, e, "Error during rebalancing [" + demandRoutineInfo(nodeId, supplyMsg) +
                     ", err=" + e + ']');
             }
         }
@@ -1171,12 +1169,11 @@ public class GridDhtPartitionDemander {
     /**
      * String representation of demand routine.
      *
-     * @param topicId Topic id.
      * @param supplier Supplier.
      * @param supplyMsg Supply message.
      */
-    private String demandRoutineInfo(int topicId, UUID supplier, GridDhtPartitionSupplyMessage supplyMsg) {
-        return "grp=" + grp.cacheOrGroupName() + ", topVer=" + supplyMsg.topologyVersion() + ", supplier=" + supplier + ", topic=" + topicId;
+    private String demandRoutineInfo(UUID supplier, GridDhtPartitionSupplyMessage supplyMsg) {
+        return "grp=" + grp.cacheOrGroupName() + ", topVer=" + supplyMsg.topologyVersion() + ", supplier=" + supplier;
     }
 
     /** {@inheritDoc} */
