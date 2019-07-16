@@ -466,17 +466,18 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         node1 = start(1, KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
         assertTypes(node1, ValueClass.class, ValueClass2.class);
-        assertTypes(node2, ValueClass.class);
 
         assertCacheStarted(CACHE_NAME, node1);
 
         reconnFut.get();
 
-        assertTypes(node2, ValueClass.class, ValueClass2.class);
         assertCacheNotStarted(CACHE_NAME, node2);
 
         node2.cache(CACHE_NAME);
+
         assertCacheStarted(CACHE_NAME, node2);
+
+        assertTypes(node2, ValueClass.class, ValueClass2.class);
     }
 
     /**
@@ -538,9 +539,8 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      * @throws AssertionError If failed.
      */
     private void assertCacheStarted(String cacheName, IgniteEx... nodes) throws AssertionError {
-        for (IgniteEx node : nodes) {
+        for (IgniteEx node : nodes)
             assertTrue(isCacheStarted(cacheName, node));
-        }
     }
 
     /**
@@ -551,9 +551,8 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      * @throws AssertionError If failed.
      */
     private void assertCacheNotStarted(String cacheName, IgniteEx... nodes) throws AssertionError {
-        for (IgniteEx node : nodes) {
+        for (IgniteEx node : nodes)
             assertFalse(isCacheStarted(cacheName, node));
-        }
     }
 
     /**
