@@ -482,6 +482,13 @@ public class GridDhtPartitionDemander {
                         return;
 
                     try {
+                        if (log.isInfoEnabled())
+                            log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
+                                ", topVer=" + fut.topologyVersion() +
+                                ", supplier=" + node.id() + ", topic=" + topicId +
+                                ", fullPartitions=" + S.compact(parts.fullSet()) +
+                                ", histPartitions=" + S.compact(parts.historicalSet()) + "]");
+
                         ctx.io().sendOrderedMessage(node, rebalanceTopic,
                             demandMsg.convertIfNeeded(node.version()), grp.ioPolicy(), demandMsg.timeout());
 
@@ -490,13 +497,6 @@ public class GridDhtPartitionDemander {
                             if (fut.isDone())
                                 fut.cleanupRemoteContexts(node.id());
                         }
-
-                        if (log.isInfoEnabled())
-                            log.info("Started rebalance routine [" + grp.cacheOrGroupName() +
-                                ", topVer=" + fut.topologyVersion() +
-                                ", supplier=" + node.id() + ", topic=" + topicId +
-                                ", fullPartitions=" + S.compact(parts.fullSet()) +
-                                ", histPartitions=" + S.compact(parts.historicalSet()) + "]");
                     }
                     catch (IgniteCheckedException e1) {
                         ClusterTopologyCheckedException cause = e1.getCause(ClusterTopologyCheckedException.class);
@@ -781,9 +781,8 @@ public class GridDhtPartitionDemander {
                                 if (last) {
                                     long queued = fut.queued.get(p).sum();
 
-                                    while (!fut.isDone() &&
-                                        fut.processed.get(p).sum() != (queued - 1))
-                                        U.sleep(1);
+                                    while (!fut.isDone() && fut.processed.get(p).sum() != (queued - 1))
+                                        U.sleep(1); // Wait untill other batches for same patrition processed.
 
                                     fut.partitionDone(nodeId, p, true);
 
@@ -1218,10 +1217,10 @@ public class GridDhtPartitionDemander {
          * partition in OWNING state. */
         private final ReentrantReadWriteLock cancelLock;
 
-        /** Entries queued. */
+        /** Entries batches queued. */
         private final Map<Integer, LongAdder> queued = new ConcurrentHashMap<>();
 
-        /** Entries processed. */
+        /** Entries batches processed. */
         private final Map<Integer, LongAdder> processed = new ConcurrentHashMap<>();
 
         /**
