@@ -44,6 +44,7 @@ import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
 import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
@@ -237,6 +238,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(MessageOrderLogListenerTest.class);
 
         suite.addTestSuite(ClassPathContentLoggingTest.class);
+
+        suite.addTestSuite(IncompleteDeserializationExceptionTest.class);
 
         return suite;
     }
