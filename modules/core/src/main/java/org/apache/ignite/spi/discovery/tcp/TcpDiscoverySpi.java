@@ -1963,14 +1963,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected IgniteSpiException duplicateIdError(TcpDiscoveryDuplicateIdMessage msg) {
         assert msg != null;
 
-        StringBuilder errorMsgBldr = new StringBuilder();
-        errorMsgBldr
+        StringBuilder errorMsgBldr = new StringBuilder()
             .append("Node with the same ID was found in node IDs history ")
             .append("or existing node in topology has the same ID ")
             .append("(fix configuration and restart local node) [localNode=")
             .append(locNode)
             .append(", existingNode=")
-            .append(msg.node())
+            .append(msg.node() == null ? msg.nodeId() : msg.node())
             .append(']');
 
         return new IgniteSpiException(errorMsgBldr.toString());
