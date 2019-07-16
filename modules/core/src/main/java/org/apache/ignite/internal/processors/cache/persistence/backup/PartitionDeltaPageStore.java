@@ -26,8 +26,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
