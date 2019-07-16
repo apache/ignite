@@ -16,6 +16,7 @@
 
 package org.apache.ignite.console.web.controller;
 
+import java.util.UUID;
 import io.swagger.annotations.ApiOperation;
 import javax.validation.Valid;
 import org.apache.ignite.console.dto.Account;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.apache.ignite.console.common.Utils.isBecomeUsed;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.security.web.authentication.switchuser.SwitchUserFilter.ROLE_PREVIOUS_ADMINISTRATOR;
 
@@ -50,15 +52,15 @@ public class AccountController {
     private final AuthenticationManager authMgr;
 
     /** Accounts service. */
-    private final AccountsService accountsSrv;
+    private final AccountsService accountsSrvc;
 
     /**
      * @param authMgr Authentication manager.
-     * @param accountsSrv Accounts service.
+     * @param accountsSrvc Accounts service.
      */
-    public AccountController(AuthenticationManager authMgr, AccountsService accountsSrv) {
+    public AccountController(AuthenticationManager authMgr, AccountsService accountsSrvc) {
         this.authMgr = authMgr;
-        this.accountsSrv = accountsSrv;
+        this.accountsSrvc = accountsSrvc;
     }
 
     /**
@@ -67,7 +69,7 @@ public class AccountController {
     @ApiOperation(value = "Get current user.")
     @GetMapping(path = "/api/v1/user")
     public ResponseEntity<UserResponse> user(SecurityContextHolderAwareRequestWrapper req) {
-        Account acc = accountsSrv.loadUserByUsername(req.getUserPrincipal().getName());
+        Account acc = accountsSrvc.loadUserByUsername(req.getUserPrincipal().getName());
 
         return ResponseEntity.ok(new UserResponse(acc, req.isUserInRole(ROLE_PREVIOUS_ADMINISTRATOR)));
     }
@@ -78,7 +80,7 @@ public class AccountController {
     @ApiOperation(value = "Register user.")
     @PostMapping(path = "/api/v1/signup")
     public ResponseEntity<Void> signup(@Valid @RequestBody SignUpRequest params) {
-        accountsSrv.register(params);
+        accountsSrvc.register(params);
 
         Authentication authentication = authMgr.authenticate(
             new UsernamePasswordAuthenticationToken(
@@ -92,22 +94,40 @@ public class AccountController {
     }
 
     /**
+     * Save and auth user.
+     *
+     * @param accId Account id.
+     * @param changes Changes to apply to user.
+     */
+    public Account saveAndAuth(UUID accId, ChangeUserRequest changes) {
+        Account acc = accountsSrvc.save(accId, changes);
+
+        Authentication authentication = new PreAuthenticatedAuthenticationToken(
+            acc,
+            acc.getPassword(),
+            acc.getAuthorities()
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        return acc;
+    }
+
+    /**
+     * @param req Request wrapper.
      * @param acc Current user.
      * @param changes Changes to apply to user.
      */
     @ApiOperation(value = "Save user.")
     @PostMapping(path = "/api/v1/profile/save", consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> save(
+    public ResponseEntity<UserResponse> save(
+        SecurityContextHolderAwareRequestWrapper req,
         @AuthenticationPrincipal Account acc,
         @Valid @RequestBody ChangeUserRequest changes
     ) {
-        Account userObj = accountsSrv.save(acc.getId(), changes);
+        Account newAcc = saveAndAuth(acc.getId(), changes);
 
-        Authentication authentication = new PreAuthenticatedAuthenticationToken(userObj, userObj.getPassword(), userObj.getAuthorities());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new UserResponse(newAcc, isBecomeUsed(req)));
     }
 
     /**
@@ -116,7 +136,7 @@ public class AccountController {
     @ApiOperation(value = "Send password reset token.")
     @PostMapping(path = "/api/v1/password/forgot", consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity forgotPassword(@Valid @RequestBody EmailRequest req) {
-        accountsSrv.forgotPassword(req.getEmail());
+        accountsSrvc.forgotPassword(req.getEmail());
 
         return ResponseEntity.ok().build();
     }
@@ -127,7 +147,7 @@ public class AccountController {
     @ApiOperation(value = "Reset user password.")
     @PostMapping(path = "/api/v1/password/reset")
     public ResponseEntity resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
-        accountsSrv.resetPasswordByToken(req.getEmail(), req.getToken(), req.getPassword());
+        accountsSrvc.resetPasswordByToken(req.getEmail(), req.getToken(), req.getPassword());
 
         return ResponseEntity.ok().build();
     }
@@ -138,7 +158,7 @@ public class AccountController {
     @ApiOperation(value = "Resend activation token.")
     @PostMapping(path = "/api/v1/activation/resend", consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity activationResend(@Valid @RequestBody EmailRequest req) {
-        accountsSrv.resetActivationToken(req.getEmail());
+        accountsSrvc.resetActivationToken(req.getEmail());
 
         return ResponseEntity.ok().build();
     }
