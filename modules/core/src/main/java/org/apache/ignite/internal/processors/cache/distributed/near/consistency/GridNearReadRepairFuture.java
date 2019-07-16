@@ -41,7 +41,7 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  */
 public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /**
-     * Creates a new instance of  GridNearReadRepairFuture.
+     * Creates a new instance of GridNearReadRepairFuture.
      *
      * @param topVer Affinity topology version.
      * @param ctx Cache context.

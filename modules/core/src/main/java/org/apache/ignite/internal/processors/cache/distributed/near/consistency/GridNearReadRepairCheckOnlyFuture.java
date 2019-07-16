@@ -47,7 +47,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     private boolean keepCacheObjects;
 
     /**
-     * Creates a new instance of  GridNearReadRepairCheckOnlyFuture.
+     * Creates a new instance of GridNearReadRepairCheckOnlyFuture.
      *
      * @param ctx Cache context.
      * @param keys Keys.

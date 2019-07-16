@@ -90,7 +90,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     private AffinityTopologyVersion topVer;
 
     /**
-     * Creates a new instance of  GridNearReadRepairAbstractFuture.
+     * Creates a new instance of GridNearReadRepairAbstractFuture.
      *
      * @param topVer Topology version.
      * @param ctx Cache context.
