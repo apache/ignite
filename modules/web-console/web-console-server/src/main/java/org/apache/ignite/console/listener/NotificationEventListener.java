@@ -67,7 +67,7 @@ public class NotificationEventListener {
      * @param evt Event.
      */
     @EventListener
-    public void onUserCreateByAdminEvent(Event<Account> evt) {
+    public void onAccountEvent(Event<? extends Account> evt) {
         NotificationDescriptor desc = notificationDescByEvtType.get(evt.getType());
         if (desc != null)
             notificationSrv.sendEmail(desc, evt.getSource());
