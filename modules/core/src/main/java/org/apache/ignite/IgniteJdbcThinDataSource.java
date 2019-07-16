@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.sql.Connection;
@@ -24,7 +25,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
-import javax.sql.DataSource;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;

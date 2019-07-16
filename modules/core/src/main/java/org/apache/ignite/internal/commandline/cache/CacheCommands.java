@@ -39,7 +39,6 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
-import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder.DELIM;
 
 /**
  * High-level "cache" command implementation.
