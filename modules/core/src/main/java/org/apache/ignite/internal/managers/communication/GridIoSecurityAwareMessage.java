@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * Represents a security communication message.
  */
 public class GridIoSecurityAwareMessage extends GridIoMessage {
     /** */
@@ -36,6 +36,9 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
     /** Security subject id that will be used during message processing on an remote node. */
     private UUID secSubjId;
+
+    /** Security context transmitting from node initiator of action. */
+    private byte[] secCtx;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -57,6 +60,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
      */
     public GridIoSecurityAwareMessage(
         UUID secSubjId,
+        byte[] secSubject,
         byte plc,
         Object topic,
         int topicOrd,
@@ -67,6 +71,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
         this.secSubjId = secSubjId;
+        this.secCtx = secSubject;
     }
 
     /**
@@ -76,6 +81,13 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         return secSubjId;
     }
 
+    /**
+     * @return Security context
+     */
+    public byte[] getSecCtx() {
+        return secCtx;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
@@ -83,7 +95,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */
@@ -102,6 +114,12 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
         switch (writer.state()) {
             case 7:
+                if (!writer.writeByteArray("secCtx", secCtx))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
                 if (!writer.writeUuid("secSubjId", secSubjId))
                     return false;
 
@@ -124,6 +142,14 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
         switch (reader.state()) {
             case 7:
+                secCtx = reader.readByteArray("secCtx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
                 secSubjId = reader.readUuid("secSubjId");
 
                 if (!reader.isLastRead())

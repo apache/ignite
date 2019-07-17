@@ -60,6 +60,9 @@ public enum IgniteFeatures {
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
 
+    /** Support new security processor */
+    IGNITE_SECURITY_PROCESSOR(13),
+
     /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14);
 
