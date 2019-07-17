@@ -134,13 +134,32 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** Write a single row on a single page. */
-    private final PageHandler<T, Integer> writeRow = new WriteRowHandler();
+    private final WriteRowHandler writeRow = new WriteRowHandler();
 
     /** Write multiple rows on a single page. */
-    private final PageHandler<GridCursor<T>, Integer> writeRows = new WriteRowsHandler();
+    private final WriteRowsHandler writeRows = new WriteRowsHandler();
 
-    /** */
-    private abstract class AbstractWriteRowHandler<X> extends PageHandler<X, Integer> {
+    /**  */
+    private class WriteRowHandler extends PageHandler<T, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer run(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PageIO iox,
+            Boolean walPlc,
+            T row,
+            int written,
+            IoStatisticsHolder statHolder)
+            throws IgniteCheckedException {
+            written = write(pageId, page, pageAddr, iox, row, written);
+
+            putPage(((AbstractDataPageIO)iox).getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
+
+            return written;
+        }
+
         /**
          * @param pageId Page ID.
          * @param page Page absolute pointer.
@@ -151,7 +170,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
          * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
          * @throws IgniteCheckedException If failed.
          */
-        protected Integer run0(
+        protected Integer write(
             long pageId,
             long page,
             long pageAddr,
@@ -277,29 +296,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** */
-    private final class WriteRowHandler extends AbstractWriteRowHandler<T> {
-        /** {@inheritDoc} */
-        @Override public Integer run(
-            int cacheId,
-            long pageId,
-            long page,
-            long pageAddr,
-            PageIO iox,
-            Boolean walPlc,
-            T row,
-            int written,
-            IoStatisticsHolder statHolder)
-            throws IgniteCheckedException {
-            written = run0(pageId, page, pageAddr, iox, row, written);
-
-            putPage(((AbstractDataPageIO)iox).getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
-
-            return written;
-        }
-    }
-
-    /** */
-    private final class WriteRowsHandler extends AbstractWriteRowHandler<GridCursor<T>> {
+    private final class WriteRowsHandler extends PageHandler<GridCursor<T>, Integer> {
         /** {@inheritDoc} */
         @Override public Integer run(
             int cacheId,
@@ -327,14 +324,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         break;
                 }
 
-                written = run0(pageId, page, pageAddr, io, row, written);
+                written = writeRow.write(pageId, page, pageAddr, io, row, written);
 
                 assert written == COMPLETE;
 
                 evictionTracker.touchPage(pageId);
             }
 
-            putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
+            writeRow.putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
 
             return written;
         }
