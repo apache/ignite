@@ -139,7 +139,7 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
      * @param partId Cache partition identifier.
      * @return A file representation.
      */
-    public static File getPartionDeltaFile(File tmpDir, int partId) {
+    private static File getPartionDeltaFile(File tmpDir, int partId) {
         return new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
     }
 
@@ -187,10 +187,6 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
-            @Override public void beforeMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-
-            }
-
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
 
             }
@@ -620,6 +616,9 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
         /** Future of result completion. */
         private final GridFutureAdapter<?> result = new GridFutureAdapter<>();
+
+        /** Flag idicates that this backup is start copying partitions. */
+        private volatile boolean started;
 
         /**
          * @param name Unique identifier of backup process.

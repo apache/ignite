@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Set;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,9 +38,14 @@ public interface DbCheckpointListener {
         public boolean nextSnapshot();
 
         /**
-         * @return {@code True} if information must be collected on #onMarkCheckpointBegin() point.
+         * @return Collection partition which require meta to be collected.
          */
-        public boolean collectContextInfo();
+        public Set<GroupPartitionId> gatherPartStats();
+
+        /**
+         * @param parts Collection of partitions for which statistics should be gathered.
+         */
+        public void gatherPartStat(Set<GroupPartitionId> parts);
 
         /**
          * @return Partition allocation statistic map
@@ -59,13 +66,6 @@ public interface DbCheckpointListener {
          * @return {@code True} if at least one page is dirty.
          */
         public boolean hasPages();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public default void beforeMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        // No-op.
     }
 
     /**

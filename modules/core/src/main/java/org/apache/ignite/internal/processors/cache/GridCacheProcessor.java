@@ -90,8 +90,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheJoinNodeDiscoveryData.CacheInfo;
-import org.apache.ignite.internal.processors.cache.backup.CacheBackupManager;
-import org.apache.ignite.internal.processors.cache.backup.GridCacheBackupManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
@@ -1706,7 +1704,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
         CacheCompressionManager compressMgr = new CacheCompressionManager();
-        CacheBackupManager backupMgr = new GridCacheBackupManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
@@ -1746,7 +1743,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * ===========================
              */
             compressMgr,
-            backupMgr,
             evtMgr,
             storeMgr,
             evictMgr,
@@ -1884,7 +1880,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * ===========================
                  */
                 compressMgr,
-                backupMgr,
                 evtMgr,
                 storeMgr,
                 evictMgr,

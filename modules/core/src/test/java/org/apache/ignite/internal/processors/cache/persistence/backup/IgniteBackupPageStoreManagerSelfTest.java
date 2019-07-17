@@ -217,8 +217,8 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
         ((GridCacheDatabaseSharedManager)cctx1.database()).addCheckpointListener(new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
                 // Partition files are in the consistent state. Calculate their CRCs before snapshot.
-                if (ctx.collectContextInfo())
-                    partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
+//                if (ctx.collectContextInfo())
+//                    partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
             }
 
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
