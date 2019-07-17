@@ -1755,7 +1755,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
 
         // Supported features.
-        add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
+        add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures(context()));
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
