@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -270,7 +271,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
-                    authorize(req, secCtx0);
+                    try (OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
+                        authorize(req);
+
+                        return handle(req, true);
+                    }
                 }
                 catch (SecurityException e) {
                     assert secCtx0 != null;
@@ -312,6 +317,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
             }
         }
 
+        return handle(req, authenticationEnabled);
+    }
+
+    /** Executes particular command from a {@link GridRestRequest} */
+    public IgniteInternalFuture<GridRestResponse> handle(final GridRestRequest req, boolean securityIsActive) {
         interceptRequest(req);
 
         GridRestCommandHandler hnd = handlers.get(req.command());
@@ -363,7 +373,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if ((authenticationEnabled || securityEnabled) && !failed)
+                if (securityIsActive && !failed)
                     res.sessionTokenBytes(req.sessionToken());
 
                 interceptResponse(res, req);
@@ -819,10 +829,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * @param req REST request.
-     * @param sCtx Security context.
      * @throws SecurityException If authorization failed.
      */
-    private void authorize(GridRestRequest req, SecurityContext sCtx) throws SecurityException {
+    private void authorize(GridRestRequest req) throws SecurityException {
         SecurityPermission perm = null;
         String name = null;
 
@@ -924,7 +933,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         if (perm != null)
-            ctx.security().authorize(name, perm, sCtx);
+            ctx.security().authorize(name, perm);
     }
 
     /**

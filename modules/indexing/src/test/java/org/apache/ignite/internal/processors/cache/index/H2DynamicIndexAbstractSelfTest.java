@@ -37,6 +37,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test that checks indexes handling on H2 side.
@@ -130,8 +131,8 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
             + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+        assertSqlException(new GridTestUtils.RunnableX() {
+            @Override public void runx() {
                 cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" +
                     TBL_NAME_ESCAPED + "\"(\"id\" ASC)"));
             }
@@ -192,8 +193,8 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     public void testDropMissingIndex() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+        assertSqlException(new GridTestUtils.RunnableX() {
+            @Override public void runx() {
                 cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\""));
             }
         }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
@@ -379,10 +380,10 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
      * @param r Runnable.
      * @param expCode Error code.
      */
-    private static void assertSqlException(DynamicIndexAbstractBasicSelfTest.RunnableX r, int expCode) {
+    private static void assertSqlException(GridTestUtils.RunnableX r, int expCode) {
         try {
             try {
-                r.run();
+                r.runx();
             }
             catch (CacheException e) {
                 if (e.getCause() != null)

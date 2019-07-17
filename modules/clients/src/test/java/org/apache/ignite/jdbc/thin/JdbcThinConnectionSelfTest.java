@@ -58,6 +58,7 @@ import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
+import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
 
 /**
  * Connection test.
@@ -570,7 +571,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
                 // Exception when called on closed connection
                 checkConnectionClosed(new RunnableX() {
-                    @Override public void run() throws Exception {
+                    @Override public void runx() throws Exception {
                         conn.createStatement();
                     }
                 });
@@ -623,7 +624,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.createStatement(TYPE_FORWARD_ONLY,
                         CONCUR_READ_ONLY);
                 }
@@ -682,7 +683,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.createStatement(TYPE_FORWARD_ONLY,
                         CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
                 }
@@ -716,7 +717,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.prepareStatement(sqlText);
                 }
             });
@@ -774,7 +775,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
                 }
             });
@@ -839,7 +840,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
                 }
             });
@@ -961,7 +962,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.nativeSQL(sqlText);
                 }
             });
@@ -987,7 +988,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setAutoCommit(true);
                 }
             });
@@ -1022,7 +1023,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.commit();
                 }
             });
@@ -1057,7 +1058,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.rollback();
                 }
             });
@@ -1077,7 +1078,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getMetaData();
                 }
             });
@@ -1093,14 +1094,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setReadOnly(true);
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.isReadOnly();
                 }
             });
@@ -1124,14 +1125,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setCatalog("");
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getCatalog();
                 }
             });
@@ -1176,14 +1177,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             // Exception when called on closed connection
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getTransactionIsolation();
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
                 }
             });
@@ -1209,14 +1210,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getWarnings();
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.clearWarnings();
                 }
             });
@@ -1355,7 +1356,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Unsupported
             checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setSavepoint();
                 }
             });
@@ -1363,7 +1364,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setSavepoint();
                 }
             });
@@ -1409,7 +1410,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Unsupported
             checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setSavepoint(name);
                 }
             });
@@ -1417,7 +1418,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setSavepoint(name);
                 }
             });
@@ -1463,7 +1464,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Unsupported
             checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.rollback(savepoint);
                 }
             });
@@ -1471,7 +1472,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.rollback(savepoint);
                 }
             });
@@ -1501,7 +1502,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final Savepoint savepoint = getFakeSavepoint();
 
             checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.releaseSavepoint(savepoint);
                 }
             });
@@ -1509,7 +1510,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.releaseSavepoint(savepoint);
                 }
             });
@@ -1655,7 +1656,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getClientInfo(name);
                 }
             });
@@ -1693,7 +1694,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getClientInfo();
                 }
             });
@@ -1734,7 +1735,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             // Unsupported
 
             checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.createArrayOf(typeName, elements);
                 }
             });
@@ -1742,7 +1743,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.createArrayOf(typeName, elements);
                 }
             });
@@ -1770,7 +1771,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final Object[] attrs = new Object[] {100, "Tom"};
 
             checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.createStruct(typeName, attrs);
                 }
             });
@@ -1778,7 +1779,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.createStruct(typeName, attrs);
                 }
             });
@@ -1805,13 +1806,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setSchema(schema);
                 }
             });
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getSchema();
                 }
             });
@@ -1889,13 +1890,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.getNetworkTimeout();
                 }
             });
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void run() throws Exception {
+                @Override public void runx() throws Exception {
                     conn.setNetworkTimeout(executor, timeout);
                 }
             });
