@@ -415,13 +415,11 @@ public class WebSocketRouter implements AutoCloseable {
 
                 return;
             }
-
-            String errMsg = ERROR_MSGS.get(evt.getEventType());
-
-            log.error(errMsg, e);
+            
+            log.error("Failed to send response: " + evt, e);
 
             try {
-                send(ses, evt.withError(extractErrorMessage(errMsg, e)));
+                send(ses, evt.withError(extractErrorMessage(ERROR_MSGS.get(evt.getEventType()), e)));
             }
             catch (Exception ex) {
                 log.error("Failed to send response with error", e);

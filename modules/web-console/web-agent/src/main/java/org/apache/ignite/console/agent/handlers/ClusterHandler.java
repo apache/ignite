@@ -102,10 +102,10 @@ public class ClusterHandler extends AbstractClusterHandler {
 
                 return res;
             }
-            catch (InterruptedException | TimeoutException ignored) {
+            catch (ConnectException | InterruptedException | TimeoutException ignored) {
                 // No-op.
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 LT.error(log, e, "Failed execute request on node [url=" + nodeUrl + ", parameters=" + params + "]");
             }
         }
