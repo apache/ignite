@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -212,6 +213,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
         "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
         "Deactivate grid and retry node join or clean the joining node.";
+    /** */
+    private static final String CACHE_NAME_AND_OPERATION_FORMAT = "[cacheName=%s, operation=%s]";
+
+    /** */
+    private static final String CACHE_NAMES_AND_OPERATION_FORMAT = "[cacheNames=%s, operation=%s]";
+
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -3699,8 +3706,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         assert cacheName != null;
 
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName,
+                "dynamicStartCache"));
+        }
 
         try {
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
@@ -3794,8 +3803,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         IgniteUuid restartId
     ) {
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> {
+                List<String> cacheNames = storedCacheDataList.stream()
+                    .map(StoredCacheData::config)
+                    .map(CacheConfiguration::getName)
+                    .collect(Collectors.toList());
+
+                return String.format(CACHE_NAMES_AND_OPERATION_FORMAT, cacheNames, "dynamicStartCachesByStoredConf");
+            });
+        }
 
         List<DynamicCacheChangeRequest> srvReqs = null;
         Map<String, DynamicCacheChangeRequest> clientReqs = null;
@@ -3887,8 +3904,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         assert cacheName != null;
 
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName,
+                "dynamicDestroyCache"));
+        }
 
         DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, sql, true);
 
@@ -3920,8 +3939,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean checkThreadTx,
         boolean destroy
     ) {
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> String.format(CACHE_NAMES_AND_OPERATION_FORMAT, cacheNames,
+                "dynamicDestroyCaches"));
+        }
 
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
@@ -4007,7 +4028,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (proxy == null || proxy.isProxyClosed())
             return new GridFinishedFuture<>(); // No-op.
 
-        checkEmptyTransactions();
+        checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName, "dynamicCloseCache"));
 
         if (proxy.context().isLocal())
             return dynamicDestroyCache(cacheName, false, true, false, null);
@@ -4022,10 +4043,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when state is changed for all caches.
      */
     public IgniteInternalFuture<?> resetCacheState(Collection<String> cacheNames) {
-        checkEmptyTransactions();
-
         if (F.isEmpty(cacheNames))
             cacheNames = cachesInfo.registeredCaches().keySet();
+
+        Collection<String> forCheckCacheNames = cacheNames;
+
+        checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, forCheckCacheNames,
+            "resetCacheState"));
 
         Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
@@ -5202,6 +5226,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void checkEmptyTransactions() throws IgniteException {
         if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
             throw new IgniteException("Cannot start/stop cache within lock or transaction.");
+    }
+
+    /**
+     * Method invoke {@link #checkEmptyTransactions()} and add message in case exception.
+     *
+     * @param eMsgSupplier supplier additional text message
+     * @throws IgniteException If {@link #checkEmptyTransactions()} throw {@link IgniteException}
+     * */
+    private void checkEmptyTransactionsEx(final Supplier<String> eMsgSupplier) throws IgniteException {
+        assert eMsgSupplier != null;
+
+        try {
+            checkEmptyTransactions();
+        }
+        catch (IgniteException e) {
+            throw new IgniteException(e.getMessage() + ' ' + eMsgSupplier.get(), e);
+        }
     }
 
     /**
