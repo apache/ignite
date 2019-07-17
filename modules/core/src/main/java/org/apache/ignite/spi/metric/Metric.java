@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.metric;
 
+import org.apache.ignite.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,5 +36,14 @@ public interface Metric {
     /** Resets metric state. */
     public default void reset() {
         // No-op.
+    }
+
+    /**
+     * Change metric configuration.
+     *
+     * @throws IgniteException If configuration failed.
+     */
+    public default void configure(String cfg) throws IgniteException {
+        throw new IgniteException("Configuration of " + name() + "(" + getClass() + ") not supported.");
     }
 }

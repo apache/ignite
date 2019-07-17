@@ -220,6 +220,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -289,6 +290,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 
@@ -4530,6 +4532,41 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             mreg.reset();
         else if (log.isInfoEnabled())
             log.info("\"" + registry + "\" not found.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void configureMetric(String registry, String name, String config) {
+        assert registry != null;
+        assert name != null;
+        assert config != null;
+
+        MetricRegistry mreg = ctx.metric().registry(registry);
+
+        if (mreg == null) {
+            if (log.isInfoEnabled())
+                log.info("\"" + registry + "\" not found.");
+
+            throw new IgniteException("\"" + registry + "\" not found.");
+        }
+
+        Metric m = mreg.findMetric(name);
+
+        if (m == null) {
+            if (log.isInfoEnabled())
+                log.info("\"" + metricName(registry, name) + "\" not found.");
+
+            throw new IgniteException("\"" + metricName(registry, name) + "\" not found.");
+        }
+
+        try {
+            m.configure(config);
+        }
+        catch (IgniteException e) {
+            if (log.isInfoEnabled())
+                log.info(e.getMessage());
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
