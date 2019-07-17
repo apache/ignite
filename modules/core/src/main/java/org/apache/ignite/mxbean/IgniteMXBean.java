@@ -507,7 +507,7 @@ public interface IgniteMXBean {
     public void resetMetrics(String registry);
 
     /**
-     * Enable metric registry.
+     * Disable metric registry.
      *
      * @param registry Metrics registry name.
      */
