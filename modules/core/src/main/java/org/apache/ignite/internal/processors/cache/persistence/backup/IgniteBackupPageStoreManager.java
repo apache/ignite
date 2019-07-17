@@ -187,15 +187,21 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
-            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                for (BackupContext2 bctx0 : backupCtxs.values()) {
+                    if (bctx0.started)
+                        continue;
 
+                    // Gather partitions metainfo for thouse which will be copied.
+                    ctx.gatherPartStat(bctx0.backupPartSizes.keySet());
+                }
+            }
+
+            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // Nothing to do here.
             }
 
             @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-
-            }
-
-            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
 
             }
         });
@@ -251,7 +257,7 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
                     final GroupPartitionId pair = new GroupPartitionId(entry.getKey(), partId);
                     final CacheGroupContext gctx = cctx0.cache().cacheGroup(entry.getKey());
 
-                    bctx0.partSizes.put(pair, 0L);
+                    bctx0.backupPartSizes.put(pair, 0L);
 
                     // Create cache backup directory if not.
                     File grpDir = U.resolveWorkDirectory(bctx0.backupDir.getAbsolutePath(),
@@ -609,7 +615,7 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
          * Partition has value greater than zero only for partitons in OWNING state.
          * Information collected under checkpoint write lock.
          */
-        private final Map<GroupPartitionId, Long> partSizes = new HashMap<>();
+        private final Map<GroupPartitionId, Long> backupPartSizes = new HashMap<>();
 
         /** Map of partitions to backup and theirs corresponding delta PageStores. */
         private final Map<GroupPartitionId, PartitionDeltaPageStore> partDeltaStores = new HashMap<>();
