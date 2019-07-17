@@ -167,7 +167,7 @@ class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends
 
     /** @inheritdoc */
     override private[sql] def applySchemaToPythonRDD(rdd: RDD[Array[Any]], schema: StructType) = {
-        val rowRdd = rdd.map(r => python.EvaluatePython.fromJava(r, schema).asInstanceOf[InternalRow])
+        val rowRdd = rdd.map(r => python.EvaluatePython.makeFromJava(schema).asInstanceOf[InternalRow])
         Dataset.ofRows(self, LogicalRDD(schema.toAttributes, rowRdd)(self))
     }
 
@@ -177,14 +177,6 @@ class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends
     /** @inheritdoc */
     @transient override private[sql] val extensions =
         proxy.extensions
-
-    /** @inheritdoc */
-    override private[sql] def internalCreateDataFrame(
-        catalystRows: RDD[InternalRow],
-        schema: StructType) = {
-        val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
-        Dataset.ofRows(self, logicalPlan)
-    }
 
     /** @inheritdoc */
     override private[sql] def createDataFrame(rowRDD: RDD[Row],

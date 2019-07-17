@@ -118,7 +118,7 @@ package object optimization {
                     metadata = alias
                         .map(new MetadataBuilder().withMetadata(toCopy.metadata).putString(ALIAS, _).build())
                         .getOrElse(toCopy.metadata)
-                )(exprId = exprId.getOrElse(toCopy.exprId), qualifier = toCopy.qualifier, isGenerated = toCopy.isGenerated)
+                )(exprId = exprId.getOrElse(toCopy.exprId), qualifier = toCopy.qualifier)
 
             case a: Alias ⇒
                 toAttributeReference(a.child, existingOutput, Some(a.exprId), Some(alias.getOrElse(a.name)))
