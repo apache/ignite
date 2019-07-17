@@ -50,6 +50,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -133,7 +134,7 @@ public class IgniteCacheQueriesLoadTest1 extends AbstractIndexingCommonTest {
     private static Map<UUID, List<Integer>> partitionsMap;
 
     /** Preload amount. */
-    private static final int preloadAmount = 10_000;
+    private static final int preloadAmount = SF.applyLB(10_000, 2_000);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -167,23 +168,27 @@ public class IgniteCacheQueriesLoadTest1 extends AbstractIndexingCommonTest {
      */
     @Test
     public void testQueries() throws Exception {
-        runQueries(1, true, 10_000);
+        int runSingleMs = SF.applyLB(10_000, 1_000);
 
-        runQueries(10, false, 30_000);
+        runQueries(1, true, runSingleMs);
+
+        int runParMs = SF.applyLB(30_000, 3_000);
+
+        runQueries(10, false, runParMs);
     }
 
     /**
-     * @param threads Threads number.
-     * @param checkBalance Check balance flag.
-     * @param time Execution time.
+     * @param threads number of threads executing the queries.
+     * @param checkBalance whether or not to perform balance check.
+     * @param runAtLeast minimum number of milliseconds thread should perform scan query in a loop.
      * @throws Exception If failed.
      */
-    private void runQueries(int threads, final boolean checkBalance, final long time) throws Exception {
+    private void runQueries(int threads, final boolean checkBalance, final long runAtLeast) throws Exception {
         final Ignite ignite = grid(0);
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() {
-                long endTime = System.currentTimeMillis() + time;
+                long endTime = System.currentTimeMillis() + runAtLeast;
 
                 while (System.currentTimeMillis() < endTime) {
                     ScanQueryBroadcastClosure c = new ScanQueryBroadcastClosure(partitionsMap, checkBalance);
