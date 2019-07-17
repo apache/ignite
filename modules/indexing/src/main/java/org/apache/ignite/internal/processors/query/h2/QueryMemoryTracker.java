@@ -16,8 +16,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,14 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Track query memory usage and throws an exception if query tries to allocate memory over limit.
  */
 public class QueryMemoryTracker extends H2MemoryTracker implements AutoCloseable {
-    /** Resered field updater. */
-    private static final AtomicLongFieldUpdater<QueryMemoryTracker> RESERVED_UPD =
-        AtomicLongFieldUpdater.newUpdater(QueryMemoryTracker.class, "reserved");
-
-    /** Closed flag updater. */
-    private static final AtomicReferenceFieldUpdater<QueryMemoryTracker, Boolean> CLOSED_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(QueryMemoryTracker.class, Boolean.class, "closed");
-
     /** Parent tracker. */
     private final H2MemoryTracker parent;
 
@@ -46,13 +36,13 @@ public class QueryMemoryTracker extends H2MemoryTracker implements AutoCloseable
     private final long blockSize;
 
     /** Memory reserved on parent. */
-    private volatile long reservedFromParent;
+    private long reservedFromParent;
 
     /** Memory reserved by query. */
-    private volatile long reserved;
+    private long reserved;
 
     /** Close flag to prevent tracker reuse. */
-    private volatile Boolean closed = Boolean.FALSE;
+    private Boolean closed = Boolean.FALSE;
 
     /**
      * Constructor.
@@ -71,40 +61,31 @@ public class QueryMemoryTracker extends H2MemoryTracker implements AutoCloseable
 
     /** {@inheritDoc} */
     @Override public void reserve(long size) {
-        assert !closed && size >= 0;
-
         if (size == 0)
             return;
 
-        long reserved0 = RESERVED_UPD.accumulateAndGet(this, size, (prev, x) -> {
-            if (prev + x > maxMem) {
-                throw new IgniteSQLException("SQL query run out of memory: Query quota exceeded.",
-                    IgniteQueryErrorCode.QUERY_OUT_OF_MEMORY);
-            }
+        assert size > 0;
 
-            return prev + x;
-        });
+        synchronized (this) {
+            if (closed)
+                throw new IllegalStateException("Memory tracker has been closed concurrently.");
 
-        if (parent != null && reserved0 > reservedFromParent) {
-            synchronized (this) {
-                assert !closed;
+            long reserved0 = reserve0(size);
 
-                if (reserved0 <= reservedFromParent)
-                    return;
-
-                // If single block size is too small.
-                long blockSize = Math.max(reserved0 - reservedFromParent, this.blockSize);
-                // If we are too close to limit.
-                blockSize = Math.min(blockSize, maxMem - reservedFromParent);
-
+            if (parent != null && reserved0 > reservedFromParent) {
                 try {
+                    // If single block size is too small.
+                    long blockSize = Math.max(reserved0 - reservedFromParent, this.blockSize);
+                    // If we are too close to limit.
+                    blockSize = Math.min(blockSize, maxMem - reservedFromParent);
+
                     parent.reserve(blockSize);
 
                     reservedFromParent += blockSize;
                 }
                 catch (Throwable e) {
                     // Fallback if failed to reserve.
-                    RESERVED_UPD.addAndGet(this, -size);
+                    release0(size);
 
                     throw e;
                 }
@@ -114,31 +95,50 @@ public class QueryMemoryTracker extends H2MemoryTracker implements AutoCloseable
 
     /** {@inheritDoc} */
     @Override public void release(long size) {
-        assert size >= 0;
-
         if (size == 0)
             return;
 
-        long reserved = RESERVED_UPD.accumulateAndGet(this, -size, (prev, x) -> {
-            if (prev + x < 0)
-                throw new IllegalStateException("Try to release more memory that were reserved: [" +
-                    "reserved=" + prev + ", toRelease=" + x + ']');
+        assert size > 0;
 
-            return prev + x;
-        });
+        synchronized (this) {
+            if (closed)
+                throw new IllegalStateException("Memory tracker has been closed concurrently.");
 
-        assert !closed && reserved >= 0 || reserved == 0 : "Invalid reserved memory size:" + reserved;
+            long reserved = release0(size);
 
-        // For now, won'tQ release memory to parent until tracker closed.
-       /* if (parent != null && preAllocated - reserved >= 2 * blockSize) {
-            synchronized (this) {
-                if (preAllocated - reserved >= 2 * blockSize) {
-                    parent.release(blockSize);
+            assert reserved >= 0;
+        }
+    }
 
-                    preAllocated -= blockSize;
-                }
-            }
-        }*/
+    /**
+     * @param size Memory to reserve in bytes.
+     * @return Reserved memory after release.
+     */
+    private long reserve0(long size) {
+        long res = reserved + size;
+
+        if (res > maxMem)
+            throw new IgniteSQLException("SQL query run out of memory: Query quota exceeded.",
+                IgniteQueryErrorCode.QUERY_OUT_OF_MEMORY);
+
+        return reserved = res;
+    }
+
+    /**
+     * Release reserved memory.
+     *
+     * @param size Memory to release in bytes.
+     * @return Reserved memory after release.
+     */
+    private long release0(long size) {
+
+        long res = reserved - size;
+
+        if (res < 0)
+            throw new IllegalStateException("Try to free more memory that ever be reserved: [" +
+                "reserved=" + reserved + ", toFree=" + size + ']');
+
+        return reserved = res;
     }
 
     /**
@@ -152,8 +152,13 @@ public class QueryMemoryTracker extends H2MemoryTracker implements AutoCloseable
     @Override public void close() {
         // It is not expected to be called concurrently with reserve\release.
         // But query can be cancelled concurrently on query finish.
-        if (CLOSED_UPD.compareAndSet(this, Boolean.FALSE, Boolean.TRUE)) {
-            release(RESERVED_UPD.get(this));
+        synchronized (this) {
+            if (closed)
+                return;
+
+            closed = true;
+
+            release0(reserved);
 
             if (parent != null)
                 parent.release(reservedFromParent);

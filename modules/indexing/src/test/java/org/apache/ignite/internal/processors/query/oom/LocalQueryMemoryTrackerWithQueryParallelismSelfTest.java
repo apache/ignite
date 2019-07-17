@@ -335,4 +335,40 @@ public class LocalQueryMemoryTrackerWithQueryParallelismSelfTest extends Abstrac
         assertEquals(1, localResults.size());
         assertTrue(100 > localResults.get(0).getRowCount());
     }
+
+    /** Check simple query with DISTINCT constraint. */
+    @Test
+    @Override public void testQueryWithDistinctAndLowCardinality() throws Exception {
+        // Distinct on indexed column with small cardinality.
+        execQuery("select DISTINCT K.grp_indexed from K", false);
+
+        assertEquals(5, localResults.size());
+        assertEquals(100, localResults.get(4).getRowCount());
+    }
+
+    /** Check query failure with DISTINCT constraint. */
+    @Test
+    @Override public void testQueryWithDistinctAndHighCardinality() throws Exception {
+        // Distinct on indexed column with unique values.
+        checkQueryExpectOOM("select DISTINCT K.id from K", true);
+
+        assertEquals(5, localResults.size());
+        assertFalse(localResults.stream().limit(4).anyMatch(r -> r.memoryReserved() + 1000 > maxMem));
+        assertTrue(BIG_TABLE_SIZE > localResults.get(4).getRowCount());
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testLazyQueryWithGroupByThenSort() {
+        maxMem = MB / 2;
+
+        // Query failed on map side due too many groups.
+        checkQueryExpectOOM("select K.indexed, sum(K.grp) as a from K " +
+            "GROUP BY K.indexed ORDER BY a DESC", true);
+
+        // Result on reduce side.
+        assertEquals(1, localResults.size());
+        assertEquals(0, localResults.get(0).memoryReserved());
+        assertEquals(0, localResults.get(0).getRowCount());
+    }
 }

@@ -173,6 +173,17 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
+    /** Check simple query with DISTINCT constraint. */
+    @Test
+    @Override public void testQueryWithDistinctAndLowCardinality() throws Exception {
+        // Distinct on indexed column with small cardinality.
+        execQuery("select DISTINCT K.grp_indexed from K", false);
+
+        assertEquals(2, localResults.size());
+        assertEquals(100, localResults.get(0).getRowCount());
+        assertEquals(100, localResults.get(1).getRowCount());
+    }
+
     /** {@inheritDoc} */
     @Test
     @Override public void testLazyQueryWithGroupByIndexedColAndDistinctAggregates() {
