@@ -78,7 +78,7 @@
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
-            <version>${curator.version}</version>
+            <version>${curator.test.version}</version>
             <scope>test</scope>
             <!-- https://github.com/confluentinc/kafka-connect-elasticsearch/issues/143 -->
             <exclusions>
