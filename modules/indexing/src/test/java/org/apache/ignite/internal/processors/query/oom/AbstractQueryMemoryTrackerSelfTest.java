@@ -44,6 +44,7 @@ import org.h2.engine.Session;
 import org.h2.expression.Expression;
 import org.h2.result.H2BaseLocalResult;
 import org.h2.result.LocalResult;
+import org.junit.Ignore;
 import org.junit.Test;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -371,9 +372,10 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
 
     /** Check GROUP BY operation on indexed col. */
     @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-19071")
     public void testQueryWithGroupByPrimaryKey() throws Exception {
-        //TODO: GG-19071: make next test pass without hint.
-        execQuery("select K.indexed, sum(K.id) from K USE INDEX (K_IDX) GROUP BY K.indexed", true);
+        //TODO: GG-19071: make next query use correct index (K_IDX instead of primary).
+        execQuery("select K.indexed, sum(K.id) from K GROUP BY K.indexed", true);
 
         assertEquals(0, localResults.size());
     }
@@ -396,7 +398,7 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
 
         // Local result is quite small.
         assertEquals(1, localResults.size());
-        assertTrue(maxMem > localResults.get(0).memoryReserved());
+        assertTrue(maxMem > localResults.get(0).memoryReserved() + 1000);
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
@@ -407,7 +409,7 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
 
         // Local result is quite small.
         assertEquals(1, localResults.size());
-        assertTrue(maxMem > localResults.get(0).memoryReserved());
+        assertTrue(maxMem > localResults.get(0).memoryReserved() + 1000);
         assertTrue(100 > localResults.get(0).getRowCount());
     }
 
@@ -428,6 +430,7 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
             "GROUP BY K.indexed ORDER BY a DESC", true);
 
         assertEquals(1, localResults.size());
+        assertTrue(maxMem < localResults.get(0).memoryReserved() + 1000);
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
@@ -447,6 +450,9 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
     public void testQueryWithDistinctAndLowCardinality() throws Exception {
         // Distinct on indexed column with small cardinality.
         execQuery("select DISTINCT K.grp_indexed from K", false);
+
+        assertEquals(1, localResults.size());
+        assertEquals(100, localResults.get(0).getRowCount());
     }
 
     /** Check query failure with DISTINCT constraint. */
@@ -454,6 +460,9 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
     public void testQueryWithDistinctAndHighCardinality() throws Exception {
         // Distinct on indexed column with unique values.
         checkQueryExpectOOM("select DISTINCT K.id from K", true);
+
+        assertEquals(1, localResults.size());
+        assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
     /** Check HashJoin with large table. */
@@ -471,6 +480,16 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
         finally {
             GridTestUtils.setFieldValue(H2Utils.class, "enableHashJoin", false);
         }
+    }
+
+    /** Check Join with large table. */
+    @Test
+    public void testJoinWithLargeTable() throws Exception {
+        maxMem = 512 * KB;
+
+        execQuery("select * from T, K where T.id = K.grp_indexed", true);
+
+        assertEquals(0, localResults.size());
     }
 
     /** Check query failure due to global memory quota exceeded. */
