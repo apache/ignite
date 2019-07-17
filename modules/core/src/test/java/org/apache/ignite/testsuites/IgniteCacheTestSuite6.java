@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheIgniteOutOfMemoryExceptionTest;
 import org.apache.ignite.internal.processors.cache.CacheNoAffinityExchangeTest;
 import org.apache.ignite.internal.processors.cache.ClientFastReplyCoordinatorFailureTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
@@ -100,6 +101,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
+        suite.addTestSuite(CacheIgniteOutOfMemoryExceptionTest.class);
 
         suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
         suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);

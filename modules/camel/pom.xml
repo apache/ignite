@@ -35,7 +35,7 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <guava.version>18.0</guava.version>
+        <guava.version>25.1-jre</guava.version>
         <okhttp.version>2.5.0</okhttp.version>
     </properties>
 

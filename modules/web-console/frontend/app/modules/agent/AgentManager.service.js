@@ -399,7 +399,7 @@ export default class AgentManager {
      * @private
      */
     _sendToAgent(event, payload = {}) {
-        if (!this.socket)
+        if (!this.socket || !this.socket.connected)
             return this.$q.reject('Failed to connect to server');
 
         const latch = this.$q.defer();
