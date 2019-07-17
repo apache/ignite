@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -130,11 +131,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerSupplyMessage(GridDhtPartitionSupplyMessage s) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void handleSupplyMessage(UUID id, GridDhtPartitionSupplyMessage s) {
         // No-op.
     }
@@ -193,13 +189,8 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void pause() {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resume() {
-        // No-op
+    @Override public Lock lock() {
+        return null;
     }
 
     /** {@inheritDoc} */

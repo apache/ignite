@@ -615,13 +615,14 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * Guarantees that "last" updates will not cause partition owning before orher batches
+     * for same partition are applied.
+     *
      * @param supplyMsg Supply message.
      */
-    public boolean registerSupplyMessage(
-        final GridDhtPartitionSupplyMessage supplyMsg) {
+    public boolean prepareSupplyMessage(final GridDhtPartitionSupplyMessage supplyMsg) {
         final RebalanceFuture fut = rebalanceFut;
 
-        // Topology already changed (for the future that supply message based on).
         if (!topologyChanged(fut) && fut.isActual(supplyMsg.rebalanceId())) {
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
                 int p = e.getKey();
@@ -781,8 +782,12 @@ public class GridDhtPartitionDemander {
                                 if (last) {
                                     long queued = fut.queued.get(p).sum();
 
-                                    while (!fut.isDone() && fut.processed.get(p).sum() != (queued - 1))
+                                    while (fut.processed.get(p).sum() != (queued - 1)) {
+                                        if (topologyChanged(fut) || !fut.isActual(supplyMsg.rebalanceId()))
+                                            return;
+
                                         U.sleep(1); // Wait untill other batches for same patrition processed.
+                                    }
 
                                     fut.partitionDone(nodeId, p, true);
 

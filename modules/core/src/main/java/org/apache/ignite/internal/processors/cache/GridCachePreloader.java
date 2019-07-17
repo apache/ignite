@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -168,13 +169,6 @@ public interface GridCachePreloader {
     public void unwindUndeploys();
 
     /**
-     * Registers Supply message.
-     *
-     * @param s Supply message.
-     */
-    public boolean registerSupplyMessage(final GridDhtPartitionSupplyMessage s);
-
-    /**
      * Handles Supply message.
      *
      * @param id Node Id.
@@ -202,14 +196,9 @@ public interface GridCachePreloader {
     public void dumpDebugInfo();
 
     /**
-     *  Pause preloader.
+     *  Preloader's lock.
      */
-    public void pause();
-
-    /**
-     * Resume preloader.
-     */
-    public void resume();
+    public Lock lock();
 
     /**
      * Rebalance timeout for supply and demand messages in milliseconds.

@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.configuration.FactoryBuilder;
@@ -3147,11 +3148,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cachesToStopByGrp -> {
                         CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
 
-                        if (gctx != null)
-                            gctx.preloader().pause();
+                        Lock lock = null;
+
+                        if (gctx != null) {
+                            lock = gctx.preloader().lock();
+
+                            lock.lock();
+                        }
 
                         try {
-
                             if (gctx != null) {
                                 final String msg = "Failed to wait for topology update, cache group is stopping.";
 
@@ -3175,8 +3180,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             }
                         }
                         finally {
-                            if (gctx != null)
-                                gctx.preloader().resume();
+                            if (lock != null)
+                                lock.unlock();
                         }
 
                         return null;

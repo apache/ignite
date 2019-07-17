@@ -20,9 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,12 +80,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** Demand lock. */
     private final ReadWriteLock demandLock = new ReentrantReadWriteLock();
-
-    /** */
-    private boolean paused;
-
-    /** */
-    private Queue<T2<UUID, GridDhtPartitionSupplyMessage>> pausedDemanderQueue = new ConcurrentLinkedQueue<>();
 
     /** */
     private boolean stopped;
@@ -362,45 +354,26 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerSupplyMessage(final GridDhtPartitionSupplyMessage s) {
-        if (!enterBusy())
-            return false;
-
-        try {
-            demandLock.readLock().lock();
-
-            try {
-               return demander.registerSupplyMessage(s);
-            }
-            finally {
-                demandLock.readLock().unlock();
-            }
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void handleSupplyMessage(UUID id, final GridDhtPartitionSupplyMessage s) {
-        if (!enterBusy())
-            return;
+        if (demander.prepareSupplyMessage(s)) {
+            ctx.kernalContext().closure().runLocalSafe(() -> {
+                if (!enterBusy())
+                    return;
 
-        try {
-            demandLock.readLock().lock();
+                try {
+                    demandLock.readLock().lock();
 
-            try {
-                if (paused)
-                    pausedDemanderQueue.add(new T2<>(id, s));
-                else
-                    demander.handleSupplyMessage(id, s);
-            }
-            finally {
-                demandLock.readLock().unlock();
-            }
-        }
-        finally {
-            leaveBusy();
+                    try {
+                        demander.handleSupplyMessage(id, s);
+                    }
+                    finally {
+                        demandLock.readLock().unlock();
+                    }
+                }
+                finally {
+                    leaveBusy();
+                }
+            }, GridIoPolicy.REBALANCE_POOL);
         }
     }
 
@@ -603,42 +576,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void pause() {
-        demandLock.writeLock().lock();
-
-        try {
-            paused = true;
-        }
-        finally {
-            demandLock.writeLock().unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resume() {
-        demandLock.writeLock().lock();
-
-        try {
-            final List<T2<UUID, GridDhtPartitionSupplyMessage>> msgToProc =
-                new ArrayList<>(pausedDemanderQueue);
-
-            pausedDemanderQueue.clear();
-
-            final GridDhtPreloader preloader = this;
-
-            ctx.kernalContext().closure().runLocalSafe(() -> msgToProc.forEach(
-                m -> preloader.handleSupplyMessage(m.get1(), m.get2())
-            ), GridIoPolicy.SYSTEM_POOL);
-
-            paused = false;
-        }
-        finally {
-            demandLock.writeLock().unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dumpDebugInfo() {
-        // No-op
+    @Override public Lock lock() {
+        return demandLock.writeLock();
     }
 }

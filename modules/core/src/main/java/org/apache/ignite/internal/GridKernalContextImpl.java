@@ -391,6 +391,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService rebalanceExecSvc;
+
+    /** */
+    @GridToStringExclude
     private Map<String, ? extends ExecutorService> customExecSvcs;
 
     /** */
@@ -502,6 +506,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
+        ExecutorService rebalanceExecSvc,
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins,
         IgnitePredicate<String> clsFilter,
@@ -531,6 +536,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.callbackExecSvc = callbackExecSvc;
         this.qryExecSvc = qryExecSvc;
         this.schemaExecSvc = schemaExecSvc;
+        this.rebalanceExecSvc = rebalanceExecSvc;
         this.customExecSvcs = customExecSvcs;
         this.workersRegistry = workerRegistry;
         this.hnd = hnd;
@@ -1144,6 +1150,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getSchemaExecutorService() {
         return schemaExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getRebalanceExecutorService() {
+        return rebalanceExecSvc;
     }
 
     /** {@inheritDoc} */

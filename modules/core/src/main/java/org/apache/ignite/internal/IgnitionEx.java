@@ -133,10 +133,10 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
@@ -1570,6 +1570,9 @@ public class IgnitionEx {
         /** Query executor service. */
         private ThreadPoolExecutor schemaExecSvc;
 
+        /** Query executor service. */
+        private ThreadPoolExecutor rebalanceExecSvc;
+
         /** Executor service. */
         private Map<String, ThreadPoolExecutor> customExecSvcs;
 
@@ -1960,6 +1963,18 @@ public class IgnitionEx {
 
             schemaExecSvc.allowCoreThreadTimeOut(true);
 
+            rebalanceExecSvc = new IgniteThreadPoolExecutor(
+                "rebalance",
+                cfg.getIgniteInstanceName(),
+                0,
+                cfg.getRebalanceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.REBALANCE_POOL,
+                oomeHnd);
+
+            rebalanceExecSvc.allowCoreThreadTimeOut(true);
+
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 
@@ -2008,6 +2023,7 @@ public class IgnitionEx {
                     callbackExecSvc,
                     qryExecSvc,
                     schemaExecSvc,
+                    rebalanceExecSvc,
                     customExecSvcs,
                     new CA() {
                         @Override public void apply() {
@@ -2648,6 +2664,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), schemaExecSvc, log);
 
             schemaExecSvc = null;
+
+            U.shutdownNow(getClass(), rebalanceExecSvc, log);
+
+            rebalanceExecSvc = null;
 
             U.shutdownNow(getClass(), stripedExecSvc, log);
 
