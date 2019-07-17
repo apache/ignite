@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,6 +45,9 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     /** Creator node. */
     private final TcpDiscoveryNode creatorNode;
 
+    /** Creator node addresses. */
+    private final Collection<InetSocketAddress> creatorNodeAddrs;
+
     /** Failed node id. */
     private final UUID failedNodeId;
 
@@ -60,17 +65,22 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
 
         this.creatorNode = creatorNode;
         this.failedNodeId = failedNodeId;
+        this.creatorNodeAddrs = null;
     }
 
     /**
-     * @param msg Message to copy.
+     * Constructor.
+     *
+     * @param creatorNodeAddrs Addresses of creator node, used to be able not to serialize node in message.
+     * @param creatorNodeId Creator node ID.
+     * @param failedNodeId Failed node id.
      */
-    public TcpDiscoveryStatusCheckMessage(TcpDiscoveryStatusCheckMessage msg) {
-        super(msg);
+    public TcpDiscoveryStatusCheckMessage(UUID creatorNodeId, Collection<InetSocketAddress> creatorNodeAddrs, UUID failedNodeId) {
+        super(creatorNodeId);
 
-        this.creatorNode = msg.creatorNode;
-        this.failedNodeId = msg.failedNodeId;
-        this.status = msg.status;
+        this.creatorNodeAddrs = creatorNodeAddrs;
+        this.creatorNode = null;
+        this.failedNodeId = failedNodeId;
     }
 
     /**
@@ -80,6 +90,15 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      */
     public TcpDiscoveryNode creatorNode() {
         return creatorNode;
+    }
+
+    /**
+     * Gets creator node addresses.
+     *
+     * @return Creator node addresses.
+     */
+    public Collection<InetSocketAddress> creatorNodeAddrs() {
+        return creatorNodeAddrs;
     }
 
     /**
@@ -119,7 +138,7 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
 
         TcpDiscoveryStatusCheckMessage other = (TcpDiscoveryStatusCheckMessage)obj;
 
-        return F.eqNodes(other.creatorNode, creatorNode) &&
+        return F.eq(other.creatorNodeId(), creatorNodeId()) &&
             F.eq(other.failedNodeId, failedNodeId) &&
             status == other.status;
     }
