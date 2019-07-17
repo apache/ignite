@@ -139,6 +139,8 @@ public class WebSocketsManager {
      */
     public void onBrowserConnectionClosed(WebSocketSession ws) {
         browsers.remove(ws);
+
+        requests.values().remove(ws);
     }
 
     /**
@@ -148,7 +150,7 @@ public class WebSocketsManager {
         WebSocketSession ws = requests.remove(evt.getRequestId());
 
         if (ws == null) {
-            log.warn("Failed to send event to browser: " + evt);
+            log.warn("Failed to send response to browser, connection was already closed: " + evt);
 
             return;
         }
@@ -426,6 +428,12 @@ public class WebSocketsManager {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void sendMessage(WebSocketSession ws, WebSocketEvent evt) throws IOException {
+        if (!ws.isOpen()) {
+            log.warn("Failed to send event because websocket is already closed [session=" + ws + ", evt=" + evt + "]");
+
+            return;
+        }
+
         synchronized (ws) {
             ws.sendMessage(new TextMessage(toJson(evt)));
         }
