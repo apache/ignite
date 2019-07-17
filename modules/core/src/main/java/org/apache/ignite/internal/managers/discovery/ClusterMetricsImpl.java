@@ -492,9 +492,16 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     /** {@inheritDoc} */
     @Override public long getCurrentPmeDuration() {
         GridDhtPartitionsExchangeFuture future = ctx.cache().context().exchange().lastTopologyFuture();
-        
+
         return (future == null || future.isDone()) ?
             0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - future.getStartTime());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCurrentPmeBlocksOperations() {
+        GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
+
+        return (fut == null || fut.isDone() || fut.firstEvent() == null) ? false : fut.changedAffinity();
     }
 
     /**

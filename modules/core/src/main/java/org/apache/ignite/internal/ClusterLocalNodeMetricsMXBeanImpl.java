@@ -340,6 +340,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isCurrentPmeBlocksOperations() {
+        return node.metrics().isCurrentPmeBlocksOperations();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
         if (!node.isClient() && !node.isDaemon()) {
             List<? extends BaselineNode> baselineNodes = discoMgr.baselineNodes(discoMgr.topologyVersionEx());

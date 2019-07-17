@@ -698,7 +698,16 @@ public interface ClusterMetrics {
     /**
      * Gets execution duration for current partition map exchange in milliseconds.
      *
-     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} if there is no running PME.
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} if there is no
+     * running PME.
      */
     public long getCurrentPmeDuration();
+
+    /**
+     * Checks that current PME blocks operations.
+     *
+     * @return {@code True} if current partition map exchange blocks operations. {@code False} If current partition map
+     * exchange don't block operations or there is no running PME.
+     */
+    public boolean isCurrentPmeBlocksOperations();
 }

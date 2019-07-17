@@ -260,6 +260,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** */
     private long currentPmeDuration = -1;
 
+    /** */
+    private boolean isCurrentPmeBlocksOperations;
+
     /**
      * Create empty snapshot.
      */
@@ -334,6 +337,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         heapTotal = 0;
         totalNodes = nodes.size();
         currentPmeDuration = 0;
+        isCurrentPmeBlocksOperations = false;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -412,6 +416,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             avgLoad += m.getCurrentCpuLoad();
 
             currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
+
+            if (!node.isClient())
+                isCurrentPmeBlocksOperations = isCurrentPmeBlocksOperations || m.isCurrentPmeBlocksOperations();
         }
 
         curJobExecTime /= size;
@@ -972,6 +979,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return currentPmeDuration;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isCurrentPmeBlocksOperations() {
+        return isCurrentPmeBlocksOperations;
+    }
+
     /**
      * Sets available processors.
      *
@@ -1216,6 +1228,15 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
+     * Sets flag indicating whether to current partition map exchange blocks operations.
+     *
+     * @param isCurrentPmeBlocksOperations Flag indicating whether to current partition map exchange blocks operations.
+     */
+    public void setCurrentPmeBlocksOperations(boolean isCurrentPmeBlocksOperations) {
+        this.isCurrentPmeBlocksOperations = isCurrentPmeBlocksOperations;
+    }
+
+    /**
      * @param neighborhood Cluster neighborhood.
      * @return CPU count.
      */
@@ -1368,6 +1389,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putInt(metrics.getTotalNodes());
         buf.putLong(metrics.getTotalJobsExecutionTime());
         buf.putLong(metrics.getCurrentPmeDuration());
+        buf.put((byte)(metrics.isCurrentPmeBlocksOperations() ? 1 : 0));
 
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
@@ -1454,6 +1476,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             metrics.setCurrentPmeDuration(buf.getLong());
         else
             metrics.setCurrentPmeDuration(0);
+
+        if (buf.remaining() >= 1)
+            metrics.setCurrentPmeBlocksOperations(buf.get() > 0);
+        else
+            metrics.setCurrentPmeBlocksOperations(false);
 
         return metrics;
     }
