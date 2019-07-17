@@ -74,7 +74,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         cleanPersistenceDir();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_MMAP, Boolean.toString(mmap()));
+        System.setProperty(IGNITE_WAL_MMAP, Boolean.toString(mmap()));
+        System.setProperty(IGNITE_DISABLE_WAL_DURING_REBALANCING, "false");
     }
 
     /** {@inheritDoc} */
@@ -83,7 +84,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         cleanPersistenceDir();
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_MMAP);
+        System.clearProperty(IGNITE_WAL_MMAP);
+        System.clearProperty(IGNITE_DISABLE_WAL_DURING_REBALANCING);
 
         super.afterTest();
     }
