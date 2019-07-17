@@ -25,9 +25,6 @@ import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -49,17 +46,15 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Tests error recovery while node flushing
  */
 public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final String TEST_CACHE = "testCache";
-
     /** */
     private static final int ITRS = 2000;
 
@@ -116,22 +111,23 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         cfg.setConsistentId(gridName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration(TEST_CACHE)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+        cfg.setCacheConfiguration(
+            new CacheConfiguration(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(TRANSACTIONAL)
                 .setBackups(1)
-                .setRebalanceMode(CacheRebalanceMode.SYNC)
-                .setAffinity(new RendezvousAffinityFunction(false, 32));
+                .setRebalanceMode(SYNC)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+        );
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
-                .setWalMode(this.walMode())
-                .setWalSegmentSize(50_000)
-                .setWalBufferSize(50_000);
-
-        cfg.setDataStorageConfiguration(memCfg);
+                    new DataRegionConfiguration()
+                        .setMaxSize(2048L * 1024 * 1024)
+                        .setPersistenceEnabled(true))
+                .setWalMode(walMode())
+                .setWalSegmentSize(512 * 1024)
+                .setWalBufferSize(512 * 1024));
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
@@ -159,17 +155,17 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     /**
      * @throws Exception if failed.
      */
-    public void failWhilePut(boolean failWhileStart) throws Exception {
-        final Ignite grid = startGridsMultiThreaded(gridCount());
+    private void failWhilePut(boolean failWhileStart) throws Exception {
+        Ignite ig = startGrids(gridCount());
 
-        grid.cluster().active(true);
+        ig.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
+        IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ITRS; i++) {
-            while (true) {
-                try (Transaction tx = grid.transactions().txStart(
-                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
+            while (!Thread.currentThread().isInterrupted()) {
+                try (Transaction tx = ig.transactions().txStart(
+                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
                     cache.put(i, "testValue" + i);
 
                     tx.commit();
@@ -190,7 +186,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                     setFileIOFactory(grid(gridCount()).context().cache().context().wal());
 
-                    grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
+                    ig.cluster().setBaselineTopology(ig.cluster().topologyVersion());
 
                     awaitPartitionMapExchange();
                 }
@@ -206,7 +202,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         // We should await successful stop of node.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return grid.cluster().nodes().size() == gridCount();
+                return ig.cluster().nodes().size() == gridCount();
             }
         }, getTestTimeout());
 
@@ -216,11 +212,9 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         Ignite grid0 = startGrids(gridCount() + 1);
 
-        setFileIOFactory(grid(gridCount()).context().cache().context().wal());
-
         grid0.cluster().active(true);
 
-        cache = grid0.cache(TEST_CACHE);
+        cache = grid0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ITRS; i++)
             assertEquals(cache.get(i), "testValue" + i);
@@ -261,7 +255,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
             return new FileIODecorator(delegate) {
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (fail != null && fail.get())
+                    if (fail != null && file.getName().endsWith(".wal") && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
@@ -269,7 +263,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                 /** {@inheritDoc} */
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-                    if (fail != null && fail.get())
+                    if (fail != null && file.getName().endsWith(".wal") && fail.get())
                         throw new IOException("No space left on deive");
 
                     return delegate.map(sizeBytes);
