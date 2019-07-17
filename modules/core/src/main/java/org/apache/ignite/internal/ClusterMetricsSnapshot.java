@@ -93,7 +93,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         4/*outbound messages queue size*/ +
         4/*total nodes*/ +
         8/*total jobs execution time*/ +
-        8/*current PME time*/;
+        8/*current PME time*/ +
+        1/*is current PME blocks operations*/;
 
     /** */
     private long lastUpdateTime = -1;
