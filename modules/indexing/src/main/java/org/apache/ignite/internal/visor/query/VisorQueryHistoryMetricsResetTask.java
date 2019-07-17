@@ -17,17 +17,18 @@
 package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * Reset query detailed metrics from cache context only
- * This task should be used to reset query metrics when indexing feature not available.
+ * Reset query detail metrics.
  */
 @GridInternal
-public class VisorQueryResetDetailMetricsTask extends VisorOneNodeTask<Void, Void> {
+public class VisorQueryHistoryMetricsResetTask extends VisorOneNodeTask<Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,6 +54,11 @@ public class VisorQueryResetDetailMetricsTask extends VisorOneNodeTask<Void, Voi
 
         /** {@inheritDoc} */
         @Override protected Void run(Void arg) {
+            GridQueryIndexing indexing = ignite.context().query().getIndexing();
+
+            if (indexing instanceof IgniteH2Indexing)
+                ((IgniteH2Indexing)indexing).runningQueryManager().resetQueryHistoryMetrics();
+
             for (String cacheName : ignite.cacheNames()) {
                 IgniteCache cache = ignite.cache(cacheName);
 
