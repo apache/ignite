@@ -51,7 +51,7 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
         it("AVG - DOUBLE") {
             val df = igniteSession.sql("SELECT AVG(val) FROM numbers WHERE id <= 3")
 
-            checkOptimizationResult(df, "SELECT AVG(val) FROM numbers WHERE id IS NOT NULL and id <= 3")
+            checkOptimizationResult(df, "SELECT AVG(val) FROM numbers WHERE id <= 3")
 
             val data = Tuple1(.5)
 
@@ -81,7 +81,7 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
         it("SUM - DOUBLE") {
             val df = igniteSession.sql("SELECT SUM(val) FROM numbers WHERE id <= 3")
 
-            checkOptimizationResult(df, "SELECT SUM(val) FROM numbers WHERE id IS NOT NULL and id <= 3")
+            checkOptimizationResult(df, "SELECT SUM(val) FROM numbers WHERE id <= 3")
 
             val data = Tuple1(1.5)
 
