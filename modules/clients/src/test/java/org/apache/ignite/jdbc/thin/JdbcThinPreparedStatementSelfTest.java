@@ -797,146 +797,146 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     public void testNotSupportedTypes() throws Exception {
         stmt = conn.prepareStatement("");
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setArray(1, null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setAsciiStream(1, null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setAsciiStream(1, null, 0);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setAsciiStream(1, null, 0L);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setBinaryStream(1, null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setBinaryStream(1, null, 0);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setBinaryStream(1, null, 0L);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setBlob(1, (Blob)null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setBlob(1, (InputStream)null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setBlob(1, null, 0L);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setCharacterStream(1, null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setCharacterStream(1, null, 0);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setCharacterStream(1, null, 0L);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setClob(1, (Clob)null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setClob(1, (Reader)null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setClob(1, null, 0L);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setNCharacterStream(1, null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setNCharacterStream(1, null, 0L);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setNClob(1, (NClob)null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setNClob(1, (Reader)null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setNClob(1, null, 0L);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setRowId(1, null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setRef(1, null);
             }
         });
 
-        checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+        checkNotSupported(new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 stmt.setSQLXML(1, null);
             }
         });

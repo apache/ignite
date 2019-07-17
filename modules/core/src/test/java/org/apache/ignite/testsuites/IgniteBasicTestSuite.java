@@ -136,6 +136,8 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTest(IgnitePlatformsTestSuite.suite());
 
+        suite.addTest(SecurityTestSuite.suite());
+
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
         suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
