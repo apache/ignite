@@ -2386,6 +2386,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void createRows(Collection<GridCacheEntryInfo> infos,
+            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
+            assert ctx.database().checkpointLockIsHeldByThread();
+
+            CacheDataStore delegate = init0(false);
+
+            delegate.createRows(infos, rmvPred);
+        }
+
+        /** {@inheritDoc} */
         @Override public int cleanup(GridCacheContext cctx,
             @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
@@ -2408,16 +2418,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             delegate.invoke(cctx, key, c);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void createRows(Collection<GridCacheEntryInfo> infos,
-            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
-            assert ctx.database().checkpointLockIsHeldByThread();
-
-            CacheDataStore delegate = init0(false);
-
-            delegate.createRows(infos, rmvPred);
         }
 
         /** {@inheritDoc} */

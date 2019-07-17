@@ -56,8 +56,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -1004,6 +1002,7 @@ public class GridDhtPartitionDemander {
         GridCacheContext cctx,
         @Nullable CacheDataRow row
     ) throws IgniteCheckedException {
+        assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
         try {
@@ -1021,10 +1020,10 @@ public class GridDhtPartitionDemander {
                 if (cached.initialValue(
                     entry.value(),
                     entry.version(),
-                    cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccVersion() : null,
-                    cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccVersion() : null,
-                    cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccTxState() : TxState.NA,
-                    cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccTxState() : TxState.NA,
+                    null,
+                    null,
+                    TxState.NA,
+                    TxState.NA,
                     entry.ttl(),
                     entry.expireTime(),
                     true,
