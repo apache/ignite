@@ -16,6 +16,11 @@
 
 package org.apache.ignite.console.websocket;
 
+/**
+ * Websocket event with payload.
+ *
+ * @param <T> payload type.
+ */
 public interface WebSocketEvent<T> {
     /**
      * @return Request ID.

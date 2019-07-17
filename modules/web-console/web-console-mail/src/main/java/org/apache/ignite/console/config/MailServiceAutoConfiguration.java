@@ -32,7 +32,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.javamail.JavaMailSender;
 
-/** */
+/**
+ * Mail service auto configuration.
+ */
 @Configuration
 @Conditional(MailServiceAutoConfiguration.MailSenderCondition.class)
 @ConditionalOnClass({ MimeMessage.class, MimeType.class, MailSender.class, MailService.class })
