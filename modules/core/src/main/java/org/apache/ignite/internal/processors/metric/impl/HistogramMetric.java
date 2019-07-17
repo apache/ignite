@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * Last element will contains count of measurements bigger then most right value of bounds.
  */
 public class HistogramMetric extends AbstractMetric implements ObjectMetric<long[]> {
-    /** Value for disabled metric */
+    /** Value for disabled metric. */
     private static final long[] EMPTY_VAL = new long[0];
 
     /** Holder of measurements. */
