@@ -63,6 +63,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -691,19 +692,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cc.isEncryptionEnabled() && !ctx.clientNode()) {
+            StringBuilder cacheSpec = new StringBuilder("[cacheName=").append(cc.getName())
+                .append(", groupName=").append(cc.getGroupName())
+                .append(", cacheType=").append(cacheType)
+                .append(']');
+
             if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
                 throw new IgniteCheckedException("Using encryption is not allowed" +
-                    " for not persistent cache  [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
-                    ", cacheType=" + cacheType + "]");
+                    " for not persistent cache " + cacheSpec.toString());
             }
 
             EncryptionSpi encSpi = c.getEncryptionSpi();
 
             if (encSpi == null) {
                 throw new IgniteCheckedException("EncryptionSpi should be configured to use encrypted cache " +
-                    "[cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
-                    ", cacheType=" + cacheType + "]");
+                    cacheSpec.toString());
             }
+
+            if (cc.getDiskPageCompression() != DiskPageCompression.DISABLED)
+                throw new IgniteCheckedException("Encryption cannot be used with disk page compression " +
+                    cacheSpec.toString());
         }
     }
 
@@ -2444,23 +2452,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean affNode = checkForAffinityNode(desc, reqNearCfg, ccfg);
 
-        CacheGroupContext grp = getOrCreateCacheGroupContext(desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName(), false);
+        ctx.cache().context().database().checkpointReadLock();
 
-        GridCacheContext cacheCtx = createCacheContext(ccfg,
-            grp,
-            null,
-            desc,
-            exchTopVer,
-            cacheObjCtx,
-            affNode,
-            true,
-            disabledAfterStart,
-            false
-        );
+        try {
+            CacheGroupContext grp = getOrCreateCacheGroupContext(
+                desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName(), false);
 
-        initCacheContext(cacheCtx, ccfg);
+            GridCacheContext cacheCtx = createCacheContext(ccfg,
+                grp,
+                null,
+                desc,
+                exchTopVer,
+                cacheObjCtx,
+                affNode,
+                true,
+                disabledAfterStart,
+                false
+            );
 
-        return cacheCtx;
+            initCacheContext(cacheCtx, ccfg);
+
+            return cacheCtx;
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -2723,28 +2739,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         preparePageStore(desc, true);
 
-        CacheGroupContext grp = getOrCreateCacheGroupContext(
-            desc,
-            AffinityTopologyVersion.NONE,
-            cacheObjCtx,
-            true,
-            cfg.getGroupName(),
-            true
-        );
+        CacheGroupContext grpCtx;
+        GridCacheContext cacheCtx;
 
-        GridCacheContext cacheCtx = createCacheContext(cfg,
-            grp,
-            null,
-            desc,
-            AffinityTopologyVersion.NONE,
-            cacheObjCtx,
-            true,
-            true,
-            false,
-            true
-        );
+        ctx.cache().context().database().checkpointReadLock();
 
-        initCacheContext(cacheCtx, cfg);
+        try {
+            grpCtx = getOrCreateCacheGroupContext(
+                desc,
+                AffinityTopologyVersion.NONE,
+                cacheObjCtx,
+                true,
+                cfg.getGroupName(),
+                true
+            );
+
+            cacheCtx = createCacheContext(cfg,
+                grpCtx,
+                null,
+                desc,
+                AffinityTopologyVersion.NONE,
+                cacheObjCtx,
+                true,
+                true,
+                false,
+                true
+            );
+
+            initCacheContext(cacheCtx, cfg);
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
 
         cacheCtx.onStarted();
 
@@ -2753,7 +2779,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (dataRegion == null && ctx.config().getDataStorageConfiguration() != null)
             dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
-        grp.onCacheStarted(cacheCtx);
+        grpCtx.onCacheStarted(cacheCtx);
 
         ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, false),
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
