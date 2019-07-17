@@ -28,7 +28,6 @@ import org.apache.ignite.internal.metric.IoStatisticsSelfTest;
 import org.apache.ignite.internal.metric.JmxExporterSpiTest;
 import org.apache.ignite.internal.metric.LogExporterSpiTest;
 import org.apache.ignite.internal.metric.MetricsDisableEnableTest;
-import org.apache.ignite.internal.metric.MetricsConfigurationTest;
 import org.apache.ignite.internal.metric.MetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
@@ -114,7 +113,6 @@ public class IgniteCacheTestSuite9 {
 
         // Metrics.
         GridTestUtils.addTestIfNeeded(suite, MetricsSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, MetricsConfigurationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MetricsDisableEnableTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsAddRemoveTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, JmxExporterSpiTest.class, ignoredTests);

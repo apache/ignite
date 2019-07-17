@@ -507,18 +507,6 @@ public interface IgniteMXBean {
     public void resetMetrics(String registry);
 
     /**
-     * Change metric configuration.
-     *
-     * @param registry Metrics registry name.
-     * @param name Metric name.
-     * @param config Configuration string.
-     */
-    @MXBeanDescription("Configure metric by name.")
-    @MXBeanParametersNames({"registry", "name", "config"})
-    @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "Configuration string."})
-    public void configureMetric(String registry, String name, String config);
-
-    /**
      * Enable metric registry.
      *
      * @param registry Metrics registry name.
