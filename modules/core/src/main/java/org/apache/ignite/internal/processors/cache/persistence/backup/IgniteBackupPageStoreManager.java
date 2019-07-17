@@ -93,13 +93,10 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
     /** TODO: CAS on list with temporary page stores */
     private final ConcurrentMap<GroupPartitionId, List<PartitionDeltaPageStore>> processingParts = new ConcurrentHashMap<>();
 
+    //// BELOW IS NOT USED
+
     /** Collection of backup stores indexed by [grpId, partId] key. */
     private final Map<GroupPartitionId, PartitionDeltaPageStore> backupStores = new ConcurrentHashMap<>();
-
-    /** Mutex to perform computations. */
-    private final Object mux = new Object();
-
-    //// BELOW IS NOT USED
 
     /** Map of registered cache backup processes and their corresponding contexts. */
     private final ConcurrentMap<String, BackupContext> backupMap = new ConcurrentHashMap<>();
