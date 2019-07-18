@@ -101,13 +101,6 @@ public interface Command<T> {
     public void printUsage(Logger logger);
 
     /**
-     * @return String which reflect of command-specific arguments in human-friendly format.
-     */
-    public default String argumentString() {
-        return arg() == null? "" : arg().toString();
-    }
-
-    /**
      * @return command name.
      */
     String name();

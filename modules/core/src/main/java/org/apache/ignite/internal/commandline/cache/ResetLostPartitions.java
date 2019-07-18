@@ -53,11 +53,6 @@ public class ResetLostPartitions implements Command<Set<String>> {
     }
 
     /** {@inheritDoc} */
-    @Override public String argumentString() {
-        return "caches=" + caches;
-    }
-
-    /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         CacheResetLostPartitionsTaskArg taskArg = new CacheResetLostPartitionsTaskArg(caches);
 
