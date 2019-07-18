@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
@@ -29,14 +30,14 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  */
 public class ClusterReadOnlyModeEnableCommand implements Command<Void> {
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             client.state().readOnly(true);
 
-            logger.log("Cluster read-only mode enabled");
+            log.info("Cluster read-only mode enabled");
         }
         catch (Throwable e) {
-            logger.log("Failed to enable read-only mode");
+            log.info("Failed to enable read-only mode");
 
             throw e;
         }
@@ -55,12 +56,17 @@ public class ClusterReadOnlyModeEnableCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage(Logger log) {
         Command.usage(
-            logger,
+            log,
             "Enable read-only mode on active cluster:",
             READ_ONLY_ENABLE,
             optional(CMD_AUTO_CONFIRMATION)
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return READ_ONLY_ENABLE.toCommandName();
     }
 }
