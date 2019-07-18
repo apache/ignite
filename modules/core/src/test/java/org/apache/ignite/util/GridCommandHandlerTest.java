@@ -18,7 +18,6 @@
 package org.apache.ignite.util;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
@@ -45,6 +44,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -52,10 +52,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -114,10 +112,13 @@ import org.junit.Test;
 
 import static java.io.File.separatorChar;
 import static java.util.Arrays.asList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
@@ -133,6 +134,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
  * Command line handler test.
  */
 public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
+
     /** */
     private File defaultDiagnosticDir;
     /** */
@@ -319,21 +321,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
 
-        assertTrue(testOut.toString().contains("garbage not found"));
+        assertContains(log, testOut.toString(), "garbage not found");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
             ignite(0).localNode().id().toString(), "--port", "11212"));
 
-        assertTrue(testOut.toString().contains("garbage not found"));
+        assertContains(log, testOut.toString(), "garbage not found");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
             "groupGarbage", "--port", "11212"));
 
-        assertTrue(testOut.toString().contains("garbage not found"));
+        assertContains(log, testOut.toString(), "garbage not found");
     }
 
     /**
@@ -2778,5 +2780,39 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         catch (IgniteCheckedException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Don't show wal commands by --help in case
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     */
+    @Test
+    public void testHideWalInHelpWhenDisableExperimentalCommand() {
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
+        injectTestSystemOut();
+
+        execute("--help");
+
+        assertNotContains(log, testOut.toString(), WAL.text());
+    }
+
+    /**
+     * Wal commands should ignored and print warning in case
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     * */
+    @Test
+    public void testWalCommandsInCaseDisableExperimentalCommand() {
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
+        injectTestSystemOut();
+
+        String warning = String.format("For use experimental command add %s=true to JVM_OPTS in %s",
+            IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME);
+
+        Stream.of("print", "delete")
+            .peek(c -> testOut.reset())
+            .peek(c -> assertEquals(EXIT_CODE_OK, execute(WAL.text(), c)))
+            .forEach(c -> assertContains(log, testOut.toString(), warning));
     }
 }
