@@ -92,6 +92,9 @@ public class CommonArgParser {
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
+    /** Set of sensitive arguments */
+    private static final Set<String> SENSITIVE_ARGUMENTS = new HashSet<>();
+
     static {
         AUX_COMMANDS.add(CMD_HOST);
         AUX_COMMANDS.add(CMD_PORT);
@@ -115,7 +118,20 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_TRUSTSTORE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
+
+        SENSITIVE_ARGUMENTS.add(CMD_PASSWORD);
+        SENSITIVE_ARGUMENTS.add(CMD_KEYSTORE_PASSWORD);
+        SENSITIVE_ARGUMENTS.add(CMD_TRUSTSTORE_PASSWORD);
     }
+
+    /**
+     * @param arg To check.
+     * @return True if provided argument is among sensitive one and not should be displayed.
+     */
+    public static boolean isSensitiveArgument(String arg) {
+        return SENSITIVE_ARGUMENTS.contains(arg);
+    }
+
 
     /**
      * @param logger Logger.
