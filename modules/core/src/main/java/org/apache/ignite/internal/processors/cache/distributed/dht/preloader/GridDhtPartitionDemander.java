@@ -782,16 +782,15 @@ public class GridDhtPartitionDemander {
                                     if (log.isDebugEnabled())
                                         log.debug("Partition became invalid during rebalancing (will ignore): " + p);
                                 }
-                                finally {
-                                    // If message was last for this partition,
-                                    // then we take ownership.
-                                    if (last) {
-                                        fut.partitionDone(nodeId, p, true);
 
-                                        if (log.isDebugEnabled())
-                                            log.debug("Finished rebalancing partition: " +
-                                                "[" + demandRoutineInfo(topicId, nodeId, supplyMsg) + ", p=" + p + "]");
-                                    }
+                                // If message was last for this partition,
+                                // then we take ownership.
+                                if (last) {
+                                    fut.partitionDone(nodeId, p, true);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Finished rebalancing partition: " +
+                                            "[" + demandRoutineInfo(topicId, nodeId, supplyMsg) + ", p=" + p + "]");
                                 }
                             }
                             finally {
