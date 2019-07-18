@@ -18,4 +18,5 @@
 /**
  * Contains cache store session listener based on Spring transaction management.
  */
+
 package org.apache.ignite.cache.store.spring;

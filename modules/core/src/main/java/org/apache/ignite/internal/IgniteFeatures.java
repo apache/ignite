@@ -61,7 +61,10 @@ public enum IgniteFeatures {
     CLUSTER_READ_ONLY_MODE(9),
 
     /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(11);
+    DISTRIBUTED_METASTORAGE(11),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14);
 
     /**
      * Unique feature identifier.

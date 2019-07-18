@@ -465,8 +465,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 page.lock();
 
-               try {
-                    GridUnsafe.copyMemory(GridUnsafe.bufferAddress(snapshot.pageDataBuffer()), page.address(), pageSize);
+            try {
+                GridUnsafe.copyHeapOffheap(snapshot.pageData(), GridUnsafe.BYTE_ARR_OFF, page.address(), pageSize);
 
                     page.changeHistory().clear();
 
@@ -666,7 +666,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
 
-            int cnt = io.getCount(actualPageAddr);
+            int cnt = io.getMaxCount(actualPageAddr, pageSize);
 
             // Reset lock info as there is no sense to log it into WAL.
             for (int i = 0; i < cnt; i++) {

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains mean squared error impurity measure and calculator.
  */
+
 package org.apache.ignite.ml.tree.impurity.mse;

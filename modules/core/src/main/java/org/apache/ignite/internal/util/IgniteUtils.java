@@ -1075,6 +1075,37 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Convert milliseconds time interval to nanoseconds.
+     *
+     * @param millis Original time interval.
+     * @return Calculated time interval.
+     */
+    public static long millisToNanos(long millis) {
+        return TimeUnit.MILLISECONDS.toNanos(millis);
+    }
+
+    /**
+     * Convert nanoseconds time interval to milliseconds.
+     *
+     * @param nanos Original time interval.
+     * @return Calculated time interval.
+     */
+    public static long nanosToMillis(long nanos) {
+        return TimeUnit.NANOSECONDS.toMillis(nanos);
+    }
+
+    /**
+     * Returns number of milliseconds passed after the given nanos timestamp.
+     *
+     * @param nanos Nanos timestamp.
+     * @return Number of milliseconds passed after the given nanos timestamp.
+     * @see System#nanoTime()
+     */
+    public static long millisSinceNanos(long nanos) {
+        return nanosToMillis(System.nanoTime() - nanos);
+    }
+
+    /**
      * Gets nearest power of 2 larger or equal than v.
      *
      * @param v Value.
@@ -10477,7 +10508,7 @@ public abstract class IgniteUtils {
             if (log != null)
                 U.quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
                     U.readableSize(adjustedWalArchiveSize, false) +
-                    " (to override, use DataStorageConfiguration.setMaxWalArhiveSize)");
+                    " (to override, use DataStorageConfiguration.setMaxWalArchiveSize)");
 
             return adjustedWalArchiveSize;
         }

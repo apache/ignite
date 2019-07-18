@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains LSQR algorithm implementation.
  */
+
 package org.apache.ignite.ml.math.isolve.lsqr;

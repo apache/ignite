@@ -15,24 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+package org.apache.ignite.internal.visor.diagnostic;
 
 /**
- * Test for asynchronous cache entry lock with timeout.
+ * Operation type for {@link VisorPageLocksTask}
  */
-public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
+public enum Operation {
+    /** Dump page locks to file operation. */
+    DUMP_FILE,
+    /** Dump page locks to log. */
+    DUMP_LOG
 }
