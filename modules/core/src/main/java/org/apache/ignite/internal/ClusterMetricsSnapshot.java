@@ -418,6 +418,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
 
+            // Calculate only cluster-wide blocking PME and exclude client join case.
             if (!node.isClient())
                 isCurrentPmeBlocksOperations = isCurrentPmeBlocksOperations || m.isCurrentPmeBlocksOperations();
         }
