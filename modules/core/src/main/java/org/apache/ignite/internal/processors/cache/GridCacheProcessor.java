@@ -3168,50 +3168,50 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             doInParallel(
-                    parallelismLvl,
-                    sharedCtx.kernalContext().getSystemExecutorService(),
-                    cachesToStop.entrySet(),
-                    cachesToStopByGrp -> {
-                        CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
+                parallelismLvl,
+                sharedCtx.kernalContext().getSystemExecutorService(),
+                cachesToStop.entrySet(),
+                cachesToStopByGrp -> {
+                    CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
 
-                        Lock lock = null;
+                    Lock lock = null;
 
+                    if (gctx != null)
+                        lock = gctx.preloader().lock();
+
+                    if (lock != null)
+                        lock.lock();
+
+                    try {
                         if (gctx != null) {
-                            lock = gctx.preloader().lock();
+                            final String msg = "Failed to wait for topology update, cache group is stopping.";
 
-                            lock.lock();
+                            // If snapshot operation in progress we must throw CacheStoppedException
+                            // for correct cache proxy restart. For more details see
+                            // IgniteCacheProxy.cacheException()
+                            gctx.affinity().cancelFutures(new CacheStoppedException(msg));
                         }
 
-                        try {
-                            if (gctx != null) {
-                                final String msg = "Failed to wait for topology update, cache group is stopping.";
+                        for (ExchangeActions.CacheActionData action : cachesToStopByGrp.getValue()) {
+                            stopGateway(action.request());
 
-                                // If snapshot operation in progress we must throw CacheStoppedException
-                                // for correct cache proxy restart. For more details see
-                                // IgniteCacheProxy.cacheException()
-                                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+                            sharedCtx.database().checkpointReadLock();
+
+                            try {
+                                prepareCacheStop(action.request().cacheName(), action.request().destroy());
                             }
-
-                            for (ExchangeActions.CacheActionData action: cachesToStopByGrp.getValue()) {
-                                stopGateway(action.request());
-
-                                sharedCtx.database().checkpointReadLock();
-
-                                try {
-                                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
-                                }
-                                finally {
-                                    sharedCtx.database().checkpointReadUnlock();
-                                }
+                            finally {
+                                sharedCtx.database().checkpointReadUnlock();
                             }
                         }
-                        finally {
-                            if (lock != null)
-                                lock.unlock();
-                        }
-
-                        return null;
                     }
+                    finally {
+                        if (lock != null)
+                            lock.unlock();
+                    }
+
+                    return null;
+                }
             );
         }
         catch (IgniteCheckedException e) {
