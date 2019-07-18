@@ -504,12 +504,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             CacheConfiguration cc = desc.cacheConfiguration();
 
-            CacheFilterEnum cacheFilter = arg.cacheFilterEnum();
-
-            if (cacheFilter == null)
-                cacheFilter = CacheFilterEnum.DEFAULT;
-
-            switch (cacheFilter) {
+            switch (arg.cacheFilterEnum()) {
                 case DEFAULT:
                     return desc.cacheType().userCache() || !F.isEmpty(arg.caches());
 
