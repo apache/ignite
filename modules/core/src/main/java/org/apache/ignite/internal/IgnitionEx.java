@@ -1971,6 +1971,8 @@ public class IgnitionEx {
 
             schemaExecSvc.allowCoreThreadTimeOut(true);
 
+            validateThreadPoolSize(cfg.getRebalanceThreadPoolSize(), "rebalance");
+
             rebalanceExecSvc = new IgniteThreadPoolExecutor(
                 "rebalance",
                 cfg.getIgniteInstanceName(),
