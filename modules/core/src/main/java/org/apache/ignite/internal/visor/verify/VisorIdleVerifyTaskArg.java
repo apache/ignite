@@ -23,10 +23,10 @@ import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Arguments for task {@link VisorIdleVerifyTask}.
- * <br/>
+ * Arguments for task {@link VisorIdleVerifyTask}. <br/>
  */
 public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** */
@@ -71,8 +71,9 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         this.caches = caches;
         this.excludeCaches = excludeCaches;
         this.skipZeros = skipZeros;
-        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
         this.checkCrc = checkCrc;
+
+        cacheFilterEnum(cacheFilterEnum);
     }
 
     /**
@@ -159,10 +160,10 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
             if (protoVer >= V4) {
                 skipZeros = in.readBoolean();
 
-                CacheFilterEnum cfe = CacheFilterEnum.fromOrdinal(in.readByte());
-
-                cacheFilterEnum = (cfe == null ? CacheFilterEnum.DEFAULT : cfe);
+                cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
             }
+
+            cacheFilterEnum(cacheFilterEnum);
         }
     }
 
@@ -196,7 +197,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @return Kind fo cache.
      */
-    public CacheFilterEnum cacheFilterEnum() {
+    @NotNull public CacheFilterEnum cacheFilterEnum() {
         return cacheFilterEnum;
     }
 
