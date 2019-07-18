@@ -1,12 +1,12 @@
 ::
 :: Copyright 2019 GridGain Systems, Inc. and Contributors.
-:: 
+::
 :: Licensed under the GridGain Community Edition License (the "License");
 :: you may not use this file except in compliance with the License.
 :: You may obtain a copy of the License at
-:: 
+::
 ::     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
-:: 
+::
 :: Unless required by applicable law or agreed to in writing, software
 :: distributed under the License is distributed on an "AS IS" BASIS,
 :: WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -166,6 +166,11 @@ if %ERRORLEVEL% equ 0 (
 ) else (
     if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms256m -Xmx1g
 )
+
+::
+:: Uncomment to enable experimental commands [--wal]
+::
+:: set JVM_OPTS=%JVM_OPTS% -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
 
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
