@@ -275,27 +275,6 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * Test that experimental command (i.e. WAL command) is disabled by default.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
-    public void testExperimentalCommandIsDisabled() {
-        GridTestUtils.assertThrows(
-            null,
-            () -> parseArgs(Arrays.asList(WAL.text(), WAL_PRINT)),
-            IllegalArgumentException.class,
-            null
-        );
-
-        GridTestUtils.assertThrows(
-            null,
-            () -> parseArgs(Arrays.asList(WAL.text(), WAL_DELETE)),
-            IllegalArgumentException.class,
-            null
-        );
-    }
-
-    /**
      * Tests parsing and validation for the SSL arguments.
      */
     @Test
