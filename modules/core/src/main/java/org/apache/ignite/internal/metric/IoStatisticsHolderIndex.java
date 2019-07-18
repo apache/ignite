@@ -21,7 +21,7 @@ package org.apache.ignite.internal.metric;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -47,16 +47,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     public static final String PHYSICAL_READS_INNER = "PHYSICAL_READS_INNER";
 
     /** */
-    private final LongAdderMetricImpl logicalReadLeafCtr;
+    private final LongAdderMetric logicalReadLeafCtr;
 
     /** */
-    private final LongAdderMetricImpl logicalReadInnerCtr;
+    private final LongAdderMetric logicalReadInnerCtr;
 
     /** */
-    private final LongAdderMetricImpl physicalReadLeafCtr;
+    private final LongAdderMetric physicalReadLeafCtr;
 
     /** */
-    private final LongAdderMetricImpl physicalReadInnerCtr;
+    private final LongAdderMetric physicalReadInnerCtr;
 
     /** */
     private final String cacheName;

@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -144,7 +144,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private final AtomicInteger allocatedPages = new AtomicInteger();
 
     /** */
-    private final LongAdderMetricImpl totalAllocatedPagesMetric;
+    private final LongAdderMetric totalAllocatedPagesMetric;
 
     /** */
     private AtomicInteger selector = new AtomicInteger();
@@ -187,7 +187,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
         DataRegionConfiguration dataRegionCfg,
-        LongAdderMetricImpl totalAllocatedPagesMetric,
+        LongAdderMetric totalAllocatedPagesMetric,
         boolean trackAcquiredPages
     ) {
         assert log != null || sharedCtx != null;

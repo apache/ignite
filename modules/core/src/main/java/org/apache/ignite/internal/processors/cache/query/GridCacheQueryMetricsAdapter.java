@@ -24,7 +24,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,16 +40,16 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     private final AtomicLongMetric maxTime;
 
     /** Sum of execution time for all completed queries. */
-    private final LongAdderMetricImpl sumTime;
+    private final LongAdderMetric sumTime;
 
     /** Number of executions. */
-    private final LongAdderMetricImpl execs;
+    private final LongAdderMetric execs;
 
     /** Number of completed executions. */
-    private final LongAdderMetricImpl completed;
+    private final LongAdderMetric completed;
 
     /** Number of fails. */
-    private final LongAdderMetricImpl fails;
+    private final LongAdderMetric fails;
 
     /**
      * @param mmgr Metrics manager.

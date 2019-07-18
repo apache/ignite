@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
@@ -228,7 +228,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             null,
             PAGE_SIZE,
             plcCfg,
-            new LongAdderMetricImpl("NO_OP", null),
+            new LongAdderMetric("NO_OP", null),
             false);
 
         pageMem.start();

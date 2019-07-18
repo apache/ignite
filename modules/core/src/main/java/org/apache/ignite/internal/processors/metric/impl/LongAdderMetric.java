@@ -18,31 +18,51 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.LongConsumer;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Long metric implementation based on {@link LongAdder} with {@link #delegate}.
+ * Long metric implementation based on {@link LongAdder}.
  */
-public class LongAdderWithDelegateMetricImpl extends LongAdderMetricImpl {
-    /** Delegate. */
-    private LongConsumer delegate;
+public class LongAdderMetric extends AbstractMetric implements LongMetric {
+    /** Field value. */
+    private volatile LongAdder val = new LongAdder();
 
     /**
      * @param name Name.
-     * @param delegate Delegate to which all updates from new metric will be delegated to.
-     * @param descr Description.
+     * @param desc Description.
      */
-    public LongAdderWithDelegateMetricImpl(String name, LongConsumer delegate, @Nullable String descr) {
-        super(name, descr);
+    public LongAdderMetric(String name, @Nullable String desc) {
+        super(name, desc);
+    }
 
-        this.delegate = delegate;
+    /**
+     * Adds x to the metric.
+     *
+     * @param x Value to be added.
+     */
+    public void add(long x) {
+        val.add(x);
+    }
+
+    /** Adds 1 to the metric. */
+    public void increment() {
+        add(1);
+    }
+
+    /** Adds -1 to the metric. */
+    public void decrement() {
+        add(-1);
     }
 
     /** {@inheritDoc} */
-    @Override public void add(long x) {
-        super.add(x);
+    @Override public void reset() {
+        val = new LongAdder();
+    }
 
-        delegate.accept(x);
+    /** {@inheritDoc} */
+    @Override public long value() {
+        return val.longValue();
     }
 }

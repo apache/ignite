@@ -75,7 +75,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
@@ -373,7 +373,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(int cacheId, int partitions, String workingDir, LongAdderMetricImpl tracker)
+    @Override public void initialize(int cacheId, int partitions, String workingDir, LongAdderMetric tracker)
         throws IgniteCheckedException {
         assert storeWorkDir != null;
 
@@ -639,7 +639,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         DataRegionMetricsImpl regionMetrics = cctx.database().dataRegion(dataRegionName).memoryMetrics();
 
-        LongAdderMetricImpl allocatedTracker =
+        LongAdderMetric allocatedTracker =
             regionMetrics.getOrAllocateGroupPageAllocationTracker(grpDesc.cacheOrGroupName());
 
         return initDir(
@@ -663,7 +663,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initDir(File cacheWorkDir,
         int grpId,
         int partitions,
-        LongAdderMetricImpl allocatedTracker,
+        LongAdderMetric allocatedTracker,
         boolean encrypted) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);

@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 
@@ -85,7 +85,7 @@ public class FilePageStore implements PageStore {
     private final AtomicLong allocated;
 
     /** Region metrics updater. */
-    private final LongAdderMetricImpl allocatedTracker;
+    private final LongAdderMetric allocatedTracker;
 
     /** */
     protected final int pageSize;
@@ -111,7 +111,7 @@ public class FilePageStore implements PageStore {
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        LongAdderMetricImpl allocatedTracker
+        LongAdderMetric allocatedTracker
     ) {
         this.type = type;
         this.pathProvider = pathProvider;

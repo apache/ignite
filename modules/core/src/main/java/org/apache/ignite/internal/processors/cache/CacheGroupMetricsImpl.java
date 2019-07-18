@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -57,7 +57,7 @@ public class CacheGroupMetricsImpl {
     private final CacheGroupContext ctx;
 
     /** */
-    private final LongAdderMetricImpl groupPageAllocationTracker;
+    private final LongAdderMetric groupPageAllocationTracker;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -147,7 +147,7 @@ public class CacheGroupMetricsImpl {
                 dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.cacheOrGroupName());
         }
         else
-            this.groupPageAllocationTracker = new LongAdderMetricImpl("NO_OP", null);
+            this.groupPageAllocationTracker = new LongAdderMetric("NO_OP", null);
     }
 
     /** */

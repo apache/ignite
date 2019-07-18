@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
@@ -221,10 +221,10 @@ public class MetricRegistry implements Iterable<Metric> {
      *
      * @param name Name.
      * @param desc Description.
-     * @return {@link LongAdderMetricImpl}.
+     * @return {@link LongAdderMetric}.
      */
-    public LongAdderMetricImpl longAdderMetric(String name, @Nullable String desc) {
-        return addMetric(name, new LongAdderMetricImpl(metricName(grpName, name), desc));
+    public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
+        return addMetric(name, new LongAdderMetric(metricName(grpName, name), desc));
     }
 
     /**
@@ -234,10 +234,10 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param name Name.
      * @param delegate Delegate to which all updates from new metric will be delegated to.
      * @param desc Description.
-     * @return {@link LongAdderWithDelegateMetricImpl}.
+     * @return {@link LongAdderWithDelegateMetric}.
      */
-    public LongAdderMetricImpl longAdderMetric(String name, LongConsumer delegate, @Nullable String desc) {
-        return addMetric(name, new LongAdderWithDelegateMetricImpl(metricName(grpName, name), delegate, desc));
+    public LongAdderMetric longAdderMetric(String name, LongConsumer delegate, @Nullable String desc) {
+        return addMetric(name, new LongAdderWithDelegateMetric(metricName(grpName, name), delegate, desc));
     }
 
     /**

@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
@@ -69,7 +69,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     @Override public PageStore createPageStore(
         byte type,
         IgniteOutClosure<Path> pathProvider,
-        LongAdderMetricImpl allocatedTracker) throws IgniteCheckedException {
+        LongAdderMetric allocatedTracker) throws IgniteCheckedException {
         Path filePath = pathProvider.apply();
 
         if (!Files.exists(filePath))
@@ -124,7 +124,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         byte type,
         IgniteOutClosure<Path> pathProvider,
         int ver,
-        LongAdderMetricImpl allocatedTracker) {
+        LongAdderMetric allocatedTracker) {
 
         switch (ver) {
             case FilePageStore.VERSION:
