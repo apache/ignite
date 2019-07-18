@@ -17,8 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.PART_ATOMIC_CACHE;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesReadOnlyMode;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertDataStreamerReadOnlyMode;
 
@@ -56,5 +63,54 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         changeClusterReadOnlyMode(false);
 
         assertDataStreamerReadOnlyMode(false, CACHE_NAMES);
+    }
+
+    /**
+     * Tests data streamer.
+     */
+    @Test
+    public void testDataStreamerReadOnlyConcurrent()throws Exception {
+        final int totalEntries = 50_000;
+        final CountDownLatch startLatch = new CountDownLatch(1);
+        final AtomicBoolean exThrown = new AtomicBoolean();
+        final CountDownLatch finishLatch = new CountDownLatch(1);
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(PART_ATOMIC_CACHE)) {
+                    startLatch.countDown();
+                    streamer.allowOverwrite(false);
+
+                    for (int i = 0; i < totalEntries; i++) {
+                        if ((i + 1) % (totalEntries / 10) == 0)
+                            log.info("Prepared " + (i + 1) * 100 / (totalEntries) + "% entries.");
+
+                        streamer.addData(i, i + PART_ATOMIC_CACHE.hashCode());
+                    }
+                }
+                catch (CacheException e) {
+                    exThrown.compareAndSet(false, true);
+
+                    log.info("Streamer cache exception is thrown", e.getMessage());
+                }
+                finally {
+                    finishLatch.countDown();
+                }
+            }
+        });
+
+        startLatch.await(5, TimeUnit.SECONDS);
+
+        changeClusterReadOnlyMode(true);
+
+        assertCachesReadOnlyMode(true, CACHE_NAMES);
+
+        changeClusterReadOnlyMode(false);
+
+        finishLatch.await(5, TimeUnit.SECONDS);
+
+        assertCachesReadOnlyMode(false, CACHE_NAMES);
+
+        assertTrue("DataStreamer exception not thrown during change readonly mode", exThrown.get());
     }
 }

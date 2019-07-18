@@ -53,7 +53,7 @@ public class ClusterReadOnlyModeTestUtils {
     private static final String REPL_MVCC_CACHE = "repl_mvcc_cache";
 
     /** Partitioned atomic cache. */
-    private static final String PART_ATOMIC_CACHE = "part_atomic_cache";
+    public static final String PART_ATOMIC_CACHE = "part_atomic_cache";
 
     /** Partitioned transactional cache. */
     private static final String PART_TX_CACHE = "part_tx_cache";
