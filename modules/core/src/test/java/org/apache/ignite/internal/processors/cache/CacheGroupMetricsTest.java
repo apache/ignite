@@ -282,30 +282,30 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         assertEquals(10, mxBean0Grp1.get1().getPartitions());
 
-        assertEquals(1, ((IntMetric)mxBean0Grp1.get2().findMetric("MinimumNumberOfPartitionCopies")).value());
-        assertEquals(3, ((IntMetric)mxBean0Grp1.get2().findMetric("MaximumNumberOfPartitionCopies")).value());
+        assertEquals(1, mxBean0Grp1.get2().<IntMetric>findMetric("MinimumNumberOfPartitionCopies").value());
+        assertEquals(3, mxBean0Grp1.get2().<IntMetric>findMetric("MaximumNumberOfPartitionCopies").value());
 
         assertEquals(0, mxBean0Grp1.get1().getClusterMovingPartitionsCount());
         assertEquals(19, mxBean0Grp1.get1().getClusterOwningPartitionsCount());
 
-        assertEquals(7, ((IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeOwningPartitionsCount")).value());
-        assertEquals(6, ((IntMetric)mxBean1Grp1.get2().findMetric("LocalNodeOwningPartitionsCount")).value());
-        assertEquals(6, ((IntMetric)mxBean2Grp1.get2().findMetric("LocalNodeOwningPartitionsCount")).value());
+        assertEquals(7, mxBean0Grp1.get2().<IntMetric>findMetric("LocalNodeOwningPartitionsCount").value());
+        assertEquals(6, mxBean1Grp1.get2().<IntMetric>findMetric("LocalNodeOwningPartitionsCount").value());
+        assertEquals(6, mxBean2Grp1.get2().<IntMetric>findMetric("LocalNodeOwningPartitionsCount").value());
 
         assertEquals(F.asList("cache1"),
-            ((ObjectMetric<List<String>>)mxBean0Grp1.get2().findMetric("Caches")).value());
+            mxBean0Grp1.get2().<ObjectMetric<List<String>>>findMetric("Caches").value());
         assertEquals(F.asList("cache2", "cache3"),
-            ((ObjectMetric<List<String>>)mxBean0Grp2.get2().findMetric("Caches")).value());
+            mxBean0Grp2.get2().<ObjectMetric<List<String>>>findMetric("Caches").value());
         assertEquals(F.asList("cache4"),
-            ((ObjectMetric<List<String>>)mxBean0Grp3.get2().findMetric("Caches")).value());
+            mxBean0Grp3.get2().<ObjectMetric<List<String>>>findMetric("Caches").value());
 
-        assertEquals(arrayToAssignmentMap(assignmentMapArr), ((ObjectMetric<Map<Integer, List<String>>>)
-            mxBean0Grp1.get2().findMetric("AffinityPartitionsAssignmentMap")).value());
-        assertEquals(arrayToAllocationMap(assignmentMapArr), ((ObjectMetric<Map<Integer, List<String>>>)
-            mxBean0Grp1.get2().findMetric("OwningPartitionsAllocationMap")).value());
+        assertEquals(arrayToAssignmentMap(assignmentMapArr), mxBean0Grp1.get2()
+            .<ObjectMetric<Map<Integer, List<String>>>>findMetric("AffinityPartitionsAssignmentMap").value());
+        assertEquals(arrayToAllocationMap(assignmentMapArr), mxBean0Grp1.get2()
+            .<ObjectMetric<Map<Integer, List<String>>>>findMetric("OwningPartitionsAllocationMap").value());
 
         ObjectMetric<Map<Integer, List<String>>> movingPartitionsAllocationMap =
-            (ObjectMetric<Map<Integer, List<String>>>)mxBean0Grp1.get2().findMetric("MovingPartitionsAllocationMap");
+            mxBean0Grp1.get2().findMetric("MovingPartitionsAllocationMap");
 
         assertEquals(arrayToAllocationMap(new int[10][]), movingPartitionsAllocationMap.value());
 
@@ -323,7 +323,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
         // Check moving partitions while rebalancing.
         assertFalse(arrayToAllocationMap(new int[10][]).equals(movingPartitionsAllocationMap.value()));
 
-        int movingCnt = ((IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeMovingPartitionsCount")).value();
+        int movingCnt = mxBean0Grp1.get2().<IntMetric>findMetric("LocalNodeMovingPartitionsCount").value();
 
         assertTrue(movingCnt > 0);
         assertTrue(mxBean0Grp1.get1().getClusterMovingPartitionsCount() > 0);
@@ -354,7 +354,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
                         IntMetric localNodeRentingPartitionsCount =
-                            (IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeRentingPartitionsCount");
+                            mxBean0Grp1.get2().findMetric("LocalNodeRentingPartitionsCount");
 
                         log.info("Renting partitions count: " +
                             localNodeRentingPartitionsCount.value());
@@ -367,7 +367,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             );
 
             assertTrue("Renting entries count is 0",
-                ((IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeRentingPartitionsCount")).value() > 0);
+                mxBean0Grp1.get2().<IntMetric>findMetric("LocalNodeRentingPartitionsCount").value() > 0);
         }
         finally {
             evictLatch.countDown();
@@ -393,13 +393,13 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         GridMetricManager mmgr = ignite.context().metric();
 
-        LongMetric totalPages = (LongMetric)mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, "default"))
+        LongMetric totalPages = mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, "default"))
             .findMetric("TotalAllocatedPages");
 
-        assertEquals(((LongMetric)totalPages).value(),
-            ((LongMetric)mxBean0Grp1.get2().findMetric("TotalAllocatedPages")).value() +
-            ((LongMetric)mxBean0Grp2.get2().findMetric("TotalAllocatedPages")).value() +
-            ((LongMetric)mxBean0Grp3.get2().findMetric("TotalAllocatedPages")).value());
+        assertEquals(totalPages.value(),
+            mxBean0Grp1.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
+            mxBean0Grp2.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
+            mxBean0Grp3.get2().<LongMetric>findMetric("TotalAllocatedPages").value());
 
         for (int cacheIdx = 1; cacheIdx <= 4; cacheIdx++) {
             IgniteCache cache = ignite.cache("cache" + cacheIdx);
@@ -408,9 +408,9 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
                 cache.put(i, new byte[100]);
         }
 
-        assertEquals(((LongMetric)totalPages).value(),
-            ((LongMetric)mxBean0Grp1.get2().findMetric("TotalAllocatedPages")).value() +
-            ((LongMetric)mxBean0Grp2.get2().findMetric("TotalAllocatedPages")).value() +
-            ((LongMetric)mxBean0Grp3.get2().findMetric("TotalAllocatedPages")).value());
+        assertEquals(totalPages.value(),
+            mxBean0Grp1.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
+            mxBean0Grp2.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
+            mxBean0Grp3.get2().<LongMetric>findMetric("TotalAllocatedPages").value());
     }
 }

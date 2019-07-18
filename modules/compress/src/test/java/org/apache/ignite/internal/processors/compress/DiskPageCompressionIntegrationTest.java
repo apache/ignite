@@ -143,8 +143,8 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         MetricRegistry mreg = ignite.context().metric().registry(
             metricName(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName()));
 
-        storeSize = ((LongMetric)mreg.findMetric("StorageSize")).longValue();
-        sparseStoreSize = ((LongMetric)mreg.findMetric("SparseStorageSize")).longValue();
+        storeSize = mreg.<LongMetric>findMetric("StorageSize").longValue();
+        sparseStoreSize = mreg.<LongMetric>findMetric("SparseStorageSize").longValue();
 
         assertTrue("storeSize: " + storeSize, storeSize > 0);
 
@@ -214,8 +214,8 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
             if (i % 50_000 == 0) {
                 dbMgr.forceCheckpoint("test").finishFuture().get();
 
-                long sparse = ((LongMetric)mreg.findMetric("SparseStorageSize")).longValue();
-                long size = ((LongMetric)mreg.findMetric("StorageSize")).longValue();
+                long sparse = mreg.<LongMetric>findMetric("SparseStorageSize").longValue();
+                long size = mreg.<LongMetric>findMetric("StorageSize").longValue();
 
                 System.out.println(i + " >> " + sparse + " / " + size + " = " + ((double)sparse / size));
             }

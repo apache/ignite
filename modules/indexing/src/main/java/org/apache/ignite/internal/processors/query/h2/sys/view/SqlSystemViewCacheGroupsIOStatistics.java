@@ -107,8 +107,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
             ses,
             grpId,
             grpName,
-            ((LongMetric)mreg.findMetric(PHYSICAL_READS)).value(),
-            ((LongMetric)mreg.findMetric(LOGICAL_READS)).value()
+            mreg.<LongMetric>findMetric(PHYSICAL_READS).value(),
+            mreg.<LongMetric>findMetric(LOGICAL_READS).value()
         );
     }
 
