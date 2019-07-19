@@ -188,7 +188,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private int maxIterCnt;
 
     /** */
-    private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
+    private volatile GridCacheQueryMetricsAdapter metrics;
 
     /** */
     private int detailMetricsSz;
@@ -275,6 +275,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
         };
+
+        metrics = new GridCacheQueryMetricsAdapter(cctx.kernalContext().metric(), cctx.name(), cctx.isNear());
 
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
@@ -1696,7 +1698,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Cache queries metrics.
      */
     public QueryMetrics metrics() {
-        return metrics.copy();
+        return metrics.snapshot();
     }
 
     /**
@@ -1749,7 +1751,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Resets metrics.
      */
     public void resetMetrics() {
-        metrics = new GridCacheQueryMetricsAdapter();
+        metrics.reset();
     }
 
     /**

@@ -45,6 +45,9 @@ public class GridRestResponse implements Externalizable {
     /** Security check failed. */
     public static final int STATUS_SECURITY_CHECK_FAILED = 3;
 
+    /** */
+    public static final int STATUS_ILLEGAL_ARGUMENT = 4;
+
     /** Success status. */
     private int successStatus = STATUS_SUCCESS;
 

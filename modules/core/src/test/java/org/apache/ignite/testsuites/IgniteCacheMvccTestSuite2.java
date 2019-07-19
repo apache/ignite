@@ -25,7 +25,6 @@ import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityB
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionStandardHashSelfTest;
 import org.apache.ignite.internal.IgniteReflectionFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheComparatorTest;
@@ -57,14 +56,22 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTransfor
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServerNodeConcurrentStart;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionPartialCountersMapSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedDebugTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedMvccTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedOptimisticTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicEvictionNearReadersSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtEvictionNearReadersSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadMessageCountTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadOnheapSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedSupplyEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedUnloadEventsSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheContainsKeyColocatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedBackupNodeFailureRecoveryTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheTxNearEnabledSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheContainsKeyColocatedAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheContainsKeyNearAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearReadersSelfTest;
@@ -74,19 +81,27 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxForceKeyTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiThreadedPutGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxTimeoutSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNestedTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxConcurrentGetTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxReadTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheRendezvousAffinityClientSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheContainsKeyNearSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheMultithreadedUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheSyncUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicStoreMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
@@ -144,7 +159,6 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(IgniteCachePartitionedBackupNodeFailureRecoveryTest.class);
 
         // Other non-tx tests.
-        ignoredTests.add(RendezvousAffinityFunctionSelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionExcludeNeighborsSelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionStandardHashSelfTest.class);
@@ -188,6 +202,23 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedTxMultiThreadedSelfTest.class); // See GridCachePartitionedMvccTxMultiThreadedSelfTest
         ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class); // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
         ignoredTests.add(GridCachePartitionedTxTimeoutSelfTest.class); // See GridCachePartitionedMvccTxTimeoutSelfTest
+
+        ignoredTests.add(GridCacheColocatedDebugTest.class);
+        ignoredTests.add(GridCacheDhtEvictionNearReadersSelfTest.class);
+        ignoredTests.add(GridCacheDhtPreloadMessageCountTest.class);
+        ignoredTests.add(GridCacheLocalBasicStoreMultithreadedSelfTest.class);
+        ignoredTests.add(GridCacheLocalTxReadTest.class);
+        ignoredTests.add(NearCacheMultithreadedUpdateTest.class);
+        ignoredTests.add(GridCachePartitionedEvictionSelfTest.class);
+        ignoredTests.add(GridCachePartitionedNearDisabledMetricsSelfTest.class);
+        ignoredTests.add(GridCachePartitionedNestedTxTest.class);
+        ignoredTests.add(GridCachePartitionedTxConcurrentGetTest.class);
+        ignoredTests.add(GridCachePartitionedTxReadTest.class);
+        ignoredTests.add(IgniteCrossCacheTxNearEnabledSelfTest.class);
+        ignoredTests.add(IgniteCacheContainsKeyColocatedSelfTest.class);
+        ignoredTests.add(IgniteCacheContainsKeyNearSelfTest.class);
+        ignoredTests.add(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
+        ignoredTests.add(IgniteCacheContainsKeyNearAtomicSelfTest.class);
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite2.suite(ignoredTests));
 

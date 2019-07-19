@@ -25,11 +25,16 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -41,7 +46,9 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,12 +56,12 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
- * This manager should provide {@link MetricRegistry} for each configured {@link MetricExporterSpi}.
+ * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
  * @see MetricRegistry
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -143,8 +150,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
     private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
-    /** Monitoring registry. */
-    private MetricRegistry mreg;
+    /** Registered metrics registries. */
+    private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+
+    /** Metric registry creation listeners. */
+    private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -167,17 +177,15 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public GridMetricManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getMetricExporterSpi());
 
-        mreg = new MetricRegistryImpl(ctx.log(MetricRegistryImpl.class));
-
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
-        heap = new MemoryUsageMetrics(metricName(SYS_METRICS, "memory", "heap"));
-        nonHeap = new MemoryUsageMetrics(metricName(SYS_METRICS, "memory", "nonheap"));
+        heap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "heap"));
+        nonHeap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "nonheap"));
 
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricRegistry sysreg = mreg.withPrefix(SYS_METRICS);
+        MetricRegistry sysreg = registry(SYS_METRICS);
 
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
         cpuLoad = sysreg.doubleMetric(CPU_LOAD, "CPU load.");
@@ -200,7 +208,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         for (MetricExporterSpi spi : getSpis())
-            spi.setMetricRegistry(mreg);
+            spi.setMetricRegistry(this);
 
         startSpi();
     }
@@ -214,10 +222,54 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     }
 
     /**
-     * @return Metric resitry.
+     * Gets or creates metric registry.
+     *
+     * @param name Group name.
+     * @return Group of metrics.
      */
-    public MetricRegistry registry() {
-        return mreg;
+    public MetricRegistry registry(String name) {
+        return registries.computeIfAbsent(name, n -> {
+            MetricRegistry mreg = new MetricRegistry(name, log);
+
+            notifyListeners(mreg, metricRegCreationLsnrs);
+
+            return mreg;
+        });
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<MetricRegistry> iterator() {
+        return registries.values().iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
+        metricRegCreationLsnrs.add(lsnr);
+    }
+
+    /**
+     * Removes group.
+     *
+     * @param grpName Group name.
+     */
+    public void remove(String grpName) {
+        registries.remove(grpName);
+    }
+
+    /**
+     * @param t Consumed object.
+     * @param lsnrs Listeners.
+     * @param <T> Type of consumed object.
+     */
+    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
+        for (Consumer<T> lsnr : lsnrs) {
+            try {
+                lsnr.accept(t);
+            }
+            catch (Exception e) {
+                U.warn(log, "Metric listener error", e);
+            }
+        }
     }
 
     /**
@@ -296,49 +348,49 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param execSvc Executor to register a bean for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricRegistry mset = mreg.withPrefix(THREAD_POOLS, name);
+        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
 
         if (execSvc instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
-            mset.register("ActiveCount", exec::getActiveCount, ACTIVE_COUNT_DESC);
-            mset.register("CompletedTaskCount", exec::getCompletedTaskCount, COMPLETED_TASK_DESC);
-            mset.register("CorePoolSize", exec::getCorePoolSize, CORE_SIZE_DESC);
-            mset.register("LargestPoolSize", exec::getLargestPoolSize, LARGEST_SIZE_DESC);
-            mset.register("MaximumPoolSize", exec::getMaximumPoolSize, MAX_SIZE_DESC);
-            mset.register("PoolSize", exec::getPoolSize, POOL_SIZE_DESC);
-            mset.register("TaskCount", exec::getTaskCount, TASK_COUNT_DESC);
-            mset.register("QueueSize", () -> exec.getQueue().size(), QUEUE_SIZE_DESC);
-            mset.register("KeepAliveTime", () -> exec.getKeepAliveTime(MILLISECONDS), KEEP_ALIVE_TIME_DESC);
-            mset.register("Shutdown", exec::isShutdown, IS_SHUTDOWN_DESC);
-            mset.register("Terminated", exec::isTerminated, IS_TERMINATED_DESC);
-            mset.register("Terminating", exec::isTerminating, IS_TERMINATING_DESC);
-            mset.register("RejectedExecutionHandlerClass", () -> {
+            mreg.register("ActiveCount", exec::getActiveCount, ACTIVE_COUNT_DESC);
+            mreg.register("CompletedTaskCount", exec::getCompletedTaskCount, COMPLETED_TASK_DESC);
+            mreg.register("CorePoolSize", exec::getCorePoolSize, CORE_SIZE_DESC);
+            mreg.register("LargestPoolSize", exec::getLargestPoolSize, LARGEST_SIZE_DESC);
+            mreg.register("MaximumPoolSize", exec::getMaximumPoolSize, MAX_SIZE_DESC);
+            mreg.register("PoolSize", exec::getPoolSize, POOL_SIZE_DESC);
+            mreg.register("TaskCount", exec::getTaskCount, TASK_COUNT_DESC);
+            mreg.register("QueueSize", () -> exec.getQueue().size(), QUEUE_SIZE_DESC);
+            mreg.register("KeepAliveTime", () -> exec.getKeepAliveTime(MILLISECONDS), KEEP_ALIVE_TIME_DESC);
+            mreg.register("Shutdown", exec::isShutdown, IS_SHUTDOWN_DESC);
+            mreg.register("Terminated", exec::isTerminated, IS_TERMINATED_DESC);
+            mreg.register("Terminating", exec::isTerminating, IS_TERMINATING_DESC);
+            mreg.register("RejectedExecutionHandlerClass", () -> {
                 RejectedExecutionHandler hnd = exec.getRejectedExecutionHandler();
 
                 return hnd == null ? "" : hnd.getClass().getName();
             }, String.class, REJ_HND_DESC);
-            mset.register("ThreadFactoryClass", () -> {
+            mreg.register("ThreadFactoryClass", () -> {
                 ThreadFactory factory = exec.getThreadFactory();
 
                 return factory == null ? "" : factory.getClass().getName();
             }, String.class, THRD_FACTORY_DESC);
         }
         else {
-            mset.metric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-            mset.metric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-            mset.metric("CorePoolSize", CORE_SIZE_DESC).value(0);
-            mset.metric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-            mset.metric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-            mset.metric("PoolSize", POOL_SIZE_DESC).value(0);
-            mset.metric("TaskCount", TASK_COUNT_DESC);
-            mset.metric("QueueSize", QUEUE_SIZE_DESC).value(0);
-            mset.metric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
-            mset.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
-            mset.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
-            mset.metric("Terminating", IS_TERMINATING_DESC);
-            mset.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
-            mset.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
+            mreg.metric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
+            mreg.metric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
+            mreg.metric("CorePoolSize", CORE_SIZE_DESC).value(0);
+            mreg.metric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
+            mreg.metric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
+            mreg.metric("PoolSize", POOL_SIZE_DESC).value(0);
+            mreg.metric("TaskCount", TASK_COUNT_DESC);
+            mreg.metric("QueueSize", QUEUE_SIZE_DESC).value(0);
+            mreg.metric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
+            mreg.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
+            mreg.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
+            mreg.metric("Terminating", IS_TERMINATING_DESC);
+            mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
+            mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
         }
     }
 
@@ -348,47 +400,47 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param svc Executor.
      */
     private void monitorStripedPool(StripedExecutor svc) {
-        MetricRegistry mset = mreg.withPrefix(THREAD_POOLS, "StripedExecutor");
+        MetricRegistry mreg = registry(metricName(THREAD_POOLS, "StripedExecutor"));
 
-        mset.register("DetectStarvation",
+        mreg.register("DetectStarvation",
             svc::detectStarvation,
             "True if possible starvation in striped pool is detected.");
 
-        mset.register("StripesCount",
+        mreg.register("StripesCount",
             svc::stripes,
             "Stripes count.");
 
-        mset.register("Shutdown",
+        mreg.register("Shutdown",
             svc::isShutdown,
             "True if this executor has been shut down.");
 
-        mset.register("Terminated",
+        mreg.register("Terminated",
             svc::isTerminated,
             "True if all tasks have completed following shut down.");
 
-        mset.register("TotalQueueSize",
+        mreg.register("TotalQueueSize",
             svc::queueSize,
             "Total queue size of all stripes.");
 
-        mset.register("TotalCompletedTasksCount",
+        mreg.register("TotalCompletedTasksCount",
             svc::completedTasks,
             "Completed tasks count of all stripes.");
 
-        mset.register("StripesCompletedTasksCounts",
+        mreg.register("StripesCompletedTasksCounts",
             svc::stripesCompletedTasks,
             long[].class,
             "Number of completed tasks per stripe.");
 
-        mset.register("ActiveCount",
+        mreg.register("ActiveCount",
             svc::activeStripesCount,
             "Number of active tasks of all stripes.");
 
-        mset.register("StripesActiveStatuses",
+        mreg.register("StripesActiveStatuses",
             svc::stripesActiveStatuses,
             boolean[].class,
             "Number of active tasks per stripe.");
 
-        mset.register("StripesQueueSizes",
+        mreg.register("StripesQueueSizes",
             svc::stripesQueueSizes,
             int[].class,
             "Size of queue per stripe.");
@@ -539,15 +591,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         private final LongMetricImpl max;
 
         /**
-         * @param prefix Metric prefix.
+         * @param group Metric registry.
+         * @param metricNamePrefix Metric name prefix.
          */
-        public MemoryUsageMetrics(String prefix) {
-            MetricRegistry mreg = GridMetricManager.this.mreg.withPrefix(prefix);
+        public MemoryUsageMetrics(String group, String metricNamePrefix) {
+            MetricRegistry mreg = GridMetricManager.this.registry(group);
 
-            this.init = mreg.metric("init", null);
-            this.used = mreg.metric("used", null);
-            this.committed = mreg.metric("committed", null);
-            this.max = mreg.metric("max", null);
+            this.init = mreg.metric(metricName(metricNamePrefix, "init"), null);
+            this.used = mreg.metric(metricName(metricNamePrefix, "used"), null);
+            this.committed = mreg.metric(metricName(metricNamePrefix, "committed"), null);
+            this.max = mreg.metric(metricName(metricNamePrefix, "max"), null);
         }
 
         /** Updates metric to the provided values. */

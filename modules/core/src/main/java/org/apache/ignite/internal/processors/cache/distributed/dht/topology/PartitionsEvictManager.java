@@ -60,8 +60,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /** */
     private final int confPermits = getInteger(IGNITE_EVICTION_PERMITS, -1);
 
-    /** Next time of show eviction progress. */
-    private long nextShowProgressTime;
+    /** Last time of show eviction progress. */
+    private long lastShowProgressTimeNanos = System.nanoTime() - U.millisToNanos(evictionProgressFreqMs);
 
     /** */
     private final Map<Integer, GroupEvictionContext> evictionGroupsMap = new ConcurrentHashMap<>();
@@ -213,7 +213,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * Shows progress of eviction.
      */
     private void showProgress() {
-        if (U.currentTimeMillis() >= nextShowProgressTime) {
+        if (U.millisSinceNanos(lastShowProgressTimeNanos) >= evictionProgressFreqMs) {
             int size = evictionQueue.size() + 1; // Queue size plus current partition.
 
             if (log.isInfoEnabled())
@@ -224,7 +224,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
             evictionGroupsMap.values().forEach(GroupEvictionContext::showProgress);
 
-            nextShowProgressTime = U.currentTimeMillis() + evictionProgressFreqMs;
+            lastShowProgressTimeNanos = System.nanoTime();
         }
     }
 

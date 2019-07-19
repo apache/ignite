@@ -1329,7 +1329,7 @@ public final class IgniteSystemProperties {
     public static boolean getBoolean(String name, boolean dflt) {
         String val = getString(name);
 
-        return val == null ? dflt : Boolean.valueOf(val);
+        return val == null ? dflt : Boolean.parseBoolean(val);
     }
 
     /**

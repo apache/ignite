@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -159,7 +160,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) {
             taskSubjId = ((GridTaskSessionInternal)ses).subjectId();
 

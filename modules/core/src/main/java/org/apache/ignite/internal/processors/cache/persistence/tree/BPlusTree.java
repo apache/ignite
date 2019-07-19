@@ -33,6 +33,8 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -61,8 +63,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -1564,8 +1564,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @param msg Message.
      */
-    private static void fail(Object msg) {
-        throw new AssertionError(msg);
+    private void fail(Object msg) {
+        AssertionError err = new AssertionError(msg);
+
+        if (failureProcessor != null)
+            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, err));
+
+        throw err;
     }
 
     /**
