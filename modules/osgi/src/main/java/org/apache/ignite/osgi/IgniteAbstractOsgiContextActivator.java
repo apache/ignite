@@ -116,7 +116,8 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
 
         log = ignite.log();
 
-        log.info("Started Ignite from OSGi Activator [name=" + ignite.name() + ']');
+        if (log.isInfoEnabled())
+            log.info("Started Ignite from OSGi Activator [name=" + ignite.name() + ']');
 
         // Add into Ignite's OSGi registry.
         IgniteOsgiUtils.classloaders().put(ignite, clsLdr);

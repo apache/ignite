@@ -633,8 +633,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                             }
                             catch (Exception e) {
                                 if (interruptAll) {
-                                    log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
-                                        " aborting transaction.");
+                                    if (log.isInfoEnabled())
+                                        log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
+                                            " aborting transaction.");
 
                                     // Abort this attempt to synchronize queue and start another one,
                                     // that will return immediately.

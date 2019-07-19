@@ -177,14 +177,16 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
         File out = new File(workDir, IDLE_DUMP_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
-        ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
+        if (ignite.log().isInfoEnabled())
+            ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(out))) {
             writeResult(partitions, conflictRes, skippedRecords, writer);
 
             writer.flush();
 
-            ignite.log().info("IdleVerifyDumpTask successfully written dump to '" + out.getAbsolutePath() + "'");
+            if (ignite.log().isInfoEnabled())
+                ignite.log().info("IdleVerifyDumpTask successfully written dump to '" + out.getAbsolutePath() + "'");
         }
         catch (IOException | IgniteException e) {
             ignite.log().error("Failed to write dump file: " + out.getAbsolutePath(), e);

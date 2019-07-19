@@ -62,7 +62,8 @@ class PrintToLogHandler implements ScannerHandler {
 
         resultString = null;
 
-        log.info(msg);
+        if (log.isInfoEnabled())
+            log.info(msg);
     }
 
     /**

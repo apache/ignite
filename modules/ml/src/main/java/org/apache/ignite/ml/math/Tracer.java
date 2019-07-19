@@ -103,7 +103,8 @@ public class Tracer {
     public static void showAscii(Vector vec, IgniteLogger log, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        log.info(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
+        if (log.isInfoEnabled())
+            log.info(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
     }
 
     /**
@@ -210,10 +211,12 @@ public class Tracer {
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
-        log.info(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
+        if (log.isInfoEnabled()) {
+            log.info(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
 
-        for (int row = 0; row < rows; row++)
-            log.info(rowStr(mtx, row, fmt));
+            for (int row = 0; row < rows; row++)
+                log.info(rowStr(mtx, row, fmt));
+        }
     }
 
     /**

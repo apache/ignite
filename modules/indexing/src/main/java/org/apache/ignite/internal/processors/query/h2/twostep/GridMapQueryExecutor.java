@@ -677,7 +677,7 @@ public class GridMapQueryExecutor {
 
                     if (log.isDebugEnabled())
                         U.warn(log, errMsg, err);
-                    else
+                    else if (log.isInfoEnabled())
                         log.info(errMsg);
                 }
                 else
