@@ -762,6 +762,24 @@ public interface EventType {
     public static final int EVT_CLUSTER_DEACTIVATED = 141;
 
     /**
+     * Built-in event type: page replacement started in one of the data regions. The name of the data region will
+     * be indicated in the event.
+     * <p>
+     * Fired whan all existing free pages are exhausted and Ignite replaces one of the loaded pages with a
+     * cold page from disk.
+     * <p>
+     * When started, page replacement negatively affects performance; it is recommended to monitor page replacement
+     * metrics and set data region size accordingly.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see org.apache.ignite.configuration.DataRegionConfiguration#setMaxSize(long)
+     * @see PageReplacementStartedEvent
+     */
+    public static final int EVT_PAGE_REPLACEMENT_STARTED = 142;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.

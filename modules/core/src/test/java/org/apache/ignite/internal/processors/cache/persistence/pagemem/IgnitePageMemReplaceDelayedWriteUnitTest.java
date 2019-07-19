@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
@@ -239,6 +241,12 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
         });
         when(sctx.kernalContext()).thenReturn(kernalCtx);
 
+        when(sctx.gridEvents()).thenAnswer(new Answer<Object>() {
+            @Override public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                return new GridEventStorageManager(kernalCtx);
+            }
+        });
+
         DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg);
@@ -263,6 +271,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setEncryptionSpi(new NoopEncryptionSpi());
+        cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()

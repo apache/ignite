@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -40,6 +41,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.PageReplacementStartedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -84,6 +87,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -278,8 +282,12 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Checkpoint progress provider. Null disables throttling. */
     @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
 
+    /** Field updater. */
+    private static final AtomicIntegerFieldUpdater<PageMemoryImpl> pageReplacementWarnedFieldUpdater =
+        AtomicIntegerFieldUpdater.newUpdater(PageMemoryImpl.class, "pageReplacementWarned");
+
     /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
-    private volatile boolean pageReplacementWarned;
+    private volatile int pageReplacementWarned;
 
     /** */
     private long[] sizes;
@@ -2295,11 +2303,25 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long removePageForReplacement(ReplacedPageWriter saveDirtyPage) throws IgniteCheckedException {
             assert getWriteHoldCount() > 0;
 
-            if (!pageReplacementWarned) {
-                pageReplacementWarned = true;
+            if (pageReplacementWarned == 0) {
+                if (pageReplacementWarnedFieldUpdater.compareAndSet(PageMemoryImpl.this, 0, 1)) {
+                    String msg = "Page replacements started, pages will be rotated with disk, this will affect " +
+                        "storage performance (consider increasing DataRegionConfiguration#setMaxSize for " +
+                        "data region): " + memMetrics.getName();
 
-                U.warn(log, "Page replacements started, pages will be rotated with disk, " +
-                    "this will affect storage performance (consider increasing DataRegionConfiguration#setMaxSize).");
+                    U.warn(log, msg);
+
+                    if (ctx.gridEvents().isRecordable(EventType.EVT_PAGE_REPLACEMENT_STARTED)) {
+                        ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                            @Override public void run() {
+                                ctx.gridEvents().record(new PageReplacementStartedEvent(
+                                    ctx.localNode(),
+                                    msg,
+                                    memMetrics.getName()));
+                            }
+                        });
+                    }
+                }
             }
 
             final ThreadLocalRandom rnd = ThreadLocalRandom.current();
