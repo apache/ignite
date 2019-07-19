@@ -41,6 +41,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -777,30 +778,15 @@ public class GridDhtPartitionDemander {
                                 else
                                     preloadEntries(topVer, node, p, infos);
 
-                                // If message was last for this partition,
-                                // then we take ownership.
-                                if (last) {
-                                    long queued = fut.queued.get(p).sum();
+                                fut.processed.get(p).increment();
 
-                                    while (fut.processed.get(p).sum() != (queued - 1)) {
-                                        if (topologyChanged(fut) || !fut.isActual(supplyMsg.rebalanceId()))
-                                            return;
-
-                                        U.sleep(1); // Wait untill other batches for same patrition processed.
-                                    }
-
-                                    fut.partitionDone(nodeId, p, true);
-
-                                    if (log.isDebugEnabled())
-                                        log.debug("Finished rebalancing partition: " +
-                                            "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + "]");
-                                }
+                                // If message was last for this partition, then we take ownership.
+                                if (last)
+                                    ownPartition(fut, p, nodeId, supplyMsg);
                             }
                             finally {
                                 part.unlock();
                                 part.release();
-
-                                fut.processed.get(p).increment();
                             }
                         }
                         else {
@@ -867,6 +853,38 @@ public class GridDhtPartitionDemander {
         }
         finally {
             fut.cancelLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param fut Future.
+     */
+    protected void ownPartition(
+        final RebalanceFuture fut,
+        int p,
+        final UUID nodeId,
+        final GridDhtPartitionSupplyMessage supplyMsg) {
+        if (topologyChanged(fut) || !fut.isActual(supplyMsg.rebalanceId()))
+            return;
+
+        long queued = fut.queued.get(p).sum();
+        long processed = fut.processed.get(p).sum();
+
+        if (processed == queued) {
+            fut.partitionDone(nodeId, p, true);
+
+            if (log.isDebugEnabled())
+                log.debug("Finished rebalancing partition: " +
+                    "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p + "]");
+        }
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Retrying partition owning: " +
+                    "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p +
+                    ", processed=" + processed + ", queued=" + queued + "]");
+
+            ctx.kernalContext().closure().runLocalSafe(
+                () -> ownPartition(fut, p, nodeId, supplyMsg), GridIoPolicy.REBALANCE_POOL);
         }
     }
 
