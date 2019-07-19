@@ -2226,7 +2226,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (log.isInfoEnabled()) {
                 for (ClusterNode node : getRemoteNodes()) {
                     if (node.id().equals(locNode.clientRouterNodeId())) {
-                        log.info("Router node: " + node);
+                        if (log.isInfoEnabled())
+                            log.info("Router node: " + node);
 
                         break;
                     }

@@ -415,7 +415,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState state = globalState;
 
         if (msg.requestId().equals(state.transitionRequestId())) {
-            log.info("Received state change finish message: " + msg.clusterActive());
+            if (log.isInfoEnabled())
+                log.info("Received state change finish message: " + msg.clusterActive());
 
             globalState = state.finish(msg.success());
 

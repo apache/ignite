@@ -485,7 +485,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 srv.close(ses);
 
-                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+                if (log.isInfoEnabled())
+                    log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
             }
         }
 
@@ -510,7 +511,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 srv.close(ses);
 
-                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+                if (log.isInfoEnabled())
+                    log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
 
                 return true;
             }

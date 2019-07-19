@@ -2333,8 +2333,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             WALPointer cpMark = ((CheckpointRecord)rec).checkpointMark();
 
             if (cpMark != null) {
-                log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
-                    "back pointer: " + cpMark);
+                if (log.isInfoEnabled()) {
+                    log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
+                        "back pointer: " + cpMark);
+                }
 
                 recPtr = cpMark;
             }
@@ -2479,8 +2481,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastReadPtr + "]");
 
-            log.info("Finished applying memory changes [changesApplied=" + applied +
-                ", time=" + (U.currentTimeMillis() - start) + " ms]");
+            if (log.isInfoEnabled())
+                log.info("Finished applying memory changes [changesApplied=" + applied +
+                    ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
             //Error in backport GG-17348 to 2.5.X branch.
             //assert applied.get() > 0;
@@ -5441,11 +5444,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             GridDhtLocalPartition part = grp.topology().localPartition(p);
 
             if (part != null) {
-                log.info("Partition [grp=" + grp.cacheOrGroupName()
-                    + ", id=" + p
-                    + ", state=" + part.state()
-                    + ", counter=" + part.dataStore().partUpdateCounter()
-                    + ", size=" + part.fullSize() + "]");
+                if (log.isInfoEnabled())
+                    log.info("Partition [grp=" + grp.cacheOrGroupName()
+                        + ", id=" + p
+                        + ", state=" + part.state()
+                        + ", counter=" + part.dataStore().partUpdateCounter()
+                        + ", size=" + part.fullSize() + "]");
 
                 continue;
             }
@@ -5456,7 +5460,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             pageStore.ensure(grp.groupId(), p);
 
             if (pageStore.pages(grp.groupId(), p) <= 1) {
-                log.info("Partition [grp=" + grp.cacheOrGroupName() + ", id=" + p + ", state=N/A (only file header) ]");
+                if (log.isInfoEnabled())
+                    log.info("Partition [grp=" + grp.cacheOrGroupName() + ", id=" + p + ", state=N/A (only file header) ]");
 
                 continue;
             }
@@ -5477,11 +5482,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     long updateCntr = io.getUpdateCounter(pageAddr);
                     long size = io.getSize(pageAddr);
 
-                    log.info("Partition [grp=" + grp.cacheOrGroupName()
-                            + ", id=" + p
-                            + ", state=" + state
-                            + ", counter=" + updateCntr
-                            + ", size=" + size + "]");
+                    if (log.isInfoEnabled())
+                        log.info("Partition [grp=" + grp.cacheOrGroupName()
+                                + ", id=" + p
+                                + ", state=" + state
+                                + ", counter=" + updateCntr
+                                + ", size=" + size + "]");
                 }
                 finally {
                     pageMem.readUnlock(grp.groupId(), partMetaId, partMetaPage);
