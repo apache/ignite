@@ -827,7 +827,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
+    @Override protected void destroyCacheDataStore0(CacheDataStore store, String desc) throws IgniteCheckedException {
         assert ctx.database() instanceof GridCacheDatabaseSharedManager
             : "Destroying cache data store when persistence is not enabled: " + ctx.database();
 
@@ -2535,7 +2535,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void destroy() throws IgniteCheckedException {
+        @Override public void destroy(String desc) throws IgniteCheckedException {
             // No need to destroy delegate.
         }
 

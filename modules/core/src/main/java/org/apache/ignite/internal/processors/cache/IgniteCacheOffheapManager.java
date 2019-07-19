@@ -155,7 +155,7 @@ public interface IgniteCacheOffheapManager {
      * @param store Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException;
+    public void destroyCacheDataStore(CacheDataStore store, String desc) throws IgniteCheckedException;
 
     /**
      * TODO: GG-10884, used on only from initialValue.
@@ -1012,7 +1012,7 @@ public interface IgniteCacheOffheapManager {
          *
          * @throws IgniteCheckedException If failed.
          */
-        public void destroy() throws IgniteCheckedException;
+        public void destroy(String desc) throws IgniteCheckedException;
 
         /**
          * Clears all the records associated with logical cache with given ID.

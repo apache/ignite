@@ -718,7 +718,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 if (state() == EVICTED && markForDestroy()) {
                     updateSeqOnDestroy = updateSeq;
 
-                    destroy();
+                    destroy("evicted2");
                 }
 
                 if (log.isDebugEnabled())
@@ -852,14 +852,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Destroys partition data store and invokes appropriate callbacks.
+     * @param desc
      */
-    public void destroy() {
+    public void destroy(String desc) {
         assert state() == EVICTED : this;
         assert evictGuard.get() == -1;
 
         grp.onPartitionEvicted(id);
 
-        destroyCacheDataStore();
+        destroyCacheDataStore(desc);
 
         rent.onDone();
 
@@ -955,9 +956,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Release created data store for this partition.
      */
-    private void destroyCacheDataStore() {
+    private void destroyCacheDataStore(String desc) {
         try {
-            grp.offheap().destroyCacheDataStore(dataStore());
+            grp.offheap().destroyCacheDataStore(dataStore(), desc);
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to destroy cache data store on partition eviction [id=" + id + "]", e);

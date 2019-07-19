@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshot
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -253,7 +253,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public void stop() {
         try {
             for (CacheDataStore store : cacheDataStores())
-                destroyCacheDataStore(store);
+                destroyCacheDataStore(store, "on stop");
 
             if (pendingEntries != null)
                 pendingEntries.destroy();
@@ -1277,7 +1277,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public final void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
+    @Override public final void destroyCacheDataStore(CacheDataStore store, String desc) throws IgniteCheckedException {
         int p = store.partId();
 
         partStoreLock.lock(p);
@@ -1285,9 +1285,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try {
             boolean removed = partDataStores.remove(p, store);
 
-            assert removed;
+            AdhocUtil.assertion(removed);
 
-            destroyCacheDataStore0(store);
+            destroyCacheDataStore0(store, desc);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1299,10 +1299,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /**
      * @param store Cache data store.
+     * @param desc
      * @throws IgniteCheckedException If failed.
      */
-    protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
-        store.destroy();
+    protected void destroyCacheDataStore0(CacheDataStore store, String desc) throws IgniteCheckedException {
+        store.destroy(desc);
     }
 
     /**
@@ -2863,9 +2864,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return cursor;
         }
 
+        public String destroyedBy;
+
         /** {@inheritDoc} */
-        @Override public void destroy() throws IgniteCheckedException {
+        @Override public void destroy(String desc) throws IgniteCheckedException {
             final AtomicReference<IgniteCheckedException> exception = new AtomicReference<>();
+
+            destroyedBy = desc;
 
             dataTree.destroy(new IgniteInClosure<CacheSearchRow>() {
                 @Override public void apply(CacheSearchRow row) {

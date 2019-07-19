@@ -420,7 +420,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
-                        part.destroy();
+                        part.destroy("evicted");
                 }
 
                 // Complete eviction future before schedule new to prevent deadlock with
