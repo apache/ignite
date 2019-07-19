@@ -1563,18 +1563,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void tryToPerformLocalSnapshotOperation() {
         try {
-            long start = U.currentTimeMillis();
+            long start = System.nanoTime();
 
             IgniteInternalFuture fut = cctx.snapshot().tryStartLocalSnapshotOperation(firstDiscoEvt, exchId.topologyVersion());
 
             if (fut != null) {
                 fut.get();
 
-                long end = U.currentTimeMillis();
+                long end = System.nanoTime();
 
                 if (log.isInfoEnabled())
                     log.info("Snapshot initialization completed [topVer=" + exchangeId().topologyVersion() +
-                        ", time=" + (end - start) + "ms]");
+                        ", time=" + U.nanosToMillis(end - start) + "ms]");
             }
         }
         catch (IgniteCheckedException e) {
@@ -1664,7 +1664,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         IgniteConfiguration cfg = cctx.gridConfig();
 
-        long waitStart = U.currentTimeMillis();
+        long waitStartNanos = System.nanoTime();
 
         long waitTimeout = 2 * cfg.getNetworkTimeout();
 
@@ -1691,7 +1691,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
                 }
 
-                if (!txRolledBack && curTimeout > 0 && U.currentTimeMillis() - waitStart >= curTimeout) {
+                long passedMillis = U.millisSinceNanos(waitStartNanos);
+
+                if (!txRolledBack && curTimeout > 0 && passedMillis >= curTimeout) {
                     txRolledBack = true;
 
                     cctx.tm().rollbackOnTopologyChange(initialVersion());
@@ -1707,10 +1709,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        long waitEnd = U.currentTimeMillis();
+        long waitEndNanos = System.nanoTime();
 
         if (log.isInfoEnabled()) {
-            long waitTime = (waitEnd - waitStart);
+            long waitTime = U.nanosToMillis(waitEndNanos - waitStartNanos);
 
             String futInfo = RELEASE_FUTURE_DUMP_THRESHOLD > 0 && waitTime > RELEASE_FUTURE_DUMP_THRESHOLD ?
                 partReleaseFut.toString() : "NA";
@@ -1719,7 +1721,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (log.isInfoEnabled())
                 log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
-                    ", waitTime=" + (waitEnd - waitStart) + "ms, futInfo=" + futInfo + ", mode=" + mode + "]");
+                    ", waitTime=" + waitTime + "ms, futInfo=" + futInfo + ", mode=" + mode + "]");
         }
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
@@ -2207,7 +2209,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                if (serverNodeDiscoveryEvent() || localJoinExchange())
+                boolean locNodeNotCrd = crd == null || !crd.isLocal();
+
+                if (locNodeNotCrd && (serverNodeDiscoveryEvent() || localJoinExchange()))
                     detectLostPartitions(res);
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
@@ -2378,7 +2382,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 latestStartedNode = nodeId;
         }
 
-        return new T2<>(TimeUnit.NANOSECONDS.toMillis(maxStartTime - minStartTime), latestStartedNode);
+        return new T2<>(U.nanosToMillis(maxStartTime - minStartTime), latestStartedNode);
     }
 
     /**
@@ -2901,6 +2905,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (log.isInfoEnabled()) {
                             log.info("Coordinator received single message [ver=" + initialVersion() +
                                 ", node=" + nodeId +
+                                (allReceived ? "" : ", remainingNodes=" + remaining.size()) +
                                 ", allReceived=" + allReceived + ']');
                         }
                     }
@@ -3476,8 +3481,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
                     assignPartitionsStates();
             }
-            else if (exchCtx.events().hasServerJoin())
-                assignPartitionsStates();
+            else {
+                if (exchCtx.events().hasServerJoin())
+                    assignPartitionsStates();
+            }
 
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment) {

@@ -15,19 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.client.thin;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheEntrySetAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 
 /**
- *
+ * Thin client payload input channel.
  */
-public class GridCacheReplicatedEntrySetSelfTest extends GridCacheEntrySetAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+class PayloadInputChannel {
+    /** Client channel. */
+    private final ClientChannel ch;
+
+    /** Input stream. */
+    private final BinaryInputStream in;
+
+    /**
+     * Constructor.
+     */
+    PayloadInputChannel(ClientChannel ch, byte[] payload) {
+        in = new BinaryHeapInputStream(payload);
+        this.ch = ch;
+    }
+
+    /**
+     * Gets client channel.
+     */
+    public ClientChannel clientChannel() {
+        return ch;
+    }
+
+    /**
+     * Gets input stream.
+     */
+    public BinaryInputStream in() {
+        return in;
     }
 }

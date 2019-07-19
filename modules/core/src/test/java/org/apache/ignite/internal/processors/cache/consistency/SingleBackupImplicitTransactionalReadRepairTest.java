@@ -15,31 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheEntrySetAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+package org.apache.ignite.internal.processors.cache.consistency;
 
 /**
  *
  */
-public class GridCacheDhtEntrySetSelfTest extends GridCacheEntrySetAbstractSelfTest {
+public class SingleBackupImplicitTransactionalReadRepairTest extends ImplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
-
-        cfg.setNearConfiguration(null);
-
-        cfg.setBackups(gridCount());
-
-        return cfg;
+    @Override protected Integer backupsCount() {
+        return 1; // Single backup possible optimisations check.
     }
 }

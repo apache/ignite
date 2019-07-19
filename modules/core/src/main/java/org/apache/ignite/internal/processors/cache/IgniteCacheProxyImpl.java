@@ -365,6 +365,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withReadRepair() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
         GridCacheContext<K, V> ctx = getContextSafe();
 
@@ -496,7 +501,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), scanQry.isDataPageScanEnabled());
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null);
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());

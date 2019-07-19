@@ -797,6 +797,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Sets transaction for current thread.
+     * @return Previously associated transaction.
+     */
+    public IgniteInternalTx tx(IgniteInternalTx tx) {
+        long key = Thread.currentThread().getId();
+
+        return tx == null ? threadMap.remove(key) : threadMap.put(key, tx);
+    }
+
+    /**
      * @return Transaction for current thread.
      */
     public <T> T tx() {
