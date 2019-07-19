@@ -46,6 +46,8 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        awaitPartitionMapExchange(true, false, null);
+
         stopAllGrids();
     }
 
