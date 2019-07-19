@@ -289,7 +289,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (weight <= WARN_THRESHOLD)
             return;
 
-        if (prevWarnTime.compareAndSet(prevWarningNs, curNs)) {
+        if (prevWarnTime.compareAndSet(prevWarningNs, curNs) && log.isInfoEnabled()) {
             String msg = String.format("Throttling is applied to page modifications " +
                     "[percentOfPartTime=%.2f, markDirty=%d pages/sec, checkpointWrite=%d pages/sec, " +
                     "estIdealMarkDirty=%d pages/sec, curDirty=%.2f, maxDirty=%.2f, avgParkTime=%d ns, " +

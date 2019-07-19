@@ -105,10 +105,12 @@ public class DistributedBaselineConfiguration {
     @NotNull private <T> DistributePropertyListener<T> makeUpdateListener(Object defaultVal) {
         return (name, oldVal, newVal) -> {
             if (!Objects.equals(oldVal, newVal)) {
-                if (oldVal == null)
-                    log.info(format(DEFAULT_PROPERTY_UPDATE_MESSAGE, name, defaultVal, newVal));
-                else
-                    log.info(format(PROPERTY_UPDATE_MESSAGE, name, oldVal, newVal));
+                if (log.isInfoEnabled()) {
+                    if (oldVal == null)
+                        log.info(format(DEFAULT_PROPERTY_UPDATE_MESSAGE, name, defaultVal, newVal));
+                    else
+                        log.info(format(PROPERTY_UPDATE_MESSAGE, name, oldVal, newVal));
+                }
             }
         };
     }

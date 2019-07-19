@@ -155,12 +155,14 @@ class BaselineAutoAdjustScheduler {
             long lastScheduledTaskTime = totalEndTime - System.currentTimeMillis();
 
             if (lastScheduledTaskTime <= 0) {
-                log.info("Baseline auto-adjust will be executed right now.");
+                if (log.isInfoEnabled())
+                    log.info("Baseline auto-adjust will be executed right now.");
 
                 baselineAutoAdjustExecutor.execute(baselineAutoAdjustData);
             }
             else {
-                log.info("Baseline auto-adjust will be executed in '" + lastScheduledTaskTime + "' ms.");
+                if (log.isInfoEnabled())
+                    log.info("Baseline auto-adjust will be executed in '" + lastScheduledTaskTime + "' ms.");
 
                 endTime = calculateEndTime(lastScheduledTaskTime);
 

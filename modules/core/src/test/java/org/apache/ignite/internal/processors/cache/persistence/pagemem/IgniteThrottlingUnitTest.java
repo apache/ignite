@@ -294,6 +294,8 @@ public class IgniteThrottlingUnitTest {
         AtomicInteger warnings = new AtomicInteger(0);
         IgniteLogger log = mock(IgniteLogger.class);
 
+        when(log.isInfoEnabled()).thenReturn(true);
+
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
 
