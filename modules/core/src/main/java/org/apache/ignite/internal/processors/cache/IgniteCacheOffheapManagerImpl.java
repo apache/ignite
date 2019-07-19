@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -179,9 +178,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
-    /** */
-    private CacheObject NULL_VAL;
-
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
         return globalRmvId;
@@ -203,8 +199,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (grp.isLocal())
                     locCacheDataStore = createCacheDataStore(0);
-
-                NULL_VAL = new CacheObjectImpl(null, ctx.marshaller().marshal(null));
             }
             finally {
                 ctx.database().checkpointReadUnlock();
@@ -632,28 +626,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheContext cctx,
         KeyCacheObject key,
         GridCacheVersion ver,
-        int partId,
         GridDhtLocalPartition part) throws IgniteCheckedException {
-        dataStore(part).removeWithTombstone(cctx, key, ver, partId);
+        assert part != null;
+
+        dataStore(part).removeWithTombstone(cctx, key, ver, part);
     }
 
     @Override public boolean isTombstone(CacheDataRow row) throws IgniteCheckedException {
-        if (row == null || !grp.supportsTombstone())
+        if (!grp.supportsTombstone())
             return false;
 
-        CacheObject val = row.value();
-
-        assert val != null : row;
-
-        if (val.cacheObjectType() == CacheObject.TYPE_REGULAR) {
-            byte[] null_bytes = NULL_VAL.valueBytes(null);
-            byte[] bytes = val.valueBytes(null);
-
-            if (Arrays.equals(null_bytes, bytes))
-                return true;
-        }
-
-        return false;
+        return grp.shared().database().isTombstone(row);
     }
 
     /** {@inheritDoc} */
@@ -2712,7 +2695,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 this.oldRow = oldRow;
 
-                newRow = createRow(cctx, key, NULL_VAL, ver, 0, oldRow);
+                newRow = createRow(cctx, key, cctx.shared().database().tombstoneValue(), ver, 0, oldRow);
             }
 
             /** {@inheritDoc} */
@@ -2730,7 +2713,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, int partId) throws IgniteCheckedException {
+        @Override public void removeWithTombstone(
+                GridCacheContext cctx,
+                KeyCacheObject key,
+                GridCacheVersion ver,
+                GridDhtLocalPartition part) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
@@ -2744,6 +2731,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
 
                 assert c.operationType() == PUT || c.operationType() == IN_PLACE : c.operationType();
+
+                part.tombstoneCreated();
 
                 if (!isTombstone(c.oldRow))
                     cctx.tombstoneCreated();
@@ -2933,7 +2922,34 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public GridCursor<? extends CacheDataRow> cursor(boolean withTombstones) throws IgniteCheckedException {
             GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
 
-            return withTombstones ? cur : cursorSkipTombstone(cur);
+            return withTombstones ? cursorSkipEmpty(cur) : cursorSkipTombstone(cur);
+        }
+
+        private GridCursor<? extends CacheDataRow> cursorSkipEmpty(final GridCursor<? extends CacheDataRow> cur) {
+            if (!grp.supportsTombstone())
+                return cur;
+
+            return new GridCursor<CacheDataRow>() {
+                CacheDataRow next;
+
+                @Override public boolean next() throws IgniteCheckedException {
+                    while (cur.next()) {
+                        CacheDataRow next = cur.get();
+
+                        if (next.version() != null) {
+                            this.next = next;
+
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                @Override public CacheDataRow get() {
+                    return next;
+                }
+            };
         }
 
         private GridCursor<? extends CacheDataRow> cursorSkipTombstone(final GridCursor<? extends CacheDataRow> cur) {
@@ -2965,7 +2981,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
-            return cursorSkipTombstone(dataTree.find(null, null, x));
+            GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null, x);
+
+            return x == CacheDataRowAdapter.RowData.TOMBSTONES ? cursorSkipEmpty(cur) : cursorSkipTombstone(cur);
         }
 
         /** {@inheritDoc} */

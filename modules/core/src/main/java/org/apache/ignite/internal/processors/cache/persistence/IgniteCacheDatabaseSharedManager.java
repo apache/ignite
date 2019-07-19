@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -45,10 +46,13 @@ import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -130,6 +134,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
+    /** */
+    private CacheObject TOMBSTONE_VAL;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -145,7 +151,60 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
+
+        TOMBSTONE_VAL = new CacheObjectImpl(null, cctx.marshaller().marshal(null));
     }
+
+    public CacheObject tombstoneValue() {
+        return TOMBSTONE_VAL;
+    }
+
+    public boolean isTombstone(CacheDataRow row) throws IgniteCheckedException {
+        if (row == null)
+            return false;
+
+        CacheObject val = row.value();
+
+        assert val != null : row;
+
+        if (val.cacheObjectType() == CacheObject.TYPE_REGULAR) {
+            byte[] nullBytes = TOMBSTONE_VAL.valueBytes(null);
+            byte[] bytes = val.valueBytes(null);
+
+            if (Arrays.equals(nullBytes, bytes))
+                return true;
+        }
+
+        return false;
+    }
+
+    public boolean isTombstone(long addr) throws IgniteCheckedException {
+        int off = 0;
+
+        byte type = PageUtils.getByte(addr, off + 4);
+
+        if (type != CacheObject.TYPE_REGULAR)
+            return false;
+
+        byte[] nullBytes = TOMBSTONE_VAL.valueBytes(null);
+
+        int len = PageUtils.getInt(addr, off);
+
+        if (len != nullBytes.length)
+            return false;
+
+        off += 5;
+
+        for (int i = 0; i < len; i++) {
+            byte b = PageUtils.getByte(addr, off++);
+
+            if (nullBytes[i] != b)
+                return false;
+        }
+
+        return true;
+    }
+
 
     /**
      * @param cfg Ignite configuration.

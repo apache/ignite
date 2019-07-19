@@ -498,6 +498,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
+        boolean tombstones = rowData == RowData.TOMBSTONES;
+
+        if (tombstones && !sharedCtx.database().isTombstone(addr + off + len + 1)) {
+            verReady = true;
+
+            return;
+        }
+
         if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
             byte type = PageUtils.getByte(addr, off);
             off++;
@@ -519,10 +527,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte type = PageUtils.getByte(addr, off);
         off++;
 
-        byte[] bytes = PageUtils.getBytes(addr, off, len);
-        off += len;
+        if (!tombstones) {
+            byte[] bytes = PageUtils.getBytes(addr, off, len);
 
-        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+            val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+        }
+
+        off += len;
 
         int verLen;
 
@@ -941,7 +952,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         FULL_WITH_HINTS,
 
         /** Force instant hints actualization for update operation with history (to avoid races with vacuum). */
-        NO_KEY_WITH_HINTS
+        NO_KEY_WITH_HINTS,
+
+        /** Do not read row data for non-tombstone entries. */
+        TOMBSTONES
     }
 
     /** {@inheritDoc} */

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -54,12 +55,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -172,6 +175,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
+
+    /** */
+    private volatile boolean tombstoneCreated;
 
     /**
      * @param ctx Context.
@@ -619,8 +625,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             assert partState == MOVING || partState == LOST;
 
-            if (casState(state, OWNING))
+            if (casState(state, OWNING)) {
+                if (grp.supportsTombstone())
+                    submitClearTombstones();
+
                 return true;
+            }
         }
     }
 
@@ -1114,6 +1124,95 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public long fullSize() {
         return store.fullSize();
+    }
+
+    /**
+     *
+     */
+    public void tombstoneCreated() {
+        tombstoneCreated = true;
+    }
+
+    /**
+     *
+     */
+    private void submitClearTombstones() {
+        if (tombstoneCreated)
+            grp.shared().kernalContext().closure().runLocalSafe(this::clearTombstones, true);
+    }
+
+    /**
+     *
+     */
+    private void clearTombstones() {
+        final int stopCheckingFreq = 1000;
+
+        CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
+
+        try {
+            GridCursor<? extends CacheDataRow> cur = store.cursor(CacheDataRowAdapter.RowData.TOMBSTONES);
+
+            int cntr = 0;
+
+            while (cur.next()) {
+                CacheDataRow row = cur.get();
+
+                if (!grp.offheap().isTombstone(row))
+                    continue;
+
+                assert row.key() != null;
+                assert row.version() != null;
+
+                if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
+                    hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
+
+                assert hld != null;
+
+                ctx.database().checkpointReadLock();
+
+                try {
+                    while (true) {
+                        GridCacheMapEntry cached = null;
+
+                        try {
+                            cached = putEntryIfObsoleteOrAbsent(
+                                hld,
+                                hld.cctx,
+                                grp.affinity().lastVersion(),
+                                row.key(),
+                                true,
+                                false);
+
+                            cached.removeTombstone(row.version());
+
+                            cached.touch();
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            cached = null;
+                        }
+                        finally {
+                            if (cached != null)
+                                cached.touch();
+                        }
+                    }
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+
+                cntr++;
+
+                if (cntr % stopCheckingFreq == 0) {
+                    if (ctx.kernalContext().isStopping() || state() != OWNING)
+                        break;
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed clear tombstone entries for partition: " + id, e);
+        }
     }
 
     /**
