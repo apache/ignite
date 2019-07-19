@@ -62,6 +62,8 @@ public class PartitionDeltaPageStore implements Closeable {
     /** */
     private volatile boolean writable = true;
 
+    // TODO create a mask based on total allocated pages within this partition.
+
     /**
      * @param file File to store.
      * @param factory Facotry.
