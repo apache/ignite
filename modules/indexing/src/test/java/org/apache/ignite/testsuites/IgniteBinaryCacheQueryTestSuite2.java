@@ -21,7 +21,6 @@ import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallba
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionedQueryMultiThreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheQueriesLoadTest1;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
@@ -133,8 +132,6 @@ import org.junit.runners.Suite;
     DisappearedCacheWasNotFoundMessageSelfTest.class,
 
     TableViewSubquerySelfTest.class,
-
-    IgniteCacheQueriesLoadTest1.class,
 
     SqlLocalQueryConnectionAndStatementTest.class,
 
