@@ -42,7 +42,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.events.PageReplacementStartedEvent;
+import org.apache.ignite.events.PageReplacementStartEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -2314,7 +2314,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     if (ctx.gridEvents().isRecordable(EventType.EVT_PAGE_REPLACEMENT_STARTED)) {
                         ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                             @Override public void run() {
-                                ctx.gridEvents().record(new PageReplacementStartedEvent(
+                                ctx.gridEvents().record(new PageReplacementStartEvent(
                                     ctx.localNode(),
                                     msg,
                                     memMetrics.getName()));

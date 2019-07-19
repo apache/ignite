@@ -775,7 +775,7 @@ public interface EventType {
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see org.apache.ignite.configuration.DataRegionConfiguration#setMaxSize(long)
-     * @see PageReplacementStartedEvent
+     * @see PageReplacementStartEvent
      */
     public static final int EVT_PAGE_REPLACEMENT_STARTED = 142;
 

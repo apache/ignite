@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
  *
  * @see EventType#EVT_PAGE_REPLACEMENT_STARTED
  */
-public class PageReplacementStartedEvent extends EventAdapter {
+public class PageReplacementStartEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,7 @@ public class PageReplacementStartedEvent extends EventAdapter {
      * @param msg Optional event message.
      * @param dataRegionName Data region name.
      */
-    public PageReplacementStartedEvent(ClusterNode node, String msg, String dataRegionName) {
+    public PageReplacementStartEvent(ClusterNode node, String msg, String dataRegionName) {
         super(node, msg, EventType.EVT_PAGE_REPLACEMENT_STARTED);
 
         this.dataRegionName = dataRegionName;
