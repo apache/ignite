@@ -253,7 +253,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param pageSize Page size.
-     * @throws Exception If failed.
+     * @throws Exception if failed.
      */
     protected void checkInsertDeleteMultiThreaded(int pageSize) throws Exception {
         checkInsertDeleteMultiThreaded(pageSize, false);
@@ -374,7 +374,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param pageSize Page size.
-     * @throws Exception If failed.
+     * @throws Exception if failed.
      */
     protected void checkInsertDeleteSingleThreaded(int pageSize) throws Exception {
         checkInsertDeleteSingleThreaded(pageSize, false);

@@ -601,8 +601,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     memMetrics.updateEvictionRate();
                 }
 
-                if (written == COMPLETE && (written = writeWholePages(row, statHolder)) == COMPLETE)
+                if (written == COMPLETE) {
+                    written = writeWholePages(row, statHolder);
+
                     continue;
+                }
 
                 AbstractDataPageIO initIo = null;
 
@@ -634,8 +637,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         assert row.link() == 0 : row.link();
 
         int written = 0;
+        int rowSize = row.size();
 
-        while (row.size() - written >= MIN_SIZE_FOR_DATA_PAGE) {
+        while (rowSize - written >= MIN_SIZE_FOR_DATA_PAGE) {
             written = write(row, written, statHolder);
 
             memMetrics.incrementLargeEntriesPages();
