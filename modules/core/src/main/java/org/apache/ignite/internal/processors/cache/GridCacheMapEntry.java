@@ -1717,8 +1717,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            if (cctx.group().createTombstone(localPartition()))
-                cctx.offheap().removeWithTombstone(cctx, key, newVer, partition(), localPartition());
+            if (cctx.group().createTombstone(localPartition())) {
+                cctx.offheap().removeWithTombstone(cctx, key, newVer, localPartition());
+
+                if (!cctx.group().createTombstone(localPartition()))
+                    removeTombstone0(newVer);
+            }
             else
                 removeValue();
 
@@ -2815,6 +2819,34 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             onMarkedObsolete();
 
         return marked;
+    }
+
+    /**
+     * @param tombstoneVer Tombstone version.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void removeTombstone(GridCacheVersion tombstoneVer) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        lockEntry();
+
+        try {
+            checkObsolete();
+
+            removeTombstone0(tombstoneVer);
+        }
+        finally {
+            unlockEntry();
+        }
+    }
+
+    /**
+     * @param tombstoneVer Tombstone version.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void removeTombstone0(GridCacheVersion tombstoneVer) throws IgniteCheckedException {
+        RemoveClosure closure = new RemoveClosure(this, tombstoneVer);
+
+        cctx.offheap().invoke(cctx, key, localPartition(), closure);
     }
 
     /**
@@ -5715,6 +5747,58 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         cctx.continuousQueries().onEntryExpired(this, key(), expiredVal);
 
         return true;
+    }
+
+    /**
+     *
+     */
+    private static class RemoveClosure implements IgniteCacheOffheapManager.OffheapInvokeClosure {
+        /** */
+        private final GridCacheMapEntry entry;
+
+        /** */
+        private final GridCacheVersion ver;
+
+        /** */
+        private IgniteTree.OperationType op;
+
+        /** */
+        private CacheDataRow oldRow;
+
+        public RemoveClosure(GridCacheMapEntry entry, GridCacheVersion ver) {
+            this.entry = entry;
+            this.ver = ver;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable CacheDataRow oldRow() {
+            return oldRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void call(@Nullable CacheDataRow row) throws IgniteCheckedException {
+            if (row == null || !ver.equals(row.version())) {
+                op = IgniteTree.OperationType.NOOP;
+
+                return;
+            }
+
+            row.key(entry.key);
+
+            oldRow = row;
+
+           op = IgniteTree.OperationType.REMOVE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheDataRow newRow() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree.OperationType operationType() {
+            return op;
+        }
     }
 
     /**

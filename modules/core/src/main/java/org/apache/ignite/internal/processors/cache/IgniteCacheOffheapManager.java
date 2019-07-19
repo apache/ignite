@@ -406,7 +406,6 @@ public interface IgniteCacheOffheapManager {
         GridCacheContext cctx,
         KeyCacheObject key,
         GridCacheVersion ver,
-        int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
@@ -453,6 +452,8 @@ public interface IgniteCacheOffheapManager {
      * @throws IgniteCheckedException If failed.
      */
     public GridIterator<CacheDataRow> partitionIterator(final int part, boolean withTombstones) throws IgniteCheckedException;
+
+    public GridIterator<CacheDataRow> tombstonesIterator(final int part) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -917,7 +918,7 @@ public interface IgniteCacheOffheapManager {
          * @param partId Partition number.
          * @throws IgniteCheckedException If failed.
          */
-        public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, int partId) throws IgniteCheckedException;
+        public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, GridDhtLocalPartition part) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

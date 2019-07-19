@@ -632,9 +632,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheContext cctx,
         KeyCacheObject key,
         GridCacheVersion ver,
-        int partId,
         GridDhtLocalPartition part) throws IgniteCheckedException {
-        dataStore(part).removeWithTombstone(cctx, key, ver, partId);
+        assert part != null;
+
+        dataStore(part).removeWithTombstone(cctx, key, ver, part);
     }
 
     @Override public boolean isTombstone(CacheDataRow row) throws IgniteCheckedException {
@@ -913,6 +914,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return new GridEmptyCloseableIterator<>();
 
         return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null, null, withTombstones);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridIterator<CacheDataRow> tombstonesIterator(int part) {
+        assert locCacheDataStore == null;
+
+        CacheDataStore data = partitionData(part);
+
+        if (data == null)
+            return new GridEmptyCloseableIterator<>();
+
+        // TODO IGNITE-11704.
+        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null, null, true);
     }
 
     /**
@@ -2730,7 +2744,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, int partId) throws IgniteCheckedException {
+        @Override public void removeWithTombstone(
+                GridCacheContext cctx,
+                KeyCacheObject key,
+                GridCacheVersion ver,
+                GridDhtLocalPartition part) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
@@ -2744,6 +2762,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
 
                 assert c.operationType() == PUT || c.operationType() == IN_PLACE : c.operationType();
+
+                part.tombstoneCreated();
 
                 if (!isTombstone(c.oldRow))
                     cctx.tombstoneCreated();
