@@ -1736,8 +1736,9 @@ public class IgnitionEx {
 
                     start0(startCtx, myCfg, startNodeTimer);
 
-                    log.info("Node started : "
-                        + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
+                    if (log.isInfoEnabled())
+                        log.info("Node started : "
+                            + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
                 }
                 catch (Exception e) {
                     if (log != null)
