@@ -364,7 +364,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
         DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg,
