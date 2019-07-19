@@ -1169,8 +1169,11 @@ public class GridSqlQuerySplitter {
         for (GridSqlAst exp : mapExps) // Add all map expressions as visible.
             mapQry.addColumn(exp, true);
 
-        for (GridSqlAst exp: rdcExps) // Add all reduce columns as visible.
-            rdcQry.addColumn(exp, true);
+        for (int i = 0; i < visibleCols; i++) // Add visible reduce columns.
+            rdcQry.addColumn(rdcExps.get(i), true);
+
+        for (int i = visibleCols; i < rdcExps.size(); i++) // Add invisible reduce columns (HAVING).
+            rdcQry.addColumn(rdcExps.get(i), false);
 
         for (int i = rdcExps.size(); i < mapExps.size(); i++)  // Add all extra map columns as invisible reduce columns.
             rdcQry.addColumn(SplitterUtils.column(((GridSqlAlias)mapExps.get(i)).alias()), false);
@@ -1203,14 +1206,8 @@ public class GridSqlQuerySplitter {
         }
 
         // -- ORDER BY
-        if (!mapQry.sort().isEmpty()) {
-            for (GridSqlSortColumn sortCol : mapQry.sort())
-                rdcQry.addSort(sortCol);
-
-            // If collocatedGrpBy is true, then aggregateFound is always false.
-            if (aggregateFound) // Ordering over aggregates does not make sense.
-                mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
-        }
+        if (!mapQry.sort().isEmpty())
+            buildSortingRule(mapQry, rdcQry, mapExps, aggregateFound);
 
         // -- LIMIT
         if (mapQry.limit() != null) {
@@ -1232,27 +1229,14 @@ public class GridSqlQuerySplitter {
             mapQry.offset(null);
         }
 
-        GridSqlSelect resQry;
-        if (rdcQry.visibleColumns() > visibleCols) { // Reduce query has extra columns which should be omitted in result query.
-            resQry = new GridSqlSelect().from(new GridSqlSubquery(rdcQry));
-
-            for (int i = 0; i < visibleCols; i++)
-                if (rdcExps.get(i) instanceof GridSqlAlias)
-                    resQry.addColumn(SplitterUtils.column(((GridSqlAlias) rdcExps.get(i)).alias()), true);
-                else
-                    resQry.addColumn(rdcExps.get(i), true);
-
-        } else // Reduce query contains only desired columns, so we do not need any wrapper.
-            resQry = rdcQry;
-
         // -- DISTINCT
         if (mapQry.distinct()) {
             mapQry.distinct(!aggregateFound && mapQry.groupColumns() == null && mapQry.havingColumn() < 0);
-            resQry.distinct(true);
+            rdcQry.distinct(true);
         }
 
         // Replace the given select with generated result query in the parent.
-        parent.child(childIdx, resQry);
+        parent.child(childIdx, rdcQry);
 
         // Setup resulting map query.
         GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
@@ -1268,6 +1252,121 @@ public class GridSqlQuerySplitter {
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
+    }
+
+    /**
+     * Copy all sorting columns to reduce query. If any sorting expression can be computed on the reduce node
+     * then it is substituted by the computing one.
+     *
+     * @param mapQry Query that should be executed on map nodes.
+     * @param rdcQry Query that should be executed on reduce node.
+     * @param mapExps Map query expressions. Contains aliases like "original_column as CX_Y".
+     * @param aggregateFound Whether original query contains aggregate functions or not.
+     */
+    private static void buildSortingRule(GridSqlSelect mapQry, GridSqlSelect rdcQry, List<GridSqlAst> mapExps, boolean aggregateFound) {
+        int visibleCols = rdcQry.visibleColumns();
+
+        // original expression to unified CX_Y mapping
+        Map<String, String> replacements = new HashMap<>();
+        for (GridSqlAst el : mapExps.subList(0, visibleCols)) {
+            GridSqlAlias a = (GridSqlAlias) el;
+
+            GridSqlAst child = el.child();
+            if (child instanceof GridSqlColumn)
+                replacements.put(((GridSqlColumn)child).columnName(), a.alias());
+        }
+
+        for (GridSqlSortColumn sortCol : mapQry.sort()) {
+            rdcQry.addSort(sortCol);
+
+            int sortColIdx = sortCol.column();
+            if (!replacements.isEmpty() && sortColIdx >= visibleCols) {
+                GridSqlAst sortExpr = mapExps.get(sortColIdx).child();
+                GridSqlAst newSortExpr = null;
+
+                // if we can compute sort expression on reduce node using visible columns then lets do it
+                if (sortExpr instanceof GridSqlFunction)
+                    newSortExpr = copyFunction((GridSqlFunction)sortExpr, replacements);
+                else if (sortExpr instanceof GridSqlOperation)
+                    newSortExpr = copyOperation((GridSqlOperation)sortExpr, replacements);
+
+                if (newSortExpr != null)
+                    rdcQry.setColumn(sortColIdx, newSortExpr);
+            }
+        }
+
+        // If collocatedGrpBy is true, then aggregateFound is always false.
+        if (aggregateFound) // Ordering over aggregates does not make sense.
+            mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
+    }
+
+    /**
+     * Unfair copy of the given function. Returns recursive copy of the function where all arguments
+     * are replaced according to replacement map.
+     *
+     * @param orig Original function.
+     * @param replacement Replacement map.
+     * @return Copy of the function or {@code null} if any argument not presented in the replacement map.
+     */
+    private static GridSqlFunction copyFunction(GridSqlFunction orig, Map<String, String> replacement) {
+        GridSqlFunction func = new GridSqlFunction(null, orig.name());
+        // try to copy children with alias replacement
+        if (!copyChildrenWithReplacement(orig, func, replacement))
+            return null;
+
+        return func;
+    }
+
+    /**
+     * Unfair copy of the given operation. Returns recursive copy of the operation where all arguments
+     * are replaced according to replacement map.
+     *
+     * @param orig Original operation.
+     * @param replacement Replacement map.
+     * @return Copy of the operation or {@code null} if any argument not presented in the replacement map.
+     */
+    private static GridSqlOperation copyOperation(GridSqlOperation orig, Map<String, String> replacement) {
+        GridSqlOperation op = new GridSqlOperation(orig.operationType());
+        // try to copy children with alias replacement
+        if (!copyChildrenWithReplacement(orig, op, replacement))
+            return null;
+
+        return op;
+    }
+
+    /**
+     * Copy with children from one element to another with replacement of the original aliases
+     * according to the replacement map.
+     *
+     * @param from Element whose children should be copied.
+     * @param to Element where children should be copied.
+     * @param replacement Alias replacement map.
+     * @return True if all children were copied and all aliases were replaced.
+     */
+    private static boolean copyChildrenWithReplacement(GridSqlElement from, GridSqlElement to, Map<String, String> replacement) {
+        for (int i = 0; i < from.size(); i++) {
+            GridSqlAst child = from.child(i);
+            GridSqlAst newChild = null;
+
+            if (child instanceof GridSqlColumn) {
+                String cName = replacement.get(((GridSqlColumn)child).columnName());
+                if (cName != null)
+                    newChild = SplitterUtils.column(cName);
+
+            } else if (child instanceof GridSqlFunction)
+                newChild = copyFunction((GridSqlFunction)child, replacement);
+            else if (child instanceof GridSqlOperation)
+                newChild = copyOperation((GridSqlOperation)child, replacement);
+            else if (child instanceof GridSqlConst)
+                newChild = child;
+
+            if (newChild == null)
+                return false;
+
+            to.addChild(newChild);
+        }
+
+        return true;
     }
 
     /**

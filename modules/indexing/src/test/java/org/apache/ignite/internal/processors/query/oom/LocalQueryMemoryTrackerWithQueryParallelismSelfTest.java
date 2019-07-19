@@ -170,13 +170,9 @@ public class LocalQueryMemoryTrackerWithQueryParallelismSelfTest extends Abstrac
         checkQueryExpectOOM("select DISTINCT K.name from K GROUP BY K.id", true);
 
         // Local result is quite small.
-        assertEquals(2, localResults.size());
-
+        assertEquals(1, localResults.size());
         assertEquals(0, localResults.get(0).memoryReserved());
-        assertEquals(0, localResults.get(1).memoryReserved());
-
         assertEquals(0, localResults.get(0).getRowCount());
-        assertEquals(0, localResults.get(1).getRowCount());
     }
 
     /** {@inheritDoc} */

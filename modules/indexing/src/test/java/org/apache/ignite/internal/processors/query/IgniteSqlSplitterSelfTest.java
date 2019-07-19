@@ -29,7 +29,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -497,7 +496,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test checks that splitter properly generates subquery for query like SELECT DISTINCT f1 FROM t ORDER BY func(f1).
+     * Ensure that we can handle disturbed queries with ordering by function of expression from select clause.
+     * For example: SELECT DISTINCT f1 FROM t ORDER BY func(f1).
      */
     @Test
     public void testQueryWithDistinctAndOrderBy() {
@@ -514,23 +514,17 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             c1.put(new AffinityKey<>(2, orgId), new Person2(1, "Another Vasya"));
 
             {
-                List<List<?>> plan = c1.query(new SqlFieldsQuery("explain select distinct name from Person2 order by lower(name)")).getAll();
+                List<List<?>> rs = c1.query(new SqlFieldsQuery("select distinct name from Person2 order by length(name)")).getAll();
 
-                assertEquals("Execution plan result should contain exactly 2 row", 2, plan.size());
-                String qryPlan = (String)plan.get(1).get(0);
-                assertTrue("Reduce query should have subselect:\n" + qryPlan,
-                    Pattern.compile("select\\s+distinct\\s+\"name\"\\s+from\\s+\\(\\s+select.*",
-                        Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(qryPlan).matches());
+                assertEquals("Result set should contains exactly 2 row", 2, rs.size());
+                assertEquals("", Arrays.asList("Vasya", "Another Vasya"), Arrays.asList(rs.get(0).get(0), rs.get(1).get(0)));
             }
 
             {
-                List<List<?>> plan = c1.query(new SqlFieldsQuery("explain select distinct lower(name) from Person2 order by lower(name)")).getAll();
+                List<List<?>> rs = c1.query(new SqlFieldsQuery("select distinct orgId from Person2 order by (-orgId * 1000 + 10)")).getAll();
 
-                assertEquals("Execution plan result should contain exactly 2 row", 2, plan.size());
-                String qryPlan = (String)plan.get(1).get(0);
-                assertFalse("Reduce query should have no subselect:\n" + qryPlan,
-                    Pattern.compile("select.*from\\s+\\(\\s+select.*",
-                        Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(qryPlan).matches());
+                assertEquals("Result set should contains exactly 2 row", 2, rs.size());
+                assertEquals("", Arrays.asList(3, 1), Arrays.asList(rs.get(0).get(0), rs.get(1).get(0)));
             }
         }
         finally {
@@ -539,7 +533,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test checks that additional visible columns in the inner query do not affect the result.
+     * Ensure that we can handle disturbed queries with grouping and distinct
      */
     @Test
     public void testQueryWithDistinctAndGroupBy() {
@@ -558,7 +552,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             List<List<?>> rs = c1.query(new SqlFieldsQuery("select distinct name from Person2 group by orgId, name")).getAll();
 
-            assertEquals("Result should contains exactly 2 rows [actualSize=" + rs.size() + "]", 2, rs.size());
+            assertEquals("Result should contains exactly 2 rows", 2, rs.size());
             List<String> names = rs.stream().map(r -> (String)r.get(0)).sorted().collect(Collectors.toList());
             assertEquals("Result should contains 2 unique names", Arrays.asList("Another Vasya", "Vasya"), names);
         }
