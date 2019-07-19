@@ -78,7 +78,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
 /** */
-public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest {
+public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHE_PARTS_COUNT = 8;
 

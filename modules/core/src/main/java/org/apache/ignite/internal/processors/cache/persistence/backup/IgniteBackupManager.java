@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -73,7 +74,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
 /** */
-public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
+public class IgniteBackupManager extends GridCacheSharedManagerAdapter
     implements IgniteChangeGlobalStateSupport {
     /** */
     public static final String DELTA_SUFFIX = ".delta";
@@ -129,7 +130,7 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private ThreadLocal<byte[]> threadTempArr;
 
     /** */
-    public IgniteBackupPageStoreManager(GridKernalContext ctx) throws IgniteCheckedException {
+    public IgniteBackupManager(GridKernalContext ctx) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
 
     }
@@ -193,16 +194,47 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
                         continue;
 
                     // Gather partitions metainfo for thouse which will be copied.
-                    ctx.gatherPartStat(bctx0.backupPartSizes.keySet());
+                    ctx.gatherPartStats(bctx0.backupPartAllocPages.keySet());
                 }
             }
 
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                // Nothing to do here.
+                // Under the write lock here. It's safe to add new stores
+                for (BackupContext2 bctx0 : backupCtxs.values()) {
+                    if (bctx0.started)
+                        continue;
+
+                    for (Map.Entry<GroupPartitionId, PartitionDeltaPageStore> e : bctx0.partDeltaStores.entrySet()) {
+                        processingParts.computeIfAbsent(e.getKey(), p -> new LinkedList<>())
+                            .add(e.getValue());
+                    }
+                }
+
+                // Remove not used delta stores.
+                for (List<PartitionDeltaPageStore> list0 : processingParts.values())
+                    list0.removeIf(store -> !store.writable());
             }
 
             @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                for (BackupContext2 bctx0 : backupCtxs.values()) {
+                    if (bctx0.started)
+                        continue;
 
+                    PartitionAllocationMap allocationMap = ctx.partitionStatMap();
+                    allocationMap.prepareForSnapshot();
+
+                    for (GroupPartitionId key : bctx0.backupPartAllocPages.keySet()) {
+                        PagesAllocationRange allocRange = allocationMap.get(key);
+
+                        assert allocRange != null : "Pages not allocated [pairId=" + key + ", ctx=" + bctx0 + ']';
+
+                        bctx0.backupPartAllocPages.put(key, allocRange.getCurrAllocatedPageCnt());
+                    }
+
+                    // TODO Schedule copy
+
+                    bctx0.started = true;
+                }
             }
         });
     }
@@ -246,7 +278,7 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
             throw new IgniteCheckedException("Backup with requested name is already scheduled: " + name);
 
         final GridCacheSharedContext<?, ?> cctx0 = cctx;
-        final BackupContext2 bctx0 = new BackupContext2(name, new File(dir, name));
+        final BackupContext2 bctx0 = new BackupContext2(name, new File(dir, name), executor);
 
         // Atomic operation, fails with ex if not.
         Files.createDirectory(bctx0.backupDir.toPath());
@@ -257,7 +289,7 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
                     final GroupPartitionId pair = new GroupPartitionId(entry.getKey(), partId);
                     final CacheGroupContext gctx = cctx0.cache().cacheGroup(entry.getKey());
 
-                    bctx0.backupPartSizes.put(pair, 0L);
+                    bctx0.backupPartAllocPages.put(pair, 0);
 
                     // Create cache backup directory if not.
                     File grpDir = U.resolveWorkDirectory(bctx0.backupDir.getAbsolutePath(),
@@ -610,12 +642,15 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
         /** Absolute backup storage path. */
         private final File backupDir;
 
+        /** Service to perform partitions copy. */
+        private final Executor executor;
+
         /**
          * The length of file size per each cache partiton file.
          * Partition has value greater than zero only for partitons in OWNING state.
          * Information collected under checkpoint write lock.
          */
-        private final Map<GroupPartitionId, Long> backupPartSizes = new HashMap<>();
+        private final Map<GroupPartitionId, Integer> backupPartAllocPages = new HashMap<>();
 
         /** Map of partitions to backup and theirs corresponding delta PageStores. */
         private final Map<GroupPartitionId, PartitionDeltaPageStore> partDeltaStores = new HashMap<>();
@@ -629,10 +664,12 @@ public class IgniteBackupPageStoreManager extends GridCacheSharedManagerAdapter
         /**
          * @param name Unique identifier of backup process.
          * @param backupDir Backup storage directory.
+         * @param executor Service to perform partitions copy.
          */
-        public BackupContext2(String name, File backupDir) {
+        public BackupContext2(String name, File backupDir, Executor executor) {
             this.name = name;
             this.backupDir = backupDir;
+            this.executor = executor;
         }
 
         /** {@inheritDoc} */

@@ -73,7 +73,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -1482,10 +1482,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private final GroupPartitionId key;
 
         /** */
-        private final IgniteBackupPageStoreManager storeBackup;
+        private final IgniteBackupManager storeBackup;
 
         /** */
-        public BackupPageStoreListener(int grpId, int partId, IgniteBackupPageStoreManager storeBackup) {
+        public BackupPageStoreListener(int grpId, int partId, IgniteBackupManager storeBackup) {
             assert storeBackup != null;
 
             key = new GroupPartitionId(grpId, partId);

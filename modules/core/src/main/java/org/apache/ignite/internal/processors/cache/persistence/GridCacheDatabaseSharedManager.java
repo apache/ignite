@@ -4358,8 +4358,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
-                @Override public void gatherPartStat(Set<GroupPartitionId> parts) {
-                    delegate.gatherPartStat(parts);
+                @Override public void gatherPartStats(Set<GroupPartitionId> parts) {
+                    delegate.gatherPartStats(parts);
                 }
 
                 /** {@inheritDoc} */
@@ -4530,7 +4530,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             /** {@inheritDoc} */
-            @Override public void gatherPartStat(Set<GroupPartitionId> parts) {
+            @Override public void gatherPartStats(Set<GroupPartitionId> parts) {
                 gatherParts.addAll(parts);
             }
 

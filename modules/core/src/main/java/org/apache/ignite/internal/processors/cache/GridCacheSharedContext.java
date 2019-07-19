@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -126,7 +126,7 @@ public class GridCacheSharedContext<K, V> {
     @Nullable private IgnitePageStoreManager pageStoreMgr;
 
     /** Page file snapshot manager. Can be {@code null} if presistence is not enabled. */
-    private IgniteBackupPageStoreManager storeBackupMgr;
+    private IgniteBackupManager storeBackupMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -221,7 +221,7 @@ public class GridCacheSharedContext<K, V> {
         @Nullable IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        IgniteBackupPageStoreManager storeBackupMgr,
+        IgniteBackupManager storeBackupMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -469,7 +469,7 @@ public class GridCacheSharedContext<K, V> {
         IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        IgniteBackupPageStoreManager storeBackupMgr,
+        IgniteBackupManager storeBackupMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -743,7 +743,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Page store backup manager.
      */
-    public IgniteBackupPageStoreManager storeBackup() {
+    public IgniteBackupManager storeBackup() {
         return storeBackupMgr;
     }
 

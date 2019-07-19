@@ -45,7 +45,7 @@ public interface DbCheckpointListener {
         /**
          * @param parts Collection of partitions for which statistics should be gathered.
          */
-        public void gatherPartStat(Set<GroupPartitionId> parts);
+        public void gatherPartStats(Set<GroupPartitionId> parts);
 
         /**
          * @return Partition allocation statistic map
