@@ -17,10 +17,18 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.AccessController;
+import java.security.AllPermission;
+import java.security.Permissions;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -43,6 +51,15 @@ public class SecurityUtils {
             return DFLT_SERIALIZE_VERSION;
         }
     };
+
+    /** Permissions that contain {@code AllPermission}. */
+    public static final Permissions ALL_PERMISSIONS;
+
+    static {
+        ALL_PERMISSIONS = new Permissions();
+
+        ALL_PERMISSIONS.add(new AllPermission());
+    }
 
     /**
      * Private constructor.
@@ -112,5 +129,46 @@ public class SecurityUtils {
         catch (IgniteCheckedException e) {
             throw new SecurityException("Failed to get security context.", e);
         }
+    }
+
+    /**
+     * Executes {@code Callable} as privileged block.
+     *
+     * @see AccessController#doPrivileged(java.security.PrivilegedExceptionAction)
+     */
+    public static <R> R doPrivileged(Callable<R> c) throws Exception {
+        try {
+            return AccessController.doPrivileged((PrivilegedExceptionAction<R>)c::call);
+        }
+        catch (PrivilegedActionException pae) {
+            throw pae.getException();
+        }
+    }
+
+    /**
+     * Executes {@code Callable} as privileged block. An exception will be converted to E bypassed {@code Function}.
+     *
+     * @see AccessController#doPrivileged(java.security.PrivilegedExceptionAction)
+     */
+    public static <R, E extends Throwable> R doPrivileged(Callable<R> c, Function<Exception, E> f) throws E {
+        try {
+            return doPrivileged(c);
+        }
+        catch (Exception e) {
+            throw f.apply(e);
+        }
+    }
+
+    /**
+     * Executes {@code Runnable} as privileged block.
+     *
+     * @see AccessController#doPrivileged(java.security.PrivilegedExceptionAction)
+     */
+    public static void doPrivileged(Runnable r) {
+        AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
+            r.run();
+
+            return null;
+        });
     }
 }

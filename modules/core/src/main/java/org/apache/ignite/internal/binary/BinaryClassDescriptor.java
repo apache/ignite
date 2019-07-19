@@ -45,6 +45,7 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -297,7 +298,7 @@ public class BinaryClassDescriptor {
                 for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                     for (Field f : c.getDeclaredFields()) {
                         if (serializeField(f)) {
-                            f.setAccessible(true);
+                            SecurityUtils.doPrivileged(() -> f.setAccessible(true));
 
                             String name = f.getName();
 

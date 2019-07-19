@@ -35,9 +35,12 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.doPrivileged;
 
 /**
  * Contains constants for all system properties and environmental variables in Ignite.
@@ -1278,15 +1281,12 @@ public final class IgniteSystemProperties {
      * @return Value of the system property or environment variable.
      *         Returns {@code null} if neither can be found for given name.
      */
-    @Nullable public static String getString(String name) {
+    public static @Nullable String getString(String name) {
         assert name != null;
 
-        String v = System.getProperty(name);
+        String v = doPrivileged(() -> System.getProperty(name), IgniteException::new);
 
-        if (v == null)
-            v = System.getenv(name);
-
-        return v;
+        return v == null ? doPrivileged(() -> System.getenv(name), IgniteException::new) : v;
     }
 
     /**

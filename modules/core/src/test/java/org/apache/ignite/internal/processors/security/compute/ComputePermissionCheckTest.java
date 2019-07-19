@@ -21,10 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -38,16 +36,15 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.impl.FutureAdapter;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -218,43 +215,6 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         }
         finally {
             RNT_LOCK.unlock();
-        }
-    }
-
-    /** */
-    private static class FutureAdapter<T> implements Future<T> {
-        /** Ignite future. */
-        private final IgniteFuture<T> igniteFut;
-
-        /** */
-        public FutureAdapter(IgniteFuture<T> igniteFut) {
-            this.igniteFut = igniteFut;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cancel(boolean mayInterruptIfRunning) {
-            return igniteFut.cancel();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isCancelled() {
-            return igniteFut.isCancelled();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isDone() {
-            return igniteFut.isDone();
-        }
-
-        /** {@inheritDoc} */
-        @Override public T get() throws InterruptedException, ExecutionException {
-            return igniteFut.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public T get(long timeout,
-            @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return igniteFut.get(timeout, unit);
         }
     }
 

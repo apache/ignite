@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.impl;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
@@ -34,22 +35,32 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** Permissions. */
     private final SecurityPermissionSet perms;
 
+    /** . */
+    private final Permissions smPerms;
+
     /** Users security data. */
     private final TestSecurityData[] clientData;
 
     /** */
     public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
         TestSecurityData... clientData) {
+        this(login, pwd, perms, new Permissions(), clientData);
+    }
+
+    /** . */
+    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+        Permissions smPerms, TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;
         this.perms = perms;
+        this.smPerms = smPerms;
         this.clientData = clientData.clone();
     }
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
         return new TestSecurityProcessor(ctx,
-            new TestSecurityData(login, pwd, perms),
+            new TestSecurityData(login, pwd, perms, smPerms),
             Arrays.asList(clientData));
     }
 }

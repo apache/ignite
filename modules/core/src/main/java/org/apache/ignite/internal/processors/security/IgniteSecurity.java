@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -41,7 +43,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public interface IgniteSecurity {
     /** */
-    static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
+    public static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
         "is not equal to remote node's grid security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
@@ -118,6 +120,33 @@ public interface IgniteSecurity {
      */
     public default void authorize(SecurityPermission perm) throws SecurityException {
         authorize(null, perm);
+    }
+
+    /**
+     * Executes {@code callable} with constraints defined by current {@code SecuritySubject}.
+     *
+     * @param call Callable to execute.
+     * @return Result of {@code callable}.
+     * @see #withContext(UUID)
+     * @see #withContext(SecurityContext)
+     * @see SecuritySubject#smPermissions()
+     */
+    public <T> T execute(Callable<T> call) throws IgniteException;
+
+    /**
+     * Executes {@code runnable} with constraints defined by current {@code SecuritySubject}.
+     *
+     * @param runnable Runnable to execute.
+     * @see #withContext(UUID)
+     * @see #withContext(SecurityContext)
+     * @see SecuritySubject#smPermissions()
+     */
+    public default void execute(Runnable runnable) throws IgniteException {
+        execute(() -> {
+            runnable.run();
+
+            return null;
+        });
     }
 
     /**

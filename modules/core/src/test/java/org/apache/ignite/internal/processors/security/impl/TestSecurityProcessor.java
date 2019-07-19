@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
+import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +49,8 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** Permissions. */
     private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
+    private static final Map<SecurityCredentials, Permissions> SM_PERMS = new ConcurrentHashMap<>();
+
     /** Node security data. */
     private final TestSecurityData nodeSecData;
 
@@ -76,6 +79,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin(cred.getLogin())
                 .setPerms(PERMS.get(cred))
+                .smPermissions(SM_PERMS.get(cred))
         );
     }
 
@@ -93,6 +97,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setAddr(ctx.address())
                 .setLogin(ctx.credentials().getLogin())
                 .setPerms(PERMS.get(ctx.credentials()))
+                .smPermissions(SM_PERMS.get(ctx.credentials()))
         );
     }
 
@@ -130,11 +135,14 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         super.start();
 
         PERMS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
+        SM_PERMS.put(nodeSecData.credentials(), nodeSecData.getSmPermissions());
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
 
-        for (TestSecurityData data : predefinedAuthData)
+        for (TestSecurityData data : predefinedAuthData) {
             PERMS.put(data.credentials(), data.getPermissions());
+            SM_PERMS.put(nodeSecData.credentials(), data.getSmPermissions());
+        }
     }
 
     /** {@inheritDoc} */
@@ -142,8 +150,11 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         super.stop(cancel);
 
         PERMS.remove(nodeSecData.credentials());
+        SM_PERMS.remove(nodeSecData.credentials());
 
-        for (TestSecurityData data : predefinedAuthData)
+        for (TestSecurityData data : predefinedAuthData) {
             PERMS.remove(data.credentials());
+            SM_PERMS.remove(data.credentials());
+        }
     }
 }

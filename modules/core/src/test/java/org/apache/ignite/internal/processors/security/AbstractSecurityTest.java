@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Permissions;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -78,5 +79,12 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
         return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", prmSet))
                 .setClientMode(isClient));
+    }
+
+    /** . */
+    protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
+        Permissions smPerms, boolean isClient) throws Exception {
+        return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", prmSet, smPerms))
+            .setClientMode(isClient));
     }
 }

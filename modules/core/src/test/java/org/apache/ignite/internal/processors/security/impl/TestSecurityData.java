@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.impl;
 
+import java.security.Permissions;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
@@ -33,6 +34,9 @@ public class TestSecurityData {
     /** Security permission set. */
     private SecurityPermissionSet prmSet;
 
+    /** . */
+    private Permissions smPerms;
+
     /**
      * Default constructor.
      */
@@ -45,10 +49,12 @@ public class TestSecurityData {
      * @param pwd Password.
      * @param prmSet Permissions.
      */
-    public TestSecurityData(String login, String pwd, SecurityPermissionSet prmSet) {
+    public TestSecurityData(String login, String pwd, SecurityPermissionSet prmSet,
+        Permissions smPerms) {
         this.login = login;
         this.pwd = pwd;
         this.prmSet = prmSet;
+        this.smPerms = smPerms;
     }
 
     /**
@@ -56,7 +62,7 @@ public class TestSecurityData {
      * @param prmSet Permissions.
      */
     public TestSecurityData(String login, SecurityPermissionSet prmSet) {
-        this(login, "", prmSet);
+        this(login, "", prmSet, new Permissions());
     }
 
     /**
@@ -71,6 +77,18 @@ public class TestSecurityData {
      */
     public TestSecurityData setPermissions(SecurityPermissionSet prmSet) {
         this.prmSet = prmSet;
+
+        return this;
+    }
+
+    /** . */
+    public Permissions getSmPermissions() {
+        return smPerms;
+    }
+
+    /** . */
+    public TestSecurityData getSmPermissions(Permissions smPerms) {
+        this.smPerms = smPerms;
 
         return this;
     }

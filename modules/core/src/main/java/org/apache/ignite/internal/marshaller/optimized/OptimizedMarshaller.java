@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
@@ -192,23 +193,26 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
-        OptimizedObjectOutputStream objOut = null;
+        return SecurityUtils.doPrivileged(() -> {
+            OptimizedObjectOutputStream objOut = null;
 
-        try {
-            objOut = OptimizedObjectStreamRegistry.out();
+            try {
+                objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(clsMap, ctx, mapper, requireSer);
+                objOut.context(clsMap, ctx, mapper, requireSer);
 
-            objOut.writeObject(obj);
+                objOut.writeObject(obj);
 
-            return objOut.out().array();
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
-        }
-        finally {
-            OptimizedObjectStreamRegistry.closeOut(objOut);
-        }
+                return objOut.out().array();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
+            }
+            finally {
+                OptimizedObjectStreamRegistry.closeOut(objOut);
+            }
+        }, IgniteCheckedException::new);
+
     }
 
     /** {@inheritDoc} */

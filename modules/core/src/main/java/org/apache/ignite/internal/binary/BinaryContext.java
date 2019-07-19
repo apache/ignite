@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -789,7 +790,7 @@ public class BinaryContext {
 
         String affFieldName = affinityFieldName(cls);
 
-        BinaryClassDescriptor desc = new BinaryClassDescriptor(this,
+        BinaryClassDescriptor desc = SecurityUtils.doPrivileged(() -> new BinaryClassDescriptor(this,
             cls,
             true,
             typeId,
@@ -799,7 +800,7 @@ public class BinaryContext {
             serializer,
             true,
             registered
-        );
+        ), IgniteException::new);
 
         if (!deserialize)
             metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,

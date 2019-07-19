@@ -51,6 +51,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.security.closure.SecurityComputeJob;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -453,6 +455,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
+
+            if (ctx.security().enabled())
+                job = new SecurityComputeJob(ctx.security(), job);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
@@ -560,8 +565,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 if (isTimedOut())
                     sndRes = false;
                 else {
-                    res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
-                        @Nullable @Override public Object call() {
+                    Callable<Object> c = new Callable<Object>() {
+                        @Override public @Nullable Object call() {
                             try {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(true);
@@ -573,7 +578,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     ctx.job().internal(false);
                             }
                         }
-                    });
+                    };
+
+                    res = SecurityUtils.doPrivileged(() -> U.wrapThreadLoader(dep.classLoader(), c),
+                        IgniteException::new);
 
                     if (log.isDebugEnabled()) {
                         log.debug(S.toString("Job execution has successfully finished",

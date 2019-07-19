@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
+import java.security.Permissions;
 import java.util.UUID;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -41,6 +42,8 @@ public class TestSecuritySubject implements SecuritySubject {
 
     /** Permissions. */
     private SecurityPermissionSet perms;
+
+    private Permissions smPerms;
 
     /**
      * Default constructor.
@@ -131,6 +134,18 @@ public class TestSecuritySubject implements SecuritySubject {
      */
     public TestSecuritySubject setPerms(SecurityPermissionSet perms) {
         this.perms = perms;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Permissions smPermissions() {
+        return smPerms;
+    }
+
+    /** . */
+    public TestSecuritySubject smPermissions(Permissions smPerms) {
+        this.smPerms = smPerms;
 
         return this;
     }

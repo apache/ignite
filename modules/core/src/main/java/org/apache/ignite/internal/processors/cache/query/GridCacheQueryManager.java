@@ -76,8 +76,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
@@ -88,6 +88,9 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.closure.SecurityIgniteBiPredicate;
+import org.apache.ignite.internal.processors.security.closure.SecurityIgniteClosure;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -837,7 +840,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.mvccSnapshot(), qry.isDataPageScanEnabled());
             }
 
-            return new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, transformer, locNode, cctx, log);
+            return new ScanQueryIterator(it, qry, topVer, locPart,
+                securityKeyValFilter(keyValFilter), securityTransformer(transformer), locNode, cctx, log);
         }
         catch (IgniteCheckedException | RuntimeException e) {
             if (intFilter != null)
@@ -845,6 +849,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw e;
         }
+    }
+
+    /** . */
+    private IgniteBiPredicate<K, V> securityKeyValFilter(IgniteBiPredicate<K, V> origin) {
+        IgniteSecurity sec = cctx.kernalContext().security();
+
+        return origin != null && sec.enabled() ? new SecurityIgniteBiPredicate<>(sec, origin) : origin;
+    }
+
+    /** . */
+    private <E, R> IgniteClosure<E, R> securityTransformer(IgniteClosure<E, R> origin) {
+        IgniteSecurity sec = cctx.kernalContext().security();
+
+        return origin != null && sec.enabled() ? new SecurityIgniteClosure<>(sec, origin) : origin;
     }
 
     /**

@@ -24,6 +24,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.closure.SecurityStreamReceiver;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -127,6 +129,8 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
             }
 
+            StreamReceiver receiver = securityStreamReceiver();
+
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
                     @Override public Map.Entry apply(DataStreamerEntry e) {
@@ -134,10 +138,10 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     }
                 });
 
-                rcvr.receive(cache, col0);
+                receiver.receive(cache, col0);
             }
             else
-                rcvr.receive(cache, col);
+                receiver.receive(cache, col);
 
             return null;
         }
@@ -163,9 +167,14 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
      */
     private void checkSecurityPermission(SecurityPermission perm)
         throws org.apache.ignite.plugin.security.SecurityException {
-        if (!ctx.security().enabled())
-            return;
+        if (ctx.security().enabled())
+            ctx.security().authorize(cacheName, perm);
+    }
 
-        ctx.security().authorize(cacheName, perm);
+    /** . */
+    private StreamReceiver securityStreamReceiver() {
+        IgniteSecurity sec = ctx.security();
+
+        return rcvr != null && sec.enabled() ? new SecurityStreamReceiver(sec, rcvr) : rcvr;
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.GridReflectionCache;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -78,7 +79,8 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
         GridArgumentCheck.notNull(key, "key");
 
         try {
-            Object o = reflectCache.firstFieldValue(key);
+            Object o = SecurityUtils.doPrivileged(() -> reflectCache.firstFieldValue(key),
+                IgniteCheckedException::new);
 
             if (o != null)
                 return o;
