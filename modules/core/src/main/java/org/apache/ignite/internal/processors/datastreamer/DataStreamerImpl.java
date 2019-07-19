@@ -1199,6 +1199,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             log.debug("Failed to flush buffer: " + e);
 
                         err = true;
+
+                        if (X.cause(e, ClusterReadOnlyModeCheckedException.class) != null)
+                            throw e;
                     }
                 }
 
