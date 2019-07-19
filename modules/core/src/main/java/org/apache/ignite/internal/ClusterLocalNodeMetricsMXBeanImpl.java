@@ -340,8 +340,8 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCurrentPmeBlocksOperations() {
-        return node.metrics().isCurrentPmeBlocksOperations();
+    @Override public boolean isOperationsBlockedByPme() {
+        return node.metrics().isOperationsBlockedByPme();
     }
 
     /** {@inheritDoc} */

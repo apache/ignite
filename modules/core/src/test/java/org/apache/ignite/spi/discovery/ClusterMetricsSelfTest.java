@@ -100,7 +100,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         waitForMetricsUpdate(ignite);
 
-        assertFalse(cluster.metrics().isCurrentPmeBlocksOperations());
+        assertFalse(cluster.metrics().isOperationsBlockedByPme());
 
         Lock lock = cache.lock(1);
 
@@ -119,9 +119,9 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         waitForMetricsUpdate(ignite);
 
         if (client)
-            assertFalse(cluster.metrics().isCurrentPmeBlocksOperations());
+            assertFalse(cluster.metrics().isOperationsBlockedByPme());
         else
-            assertTrue(cluster.metrics().isCurrentPmeBlocksOperations());
+            assertTrue(cluster.metrics().isOperationsBlockedByPme());
 
         lock.unlock();
 
@@ -132,7 +132,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         waitForMetricsUpdate(ignite);
 
-        assertFalse(cluster.metrics().isCurrentPmeBlocksOperations());
+        assertFalse(cluster.metrics().isOperationsBlockedByPme());
     }
 
     /**

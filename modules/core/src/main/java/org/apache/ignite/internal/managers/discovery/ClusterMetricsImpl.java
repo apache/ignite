@@ -498,7 +498,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCurrentPmeBlocksOperations() {
+    @Override public boolean isOperationsBlockedByPme() {
         GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
 
         return fut != null && !fut.isDone() && fut.firstEvent() != null && fut.changedAffinity();

@@ -704,7 +704,7 @@ public interface ClusterMetrics {
     public long getCurrentPmeDuration();
 
     /**
-     * Checks that current PME blocks operations.
+     * Checks that operations blocked by current PME.
      *
      * It means that current PME will wait for all ongoing updates and explicit locks on the previous topology. New
      * operations will be blocked until PME completed.
@@ -712,5 +712,5 @@ public interface ClusterMetrics {
      * @return {@code True} if current partition map exchange blocks operations. {@code False} If current partition map
      * exchange don't block operations or there is no running PME.
      */
-    public boolean isCurrentPmeBlocksOperations();
+    public boolean isOperationsBlockedByPme();
 }

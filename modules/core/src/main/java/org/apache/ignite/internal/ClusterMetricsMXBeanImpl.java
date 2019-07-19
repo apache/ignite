@@ -367,8 +367,8 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCurrentPmeBlocksOperations() {
-        return metrics().isCurrentPmeBlocksOperations();
+    @Override public boolean isOperationsBlockedByPme() {
+        return metrics().isOperationsBlockedByPme();
     }
 
     /** {@inheritDoc} */
