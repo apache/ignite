@@ -848,7 +848,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public void enableDataPageScan(Boolean dataPageScanEnabled) {
         // Data page scan is enabled by default for SQL.
-        // TODO https://ggsystems.atlassian.net/browse/GG-20800
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11998
         CacheDataTree.setDataPageScanEnabled(false);
     }
 
