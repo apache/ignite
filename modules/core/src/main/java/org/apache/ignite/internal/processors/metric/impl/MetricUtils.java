@@ -90,8 +90,8 @@ public class MetricUtils {
      * @return {@code true} if successful. False return indicates that
      * the actual value was not equal to the expected value.
      */
-    public static boolean compareAndSet(LongMetricImpl m, long expect, long update) {
-        return LongMetricImpl.updater.compareAndSet(m, expect, update);
+    public static boolean compareAndSet(AtomicLongMetric m, long expect, long update) {
+        return AtomicLongMetric.updater.compareAndSet(m, expect, update);
     }
 
     /**
@@ -100,10 +100,10 @@ public class MetricUtils {
      * @param m Metric to update.
      * @param update New value.
      */
-    public static void setIfLess(LongMetricImpl m, long update) {
+    public static void setIfLess(AtomicLongMetric m, long update) {
         long v = m.value();
 
-        while (v > update && !LongMetricImpl.updater.compareAndSet(m, v, update))
+        while (v > update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
             v = m.value();
     }
 
@@ -113,10 +113,10 @@ public class MetricUtils {
      * @param m Metric to update.
      * @param update New value.
      */
-    public static void setIfGreater(LongMetricImpl m, long update) {
+    public static void setIfGreater(AtomicLongMetric m, long update) {
         long v = m.value();
 
-        while (v < update && !LongMetricImpl.updater.compareAndSet(m, v, update))
+        while (v < update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
             v = m.value();
     }
 
