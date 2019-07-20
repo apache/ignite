@@ -93,7 +93,7 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScanWithRestart() throws Exception {
         IgniteEx ignite = startGrid(0);
         ignite.cluster().active(true);
