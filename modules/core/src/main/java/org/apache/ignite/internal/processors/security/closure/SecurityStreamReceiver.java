@@ -33,6 +33,9 @@ import org.apache.ignite.stream.StreamReceiver;
  */
 public class SecurityStreamReceiver<K, V> implements StreamReceiver<K, V> {
     /** . */
+    private static final long serialVersionUID = 3783092194186094866L;
+
+    /** . */
     private final IgniteSecurity sec;
 
     /** . */

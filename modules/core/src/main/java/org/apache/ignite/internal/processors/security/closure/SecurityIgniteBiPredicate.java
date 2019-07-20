@@ -29,6 +29,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 public class SecurityIgniteBiPredicate<K, V> implements IgniteBiPredicate<K, V> {
     /** . */
+    private static final long serialVersionUID = 1234751431315974061L;
+
+    /** . */
     private final IgniteSecurity sec;
 
     /** . */

@@ -30,6 +30,9 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
  */
 public class SecurityComputeJob implements ComputeJob {
     /** . */
+    private static final long serialVersionUID = 7510836970476698602L;
+
+    /** . */
     private final IgniteSecurity sec;
 
     /** . */

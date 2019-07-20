@@ -29,6 +29,9 @@ import org.apache.ignite.lang.IgniteClosure;
  */
 public class SecurityIgniteClosure<E, R> implements IgniteClosure<E, R> {
     /** . */
+    private static final long serialVersionUID = -7040271779139978769L;
+
+    /** . */
     private final IgniteSecurity sec;
     /** . */
     private final IgniteClosure<E, R> origin;
