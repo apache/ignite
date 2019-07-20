@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.visor.ru;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,7 +28,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorRollingUpgradeChangeModeTask extends VisorOneNodeTask<VisorRollingUpgradeChangeModeTaskArg, RollingUpgradeModeChangeResult> {
+public class VisorRollingUpgradeChangeModeTask extends VisorOneNodeTask<VisorRollingUpgradeChangeModeTaskArg, VisorRollingUpgradeChangeModeResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +40,7 @@ public class VisorRollingUpgradeChangeModeTask extends VisorOneNodeTask<VisorRol
     /**
      * Job that will collect baseline topology information.
      */
-    private static class VisorRollingUpgradeJob extends VisorJob<VisorRollingUpgradeChangeModeTaskArg, RollingUpgradeModeChangeResult> {
+    private static class VisorRollingUpgradeJob extends VisorJob<VisorRollingUpgradeChangeModeTaskArg, VisorRollingUpgradeChangeModeResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -54,18 +53,20 @@ public class VisorRollingUpgradeChangeModeTask extends VisorOneNodeTask<VisorRol
         }
 
         /** {@inheritDoc} */
-        @Override protected RollingUpgradeModeChangeResult run(
+        @Override protected VisorRollingUpgradeChangeModeResult run(
             VisorRollingUpgradeChangeModeTaskArg arg
         ) throws IgniteException {
-            switch (arg.operation()) {
+            switch (arg.getOperation()) {
                 case ENABLE:
-                    if (arg.isForcedMode())
-                        return ignite.context().rollingUpgrade().enableForcedMode();
+                    if (arg.isForcedMode()) {
+                        return new VisorRollingUpgradeChangeModeResult(
+                            ignite.context().rollingUpgrade().enableForcedMode());
+                    }
 
-                    return ignite.context().rollingUpgrade().setMode(true);
+                    return new VisorRollingUpgradeChangeModeResult(ignite.context().rollingUpgrade().setMode(true));
 
                 case DISABLE:
-                    return ignite.context().rollingUpgrade().setMode(false);
+                    return new VisorRollingUpgradeChangeModeResult(ignite.context().rollingUpgrade().setMode(false));
 
                 default:
                     throw new IgniteException("Unexpected rolling upgrade operation arg=[" + arg + ']');

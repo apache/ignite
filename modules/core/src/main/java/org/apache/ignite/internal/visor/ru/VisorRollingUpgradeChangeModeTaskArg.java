@@ -59,7 +59,7 @@ public class VisorRollingUpgradeChangeModeTaskArg extends IgniteDataTransferObje
     /**
      * @return Rolling upgrade operation.
      */
-    public VisorRollingUpgradeOperation operation() {
+    public VisorRollingUpgradeOperation getOperation() {
         return op;
     }
 
