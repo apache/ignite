@@ -54,7 +54,6 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -64,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
@@ -2782,7 +2782,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             return Thread.currentThread().getId(); //.getName();
         }
 
-
         /**
          * @param b String builder.
          * @param locks Locks.
@@ -2902,7 +2901,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg), true);
+            new LongAdderMetric("NO_OP", null),
+            true);
 
         pageMem.start();
 
@@ -3134,14 +3134,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             return locks;
         }
 
-
-
         /**
          * @return {@code true} If current thread does not keep any locks.
          */
         static boolean checkNoLocks() {
             return locks(true).isEmpty() && locks(false).isEmpty();
         }
-
     }
 }

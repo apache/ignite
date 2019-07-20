@@ -14,16 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
+package org.apache.ignite.internal.processors.metric.impl;
+
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.LongConsumer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Long metric implementation based on {@link LongAdder} with {@link #delegate}.
  */
-public class MvccCacheGroupMetricsMBeanTest extends CacheGroupMetricsMBeanTest {
+public class LongAdderWithDelegateMetric extends LongAdderMetric {
+    /** Delegate. */
+    private LongConsumer delegate;
+
+    /**
+     * @param name Name.
+     * @param delegate Delegate to which all updates from new metric will be delegated to.
+     * @param descr Description.
+     */
+    public LongAdderWithDelegateMetric(String name, LongConsumer delegate, @Nullable String descr) {
+        super(name, descr);
+
+        this.delegate = delegate;
+    }
+
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+    @Override public void add(long x) {
+        super.add(x);
+
+        delegate.accept(x);
     }
 }
