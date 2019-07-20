@@ -93,20 +93,20 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         if (type == CACHE_GROUP) {
             assertEquals(5, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, ((LongMetric)mreg.findMetric(LOGICAL_READS)).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS).longValue());
 
-            assertEquals(0, ((LongMetric)mreg.findMetric(PHYSICAL_READS)).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS).longValue());
         }
         else {
             assertEquals(7, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).longValue());
 
-            assertEquals(0, ((LongMetric)mreg.findMetric(LOGICAL_READS_INNER)).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).longValue());
 
-            assertEquals(0, ((LongMetric)mreg.findMetric(PHYSICAL_READS_LEAF)).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).longValue());
 
-            assertEquals(0, ((LongMetric)mreg.findMetric(PHYSICAL_READS_INNER)).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).longValue());
         }
     }
 
@@ -232,12 +232,12 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         switch (statType) {
             case CACHE_GROUP:
-                return ((LongMetric)mreg.findMetric(PHYSICAL_READS)).value();
+                return mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
 
             case HASH_INDEX:
             case SORTED_INDEX:
-                long leaf = ((LongMetric)mreg.findMetric(PHYSICAL_READS_LEAF)).value();
-                long inner = ((LongMetric)mreg.findMetric(PHYSICAL_READS_INNER)).value();
+                long leaf = mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value();
+                long inner = mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value();
 
                 return leaf + inner;
 

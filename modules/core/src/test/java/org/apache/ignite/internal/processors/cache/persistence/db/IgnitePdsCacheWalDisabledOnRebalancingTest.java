@@ -41,13 +41,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -208,10 +208,10 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         stopGrid("client");
 
-        CacheGroupMetricsMXBean mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
+        CacheGroupMetricsImpl metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
 
-        assertTrue("Unexpected moving partitions count: " + mxBean.getLocalNodeMovingPartitionsCount(),
-            mxBean.getLocalNodeMovingPartitionsCount() == CACHE3_PARTS_NUM);
+        assertTrue("Unexpected moving partitions count: " + metrics.getLocalNodeMovingPartitionsCount(),
+            metrics.getLocalNodeMovingPartitionsCount() == CACHE3_PARTS_NUM);
 
         TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
             .configuration().getCommunicationSpi();
@@ -219,11 +219,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         commSpi.stopBlock();
 
         boolean waitResult = GridTestUtils.waitForCondition(
-            () -> mxBean.getLocalNodeMovingPartitionsCount() == 0,
+            () -> metrics.getLocalNodeMovingPartitionsCount() == 0,
             30_000);
 
         assertTrue("Failed to wait for owning all partitions, parts in moving state: "
-            + mxBean.getLocalNodeMovingPartitionsCount(), waitResult);
+            + metrics.getLocalNodeMovingPartitionsCount(), waitResult);
     }
 
     /**
@@ -264,7 +264,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         IgniteEx ig1 = startGrid(1);
 
-        CacheGroupMetricsMXBean mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
+        CacheGroupMetricsImpl metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
 
         TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
             .configuration().getCommunicationSpi();
@@ -274,9 +274,9 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         commSpi.stopBlock();
 
         boolean allOwned = GridTestUtils.waitForCondition(
-            () -> mxBean.getLocalNodeMovingPartitionsCount() == 0, 30_000);
+            () -> metrics.getLocalNodeMovingPartitionsCount() == 0, 30_000);
 
-        assertTrue("Partitions were not owned, there are " + mxBean.getLocalNodeMovingPartitionsCount() +
+        assertTrue("Partitions were not owned, there are " + metrics.getLocalNodeMovingPartitionsCount() +
             " partitions in MOVING state", allOwned);
     }
 
@@ -311,26 +311,34 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
             return false;
         };
 
+        IgniteEx ig1;
+        CacheGroupMetricsImpl metrics;
+        int locMovingPartsNum;
+
         // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
         fileIoBlockingSemaphore.drainPermits();
 
-        IgniteEx ig1 = startGrid(1);
+        try {
+            ig1 = startGrid(1);
 
-        CacheGroupMetricsMXBean mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
-        int locMovingPartsNum = mxBean.getLocalNodeMovingPartitionsCount();
+            metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
+            locMovingPartsNum = metrics.getLocalNodeMovingPartitionsCount();
 
-        // Partitions remain in MOVING state even after PME and rebalancing when checkpointer is blocked.
-        assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
-            locMovingPartsNum, 0 < locMovingPartsNum && locMovingPartsNum < CACHE3_PARTS_NUM);
+            // Partitions remain in MOVING state even after PME and rebalancing when checkpointer is blocked.
+            assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
+                    locMovingPartsNum, 0 < locMovingPartsNum && locMovingPartsNum < CACHE3_PARTS_NUM);
 
-        blockRebalanceEnabled.set(true);
+            blockRebalanceEnabled.set(true);
 
-        // Change baseline topology and release checkpointer to verify
-        // that no partitions will be owned after affinity change.
-        ig0.cluster().setBaselineTopology(ig1.context().discovery().topologyVersion());
-        fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+            // Change baseline topology and release checkpointer to verify
+            // that no partitions will be owned after affinity change.
+            ig0.cluster().setBaselineTopology(ig1.context().discovery().topologyVersion());
+        }
+        finally {
+            fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+        }
 
-        locMovingPartsNum = mxBean.getLocalNodeMovingPartitionsCount();
+        locMovingPartsNum = metrics.getLocalNodeMovingPartitionsCount();
         assertTrue("Expected moving partitions count on node idx = 1 equals to all partitions of the cache " +
              CACHE3_NAME + ": " + locMovingPartsNum, locMovingPartsNum == CACHE3_PARTS_NUM);
 
@@ -341,7 +349,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         commSpi.stopBlock();
 
         boolean res = GridTestUtils.waitForCondition(
-            () -> mxBean.getLocalNodeMovingPartitionsCount() == 0, 15_000);
+            () -> metrics.getLocalNodeMovingPartitionsCount() == 0, 15_000);
 
         assertTrue("All partitions on node idx = 1 are expected to be owned", res);
 

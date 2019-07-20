@@ -231,8 +231,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         finally {
             part.release();
 
-            if (cctx.group().metrics0() != null)
-                cctx.group().metrics0().decrementIndexBuildCountPartitionsLeft();
+            cctx.group().metrics().decrementIndexBuildCountPartitionsLeft();
         }
     }
 
@@ -333,8 +332,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
                 stop = true;
 
-                if (cctx.group().metrics0() != null)
-                    cctx.group().metrics0().setIndexBuildCountPartitionsLeft(0);
+                cctx.group().metrics().setIndexBuildCountPartitionsLeft(0);
             }
             finally {
                 fut.onDone(err);

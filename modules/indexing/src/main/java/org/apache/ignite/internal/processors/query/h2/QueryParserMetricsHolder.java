@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 
 /**
  * Metric holder for metrics of query parser.
@@ -28,10 +28,10 @@ public class QueryParserMetricsHolder {
     static final String QUERY_PARSER_METRIC_GROUP_NAME = "sql.parser.cache";
 
     /** Query cache hits counter. */
-    private final LongAdderMetricImpl qryCacheHits;
+    private final LongAdderMetric qryCacheHits;
 
     /** Query cache misses counter. */
-    private final LongAdderMetricImpl qryCacheMisses;
+    private final LongAdderMetric qryCacheMisses;
 
     /**
      * Create metrics holder with given metric manager.
@@ -41,8 +41,8 @@ public class QueryParserMetricsHolder {
     public QueryParserMetricsHolder(GridMetricManager metricMgr) {
         MetricRegistry registry = metricMgr.registry(QUERY_PARSER_METRIC_GROUP_NAME);
 
-        this.qryCacheHits = registry.longAdderMetric("hits", "Count of hits for queries cache");
-        this.qryCacheMisses = registry.longAdderMetric("misses", "Count of misses for queries cache");
+        qryCacheHits = registry.longAdderMetric("hits", "Count of hits for queries cache");
+        qryCacheMisses = registry.longAdderMetric("misses", "Count of misses for queries cache");
     }
 
     /**

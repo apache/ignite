@@ -88,19 +88,19 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
         MetricRegistry mreg = ignite.context().metric()
             .registry(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
-        long idxLeafLogicalCnt = ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).value();
+        long idxLeafLogicalCnt = mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value();
 
         assertEquals(cnt, idxLeafLogicalCnt);
 
-        long idxLeafPhysicalCnt = ((LongMetric)mreg.findMetric(PHYSICAL_READS_LEAF)).value();
+        long idxLeafPhysicalCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value();
 
         assertEquals(0, idxLeafPhysicalCnt);
 
-        long idxInnerLogicalCnt = ((LongMetric)mreg.findMetric(LOGICAL_READS_INNER)).value();
+        long idxInnerLogicalCnt = mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value();
 
         assertEquals(0, idxInnerLogicalCnt);
 
-        long idxInnerPhysicalCnt = ((LongMetric)mreg.findMetric(PHYSICAL_READS_INNER)).value();
+        long idxInnerPhysicalCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value();
 
         assertEquals(0, idxInnerPhysicalCnt);
     }
@@ -125,11 +125,11 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
         MetricRegistry mreg = ignite.context().metric()
             .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
 
-        long cacheLogicalReadsCnt = ((LongMetric)mreg.findMetric(LOGICAL_READS)).value();
+        long cacheLogicalReadsCnt = mreg.<LongMetric>findMetric(LOGICAL_READS).value();
 
         assertEquals(cnt, cacheLogicalReadsCnt);
 
-        long cachePhysicalReadsCnt = ((LongMetric)mreg.findMetric(PHYSICAL_READS)).value();
+        long cachePhysicalReadsCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
 
         assertEquals(0, cachePhysicalReadsCnt);
     }

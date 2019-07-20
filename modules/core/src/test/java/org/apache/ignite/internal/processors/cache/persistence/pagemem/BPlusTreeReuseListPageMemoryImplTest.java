@@ -38,6 +38,8 @@ import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.mockito.Mockito;
 
+import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
+
 /**
  *
  */
@@ -100,7 +102,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
                 }
             },
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration()),
+            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             Mockito.mock(CheckpointWriteProgressSupplier.class)
         );

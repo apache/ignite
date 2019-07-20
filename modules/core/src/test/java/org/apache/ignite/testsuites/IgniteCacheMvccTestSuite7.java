@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
-import org.apache.ignite.internal.processors.cache.MvccCacheGroupMetricsMBeanTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsTest;
+import org.apache.ignite.internal.processors.cache.MvccCacheGroupMetricsTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersMvccTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
@@ -64,13 +64,13 @@ public class IgniteCacheMvccTestSuite7 {
 
         // Skip classes which Mvcc implementations are added in this method below.
         // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.
-        ignoredTests.add(CacheGroupMetricsMBeanTest.class); // See MvccCacheGroupMetricsMBeanTest
+        ignoredTests.add(CacheGroupMetricsTest.class); // See MvccCacheGroupMetricsMBeanTest
         ignoredTests.add(GridCacheRebalancingPartitionCountersTest.class); // See GridCacheRebalancingPartitionCountersMvccTest
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite7.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.add(MvccCacheGroupMetricsMBeanTest.class);
+        suite.add(MvccCacheGroupMetricsTest.class);
         suite.add(GridCacheRebalancingPartitionCountersMvccTest.class);
         suite.add(GridCacheRebalancingWithAsyncClearingMvccTest.class);
 

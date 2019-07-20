@@ -172,26 +172,26 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
         MetricRegistry mreg = ctx.metric().registry(SYS_METRICS);
 
-        gcCpuLoad = (DoubleMetric)mreg.findMetric(GC_CPU_LOAD);
-        cpuLoad = (DoubleMetric)mreg.findMetric(CPU_LOAD);
-        upTime = (LongMetric)mreg.findMetric(UP_TIME);
+        gcCpuLoad = mreg.findMetric(GC_CPU_LOAD);
+        cpuLoad = mreg.findMetric(CPU_LOAD);
+        upTime = mreg.findMetric(UP_TIME);
 
-        threadCnt = (IntMetric)mreg.findMetric(THREAD_CNT);
-        peakThreadCnt = (IntMetric)mreg.findMetric(PEAK_THREAD_CNT);
-        totalStartedThreadCnt = (LongMetric)mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
-        daemonThreadCnt = (IntMetric)mreg.findMetric(DAEMON_THREAD_CNT);
+        threadCnt = mreg.findMetric(THREAD_CNT);
+        peakThreadCnt = mreg.findMetric(PEAK_THREAD_CNT);
+        totalStartedThreadCnt = mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
+        daemonThreadCnt = mreg.findMetric(DAEMON_THREAD_CNT);
 
         availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
-        heapInit = (LongMetric)mreg.findMetric(metricName("memory", "heap", "init"));
-        heapUsed = (LongMetric)mreg.findMetric(metricName("memory", "heap", "used"));
-        heapCommitted = (LongMetric)mreg.findMetric(metricName("memory", "heap", "committed"));
-        heapMax = (LongMetric)mreg.findMetric(metricName("memory", "heap", "max"));
+        heapInit = mreg.findMetric(metricName("memory", "heap", "init"));
+        heapUsed = mreg.findMetric(metricName("memory", "heap", "used"));
+        heapCommitted = mreg.findMetric(metricName("memory", "heap", "committed"));
+        heapMax = mreg.findMetric(metricName("memory", "heap", "max"));
 
-        nonHeapInit = (LongMetric)mreg.findMetric(metricName("memory", "nonheap", "init"));
-        nonHeapUsed = (LongMetric)mreg.findMetric(metricName("memory", "nonheap", "used"));
-        nonHeapCommitted = (LongMetric)mreg.findMetric(metricName("memory", "nonheap", "committed"));
-        nonHeapMax = (LongMetric)mreg.findMetric(metricName("memory", "nonheap", "max"));
+        nonHeapInit = mreg.findMetric(metricName("memory", "nonheap", "init"));
+        nonHeapUsed = mreg.findMetric(metricName("memory", "nonheap", "used"));
+        nonHeapCommitted = mreg.findMetric(metricName("memory", "nonheap", "committed"));
+        nonHeapMax = mreg.findMetric(metricName("memory", "nonheap", "max"));
     }
 
     /** {@inheritDoc} */
