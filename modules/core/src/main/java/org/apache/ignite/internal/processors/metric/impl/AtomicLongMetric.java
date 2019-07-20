@@ -17,23 +17,27 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Long metric implementation based on {@link LongAdder}.
+ * Long metric implementation.
  */
-public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
+public class AtomicLongMetric extends AbstractMetric implements LongMetric {
+    /** Field updater. */
+    static final AtomicLongFieldUpdater<AtomicLongMetric> updater =
+        AtomicLongFieldUpdater.newUpdater(AtomicLongMetric.class, "val");
+
     /** Field value. */
-    private volatile LongAdder val = new LongAdder();
+    private volatile long val;
 
     /**
      * @param name Name.
      * @param desc Description.
      */
-    public LongAdderMetricImpl(String name, @Nullable String desc) {
+    public AtomicLongMetric(String name, @Nullable String desc) {
         super(name, desc);
     }
 
@@ -46,7 +50,7 @@ public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
         if (disabled)
             return;
 
-        val.add(x);
+        updater.getAndAdd(this, x);
     }
 
     /** Adds 1 to the metric. */
@@ -64,7 +68,7 @@ public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
         if (disabled)
             return;
 
-        val = new LongAdder();
+        updater.set(this, 0);
     }
 
     /** {@inheritDoc} */
@@ -72,6 +76,18 @@ public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
         if (disabled)
             return 0;
 
-        return val.longValue();
+        return val;
+    }
+
+    /**
+     * Sets value.
+     *
+     * @param val Value.
+     */
+    public void value(long val) {
+        if (disabled)
+            return;
+
+        this.val = val;
     }
 }
