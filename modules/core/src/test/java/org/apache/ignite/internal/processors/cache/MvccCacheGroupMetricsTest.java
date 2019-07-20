@@ -22,7 +22,7 @@ import org.junit.Test;
 /**
  *
  */
-public class MvccCacheGroupMetricsMBeanTest extends CacheGroupMetricsMBeanTest {
+public class MvccCacheGroupMetricsTest extends CacheGroupMetricsTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;

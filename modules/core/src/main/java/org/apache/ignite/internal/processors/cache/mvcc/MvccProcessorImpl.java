@@ -404,7 +404,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         //noinspection ConstantConditions
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 0,
-            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
+            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics().totalAllocatedPages());
     }
 
     /** {@inheritDoc} */

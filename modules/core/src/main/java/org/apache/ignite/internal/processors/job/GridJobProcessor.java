@@ -69,7 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -219,28 +219,28 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final AtomicLong metricsLastUpdateTstamp = new AtomicLong();
 
     /** Number of started jobs. */
-    final LongMetricImpl startedJobsMetric;
+    final AtomicLongMetric startedJobsMetric;
 
     /** Number of active jobs currently executing. */
-    final LongMetricImpl activeJobsMetric;
+    final AtomicLongMetric activeJobsMetric;
 
     /** Number of currently queued jobs waiting to be executed. */
-    final LongMetricImpl waitingJobsMetric;
+    final AtomicLongMetric waitingJobsMetric;
 
     /** Number of cancelled jobs that are still running. */
-    final LongMetricImpl canceledJobsMetric;
+    final AtomicLongMetric canceledJobsMetric;
 
     /** Number of jobs rejected after more recent collision resolution operation. */
-    final LongMetricImpl rejectedJobsMetric;
+    final AtomicLongMetric rejectedJobsMetric;
 
     /** Number of finished jobs. */
-    final LongMetricImpl finishedJobsMetric;
+    final AtomicLongMetric finishedJobsMetric;
 
     /** Total job execution time. */
-    final LongMetricImpl totalExecutionTimeMetric;
+    final AtomicLongMetric totalExecutionTimeMetric;
 
     /** Total time jobs spent on waiting queue. */
-    final LongMetricImpl totalWaitTimeMetric;
+    final AtomicLongMetric totalWaitTimeMetric;
 
     /** */
     private boolean stopping;
@@ -301,26 +301,26 @@ public class GridJobProcessor extends GridProcessorAdapter {
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
 
-        cpuLoadMetric = (DoubleMetric)ctx.metric().registry(SYS_METRICS).findMetric(CPU_LOAD);
+        cpuLoadMetric = ctx.metric().registry(SYS_METRICS).findMetric(CPU_LOAD);
 
         MetricRegistry mreg = ctx.metric().registry(JOBS_METRICS);
 
-        startedJobsMetric = mreg.metric(STARTED, "Number of started jobs.");
+        startedJobsMetric = mreg.longMetric(STARTED, "Number of started jobs.");
 
-        activeJobsMetric = mreg.metric(ACTIVE, "Number of active jobs currently executing.");
+        activeJobsMetric = mreg.longMetric(ACTIVE, "Number of active jobs currently executing.");
 
-        waitingJobsMetric = mreg.metric(WAITING, "Number of currently queued jobs waiting to be executed.");
+        waitingJobsMetric = mreg.longMetric(WAITING, "Number of currently queued jobs waiting to be executed.");
 
-        canceledJobsMetric = mreg.metric(CANCELED, "Number of cancelled jobs that are still running.");
+        canceledJobsMetric = mreg.longMetric(CANCELED, "Number of cancelled jobs that are still running.");
 
-        rejectedJobsMetric = mreg.metric(REJECTED,
+        rejectedJobsMetric = mreg.longMetric(REJECTED,
             "Number of jobs rejected after more recent collision resolution operation.");
 
-        finishedJobsMetric = mreg.metric(FINISHED, "Number of finished jobs.");
+        finishedJobsMetric = mreg.longMetric(FINISHED, "Number of finished jobs.");
 
-        totalExecutionTimeMetric = mreg.metric(EXECUTION_TIME, "Total execution time of jobs.");
+        totalExecutionTimeMetric = mreg.longMetric(EXECUTION_TIME, "Total execution time of jobs.");
 
-        totalWaitTimeMetric = mreg.metric(WAITING_TIME, "Total time jobs spent on waiting queue.");
+        totalWaitTimeMetric = mreg.longMetric(WAITING_TIME, "Total time jobs spent on waiting queue.");
     }
 
     /** {@inheritDoc} */

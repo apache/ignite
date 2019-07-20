@@ -305,10 +305,10 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), id));
 
         if (type == CACHE_GROUP)
-            return ((LongMetric)mreg.findMetric(LOGICAL_READS)).value();
+            return mreg.<LongMetric>findMetric(LOGICAL_READS).value();
         else {
-            long leaf = ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).value();
-            long inner = ((LongMetric)mreg.findMetric(LOGICAL_READS_INNER)).value();
+            long leaf = mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value();
+            long inner = mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value();
 
             return leaf + inner;
         }

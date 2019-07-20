@@ -1840,6 +1840,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         markIndexRebuild(cctx.name(), true);
 
+        if (cctx.group().metrics() != null)
+            cctx.group().metrics().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
             @Override protected void body() {
                 try {

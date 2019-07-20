@@ -18,7 +18,7 @@ package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.query.h2.QueryMemoryManager;
 
@@ -35,7 +35,7 @@ public class SqlStatisticsHolderMemoryQuotas {
     private final QueryMemoryManager memMgr;
 
     /** Measures number of sql memory allocations on this node. */
-    private final LongAdderMetricImpl quotaRequestedCnt;
+    private final LongAdderMetric quotaRequestedCnt;
 
     /** Measures total memory in bytes it is possible to allocate on this node. */
     private final LongGauge quotaMaxMem;

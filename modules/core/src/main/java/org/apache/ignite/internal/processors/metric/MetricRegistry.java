@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
@@ -32,9 +33,10 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -51,7 +53,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
  * Metric registry.
  */
 public class MetricRegistry implements Iterable<Metric> {
-    /** Group name. */
+    /** Registry name. */
     private String grpName;
 
     /** Logger. */
@@ -73,8 +75,8 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param name Name of the metric.
      * @return Metric with specified name if exists. Null otherwise.
      */
-    @Nullable public Metric findMetric(String name) {
-        return metrics.get(name);
+    @Nullable public <M extends Metric> M findMetric(String name) {
+        return (M)metrics.get(name);
     }
 
     /** Resets state of this metric set. */
@@ -206,10 +208,10 @@ public class MetricRegistry implements Iterable<Metric> {
      *
      * @param name Name.
      * @param desc Description.
-     * @return {@link LongMetricImpl}.
+     * @return {@link AtomicLongMetric}.
      */
-    public LongMetricImpl metric(String name, @Nullable String desc) {
-        return addMetric(name, new LongMetricImpl(metricName(grpName, name), desc));
+    public AtomicLongMetric longMetric(String name, @Nullable String desc) {
+        return addMetric(name, new AtomicLongMetric(metricName(grpName, name), desc));
     }
 
     /**
@@ -218,10 +220,23 @@ public class MetricRegistry implements Iterable<Metric> {
      *
      * @param name Name.
      * @param desc Description.
-     * @return {@link LongAdderMetricImpl}.
+     * @return {@link LongAdderMetric}.
      */
-    public LongAdderMetricImpl longAdderMetric(String name, @Nullable String desc) {
-        return addMetric(name, new LongAdderMetricImpl(metricName(grpName, name), desc));
+    public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
+        return addMetric(name, new LongAdderMetric(metricName(grpName, name), desc));
+    }
+
+    /**
+     * Creates and register named metric.
+     * Returned instance are thread safe.
+     *
+     * @param name Name.
+     * @param delegate Delegate to which all updates from new metric will be delegated to.
+     * @param desc Description.
+     * @return {@link LongAdderWithDelegateMetric}.
+     */
+    public LongAdderMetric longAdderMetric(String name, LongConsumer delegate, @Nullable String desc) {
+        return addMetric(name, new LongAdderWithDelegateMetric(metricName(grpName, name), delegate, desc));
     }
 
     /**

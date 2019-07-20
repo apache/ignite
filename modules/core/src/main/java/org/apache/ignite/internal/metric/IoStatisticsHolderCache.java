@@ -19,7 +19,7 @@ package org.apache.ignite.internal.metric;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -37,10 +37,10 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     public static final String LOGICAL_READS = "LOGICAL_READS";
 
     /** */
-    private final LongAdderMetricImpl logicalReadCtr;
+    private final LongAdderMetric logicalReadCtr;
 
     /** */
-    private final LongAdderMetricImpl physicalReadCtr;
+    private final LongAdderMetric physicalReadCtr;
 
     /** */
     private final String cacheName;
@@ -61,7 +61,7 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
         MetricRegistry mreg = mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), cacheName));
 
-        mreg.metric("startTime", null).value(U.currentTimeMillis());
+        mreg.longMetric("startTime", null).value(U.currentTimeMillis());
         mreg.objectMetric("name", String.class, null).value(cacheName);
         mreg.intMetric("grpId", null).value(grpId);
 
