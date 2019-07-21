@@ -898,6 +898,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null, null, withTombstones);
     }
 
+    /** {@inheritDoc} */
+    @Override public GridIterator<CacheDataRow> tombstonesIterator(int part) {
+        assert locCacheDataStore == null;
+
+        CacheDataStore data = partitionData(part);
+
+        if (data == null)
+            return new GridEmptyCloseableIterator<>();
+
+        // TODO IGNITE-11704.
+        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null, null, true);
+    }
+
     /**
      *
      * @param cacheId Cache ID.
