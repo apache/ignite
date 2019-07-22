@@ -14,17 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+
 /**
- * Cache group metrics
+ *
  */
-public interface CacheGroupMetrics {
-    /**
-     * @return Number of partitions need processed for finished indexes create or rebuilding.
-     * It is calculated as the number of local partition minus the processed.
-     * A value of 0 indicates that the index is built.
-     */
-    public long getIndexBuildCountPartitionsLeft();
+public class MvccCacheGroupMetricsTest extends CacheGroupMetricsTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+    }
 }
