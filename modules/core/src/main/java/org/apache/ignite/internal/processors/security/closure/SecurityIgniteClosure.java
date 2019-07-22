@@ -33,6 +33,7 @@ public class SecurityIgniteClosure<E, R> implements IgniteClosure<E, R> {
 
     /** . */
     private final IgniteSecurity sec;
+
     /** . */
     private final IgniteClosure<E, R> origin;
 
