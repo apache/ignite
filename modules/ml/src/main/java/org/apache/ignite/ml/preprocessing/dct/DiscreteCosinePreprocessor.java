@@ -1,31 +1,48 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.preprocessing.dct;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
-public class DiscreteCosinePreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public class DiscreteCosinePreprocessor<K, V> implements Preprocessor<K, V> {
 
-    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
+    private final Preprocessor<K, V> basePreprocessor;
 
-    public DiscreteCosinePreprocessor(IgniteBiFunction<K, V, Vector> basePreprocessor) {
+    public DiscreteCosinePreprocessor(Preprocessor<K, V> basePreprocessor) {
         this.basePreprocessor = basePreprocessor;
     }
 
     @Override
-    public Vector apply(K k, V v) {
-        Vector init = basePreprocessor.apply(k, v);
+    public LabeledVector apply(K k, V v) {
+        LabeledVector tmp = basePreprocessor.apply(k, v);
+        double[] res = new double[tmp.size()];
 
-        Vector res = init.like(init.size());
+        for (int i = 0; i < res.length; i++) {
+            double sum = 0;
 
-        for (int i = 0; i < init.size(); i++) {
-            int sum = 0;
+            for (int j = 0; j < tmp.size(); j++)
+                sum += 2 * tmp.get(j) * Math.cos((Math.PI/tmp.size()) * (j + 0.5) * i);
 
-            for (int j = 0; j < init.size(); j++)
-                sum += init.get(j) * Math.cos((Math.PI/init.size()) * (j + 0.5) * i);
-
-            res.set(i, sum);
+            res[i] = sum;
         }
 
-        return res;
+        return new LabeledVector<>(VectorUtils.of(res), tmp.label());
     }
 }

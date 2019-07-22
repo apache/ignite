@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
+/**
+ * <!-- Package description. -->
+ * Contains Discrete Cosine preprocessor.
+ */
 package org.apache.ignite.ml.preprocessing.dct;
-
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
-import org.apache.ignite.ml.preprocessing.Preprocessor;
-
-public class DiscreteCosineTrainer<K, V> implements PreprocessingTrainer<K, V> {
-
-    @Override
-    public DiscreteCosinePreprocessor<K, V> fit(LearningEnvironmentBuilder envBuilder, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> basePreprocessor) {
-        return new DiscreteCosinePreprocessor<>(basePreprocessor);
-    }
-}
