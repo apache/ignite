@@ -1531,16 +1531,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
-            IgnitePageStoreManager pageStore;
+            try {
+                IgniteWriteAheadLogManager wal;
 
-            if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
-                try {
+                if ((wal = sharedCtx.wal()) != null)
+                    wal.flush(null, false);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to flush WAL data while destroying cache" +
+                    "[cache=" + ctx.name() + "]", e);
+            }
+
+            try {
+                IgnitePageStoreManager pageStore;
+
+                if (destroy && (pageStore = sharedCtx.pageStore()) != null)
                     pageStore.removeCacheData(new StoredCacheData(ctx.config()));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to delete cache configuration data while destroying cache" +
-                        "[cache=" + ctx.name() + "]", e);
-                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to delete cache configuration data while destroying cache" +
+                    "[cache=" + ctx.name() + "]", e);
             }
 
             if (log.isInfoEnabled()) {
