@@ -782,7 +782,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
                     partSize,
                     new File(backupDir, cacheDirName(ccfg)));
 
-                // Copy partition file and stop recording deltas.
+                // Partition copied, stop recording deltas
                 delta.writable(false);
 
                 // TODO that merge with deltas
