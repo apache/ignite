@@ -81,6 +81,8 @@ public class KNNRegressionExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

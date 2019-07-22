@@ -83,6 +83,8 @@ public class LogRegFromSparkThroughPMMLExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

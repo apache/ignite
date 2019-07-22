@@ -95,6 +95,8 @@ public class TrainingWithCustomPreprocessorsExample {
             );
 
             System.out.println(">>> R^2 score: " + score);
+        } finally {
+            System.out.flush();
         }
     }
 

@@ -76,6 +76,8 @@ public class Step_1_Read_and_Learn {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

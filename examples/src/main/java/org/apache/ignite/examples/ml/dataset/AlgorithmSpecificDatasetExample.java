@@ -127,6 +127,8 @@ public class AlgorithmSpecificDatasetExample {
             finally {
                 persons.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

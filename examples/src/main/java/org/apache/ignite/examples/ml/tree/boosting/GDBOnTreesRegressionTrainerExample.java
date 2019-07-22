@@ -85,6 +85,8 @@ public class GDBOnTreesRegressionTrainerExample {
             } finally {
                 trainingSet.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

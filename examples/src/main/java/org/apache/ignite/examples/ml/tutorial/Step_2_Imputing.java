@@ -86,6 +86,8 @@ public class Step_2_Imputing {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

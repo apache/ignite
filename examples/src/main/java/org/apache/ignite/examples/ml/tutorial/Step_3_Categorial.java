@@ -100,6 +100,8 @@ public class Step_3_Categorial {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

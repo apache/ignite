@@ -70,5 +70,6 @@ public class StandardGeneratorsExample {
         RegressionDataStream regression = RegressionDataStream.twoDimensional(
             x -> Math.abs(x * x - 10), -10, 10);
         Tracer.showRegressionDatasetInHtml("|x^2 - 10|", regression, 1000, 0);
+        System.out.flush();
     }
 }

@@ -80,6 +80,8 @@ public class GaussianNaiveBayesTrainerExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

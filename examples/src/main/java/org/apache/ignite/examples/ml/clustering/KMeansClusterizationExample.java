@@ -95,6 +95,8 @@ public class KMeansClusterizationExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

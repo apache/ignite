@@ -92,5 +92,6 @@ public class VectorGeneratorPrimitivesExample {
             }).rotate(Math.PI / 2);
 
         Tracer.showClassificationDatasetHtml("Axe blade", axeBlade.asDataStream(), 1500, 0, 1, false);
+        System.out.flush();
     }
 }

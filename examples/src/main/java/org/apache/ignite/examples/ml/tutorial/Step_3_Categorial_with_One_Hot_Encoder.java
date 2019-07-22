@@ -103,6 +103,8 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

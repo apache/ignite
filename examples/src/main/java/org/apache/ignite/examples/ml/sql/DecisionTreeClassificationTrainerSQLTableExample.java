@@ -141,6 +141,8 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
                 cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
                 cache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

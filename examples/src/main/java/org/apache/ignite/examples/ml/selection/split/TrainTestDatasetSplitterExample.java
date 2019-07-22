@@ -98,6 +98,8 @@ public class TrainTestDatasetSplitterExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

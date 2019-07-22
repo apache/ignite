@@ -129,6 +129,8 @@ public class MLPTrainerExample {
             } finally {
                 trainingSet.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

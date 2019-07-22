@@ -74,6 +74,8 @@ public class MinMaxScalerExample {
             } finally {
                 data.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 
