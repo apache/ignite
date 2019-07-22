@@ -1572,7 +1572,7 @@ public class IgnitionEx {
         /** Query executor service. */
         private ThreadPoolExecutor schemaExecSvc;
 
-        /** Query executor service. */
+        /** Rebalance executor service. */
         private ThreadPoolExecutor rebalanceExecSvc;
 
         /** Executor service. */
