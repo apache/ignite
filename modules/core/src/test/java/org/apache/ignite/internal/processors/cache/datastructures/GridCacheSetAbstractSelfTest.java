@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -1027,6 +1028,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         assert cctx(set5).cacheId() == cctx(set6).cacheId();
         assert cctx(set1).groupId() != cctx(set5).groupId();
+
+        Stream.of(set1, set2, set3, set4, set5, set6).forEach(IgniteSet::close);
     }
 
     /**
