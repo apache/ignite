@@ -800,7 +800,7 @@ public class BinaryContext {
             serializer,
             true,
             registered
-        ), IgniteException::new);
+        ), IgniteException.class);
 
         if (!deserialize)
             metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,

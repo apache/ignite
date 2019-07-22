@@ -1283,9 +1283,9 @@ public final class IgniteSystemProperties {
     public static @Nullable String getString(String name) {
         assert name != null;
 
-        String v = doPrivileged(() -> System.getProperty(name), IgniteException::new);
+        String v = doPrivileged(() -> System.getProperty(name), IgniteException.class);
 
-        return v == null ? doPrivileged(() -> System.getenv(name), IgniteException::new) : v;
+        return v == null ? doPrivileged(() -> System.getenv(name), IgniteException.class) : v;
     }
 
     /**

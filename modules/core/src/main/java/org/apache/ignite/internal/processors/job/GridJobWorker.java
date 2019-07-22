@@ -581,7 +581,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     };
 
                     res = SecurityUtils.doPrivileged(() -> U.wrapThreadLoader(dep.classLoader(), c),
-                        IgniteException::new);
+                        IgniteException.class);
 
                     if (log.isDebugEnabled()) {
                         log.debug(S.toString("Job execution has successfully finished",

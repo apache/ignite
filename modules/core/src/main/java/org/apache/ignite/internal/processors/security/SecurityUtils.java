@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permissions;
@@ -28,7 +30,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -146,16 +147,33 @@ public class SecurityUtils {
     }
 
     /**
-     * Executes {@code Callable} as privileged block. An exception will be converted to E bypassed {@code Function}.
+     * Executes {@code Callable} as privileged block. An exception will be converted to E type.
      *
      * @see AccessController#doPrivileged(java.security.PrivilegedExceptionAction)
      */
-    public static <R, E extends Throwable> R doPrivileged(Callable<R> c, Function<Exception, E> f) throws E {
+    public static <R, E extends Throwable> R doPrivileged(Callable<R> c, Class<E> eType) throws E {
         try {
             return doPrivileged(c);
         }
         catch (Exception e) {
-            throw f.apply(e);
+            if (eType.isInstance(e))
+                throw eType.cast(e);
+            else
+                throw instantinateException(eType, e);
+        }
+    }
+
+    /** . */
+    private static <E extends Throwable> E instantinateException(Class<E> type, Exception e) {
+        Constructor<E> ctor = null;
+        try {
+            ctor = type.getConstructor(Exception.class);
+
+            return ctor.newInstance(e);
+        }
+        catch (NoSuchMethodException | IllegalAccessException |
+            InstantiationException | InvocationTargetException ex) {
+            throw new RuntimeException(ex);
         }
     }
 

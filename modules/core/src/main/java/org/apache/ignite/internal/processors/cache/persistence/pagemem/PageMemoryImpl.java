@@ -896,7 +896,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     }
                 }
             }
-        }, IgniteCheckedException::new);
+        }, IgniteCheckedException.class);
     }
 
     /**

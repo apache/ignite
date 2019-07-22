@@ -211,7 +211,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
             finally {
                 OptimizedObjectStreamRegistry.closeOut(objOut);
             }
-        }, IgniteCheckedException::new);
+        }, IgniteCheckedException.class);
 
     }
 

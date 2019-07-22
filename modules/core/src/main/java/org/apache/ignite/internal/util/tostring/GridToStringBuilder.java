@@ -993,7 +993,7 @@ public class GridToStringBuilder {
             int len = buf.length();
 
             String s = SecurityUtils.doPrivileged(
-                () -> toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen), IgniteException::new);
+                () -> toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen), IgniteException.class);
 
             if (newStr)
                 return s;

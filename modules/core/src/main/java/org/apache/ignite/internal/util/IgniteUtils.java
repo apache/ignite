@@ -1429,7 +1429,7 @@ public abstract class IgniteUtils {
         Callable<ThreadInfo[]> c = () ->
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
-        ThreadInfo[] threadInfos = SecurityUtils.doPrivileged(c, IgniteException::new);
+        ThreadInfo[] threadInfos = SecurityUtils.doPrivileged(c, IgniteException.class);
 
         GridStringBuilder sb = new GridStringBuilder("Thread dump at ")
             .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
@@ -1473,7 +1473,7 @@ public abstract class IgniteUtils {
      * @return the set of deadlocked threads (may be empty Set, but never null).
      */
     private static Set<Long> getDeadlockedThreadIds(ThreadMXBean mxBean) {
-        final long[] deadlockedIds = SecurityUtils.doPrivileged(mxBean::findDeadlockedThreads, IgniteException::new);
+        final long[] deadlockedIds = SecurityUtils.doPrivileged(mxBean::findDeadlockedThreads, IgniteException.class);
 
         final Set<Long> deadlockedThreadsIds;
 
