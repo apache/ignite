@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -40,13 +41,29 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
     /** Inline object supported flag. */
     private boolean inlineObjSupported = true;
 
+    /** */
+    private final String tblName;
+
+    /** */
+    private final String idxName;
+
+    /** */
+    private final IgniteLogger log;
+
     /**
      * @param inlineSize Inline size.
      * @param inlineHelpers Inline helpers.
+     * @param tblName Table name.
+     * @param idxName Name of index.
+     * @param log Logger.
      */
-    H2TreeInlineObjectDetector(int inlineSize, List<InlineIndexHelper> inlineHelpers) {
+    H2TreeInlineObjectDetector(int inlineSize, List<InlineIndexHelper> inlineHelpers, String tblName, String idxName,
+        IgniteLogger log) {
         this.inlineSize = inlineSize;
         this.inlineHelpers = inlineHelpers;
+        this.tblName = tblName;
+        this.idxName = idxName;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -68,26 +85,61 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
                 continue;
             }
 
-            if (r.getValue(ih.columnIndex()) == ValueNull.INSTANCE)
+            Value val = r.getValue(ih.columnIndex());
+
+            if (val == ValueNull.INSTANCE)
                 return false;
 
             int type = PageUtils.getByte(pageAddr, off + fieldOff);
 
-            if (type == 0) {
-                inlineObjSupported = false;
+            //We can have garbage in memory and need to compare data.
+            if (type == Value.JAVA_OBJECT) {
+                int len = PageUtils.getShort(pageAddr, off + fieldOff + 1);
+
+                boolean isFull = (len & 0x8000) == 0;
+
+                len = len & 0x7FFF;
+
+                byte[] originalObjBytes = val.getBytesNoCopy();
+
+                // read size more then available space or more then origin length
+                if(len > inlineSize - fieldOff - 3 || len > originalObjBytes.length){
+
+                    inlineObjectSupportedDecision(false, "lenght is big " + len);
+
+                    return true;
+                }
+
+                // compare full object
+                if(isFull) {
+                    int compRes = ih.compare(pageAddr, off + fieldOff, inlineSize - fieldOff, val, (o1, o2) -> 0);
+
+                    inlineObjectSupportedDecision(compRes == 0, "full compare");
+
+                    return true;
+                }
+
+
+                // try compare byte by byte for partial inlined object.
+                byte[] inlineBytes = PageUtils.getBytes(pageAddr, off + fieldOff + 3, len);
+
+                for (int i = 0; i < len; i++) {
+                    if(inlineBytes[i] == originalObjBytes[i])
+                        continue;
+
+                    inlineObjectSupportedDecision(false,  i + " byte compare");
+
+                    return true;
+                }
+
+                inlineObjectSupportedDecision(true, len + " bytes compared");
 
                 return true;
             }
-            else if (type == Value.JAVA_OBJECT) {
-                inlineObjSupported = true;
 
-                return true;
-            }
-            else {
-                assert type == Value.UNKNOWN;
+            inlineObjectSupportedDecision(false, "inline type " + type);
 
-                return false;
-            }
+            return true;
         }
 
         return true;
@@ -121,5 +173,20 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
         }
 
         return remainSize >= 4;
+    }
+
+    /**
+     * @param inlineObjSupported {@code true} if inline object is supported on current tree.
+     * @param reason Reason why has been made decision.
+     */
+    private void inlineObjectSupportedDecision(boolean inlineObjSupported, String reason){
+        this.inlineObjSupported = inlineObjSupported;
+
+        if (inlineObjSupported)
+            log.info("Index support JAVA_OBJECT type inlining [tblName=" + tblName +", idxName=" +
+                idxName + ", reason='" + reason + "']");
+        else
+            log.info("Index doesn't support JAVA_OBJECT type inlining [tblName=" + tblName +", idxName=" +
+                idxName + ", reason='" + reason + "']");
     }
 }
