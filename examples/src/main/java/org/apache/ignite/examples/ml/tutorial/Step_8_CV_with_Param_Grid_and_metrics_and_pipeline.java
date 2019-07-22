@@ -124,6 +124,8 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

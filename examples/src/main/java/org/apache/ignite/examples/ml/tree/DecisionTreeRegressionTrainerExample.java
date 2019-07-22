@@ -90,6 +90,8 @@ public class DecisionTreeRegressionTrainerExample {
             } finally {
                 trainingSet.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

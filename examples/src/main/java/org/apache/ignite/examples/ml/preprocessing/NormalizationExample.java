@@ -71,6 +71,8 @@ public class NormalizationExample {
             } finally {
                 data.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

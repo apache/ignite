@@ -174,6 +174,8 @@ public class Step_8_CV_with_Param_Grid {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

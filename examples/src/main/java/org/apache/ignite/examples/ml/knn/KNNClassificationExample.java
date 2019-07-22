@@ -78,6 +78,8 @@ public class KNNClassificationExample {
                 if (dataCache != null)
                     dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

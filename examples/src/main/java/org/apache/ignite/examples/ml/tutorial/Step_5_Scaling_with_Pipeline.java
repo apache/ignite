@@ -91,6 +91,8 @@ public class Step_5_Scaling_with_Pipeline {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

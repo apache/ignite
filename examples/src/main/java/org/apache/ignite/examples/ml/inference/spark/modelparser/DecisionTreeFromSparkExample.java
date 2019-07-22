@@ -75,6 +75,8 @@ public class DecisionTreeFromSparkExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

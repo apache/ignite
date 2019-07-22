@@ -118,6 +118,8 @@ public class Step_6_KNN {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

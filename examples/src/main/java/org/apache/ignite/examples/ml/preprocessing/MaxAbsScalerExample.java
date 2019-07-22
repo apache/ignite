@@ -65,6 +65,8 @@ public class MaxAbsScalerExample {
             } finally {
                 data.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

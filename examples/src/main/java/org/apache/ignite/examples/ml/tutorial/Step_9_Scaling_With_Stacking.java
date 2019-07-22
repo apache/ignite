@@ -133,6 +133,8 @@ public class Step_9_Scaling_With_Stacking {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

@@ -126,6 +126,8 @@ public class Step_7_Split_train_test {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

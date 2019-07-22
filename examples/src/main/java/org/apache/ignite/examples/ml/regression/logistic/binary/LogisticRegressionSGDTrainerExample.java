@@ -93,6 +93,8 @@ public class LogisticRegressionSGDTrainerExample {
                 if (dataCache != null)
                     dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

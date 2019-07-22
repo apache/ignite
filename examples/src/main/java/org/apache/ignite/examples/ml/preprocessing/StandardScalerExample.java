@@ -65,6 +65,8 @@ public class StandardScalerExample {
             } finally {
                 data.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

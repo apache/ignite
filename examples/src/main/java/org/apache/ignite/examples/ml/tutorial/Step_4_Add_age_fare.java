@@ -99,6 +99,8 @@ public class Step_4_Add_age_fare {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

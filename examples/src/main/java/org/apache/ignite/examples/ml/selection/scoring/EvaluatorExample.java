@@ -83,6 +83,8 @@ public class EvaluatorExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

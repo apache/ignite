@@ -117,6 +117,8 @@ public class Step_5_Scaling {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

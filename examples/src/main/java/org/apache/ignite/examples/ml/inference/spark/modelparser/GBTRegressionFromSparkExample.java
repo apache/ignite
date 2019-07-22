@@ -82,6 +82,8 @@ public class GBTRegressionFromSparkExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

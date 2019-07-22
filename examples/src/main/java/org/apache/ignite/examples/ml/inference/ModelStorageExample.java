@@ -81,6 +81,8 @@ public class ModelStorageExample {
                     System.out.println(i + " -> " + res);
                 }
             }
+        } finally {
+            System.out.flush();
         }
     }
 
