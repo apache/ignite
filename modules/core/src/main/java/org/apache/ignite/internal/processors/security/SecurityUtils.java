@@ -164,10 +164,9 @@ public class SecurityUtils {
     }
 
     /** . */
-    private static <E extends Throwable> E instantinateException(Class<E> type, Exception e) {
-        Constructor<E> ctor = null;
+    private static <E extends Throwable> E instantinateException(Class<E> type, Throwable e) {
         try {
-            ctor = type.getConstructor(Exception.class);
+            Constructor<E> ctor = type.getConstructor(Throwable.class);
 
             return ctor.newInstance(e);
         }
