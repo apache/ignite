@@ -88,7 +88,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
      * Verify single queries.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScanSingle() throws Exception {
         checkDataPageScan("SELECT * FROM TEST WHERE val > 42", null);
         checkDataPageScan("UPDATE TEST SET val = val + 1 WHERE val > 10", null);
@@ -104,7 +104,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
      * Verify the case property is set on connection and batched operations are performed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScanBatching() throws Exception {
         checkDataPageScanInBatch("UPDATE TEST SET val = ? WHERE val > 10", null);
 
