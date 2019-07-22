@@ -20,12 +20,20 @@ package org.apache.ignite.internal.benchmarks.jmh.pagemem;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridKernalGatewayImpl;
+import org.apache.ignite.internal.GridLoggerProxy;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
@@ -43,7 +51,10 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvi
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -125,6 +136,52 @@ public class JmhCacheFreelistBenchmark {
         }
     }
 
+    /** For test purposes only. */
+    private static final DataRegionMetricsProvider NO_OP_METRICS = new DataRegionMetricsProvider() {
+        /** {@inheritDoc} */
+        @Override public long partiallyFilledPagesFreeSpace() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long emptyDataPages() {
+            return 0;
+        }
+    };
+
+    /** */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    private static final class GridKernalContextStub extends GridKernalContextImpl {
+        /** */
+        GridKernalContextStub(IgniteLogger log, IgniteConfiguration cfg) {
+            super(new GridLoggerProxy(log, null, null, null),
+                new IgniteKernal(null),
+                cfg,
+                new GridKernalGatewayImpl(null),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Collections.emptyList(),
+                null,
+                null,
+                null,
+                new LongJVMPauseDetector(log));
+        }
+    }
+
     /**
      * Check {@link FreeList#insertDataRow(Storable, IoStatisticsHolder)} performance.
      */
@@ -190,7 +247,7 @@ public class JmhCacheFreelistBenchmark {
     @State(Scope.Thread)
     public static class FreeListProvider {
         /** */
-        private final DataRegionConfiguration plcCfg =
+        private final DataRegionConfiguration regCfg =
             new DataRegionConfiguration().setInitialSize(MEMORY_REGION_SIZE).setMaxSize(MEMORY_REGION_SIZE);
 
         /** */
@@ -205,9 +262,9 @@ public class JmhCacheFreelistBenchmark {
         /** */
         @Setup(Level.Trial)
         public void setup() throws IgniteCheckedException {
-            pageMem = createPageMemory(log, PAGE_SIZE, plcCfg);
+            pageMem = createPageMemory(log, PAGE_SIZE, regCfg);
 
-            freeList = createFreeList(pageMem, plcCfg);
+            freeList = createFreeList();
         }
 
         /** */
@@ -225,7 +282,7 @@ public class JmhCacheFreelistBenchmark {
                 null,
                 pageSize,
                 plcCfg,
-                new DataRegionMetricsImpl(plcCfg),
+                new LongAdderMetric("NO_OP", null),
                 true);
 
             pageMem.start();
@@ -234,19 +291,21 @@ public class JmhCacheFreelistBenchmark {
         }
 
         /**
-         * @param pageMem Page memory.
          * @return Free list.
          * @throws IgniteCheckedException If failed.
          */
-        private FreeList<CacheDataRow> createFreeList(
-            PageMemory pageMem,
-            DataRegionConfiguration plcCfg
-        ) throws IgniteCheckedException {
+        private FreeList<CacheDataRow> createFreeList() throws IgniteCheckedException {
             long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-            DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg);
+            IgniteConfiguration cfg = new IgniteConfiguration()
+                .setMetricExporterSpi(new NoopMetricExporterSpi())
+                .setGridLogger(log);
 
-            DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
+            GridMetricManager metricsMgr = new GridMetricManager(new GridKernalContextStub(log, cfg));
+
+            DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(regCfg, metricsMgr, NO_OP_METRICS);
+
+            DataRegion dataRegion = new DataRegion(pageMem, regCfg, regionMetrics, new NoOpPageEvictionTracker());
 
             return new CacheFreeList(
                 1,
