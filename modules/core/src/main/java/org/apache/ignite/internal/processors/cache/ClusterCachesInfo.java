@@ -1595,7 +1595,7 @@ class ClusterCachesInfo {
 
                         req.deploymentId(deploymentId);
                         req.startCacheConfiguration(ccfg);
-                        req.cacheType(CacheType.cacheType(ccfg.getName()));
+                        req.cacheType(ctx.cache().cacheType(ccfg.getName()));
                         req.schema(new QuerySchema(storedCfg.queryEntities()));
                         req.sql(storedCfg.sql());
 
