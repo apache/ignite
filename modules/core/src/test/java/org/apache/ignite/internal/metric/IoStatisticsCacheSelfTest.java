@@ -217,7 +217,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         long logicalReads = logicalReads(mmgr, CACHE_GROUP, CACHE_GROUP_NAME);
 
-        assertEquals(RECORD_COUNT * 6, logicalReads);
+        assertEquals(RECORD_COUNT * 4, logicalReads);
     }
 
     /**
@@ -306,10 +306,10 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), id));
 
         if (type == CACHE_GROUP)
-            return ((LongMetric)mreg.findMetric(LOGICAL_READS)).value();
+            return mreg.<LongMetric>findMetric(LOGICAL_READS).value();
         else {
-            long leaf = ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).value();
-            long inner = ((LongMetric)mreg.findMetric(LOGICAL_READS_INNER)).value();
+            long leaf = mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value();
+            long inner = mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value();
 
             return leaf + inner;
         }

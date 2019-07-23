@@ -57,6 +57,7 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -250,7 +251,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg);
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg, kernalCtx.metric(), NO_OP_METRICS);
 
         long[] sizes = prepareSegmentSizes(regCfg.getMaxSize());
 

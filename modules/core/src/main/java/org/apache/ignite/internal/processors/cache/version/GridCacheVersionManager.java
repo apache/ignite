@@ -281,7 +281,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             topVer += (gridStartTime - TOP_VER_BASE_TIME) / 1000;
         }
 
-        int locNodeOrder = (int)cctx.localNode().order();
+        int locNodeOrder = forLoad ? 0 : (int)cctx.localNode().order();
 
         long ord = forLoad ? loadOrder.incrementAndGet() : order.incrementAndGet();
 

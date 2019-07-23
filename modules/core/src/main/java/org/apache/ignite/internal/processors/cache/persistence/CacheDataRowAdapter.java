@@ -52,6 +52,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CR
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.TOMBSTONES;
 
 /**
  * Cache data row adapter.
@@ -261,8 +262,22 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
                             grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
-                        if (incomplete == null || (rowData == KEY_ONLY && key != null))
+                        if (incomplete == null)
                             return;
+
+                        if (rowData == KEY_ONLY) {
+                            if (key != null)
+                                return;
+                        }
+                        else if (rowData == TOMBSTONES) {
+                            // TODO IGNITE-11704.
+                            if (val != null && !sharedCtx.database().isTombstone(this)) {
+                                verReady = true;
+                                ver = null;
+
+                                return;
+                            }
+                        }
 
                         nextLink = incomplete.getNextLink();
                     }
@@ -501,7 +516,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean tombstones = rowData == RowData.TOMBSTONES;
 
         if (tombstones && !sharedCtx.database().isTombstone(addr + off + len + 1)) {
-            verReady = true;
+            verReady = true; // Mark as ready, no need to read any data.
 
             return;
         }

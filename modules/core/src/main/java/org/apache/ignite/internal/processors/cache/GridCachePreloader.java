@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -95,17 +94,6 @@ public interface GridCachePreloader {
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
-
-    /**
-     * @param p Preload predicate.
-     */
-    public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> p);
-
-    /**
-     * @return Preload predicate. If not {@code null}, will evaluate each preloaded entry during
-     *      send and receive, and if predicate evaluates to {@code false}, entry will be skipped.
-     */
-    public IgnitePredicate<GridCacheEntryInfo> preloadPredicate();
 
     /**
      * @return Future which will complete when preloader is safe to use.

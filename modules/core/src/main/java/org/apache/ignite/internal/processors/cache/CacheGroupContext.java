@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -170,9 +169,6 @@ public class CacheGroupContext {
     /** */
     private final boolean mvccEnabled;
 
-    /** MXBean. */
-    private final CacheGroupMetricsMXBean mxBean;
-
     /** */
     private volatile boolean localWalEnabled;
 
@@ -191,7 +187,7 @@ public class CacheGroupContext {
     /** */
     private volatile boolean hasAtomicCaches;
 
-    /** Store cache group metrics. */
+    /** Cache group metrics. */
     private final CacheGroupMetricsImpl metrics;
 
     /**
@@ -255,9 +251,7 @@ public class CacheGroupContext {
 
         log = ctx.kernalContext().log(getClass());
 
-        metrics = new CacheGroupMetricsImpl();
-
-        mxBean = new CacheGroupMetricsMXBeanImpl(this);
+        metrics = new CacheGroupMetricsImpl(this);
 
         if (systemCache()) {
             statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
@@ -1207,13 +1201,6 @@ public class CacheGroupContext {
         preldr.onReconnected();
     }
 
-    /**
-     * @return MXBean.
-     */
-    public CacheGroupMetricsMXBean mxBean() {
-        return mxBean;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CacheGroupContext [grp=" + cacheOrGroupName() + ']';
@@ -1256,13 +1243,15 @@ public class CacheGroupContext {
 
     /**
      * @param enabled Local WAL enabled flag.
+     * @param persist If {@code true} then flag state will be persisted into metastorage.
      */
-    public void localWalEnabled(boolean enabled) {
+    public void localWalEnabled(boolean enabled, boolean persist) {
         if (localWalEnabled != enabled){
             log.info("Local WAL state for group=" + cacheOrGroupName() +
                 " changed from " + localWalEnabled + " to " + enabled);
 
-            persistLocalWalState(enabled);
+            if (persist)
+                persistLocalWalState(enabled);
 
             localWalEnabled = enabled;
         }
@@ -1314,7 +1303,7 @@ public class CacheGroupContext {
     /**
      * @return Metrics.
      */
-    public CacheGroupMetricsImpl metrics0() {
+    public CacheGroupMetricsImpl metrics() {
         return metrics;
     }
 }

@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest
 import org.apache.ignite.internal.processors.cache.BinaryTypeRegistrationTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanWithIndexTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsWithIndexTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryAfterDynamicCacheStartFailureTest;
@@ -90,7 +90,7 @@ import org.junit.runners.Suite;
 
     ClusterReadOnlyModeSqlTest.class,
 
-    CacheGroupMetricsMBeanWithIndexTest.class,
+    CacheGroupMetricsWithIndexTest.class,
 
     RebuildIndexLogMessageTest.class
 })
