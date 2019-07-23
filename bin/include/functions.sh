@@ -37,6 +37,10 @@ fi
 
 # Extract java version to `version` variable.
 javaVersion() {
+    if ! $(type -p awk >/dev/null); then
+        echo "${0}, [ERROR]: awk is not found"
+        exit 1
+    fi
     version=$("$1" -version 2>&1 | awk -F '"' '/version/ {print $2}')
 }
 
