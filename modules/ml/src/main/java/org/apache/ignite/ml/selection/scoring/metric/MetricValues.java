@@ -27,14 +27,14 @@ public interface MetricValues {
     /** Returns the pair of metric name and metric value. */
     public default Map<String, Double> toMap() {
         Map<String, Double> metricValues = new HashMap<>();
-        Class<? extends MetricValues> aClass = getClass();
-        for (Field field : aClass.getDeclaredFields()) {
+        Class<? extends MetricValues> aCls = getClass();
+        for (Field field : aCls.getDeclaredFields()) {
             try {
                 field.setAccessible(true);
                 metricValues.put(field.getName(), field.getDouble(this));
             }
             catch (IllegalAccessException e) {
-                throw new RuntimeException("Cannot read field [class=" + aClass.getSimpleName() + ", field_name=" + field.getName() + "]", e);
+                throw new RuntimeException("Cannot read field [class=" + aCls.getSimpleName() + ", field_name=" + field.getName() + "]", e);
             }
         }
 

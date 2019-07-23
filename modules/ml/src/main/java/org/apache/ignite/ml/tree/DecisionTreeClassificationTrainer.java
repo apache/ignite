@@ -95,6 +95,14 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         return this;
     }
 
+    public double getMaxDeep() {
+        return maxDeep;
+    }
+
+    public double getMinImpurityDecrease() {
+        return minImpurityDecrease;
+    }
+
     /** {@inheritDoc} */
     @Override protected ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {

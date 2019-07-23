@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util;
-
-import org.apache.ignite.ml.util.genetic.GeneticAlgorithmTest;
-import org.apache.ignite.ml.util.genetic.PopulationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.util.genetic;
 
 /**
- * Test suite for all tests located in {@link org.apache.ignite.ml.util} package.
+ * Represents the crossover strategy depending of locus point amount.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LRUCacheTest.class,
-    GeneticAlgorithmTest.class,
-    PopulationTest.class
-})
-public class UtilTestSuite {
+public enum CrossoverStrategy {
+    /** One point. */
+    ONE_POINT,
+
+    /** Two point. */
+    TWO_POINT,
+
+    /** Multi point. */
+    MULTI_POINT,
+
+    /** Uniform. */
+    UNIFORM
 }

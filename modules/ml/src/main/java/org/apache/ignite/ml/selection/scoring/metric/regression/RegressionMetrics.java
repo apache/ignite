@@ -65,14 +65,8 @@ public class RegressionMetrics extends AbstractMetrics<RegressionMetricValues> {
         double tss = totalAmount * (meanOfLblSquares - Math.pow(meanOfLbls, 2));
 
         double r2 = 0.0;
-        if (Math.abs(tss) < EPS) {
-            if (Math.abs(rss) < EPS)
-                r2 = 1.0;
-            else
-                r2 = 0.0;
-        } else {
-            r2 = 1 - rss / tss;
-        }
+        if (Math.abs(tss) < EPS) r2 = Math.abs(rss) < EPS ? 1.0 : 0.0;
+        else r2 = 1 - rss / tss;
 
         mae /= totalAmount;
 

@@ -35,6 +35,11 @@ public class NoParallelismStrategy implements ParallelismStrategy {
     }
 
     /** {@inheritDoc} */
+    @Override public int getParallelism() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T>  Promise<T> submit(IgniteSupplier<T> task) {
         return new Stub<>(task.get());
     }

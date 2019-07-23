@@ -42,14 +42,14 @@ public class EncoderTrainerTest extends TrainerTest {
     @Test
     public void testFitOnStringCategorialFeatures() {
         Map<Integer, Vector> data = new HashMap<>();
-        data.put(1, new DenseVector(new Serializable[]{"Monday", "September"}));
-        data.put(2, new DenseVector(new Serializable[]{"Monday", "August"}));
-        data.put(3, new DenseVector(new Serializable[]{"Monday", "August"}));
-        data.put(4, new DenseVector(new Serializable[]{"Friday", "June"}));
-        data.put(5, new DenseVector(new Serializable[]{"Friday", "June"}));
-        data.put(6, new DenseVector(new Serializable[]{"Sunday", "August"}));
+        data.put(1, new DenseVector(new Serializable[]{1.0, "Monday", "September"}));
+        data.put(2, new DenseVector(new Serializable[]{2.0, "Monday", "August"}));
+        data.put(3, new DenseVector(new Serializable[]{3.0, "Monday", "August"}));
+        data.put(4, new DenseVector(new Serializable[]{4.0, "Friday", "June"}));
+        data.put(5, new DenseVector(new Serializable[]{5.0, "Friday", "June"}));
+        data.put(6, new DenseVector(new Serializable[]{6.0, "Sunday", "August"}));
 
-        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0 , 1);
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1, 2).labeled(0);
 
         DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
@@ -64,7 +64,7 @@ public class EncoderTrainerTest extends TrainerTest {
             vectorizer
         );
 
-        assertArrayEquals(new double[]{0.0, 2.0}, preprocessor.apply(7, new DenseVector(new Serializable[]{"Monday", "September"})).features().asArray(), 1e-8);
+        assertArrayEquals(new double[]{0.0, 2.0}, preprocessor.apply(7, new DenseVector(new Serializable[]{7.0, "Monday", "September"})).features().asArray(), 1e-8);
     }
 
     /** Tests {@code fit()} method. */

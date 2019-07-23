@@ -14,21 +14,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util;
 
-import org.apache.ignite.ml.util.genetic.GeneticAlgorithmTest;
-import org.apache.ignite.ml.util.genetic.PopulationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.selection.paramgrid;
 
 /**
- * Test suite for all tests located in {@link org.apache.ignite.ml.util} package.
+ * This strategy enables the brute-force search in hyper-parameter space.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LRUCacheTest.class,
-    GeneticAlgorithmTest.class,
-    PopulationTest.class
-})
-public class UtilTestSuite {
+public class BruteForceStrategy extends HyperParameterTuningStrategy {
+    /** {@inheritDoc} */
+    @Override public String getName() {
+        return "Brute Force";
+    }
 }

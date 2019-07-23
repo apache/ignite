@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tutorial;
+package org.apache.ignite.examples.ml.tutorial.hyperparametertuning;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -31,15 +35,20 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.cv.CrossValidationResult;
+import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
+import org.apache.ignite.ml.selection.paramgrid.RandomStrategy;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
 /**
- * To choose the best hyperparameters the cross-validation will be used in this example.
+ * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
@@ -62,12 +71,9 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
-public class Step_8_CV {
+public class Step_12_Parallel_Random_Search {
     /** Run example. */
     public static void main(String[] args) {
-        System.out.println();
-        System.out.println(">>> Tutorial step 8 (cross-validation) example started.");
-
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
                 IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
@@ -82,7 +88,7 @@ public class Step_8_CV {
                 Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
-                    .withEncodedFeature(6) // <--- Changed index here.
+                    .withEncodedFeature(6)
                     .fit(ignite,
                         dataCache,
                         vectorizer
@@ -102,67 +108,70 @@ public class Step_8_CV {
                     );
 
 
-                // Tune hyperparams with K-fold Cross-Validation on the split training set.
-                int[] pSet = new int[]{1, 2};
-                int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
-                int bestP = 1;
-                int bestMaxDeep = 1;
-                double avg = Double.MIN_VALUE;
+                NormalizationTrainer<Integer, Vector> normalizationTrainer = new NormalizationTrainer<Integer, Vector>()
+                    .withP(1);
 
-                for(int p: pSet){
-                    for(int maxDeep: maxDeepSet){
-
-                        Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
-                            .withP(p)
-                            .fit(
-                                ignite,
-                                dataCache,
-                                minMaxScalerPreprocessor
-                            );
-
-                        DecisionTreeClassificationTrainer trainer
-                            = new DecisionTreeClassificationTrainer(maxDeep, 0);
-
-                        CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
-                            = new CrossValidation<>();
-
-                        double[] scores = scoreCalculator
-                            .withIgnite(ignite)
-                            .withUpstreamCache(dataCache)
-                            .withTrainer(trainer)
-                            .withMetric(new Accuracy<>())
-                            .withFilter(split.getTrainFilter())
-                            .withPreprocessor(normalizationPreprocessor)
-                            .withAmountOfFolds(3)
-                            .isRunningOnPipeline(false)
-                            .scoreByFolds();
-
-                        System.out.println("Scores are: " + Arrays.toString(scores));
-
-                        final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
-
-                        if(currAvg > avg) {
-                            avg = currAvg;
-                            bestP = p;
-                            bestMaxDeep = maxDeep;
-                        }
-
-                        System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
-                    }
-                }
-
-                System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
-
-                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
-                    .withP(bestP)
+                Preprocessor<Integer, Vector> normalizationPreprocessor = normalizationTrainer
                     .fit(
                         ignite,
                         dataCache,
                         minMaxScalerPreprocessor
                     );
 
+                // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
+                DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
+
+                CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
+                    = new CrossValidation<>();
+
+                ParamGrid paramGrid = new ParamGrid()
+                    .withParameterSearchStrategy(
+                        new RandomStrategy()
+                            .withMaxTries(10)
+                            .withSeed(12L)
+                    )
+                    .addHyperParam("p", normalizationTrainer::withP, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
+                    .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[]{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0});
+
+
+                BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
+                    .withNegativeClsLb(0.0)
+                    .withPositiveClsLb(1.0)
+                    .withMetric(BinaryClassificationMetricValues::accuracy);
+
+                scoreCalculator
+                    .withIgnite(ignite)
+                    .withUpstreamCache(dataCache)
+                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder()
+                        .withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+                        .withLoggingFactoryDependency(ConsoleLogger.Factory.LOW))
+                    .withTrainer(trainerCV)
+                    .isRunningOnPipeline(false)
+                    .withMetric(metrics)
+                    .withFilter(split.getTrainFilter())
+                    .withPreprocessor(normalizationPreprocessor)
+                    .withAmountOfFolds(3)
+                    .withParamGrid(paramGrid);
+
+                CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
+
+                System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
+                    + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
+
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer()
+                    .withMaxDeep(crossValidationRes.getBest("maxDeep"))
+                    .withMinImpurityDecrease(crossValidationRes.getBest("minImpurityDecrease"));
+
+                System.out.println(crossValidationRes);
+
+                System.out.println("Best score: " + Arrays.toString(crossValidationRes.getBestScore()));
+                System.out.println("Best hyper params: " + crossValidationRes.getBestHyperParams());
+                System.out.println("Best average score: " + crossValidationRes.getBestAvgScore());
+
+                crossValidationRes.getScoringBoard().forEach((hyperParams, score)
+                    -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
                 // Train decision tree model.
                 DecisionTreeNode bestMdl = trainer.fit(
@@ -185,9 +194,8 @@ public class Step_8_CV {
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 8 (cross-validation) example completed.");
-            }
-            catch (FileNotFoundException e) {
+                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
         } finally {

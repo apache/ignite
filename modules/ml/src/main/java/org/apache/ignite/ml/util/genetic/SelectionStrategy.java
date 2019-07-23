@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util;
-
-import org.apache.ignite.ml.util.genetic.GeneticAlgorithmTest;
-import org.apache.ignite.ml.util.genetic.PopulationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.util.genetic;
 
 /**
- * Test suite for all tests located in {@link org.apache.ignite.ml.util} package.
+ * Please, have a look at https://en.wikipedia.org/wiki/Selection_(genetic_algorithm).
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LRUCacheTest.class,
-    GeneticAlgorithmTest.class,
-    PopulationTest.class
-})
-public class UtilTestSuite {
+public enum SelectionStrategy {
+    /** Roulette wheel. */
+    ROULETTE_WHEEL,
+
+    /** Truncation. */
+    TRUNCATION,
+
+    /** Tournament. */
+    TOURNAMENT
 }

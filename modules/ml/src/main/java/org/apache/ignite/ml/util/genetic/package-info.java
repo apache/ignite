@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util;
-
-import org.apache.ignite.ml.util.genetic.GeneticAlgorithmTest;
-import org.apache.ignite.ml.util.genetic.PopulationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in {@link org.apache.ignite.ml.util} package.
+ * <!-- Package description. -->
+ * Contains some genetic algorithms for discrete optimization task in ML module locally.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LRUCacheTest.class,
-    GeneticAlgorithmTest.class,
-    PopulationTest.class
-})
-public class UtilTestSuite {
-}
+package org.apache.ignite.ml.util.genetic;
