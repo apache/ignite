@@ -17,17 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.PART_ATOMIC_CACHE;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesReadOnlyMode;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertDataStreamerReadOnlyMode;
+import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheNames;
 
 /**
  * Tests cache get/put/remove and data streaming in read-only cluster mode.
@@ -69,48 +75,144 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
      * Tests data streamer.
      */
     @Test
-    public void testDataStreamerReadOnlyConcurrent()throws Exception {
-        final int totalEntries = 50_000;
-        final CountDownLatch startLatch = new CountDownLatch(1);
-        final AtomicBoolean exThrown = new AtomicBoolean();
-        final CountDownLatch finishLatch = new CountDownLatch(1);
+    public void testDataStreamerReadOnlyConcurrent() throws Exception {
+        testDataStreamerReadOnlyConcurrent(false, false);
+    }
 
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(PART_ATOMIC_CACHE)) {
-                    startLatch.countDown();
-                    streamer.allowOverwrite(false);
+    /**
+     * Tests data streamer.
+     */
+    @Test
+    public void testDataStreamerReadOnlyConcurrentWithFlush() throws Exception {
+        testDataStreamerReadOnlyConcurrent(true, false);
+    }
 
-                    for (int i = 0; i < totalEntries; i++) {
-                        if ((i + 1) % (totalEntries / 10) == 0)
-                            log.info("Prepared " + (i + 1) * 100 / (totalEntries) + "% entries.");
+    /**
+     * Tests data streamer.
+     */
+    @Test
+    public void testDataStreamerReadOnlyConcurrentAllowOverride() throws Exception {
+        testDataStreamerReadOnlyConcurrent(false, true);
+    }
 
-                        streamer.addData(i, i + PART_ATOMIC_CACHE.hashCode());
+    /**
+     * Tests data streamer.
+     */
+    @Test
+    public void testDataStreamerReadOnlyConcurrentWithFlushAllowOverride() throws Exception {
+        testDataStreamerReadOnlyConcurrent(true, true);
+    }
+
+
+    private void testDataStreamerReadOnlyConcurrent(boolean manualFlush, boolean allowOverride) throws Exception {
+        final CountDownLatch firstPackLatch = new CountDownLatch(cacheNames().size());
+        final CountDownLatch secondPackLatch = new CountDownLatch(cacheNames().size());
+        final CountDownLatch finishLatch = new CountDownLatch(cacheNames().size());
+
+        final CountDownLatch readOnlyEnabled = new CountDownLatch(1);
+        final CountDownLatch readOnlyDisabled = new CountDownLatch(1);
+
+        final Map<String, Exception> eMap = new ConcurrentHashMap<>(cacheNames().size());
+
+        Map<String, IgniteInternalFuture<?>> futs = new HashMap<>(cacheNames().size());
+
+        try {
+            for (String cacheName : cacheNames()) {
+                futs.put(cacheName, GridTestUtils.runAsync(() -> {
+                    final int entries = 10000;
+                    try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(cacheName)) {
+                        streamer.allowOverwrite(allowOverride);
+
+                        doLoad(streamer, 0, entries, manualFlush);
+
+                        firstPackLatch.countDown();
+
+                        readOnlyEnabled.await(5, TimeUnit.SECONDS);
+
+                        doLoad(streamer, entries, 2 * entries, manualFlush);
+
+                        secondPackLatch.countDown();
+
+                        readOnlyDisabled.await(5, TimeUnit.SECONDS);
+
+                        doLoad(streamer, 2 * entries, 3 * entries, manualFlush);
+
+                        finishLatch.countDown();
                     }
-                }
-                catch (CacheException e) {
-                    exThrown.compareAndSet(false, true);
+                    catch (Exception e) {
+                        log.error("Streamer cache exception is thrown for cache " + cacheName, e);
 
-                    log.info("Streamer cache exception is thrown", e.getMessage());
+                        assertNull(cacheName, eMap.put(cacheName, e));
+                    }
+                    finally {
+                        // Avoid to hanging test in case of unexpected behaviour.
+                        firstPackLatch.countDown();
+                        secondPackLatch.countDown();
+                        finishLatch.countDown();
+                    }
+                }));
+            }
+
+            firstPackLatch.await(5, TimeUnit.SECONDS);
+
+            changeClusterReadOnlyMode(true);
+
+            readOnlyEnabled.countDown();
+
+            secondPackLatch.await(5, TimeUnit.SECONDS);
+
+            changeClusterReadOnlyMode(false);
+
+            readOnlyDisabled.countDown();
+
+            finishLatch.await(5, TimeUnit.SECONDS);
+
+            assertEquals("exceptions: " + eMap, cacheNames().size(), eMap.size());
+
+            for (String cacheName : cacheNames()) {
+                Exception e = eMap.get(cacheName);
+
+                assertNotNull(cacheName, e);
+                assertTrue(cacheName + " " + e.getClass().toString(), e instanceof CacheException);
+                assertTrue(cacheName + " " + e, X.hasCause(e, ClusterReadOnlyModeCheckedException.class));
+            }
+        }
+        finally {
+            // Avoid to hanging test in case of unexpected behaviour.
+            readOnlyEnabled.countDown();
+            readOnlyDisabled.countDown();
+
+            awaitThreads(futs);
+        }
+    }
+
+    private void awaitThreads(Map<String, IgniteInternalFuture<?>> futs) {
+        for (String cacheName : futs.keySet()) {
+            IgniteInternalFuture<?> fut = futs.get(cacheName);
+
+            try {
+                fut.get(5, TimeUnit.SECONDS);
+            }
+            catch (Exception e) {
+                log.error("Failed to get future " + cacheName, e);
+
+                try {
+                    fut.cancel();
                 }
-                finally {
-                    finishLatch.countDown();
+                catch (IgniteCheckedException ce) {
+                    log.error("Failed to cancel future " + cacheName, e);
                 }
             }
-        });
+        }
+    }
 
-        startLatch.await(5, TimeUnit.SECONDS);
+    private void doLoad(IgniteDataStreamer<Integer, Integer> streamer, int from, int to, boolean flush) {
+        assertTrue(from < to);
 
-        changeClusterReadOnlyMode(true);
+        for (int i = from; i < to; i++)
+            streamer.addData(i, i);
 
-        assertCachesReadOnlyMode(true, CACHE_NAMES);
-
-        changeClusterReadOnlyMode(false);
-
-        finishLatch.await(5, TimeUnit.SECONDS);
-
-        assertCachesReadOnlyMode(false, CACHE_NAMES);
-
-        assertTrue("DataStreamer exception not thrown during change readonly mode", exThrown.get());
+        if (flush)
+            streamer.flush();
     }
 }
