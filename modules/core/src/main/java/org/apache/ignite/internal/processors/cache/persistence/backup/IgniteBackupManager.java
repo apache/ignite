@@ -63,9 +63,9 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAl
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,8 +81,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.util.io.GridFileUtils.copy;
 
 /** */
-public class IgniteBackupManager extends GridCacheSharedManagerAdapter
-    implements IgniteChangeGlobalStateSupport {
+public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /** */
     public static final String DELTA_SUFFIX = ".delta";
 
@@ -200,6 +199,18 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
 
         assert pageSize > 0;
 
+        if (!cctx.kernalContext().clientNode()) {
+            backupRunner = new IgniteThreadPoolExecutor(
+                BACKUP_RUNNER_THREAD_PREFIX,
+                cctx.igniteInstanceName(),
+                BACKUP_POOL_SIZE,
+                BACKUP_POOL_SIZE,
+                30_000,
+                new LinkedBlockingQueue<>(),
+                SYSTEM_POOL,
+                (t, e) -> cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
+        }
+
         setThreadPageBuff(ThreadLocal.withInitial(() ->
             ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder())));
 
@@ -214,7 +225,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
                         continue;
 
                     // Gather partitions metainfo for thouse which will be copied.
-                    ctx.gatherPartStats(bctx0.partAllocLengths.keySet());
+                    ctx.gatherPartStats(bctx0.parts);
                 }
             }
 
@@ -246,6 +257,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
                         PartitionAllocationMap allocationMap = ctx.partitionStatMap();
                         allocationMap.prepareForSnapshot();
 
+                        assert !allocationMap.isEmpty() : "Partitions statistics has not been gathered: " + bctx0;
+
                         for (GroupPartitionId pair : bctx0.partAllocLengths.keySet()) {
                             PagesAllocationRange allocRange = allocationMap.get(pair);
 
@@ -273,25 +286,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         dbMgr.removeCheckpointListener(cpLsnr);
-    }
 
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode()) {
-            backupRunner = new IgniteThreadPoolExecutor(
-                BACKUP_RUNNER_THREAD_PREFIX,
-                cctx.igniteInstanceName(),
-                BACKUP_POOL_SIZE,
-                BACKUP_POOL_SIZE,
-                30_000,
-                new LinkedBlockingQueue<>(),
-                SYSTEM_POOL,
-                (t, e) -> cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
         for (Collection<PartitionDeltaPageStore> deltas : processingParts.values()) {
             for (PartitionDeltaPageStore s : deltas)
                 U.closeQuiet(s);
@@ -324,6 +319,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
 
         final BackupContext2 bctx0 = new BackupContext2(name,
             backupDir,
+            parts,
             backupRunner,
             (storeWorkDir, ccfg, partId, partSize, delta) ->
                 new PartitionCopyTask(backupDir, storeWorkDir, ccfg, partId, partSize, delta));
@@ -400,7 +396,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
     /**
      * @param backupName Unique backup name.
      */
-   public void stopCacheBackup(String backupName) {
+    public void stopCacheBackup(String backupName) {
 
     }
 
@@ -817,10 +813,15 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
         private final Map<GroupPartitionId, PartitionDeltaPageStore> partDeltaStores = new HashMap<>();
 
         /** Future of result completion. */
+        @GridToStringExclude
         private final GridCompoundFuture<Boolean, Boolean> result = new GridCompoundFuture<>();
 
         /** Factory to create executable tasks for partition processing. */
+        @GridToStringExclude
         private final PartitionTaskFactory factory;
+
+        /** Collection of partition to be backuped. */
+        private final Map<Integer, Set<Integer>> parts;
 
         /** Flag idicates that this backup is start copying partitions. */
         private volatile boolean started;
@@ -834,11 +835,18 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter
         public BackupContext2(
             String name,
             File backupDir,
+            Map<Integer, Set<Integer>> parts,
             ExecutorService execSvc,
             PartitionTaskFactory factory
         ) {
+            A.ensure(name != null, "Backup name cannot be empty or null");
+            A.ensure(backupDir != null && backupDir.isDirectory(), "You must secify correct backup directory");
+            A.ensure(execSvc != null, "Executor service must be not null");
+            A.ensure(factory != null, "Factory which procudes backup tasks to execute must be not null");
+
             this.name = name;
             this.backupDir = backupDir;
+            this.parts = parts;
             this.execSvc = execSvc;
             this.factory = factory;
         }

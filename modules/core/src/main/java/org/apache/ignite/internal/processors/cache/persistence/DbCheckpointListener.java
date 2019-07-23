@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,12 +40,12 @@ public interface DbCheckpointListener {
         /**
          * @return Collection partition which require meta to be collected.
          */
-        public Set<GroupPartitionId> gatherPartStats();
+        public Map<Integer, Set<Integer>> gatherPartStats();
 
         /**
          * @param parts Collection of partitions for which statistics should be gathered.
          */
-        public void gatherPartStats(Set<GroupPartitionId> parts);
+        public void gatherPartStats(Map<Integer, Set<Integer>> parts);
 
         /**
          * @return Partition allocation statistic map

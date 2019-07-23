@@ -4353,12 +4353,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
-                @Override public Set<GroupPartitionId> gatherPartStats() {
+                @Override public Map<Integer, Set<Integer>> gatherPartStats() {
                     return delegate.gatherPartStats();
                 }
 
                 /** {@inheritDoc} */
-                @Override public void gatherPartStats(Set<GroupPartitionId> parts) {
+                @Override public void gatherPartStats(Map<Integer, Set<Integer>> parts) {
                     delegate.gatherPartStats(parts);
                 }
 
@@ -4502,8 +4502,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** Partition map. */
             private final PartitionAllocationMap map;
 
-            /** */
-            private final Set<GroupPartitionId> gatherParts;
+            /** Collection of partitions to gather statistics. */
+            private final Map<Integer, Set<Integer>> gatherParts = new HashMap<>();
 
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
@@ -4515,7 +4515,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             private DbCheckpointContextImpl(CheckpointProgress curr, PartitionAllocationMap map) {
                 this.curr = curr;
                 this.map = map;
-                gatherParts = new HashSet<>();
                 this.pendingTaskFuture = asyncRunner == null ? null : new GridCompoundFuture();
             }
 
@@ -4525,13 +4524,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             /** {@inheritDoc} */
-            @Override public Set<GroupPartitionId> gatherPartStats() {
-                return Collections.unmodifiableSet(gatherParts);
+            @Override public Map<Integer, Set<Integer>> gatherPartStats() {
+                return gatherParts;
             }
 
             /** {@inheritDoc} */
-            @Override public void gatherPartStats(Set<GroupPartitionId> parts) {
-                gatherParts.addAll(parts);
+            @Override public void gatherPartStats(Map<Integer, Set<Integer>> parts) {
+                for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
+                    gatherParts.computeIfAbsent(e.getKey(), g -> new HashSet<>())
+                        .addAll(e.getValue());
+                }
             }
 
             /** {@inheritDoc} */

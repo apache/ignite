@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -49,6 +50,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreListener;
@@ -107,7 +109,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
                 .setPartitions(CACHE_PARTS_COUNT));
 
     /** Directory to store temporary files on testing cache backup process. */
-    private File mergeTempDir;
+    private File backupDir;
 
     /**
      * Calculate CRC for all partition files of specified cache.
@@ -117,7 +119,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If fails.
      */
     private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IgniteCheckedException {
-        assert cacheDir.isDirectory();
+        assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
 
         Map<String, Integer> result = new HashMap<>();
 
@@ -174,7 +176,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     public void beforeTestBackup() throws Exception {
         cleanPersistenceDir();
 
-        mergeTempDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "merge", true);
+        backupDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "backup", true);
     }
 
     /** */
@@ -257,7 +259,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .order(ByteOrder.nativeOrder());
 
         final File mergeCacheDir = U.resolveWorkDirectory(
-            mergeTempDir.getAbsolutePath(),
+            backupDir.getAbsolutePath(),
             cacheDirName(defaultCacheCfg),
             true
         );
@@ -363,6 +365,75 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         partsCRCSnapshots.add(calculateCRC32Partitions(mergeCacheDir));
 
         assertEquals("Partitons the same after backup and after merge", partsCRCSnapshots.get(0), partsCRCSnapshots.get(1));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBackupLocalPartitions() throws Exception {
+        final CountDownLatch slowCopy = new CountDownLatch(1);
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        for (int i = 0; i < 1024; i++)
+            ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        File cacheWorkDir = ((FilePageStoreManager)ignite.context().cache().context().pageStore())
+            .cacheWorkDir(defaultCacheCfg);
+
+        stopGrid(0);
+
+        // Calculate CRCs
+        final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
+
+        IgniteEx ig0 = startGrid(0);
+
+        final GridCacheSharedContext<?, ?> cctx1 = ig0.context().cache().context();
+
+        // Run the next checkpoint and produce dirty pages to generate onPageWrite events.
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    for (int i = 1024; i < 2048; i++)
+                        ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+                    CheckpointFuture cpFut = cctx1.database().forceCheckpoint("the next one");
+
+                    cpFut.finishFuture().get();
+
+                    slowCopy.countDown();
+
+                    U.log(log, "Parallel changes have made. The checkpoint finished succesfully.");
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
+
+        Set<Integer> parts = Stream.iterate(0, n -> n + 1)
+            .limit(CACHE_PARTS_COUNT)
+            .collect(Collectors.toSet());
+
+        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
+        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME), parts);
+
+        IgniteInternalFuture<?> fut = ig0.context()
+            .cache()
+            .context()
+            .storeBackup()
+            .createLocalBackup("testBackup", toBackup, backupDir);
+
+        fut.get();
+
+        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(new File(backupDir.getAbsolutePath(),
+            "testBackup"),
+            cacheDirName(defaultCacheCfg)));
+
+        assertEquals("Partitons the same after backup and after merge", origParts, bakcupCRCs);
     }
 
     /** */
