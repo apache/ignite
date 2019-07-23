@@ -49,13 +49,14 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
     private static final long DAYS_BEFORE_NOW = 10;
 
     /** {@link LocalTime} instance. */
-    private static final LocalTime SAMPLE_TIME = LocalTime.now().minusHours(10);
+    // enforce at most millisecond precision as more does not work
+    private static final LocalTime SAMPLE_TIME = LocalTime.now().minusHours(10).withNano(123_000_000);
 
     /** {@link LocalDate} instance. */
     private static final LocalDate SAMPLE_DATE = LocalDate.now().minusDays(DAYS_BEFORE_NOW);
 
     /** {@link LocalDateTime} instance. */
-    private static final LocalDateTime SAMPLE_DATE_TIME = LocalDateTime.of(SAMPLE_DATE, LocalTime.MIDNIGHT);
+    private static final LocalDateTime SAMPLE_DATE_TIME = LocalDateTime.of(SAMPLE_DATE, LocalTime.MIDNIGHT.withNano(1));
 
     /** Cache. */
     private IgniteCache<Long, EntityWithDateTimeFields> cache;
