@@ -59,6 +59,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      * @throws Exception If failed.
      */
     public void testDestroyCachesAbruptly() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8717");
         Ignite ignite = startGrids(NODES);
 
         ignite.cluster().active(true);
@@ -67,13 +68,14 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
 
         checkDestroyCachesAbruptly(ignite);
     }
-    
+
     /**
      * Test destroy group caches abruptly with checkpoints.
      *
      * @throws Exception If failed.
      */
     public void testDestroyGroupCachesAbruptly() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8717");
         Ignite ignite = startGrids(NODES);
 
         ignite.cluster().active(true);
