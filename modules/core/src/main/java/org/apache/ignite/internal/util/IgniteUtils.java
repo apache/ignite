@@ -11428,6 +11428,9 @@ public abstract class IgniteUtils {
     /** */
     private static class WriteLockTracer extends ReentrantReadWriteLock.WriteLock {
         /** */
+        private static final long serialVersionUID = 0L;
+        
+        /** */
         public WriteLockTracer(ReentrantReadWriteLock lock) {
             super(lock);
         }
