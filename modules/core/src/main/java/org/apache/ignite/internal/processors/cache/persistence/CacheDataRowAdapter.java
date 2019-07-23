@@ -260,10 +260,19 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         int itemId = itemId(nextLink);
 
                         incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
-                            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+                                grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
-                        if (incomplete == null)
+                        if (incomplete == null) {
+                            if (rowData == TOMBSTONES && val != null && !sharedCtx.database().isTombstone(this)) {
+                                // TODO IGNITE-11704.
+                                ver = null;
+                                key = null;
+                                val = null;
+                                verReady = true;
+                            }
+
                             return;
+                        }
 
                         if (rowData == KEY_ONLY) {
                             if (key != null)
