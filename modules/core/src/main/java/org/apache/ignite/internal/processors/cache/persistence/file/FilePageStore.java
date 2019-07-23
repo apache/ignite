@@ -35,11 +35,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreListener;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 
@@ -86,7 +86,7 @@ public class FilePageStore implements PageStore {
     private final AtomicLong allocated;
 
     /** Region metrics updater. */
-    private final AllocatedPageTracker allocatedTracker;
+    private final LongAdderMetric allocatedTracker;
 
     /** */
     private final PageStoreListener lsnr;
@@ -115,7 +115,7 @@ public class FilePageStore implements PageStore {
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker,
+        LongAdderMetric allocatedTracker,
         PageStoreListener lsnr
     ) {
         assert lsnr != null;
@@ -335,7 +335,7 @@ public class FilePageStore implements PageStore {
                 + ", delete=" + delete + "]", e);
         }
         finally {
-            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.getAndSet(0) / pageSize);
+            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -368,7 +368,7 @@ public class FilePageStore implements PageStore {
             throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
         }
         finally {
-            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.getAndSet(0) / pageSize);
+            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -405,7 +405,7 @@ public class FilePageStore implements PageStore {
 
                 assert delta % pageSize == 0 : delta;
 
-                allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+                allocatedTracker.add(delta / pageSize);
             }
 
             recover = false;
@@ -504,8 +504,10 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void init() throws StorageException {
+    /**
+     * @throws StorageException If failed to initialize store file.
+     */
+    private void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -550,7 +552,7 @@ public class FilePageStore implements PageStore {
 
                         // Order is important, update of total allocated pages must be called after allocated update
                         // and setting inited to true, because it affects pages() returned value.
-                        allocatedTracker.updateTotalAllocatedPages(pages());
+                        allocatedTracker.add(pages());
                     }
                     catch (IOException e) {
                         err = new StorageException(
@@ -793,7 +795,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                allocatedTracker.updateTotalAllocatedPages(1);
+                allocatedTracker.increment();
 
                 break;
             }

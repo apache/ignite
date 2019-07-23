@@ -934,7 +934,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             curPart = ds.partId();
 
                             // Data page scan is disabled by default for scan queries.
-                            // TODO https://ggsystems.atlassian.net/browse/GG-20800
+                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998
                             CacheDataTree.setDataPageScanEnabled(false);
 
                             try {
