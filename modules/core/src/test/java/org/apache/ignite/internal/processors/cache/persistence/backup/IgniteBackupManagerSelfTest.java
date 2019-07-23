@@ -269,7 +269,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         grpsBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
             IntStream.range(0, CACHE_PARTS_COUNT).boxed().collect(Collectors.toSet()));
 
-        cctx1.storeBackup()
+        cctx1.backup()
             .backup(
                 "testbackup",
                 grpsBackup,
@@ -424,7 +424,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut = ig0.context()
             .cache()
             .context()
-            .storeBackup()
+            .backup()
             .createLocalBackup("testBackup", toBackup, backupDir);
 
         fut.get();

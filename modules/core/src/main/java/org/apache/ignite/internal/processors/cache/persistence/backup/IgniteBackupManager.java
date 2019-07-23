@@ -43,12 +43,14 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -70,6 +72,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static java.util.Optional.ofNullable;
@@ -322,7 +326,14 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             parts,
             backupRunner,
             (storeWorkDir, ccfg, partId, partSize, delta) ->
-                new PartitionCopyTask(backupDir, storeWorkDir, ccfg, partId, partSize, delta));
+                new PartitionCopyWorker(cctx.igniteInstanceName(),
+                    log,
+                    backupDir,
+                    storeWorkDir,
+                    ccfg,
+                    partId,
+                    partSize,
+                    delta));
 
         try {
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
@@ -361,6 +372,10 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         BackupContext2 tctx = backupCtxs.putIfAbsent(name, bctx0);
 
+        dbMgr.forceCheckpoint(String.format(BACKUP_CP_REASON, name))
+            .beginFuture()
+            .get();
+
         assert tctx == null : tctx;
 
         return bctx0.result;
@@ -370,14 +385,15 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @param bctx Context to handle.
      */
     private void submitPartitionsTask(BackupContext2 bctx, File storeWorkDir) {
-        GridFutureAdapter<Boolean> fut0;
+        GridWorkerFuture<Boolean> wrapFut;
+        GridWorker w0;
 
         for (Map.Entry<GroupPartitionId, Long> e : bctx.partAllocLengths.entrySet()) {
             GroupPartitionId pair = e.getKey();
 
             bctx.execSvc.submit(
                 U.wrapIgniteFuture(
-                    bctx.factory
+                        w0 = bctx.factory
                         .createTask(storeWorkDir,
                             cctx.cache()
                                 .cacheGroup(pair.getGroupId())
@@ -385,9 +401,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                             pair.getPartitionId(),
                             bctx.partAllocLengths.get(pair),
                             bctx.partDeltaStores.get(pair)),
-                    fut0 = new GridFutureAdapter<>()));
+                    wrapFut = new GridWorkerFuture<>()));
 
-            bctx.result.add(fut0);
+            // To be able to cancel all tasks.
+            wrapFut.setWorker(w0);
+            bctx.result.add(wrapFut);
         }
 
         bctx.result.markInitialized();
@@ -712,7 +730,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          * @param delta Storage with delta pages.
          * @return Executable partition prccessing task.
          */
-        public Runnable createTask(
+        public GridWorker createTask(
             File storeWorkDir,
             CacheConfiguration ccfg,
             int partId,
@@ -724,7 +742,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class PartitionCopyTask implements Runnable {
+    private static class PartitionCopyWorker extends GridWorker {
         /** */
         private final File backupDir;
 
@@ -751,7 +769,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          * @param partSize Partition lenght on checkpoint time.
          * @param delta Storage with delta pages.
          */
-        public PartitionCopyTask(
+        public PartitionCopyWorker(
+            String igniteInstanceName,
+            IgniteLogger log,
             File backupDir,
             File storeWorkDir,
             CacheConfiguration ccfg,
@@ -759,6 +779,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             long partSize,
             PartitionDeltaPageStore delta
         ) {
+            super(igniteInstanceName, "part-backup-worker-", log.getLogger(PartitionCopyWorker.class));
+
             this.backupDir = backupDir;
             this.storeWorkDir = storeWorkDir;
             this.ccfg = ccfg;
@@ -768,15 +790,18 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             if (partSize == 0)
                 return;
 
             try {
-                copy(getPartitionFile(cacheWorkDir(storeWorkDir, ccfg), partId),
-                    0,
-                    partSize,
-                    new File(backupDir, cacheDirName(ccfg)));
+                File part = getPartitionFile(cacheWorkDir(storeWorkDir, ccfg), partId);
+                File partCopy = new File(backupDir, cacheDirName(ccfg));
+
+                copy(part, 0, partSize, partCopy);
+
+                U.log(log, "Partition has been copied [from=" + part.getAbsolutePath() +
+                    ", to=" + partCopy.getAbsolutePath() + ']');
 
                 // Partition copied, stop recording deltas
                 delta.writable(false);

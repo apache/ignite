@@ -725,8 +725,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         PageMemory.FLAG_DATA,
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         allocatedTracker,
-                        cctx.storeBackup() == null ?
-                            PageStoreListener.NO_OP : new BackupPageStoreListener(grpId, partId, cctx.storeBackup())
+                        cctx.backup() == null ?
+                            PageStoreListener.NO_OP : new BackupPageStoreListener(grpId, partId, cctx.backup())
                     );
 
                     partStores[partId] = partStore;

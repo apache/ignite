@@ -126,7 +126,7 @@ public class GridCacheSharedContext<K, V> {
     @Nullable private IgnitePageStoreManager pageStoreMgr;
 
     /** Page file snapshot manager. Can be {@code null} if presistence is not enabled. */
-    private IgniteBackupManager storeBackupMgr;
+    private IgniteBackupManager backupMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -221,7 +221,7 @@ public class GridCacheSharedContext<K, V> {
         @Nullable IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        IgniteBackupManager storeBackupMgr,
+        IgniteBackupManager backupMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -247,7 +247,7 @@ public class GridCacheSharedContext<K, V> {
             walMgr,
             walStateMgr,
             dbMgr,
-            storeBackupMgr,
+            backupMgr,
             snpMgr,
             depMgr,
             exchMgr,
@@ -419,7 +419,7 @@ public class GridCacheSharedContext<K, V> {
             walMgr,
             walStateMgr,
             dbMgr,
-            storeBackupMgr,
+            backupMgr,
             snpMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
@@ -469,7 +469,7 @@ public class GridCacheSharedContext<K, V> {
         IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        IgniteBackupManager storeBackupMgr,
+        IgniteBackupManager backupMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -489,7 +489,7 @@ public class GridCacheSharedContext<K, V> {
         this.walMgr = add(mgrs, walMgr);
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
-        this.storeBackupMgr = add(mgrs, storeBackupMgr);
+        this.backupMgr = add(mgrs, backupMgr);
         this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
@@ -743,8 +743,8 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Page store backup manager.
      */
-    public IgniteBackupManager storeBackup() {
-        return storeBackupMgr;
+    public IgniteBackupManager backup() {
+        return backupMgr;
     }
 
     /**
