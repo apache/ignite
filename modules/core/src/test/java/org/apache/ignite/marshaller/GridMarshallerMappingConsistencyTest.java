@@ -147,8 +147,8 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
 
         stopAllGrids();
 
-        Ignite g2 = startGrid(2);
         startGrid(1);
+        Ignite g2 = startGrid(2);
 
         assertTrue("Failed to wait for automatic grid activation",
             GridTestUtils.waitForCondition(() -> g2.cluster().active(), getTestTimeout()));
