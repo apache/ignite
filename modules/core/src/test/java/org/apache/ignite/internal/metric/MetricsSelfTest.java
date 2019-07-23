@@ -29,8 +29,8 @@ import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -63,7 +63,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testLongCounter() throws Exception {
-        LongMetricImpl l = mreg.metric("ltest", "test");
+        AtomicLongMetric l = mreg.longMetric("ltest", "test");
 
         run(l::increment, 100);
 
@@ -77,7 +77,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testLongAdderCounter() throws Exception {
-        LongAdderMetricImpl l = mreg.longAdderMetric("latest", "test");
+        LongAdderMetric l = mreg.longAdderMetric("latest", "test");
 
         run(l::increment, 100);
 
@@ -119,7 +119,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        LongMetricImpl l = new LongMetricImpl("rtest", "test");
+        AtomicLongMetric l = new AtomicLongMetric("rtest", "test");
 
         mreg.register(l);
 
@@ -137,7 +137,7 @@ public class MetricsSelfTest {
 
         mreg.register("bmtest", () -> v[0], "test");
 
-        BooleanMetric m = (BooleanMetric)mreg.findMetric("bmtest");
+        BooleanMetric m = mreg.findMetric("bmtest");
 
         assertEquals(v[0], m.value());
 
@@ -153,7 +153,7 @@ public class MetricsSelfTest {
 
         mreg.register("dmtest", () -> v[0], "test");
 
-        DoubleMetric m = (DoubleMetric)mreg.findMetric("dmtest");
+        DoubleMetric m = mreg.findMetric("dmtest");
 
         assertEquals(v[0], m.value(), 0);
 
@@ -169,7 +169,7 @@ public class MetricsSelfTest {
 
         mreg.register("imtest", () -> v[0], "test");
 
-        IntMetric m = (IntMetric)mreg.findMetric("imtest");
+        IntMetric m = mreg.findMetric("imtest");
 
         assertEquals(v[0], m.value());
 
@@ -185,7 +185,7 @@ public class MetricsSelfTest {
 
         mreg.register("lmtest", () -> v[0], "test");
 
-        LongMetric m = (LongMetric)mreg.findMetric("lmtest");
+        LongMetric m = mreg.findMetric("lmtest");
 
         assertEquals(v[0], m.value());
 
@@ -201,7 +201,7 @@ public class MetricsSelfTest {
 
         mreg.register("omtest", () -> v[0], String.class, "test");
 
-        ObjectMetric<String> m = (ObjectMetric<String>)mreg.findMetric("omtest");
+        ObjectMetric<String> m = mreg.findMetric("omtest");
 
         assertEquals(v[0], m.value());
 
@@ -269,11 +269,11 @@ public class MetricsSelfTest {
     public void testGetMetrics() throws Exception {
         MetricRegistry mreg = new MetricRegistry("group", null);
 
-        mreg.metric("test1", "");
-        mreg.metric("test2", "");
-        mreg.metric("test3", "");
-        mreg.metric("test4", "");
-        mreg.metric("test5", "");
+        mreg.longMetric("test1", "");
+        mreg.longMetric("test2", "");
+        mreg.longMetric("test3", "");
+        mreg.longMetric("test4", "");
+        mreg.longMetric("test5", "");
 
         Set<String> names = new HashSet<>(asList("group.test1", "group.test2", "group.test3", "group.test4",
             "group.test5"));
@@ -290,8 +290,8 @@ public class MetricsSelfTest {
     public void testRemove() throws Exception {
         MetricRegistry mreg = new MetricRegistry("group", null);
 
-        LongMetricImpl cntr = mreg.metric("my.name", null);
-        LongMetricImpl cntr2 = mreg.metric("my.name.x", null);
+        AtomicLongMetric cntr = mreg.longMetric("my.name", null);
+        AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);
 
         assertNotNull(cntr);
         assertNotNull(cntr2);
@@ -304,7 +304,7 @@ public class MetricsSelfTest {
         assertNull(mreg.findMetric("my.name"));
         assertNotNull(mreg.findMetric("my.name.x"));
 
-        cntr = mreg.metric("my.name", null);
+        cntr = mreg.longMetric("my.name", null);
 
         assertNotNull(mreg.findMetric("my.name"));
     }
