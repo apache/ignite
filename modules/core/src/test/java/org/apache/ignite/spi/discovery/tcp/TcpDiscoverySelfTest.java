@@ -93,6 +93,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -114,12 +115,21 @@ import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
  */
 public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
+    private static final String NODE_WITH_PORT_ID_0 = "node0-47500";
+
+    /** */
+    private static final String NODE_WITH_PORT_ID_1 = "node1-47501";
+
+    /** */
+    private static final String NODE_WITH_PORT_ID_2 = "node2-47502";
+
+    /** */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private Map<String, TcpDiscoverySpi> discoMap = new HashMap<>();
 
-    /** */
+    /** If not null this ID is used as nodeID. */
     private UUID nodeId;
 
     /** */
@@ -136,6 +146,38 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** */
     private SegmentationPolicy segPlc;
+
+    /** ID to be used as a nodeID for failed node. */
+    private UUID failedNodeId = UUID.randomUUID();
+
+    /** */
+    private TcpDiscoverySpi specialSpi;
+
+    /** Discovery SPI aimed to fail node with it when another server node joins the topology. */
+    private TcpDiscoverySpi failingNodeOnNodeJoinSpi = new TcpDiscoverySpi() {
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
+                UUID nodeId = ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId();
+
+                if (nodeId.equals(failedNodeId)) {
+                    Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
+
+                    OutputStream out = GridTestUtils.getFieldValue(workerObj, "out");
+
+                    try {
+                        out.close();
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+
+                    return;
+                }
+            }
+
+            super.startMessageProcess(msg);
+        }
+    };
 
     /**
      * @throws Exception If fails.
@@ -159,6 +201,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else
             nodeSpi.set(null);
 
+        if (specialSpi != null)
+            spi = specialSpi;
+
         discoMap.put(igniteInstanceName, spi);
 
         spi.setIpFinder(ipFinder);
@@ -168,6 +213,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         spi.setIpFinderCleanFrequency(5000);
 
         spi.setJoinTimeout(5000);
+
+        spi.setConnectionRecoveryTimeout(0);
 
         cfg.setDiscoverySpi(spi);
 
@@ -243,6 +290,41 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /**
+     * Scenario: two server nodes in stable topology, n1 -> n0.
+     *
+     * During node n2 join join request is handled successfully, NodeAdded message finishes pass across the ring,
+     * NodeAddFinished message is generated.
+     *
+     * Right before delivering finished message to n2 glitch happens, n0 and n1 think that n2 has failed,
+     * but n2 tries to send join request again (with the same nodeID).
+     *
+     * It is expected that n2 repeated join request doesn't pass validation and n2 shuts down automatically.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testServerRejoinAfterNetworkGlitchIsProhibited() throws Exception {
+        startGrid(NODE_WITH_PORT_ID_0);
+
+        specialSpi = failingNodeOnNodeJoinSpi;
+
+        startGrid(NODE_WITH_PORT_ID_1);
+
+        nodeId = failedNodeId;
+
+        boolean exceptionThrown = false;
+        try {
+            startGrid(NODE_WITH_PORT_ID_2);
+        }
+        catch (IgniteCheckedException e) {
+            //TODO add asserts here
+            exceptionThrown = true;
+        }
+
+        assertTrue("Expected IgniteSpiException was not thrown", exceptionThrown);
     }
 
     /** {@inheritDoc} */

@@ -64,6 +64,9 @@ public class DiscoveryDataPacket implements Serializable {
     /** */
     private transient boolean joiningNodeClient;
 
+    /** */
+    private UUID[] nodeIdsHist;
+
     /**
      * @param joiningNodeId Joining node id.
      */
@@ -476,5 +479,15 @@ public class DiscoveryDataPacket implements Serializable {
      */
     public void joiningNodeClient(boolean joiningNodeClient) {
         this.joiningNodeClient = joiningNodeClient;
+    }
+
+    /** */
+    public UUID[] nodesIdsHistory() {
+        return nodeIdsHist;
+    }
+
+    /** */
+    public void nodesIdsHistory(UUID[] nodeIdsHist) {
+        this.nodeIdsHist = nodeIdsHist;
     }
 }

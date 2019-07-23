@@ -4776,6 +4776,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             joiningNodesDiscoDataList.add(dataPacket);
                     }
 
+                    if (isLocalNodeCoordinator())
+                        dataPacket.nodesIdsHistory(nodesIdsHist.toArray(new UUID[nodesIdsHist.size()]));
+
                     processMessageFailedNodes(msg);
                 }
 
@@ -5046,12 +5049,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                     mux.notifyAll();
                 }
 
-                if (gridDiscoveryData != null)
+                if (gridDiscoveryData != null) {
                     spi.onExchange(gridDiscoveryData, U.resolveClassLoader(spi.ignite().configuration()));
 
+                    if (gridDiscoveryData.nodesIdsHistory() != null)
+                        nodesIdsHist.addAll(Arrays.asList(gridDiscoveryData.nodesIdsHistory()));
+                }
+
                 if (joiningNodesDiscoDataList != null) {
-                    for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList)
+                    for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList) {
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+
+                        if (dataPacket.nodesIdsHistory() != null)
+                            nodesIdsHist.addAll(Arrays.asList(dataPacket.nodesIdsHistory()));
+                    }
                 }
 
                 nullifyDiscoData();
