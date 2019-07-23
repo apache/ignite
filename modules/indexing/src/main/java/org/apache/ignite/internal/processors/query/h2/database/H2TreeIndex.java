@@ -82,11 +82,13 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param cctx Cache context.
+     * @param rowCache Row cache.
      * @param tbl Table.
      * @param name Index name.
      * @param pk Primary key.
      * @param colsList Index columns.
      * @param inlineSize Inline size.
+     * @param segmentsCnt number of tree's segments.
      * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */

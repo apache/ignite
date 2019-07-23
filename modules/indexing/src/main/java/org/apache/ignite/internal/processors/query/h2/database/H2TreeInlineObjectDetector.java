@@ -96,35 +96,22 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
             if (type == Value.JAVA_OBJECT) {
                 int len = PageUtils.getShort(pageAddr, off + fieldOff + 1);
 
-                boolean isFull = (len & 0x8000) == 0;
-
                 len = len & 0x7FFF;
 
                 byte[] originalObjBytes = val.getBytesNoCopy();
 
                 // read size more then available space or more then origin length
-                if(len > inlineSize - fieldOff - 3 || len > originalObjBytes.length){
-
+                if (len > inlineSize - fieldOff - 3 || len > originalObjBytes.length) {
                     inlineObjectSupportedDecision(false, "lenght is big " + len);
 
                     return true;
                 }
 
-                // compare full object
-                if(isFull) {
-                    int compRes = ih.compare(pageAddr, off + fieldOff, inlineSize - fieldOff, val, (o1, o2) -> 0);
-
-                    inlineObjectSupportedDecision(compRes == 0, "full compare");
-
-                    return true;
-                }
-
-
-                // try compare byte by byte for partial inlined object.
+                // try compare byte by byte for fully or partial inlined object.
                 byte[] inlineBytes = PageUtils.getBytes(pageAddr, off + fieldOff + 3, len);
 
                 for (int i = 0; i < len; i++) {
-                    if(inlineBytes[i] == originalObjBytes[i])
+                    if (inlineBytes[i] == originalObjBytes[i])
                         continue;
 
                     inlineObjectSupportedDecision(false,  i + " byte compare");
@@ -183,7 +170,7 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
         this.inlineObjSupported = inlineObjSupported;
 
         if (inlineObjSupported)
-            log.info("Index support JAVA_OBJECT type inlining [tblName=" + tblName +", idxName=" +
+            log.info("Index supports JAVA_OBJECT type inlining [tblName=" + tblName +", idxName=" +
                 idxName + ", reason='" + reason + "']");
         else
             log.info("Index doesn't support JAVA_OBJECT type inlining [tblName=" + tblName +", idxName=" +
