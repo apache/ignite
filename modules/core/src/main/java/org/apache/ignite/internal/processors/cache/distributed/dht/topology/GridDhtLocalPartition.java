@@ -1157,9 +1157,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             while (cur.next()) {
                 CacheDataRow row = cur.get();
 
-                if (!grp.offheap().isTombstone(row))
-                    continue;
-
                 assert row.key() != null;
                 assert row.version() != null;
 

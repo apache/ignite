@@ -898,19 +898,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null, null, withTombstones);
     }
 
-    /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> tombstonesIterator(int part) {
-        assert locCacheDataStore == null;
-
-        CacheDataStore data = partitionData(part);
-
-        if (data == null)
-            return new GridEmptyCloseableIterator<>();
-
-        // TODO IGNITE-11704.
-        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null, null, true);
-    }
-
     /**
      *
      * @param cacheId Cache ID.
@@ -2940,7 +2927,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public GridCursor<? extends CacheDataRow> cursor(boolean withTombstones) throws IgniteCheckedException {
             GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
 
-            return withTombstones ? cursorSkipEmpty(cur) : cursorSkipTombstone(cur);
+            return withTombstones ? cur : cursorSkipTombstone(cur);
         }
 
         private GridCursor<? extends CacheDataRow> cursorSkipEmpty(final GridCursor<? extends CacheDataRow> cur) {

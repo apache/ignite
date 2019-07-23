@@ -272,8 +272,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         else if (rowData == TOMBSTONES) {
                             // TODO IGNITE-11704.
                             if (val != null && !sharedCtx.database().isTombstone(this)) {
-                                verReady = true;
                                 ver = null;
+                                key = null;
+                                val = null;
+                                verReady = true;
 
                                 return;
                             }

@@ -453,8 +453,6 @@ public interface IgniteCacheOffheapManager {
      */
     public GridIterator<CacheDataRow> partitionIterator(final int part, boolean withTombstones) throws IgniteCheckedException;
 
-    public GridIterator<CacheDataRow> tombstonesIterator(final int part) throws IgniteCheckedException;
-
     /**
      * @param part Partition number.
      * @param topVer Topology version.

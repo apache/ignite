@@ -1293,7 +1293,7 @@ public class CacheGroupContext {
     }
 
     public boolean supportsTombstone() {
-        return !hasAtomicCaches && !mvccEnabled && !isLocal();
+        return !sharedGroup() && !hasAtomicCaches && !mvccEnabled && !isLocal();
     }
 
     public boolean createTombstone(@Nullable GridDhtLocalPartition part) {
