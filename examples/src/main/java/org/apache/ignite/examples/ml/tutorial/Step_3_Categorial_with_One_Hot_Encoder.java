@@ -69,7 +69,7 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
                     .fit(ignite,
                         dataCache,
                         vectorizer
-                );
+                    );
 
                 Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
@@ -100,10 +100,11 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
 
                 System.out.println(">>> Tutorial step 3 (categorial with One-hot encoder) example started.");
 
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

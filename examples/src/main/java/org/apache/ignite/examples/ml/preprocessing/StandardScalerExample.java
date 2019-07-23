@@ -62,10 +62,12 @@ public class StandardScalerExample {
                     new DatasetHelper(dataset).describe();
                 }
 
-                System.out.println(">>> Imputing example completed.");
+                System.out.println(">>> Standard scaler example completed.");
             } finally {
                 data.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 
