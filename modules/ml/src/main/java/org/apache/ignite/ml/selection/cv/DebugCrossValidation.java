@@ -17,13 +17,11 @@
 
 package org.apache.ignite.ml.selection.cv;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.pipeline.PipelineMdl;
-import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
 
 /**
  * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the
@@ -40,12 +38,12 @@ import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends AbstractCrossValidation<M, L, K, V> {
-    /** Ignite. */
-    private Ignite ignite;
+public class DebugCrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends AbstractCrossValidation<M, L, K, V> {
+    /** Upstream map. */
+    private Map<K, V> upstreamMap;
 
-    /** Upstream cache. */
-    private IgniteCache<K, V> upstreamCache;
+    /** Parts. */
+    private int parts;
 
     /**
      * Calculates score by folds.
@@ -53,27 +51,27 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends 
     @Override public double[] scoreByFolds() {
         double[] locScores;
 
-        locScores = isRunningOnPipeline ? scorePipelineOnIgnite() : scoreOnIgnite();
+        locScores = isRunningOnPipeline ? scorePipelineLocally() : scoreLocally();
 
         return locScores;
     }
 
     /**
-     * Calculate score on pipeline based on Ignite data (upstream cache).
+     * Calculate score on pipeline based on local data (upstream map).
      *
      * @return Array of scores of the estimator for each run of the cross validation.
      */
-    private double[] scorePipelineOnIgnite() {
+    private double[] scorePipelineLocally() {
         return scorePipeline(
-            predicate -> new CacheBasedDatasetBuilder<>(
-                ignite,
-                upstreamCache,
-                (k, v) -> filter.apply(k, v) && predicate.apply(k, v)
+            predicate -> new LocalDatasetBuilder<>(
+                upstreamMap,
+                (k, v) -> filter.apply(k, v) && predicate.apply(k, v),
+                parts
             ),
-            (predicate, mdl) -> new CacheBasedLabelPairCursor<>(
-                upstreamCache,
+            (predicate, mdl) -> new LocalLabelPairCursor<>(
+                upstreamMap,
                 (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
-                ((PipelineMdl<K, V>) mdl).getPreprocessor(),
+                preprocessor,
                 mdl
             )
         );
@@ -84,15 +82,15 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends 
      *
      * @return Array of scores of the estimator for each run of the cross validation.
      */
-    private double[] scoreOnIgnite() {
+    private double[] scoreLocally() {
         return score(
-            predicate -> new CacheBasedDatasetBuilder<>(
-                ignite,
-                upstreamCache,
-                (k, v) -> filter.apply(k, v) && predicate.apply(k, v)
+            predicate -> new LocalDatasetBuilder<>(
+                upstreamMap,
+                (k, v) -> filter.apply(k, v) && predicate.apply(k, v),
+                parts
             ),
-            (predicate, mdl) -> new CacheBasedLabelPairCursor<>(
-                upstreamCache,
+            (predicate, mdl) -> new LocalLabelPairCursor<>(
+                upstreamMap,
                 (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
                 preprocessor,
                 mdl
@@ -101,18 +99,18 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends 
     }
 
     /**
-     * @param ignite Ignite.
+     * @param upstreamMap Upstream map.
      */
-    public CrossValidation<M, L, K, V> withIgnite(Ignite ignite) {
-        this.ignite = ignite;
+    public DebugCrossValidation<M, L, K, V> withUpstreamMap(Map<K, V> upstreamMap) {
+        this.upstreamMap = upstreamMap;
         return this;
     }
 
     /**
-     * @param upstreamCache Upstream cache.
+     * @param parts Parts.
      */
-    public CrossValidation<M, L, K, V> withUpstreamCache(IgniteCache<K, V> upstreamCache) {
-        this.upstreamCache = upstreamCache;
+    public DebugCrossValidation<M, L, K, V> withAmountOfParts(int parts) {
+        this.parts = parts;
         return this;
     }
 }

@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util;
-
-import org.apache.ignite.ml.util.genetic.GeneticAlgorithmTest;
-import org.apache.ignite.ml.util.genetic.PopulationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.selection.paramgrid;
 
 /**
- * Test suite for all tests located in {@link org.apache.ignite.ml.util} package.
+ * The parent abstract class of all hyper-parameter tuning strategies.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LRUCacheTest.class,
-    GeneticAlgorithmTest.class,
-    PopulationTest.class
-})
-public class UtilTestSuite {
+public abstract class HyperParameterTuningStrategy {
+    /**
+     * Returns the name of strategy.
+     */
+    public abstract String getName();
 }
