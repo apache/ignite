@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +56,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -179,6 +182,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return false;
     }
 
+    public Boolean isTombstone(ByteBuffer buf,
+        @Nullable KeyCacheObject key,
+        @Nullable IncompleteCacheObject incomplete) {
+        // TODO IGNITE-11704
+        return null;
+    }
+
     public boolean isTombstone(long addr) throws IgniteCheckedException {
         int off = 0;
 
@@ -205,7 +215,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         return true;
     }
-
 
     /**
      * @param cfg Ignite configuration.

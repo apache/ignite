@@ -262,33 +262,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
                                 grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
-                        if (incomplete == null) {
-                            if (rowData == TOMBSTONES && val != null && !sharedCtx.database().isTombstone(this)) {
-                                // TODO IGNITE-11704.
-                                ver = null;
-                                key = null;
-                                val = null;
-                                verReady = true;
-                            }
-
+                        if (incomplete == null || (rowData == KEY_ONLY && key != null))
                             return;
-                        }
-
-                        if (rowData == KEY_ONLY) {
-                            if (key != null)
-                                return;
-                        }
-                        else if (rowData == TOMBSTONES) {
-                            // TODO IGNITE-11704.
-                            if (val != null && !sharedCtx.database().isTombstone(this)) {
-                                ver = null;
-                                key = null;
-                                val = null;
-                                verReady = true;
-
-                                return;
-                            }
-                        }
 
                         nextLink = incomplete.getNextLink();
                     }
@@ -377,9 +352,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         buf.position(off);
         buf.limit(off + payloadSize);
 
-        boolean keyOnly = rowData == RowData.KEY_ONLY;
-
-        incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete, skipVer);
+        incomplete = readFragment(sharedCtx, coctx, buf, rowData, readCacheId, incomplete, skipVer);
 
         if (incomplete != null)
             incomplete.setNextLink(nextLink);
@@ -416,11 +389,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
         ByteBuffer buf,
-        boolean keyOnly,
+        RowData rowData,
         boolean readCacheId,
         IncompleteObject<?> incomplete,
         boolean skipVer
     ) throws IgniteCheckedException {
+        boolean tombstones = rowData == TOMBSTONES;
+
         if (readCacheId && cacheId == 0) {
             incomplete = readIncompleteCacheId(buf, incomplete);
 
@@ -442,6 +417,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         // Read key.
         if (key == null) {
+            if (tombstones && sharedCtx.database().isTombstone(buf, key, (IncompleteCacheObject)incomplete) == Boolean.FALSE) {
+                verReady = true;
+
+                return null;
+            }
+
             incomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
 
             if (key == null) {
@@ -449,7 +430,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 return incomplete; // Need to finish reading the key.
             }
 
-            if (keyOnly)
+            if (rowData == RowData.KEY_ONLY)
                 return null; // Key is ready - we are done!
 
             incomplete = null;
@@ -468,6 +449,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         // Read value.
         if (val == null) {
+            if (tombstones && sharedCtx.database().isTombstone(buf, key, (IncompleteCacheObject)incomplete) == Boolean.FALSE) {
+                key = null;
+                verReady = true;
+
+                return null;
+            }
+
             incomplete = readIncompleteValue(coctx, buf, (IncompleteCacheObject)incomplete);
 
             if (val == null) {
@@ -476,6 +464,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             incomplete = null;
+        }
+
+        if (tombstones && !sharedCtx.database().isTombstone(this)) {
+            key = null;
+            val = null;
+            verReady = true;
+
+            return null;
         }
 
         // Read version.
