@@ -19,7 +19,6 @@ package org.apache.ignite.ml.util.genetic;
 
 import org.jetbrains.annotations.NotNull;
 
-
 /**
  * Representes the set of genes, known as chromosome in genetic programming.
  *

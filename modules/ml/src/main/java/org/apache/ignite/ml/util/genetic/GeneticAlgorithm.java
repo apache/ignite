@@ -124,7 +124,6 @@ public class GeneticAlgorithm {
         }
     }
 
-
     /**
      * The main method for genetic algorithm.
      *

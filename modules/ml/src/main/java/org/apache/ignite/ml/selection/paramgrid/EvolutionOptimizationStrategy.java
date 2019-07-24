@@ -43,7 +43,6 @@ public class EvolutionOptimizationStrategy extends HyperParameterTuningStrategy 
     /** Selection strategy. */
     private SelectionStrategy selectionStgy = SelectionStrategy.ROULETTE_WHEEL;
 
-
     /**
      *
      */
