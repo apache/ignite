@@ -89,7 +89,7 @@ public class FilePageStore implements PageStore {
     private final LongAdderMetric allocatedTracker;
 
     /** */
-    private final PageStoreListener lsnr;
+    private final PageStoreListener pageLsnr;
 
     /** */
     protected final int pageSize;
@@ -116,9 +116,9 @@ public class FilePageStore implements PageStore {
         FileIOFactory factory,
         DataStorageConfiguration cfg,
         LongAdderMetric allocatedTracker,
-        PageStoreListener lsnr
+        PageStoreListener pageLsnr
     ) {
-        assert lsnr != null;
+        assert pageLsnr != null;
 
         this.type = type;
         this.pathProvider = pathProvider;
@@ -127,7 +127,7 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
-        this.lsnr = lsnr;
+        this.pageLsnr = pageLsnr;
     }
 
     /** {@inheritDoc} */
@@ -681,7 +681,9 @@ public class FilePageStore implements PageStore {
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 
-                    lsnr.onPageWrite(this, pageId);
+                    pageLsnr.onPageWrite(pageId, pageBuf, off);
+
+                    assert pageBuf.position() == 0 : pageBuf.position();
 
                     fileIO.writeFully(pageBuf, off);
 

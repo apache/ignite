@@ -47,9 +47,9 @@ public class FilePageStoreV2 extends FilePageStore {
         FileIOFactory factory,
         DataStorageConfiguration cfg,
         LongAdderMetric allocatedTracker,
-        PageStoreListener storeHandler
+        PageStoreListener pageLsnr
     ) {
-        super(type, pathProvider, factory, cfg, allocatedTracker, storeHandler);
+        super(type, pathProvider, factory, cfg, allocatedTracker, pageLsnr);
 
         hdrSize = cfg.getPageSize();
     }

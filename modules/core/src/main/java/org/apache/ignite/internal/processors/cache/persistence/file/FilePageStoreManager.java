@@ -1481,19 +1481,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private final GroupPartitionId key;
 
         /** */
-        private final IgniteBackupManager storeBackup;
+        private final IgniteBackupManager backup;
 
         /** */
-        public BackupPageStoreListener(int grpId, int partId, IgniteBackupManager storeBackup) {
-            assert storeBackup != null;
+        public BackupPageStoreListener(int grpId, int partId, IgniteBackupManager backup) {
+            assert backup != null;
 
             key = new GroupPartitionId(grpId, partId);
-            this.storeBackup = storeBackup;
+            this.backup = backup;
         }
 
         /** {@inheritDoc} */
-        @Override public void onPageWrite(PageStore store, long pageId) {
-            storeBackup.beforeStoreWrite(key, store, pageId);
+        @Override public void onPageWrite(long pageId, ByteBuffer buf, long off) {
+            backup.beforeStoreWrite(key, pageId, buf, off);
         }
     }
 }

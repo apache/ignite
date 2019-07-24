@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.pagemem.store.PageStoreListener;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
@@ -71,18 +71,18 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         byte type,
         IgniteOutClosure<Path> pathProvider,
         LongAdderMetric allocatedTracker,
-        PageStoreListener storeHandler
+        PageStoreListener pageLsnr
     ) throws IgniteCheckedException {
         Path filePath = pathProvider.apply();
 
         if (!Files.exists(filePath))
-            return createPageStore(type, pathProvider, latestVersion(), allocatedTracker, storeHandler);
+            return createPageStore(type, pathProvider, latestVersion(), allocatedTracker, pageLsnr);
 
         try (FileIO fileIO = fileIOFactoryStoreV1.create(filePath.toFile())) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
-                return createPageStore(type, pathProvider, latestVersion(), allocatedTracker, storeHandler);
+                return createPageStore(type, pathProvider, latestVersion(), allocatedTracker, pageLsnr);
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -94,7 +94,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             int ver = hdr.getInt();
 
-            return createPageStore(type, pathProvider, ver, allocatedTracker, storeHandler);
+            return createPageStore(type, pathProvider, ver, allocatedTracker, pageLsnr);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Error while creating file page store [file=" + filePath.toAbsolutePath() + "]:", e);
@@ -128,15 +128,15 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         IgniteOutClosure<Path> pathProvider,
         int ver,
         LongAdderMetric allocatedTracker,
-        PageStoreListener storeHandler
+        PageStoreListener pageLsnr
     ) {
 
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, pathProvider, fileIOFactoryStoreV1, memCfg, allocatedTracker, storeHandler);
+                return new FilePageStore(type, pathProvider, fileIOFactoryStoreV1, memCfg, allocatedTracker, pageLsnr);
 
             case FilePageStoreV2.VERSION:
-                return new FilePageStoreV2(type, pathProvider, fileIOFactory, memCfg, allocatedTracker, storeHandler);
+                return new FilePageStoreV2(type, pathProvider, fileIOFactory, memCfg, allocatedTracker, pageLsnr);
 
             default:
                 throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + pathProvider.apply().toAbsolutePath() + "]");

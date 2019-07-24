@@ -17,14 +17,20 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-/** */
+import java.nio.ByteBuffer;
+
+/**
+ *
+ */
+@FunctionalInterface
 public interface PageStoreListener {
     /** Default handler. */
-    public PageStoreListener NO_OP = (store, pageId) -> {};
+    public static PageStoreListener NO_OP = (pageId, buff, off) -> {};
 
     /**
-     * @param store Page store to performe at.
      * @param pageId Handled page id.
+     * @param buf Buffer with data.
+     * @param off Buffer offset in page store.
      */
-    public void onPageWrite(PageStore store, long pageId);
+    public void onPageWrite(long pageId, ByteBuffer buf, long off);
 }
