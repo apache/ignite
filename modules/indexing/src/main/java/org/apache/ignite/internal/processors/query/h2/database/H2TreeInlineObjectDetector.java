@@ -82,8 +82,8 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
                 return false;
 
             if (ih.type() != Value.JAVA_OBJECT) {
-                if(ih.size() < 0)
-                    varLenPresents=true;
+                if (ih.size() < 0)
+                    varLenPresents = true;
 
                 fieldOff += ih.fullSize(pageAddr, off + fieldOff);
 
@@ -116,12 +116,11 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
                 byte[] inlineBytes = PageUtils.getBytes(pageAddr, off + fieldOff + 3, len);
 
                 for (int i = 0; i < len; i++) {
-                    if (inlineBytes[i] == originalObjBytes[i])
-                        continue;
+                    if (inlineBytes[i] != originalObjBytes[i]) {
+                        inlineObjectSupportedDecision(false, i + " byte compare");
 
-                    inlineObjectSupportedDecision(false,  i + " byte compare");
-
-                    return true;
+                        return true;
+                    }
                 }
 
                 inlineObjectSupportedDecision(true, len + " bytes compared");
@@ -129,7 +128,7 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
                 return true;
             }
 
-            if(type == Value.UNKNOWN && varLenPresents){
+            if (type == Value.UNKNOWN && varLenPresents) {
                 // we can't garantee in case unknown type and should check next row:
                 //1: long string, UNKNOWN for java object.
                 //2: short string, inlined java object
@@ -154,13 +153,11 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
     }
 
     /**
-     * Static analyze inline_size and inline helpers set.
-     * e.g.: indexed: (long, obj) and inline_size < 12.
-     * In this case there is no space ti inline object.
+     * Static analyze inline_size and inline helpers set. e.g.: indexed: (long, obj) and inline_size < 12. In this case
+     * there is no space to inline object.
      *
      * @param inlineHelpers Inline helpers.
      * @param inlineSize Inline size.
-     *
      * @return {@code true} If the object may be inlined.
      */
     public static boolean objectMayBeInlined(int inlineSize, List<InlineIndexHelper> inlineHelpers) {
@@ -180,14 +177,14 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
      * @param inlineObjSupported {@code true} if inline object is supported on current tree.
      * @param reason Reason why has been made decision.
      */
-    private void inlineObjectSupportedDecision(boolean inlineObjSupported, String reason){
+    private void inlineObjectSupportedDecision(boolean inlineObjSupported, String reason) {
         this.inlineObjSupported = inlineObjSupported;
 
         if (inlineObjSupported)
-            log.info("Index supports JAVA_OBJECT type inlining [tblName=" + tblName +", idxName=" +
+            log.info("Index supports JAVA_OBJECT type inlining [tblName=" + tblName + ", idxName=" +
                 idxName + ", reason='" + reason + "']");
         else
-            log.info("Index doesn't support JAVA_OBJECT type inlining [tblName=" + tblName +", idxName=" +
+            log.info("Index doesn't support JAVA_OBJECT type inlining [tblName=" + tblName + ", idxName=" +
                 idxName + ", reason='" + reason + "']");
     }
 }
