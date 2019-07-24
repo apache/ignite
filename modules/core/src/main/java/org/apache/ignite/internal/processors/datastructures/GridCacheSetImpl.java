@@ -38,13 +38,12 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
-import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder;
+import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -155,14 +154,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         try {
             onAccess();
 
-            if (ctx.isLocal() || ctx.isReplicated()) {
-                GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
-
-                return set != null ? set.size() : 0;
-            }
-
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -189,9 +182,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean isEmpty() {
         onAccess();
 
-        GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
-
-        return (set == null || set.isEmpty()) && size() == 0;
+        return size() == 0;
     }
 
     /** {@inheritDoc} */
@@ -413,7 +404,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private GridCloseableIterator<T> iterator0() {
         try {
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -421,7 +412,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
 
-            CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator it =
+            WeakReferenceCloseableIterator<T> it =
                 ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
                     @Override protected T convert(Map.Entry<T, ?> e) {
                         return e.getKey();
