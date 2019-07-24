@@ -110,6 +110,8 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void test150Clients() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-21405");
+
         Ignite srv = startGrid(0);
 
         assertFalse(srv.configuration().isClientMode());
