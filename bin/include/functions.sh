@@ -69,7 +69,7 @@ checkJava() {
     # Check JAVA_HOME.
     if [ "${JAVA_HOME:-}" = "" ]; then
 
-        if ! $(type -p java); then
+        if ! type -p java > /dev/null; then
             echo $0", [ERROR]:"
             echo "JAVA_HOME environment variable is not found."
             echo "Please point JAVA_HOME variable to location of JDK 1.8 or later."
