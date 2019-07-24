@@ -47,7 +47,7 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final long endTime = System.currentTimeMillis() + 60_000;
+        final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 20_000);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

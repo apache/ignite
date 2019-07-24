@@ -73,7 +73,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     private static final int KEYS_CNT = 10_000;
 
     /** Test duration. */
-    private static final long DUR = 90 * 1000L;
+    private static final long DUR = GridTestUtils.SF.applyLB(90 * 1000, 40 * 1000);
 
     /** Cache data assert frequency. */
     private static final long ASSERT_FREQ = 10_000;

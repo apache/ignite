@@ -116,7 +116,7 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
         });
 
         try {
-            long end = System.currentTimeMillis() + 60_000;
+            long end = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 20_000);
 
             long iter = 0;
 
