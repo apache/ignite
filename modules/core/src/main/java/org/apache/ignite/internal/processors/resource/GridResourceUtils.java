@@ -22,7 +22,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.lang.IgniteClosure;
 
 /**
@@ -52,7 +51,7 @@ final class GridResourceUtils {
 
         try {
             // Override default Java access check.
-            SecurityUtils.doPrivileged(() -> field.setAccessible(true));
+            field.setAccessible(true);
 
             field.set(target, rsrc);
         }
@@ -81,7 +80,7 @@ final class GridResourceUtils {
         }
 
         try {
-            SecurityUtils.doPrivileged(() -> mtd.setAccessible(true));
+            mtd.setAccessible(true);
 
             mtd.invoke(target, rsrc);
         }

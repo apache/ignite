@@ -69,7 +69,6 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.CO;
@@ -515,19 +514,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // Inject resources.
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
-            Callable<Map<? extends ComputeJob, ClusterNode>> c =
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
                 new Callable<Map<? extends ComputeJob, ClusterNode>>() {
                     @Override public Map<? extends ComputeJob, ClusterNode> call() {
                         return task.map(shuffledNodes, arg);
                     }
-                };
-
-            Map<? extends ComputeJob, ClusterNode> mappedJobs = SecurityUtils.doPrivileged(
-                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends ComputeJob, ClusterNode> call() throws Exception {
-                        return U.wrapThreadLoader(dep.classLoader(), c);
-                    }
-                }, IgniteCheckedException.class);
+                });
 
             if (log.isDebugEnabled())
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
@@ -867,11 +859,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                 }
 
-                final GridJobResultImpl jobRes0 = jobRes;
-
-                ComputeJobResultPolicy plc = SecurityUtils.doPrivileged(
-                    () -> result(jobRes0, results), IgniteCheckedException.class
-                );
+                ComputeJobResultPolicy plc = result(jobRes, results);
 
                 if (plc == null) {
                     String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
@@ -1155,13 +1143,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         try {
             try {
                 // Reduce results.
-                reduceRes = SecurityUtils.doPrivileged(
-                    () -> U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                        @Override public @Nullable R call() {
-                            return task.reduce(results);
-                        }
-                    }), IgniteCheckedException.class
-                );
+                reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
+                    @Override public @Nullable R call() {
+                        return task.reduce(results);
+                    }
+                });
             }
             finally {
                 synchronized (mux) {

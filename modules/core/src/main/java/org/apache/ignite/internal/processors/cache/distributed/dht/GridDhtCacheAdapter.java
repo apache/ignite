@@ -624,9 +624,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
-        if (p != null)
-            ctx.kernalContext().resource().injectGeneric(p);
-
         try {
             ctx.store().loadCache(new CI3<KeyCacheObject, Object, GridCacheVersion>() {
                 @Override public void apply(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver) {

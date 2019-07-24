@@ -51,7 +51,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.security.closure.SecurityComputeJob;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -565,7 +564,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 if (isTimedOut())
                     sndRes = false;
                 else {
-                    Callable<Object> c = new Callable<Object>() {
+                    res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
                         @Override public @Nullable Object call() {
                             try {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
@@ -578,10 +577,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     ctx.job().internal(false);
                             }
                         }
-                    };
-
-                    res = SecurityUtils.doPrivileged(() -> U.wrapThreadLoader(dep.classLoader(), c),
-                        IgniteException.class);
+                    });
 
                     if (log.isDebugEnabled()) {
                         log.debug(S.toString("Job execution has successfully finished",

@@ -213,7 +213,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -1426,10 +1425,8 @@ public abstract class IgniteUtils {
             warn(log, "Deadlocked threads detected (see thread dump below) " +
                 "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
 
-        Callable<ThreadInfo[]> c = () ->
+        ThreadInfo[] threadInfos =
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
-
-        ThreadInfo[] threadInfos = SecurityUtils.doPrivileged(c, IgniteException.class);
 
         GridStringBuilder sb = new GridStringBuilder("Thread dump at ")
             .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
@@ -1473,7 +1470,7 @@ public abstract class IgniteUtils {
      * @return the set of deadlocked threads (may be empty Set, but never null).
      */
     private static Set<Long> getDeadlockedThreadIds(ThreadMXBean mxBean) {
-        final long[] deadlockedIds = SecurityUtils.doPrivileged(mxBean::findDeadlockedThreads, IgniteException.class);
+        final long[] deadlockedIds = mxBean.findDeadlockedThreads();
 
         final Set<Long> deadlockedThreadsIds;
 

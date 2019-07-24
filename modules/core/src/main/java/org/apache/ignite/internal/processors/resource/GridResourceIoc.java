@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -287,7 +286,7 @@ public class GridResourceIoc {
                     if (allowImplicitInjection
                         && fieldAnns.length == 0
                         && GridResourceUtils.mayRequireResources(field)) {
-                        SecurityUtils.doPrivileged(() -> field.setAccessible(true));
+                        field.setAccessible(true);
 
                         // Account for anonymous inner classes.
                         recursiveFieldsList.add(field);

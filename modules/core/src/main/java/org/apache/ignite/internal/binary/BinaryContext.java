@@ -48,11 +48,6 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.UnregisteredBinaryTypeException;
-import org.apache.ignite.internal.UnregisteredClassException;
-import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -70,6 +65,8 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.DuplicateTypeIdException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -110,10 +107,12 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceP
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
+import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -790,7 +789,7 @@ public class BinaryContext {
 
         String affFieldName = affinityFieldName(cls);
 
-        BinaryClassDescriptor desc = SecurityUtils.doPrivileged(() -> new BinaryClassDescriptor(this,
+        BinaryClassDescriptor desc = new BinaryClassDescriptor(this,
             cls,
             true,
             typeId,
@@ -799,8 +798,7 @@ public class BinaryContext {
             mapper,
             serializer,
             true,
-            registered
-        ), IgniteException.class);
+            registered);
 
         if (!deserialize)
             metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,

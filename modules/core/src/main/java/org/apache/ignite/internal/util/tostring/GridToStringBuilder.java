@@ -38,7 +38,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
@@ -992,8 +991,7 @@ public class GridToStringBuilder {
         try {
             int len = buf.length();
 
-            String s = SecurityUtils.doPrivileged(
-                () -> toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen), IgniteException.class);
+            String s = toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen);
 
             if (newStr)
                 return s;

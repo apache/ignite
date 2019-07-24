@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -56,9 +55,8 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
         try {
             CacheConfiguration cfgCp = new CacheConfiguration(ccfg);
 
-            CacheConfigurationEnrichment enrichment = SecurityUtils.doPrivileged(
-                () -> buildEnrichment(CacheConfiguration.class, cfgCp, DEFAULT_CACHE_CONFIG)
-            );
+            CacheConfigurationEnrichment enrichment =
+                buildEnrichment(CacheConfiguration.class, cfgCp, DEFAULT_CACHE_CONFIG);
 
             return new T2<>(cfgCp, enrichment);
         }

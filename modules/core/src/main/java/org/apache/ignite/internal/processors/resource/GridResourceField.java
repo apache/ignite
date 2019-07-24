@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Collection;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,7 +47,7 @@ class GridResourceField {
         this.field = field;
         this.ann = ann;
 
-        SecurityUtils.doPrivileged(() -> field.setAccessible(true));
+        field.setAccessible(true);
     }
 
     /**

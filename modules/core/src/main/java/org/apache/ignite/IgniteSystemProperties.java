@@ -39,8 +39,6 @@ import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.doPrivileged;
-
 /**
  * Contains constants for all system properties and environmental variables in Ignite.
  * These properties and variables can be used to affect the behavior of Ignite.
@@ -1283,9 +1281,9 @@ public final class IgniteSystemProperties {
     public static @Nullable String getString(String name) {
         assert name != null;
 
-        String v = doPrivileged(() -> System.getProperty(name), IgniteException.class);
+        String v = System.getProperty(name);
 
-        return v == null ? doPrivileged(() -> System.getenv(name), IgniteException.class) : v;
+        return v == null ? System.getenv(name) : v;
     }
 
     /**

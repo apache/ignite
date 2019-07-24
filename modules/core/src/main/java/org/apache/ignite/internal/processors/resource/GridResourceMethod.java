@@ -50,7 +50,7 @@ class GridResourceMethod {
         this.mtd = mtd;
         this.ann = ann;
 
-        SecurityUtils.doPrivileged(() -> mtd.setAccessible(true));
+        mtd.setAccessible(true);
     }
 
     /**

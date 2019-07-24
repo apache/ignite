@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -1442,8 +1441,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private boolean executeAsync(GridJobWorker jobWorker) {
         try {
-            Runnable runnable = () -> ctx.getExecutorService().execute(jobWorker);
-
             if (jobWorker.executorName() != null) {
                 Executor customExec = ctx.pools().customExecutor(jobWorker.executorName());
 
@@ -1453,11 +1450,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     LT.warn(log, "Custom executor doesn't exist (local job will be processed in default " +
                         "thread pool): " + jobWorker.executorName());
 
-                    SecurityUtils.doPrivileged(runnable);
+                    ctx.getExecutorService().execute(jobWorker);
                 }
             }
             else
-                SecurityUtils.doPrivileged(runnable);
+                ctx.getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();

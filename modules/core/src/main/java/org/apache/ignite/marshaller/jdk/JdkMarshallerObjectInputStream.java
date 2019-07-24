@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -48,7 +47,7 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
         this.clsLdr = clsLdr;
         this.clsFilter = clsFilter;
 
-        SecurityUtils.doPrivileged((Runnable)() -> enableResolveObject(true));
+        enableResolveObject(true);
     }
 
     /** {@inheritDoc} */

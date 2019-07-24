@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingP
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -712,191 +711,189 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean restore) throws IgniteCheckedException {
         assert started;
 
-        return SecurityUtils.doPrivileged(() -> {
-            FullPageId fullId = new FullPageId(pageId, grpId);
+        FullPageId fullId = new FullPageId(pageId, grpId);
 
-            int partId = PageIdUtils.partId(pageId);
+        int partId = PageIdUtils.partId(pageId);
 
-            Segment seg = segment(grpId, pageId);
+        Segment seg = segment(grpId, pageId);
 
-            seg.readLock().lock();
+        seg.readLock().lock();
 
-            try {
-                long relPtr = seg.loadedPages.get(
-                    grpId,
-                    PageIdUtils.effectivePageId(pageId),
-                    seg.partGeneration(grpId, partId),
-                    INVALID_REL_PTR,
-                    INVALID_REL_PTR
-                );
+        try {
+            long relPtr = seg.loadedPages.get(
+                grpId,
+                PageIdUtils.effectivePageId(pageId),
+                seg.partGeneration(grpId, partId),
+                INVALID_REL_PTR,
+                INVALID_REL_PTR
+            );
 
-                // The page is loaded to the memory.
-                if (relPtr != INVALID_REL_PTR) {
-                    long absPtr = seg.absolute(relPtr);
-
-                    seg.acquirePage(absPtr);
-
-                    statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
-
-                    return absPtr;
-                }
-            }
-            finally {
-                seg.readLock().unlock();
-            }
-
-            DelayedDirtyPageWrite delayedWriter = delayedPageReplacementTracker != null
-                ? delayedPageReplacementTracker.delayedPageWrite() : null;
-
-            seg.writeLock().lock();
-
-            long lockedPageAbsPtr = -1;
-            boolean readPageFromStore = false;
-
-            try {
-                // Double-check.
-                long relPtr = seg.loadedPages.get(
-                    grpId,
-                    PageIdUtils.effectivePageId(pageId),
-                    seg.partGeneration(grpId, partId),
-                    INVALID_REL_PTR,
-                    OUTDATED_REL_PTR
-                );
-
-                long absPtr;
-
-                if (relPtr == INVALID_REL_PTR) {
-                    relPtr = seg.borrowOrAllocateFreePage(pageId);
-
-                    if (relPtr == INVALID_REL_PTR)
-                        relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);
-
-                    absPtr = seg.absolute(relPtr);
-
-                    PageHeader.fullPageId(absPtr, fullId);
-                    PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
-
-                    assert !PageHeader.isAcquired(absPtr) :
-                        "Pin counter must be 0 for a new page [relPtr=" + U.hexLong(relPtr) +
-                            ", absPtr=" + U.hexLong(absPtr) + ']';
-
-                    // We can clear dirty flag after the page has been allocated.
-                    setDirty(fullId, absPtr, false, false);
-
-                    seg.loadedPages.put(
-                        grpId,
-                        PageIdUtils.effectivePageId(pageId),
-                        relPtr,
-                        seg.partGeneration(grpId, partId)
-                    );
-
-                    long pageAddr = absPtr + PAGE_OVERHEAD;
-
-                    if (!restore) {
-                        if (delayedPageReplacementTracker != null)
-                            delayedPageReplacementTracker.waitUnlock(fullId);
-
-                        readPageFromStore = true;
-                    }
-                    else {
-                        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
-
-                        // Must init page ID in order to ensure RWLock tag consistency.
-                        PageIO.setPageId(pageAddr, pageId);
-                    }
-
-                    rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
-
-                    if (readPageFromStore) {
-                        boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
-
-                        assert locked: "Page ID " + fullId + " expected to be locked";
-
-                        lockedPageAbsPtr = absPtr;
-                    }
-                }
-                else if (relPtr == OUTDATED_REL_PTR) {
-                    assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
-
-                    relPtr = refreshOutdatedPage(seg, grpId, pageId, false);
-
-                    absPtr = seg.absolute(relPtr);
-
-                    long pageAddr = absPtr + PAGE_OVERHEAD;
-
-                    GridUnsafe.setMemory(pageAddr, pageSize(), (byte)0);
-
-                    PageHeader.fullPageId(absPtr, fullId);
-                    PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
-                    PageIO.setPageId(pageAddr, pageId);
-
-                    assert !PageHeader.isAcquired(absPtr) :
-                        "Pin counter must be 0 for a new page [relPtr=" + U.hexLong(relPtr) +
-                            ", absPtr=" + U.hexLong(absPtr) + ']';
-
-                    rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
-                }
-                else
-                    absPtr = seg.absolute(relPtr);
+            // The page is loaded to the memory.
+            if (relPtr != INVALID_REL_PTR) {
+                long absPtr = seg.absolute(relPtr);
 
                 seg.acquirePage(absPtr);
 
-                if(!readPageFromStore)
-                    statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+                statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
                 return absPtr;
             }
-            catch (IgniteOutOfMemoryException oom) {
-                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+        }
+        finally {
+            seg.readLock().unlock();
+        }
 
-                throw oom;
-            }
-            finally {
-                seg.writeLock().unlock();
+        DelayedDirtyPageWrite delayedWriter = delayedPageReplacementTracker != null
+            ? delayedPageReplacementTracker.delayedPageWrite() : null;
 
-                if (delayedWriter != null)
-                    delayedWriter.finishReplacement();
+        seg.writeLock().lock();
+
+        long lockedPageAbsPtr = -1;
+        boolean readPageFromStore = false;
+
+        try {
+            // Double-check.
+            long relPtr = seg.loadedPages.get(
+                grpId,
+                PageIdUtils.effectivePageId(pageId),
+                seg.partGeneration(grpId, partId),
+                INVALID_REL_PTR,
+                OUTDATED_REL_PTR
+            );
+
+            long absPtr;
+
+            if (relPtr == INVALID_REL_PTR) {
+                relPtr = seg.borrowOrAllocateFreePage(pageId);
+
+                if (relPtr == INVALID_REL_PTR)
+                    relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);
+
+                absPtr = seg.absolute(relPtr);
+
+                PageHeader.fullPageId(absPtr, fullId);
+                PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+
+                assert !PageHeader.isAcquired(absPtr) :
+                    "Pin counter must be 0 for a new page [relPtr=" + U.hexLong(relPtr) +
+                        ", absPtr=" + U.hexLong(absPtr) + ']';
+
+                // We can clear dirty flag after the page has been allocated.
+                setDirty(fullId, absPtr, false, false);
+
+                seg.loadedPages.put(
+                    grpId,
+                    PageIdUtils.effectivePageId(pageId),
+                    relPtr,
+                    seg.partGeneration(grpId, partId)
+                );
+
+                long pageAddr = absPtr + PAGE_OVERHEAD;
+
+                if (!restore) {
+                    if (delayedPageReplacementTracker != null)
+                        delayedPageReplacementTracker.waitUnlock(fullId);
+
+                    readPageFromStore = true;
+                }
+                else {
+                    GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+
+                    // Must init page ID in order to ensure RWLock tag consistency.
+                    PageIO.setPageId(pageAddr, pageId);
+                }
+
+                rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
                 if (readPageFromStore) {
-                    assert lockedPageAbsPtr != -1 : "Page is expected to have a valid address [pageId=" + fullId +
-                        ", lockedPageAbsPtr=" + U.hexLong(lockedPageAbsPtr) + ']';
+                    boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-                    assert isPageWriteLocked(lockedPageAbsPtr) : "Page is expected to be locked: [pageId=" + fullId + "]";
+                    assert locked : "Page ID " + fullId + " expected to be locked";
 
-                    long pageAddr = lockedPageAbsPtr + PAGE_OVERHEAD;
-
-                    ByteBuffer buf = wrapPointer(pageAddr, pageSize());
-
-                    long actualPageId = 0;
-
-                    try {
-                        storeMgr.read(grpId, pageId, buf);
-
-                        statHolder.trackPhysicalAndLogicalRead(pageAddr);
-
-                        actualPageId = PageIO.getPageId(buf);
-
-                        memMetrics.onPageRead();
-                    }
-                    catch (IgniteDataIntegrityViolationException e) {
-                        U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
-                            "restore using existing WAL) [fullPageId=" + fullId + ']', e);
-
-                        buf.rewind();
-
-                        tryToRestorePage(fullId, buf);
-
-                        statHolder.trackPhysicalAndLogicalRead(pageAddr);
-
-                        memMetrics.onPageRead();
-                    }
-                    finally {
-                        rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET,
-                            actualPageId == 0 ? OffheapReadWriteLock.TAG_LOCK_ALWAYS : PageIdUtils.tag(actualPageId));
-                    }
+                    lockedPageAbsPtr = absPtr;
                 }
             }
-        }, IgniteCheckedException.class);
+            else if (relPtr == OUTDATED_REL_PTR) {
+                assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
+
+                relPtr = refreshOutdatedPage(seg, grpId, pageId, false);
+
+                absPtr = seg.absolute(relPtr);
+
+                long pageAddr = absPtr + PAGE_OVERHEAD;
+
+                GridUnsafe.setMemory(pageAddr, pageSize(), (byte)0);
+
+                PageHeader.fullPageId(absPtr, fullId);
+                PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+                PageIO.setPageId(pageAddr, pageId);
+
+                assert !PageHeader.isAcquired(absPtr) :
+                    "Pin counter must be 0 for a new page [relPtr=" + U.hexLong(relPtr) +
+                        ", absPtr=" + U.hexLong(absPtr) + ']';
+
+                rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+            }
+            else
+                absPtr = seg.absolute(relPtr);
+
+            seg.acquirePage(absPtr);
+
+            if (!readPageFromStore)
+                statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+
+            return absPtr;
+        }
+        catch (IgniteOutOfMemoryException oom) {
+            ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+            throw oom;
+        }
+        finally {
+            seg.writeLock().unlock();
+
+            if (delayedWriter != null)
+                delayedWriter.finishReplacement();
+
+            if (readPageFromStore) {
+                assert lockedPageAbsPtr != -1 : "Page is expected to have a valid address [pageId=" + fullId +
+                    ", lockedPageAbsPtr=" + U.hexLong(lockedPageAbsPtr) + ']';
+
+                assert isPageWriteLocked(lockedPageAbsPtr) : "Page is expected to be locked: [pageId=" + fullId + "]";
+
+                long pageAddr = lockedPageAbsPtr + PAGE_OVERHEAD;
+
+                ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+
+                long actualPageId = 0;
+
+                try {
+                    storeMgr.read(grpId, pageId, buf);
+
+                    statHolder.trackPhysicalAndLogicalRead(pageAddr);
+
+                    actualPageId = PageIO.getPageId(buf);
+
+                    memMetrics.onPageRead();
+                }
+                catch (IgniteDataIntegrityViolationException e) {
+                    U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
+                        "restore using existing WAL) [fullPageId=" + fullId + ']', e);
+
+                    buf.rewind();
+
+                    tryToRestorePage(fullId, buf);
+
+                    statHolder.trackPhysicalAndLogicalRead(pageAddr);
+
+                    memMetrics.onPageRead();
+                }
+                finally {
+                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET,
+                        actualPageId == 0 ? OffheapReadWriteLock.TAG_LOCK_ALWAYS : PageIdUtils.tag(actualPageId));
+                }
+            }
+        }
     }
 
     /**

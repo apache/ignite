@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller.jdk;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +34,7 @@ class JdkMarshallerObjectOutputStream extends ObjectOutputStream {
     JdkMarshallerObjectOutputStream(OutputStream out) throws IOException {
         super(out);
 
-        SecurityUtils.doPrivileged((Runnable)() -> enableReplaceObject(true));
+        enableReplaceObject(true);
     }
 
     /** {@inheritDoc} */

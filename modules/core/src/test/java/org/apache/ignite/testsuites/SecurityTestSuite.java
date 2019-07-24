@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.security.datastreamer.closure.DataS
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
-import org.apache.ignite.internal.processors.security.sandbox.OperationsInsideSandboxTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -59,8 +58,7 @@ import org.junit.runners.Suite;
 
     CacheSandboxTest.class,
     DataStreamerSandboxTest.class,
-    ComputeSandboxTest.class,
-    OperationsInsideSandboxTest.class
+    ComputeSandboxTest.class
 })
 public class SecurityTestSuite {
 }

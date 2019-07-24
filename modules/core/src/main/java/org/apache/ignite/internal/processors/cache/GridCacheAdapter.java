@@ -3999,6 +3999,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
+        if (p != null)
+            ctx.kernalContext().resource().injectGeneric(p);
+
         ComputeTaskInternalFuture fut = ctx.kernalContext().closure().callAsync(BROADCAST,
             Collections.singletonList(
                 new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
