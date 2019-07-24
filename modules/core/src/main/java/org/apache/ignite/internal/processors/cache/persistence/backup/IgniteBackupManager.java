@@ -509,13 +509,13 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 return;
 
             try {
-                File part = getPartitionFile(cacheWorkDir(storeWorkDir, ccfg), partId);
-                File partCopy = new File(backupDir, cacheDirName(ccfg));
+                File from = getPartitionFile(cacheWorkDir(storeWorkDir, ccfg), partId);
+                File to = new File(backupDir, cacheDirName(ccfg));
 
-                copy(part, 0, partSize, partCopy);
+                copy(from, 0, partSize, to);
 
-                U.log(log, "Partition has been copied [from=" + part.getAbsolutePath() +
-                    ", to=" + partCopy.getAbsolutePath() + ']');
+                U.log(log, "Partition has been copied [from=" + from.getAbsolutePath() +
+                    ", to=" + to.getAbsolutePath() + ']');
 
                 // TODO that merge with deltas
             }
