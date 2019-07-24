@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -44,16 +45,21 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
     /** Cleanup worker. */
     private CleanupWorker cleanupWorker;
 
-    /** Mutex on worker thread creation. */
-    private final Object mux = new Object();
+    /** Lock on worker thread creation. */
+    private final ReentrantLock lock = new ReentrantLock();
 
     /** Map of registered ttl managers, where the cache id is used as the key. */
     private final Map<Integer, GridCacheTtlManager> mgrs = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        synchronized (mux) {
+        lock.lock();
+
+        try {
             stopCleanupWorker();
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -63,11 +69,16 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      * @param mgr ttl manager of cache.
      * */
     public void register(GridCacheTtlManager mgr) {
-        synchronized (mux) {
+        lock.lock();
+
+        try {
             if (cleanupWorker == null)
                 startCleanupWorker();
 
             mgrs.put(mgr.context().cacheId(), mgr);
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -77,11 +88,16 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      * @param mgr ttl manager of cache.
      * */
     public void unregister(GridCacheTtlManager mgr) {
-        synchronized (mux) {
+        lock.lock();
+
+        try {
             mgrs.remove(mgr.context().cacheId());
 
             if (mgrs.isEmpty())
                 stopCleanupWorker();
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -91,8 +107,13 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
     public boolean eagerTtlEnabled() {
         assert cctx != null : "Manager is not started";
 
-        synchronized (mux) {
+        lock.lock();
+
+        try {
             return cleanupWorker != null;
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -100,6 +121,8 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      *
      */
     private void startCleanupWorker() {
+        assert lock.isHeldByCurrentThread() : "The lock must be held by the current thread.";
+
         cleanupWorker = new CleanupWorker();
 
         new IgniteThread(cleanupWorker).start();
@@ -109,6 +132,8 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      *
      */
     private void stopCleanupWorker() {
+        assert lock.isHeldByCurrentThread() : "The lock must be held by the current thread.";
+
         if (null != cleanupWorker) {
             U.cancel(cleanupWorker);
             U.join(cleanupWorker, log);
@@ -150,12 +175,19 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
                     Map<Integer, GridCacheTtlManager> cp;
 
-                    synchronized (mux) {
+                    lock.lockInterruptibly();
+
+                    try {
                         cp = new HashMap<>(mgrs);
+                    }
+                    finally {
+                        lock.unlock();
                     }
 
                     for (Map.Entry<Integer, GridCacheTtlManager> mgr : cp.entrySet()) {
-                        synchronized (mux) {
+                        lock.lockInterruptibly();
+
+                        try {
                             if (!mgrs.containsKey(mgr.getKey()))
                                 continue;
 
@@ -166,6 +198,9 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
                             if (isCancelled())
                                 return;
+                        }
+                        finally {
+                            lock.unlock();
                         }
                     }
 
