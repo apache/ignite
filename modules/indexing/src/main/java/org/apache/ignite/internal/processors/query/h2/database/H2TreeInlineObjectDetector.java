@@ -75,11 +75,16 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
 
         int fieldOff = 0;
 
+        boolean varLenPresents = false;
+
         for (InlineIndexHelper ih : inlineHelpers) {
             if (fieldOff >= inlineSize)
                 return false;
 
             if (ih.type() != Value.JAVA_OBJECT) {
+                if(ih.size() < 0)
+                    varLenPresents=true;
+
                 fieldOff += ih.fullSize(pageAddr, off + fieldOff);
 
                 continue;
@@ -124,10 +129,19 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
                 return true;
             }
 
+            if(type == Value.UNKNOWN && varLenPresents){
+                // we can't garantee in case unknown type and should check next row:
+                //1: long string, UNKNOWN for java object.
+                //2: short string, inlined java object
+                return false;
+            }
+
             inlineObjectSupportedDecision(false, "inline type " + type);
 
             return true;
         }
+
+        inlineObjectSupportedDecision(true, "no java objects for inlining");
 
         return true;
     }
