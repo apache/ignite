@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -754,13 +755,10 @@ public class QueryEntity implements Serializable {
      * @return Type descriptor.
      */
     private static QueryEntityTypeDescriptor processKeyAndValueClasses(
-        Class<?> keyCls,
-        Class<?> valCls
+        @NotNull Class<?> keyCls,
+        @NotNull Class<?> valCls
     ) {
-        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor();
-
-        d.keyClass(keyCls);
-        d.valueClass(valCls);
+        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor(keyCls, valCls);
 
         processAnnotationsInClass(true, d.keyClass(), d, null);
         processAnnotationsInClass(false, d.valueClass(), d, null);
