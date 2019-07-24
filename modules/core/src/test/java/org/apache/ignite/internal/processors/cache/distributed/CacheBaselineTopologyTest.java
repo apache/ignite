@@ -1027,7 +1027,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     public void testSettingBaselineTopologyWithOfflineNode() throws Exception {
         Ignite ignite = startGrids(2);
@@ -1054,7 +1053,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     public void testSettingBaselineTopologyWithOfflineNodeFromOldTopology() throws Exception {
         Ignite ignite = startGrids(2);
