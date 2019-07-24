@@ -533,7 +533,7 @@ public abstract class SelectGroups {
         if (size > 0)
             session.queryMemoryTracker().reserve(size);
         else
-            session.queryMemoryTracker().release(size);
+            session.queryMemoryTracker().release(-size);
 
         memReserved += size;
     }
