@@ -1976,7 +1976,7 @@ public class IgnitionEx {
             rebalanceExecSvc = new IgniteThreadPoolExecutor(
                 "rebalance",
                 cfg.getIgniteInstanceName(),
-                0,
+                cfg.getRebalanceThreadPoolSize(),
                 cfg.getRebalanceThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
