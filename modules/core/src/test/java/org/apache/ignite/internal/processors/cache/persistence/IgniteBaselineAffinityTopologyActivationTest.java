@@ -758,39 +758,6 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     }
 
     /**
-     * Verifies that grid is autoactivated when full BaselineTopology is preset even on one node
-     * and then all other nodes from BaselineTopology are started.
-     */
-    @Test
-    public void testAutoActivationWithBaselineTopologyPreset() throws Exception {
-        Ignite ig = startGridWithConsistentId("A");
-
-        ig.cluster().active(true);
-
-        ig.cluster().setBaselineTopology(Arrays.asList(new BaselineNode[] {
-            createBaselineNodeWithConsId("A"), createBaselineNodeWithConsId("B"), createBaselineNodeWithConsId("C")}));
-
-        stopAllGrids();
-
-        final Ignite ig1 = startGridWithConsistentId("A");
-
-        startGridWithConsistentId("B");
-
-        startGridWithConsistentId("C");
-
-        boolean activated = GridTestUtils.waitForCondition(
-            new GridAbsPredicate() {
-               @Override public boolean apply() {
-                   return ig1.cluster().active();
-               }
-            },
-            10_000
-        );
-
-        assertTrue(activated);
-    }
-
-    /**
      * Creates BaselineNode with specific attribute indicating that this node is not client.
      */
     private BaselineNode createBaselineNodeWithConsId(String consId) {
