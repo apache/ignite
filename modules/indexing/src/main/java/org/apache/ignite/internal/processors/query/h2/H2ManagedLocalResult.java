@@ -74,7 +74,7 @@ public class H2ManagedLocalResult extends H2BaseLocalResult {
             memory += row[i].getMemory();
 
         if (memory < 0)
-            mem.release(memory);
+            mem.release(-memory);
         else
             mem.reserve(memory);
 
