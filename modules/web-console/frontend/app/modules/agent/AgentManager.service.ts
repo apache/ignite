@@ -183,8 +183,6 @@ export default class AgentManager {
         private Version: VersionService,
         private ClusterLoginSrv: ClusterLoginService
     ) {
-        this.clusterVersion = this.Version.webConsole;
-
         let prevCluster;
 
         this.currentCluster$ = this.connectionSbj.pipe(
@@ -203,18 +201,16 @@ export default class AgentManager {
             map((cluster) => !!cluster)
         );
 
-        if (!this.isDemoMode()) {
-            this.connectionSbj.subscribe({
-                next: ({cluster}) => {
-                    const version = this.getClusterVersion(cluster);
+        this.connectionSbj.subscribe({
+            next: ({cluster}) => {
+                const version = this.getClusterVersion(cluster);
 
-                    if (_.isEmpty(version))
-                        return;
+                if (_.isEmpty(version))
+                    return;
 
-                    this.clusterVersion = version;
-                }
-            });
-        }
+                this.clusterVersion = version;
+            }
+        });
     }
 
     isDemoMode() {
