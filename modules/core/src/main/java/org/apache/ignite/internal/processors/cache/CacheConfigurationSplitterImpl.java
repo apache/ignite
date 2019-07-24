@@ -55,8 +55,8 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
         try {
             CacheConfiguration cfgCp = new CacheConfiguration(ccfg);
 
-            CacheConfigurationEnrichment enrichment =
-                buildEnrichment(CacheConfiguration.class, cfgCp, DEFAULT_CACHE_CONFIG);
+            CacheConfigurationEnrichment enrichment = buildEnrichment(
+                CacheConfiguration.class, cfgCp, DEFAULT_CACHE_CONFIG);
 
             return new T2<>(cfgCp, enrichment);
         }

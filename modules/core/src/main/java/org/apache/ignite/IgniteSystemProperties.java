@@ -1278,12 +1278,15 @@ public final class IgniteSystemProperties {
      * @return Value of the system property or environment variable.
      *         Returns {@code null} if neither can be found for given name.
      */
-    public static @Nullable String getString(String name) {
+    @Nullable public static String getString(String name) {
         assert name != null;
 
         String v = System.getProperty(name);
 
-        return v == null ? System.getenv(name) : v;
+        if (v == null)
+            v = System.getenv(name);
+
+        return v;
     }
 
     /**

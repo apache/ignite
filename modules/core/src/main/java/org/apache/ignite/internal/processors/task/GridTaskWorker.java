@@ -1144,7 +1144,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             try {
                 // Reduce results.
                 reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                    @Override public @Nullable R call() {
+                    @Nullable @Override public R call() {
                         return task.reduce(results);
                     }
                 });

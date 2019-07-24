@@ -565,7 +565,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     sndRes = false;
                 else {
                     res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
-                        @Override public @Nullable Object call() {
+                        @Nullable @Override public Object call() {
                             try {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(true);
