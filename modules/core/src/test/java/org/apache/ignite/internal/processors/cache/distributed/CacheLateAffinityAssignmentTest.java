@@ -1757,9 +1757,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     public void testRandomOperations() throws Exception {
         forceSrvMode = true;
 
-        final int MAX_SRVS = 10;
-        final int MAX_CLIENTS = 10;
-        final int MAX_CACHES = 15;
+        final int MAX_SRVS = GridTestUtils.SF.applyLB(10, 5);
+        final int MAX_CLIENTS = GridTestUtils.SF.applyLB(10, 5);
+        final int MAX_CACHES = GridTestUtils.SF.applyLB(15, 5);
 
         List<String> srvs = new ArrayList<>();
         List<String> clients = new ArrayList<>();
@@ -2134,7 +2134,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         final AtomicInteger nodeIdx = new AtomicInteger();
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+        final long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 30_000);
 
         IgniteInternalFuture<?> updateFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {

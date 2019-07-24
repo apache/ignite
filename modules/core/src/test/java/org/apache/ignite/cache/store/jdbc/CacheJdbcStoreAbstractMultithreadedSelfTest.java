@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -67,10 +68,10 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** Number of transactions. */
-    private static final int TX_CNT = 200;
+    private static final int TX_CNT = GridTestUtils.SF.applyLB(200, 20);
 
     /** Number of transactions. */
-    private static final int BATCH_CNT = 2000;
+    private static final int BATCH_CNT = GridTestUtils.SF.applyLB(2000, 200);
 
     /** Cache store. */
     protected static CacheAbstractJdbcStore store;

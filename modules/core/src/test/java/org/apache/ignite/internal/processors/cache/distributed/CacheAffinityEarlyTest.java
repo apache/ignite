@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,9 +42,6 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
 
     /** Stopped. */
     private volatile boolean stopped;
-
-    /** Iteration. */
-    private static final int iters = 10;
 
     /** Concurrent. */
     private static final boolean concurrent = true;
@@ -70,6 +68,8 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStartNodes() throws Exception {
+        int iters = GridTestUtils.SF.applyLB(10, 2);
+
         for (int i = 0; i < iters; i++) {
             try {
                 log.info("Iteration: " + (i + 1) + '/' + iters);
@@ -93,42 +93,40 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
 
             final Ignite grid = concurrent ? null : startGrid(idx);
 
-            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-                @Override public void run() {
-                    Random rnd = new Random();
+            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+                Random rnd = new Random();
 
-                    try {
-                        Ignite ignite = grid == null ? startGrid(idx) : grid;
+                try {
+                    Ignite ignite = grid == null ? startGrid(idx) : grid;
 
-                        IgniteCache<Object, Object> cache = getCache(ignite);
+                    IgniteCache<Object, Object> cache = getCache(ignite);
 
-                        cache.put(ignite.cluster().localNode().id(), UUID.randomUUID());
+                    cache.put(ignite.cluster().localNode().id(), UUID.randomUUID());
 
-                        while (!stopped) {
-                            int val = Math.abs(rnd.nextInt(100));
+                    while (!stopped) {
+                        int val = Math.abs(rnd.nextInt(100));
 
-                            if (val >= 0 && val < 40)
-                                cache.containsKey(ignite.cluster().localNode().id());
-                            else if (val >= 40 && val < 80)
-                                cache.get(ignite.cluster().localNode().id());
-                            else
-                                cache.put(ignite.cluster().localNode().id(), UUID.randomUUID());
+                        if (val >= 0 && val < 40)
+                            cache.containsKey(ignite.cluster().localNode().id());
+                        else if (val >= 40 && val < 80)
+                            cache.get(ignite.cluster().localNode().id());
+                        else
+                            cache.put(ignite.cluster().localNode().id(), UUID.randomUUID());
 
-                            Thread.sleep(50);
-                        }
+                        Thread.sleep(50);
                     }
-                    catch (Exception e) {
-                        log.error("Unexpected error: " + e, e);
+                }
+                catch (Exception e) {
+                    log.error("Unexpected error: " + e, e);
 
-                        failed.set(true);
-                    }
+                    failed.set(true);
                 }
             }, 1);
 
             futs.add(fut);
         }
 
-        Thread.sleep(10_000);
+        Thread.sleep(5_000);
 
         stopped = true;
 

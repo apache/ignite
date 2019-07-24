@@ -194,7 +194,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      * @throws Exception If fail.
      */
     private void testRebalance(final Operation operation) throws Exception {
-        long stopTime = System.currentTimeMillis() + SF.applyLB(2 * 60_000, 5_000);
+        long stopTime = System.currentTimeMillis() + SF.applyLB(60_000, 5_000);
 
         for (int iter = 0; iter < TEST_ITERATIONS && System.currentTimeMillis() < stopTime; iter++) {
             log.info("Iteration: " + iter);
