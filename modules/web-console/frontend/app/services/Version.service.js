@@ -27,7 +27,7 @@ const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
 
 export default class IgniteVersion {
     constructor() {
-        this.webConsole = '2.7.0';
+        this.webConsole = '2.5.9';
 
         this.supportedVersions = [
             {
