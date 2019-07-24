@@ -575,10 +575,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             ExecutorService execSvc,
             PartitionTaskFactory factory
         ) {
-            A.ensure(name != null, "Backup name cannot be empty or null");
-            A.ensure(backupDir != null && backupDir.isDirectory(), "You must secify correct backup directory");
-            A.ensure(execSvc != null, "Executor service must be not null");
-            A.ensure(factory != null, "Factory which procudes backup tasks to execute must be not null");
+            A.notNull(name, "Backup name cannot be empty or null");
+            A.notNull(backupDir, "You must secify correct backup directory");
+            A.ensure(backupDir.isDirectory(), "Specified path is not a directory");
+            A.notNull(execSvc, "Executor service must be not null");
+            A.notNull(factory, "Factory which procudes backup tasks to execute must be not null");
 
             this.name = name;
             this.backupDir = backupDir;

@@ -24,20 +24,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -53,19 +47,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -191,180 +180,6 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .setConsistentId(igniteInstanceName)
             .setDataStorageConfiguration(memCfg)
             .setCacheConfiguration(defaultCacheCfg);
-    }
-
-    /**
-     * @throws Exception Exception.
-     */
-    @Test
-    public void testCopyCachePartitonFiles() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        for (int i = 0; i < 1024; i++)
-            ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        File cacheWorkDir = ((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .cacheWorkDir(defaultCacheCfg);
-
-        stopGrid(0);
-
-        IgniteEx ig0 = startGrid(0);
-
-        final GridCacheSharedContext<?, ?> cctx1 = ig0.context().cache().context();
-
-        final List<Map<String, Integer>> partsCRCSnapshots = new ArrayList<>();
-
-        ((GridCacheDatabaseSharedManager)cctx1.database()).addCheckpointListener(new DbCheckpointListener() {
-            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                // Partition files are in the consistent state. Calculate their CRCs before snapshot.
-//                if (ctx.collectContextInfo())
-//                    partsCRCSnapshots.add(calculateCRC32Partitions(cacheWorkDir));
-            }
-
-            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                // No-op/
-            }
-
-            @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                // No-op.
-            }
-        });
-
-        final CountDownLatch slowCopy = new CountDownLatch(1);
-
-        // Run the next checkpoint and produce dirty pages to generate onPageWrite events.
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 1024; i < 2048; i++)
-                        ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-                    CheckpointFuture cpFut = cctx1.database().forceCheckpoint("the next one");
-
-                    cpFut.finishFuture().get();
-
-                    slowCopy.countDown();
-
-                    U.log(log, "Parallel changes have made. The checkpoint finished succesfully.");
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        });
-
-        final ByteBuffer pageBuff = ByteBuffer.allocate(PAGE_SIZE)
-            .order(ByteOrder.nativeOrder());
-
-        final File mergeCacheDir = U.resolveWorkDirectory(
-            backupDir.getAbsolutePath(),
-            cacheDirName(defaultCacheCfg),
-            true
-        );
-
-        final Map<Integer, Set<Integer>> grpsBackup = new HashMap<>();
-
-        grpsBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
-            IntStream.range(0, CACHE_PARTS_COUNT).boxed().collect(Collectors.toSet()));
-
-        cctx1.backup()
-            .backup(
-                "testbackup",
-                grpsBackup,
-                new PageStoreInClosure() {
-                    /** Last seen handled partition id file. */
-                    private File lastSavedPartId;
-
-                    @Override public boolean accept(
-                        GroupPartitionId grpPartId,
-                        PageStoreType type,
-                        File file,
-                        long offset,
-                        long size
-                    ) throws IgniteCheckedException {
-                        switch (type) {
-                            case MAIN:
-                                try {
-                                    slowCopy.await();
-
-                                    lastSavedPartId = copy(file, 0, size, mergeCacheDir);
-                                }
-                                catch (InterruptedException e) {
-                                    throw new IgniteCheckedException(e);
-                                }
-
-                                break;
-
-                            case TEMP:
-                                // Nothing to handle
-                                if (!file.exists())
-                                    return true;
-
-                                // Will perform a copy delta file page by page simultaneously with merge pages operation.
-                                try (SeekableByteChannel src = Files.newByteChannel(file.toPath())) {
-                                    src.position(offset);
-
-                                    pageBuff.clear();
-
-                                    PageStore pageStore = pageStoreFactory.createPageStore(FLAG_DATA,
-                                        lastSavedPartId,
-                                        new LongAdderMetric("NO_OP", null),
-                                        PageStoreListener.NO_OP);
-
-//                                    pageStore.init();
-
-                                    long readed;
-                                    long position = offset;
-
-                                    while ((readed = src.read(pageBuff)) > 0 && position < size) {
-                                        position += readed;
-
-                                        pageBuff.flip();
-
-                                        long pageId = PageIO.getPageId(pageBuff);
-                                        long pageOffset = pageStore.pageOffset(pageId);
-                                        int crc32 = FastCrc.calcCrc(new CRC32(), pageBuff, pageBuff.limit());
-                                        int crc = PageIO.getCrc(pageBuff);
-
-                                        if (log.isDebugEnabled())
-                                            log.debug("handle partition delta [pageId=" + pageId +
-                                                ", pageOffset=" + pageOffset +
-                                                ", partSize=" + pageStore.size() +
-                                                ", skipped=" + (pageOffset >= pageStore.size()) +
-                                                ", position=" + position +
-                                                ", size=" + size +
-                                                ", crcBuff=" + crc32 +
-                                                ", crcPage=" + crc +
-                                                ", part=" + file.getName() + ']');
-
-                                        pageBuff.rewind();
-
-                                        // Other pages are not related to handled partition file and must be ignored.
-                                        if (pageOffset < pageStore.size())
-                                            pageStore.write(pageId, pageBuff, 0, false);
-
-                                        pageBuff.clear();
-                                    }
-                                }
-                                catch (IOException e) {
-                                    throw new IgniteCheckedException(e);
-                                }
-
-                                break;
-
-                                default:
-                                    throw new IgniteException("Type is unknown: " + type);
-                        }
-
-                        return true;
-                    }
-                });
-
-        partsCRCSnapshots.add(calculateCRC32Partitions(mergeCacheDir));
-
-        assertEquals("Partitons the same after backup and after merge", partsCRCSnapshots.get(0), partsCRCSnapshots.get(1));
     }
 
     /**
