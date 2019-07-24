@@ -23,9 +23,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
@@ -54,8 +53,11 @@ public class IrisClassificationExample {
             try {
                 System.out.println(">>> Fill dataset cache.");
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.IRIS);
-                KNNClassificationTrainer trainer = new KNNClassificationTrainer()
-                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(0));
+                KNNClassificationTrainer trainer = ((KNNClassificationTrainer)new KNNClassificationTrainer()
+                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(0)))
+                    .withK(3)
+                    .withDistanceMeasure(new EuclideanDistance())
+                    .withWeighted(true);
 
                 // This vectorizer works with values in cache of Vector class.
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
@@ -65,14 +67,11 @@ public class IrisClassificationExample {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.6);
 
                 System.out.println(">>> Start traininig.");
-                NNClassificationModel mdl = trainer.fit(
+                KNNClassificationModel mdl = trainer.fit(
                     ignite, dataCache,
                     split.getTrainFilter(),
                     vectorizer
-                )
-                    .withK(3)
-                    .withDistanceMeasure(new EuclideanDistance())
-                    .withStrategy(NNStrategy.WEIGHTED);
+                );
 
                 System.out.println(">>> Perform scoring.");
                 double accuracy = Evaluator.evaluate(

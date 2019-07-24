@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.structures;
+package org.apache.ignite.ml.knn.utils;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.knn.utils.indices.ArraySpatialIndex;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * Test for {@link ArraySpatialIndex}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    DatasetStructureTest.class,
-    LabeledVectorSetTest.class
-})
-public class StructuresTestSuite {
+public class ArraySpatialIndexTest extends SpatialIndexTest {
+    /**
+     * Constructs a new instance of array spatial index test.
+     */
+    public ArraySpatialIndexTest() {
+        super(ArraySpatialIndex::new);
+    }
 }

@@ -22,9 +22,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -92,14 +91,16 @@ public class Step_6_KNN {
                         minMaxScalerPreprocessor
                     );
 
-                KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+                KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+                    .withK(1)
+                    .withWeighted(true);
 
-                // Train decision tree model.
-                NNClassificationModel mdl = trainer.fit(
+                // Train KNN tree model.
+                KNNClassificationModel mdl = trainer.fit(
                     ignite,
                     dataCache,
                     normalizationPreprocessor
-                ).withK(1).withStrategy(NNStrategy.WEIGHTED);
+                );
 
                 System.out.println("\n>>> Trained model: " + mdl);
 

@@ -23,9 +23,6 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.ann.ANNModelFormat;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
-import org.apache.ignite.ml.knn.classification.KNNModelFormat;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.HammingDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
@@ -49,7 +46,9 @@ import static org.junit.Assert.assertNotEquals;
  * Tests for equals and hashCode methods in classes that provide own implementations of these.
  */
 public class CollectionsTest {
-    /** */
+    /**
+     *
+     */
     @Test
     @SuppressWarnings("unchecked")
     public void test() {
@@ -83,18 +82,17 @@ public class CollectionsTest {
         test(new KMeansModel(new Vector[] {}, new ManhattanDistance()),
             new KMeansModel(new Vector[] {}, new HammingDistance()));
 
-        test(new KNNModelFormat(1, new ManhattanDistance(), NNStrategy.SIMPLE),
-            new KNNModelFormat(2, new ManhattanDistance(), NNStrategy.SIMPLE));
-
-        test(new KNNClassificationModel(null).withK(1), new KNNClassificationModel(null).withK(2));
-
-        test(new SVMLinearClassificationModel(null, 1.0), new SVMLinearClassificationModel(null, 0.5));
+        test(new SVMLinearClassificationModel(null, 1.0),
+            new SVMLinearClassificationModel(null, 0.5));
 
         test(new ANNClassificationModel(new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()),
-            new ANNClassificationModel(new LabeledVectorSet<>(1, 1, true), new ANNClassificationTrainer.CentroidStat()));
+            new ANNClassificationModel(new LabeledVectorSet<>(1, 1, true),
+                new ANNClassificationTrainer.CentroidStat()));
 
-        test(new ANNModelFormat(1, new ManhattanDistance(), NNStrategy.SIMPLE, new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()),
-            new ANNModelFormat(2, new ManhattanDistance(), NNStrategy.SIMPLE, new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()));
+        test(new ANNModelFormat(1, new ManhattanDistance(), false, new LabeledVectorSet<>(),
+                new ANNClassificationTrainer.CentroidStat()),
+            new ANNModelFormat(2, new ManhattanDistance(), false, new LabeledVectorSet<>(),
+                new ANNClassificationTrainer.CentroidStat()));
     }
 
     /** Test classes that have all instances equal (eg, metrics). */
@@ -104,7 +102,9 @@ public class CollectionsTest {
         test(o1, new Object());
     }
 
-    /** */
+    /**
+     *
+     */
     private <T> void test(T o1, T o2) {
         assertNotEquals(o1, null);
         assertNotEquals(o2, null);

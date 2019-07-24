@@ -25,8 +25,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.knn.NNClassificationModel;
-import org.apache.ignite.ml.knn.classification.KNNModelFormat;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
@@ -41,7 +39,7 @@ public final class ANNClassificationModel extends NNClassificationModel  {
     private static final long serialVersionUID = -127312378991350345L;
 
     /** The labeled set of candidates. */
-    private final LabeledVectorSet<ProbableLabel, LabeledVector> candidates;
+    private final LabeledVectorSet<LabeledVector> candidates;
 
     /** Centroid statistics. */
     private final ANNClassificationTrainer.CentroidStat centroindsStat;
@@ -51,14 +49,14 @@ public final class ANNClassificationModel extends NNClassificationModel  {
      * @param centers The candidates set.
      * @param centroindsStat The stat about centroids.
      */
-    public ANNClassificationModel(LabeledVectorSet<ProbableLabel, LabeledVector> centers,
+    public ANNClassificationModel(LabeledVectorSet<LabeledVector> centers,
         ANNClassificationTrainer.CentroidStat centroindsStat) {
        this.candidates = centers;
        this.centroindsStat = centroindsStat;
     }
 
     /** */
-    public LabeledVectorSet<ProbableLabel, LabeledVector> getCandidates() {
+    public LabeledVectorSet<LabeledVector> getCandidates() {
         return candidates;
     }
 
@@ -70,12 +68,12 @@ public final class ANNClassificationModel extends NNClassificationModel  {
     /** {@inheritDoc} */
     @Override public Double predict(Vector v) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
-            return classify(neighbors, v, stgy);
+            return classify(neighbors, v, weighted);
     }
 
     /** */
     @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
-        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, stgy, candidates, centroindsStat);
+        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, weighted, candidates, centroindsStat);
         exporter.save(mdlData, path);
     }
 
@@ -145,7 +143,7 @@ public final class ANNClassificationModel extends NNClassificationModel  {
     }
 
     /** */
-    private double classify(List<LabeledVector> neighbors, Vector v, NNStrategy stgy) {
+    private double classify(List<LabeledVector> neighbors, Vector v, boolean weighted) {
         Map<Double, Double> clsVotes = new HashMap<>();
 
         for (LabeledVector neighbor : neighbors) {
@@ -156,7 +154,7 @@ public final class ANNClassificationModel extends NNClassificationModel  {
             // we predict class label, not the probability vector (it need here another math with counting of votes)
             probableClsLb.forEach((label, probability) -> {
                 double cnt = clsVotes.containsKey(label) ? clsVotes.get(label) : 0;
-                clsVotes.put(label, cnt + probability * getClassVoteForVector(stgy, distance));
+                clsVotes.put(label, cnt + probability * getClassVoteForVector(weighted, distance));
             });
         }
         return getClassWithMaxVotes(clsVotes);
@@ -168,7 +166,7 @@ public final class ANNClassificationModel extends NNClassificationModel  {
 
         res = res * 37 + k;
         res = res * 37 + distanceMeasure.hashCode();
-        res = res * 37 + stgy.hashCode();
+        res = res * 37 + Boolean.hashCode(weighted);
         res = res * 37 + candidates.hashCode();
 
         return res;
@@ -186,7 +184,7 @@ public final class ANNClassificationModel extends NNClassificationModel  {
 
         return k == that.k
             && distanceMeasure.equals(that.distanceMeasure)
-            && stgy.equals(that.stgy)
+            && weighted == that.weighted
             && candidates.equals(that.candidates);
     }
 
@@ -200,7 +198,7 @@ public final class ANNClassificationModel extends NNClassificationModel  {
         return ModelTrace.builder("KNNClassificationModel", pretty)
             .addField("k", String.valueOf(k))
             .addField("measure", distanceMeasure.getClass().getSimpleName())
-            .addField("strategy", stgy.name())
+            .addField("weighted", String.valueOf(weighted))
             .addField("amount of candidates", String.valueOf(candidates.rowSize()))
             .toString();
     }

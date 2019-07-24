@@ -34,11 +34,7 @@ import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.ann.ANNModelFormat;
-import org.apache.ignite.ml.knn.ann.ProbableLabel;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
-import org.apache.ignite.ml.knn.classification.KNNModelFormat;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.knn.ann.KNNModelFormat;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
@@ -46,14 +42,19 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
-import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for models import/export functionality.
  */
 public class LocalModelsTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void importExportKMeansModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
@@ -65,34 +66,38 @@ public class LocalModelsTest {
 
             KMeansModelFormat load = exporter.load(mdlFilePath);
 
-            Assert.assertNotNull(load);
+            assertNotNull(load);
 
             KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
 
-            Assert.assertEquals("", mdl, importedMdl);
+            assertEquals("", mdl, importedMdl);
 
             return null;
         });
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void importExportLinearRegressionModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            LinearRegressionModel mdl = new LinearRegressionModel(new DenseVector(new double[]{1, 2}), 3);
+            LinearRegressionModel mdl = new LinearRegressionModel(new DenseVector(new double[] {1, 2}), 3);
             Exporter<LinearRegressionModel, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
             LinearRegressionModel load = exporter.load(mdlFilePath);
 
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
+            assertNotNull(load);
+            assertEquals("", mdl, load);
 
             return null;
         });
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void importExportSVMBinaryClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
@@ -102,40 +107,44 @@ public class LocalModelsTest {
 
             SVMLinearClassificationModel load = exporter.load(mdlFilePath);
 
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
+            assertNotNull(load);
+            assertEquals("", mdl, load);
 
             return null;
         });
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void importExportLogisticRegressionModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            LogisticRegressionModel mdl = new LogisticRegressionModel(new DenseVector(new double[]{1, 2}), 3);
+            LogisticRegressionModel mdl = new LogisticRegressionModel(new DenseVector(new double[] {1, 2}), 3);
             Exporter<LogisticRegressionModel, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
             LogisticRegressionModel load = exporter.load(mdlFilePath);
 
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
+            assertNotNull(load);
+            assertEquals("", mdl, load);
 
             return null;
         });
     }
 
-    /** */
+    /**
+     *
+     */
     private void executeModelTest(Function<String, Void> code) throws IOException {
         Path mdlPath = Files.createTempFile(null, null);
 
-        Assert.assertNotNull(mdlPath);
+        assertNotNull(mdlPath);
 
         try {
             String mdlFilePath = mdlPath.toAbsolutePath().toString();
 
-            Assert.assertTrue(String.format("File %s not found.", mdlFilePath), Files.exists(mdlPath));
+            assertTrue(String.format("File %s not found.", mdlFilePath), Files.exists(mdlPath));
 
             code.apply(mdlFilePath);
         }
@@ -144,7 +153,9 @@ public class LocalModelsTest {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private KMeansModel getClusterModel() {
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {1.0, 1959, 325100});
@@ -159,58 +170,33 @@ public class LocalModelsTest {
         );
     }
 
-    /** */
-    @Test
-    public void importExportKNNModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            NNClassificationModel mdl = new KNNClassificationModel(null)
-                .withK(3)
-                .withDistanceMeasure(new EuclideanDistance())
-                .withStrategy(NNStrategy.SIMPLE);
-
-            Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            KNNModelFormat load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-
-            NNClassificationModel importedMdl = new KNNClassificationModel(null)
-                .withK(load.getK())
-                .withDistanceMeasure(load.getDistanceMeasure())
-                .withStrategy(load.getStgy());
-
-            Assert.assertEquals("", mdl, importedMdl);
-
-            return null;
-        });
-    }
-
-    /** */
+    /**
+     *
+     */
     @Test
     public void importExportANNModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            final LabeledVectorSet<ProbableLabel, LabeledVector> centers = new LabeledVectorSet<>();
+            final LabeledVectorSet<LabeledVector> centers = new LabeledVectorSet<>();
 
             NNClassificationModel mdl = new ANNClassificationModel(centers, new ANNClassificationTrainer.CentroidStat())
                 .withK(4)
                 .withDistanceMeasure(new ManhattanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                .withWeighted(true);
 
             Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
-            ANNModelFormat load = (ANNModelFormat) exporter.load(mdlFilePath);
+            ANNModelFormat load = (ANNModelFormat)exporter.load(mdlFilePath);
 
-            Assert.assertNotNull(load);
+            assertNotNull(load);
 
-
-            NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates(), new ANNClassificationTrainer.CentroidStat())
+            NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates(),
+                new ANNClassificationTrainer.CentroidStat())
                 .withK(load.getK())
                 .withDistanceMeasure(load.getDistanceMeasure())
-                .withStrategy(load.getStgy());
+                .withWeighted(load.isWeighted());
 
-            Assert.assertEquals("", mdl, importedMdl);
+            assertEquals("", mdl, importedMdl);
 
             return null;
         });

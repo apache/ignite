@@ -84,12 +84,12 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
 
         PatchedPreprocessor<K, V, Double, Double> patchedPreprocessor = new PatchedPreprocessor<>(func, preprocessor);
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder =
             new LabeledDatasetPartitionDataBuilderOnHeap<>(patchedPreprocessor);
 
         Vector weights;
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder,
@@ -152,7 +152,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
 
     /** */
     private Vector calculateUpdates(Vector weights,
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
+        Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset) {
         return dataset.compute(data -> {
             Vector copiedWeights = weights.copy();
             Vector deltaWeights = initializeWeightsWithZeros(weights.size());

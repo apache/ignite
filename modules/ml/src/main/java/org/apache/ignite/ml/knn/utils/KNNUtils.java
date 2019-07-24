@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn;
+package org.apache.ignite.ml.knn.utils;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -27,7 +27,6 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Helper class for KNNRegression.
@@ -41,16 +40,16 @@ public class KNNUtils {
      * @param vectorizer Upstream vectorizer.
      * @return Dataset.
      */
-    @Nullable public static <K, V, C extends Serializable> Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
+    public static <K, V, C extends Serializable> Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> buildDataset(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
         LearningEnvironment environment = envBuilder.buildForTrainer();
         environment.initDeployingContext(vectorizer);
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder
             = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = null;
+        Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = null;
 
         if (datasetBuilder != null) {
             dataset = datasetBuilder.build(

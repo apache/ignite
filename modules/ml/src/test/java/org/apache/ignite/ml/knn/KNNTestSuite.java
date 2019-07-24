@@ -16,6 +16,9 @@
 
 package org.apache.ignite.ml.knn;
 
+import org.apache.ignite.ml.knn.utils.ArraySpatialIndexTest;
+import org.apache.ignite.ml.knn.utils.BallTreeSpatialIndexTest;
+import org.apache.ignite.ml.knn.utils.KDTreeSpatialIndexTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -27,7 +30,9 @@ import org.junit.runners.Suite;
     ANNClassificationTest.class,
     KNNClassificationTest.class,
     KNNRegressionTest.class,
-    LabeledVectorSetTest.class
+    ArraySpatialIndexTest.class,
+    BallTreeSpatialIndexTest.class,
+    KDTreeSpatialIndexTest.class
 })
 public class KNNTestSuite {
 }

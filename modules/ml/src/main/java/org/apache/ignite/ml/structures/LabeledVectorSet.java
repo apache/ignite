@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 /**
  * The set of labeled vectors used in local partition calculations.
  */
-public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
+public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */
@@ -81,7 +81,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
     private void initializeDataWithLabeledVectors() {
         data = (Row[])new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++)
-            data[i] = (Row)new LabeledVector(emptyVector(colSize, isDistributed), null);
+            data[i] = (Row)new LabeledVector<>(emptyVector(colSize, isDistributed), null);
     }
 
     /**
@@ -137,7 +137,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
         data = (Row[])new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++){
 
-            data[i] = (Row)new LabeledVector(emptyVector(colSize, isDistributed), lbs[i]);
+            data[i] = (Row)new LabeledVector<>(emptyVector(colSize, isDistributed), lbs[i]);
             for (int j = 0; j < colSize; j++) {
                 try {
                     data[i].features().set(j, mtx[i][j]);
@@ -203,7 +203,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
 
     /** Makes copy with new Label objects and old features and Metadata objects. */
     public LabeledVectorSet copy(){
-        LabeledVectorSet res = new LabeledVectorSet(this.data, this.colSize);
+        LabeledVectorSet res = new LabeledVectorSet<>(this.data, this.colSize);
         res.isDistributed = this.isDistributed;
         res.meta = this.meta;
         for (int i = 0; i < rowSize; i++)

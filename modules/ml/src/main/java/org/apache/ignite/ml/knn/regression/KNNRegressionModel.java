@@ -13,93 +13,104 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.ml.knn.regression;
 
 import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.knn.KNNModel;
+import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.util.ModelTrace;
 
 /**
- * This class provides kNN Multiple Linear Regression or Locally [weighted] regression (Simple and Weighted versions).
- *
- * <p> This is an instance-based learning method. </p>
- *
- * <ul>
- *     <li>Local means using nearby points (i.e. a nearest neighbors approach).</li>
- *     <li>Weighted means we value points based upon how far away they are.</li>
- *     <li>Regression means approximating a function.</li>
- * </ul>
+ * KNN regression model. Be aware that this model is linked with cluster environment it's been built on and can't
+ * be saved or used in other places. Under the hood it keeps {@link Dataset} that consists of a set of resources
+ * allocated across the cluster.
  */
-public class KNNRegressionModel extends KNNClassificationModel {
-    /** */
-    private static final long serialVersionUID = -721836321291120543L;
+public class KNNRegressionModel extends KNNModel<Double> {
+    /** Regression predictor. */
+    private final KNNRegressionPredictor predictor;
 
     /**
-     * Builds the model via prepared dataset.
-     * @param dataset Specially prepared object to run algorithm over it.
+     * Constructs a new instance of KNN regression model.
+     *
+     * @param dataset Dataset with {@link SpatialIndex} as a partition data.
+     * @param distanceMeasure Distance measure.
+     * @param k Number of neighbours.
+     * @param weighted Weighted or not.
      */
-    public KNNRegressionModel(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
-        super(dataset);
+    KNNRegressionModel(Dataset<EmptyContext, SpatialIndex<Double>> dataset, DistanceMeasure distanceMeasure, int k,
+        boolean weighted) {
+        super(dataset, distanceMeasure, k, weighted);
+        predictor = weighted ? new KNNRegressionWeightedPredictor() : new KNNRegressionSimplePredictor();
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector v) {
-        List<LabeledVector> neighbors = findKNearestNeighbors(v);
+    @Override public Double predict(Vector input) {
+        List<LabeledVector<Double>> neighbors = findKClosest(k, input);
 
-        return predictYBasedOn(neighbors, v);
+        return predictor.predict(neighbors, input);
     }
 
-    /** */
-    private double predictYBasedOn(List<LabeledVector> neighbors, Vector v) {
-        switch (stgy) {
-            case SIMPLE:
-                return simpleRegression(neighbors);
-            case WEIGHTED:
-                return weightedRegression(neighbors, v);
-            default:
-                throw new UnsupportedOperationException("Strategy " + stgy.name() + " is not supported");
+    /**
+     * Util class that makes prediction based on the specified list of nearest neighbours.
+     */
+    private interface KNNRegressionPredictor {
+        /**
+         * Makes a regression prediction based on the specified list of nearest neighbours.
+         *
+         * @param neighbors List of nearest neighbours.
+         * @param pnt Point to calculate distance to.
+         * @return Regression prediction.
+         */
+        public Double predict(List<LabeledVector<Double>> neighbors, Vector pnt);
+    }
+
+    /**
+     * Simple (not weighted) implementation of {@link KNNRegressionPredictor} that makes prediction based on the
+     * specified list of nearest neighbours.
+     */
+    private class KNNRegressionSimplePredictor implements KNNRegressionPredictor {
+        /** {@inheritDoc} */
+        @Override public Double predict(List<LabeledVector<Double>> neighbors, Vector pnt) {
+            if (neighbors.isEmpty())
+                return null;
+
+            double sum = 0.0;
+
+            for (LabeledVector<Double> neighbor : neighbors)
+                sum += neighbor.label();
+
+            return sum / k;
         }
     }
 
-    /** */
-    private double weightedRegression(List<LabeledVector> neighbors, Vector v) {
-        double sum = 0.0;
-        double div = 0.0;
-        for (LabeledVector<Double> neighbor : neighbors) {
-            double distance = distanceMeasure.compute(v, neighbor.features());
-            sum += neighbor.label() * distance;
-            div += distance;
+    /**
+     * Weighted implementation of {@link KNNRegressionPredictor} that makes prediction based on the specified list of
+     * nearest neighbours.
+     */
+    private class KNNRegressionWeightedPredictor extends KNNRegressionSimplePredictor {
+        /** {@inheritDoc} */
+        @Override public Double predict(List<LabeledVector<Double>> neighbors, Vector pnt) {
+            if (neighbors.isEmpty())
+                return null;
+
+            double sum = 0.0;
+            double div = 0.0;
+
+            for (LabeledVector<Double> neighbor : neighbors) {
+                double distance = distanceMeasure.compute(pnt, neighbor.features());
+                sum += neighbor.label() * distance;
+                div += distance;
+            }
+
+            if (div == 0.0)
+                return super.predict(neighbors, pnt);
+
+            return sum / div;
         }
-        if (div == 0.0) // when all neighbours are equal to the given point
-            return simpleRegression(neighbors);
-        return sum / div;
-    }
-
-    /** */
-    private double simpleRegression(List<LabeledVector> neighbors) {
-        double sum = 0.0;
-        for (LabeledVector<Double> neighbor : neighbors)
-            sum += neighbor.label();
-        return sum / (double)k;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return toString(false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString(boolean pretty) {
-        return ModelTrace.builder("KNNRegressionModel", pretty)
-            .addField("k", String.valueOf(k))
-            .addField("measure", distanceMeasure.getClass().getSimpleName())
-            .addField("strategy", stgy.name())
-            .toString();
     }
 }

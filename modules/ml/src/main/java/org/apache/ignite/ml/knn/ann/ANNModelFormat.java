@@ -16,9 +16,6 @@
 
 package org.apache.ignite.ml.knn.ann;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.knn.classification.KNNModelFormat;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
@@ -28,34 +25,34 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
  *
  * @see ANNClassificationModel
  */
-public class ANNModelFormat extends KNNModelFormat implements Serializable {
+public class ANNModelFormat extends KNNModelFormat {
     /** Centroid statistics. */
     private final ANNClassificationTrainer.CentroidStat candidatesStat;
 
     /** The labeled set of candidates. */
-    private LabeledVectorSet<ProbableLabel, LabeledVector> candidates;
+    private LabeledVectorSet<LabeledVector> candidates;
 
     /**
      * Creates an instance.
      * @param k Amount of nearest neighbors.
-     * @param measure Distance measure.
-     * @param stgy kNN strategy.
+     * @param distanceMeasure Distance measure.
+     * @param weighted Weighted or not.
      * @param candidatesStat The stat about candidates.
      */
     public ANNModelFormat(int k,
-        DistanceMeasure measure,
-        NNStrategy stgy,
-        LabeledVectorSet<ProbableLabel, LabeledVector> candidates,
+        DistanceMeasure distanceMeasure,
+        boolean weighted,
+        LabeledVectorSet<LabeledVector> candidates,
         ANNClassificationTrainer.CentroidStat candidatesStat) {
         this.k = k;
-        this.distanceMeasure = measure;
-        this.stgy = stgy;
+        this.distanceMeasure = distanceMeasure;
+        this.weighted = weighted;
         this.candidates = candidates;
         this.candidatesStat = candidatesStat;
     }
 
     /** */
-    public LabeledVectorSet<ProbableLabel, LabeledVector> getCandidates() {
+    public LabeledVectorSet<LabeledVector> getCandidates() {
         return candidates;
     }
 
@@ -65,7 +62,7 @@ public class ANNModelFormat extends KNNModelFormat implements Serializable {
 
         res = res * 37 + k;
         res = res * 37 + distanceMeasure.hashCode();
-        res = res * 37 + stgy.hashCode();
+        res = res * 37 + Boolean.hashCode(weighted);
         res = res * 37 + candidates.hashCode();
 
         return res;
@@ -83,7 +80,7 @@ public class ANNModelFormat extends KNNModelFormat implements Serializable {
 
         return k == that.k
             && distanceMeasure.equals(that.distanceMeasure)
-            && stgy.equals(that.stgy)
+            && weighted == that.weighted
             && candidates.equals(that.candidates);
     }
 }

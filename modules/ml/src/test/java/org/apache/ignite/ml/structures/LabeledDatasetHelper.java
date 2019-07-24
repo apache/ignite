@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn;
-
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
+package org.apache.ignite.ml.structures;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /**
  * Base class for decision trees test.

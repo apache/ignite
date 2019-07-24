@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.structures;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * <!-- Package description. -->
+ * Contains util functionality for kNN algorithms.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    DatasetStructureTest.class,
-    LabeledVectorSetTest.class
-})
-public class StructuresTestSuite {
-}
+package org.apache.ignite.ml.knn.utils;

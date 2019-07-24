@@ -164,7 +164,7 @@ public class DataStreamGeneratorTest {
     private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
         Predicate<LabeledVector> labelCheck) throws Exception {
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = buildDataset(datasetBuilder)) {
+        try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = buildDataset(datasetBuilder)) {
             List<LabeledVector> res = dataset.compute(this::map, this::reduce);
             assertEquals(sampleSize, res.size());
 
@@ -173,7 +173,7 @@ public class DataStreamGeneratorTest {
     }
 
     /** */
-    private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
+    private Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> buildDataset(
         DatasetBuilder<Vector, Double> b1) {
         return b1.build(LearningEnvironmentBuilder.defaultBuilder(),
             new EmptyContextBuilder<>(),
@@ -183,7 +183,7 @@ public class DataStreamGeneratorTest {
     }
 
     /** */
-    private List<LabeledVector> map(LabeledVectorSet<Double, LabeledVector> d) {
+    private List<LabeledVector> map(LabeledVectorSet<LabeledVector> d) {
         return IntStream.range(0, d.rowSize()).mapToObj(d::getRow).collect(Collectors.toList());
     }
 
