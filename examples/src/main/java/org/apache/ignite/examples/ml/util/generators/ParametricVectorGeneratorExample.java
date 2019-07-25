@@ -61,5 +61,6 @@ public class ParametricVectorGeneratorExample {
         ).asDataStream();
 
         Tracer.showClassificationDatasetHtml("Butterfly", butterfly, 2000, 0, 1, false);
+        System.out.flush();
     }
 }

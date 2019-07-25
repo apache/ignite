@@ -40,9 +40,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -399,18 +399,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             }, String.class, THRD_FACTORY_DESC);
         }
         else {
-            mreg.metric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-            mreg.metric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-            mreg.metric("CorePoolSize", CORE_SIZE_DESC).value(0);
-            mreg.metric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-            mreg.metric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-            mreg.metric("PoolSize", POOL_SIZE_DESC).value(0);
-            mreg.metric("TaskCount", TASK_COUNT_DESC);
-            mreg.metric("QueueSize", QUEUE_SIZE_DESC).value(0);
-            mreg.metric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
+            mreg.longMetric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
+            mreg.longMetric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
+            mreg.longMetric("CorePoolSize", CORE_SIZE_DESC).value(0);
+            mreg.longMetric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
+            mreg.longMetric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
+            mreg.longMetric("PoolSize", POOL_SIZE_DESC).value(0);
+            mreg.longMetric("TaskCount", TASK_COUNT_DESC);
+            mreg.longMetric("QueueSize", QUEUE_SIZE_DESC).value(0);
+            mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
             mreg.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
             mreg.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
-            mreg.metric("Terminating", IS_TERMINATING_DESC);
+            mreg.longMetric("Terminating", IS_TERMINATING_DESC);
             mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
             mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
         }
@@ -616,16 +616,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Memory usage metrics. */
     public class MemoryUsageMetrics {
         /** @see MemoryUsage#getInit() */
-        private final LongMetricImpl init;
+        private final AtomicLongMetric init;
 
         /** @see MemoryUsage#getUsed() */
-        private final LongMetricImpl used;
+        private final AtomicLongMetric used;
 
         /** @see MemoryUsage#getCommitted() */
-        private final LongMetricImpl committed;
+        private final AtomicLongMetric committed;
 
         /** @see MemoryUsage#getMax() */
-        private final LongMetricImpl max;
+        private final AtomicLongMetric max;
 
         /**
          * @param group Metric registry.
@@ -634,10 +634,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
             MetricRegistry mreg = GridMetricManager.this.registry(group);
 
-            this.init = mreg.metric(metricName(metricNamePrefix, "init"), null);
-            this.used = mreg.metric(metricName(metricNamePrefix, "used"), null);
-            this.committed = mreg.metric(metricName(metricNamePrefix, "committed"), null);
-            this.max = mreg.metric(metricName(metricNamePrefix, "max"), null);
+            this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
+            this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);
+            this.committed = mreg.longMetric(metricName(metricNamePrefix, "committed"), null);
+            this.max = mreg.longMetric(metricName(metricNamePrefix, "max"), null);
         }
 
         /** Updates metric to the provided values. */

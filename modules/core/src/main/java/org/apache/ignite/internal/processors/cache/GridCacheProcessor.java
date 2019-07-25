@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.configuration.FactoryBuilder;
@@ -239,6 +240,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Template of message of failed node join because encryption settings are different for the same cache. */
     private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
         "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
+
+    /** */
+    private static final String CACHE_NAME_AND_OPERATION_FORMAT = "[cacheName=%s, operation=%s]";
+
+    /** */
+    private static final String CACHE_NAMES_AND_OPERATION_FORMAT = "[cacheNames=%s, operation=%s]";
 
     /** */
     private final boolean startClientCaches =
@@ -806,6 +813,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to unregister MBean for cache group: " + grp.name(), e);
             }
         }
+
+        grp.metrics().remove();
 
         cachesInfo.cleanupRemovedGroup(grp.groupId());
     }
@@ -2932,7 +2941,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
             try {
                 U.registerMBean(ctx.config().getMBeanServer(), ctx.igniteInstanceName(), CACHE_GRP_METRICS_MBEAN_GRP,
-                    grp.cacheOrGroupName(), grp.mxBean(), CacheGroupMetricsMXBean.class);
+                    grp.cacheOrGroupName(), new CacheGroupMetricsMXBeanImpl(grp), CacheGroupMetricsMXBean.class);
             }
             catch (Throwable e) {
                 U.error(log, "Failed to register MBean for cache group: " + grp.name(), e);
@@ -4054,8 +4063,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         assert cacheName != null;
 
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName,
+                "dynamicStartCache"));
+        }
 
         GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
             assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
@@ -4204,8 +4215,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         IgniteUuid restartId
     ) {
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> {
+                List<String> cacheNames = storedCacheDataList.stream()
+                    .map(StoredCacheData::config)
+                    .map(CacheConfiguration::getName)
+                    .collect(Collectors.toList());
+
+                return String.format(CACHE_NAMES_AND_OPERATION_FORMAT, cacheNames, "dynamicStartCachesByStoredConf");
+            });
+        }
 
         GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
             List<DynamicCacheChangeRequest> srvReqs = null;
@@ -4307,8 +4326,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         assert cacheName != null;
 
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName,
+                "dynamicDestroyCache"));
+        }
 
         DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, sql, true);
 
@@ -4340,8 +4361,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean checkThreadTx,
         boolean destroy
     ) {
-        if (checkThreadTx)
-            checkEmptyTransactions();
+        if (checkThreadTx) {
+            checkEmptyTransactionsEx(() -> String.format(CACHE_NAMES_AND_OPERATION_FORMAT, cacheNames,
+                "dynamicDestroyCaches"));
+        }
 
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
@@ -4427,7 +4450,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (proxy == null || proxy.isProxyClosed())
             return new GridFinishedFuture<>(); // No-op.
 
-        checkEmptyTransactions();
+        checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName, "dynamicCloseCache"));
 
         if (proxy.context().isLocal())
             return dynamicDestroyCache(cacheName, false, true, false, null);
@@ -4442,10 +4465,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when state is changed for all caches.
      */
     public IgniteInternalFuture<?> resetCacheState(Collection<String> cacheNames) {
-        checkEmptyTransactions();
-
         if (F.isEmpty(cacheNames))
             cacheNames = cachesInfo.registeredCaches().keySet();
+
+        Collection<String> forCheckCacheNames = cacheNames;
+
+        checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, forCheckCacheNames,
+            "resetCacheState"));
 
         Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
@@ -5639,6 +5665,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void checkEmptyTransactions() throws IgniteException {
         if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
             throw new IgniteException("Cannot start/stop cache within lock or transaction.");
+    }
+
+    /**
+     * Method invoke {@link #checkEmptyTransactions()} and add message in case exception.
+     *
+     * @param eMsgSupplier supplier additional text message
+     * @throws IgniteException If {@link #checkEmptyTransactions()} throw {@link IgniteException}
+     * */
+    private void checkEmptyTransactionsEx(final Supplier<String> eMsgSupplier) throws IgniteException {
+        assert eMsgSupplier != null;
+
+        try {
+            checkEmptyTransactions();
+        }
+        catch (IgniteException e) {
+            throw new IgniteException(e.getMessage() + ' ' + eMsgSupplier.get(), e);
+        }
     }
 
     /**

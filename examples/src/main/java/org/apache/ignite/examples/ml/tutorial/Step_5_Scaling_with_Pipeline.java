@@ -88,10 +88,11 @@ public class Step_5_Scaling_with_Pipeline {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 5 (scaling) via Pipeline example completed.");
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

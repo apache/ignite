@@ -14,20 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache;
 
-package org.apache.ignite.internal.processors.cache.persistence;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Tracks allocated pages.
+ *
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
-
-    /**
-     * Updates totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
-     */
-    public void updateTotalAllocatedPages(long delta);
+public class MvccCacheGroupMetricsTest extends CacheGroupMetricsTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+    }
 }
