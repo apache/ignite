@@ -1231,10 +1231,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
 
     /**
-     * Index rebuilding parallelism level. If specified, sets the count of threads that are used for index rebuilding
-     * and can only be greater than <code>0</code>, otherwise default value will be used. Maximum count of threads
-     * can't be greater than total available processors count.
-     * Default value is minimum of <code>4</code> and processors count / 4, but always greater than <code>0</code>.
+     * Index rebuilding parallelism level. It sets a number of threads will be used for index rebuilding.
+     * Zero value means default should be used. Default value is calculated as <code>CPU count / 4</code>
+     * <p>
+     * Note: Number of threads is bounded within the range from <code>1</code> up to <code>CPU count</code>.
      */
     public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 

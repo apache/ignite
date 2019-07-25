@@ -48,8 +48,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Traversor operating all primary and backup partitions of given cache.
  */
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
-    /** Default degree of parallelism. */
-    private static final int DFLT_PARALLELISM;
+    /** Default degree of parallelism for rebuilding indexes. */
+    private static final int DFLT_INDEX_REBUILDING_PARALLELISM;
 
     /** Count of rows, being processed within a single checkpoint lock. */
     private static final int BATCH_SIZE = 1000;
@@ -73,9 +73,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         int parallelism = IgniteSystemProperties.getInteger(INDEX_REBUILDING_PARALLELISM, 0);
 
         if (parallelism > 0)
-            DFLT_PARALLELISM = Math.min(parallelism, Runtime.getRuntime().availableProcessors());
+            DFLT_INDEX_REBUILDING_PARALLELISM = Math.min(parallelism, Runtime.getRuntime().availableProcessors());
         else
-            DFLT_PARALLELISM = Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+            DFLT_INDEX_REBUILDING_PARALLELISM = Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
     }
 
     /**
@@ -102,7 +102,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         if (parallelism > 0)
             this.parallelism = Math.min(Runtime.getRuntime().availableProcessors(), parallelism);
         else
-            this.parallelism = DFLT_PARALLELISM;
+            this.parallelism = DFLT_INDEX_REBUILDING_PARALLELISM;
 
         if (cctx.isNear())
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
