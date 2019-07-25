@@ -39,7 +39,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
@@ -208,11 +207,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
 
         sysreg.register(CACHE_OPERATIONS_BLOCKED_DURATION,
-            () -> {
-                GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
-
-                return fut == null ? 0 : fut.cacheOperationsBlockedDuration();
-            },
+            ctx.cache().context().exchange()::cacheOperationsBlockedDuration,
             "Cache operations blocked duration in milliseconds.");
 
         HistogramMetric cacheOperationsBlockedDurationHistogram =

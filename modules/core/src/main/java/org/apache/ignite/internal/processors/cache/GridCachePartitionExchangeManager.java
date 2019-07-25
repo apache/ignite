@@ -2706,6 +2706,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @return Gets cache operations blocked duration in milliseconds. {@code 0} If current partition map exchange don't
+     * block operations or there is no running PME.
+     */
+    public long cacheOperationsBlockedDuration() {
+        GridDhtPartitionsExchangeFuture fut = lastTopologyFuture();
+
+        return fut == null ? 0 : fut.cacheOperationsBlockedDuration();
+    }
+
+    /**
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
      */
