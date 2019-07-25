@@ -104,6 +104,9 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
@@ -135,6 +138,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -256,9 +260,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** */
     private CacheAffinityChangeMessage affChangeMsg;
 
-    /** Init timestamp. Used to track the amount of time spent to complete the future. */
-    private long initTs;
-
     /**
      * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
      * partitions maps to nodes using discovery (ring) instead of communication.
@@ -348,6 +349,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Start time of exchange. */
     private long startTime = System.nanoTime();
+
+    /** Init time of exchange in nanoseconds. */
+    private volatile long initTime;
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
@@ -551,6 +555,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @return Init time in nanoseconds. {@code 0} if future are not initialized yet.
+     */
+    public long getInitTime() {
+        return initTime;
+    }
+
+    /**
+     * @return Gets cache operations blocked duration in milliseconds. {@code 0} If current partition map exchange don't
+     * block operations or there is no running PME.
+     */
+    public long cacheOperationsBlockedDuration() {
+        return (isDone() || getInitTime() == 0 || isClientEventExchangeWithoutAffinityChange()) ?
+            0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - getInitTime());
+    }
+
+    /**
      * @return {@code True}
      */
     public boolean onAdded() {
@@ -565,7 +585,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param discoCache Discovery data cache.
      */
     public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt, DiscoCache discoCache) {
-        assert exchId.equals(this.exchId);
+        // TODO: IGNITE-12017 Avoid calling GridDhtPartitionsExchangeFuture#onEvent more than once.
+        assert exchId.equals(this.exchId) && (firstDiscoEvt == null || firstDiscoEvt == discoEvt);
 
         this.exchId.discoveryEvent(discoEvt);
         this.firstDiscoEvt = discoEvt;
@@ -619,15 +640,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public boolean changedAffinity() {
-        DiscoveryEvent firstDiscoEvt0 = firstDiscoEvt;
+        assert firstDiscoEvt != null;
 
-        assert firstDiscoEvt0 != null;
+        return firstDiscoEvt.eventNode().isLocal() || !isClientEventExchangeWithoutAffinityChange();
+    }
 
-        return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
-            || !firstDiscoEvt0.eventNode().isClient()
-            || firstDiscoEvt0.eventNode().isLocal()
-            || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
-            cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
+    /**
+     * @return {@code True} if exchange triggered by client node join/left and didn't not change affinity in cluster.
+     */
+    private boolean isClientEventExchangeWithoutAffinityChange() {
+        assert firstDiscoEvt != null;
+
+        boolean hasCachesReceivedFromJoin = (firstDiscoEvt.type() == EVT_NODE_JOINED) &&
+            cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode());
+
+        return firstDiscoEvt.eventNode().isClient() &&
+            firstDiscoEvt.type() != DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT && !hasCachesReceivedFromJoin;
     }
 
     /**
@@ -724,8 +752,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert !cctx.kernalContext().isDaemon();
 
-        initTs = U.currentTimeMillis();
-
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
@@ -759,6 +785,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 state = ExchangeLocalState.CRD;
             else
                 state = cctx.kernalContext().clientNode() ? ExchangeLocalState.CLIENT : ExchangeLocalState.SRV;
+
+            initTime = System.nanoTime();
 
             if (exchLog.isInfoEnabled()) {
                 exchLog.info("Started exchange init [topVer=" + topVer +
@@ -2299,6 +2327,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (err == null) {
                     timeBag.finishGlobalStage("Exchange done");
 
+                    updateDurationHistogram(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+
                     // Collect all stages timings.
                     List<String> timings = timeBag.stagesTimings();
 
@@ -2341,13 +2371,27 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             logExchange(evt);
                     }
                 }
-
             }
 
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Updates the {@link GridMetricManager#CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM} metric if needed.
+     */
+    private void updateDurationHistogram(long duration) {
+        if (isClientEventExchangeWithoutAffinityChange())
+            return;
+
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(GridMetricManager.SYS_METRICS);
+
+        HistogramMetric durationHistogram =
+            (HistogramMetric)mreg.findMetric(CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM);
+
+        durationHistogram.value(duration);
     }
 
     /**

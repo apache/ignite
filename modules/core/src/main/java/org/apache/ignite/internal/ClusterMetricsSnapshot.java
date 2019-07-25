@@ -93,8 +93,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         4/*outbound messages queue size*/ +
         4/*total nodes*/ +
         8/*total jobs execution time*/ +
-        8/*current PME time*/ +
-        1/*is operations blocked by PME*/;
+        8/*cache operations blocked duration*/;
 
     /** */
     private long lastUpdateTime = -1;
@@ -259,10 +258,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     private long totalJobsExecTime = -1;
 
     /** */
-    private long currentPmeDuration = -1;
-
-    /** */
-    private boolean isOperationsBlockedByPme;
+    private long cacheOperationsBlockedDuration = -1;
 
     /**
      * Create empty snapshot.
@@ -337,8 +333,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         outMesQueueSize = 0;
         heapTotal = 0;
         totalNodes = nodes.size();
-        currentPmeDuration = 0;
-        isOperationsBlockedByPme = false;
+        cacheOperationsBlockedDuration = 0;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -416,11 +411,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             avgLoad += m.getCurrentCpuLoad();
 
-            currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
-
             // Calculate only cluster-wide blocking PME and exclude client join case.
-            if (!node.isClient())
-                isOperationsBlockedByPme = isOperationsBlockedByPme || m.isOperationsBlockedByPme();
+            if (!node.isClient()) {
+                cacheOperationsBlockedDuration =
+                    max(cacheOperationsBlockedDuration, m.getCacheOperationsBlockedDuration());
+            }
         }
 
         curJobExecTime /= size;
@@ -977,13 +972,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCurrentPmeDuration() {
-        return currentPmeDuration;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isOperationsBlockedByPme() {
-        return isOperationsBlockedByPme;
+    @Override public long getCacheOperationsBlockedDuration() {
+        return cacheOperationsBlockedDuration;
     }
 
     /**
@@ -1221,21 +1211,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
-     * Sets execution duration for current partition map exchange.
      *
-     * @param currentPmeDuration Execution duration for current partition map exchange.
      */
-    public void setCurrentPmeDuration(long currentPmeDuration) {
-        this.currentPmeDuration = currentPmeDuration;
-    }
-
-    /**
-     * Sets flag indicating whether to current partition map exchange blocks operations.
-     *
-     * @param isOperationsBlockedByPme Flag indicating whether to current partition map exchange blocks operations.
-     */
-    public void setOperationsBlockedByPme(boolean isOperationsBlockedByPme) {
-        this.isOperationsBlockedByPme = isOperationsBlockedByPme;
+    public void setCacheOperationsBlockedDuration(long cacheOperationsBlockedDuration) {
+        this.cacheOperationsBlockedDuration = cacheOperationsBlockedDuration;
     }
 
     /**
@@ -1390,8 +1369,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putInt(metrics.getOutboundMessagesQueueSize());
         buf.putInt(metrics.getTotalNodes());
         buf.putLong(metrics.getTotalJobsExecutionTime());
-        buf.putLong(metrics.getCurrentPmeDuration());
-        buf.put((byte)(metrics.isOperationsBlockedByPme() ? 1 : 0));
+        buf.putLong(metrics.getCacheOperationsBlockedDuration());
 
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
@@ -1475,14 +1453,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             metrics.setTotalJobsExecutionTime(0);
 
         if (buf.remaining() >= 8)
-            metrics.setCurrentPmeDuration(buf.getLong());
+            metrics.setCacheOperationsBlockedDuration(buf.getLong());
         else
-            metrics.setCurrentPmeDuration(0);
-
-        if (buf.remaining() >= 1)
-            metrics.setOperationsBlockedByPme(buf.get() > 0);
-        else
-            metrics.setOperationsBlockedByPme(false);
+            metrics.setCacheOperationsBlockedDuration(0);
 
         return metrics;
     }

@@ -39,7 +39,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -135,6 +137,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Daemon thread count metric name. */
     public static final String DAEMON_THREAD_CNT = "DaemonThreadCount";
 
+    /** Cache operations blocked duration metric name. */
+    public static final String CACHE_OPERATIONS_BLOCKED_DURATION = "cacheOperationsBlockedDuration";
+
+    /** Cache operations blocked duration histogram metric name. */
+    public static final String CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
+
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
@@ -198,10 +206,24 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
+
+        sysreg.register(CACHE_OPERATIONS_BLOCKED_DURATION,
+            () -> {
+                GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
+
+                return fut == null ? 0 : fut.cacheOperationsBlockedDuration();
+            },
+            "Cache operations blocked duration in milliseconds.");
+
+        HistogramMetric cacheOperationsBlockedDurationHistogram =
+            new HistogramMetric(CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM,
+                "Histogram of cache operations blocked duration in milliseconds.", getDurationHistogramBounds());
+
+        sysreg.register(cacheOperationsBlockedDurationHistogram);
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
+    @Override protected void onKernalStart0() {
         metricsUpdateTask = ctx.timeout().schedule(new MetricsUpdater(), METRICS_UPDATE_FREQ, METRICS_UPDATE_FREQ);
     }
 
@@ -493,6 +515,21 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         catch (RuntimeException ignored) {
             return -1;
         }
+    }
+
+    /**
+     * @return Bounds for the {@link #CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM} metric. 30 bounds with 1-second
+     * interval by default.
+     */
+    private long[] getDurationHistogramBounds() {
+        int cnt = 30;
+
+        long[] bounds = new long[cnt];
+
+        for (int i = 0; i < cnt; i++)
+            bounds[i] = (i + 1) * 1000;
+
+        return bounds;
     }
 
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -27,6 +28,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -35,6 +38,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -90,6 +94,9 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         IgniteCluster cluster = ignite.cluster();
 
+        HistogramMetric durationHistogram = (HistogramMetric)ignite.context().metric()
+            .registry(GridMetricManager.SYS_METRICS).findMetric(CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM);
+
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(TRANSACTIONAL));
@@ -100,7 +107,12 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         waitForMetricsUpdate(ignite);
 
-        assertFalse(cluster.metrics().isOperationsBlockedByPme());
+        assertTrue(cluster.metrics().getCacheOperationsBlockedDuration() == 0);
+
+        long[] lastHistogram = durationHistogram.value();
+
+        // There was two exchange: node start and cache start.
+        assertTrue(Arrays.stream(lastHistogram).sum() == 2);
 
         Lock lock = cache.lock(1);
 
@@ -119,9 +131,9 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         waitForMetricsUpdate(ignite);
 
         if (client)
-            assertFalse(cluster.metrics().isOperationsBlockedByPme());
+            assertTrue(cluster.metrics().getCacheOperationsBlockedDuration() == 0);
         else
-            assertTrue(cluster.metrics().isOperationsBlockedByPme());
+            assertTrue(cluster.metrics().getCacheOperationsBlockedDuration() > 0);
 
         lock.unlock();
 
@@ -132,7 +144,12 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         waitForMetricsUpdate(ignite);
 
-        assertFalse(cluster.metrics().isOperationsBlockedByPme());
+        assertTrue(cluster.metrics().getCacheOperationsBlockedDuration() == 0);
+
+        if (client)
+            assertTrue(Arrays.equals(lastHistogram, durationHistogram.value()));
+        else
+            assertFalse(Arrays.equals(lastHistogram, durationHistogram.value()));
     }
 
     /**

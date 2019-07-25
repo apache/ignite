@@ -258,12 +258,8 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     public int getTotalNodes();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Current PME duration in milliseconds.")
-    public long getCurrentPmeDuration();
-
-    /** {@inheritDoc} */
-    @Override @MXBeanDescription("Is operations blocked by current PME.")
-    public boolean isOperationsBlockedByPme();
+    @Override @MXBeanDescription("Cache operations blocked duration.")
+    public long getCacheOperationsBlockedDuration();
 
     /**
      * Get count of total baseline nodes.

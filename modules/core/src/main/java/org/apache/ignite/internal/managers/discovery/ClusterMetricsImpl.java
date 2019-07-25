@@ -22,11 +22,9 @@ import java.lang.management.MemoryUsage;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -35,6 +33,7 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_OPERATIONS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
@@ -163,6 +162,9 @@ public class ClusterMetricsImpl implements ClusterMetrics {
      */
     private final IntMetric daemonThreadCnt;
 
+    /** Cache operations blocked duration. */
+    private final LongMetric cacheOperationsBlockedDuration;
+
     /**
      * @param ctx Kernel context.
      * @param nodeStartTime Node start time.
@@ -193,6 +195,8 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         nonHeapUsed = (LongMetric)mreg.findMetric(metricName("memory", "nonheap", "used"));
         nonHeapCommitted = (LongMetric)mreg.findMetric(metricName("memory", "nonheap", "committed"));
         nonHeapMax = (LongMetric)mreg.findMetric(metricName("memory", "nonheap", "max"));
+
+        cacheOperationsBlockedDuration = (LongMetric)mreg.findMetric(CACHE_OPERATIONS_BLOCKED_DURATION);
     }
 
     /** {@inheritDoc} */
@@ -490,18 +494,8 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCurrentPmeDuration() {
-        GridDhtPartitionsExchangeFuture future = ctx.cache().context().exchange().lastTopologyFuture();
-
-        return (future == null || future.isDone()) ?
-            0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - future.getStartTime());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isOperationsBlockedByPme() {
-        GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
-
-        return fut != null && !fut.isDone() && fut.firstEvent() != null && fut.changedAffinity();
+    @Override public long getCacheOperationsBlockedDuration() {
+        return cacheOperationsBlockedDuration.value();
     }
 
     /**
