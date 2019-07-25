@@ -21,16 +21,36 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 
+/**
+ * Preprocessing function that applies discrete cosine transformation.
+ *
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ */
 public class DiscreteCosinePreprocessor<K, V> implements Preprocessor<K, V> {
+    /** */
+    private static final long serialVersionUID = 6877811577892627461L;
 
+    /** Base preprocessor */
     private final Preprocessor<K, V> basePreprocessor;
 
+    /**
+     * Constructs a new instance of Discrete Cosine preprocessor.
+     *
+     * @param basePreprocessor Base preprocessor.
+     */
     public DiscreteCosinePreprocessor(Preprocessor<K, V> basePreprocessor) {
         this.basePreprocessor = basePreprocessor;
     }
 
-    @Override
-    public LabeledVector apply(K k, V v) {
+    /**
+     * Applies this preprocessor.
+     *
+     * @param k Key.
+     * @param v Value.
+     * @return Preprocessed row.
+     */
+    @Override public LabeledVector apply(K k, V v) {
         LabeledVector tmp = basePreprocessor.apply(k, v);
         double[] res = new double[tmp.size()];
 

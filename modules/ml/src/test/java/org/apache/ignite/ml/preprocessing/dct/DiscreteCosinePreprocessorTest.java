@@ -30,8 +30,7 @@ public class DiscreteCosinePreprocessorTest {
     /**
      * Tests {@code apply()} method.
      */
-    @Test
-    public void testApply() {
+    @Test public void testApply() {
         double[][] data = new double[][]{
                 {1, 2, 1},
                 {1, 1, 1},

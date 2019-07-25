@@ -24,10 +24,16 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 
+/**
+ * Trainer of the Discrete Cosine preprocessor.
+ *
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ */
 public class DiscreteCosineTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
-    @Override
-    public DiscreteCosinePreprocessor<K, V> fit(LearningEnvironmentBuilder envBuilder, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> basePreprocessor) {
+    /** {@inheritDoc} */
+    @Override public DiscreteCosinePreprocessor<K, V> fit(LearningEnvironmentBuilder envBuilder, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> basePreprocessor) {
         return new DiscreteCosinePreprocessor<>(basePreprocessor);
     }
 }
