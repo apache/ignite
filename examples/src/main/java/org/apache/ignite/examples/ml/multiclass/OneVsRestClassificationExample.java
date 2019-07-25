@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.multiclass;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import javax.cache.Cache;
 import org.apache.commons.math3.util.Precision;
@@ -57,7 +57,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class OneVsRestClassificationExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> One-vs-Rest SVM Multi-class classification model over cached dataset usage example started.");
         // Start ignite grid.
@@ -159,8 +159,11 @@ public class OneVsRestClassificationExample {
                     System.out.println(">>> One-vs-Rest SVM model over cache based dataset usage example completed.");
                 }
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

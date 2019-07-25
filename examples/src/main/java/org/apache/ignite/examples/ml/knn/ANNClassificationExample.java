@@ -124,6 +124,8 @@ public class ANNClassificationExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 
