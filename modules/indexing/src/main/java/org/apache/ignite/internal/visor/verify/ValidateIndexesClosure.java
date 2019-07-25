@@ -504,7 +504,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     }
                 }
 
-                int cacheId = row.cacheId() == 0 ? grpCtx.groupId() : row.cacheId();
+                int cacheId = row.storeCacheId() ? row.cacheId() : grpCtx.groupId();
 
                 GridCacheContext cacheCtx = row.cacheId() == 0 ?
                     grpCtx.singleCacheContext() : grpCtx.shared().cacheContext(row.cacheId());

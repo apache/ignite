@@ -142,6 +142,7 @@ public class CacheDataRowStore extends RowStore {
      * @param cacheId Cache ID.
      */
     private <T extends DataRow> T initDataRow(T dataRow, int cacheId) {
+        //todo
         if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
             dataRow.cacheId(cacheId);
 

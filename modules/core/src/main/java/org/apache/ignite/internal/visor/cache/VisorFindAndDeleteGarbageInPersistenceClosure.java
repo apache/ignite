@@ -271,7 +271,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             while (it.hasNextX()) {
                 CacheDataRow row = it.nextX();
 
-                if (row.cacheId() == 0)
+                if (!row.storeCacheId())
                     break;
 
                 int cacheId = row.cacheId();

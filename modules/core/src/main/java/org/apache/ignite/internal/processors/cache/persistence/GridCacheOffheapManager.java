@@ -1440,6 +1440,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public boolean storeCacheId() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheObject value() {
             return entry.value();
         }

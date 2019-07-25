@@ -566,6 +566,11 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean storeCacheId() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheObject value() {
             return val;
         }
@@ -591,7 +596,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
             len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
 
-            return len + (cacheId() != 0 ? 4 : 0);
+            return len + (storeCacheId() ? 4 : 0);
         }
 
         /** {@inheritDoc} */

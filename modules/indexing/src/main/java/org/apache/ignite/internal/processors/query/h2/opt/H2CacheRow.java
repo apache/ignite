@@ -191,6 +191,11 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean storeCacheId() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject value() {
         return row.value();
     }

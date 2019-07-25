@@ -190,7 +190,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
                     int valHash = Arrays.hashCode(row.value().valueBytes(grpCtx.cacheObjectContext()));
                     partHash += valHash;
 
-                    int cacheId = row.cacheId() == 0 ? grpCtx.groupId() : row.cacheId();
+                    int cacheId = row.storeCacheId() ? row.cacheId() : grpCtx.groupId();
                     DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheId);
 
                     assert desc != null;

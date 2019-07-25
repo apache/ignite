@@ -62,7 +62,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         boolean newRow) throws IgniteCheckedException {
         long addr = pageAddr + dataOff;
 
-        int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
+        int cacheIdSize = row.storeCacheId() ? 4 : 0;
         int mvccInfoSize = row.mvccCoordinatorVersion() > 0 ? MVCC_INFO_SIZE : 0;
 
         if (newRow) {
@@ -163,7 +163,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         final int prevLen;
         final int curLen;
 
-        int cacheIdSize = row.cacheId() == 0 ? 0 : 4;
+        int cacheIdSize = row.storeCacheId() ? 4 : 0;
         int mvccInfoSize = row.mvccCoordinatorVersion() > 0 ? MVCC_INFO_SIZE : 0;
 
         switch (type) {

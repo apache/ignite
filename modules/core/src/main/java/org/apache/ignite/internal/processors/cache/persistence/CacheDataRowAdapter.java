@@ -84,6 +84,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected int cacheId;
 
+    /** Store cacheId on data page flag. */
+    @GridToStringInclude
+    protected boolean storeCacheId;
+
     /**
      * @param link Link.
      */
@@ -816,13 +820,27 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean storeCacheId() {
+        return storeCacheId;
+    }
+
+    /**
+     * todo
+     * @param storeCacheId
+     * @return
+     */
+    public void storeCacheId(boolean storeCacheId) {
+        this.storeCacheId = storeCacheId;
+    }
+
+    /** {@inheritDoc} */
     @Override public int cacheId() {
         return cacheId;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        assert val != null : "Value is not ready: " + this;
+        //assert val != null : "Value is not ready: " + this;
 
         return val;
     }
@@ -865,7 +883,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
 
-        return len + (cacheId() != 0 ? 4 : 0);
+        return len + (storeCacheId ? 4 : 0);
     }
 
     /** {@inheritDoc} */

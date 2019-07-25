@@ -63,4 +63,9 @@ public interface CacheDataRow extends MvccUpdateVersionAware, CacheSearchRow, St
     @Override public default IOVersions<? extends AbstractDataPageIO> ioVersions() {
         return DataPageIO.VERSIONS;
     }
+
+    /**
+     * @return {@code True} if cacheId should be stored in data page.
+     */
+    public boolean storeCacheId();
 }

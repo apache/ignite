@@ -118,7 +118,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
 
-                assert data.payloadSize() == rowSize;
+                assert data.payloadSize() == rowSize : "payload=" + data.payloadSize() + ", size=" + rowSize;
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
