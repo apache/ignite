@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import com.google.common.collect.Lists;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
