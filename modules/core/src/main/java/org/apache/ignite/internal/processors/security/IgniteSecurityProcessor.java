@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.security;
 
 import java.security.AccessControlContext;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
@@ -186,8 +187,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             Collections.emptySet(), Collections.emptySet()
         );
 
-        final AccessControlContext acc = AccessController.doPrivileged
-            (new java.security.PrivilegedAction<AccessControlContext>() {
+        final AccessControlContext acc = AccessController.doPrivileged(
+            new PrivilegedAction<AccessControlContext>() {
                 @Override public AccessControlContext run() {
                     return new AccessControlContext
                         (new AccessControlContext(NULL_PD_ARRAY),

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +53,17 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"CustomClassloader"})
 class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInfo {
+    /** . */
+    private static final ProtectionDomain PROTECTION_DOMAIN;
+
+    static {
+        Permissions perms = new Permissions();
+
+        perms.setReadOnly();
+
+        PROTECTION_DOMAIN = new ProtectionDomain(null, perms);
+    }
+
     /** Class loader ID. */
     private final IgniteUuid id;
 
@@ -514,7 +527,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 if (byteMap != null)
                     byteMap.put(path, byteSrc.array());
 
-                cls = defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
+                cls = defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), PROTECTION_DOMAIN);
 
                 /* Define package in classloader. See URLClassLoader.defineClass(). */
                 int i = name.lastIndexOf('.');

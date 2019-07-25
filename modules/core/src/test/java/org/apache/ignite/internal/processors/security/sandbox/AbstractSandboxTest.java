@@ -64,7 +64,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     protected static final String CLNT_FORBIDDEN = "clnt_forbidden";
 
     /** . */
-    protected static final IgniteRunnable START_THREAD_RUNNABLE = () -> {
+    public static final IgniteRunnable START_THREAD_RUNNABLE = () -> {
         LOCK.lock();
 
         try {
