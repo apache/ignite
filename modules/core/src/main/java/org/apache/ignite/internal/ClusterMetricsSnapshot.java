@@ -1207,7 +1207,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
+     * Sets cache operations blocked duration.
      *
+     * @param cacheOperationsBlockedDuration Cache operations blocked duration.
      */
     public void setCacheOperationsBlockedDuration(long cacheOperationsBlockedDuration) {
         this.cacheOperationsBlockedDuration = cacheOperationsBlockedDuration;

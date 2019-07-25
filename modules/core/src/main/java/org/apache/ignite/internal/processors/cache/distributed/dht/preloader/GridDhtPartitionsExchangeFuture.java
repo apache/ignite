@@ -2381,6 +2381,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * Updates the {@link GridMetricManager#CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM} metric if needed.
+     *
+     * @param duration The total duration of the current PME.
      */
     private void updateDurationHistogram(long duration) {
         if (isClientEventExchangeWithoutAffinityChange())
