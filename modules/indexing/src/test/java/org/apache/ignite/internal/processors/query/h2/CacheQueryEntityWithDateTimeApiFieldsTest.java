@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static java.time.temporal.ChronoUnit.MILLIS;
+
 /**
  * Tests queries against entities with Java 8 Date and Time API fields.
  */
@@ -265,7 +267,7 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
     public void testUpdateAllFieldsMillisTimePrecision() {
         EntityWithDateTimeFields expEntity = new EntityWithDateTimeFields(entity);
 
-        expEntity.setLocalTime(expEntity.getLocalTime().plusHours(1).withNano(123_000_000));
+        expEntity.setLocalTime(expEntity.getLocalTime().plusHours(1).withNano(0).plus(123, MILLIS));
         expEntity.setLocalDate(expEntity.getLocalDate().plusDays(1));
         expEntity.setLocalDateTime(LocalDateTime.of(expEntity.getLocalDate(), expEntity.getLocalTime()));
 
