@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -343,26 +342,24 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void handleSupplyMessage(UUID id, final GridDhtPartitionSupplyMessage s) {
-        if (demander.prepareSupplyMessage(s)) {
-            ctx.kernalContext().closure().runLocalSafe(() -> {
-                if (!enterBusy())
-                    return;
+        demander.acceptSupplyMessage(id, s, () -> {
+            if (!enterBusy())
+                return;
+
+            try {
+                demandLock.readLock().lock();
 
                 try {
-                    demandLock.readLock().lock();
-
-                    try {
-                        demander.handleSupplyMessage(id, s);
-                    }
-                    finally {
-                        demandLock.readLock().unlock();
-                    }
+                    demander.handleSupplyMessage(id, s);
                 }
                 finally {
-                    leaveBusy();
+                    demandLock.readLock().unlock();
                 }
-            }, GridIoPolicy.REBALANCE_POOL);
-        }
+            }
+            finally {
+                leaveBusy();
+            }
+        });
     }
 
     /** {@inheritDoc} */

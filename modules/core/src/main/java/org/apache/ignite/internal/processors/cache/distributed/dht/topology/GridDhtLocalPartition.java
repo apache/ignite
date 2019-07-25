@@ -447,21 +447,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Locks partition.
-     */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
-    public void lock() {
-        lock.lock();
-    }
-
-    /**
-     * Unlocks partition.
-     */
-    public void unlock() {
-        lock.unlock();
-    }
-
-    /**
      * Reserves a partition so it won't be cleared or evicted.
      *
      * @return {@code True} if reserved.

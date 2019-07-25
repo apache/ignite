@@ -453,16 +453,11 @@ public class GridDhtPartitionDemander {
             }
 
             if (!parts.isEmpty()) {
-                // Create copy of demand message with new striped partitions map.
-                final GridDhtPartitionDemandMessage demandMsg = d.withNewPartitionsMap(parts);
+                d.topic(rebalanceTopic);
+                d.rebalanceId(fut.rebalanceId);
+                d.timeout(grp.preloader().timeout());
 
-                final int topicId = 0;
-
-                demandMsg.topic(rebalanceTopic);
-                demandMsg.rebalanceId(fut.rebalanceId);
-                demandMsg.timeout(grp.preloader().timeout());
-
-                IgniteInternalFuture<?> clearAllFuture = clearFullPartitions(fut, demandMsg.partitions().fullSet());
+                IgniteInternalFuture<?> clearAllFuture = clearFullPartitions(fut, d.partitions().fullSet());
 
                 // Start rebalancing after clearing full partitions is finished.
                 clearAllFuture.listen(f -> ctx.kernalContext().closure().runLocalSafe(() -> {
@@ -473,12 +468,12 @@ public class GridDhtPartitionDemander {
                         if (log.isInfoEnabled())
                             log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
                                 ", topVer=" + fut.topologyVersion() +
-                                ", supplier=" + node.id() + ", topic=" + topicId +
+                                ", supplier=" + node.id() +
                                 ", fullPartitions=" + S.compact(parts.fullSet()) +
                                 ", histPartitions=" + S.compact(parts.historicalSet()) + "]");
 
                         ctx.io().sendOrderedMessage(node, rebalanceTopic,
-                            demandMsg.convertIfNeeded(node.version()), grp.ioPolicy(), demandMsg.timeout());
+                            d.convertIfNeeded(node.version()), grp.ioPolicy(), d.timeout());
 
                         // Cleanup required in case partitions demanded in parallel with cancellation.
                         synchronized (fut) {
@@ -603,26 +598,29 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Guarantees that "last" updates will not cause partition owning before orher batches
-     * for same partition are applied.
-     *
-     * @param supplyMsg Supply message.
+     * Accepts supply message.
      */
-    public boolean prepareSupplyMessage(final GridDhtPartitionSupplyMessage supplyMsg) {
+    public void acceptSupplyMessage(final UUID id, final GridDhtPartitionSupplyMessage supplyMsg, final Runnable r) {
         final RebalanceFuture fut = rebalanceFut;
 
         if (!topologyChanged(fut) && fut.isActual(supplyMsg.rebalanceId())) {
+            boolean historical = false;
+
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
                 int p = e.getKey();
 
                 fut.queued.computeIfAbsent(p, (ignored) -> new LongAdder()).increment();
                 fut.processed.putIfAbsent(p, new LongAdder());
+
+                if (fut.historical.contains(p))
+                    historical = true;
             }
 
-            return true;
+            if (historical)
+                r.run(); // Sync execution to prevent reordering.
+            else
+                ctx.kernalContext().closure().runLocalSafe(r, GridIoPolicy.REBALANCE_POOL);
         }
-
-        return false;
     }
 
     /**
@@ -753,8 +751,6 @@ public class GridDhtPartitionDemander {
                             assert reserved : "Failed to reserve partition [igniteInstanceName=" +
                                 ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
 
-                            part.lock();
-
                             part.beforeApplyBatch(last);
 
                             try {
@@ -772,7 +768,6 @@ public class GridDhtPartitionDemander {
                                     ownPartition(fut, p, nodeId, supplyMsg);
                             }
                             finally {
-                                part.unlock();
                                 part.release();
                             }
                         }
@@ -1229,6 +1224,9 @@ public class GridDhtPartitionDemander {
         /** Entries batches processed. */
         private final Map<Integer, LongAdder> processed = new ConcurrentHashMap<>();
 
+        /** Historical rebalance set. */
+        private final Set<Integer> historical = new HashSet<>();
+
         /**
          * @param grp Cache group.
          * @param assignments Assignments.
@@ -1251,6 +1249,8 @@ public class GridDhtPartitionDemander {
                     "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
 
                 remaining.put(k.id(), v.partitions());
+
+                historical.addAll(v.partitions().historicalSet());
             });
 
             this.routines = remaining.size();
