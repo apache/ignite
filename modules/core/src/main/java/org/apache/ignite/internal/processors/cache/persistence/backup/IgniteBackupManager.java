@@ -518,7 +518,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     new LongAdderMetric("NO_OP", null),
                     PageStoreListener.NO_OP);
 
-                delta.applyTo(store);
+                delta.apply(store);
 
                 store.stop(false);
 
