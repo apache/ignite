@@ -107,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -156,6 +157,8 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_OPERATIONS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 
 /**
  * Partition exchange manager.
@@ -476,6 +479,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 });
             }
         }
+
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(SYS_METRICS);
+
+        mreg.register(CACHE_OPERATIONS_BLOCKED_DURATION,
+            this::cacheOperationsBlockedDuration,
+            "Cache operations blocked duration in milliseconds.");
     }
 
     /**
@@ -2709,7 +2718,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Gets cache operations blocked duration in milliseconds. {@code 0} If current partition map exchange don't
      * block operations or there is no running PME.
      */
-    public long cacheOperationsBlockedDuration() {
+    private long cacheOperationsBlockedDuration() {
         GridDhtPartitionsExchangeFuture fut = lastTopologyFuture();
 
         return fut == null ? 0 : fut.cacheOperationsBlockedDuration();

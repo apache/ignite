@@ -206,10 +206,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
 
-        sysreg.register(CACHE_OPERATIONS_BLOCKED_DURATION,
-            ctx.cache().context().exchange()::cacheOperationsBlockedDuration,
-            "Cache operations blocked duration in milliseconds.");
-
         HistogramMetric cacheOperationsBlockedDurationHistogram =
             new HistogramMetric(CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM,
                 "Histogram of cache operations blocked duration in milliseconds.", getDurationHistogramBounds());
