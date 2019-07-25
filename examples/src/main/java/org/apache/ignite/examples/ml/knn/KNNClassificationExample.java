@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -41,14 +41,14 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> algorithm.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster does
+ * this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class KNNClassificationExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> kNN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -76,8 +76,11 @@ public class KNNClassificationExample {
 
                 System.out.println("\n>>> Accuracy " + accuracy);
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

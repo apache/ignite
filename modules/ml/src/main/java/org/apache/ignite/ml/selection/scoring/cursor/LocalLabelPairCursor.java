@@ -97,7 +97,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
         @Override public boolean hasNext() {
             if (filter == null) {
                 Map.Entry<K, V> entry = iter.next();
-                this.nextEntry = entry;
+                nextEntry = entry;
                 return iter.hasNext();
             }
 
@@ -130,7 +130,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
                 Map.Entry<K, V> entry = iter.next();
 
                 if (filter.apply(entry.getKey(), entry.getValue())) {
-                    this.nextEntry = entry;
+                    nextEntry = entry;
                     break;
                 }
             }

@@ -102,6 +102,7 @@ public class Step_8_CV {
                         imputingPreprocessor
                     );
 
+
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.
                 int[] pSet = new int[]{1, 2};
                 int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
@@ -126,15 +127,16 @@ public class Step_8_CV {
                         CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
                             = new CrossValidation<>();
 
-                        double[] scores = scoreCalculator.score(
-                            trainer,
-                            new Accuracy<>(),
-                            ignite,
-                            dataCache,
-                            split.getTrainFilter(),
-                            normalizationPreprocessor,
-                            3
-                        );
+                        double[] scores = scoreCalculator
+                            .withIgnite(ignite)
+                            .withUpstreamCache(dataCache)
+                            .withTrainer(trainer)
+                            .withMetric(new Accuracy<>())
+                            .withFilter(split.getTrainFilter())
+                            .withPreprocessor(normalizationPreprocessor)
+                            .withAmountOfFolds(3)
+                            .isRunningOnPipeline(false)
+                            .scoreByFolds();
 
                         System.out.println("Scores are: " + Arrays.toString(scores));
 
@@ -160,6 +162,7 @@ public class Step_8_CV {
                         minMaxScalerPreprocessor
                     );
 
+
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
 
                 // Train decision tree model.
@@ -184,10 +187,11 @@ public class Step_8_CV {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 8 (cross-validation) example completed.");
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -52,7 +52,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model with Min Max Scaling preprocessor over cached dataset usage example started.");
         // Start ignite grid.
@@ -97,8 +97,11 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> Linear regression model with MinMaxScaler preprocessor over cache based dataset usage example completed.");
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }
