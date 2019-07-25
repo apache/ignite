@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -700,11 +699,11 @@ public interface IgniteCacheOffheapManager {
          * Create data rows.
          *
          * @param infos Entry infos.
-         * @param rmvPred Applied to all created rows. Each row that matches the predicate is removed.
+         * @param topVer Topology version.
          * @throws IgniteCheckedException If failed.
          */
         public void createRows(Collection<GridCacheEntryInfo> infos,
-            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException;
+            AffinityTopologyVersion topVer) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

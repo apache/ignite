@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowStoreAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -108,7 +109,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -139,6 +139,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.EMPTY_CURSOR;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 
@@ -1729,35 +1731,101 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return dataRow;
         }
 
+        /** */
+        private boolean preloadEntry(
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            AffinityTopologyVersion topVer,
+            int cacheId,
+            @Nullable CacheDataRow row
+        ) throws IgniteCheckedException {
+            assert !grp.mvccEnabled();
+            assert ctx.database().checkpointLockIsHeldByThread();
+
+            GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(cacheId) : grp.singleCacheContext();
+
+            if (cctx == null)
+                return false;
+
+            cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
+
+            GridCacheEntryEx cached = cctx.cache().entryEx(key, topVer);
+
+            try {
+                if (log.isTraceEnabled()) {
+                    log.trace("Preloading key [key=" + key + ", part=" + cached.partition() +
+                        ", grpId=" + grp.groupId() + ']');
+                }
+
+                try {
+                    if (cached.initialValue(
+                        val,
+                        ver,
+                        null,
+                        null,
+                        TxState.NA,
+                        TxState.NA,
+                        0,
+                        expireTime,
+                        true,
+                        topVer,
+                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                        false,
+                        row
+                    )) {
+                        cached.touch(); // Start tracking.
+
+                        return true;
+                    }
+                    else {
+                        cached.touch(); // Start tracking.
+
+                        if (log.isTraceEnabled())
+                            log.trace("Preloading entry is already in cache (will ignore) [key=" + cached.key() +
+                                ", part=" + cached.partition() + ']');
+                    }
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isTraceEnabled())
+                        log.trace("Entry has been concurrently removed while preloading (will ignore) [key=" +
+                            cached.key() + ", part=" + cached.partition() + ']');
+                }
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteCheckedException("Preloading failed [key=" + key +"]", e);
+            }
+
+            return false;
+        }
+
         /** {@inheritDoc} */
-        @Override public void createRows(Collection<GridCacheEntryInfo> infos,
-            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
-            Collection<DataRow> rows = new ArrayList<>(infos.size());
+        @Override public void createRows(Collection<GridCacheEntryInfo> infos, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+            Collection<DataRowStoreAware> rows = new ArrayList<>(infos.size());
 
             for (GridCacheEntryInfo info : infos) {
-                rows.add(info.value() == null ? null :
-                    makeDataRow(info.key(),
+                if (info.value() == null)
+                    preloadEntry(info.key(), info.value(), info.version(), info.expireTime(), topVer, info.cacheId(), null);
+                else
+                    rows.add(new DataRowStoreAware(makeDataRow(info.key(),
                         info.value(),
                         info.version(),
                         info.expireTime(),
-                        grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
+                        info.cacheId()), grp.storeCacheIdInDataPage()));
             }
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                rowStore.addRows(F.view(rows, Objects::nonNull), grp.statisticsHolderData());
+                rowStore.addRows(rows, grp.statisticsHolderData());
 
-                Iterator<DataRow> iter = rows.iterator();
-
-                for (GridCacheEntryInfo info : infos) {
-                    DataRow row = iter.next();
-
-                    if (row != null && grp.sharedGroup() && row.cacheId() == CU.UNDEFINED_CACHE_ID)
-                        row.cacheId(info.cacheId());
-
-                    if (rmvPred.apply(info, row) && row != null)
+                for (DataRowStoreAware row : rows) {
+                    if (!preloadEntry(row.key(), row.value(), row.version(), row.expireTime(), topVer, row.delegate().cacheId(), row))
                         rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
             }
