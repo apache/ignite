@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,9 +28,9 @@ import org.jetbrains.annotations.Nullable;
  * content without holding segment lock. Page data is copied into temp buffer during {@link #writePage(FullPageId,
  * ByteBuffer, int)} and then sent to real implementation by {@link #finishReplacement()}.
  */
-public class DelayedDirtyPageWrite implements ReplacedPageWriter {
+public class DelayedDirtyPageStoreWrite implements PageStoreWriter {
     /** Real flush dirty page implementation. */
-    private final ReplacedPageWriter flushDirtyPage;
+    private final PageStoreWriter flushDirtyPage;
 
     /** Page size. */
     private final int pageSize;
@@ -55,9 +56,12 @@ public class DelayedDirtyPageWrite implements ReplacedPageWriter {
      * @param pageSize page size.
      * @param tracker tracker to lock/unlock page reads.
      */
-    public DelayedDirtyPageWrite(ReplacedPageWriter flushDirtyPage,
-        ThreadLocal<ByteBuffer> byteBufThreadLoc, int pageSize,
-        DelayedPageReplacementTracker tracker) {
+    public DelayedDirtyPageStoreWrite(
+        PageStoreWriter flushDirtyPage,
+        ThreadLocal<ByteBuffer> byteBufThreadLoc,
+        int pageSize,
+        DelayedPageReplacementTracker tracker
+    ) {
         this.flushDirtyPage = flushDirtyPage;
         this.pageSize = pageSize;
         this.byteBufThreadLoc = byteBufThreadLoc;

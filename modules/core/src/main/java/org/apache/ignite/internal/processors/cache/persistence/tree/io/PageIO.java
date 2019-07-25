@@ -877,24 +877,29 @@ public abstract class PageIO {
     /**
      * @param addr Address.
      */
-    public static String printPage(long addr, int pageSize) throws IgniteCheckedException {
-        PageIO io = getPageIO(addr);
-
+    public static String printPage(long addr, int pageSize) {
         GridStringBuilder sb = new GridStringBuilder("Header [\n\ttype=");
 
-        sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
-            .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
-            .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
-            .a("\n],\n");
+        try {
+            PageIO io = getPageIO(addr);
 
-        if (getCompressionType(addr) != 0) {
-            sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
-                .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
-                .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
-                .a("\n]");
+            sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
+                .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
+                .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
+                .a("\n],\n");
+
+            if (getCompressionType(addr) != 0) {
+                sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
+                    .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
+                    .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
+                    .a("\n]");
+            }
+            else
+                io.printPage(addr, pageSize, sb);
         }
-        else
-            io.printPage(addr, pageSize, sb);
+        catch (IgniteCheckedException e) {
+            sb.a("Failed to print page: ").a(e.getMessage());
+        }
 
         return sb.toString();
     }
