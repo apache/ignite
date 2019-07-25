@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IndexPageType;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -45,8 +47,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwa
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
-import org.apache.ignite.internal.metric.IndexPageType;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
@@ -877,24 +877,29 @@ public abstract class PageIO {
     /**
      * @param addr Address.
      */
-    public static String printPage(long addr, int pageSize) throws IgniteCheckedException {
-        PageIO io = getPageIO(addr);
-
+    public static String printPage(long addr, int pageSize) {
         GridStringBuilder sb = new GridStringBuilder("Header [\n\ttype=");
 
-        sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
-            .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
-            .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
-            .a("\n],\n");
+        try {
+            PageIO io = getPageIO(addr);
 
-        if (getCompressionType(addr) != 0) {
-            sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
-                .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
-                .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
-                .a("\n]");
+            sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
+                .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
+                .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
+                .a("\n],\n");
+
+            if (getCompressionType(addr) != 0) {
+                sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
+                    .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
+                    .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
+                    .a("\n]");
+            }
+            else
+                io.printPage(addr, pageSize, sb);
         }
-        else
-            io.printPage(addr, pageSize, sb);
+        catch (IgniteCheckedException e) {
+            sb.a("Failed to print page: ").a(e.getMessage());
+        }
 
         return sb.toString();
     }
