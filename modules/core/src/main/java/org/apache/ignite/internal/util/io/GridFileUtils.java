@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.util.io;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
@@ -57,40 +53,6 @@ public class GridFileUtils {
 
         dst.force();
     }
-
-    /**
-     * @param from File to copy from.
-     * @param offset Starting file position.
-     * @param count Bytes to copy to destination.
-     * @param to Output directory.
-     * @throws IgniteCheckedException If fails.
-     */
-    public static File copy(File from, long offset, long count, File to) throws IgniteCheckedException {
-        assert to.isDirectory();
-
-        try {
-            File destFile = new File(to, from.getName());
-
-            if (!destFile.exists() || destFile.delete())
-                destFile.createNewFile();
-
-            try (FileChannel src = new FileInputStream(from).getChannel();
-                 FileChannel dest = new FileOutputStream(destFile).getChannel()) {
-                src.position(offset);
-
-                long written = 0;
-
-                while (written < count)
-                    written += src.transferTo(written, count - written, dest);
-            }
-
-            return destFile;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
 
     /**
      * Copy file

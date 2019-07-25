@@ -162,6 +162,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private FileIOFactory pageStoreFileIoFactory;
 
+    /** File page store factory. */
+    private FileVersionCheckingFactory pageStoreFactory;
+
     /**
      * File IO factory for page store V1 and for fast checking page store (non block read).
      * By default is taken from {@link #dsCfg}.
@@ -695,7 +698,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     cctx.gridConfig().getEncryptionSpi());
             }
 
-            FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
+            pageStoreFactory = new FileVersionCheckingFactory(
                 pageStoreFileIoFactory,
                 pageStoreV1FileIoFactory,
                 igniteCfg.getDataStorageConfiguration()
@@ -1264,6 +1267,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FileIOFactory getPageStoreFileIoFactory() {
         return pageStoreFileIoFactory;
+    }
+
+    /**
+     * @return File page store factory currently used.
+     */
+    public FilePageStoreFactory getFilePageStoreFactory() {
+        return pageStoreFactory;
     }
 
     /**

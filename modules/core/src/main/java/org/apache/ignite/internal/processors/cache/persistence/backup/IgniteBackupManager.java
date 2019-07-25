@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -29,10 +33,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -42,35 +50,37 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.util.io.GridFileUtils.copy;
 
 /** */
 public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
@@ -243,7 +253,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                                     (long)allocRange.getCurrAllocatedPageCnt() * pageSize + store.headerSize());
                         }
 
-                        submitPartitionsTask(bctx0, pageMgr.workDir());
+                        submitTasks(bctx0, pageMgr);
 
                         bctx0.started = true;
                     }
@@ -293,15 +303,22 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             backupDir,
             parts,
             backupRunner,
-            (storeWorkDir, ccfg, partId, partSize, delta) ->
-                new PartitionCopyWorker(cctx.igniteInstanceName(),
-                    log,
-                    backupDir,
-                    storeWorkDir,
-                    ccfg,
-                    partId,
-                    partSize,
+            (from, to, partSize) ->
+                new PartitionCopySupplier(log, from, to, partSize),
+            (from, delta) ->
+                new PartitionDeltaSupplier(log,
+                    ((FilePageStoreManager)cctx.pageStore())
+                        .getFilePageStoreFactory(),
+                    from,
                     delta));
+
+        // Stop all corresponding storages.
+        bctx0.cpEndFut.thenRun(() -> {
+            for (DeltaPagesStorage s : bctx0.partDeltaStores.values())
+                s.writable(false);
+
+            U.log(log, "All partition delta storages are closed to write after checkpoint finished");
+        });
 
         try {
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
@@ -320,8 +337,13 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
                     bctx0.partAllocLengths.put(pair, 0L);
                     bctx0.partDeltaStores.put(pair,
-                        new DeltaPagesStorage(() -> getPartionDeltaFile(grpDir, partId).toPath(),
-                            ioFactory)
+                        new DeltaPagesStorage(log,
+                            () -> getPartionDeltaFile(grpDir, partId)
+                                .toPath(),
+                            ioFactory,
+                            cctx.gridConfig()
+                                .getDataStorageConfiguration()
+                                .getPageSize())
                             .init());
                 }
             }
@@ -342,11 +364,20 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         BackupContext tctx = backupCtxs.putIfAbsent(name, bctx0);
 
-        dbMgr.forceCheckpoint(String.format(BACKUP_CP_REASON, name))
-            .beginFuture()
-            .get();
-
         assert tctx == null : tctx;
+
+        CheckpointFuture cpFut = dbMgr.forceCheckpoint(String.format(BACKUP_CP_REASON, name));
+
+        cpFut.finishFuture()
+            .listen(f -> {
+                if (f.error() == null)
+                    bctx0.cpEndFut.complete(true);
+                else
+                    bctx0.cpEndFut.completeExceptionally(f.error());
+            });
+
+        cpFut.beginFuture()
+            .get();
 
         return bctx0.result;
     }
@@ -365,31 +396,48 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      * @param bctx Context to handle.
      */
-    private void submitPartitionsTask(BackupContext bctx, File storeWorkDir) {
-        GridWorkerFuture<Boolean> wrapFut;
-        GridWorker w0;
+    private void submitTasks(BackupContext bctx, FilePageStoreManager pageMgr) throws IgniteCheckedException {
+        List<CompletableFuture<File>> futs = new ArrayList<>(bctx.partAllocLengths.size());
 
         for (Map.Entry<GroupPartitionId, Long> e : bctx.partAllocLengths.entrySet()) {
             GroupPartitionId pair = e.getKey();
 
-            bctx.execSvc.submit(
-                U.wrapIgniteFuture(
-                        w0 = bctx.factory
-                        .createTask(storeWorkDir,
-                            cctx.cache()
-                                .cacheGroup(pair.getGroupId())
-                                .config(),
-                            pair.getPartitionId(),
-                            bctx.partAllocLengths.get(pair),
-                            bctx.partDeltaStores.get(pair)),
-                    wrapFut = new GridWorkerFuture<>()));
+            CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
 
-            // To be able to cancel all tasks.
-            wrapFut.setWorker(w0);
-            bctx.result.add(wrapFut);
+            CompletableFuture<File> fut0 = CompletableFuture.supplyAsync(
+                bctx.partSuppFactory
+                    .apply(
+                        getPartitionFile(
+                            cacheWorkDir(pageMgr.workDir(), ccfg),
+                            pair.getPartitionId()),
+                        new File(
+                            bctx.backupDir,
+                            cacheDirName(ccfg)),
+                        bctx.partAllocLengths.get(pair)),
+                bctx.execSvc)
+                .thenCombineAsync(bctx.cpEndFut,
+                    new BiFunction<File, Boolean, File>() {
+                        @Override public File apply(File from, Boolean cp) {
+                            assert cp;
+
+                            return bctx.deltaTaskFactory.apply(from, bctx.partDeltaStores.get(pair))
+                                .get();
+                        }
+                    },
+                    bctx.execSvc);
+
+            futs.add(fut0);
         }
 
-        bctx.result.markInitialized();
+        CompletableFuture.allOf(futs.toArray(new CompletableFuture[bctx.partAllocLengths.size()]))
+             .whenComplete(new BiConsumer<Void, Throwable>() {
+                 @Override public void accept(Void res, Throwable t) {
+                     if (t == null)
+                         bctx.result.onDone();
+                     else
+                         bctx.result.onDone(t);
+                 }
+             });
     }
 
     /**
@@ -434,94 +482,119 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    @FunctionalInterface
-    private static interface PartitionTaskFactory {
+    private static class PartitionDeltaSupplier implements Supplier<File> {
+        /** Ignite logger to use. */
+        private final IgniteLogger log;
+
+        /** File page store factory */
+        private final FilePageStoreFactory factory;
+
+        /** Copied partition file to apply delta pages to. */
+        private final File from;
+
+        /** Delta pages storage for the given partition. */
+        private final DeltaPagesStorage delta;
+
         /**
-         * @param storeWorkDir File page storage working directory.
-         * @param ccfg Cache group configuration.
-         * @param partId Partition id to process.
-         * @param partSize Partition lenght on checkpoint time.
          * @param delta Storage with delta pages.
-         * @return Executable partition prccessing task.
          */
-        public GridWorker createTask(
-            File storeWorkDir,
-            CacheConfiguration ccfg,
-            int partId,
-            long partSize,
+        public PartitionDeltaSupplier(
+            IgniteLogger log,
+            FilePageStoreFactory factory,
+            File from,
             DeltaPagesStorage delta
-        );
+        ) {
+            this.log = log.getLogger(PartitionDeltaSupplier.class);
+            this.factory = factory;
+            this.from = from;
+            this.delta = delta;
+        }
+
+        /** {@inheritDoc} */
+        @Override public File get() {
+            try {
+                PageStore store = factory.createPageStore(FLAG_DATA,
+                    from::toPath,
+                    new LongAdderMetric("NO_OP", null),
+                    PageStoreListener.NO_OP);
+
+                delta.applyTo(store);
+
+                store.stop(false);
+
+                U.log(log, "Partition applied");
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
+            return from;
+        }
     }
 
     /**
      *
      */
-    private static class PartitionCopyWorker extends GridWorker {
-        /** */
-        private final File backupDir;
+    private static class PartitionCopySupplier implements Supplier<File> {
+        /** Ignite logger to use. */
+        private final IgniteLogger log;
 
-        /** */
-        private final File storeWorkDir;
+        /** Partition file. */
+        private final File from;
 
-        /** */
-        private final CacheConfiguration ccfg;
+        /** Destination copy file to copy partition to. */
+        private final File to;
 
-        /** */
-        private final int partId;
-
-        /** */
+        /** Size of partition. */
         private final long partSize;
 
-        /** */
-        private final DeltaPagesStorage delta;
-
         /**
-         * @param backupDir Backup directory.
-         * @param storeWorkDir File page storage working directory.
-         * @param ccfg Cache group configuration.
-         * @param partId Partition id to process.
-         * @param partSize Partition lenght on checkpoint time.
-         * @param delta Storage with delta pages.
+         * @param log Ignite logger to use.
+         * @param from Partition file.
+         * @param dir Destination copy file.
+         * @param partSize Size of partition.
          */
-        public PartitionCopyWorker(
-            String igniteInstanceName,
+        public PartitionCopySupplier(
             IgniteLogger log,
-            File backupDir,
-            File storeWorkDir,
-            CacheConfiguration ccfg,
-            int partId,
-            long partSize,
-            DeltaPagesStorage delta
+            File from,
+            File dir,
+            long partSize
         ) {
-            super(igniteInstanceName, "part-backup-worker-", log.getLogger(PartitionCopyWorker.class));
+            A.ensure(dir.isDirectory(), "Destination path must be a directory");
 
-            this.backupDir = backupDir;
-            this.storeWorkDir = storeWorkDir;
-            this.ccfg = ccfg;
-            this.partId = partId;
+            this.log = log.getLogger(PartitionCopySupplier.class);
+            this.from = from;
             this.partSize = partSize;
-            this.delta = delta;
+            to = new File(dir, from.getName());
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            if (partSize == 0)
-                return;
-
+        @Override public File get() {
             try {
-                File from = getPartitionFile(cacheWorkDir(storeWorkDir, ccfg), partId);
-                File to = new File(backupDir, cacheDirName(ccfg));
+                if (!to.exists() || to.delete())
+                    to.createNewFile();
 
-                copy(from, 0, partSize, to);
+                if (partSize == 0)
+                    return to;
+
+                try (FileChannel src = new FileInputStream(from).getChannel();
+                     FileChannel dest = new FileOutputStream(to).getChannel()) {
+                    src.position(0);
+
+                    long written = 0;
+
+                    while (written < partSize)
+                        written += src.transferTo(written, partSize - written, dest);
+                }
 
                 U.log(log, "Partition has been copied [from=" + from.getAbsolutePath() +
                     ", to=" + to.getAbsolutePath() + ']');
-
-                // TODO that merge with deltas
             }
-            catch (IgniteCheckedException ex) {
+            catch (IOException ex) {
                 throw new IgniteException(ex);
             }
+
+            return to;
         }
     }
 
@@ -550,14 +623,21 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         /** Future of result completion. */
         @GridToStringExclude
-        private final GridCompoundFuture<Boolean, Boolean> result = new GridCompoundFuture<>();
+        private final GridFutureAdapter<Void> result = new GridFutureAdapter<>();
 
         /** Factory to create executable tasks for partition processing. */
         @GridToStringExclude
-        private final PartitionTaskFactory factory;
+        private final IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory;
+
+        /** Factory to create executable tasks for partition delta pages processing. */
+        @GridToStringExclude
+        private final IgniteBiClosure<File, DeltaPagesStorage, Supplier<File>> deltaTaskFactory;
 
         /** Collection of partition to be backuped. */
         private final Map<Integer, Set<Integer>> parts;
+
+        /** Checkpoint end future. */
+        private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
 
         /** Flag idicates that this backup is start copying partitions. */
         private volatile boolean started;
@@ -566,26 +646,29 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          * @param name Unique identifier of backup process.
          * @param backupDir Backup storage directory.
          * @param execSvc Service to perform partitions copy.
-         * @param factory Factory to create executable tasks for partition processing.
+         * @param partSuppFactory Factory to create executable tasks for partition processing.
          */
         public BackupContext(
             String name,
             File backupDir,
             Map<Integer, Set<Integer>> parts,
             ExecutorService execSvc,
-            PartitionTaskFactory factory
+            IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory,
+            IgniteBiClosure<File, DeltaPagesStorage, Supplier<File>> deltaTaskFactory
         ) {
             A.notNull(name, "Backup name cannot be empty or null");
             A.notNull(backupDir, "You must secify correct backup directory");
             A.ensure(backupDir.isDirectory(), "Specified path is not a directory");
             A.notNull(execSvc, "Executor service must be not null");
-            A.notNull(factory, "Factory which procudes backup tasks to execute must be not null");
+            A.notNull(partSuppFactory, "Factory which procudes backup tasks to execute must be not null");
+            A.notNull(deltaTaskFactory, "Factory which processes delta pages storage must be not null");
 
             this.name = name;
             this.backupDir = backupDir;
             this.parts = parts;
             this.execSvc = execSvc;
-            this.factory = factory;
+            this.partSuppFactory = partSuppFactory;
+            this.deltaTaskFactory = deltaTaskFactory;
 
             result.listen(f -> {
                 if (f.error() != null)

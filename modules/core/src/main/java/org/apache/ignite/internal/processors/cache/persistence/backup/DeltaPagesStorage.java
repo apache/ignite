@@ -23,13 +23,16 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -37,35 +40,50 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** */
+/**
+ *
+ */
 public class DeltaPagesStorage implements Closeable {
-    /** */
+    /** Ignite logger to use. */
+    private final IgniteLogger log;
+
+    /** Configuration file path provider. */
     private final Supplier<Path> cfgPath;
 
-    /** */
+    /** Factory to produce an IO interface over underlying file. */
     private final FileIOFactory factory;
 
-    /** */
+    /** Storage size. */
+    private final LongAdder storageSize = new LongAdder();
+
+    /** Page size of stored pages. */
+    private final int pageSize;
+
+    /** Buse lock to perform write opertions. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** */
+    /** IO over the underlying file */
     private volatile FileIO fileIo;
 
-    /** */
+    /** Allow write to storage flag. */
     private volatile boolean writable = true;
-
 
     // TODO create a mask based on total allocated pages within this partition.
 
     /**
-     * @param factory Facotry.
+     * @param log Ignite logger to use.
+     * @param cfgPath Configuration file path provider.
+     * @param factory Factory to produce an IO interface over underlying file.
+     * @param pageSize Page size of stored pages.
      */
-    public DeltaPagesStorage(Supplier<Path> cfgPath, FileIOFactory factory) {
+    public DeltaPagesStorage(IgniteLogger log, Supplier<Path> cfgPath, FileIOFactory factory, int pageSize) {
         A.notNull(cfgPath, "Configurations path cannot be empty");
         A.notNull(factory, "File configuration factory cannot be empty");
 
+        this.log = log.getLogger(DeltaPagesStorage.class);
         this.cfgPath = cfgPath;
         this.factory = factory;
+        this.pageSize = pageSize;
     }
 
     /**
@@ -154,9 +172,56 @@ public class DeltaPagesStorage implements Closeable {
 
             // Write buffer to the end of the file.
             fileIo.writeFully(pageBuf);
+
+            storageSize.add(pageBuf.capacity());
         }
         finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param store File page store to apply deltas to.
+     */
+    public void apply(PageStore store) throws IOException, IgniteCheckedException {
+        assert !writable;
+        assert fileIo != null;
+
+        // Will perform a copy delta file page by page simultaneously with merge pages operation.
+        ByteBuffer pageBuff = ByteBuffer.allocate(pageSize);
+
+        pageBuff.clear();
+
+        long readed;
+        long position = 0;
+        long size = storageSize.sum();
+
+        while ((readed = fileIo.readFully(pageBuff, position)) > 0 && position < size) {
+            position += readed;
+
+            pageBuff.flip();
+
+            long pageId = PageIO.getPageId(pageBuff);
+            long pageOffset = store.pageOffset(pageId);
+            int crc32 = FastCrc.calcCrc(new CRC32(), pageBuff, pageBuff.limit());
+            int crc = PageIO.getCrc(pageBuff);
+
+            U.log(log, "handle partition delta [pageId=" + pageId +
+                    ", pageOffset=" + pageOffset +
+                    ", partSize=" + store.size() +
+                    ", skipped=" + (pageOffset >= store.size()) +
+                    ", position=" + position +
+                    ", size=" + size +
+                    ", crcBuff=" + crc32 +
+                    ", crcPage=" + crc + ']');
+
+            pageBuff.rewind();
+
+            // Other pages are not related to handled partition file and must be ignored.
+            if (pageOffset < store.size())
+                store.write(pageId, pageBuff, 0, false);
+
+            pageBuff.clear();
         }
     }
 
@@ -173,7 +238,6 @@ public class DeltaPagesStorage implements Closeable {
     public void writable(boolean writable) {
         this.writable = writable;
     }
-
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
