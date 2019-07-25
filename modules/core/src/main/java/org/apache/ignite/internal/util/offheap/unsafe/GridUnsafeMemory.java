@@ -19,15 +19,12 @@ package org.apache.ignite.internal.util.offheap.unsafe;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.offheap.GridOffHeapEventListener;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OFFHEAP_SAFE_RELEASE;
-import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.ALLOCATE;
-import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.RELEASE;
 
 /**
  * Unsafe memory.
@@ -51,9 +48,6 @@ public class GridUnsafeMemory {
     @GridToStringInclude
     private final AtomicLong sysAllocated;
 
-    /** Event listener. */
-    private GridOffHeapEventListener lsnr;
-
     /**
      * @param total Total size, {@code 0} for unlimited.
      */
@@ -65,15 +59,6 @@ public class GridUnsafeMemory {
         allocated = new AtomicLong();
 
         sysAllocated = new AtomicLong();
-    }
-
-    /**
-     * Sets event listener.
-     *
-     * @param lsnr Event listener.
-     */
-    public void listen(GridOffHeapEventListener lsnr) {
-        this.lsnr = lsnr;
     }
 
     /**
@@ -91,9 +76,7 @@ public class GridUnsafeMemory {
 
         long mem = allocated.addAndGet(size);
 
-        long max = total;
-
-        return mem <= max;
+        return mem <= total;
     }
 
     /**
@@ -169,9 +152,6 @@ public class GridUnsafeMemory {
             if (init)
                 fill(ptr, size, FREE);
 
-            if (lsnr != null)
-                lsnr.onEvent(ALLOCATE);
-
             return ptr;
         }
         catch (OutOfMemoryError ignore) {
@@ -226,9 +206,6 @@ public class GridUnsafeMemory {
             GridUnsafe.freeMemory(ptr);
 
             cnt.addAndGet(-size);
-
-            if (lsnr != null)
-                lsnr.onEvent(RELEASE);
         }
     }
 
@@ -547,38 +524,33 @@ public class GridUnsafeMemory {
         int words = (len - align) / addrSize;
         int left = (len - align) % addrSize;
 
-        switch (addrSize) {
-            case 4:
-                for (int i = 0; i < words; i++) {
-                    int step = i * addrSize + align;
+        if (addrSize == 4) {
+            for (int i = 0; i < words; i++) {
+                int step = i * 4 + align;
 
-                    int word = GridUnsafe.getInt(ptr);
+                int word = GridUnsafe.getInt(ptr);
 
-                    int comp = GridUnsafe.getInt(bytes, GridUnsafe.BYTE_ARR_OFF + step + bytesOff);
+                int comp = GridUnsafe.getInt(bytes, GridUnsafe.BYTE_ARR_OFF + step + bytesOff);
 
-                    if (word != comp)
-                        return false;
+                if (word != comp)
+                    return false;
 
-                    ptr += GridUnsafe.ADDR_SIZE;
-                }
+                ptr += GridUnsafe.ADDR_SIZE;
+            }
+        }
+        else {
+            for (int i = 0; i < words; i++) {
+                int step = i * addrSize + align;
 
-                break;
+                long word = GridUnsafe.getLong(ptr);
 
-            default:
-                for (int i = 0; i < words; i++) {
-                    int step = i * addrSize + align;
+                long comp = GridUnsafe.getLong(bytes, GridUnsafe.BYTE_ARR_OFF + step + bytesOff);
 
-                    long word = GridUnsafe.getLong(ptr);
+                if (word != comp)
+                    return false;
 
-                    long comp = GridUnsafe.getLong(bytes, GridUnsafe.BYTE_ARR_OFF + step + bytesOff);
-
-                    if (word != comp)
-                        return false;
-
-                    ptr += GridUnsafe.ADDR_SIZE;
-                }
-
-                break;
+                ptr += GridUnsafe.ADDR_SIZE;
+            }
         }
 
         if (left != 0) {

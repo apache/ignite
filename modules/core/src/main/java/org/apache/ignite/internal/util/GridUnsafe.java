@@ -1952,4 +1952,47 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr, (byte)(val));
         }
     }
+
+    /**
+     * @param ptr1 First pointer.
+     * @param ptr2 Second pointer.
+     * @param size Memory size.
+     * @return {@code True} if equals.
+     */
+    public static boolean compare(long ptr1, long ptr2, int size) {
+        assert ptr1 > 0 : ptr1;
+        assert ptr2 > 0 : ptr2;
+        assert size > 0 : size;
+
+        if (ptr1 == ptr2)
+            return true;
+
+        int words = size / 8;
+
+        for (int i = 0; i < words; i++) {
+            long w1 = getLong(ptr1);
+            long w2 = getLong(ptr2);
+
+            if (w1 != w2)
+                return false;
+
+            ptr1 += 8;
+            ptr2 += 8;
+        }
+
+        int left = size % 8;
+
+        for (int i = 0; i < left; i++) {
+            byte b1 = getByte(ptr1);
+            byte b2 = getByte(ptr2);
+
+            if (b1 != b2)
+                return false;
+
+            ptr1++;
+            ptr2++;
+        }
+
+        return true;
+    }
 }
