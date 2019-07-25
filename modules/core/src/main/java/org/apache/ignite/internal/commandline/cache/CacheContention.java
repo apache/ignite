@@ -29,6 +29,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
@@ -92,6 +93,11 @@ public class CacheContention implements Command<CacheContention.Arguments> {
          */
         public int maxPrint() {
             return maxPrint;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Arguments.class, this);
         }
     }
 
