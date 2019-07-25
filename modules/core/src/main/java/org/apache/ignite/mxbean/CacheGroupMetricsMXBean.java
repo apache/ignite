@@ -20,12 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetrics;
 
 /**
  * This interface defines JMX view on {@link CacheGroupContext}.
  */
 @MXBeanDescription("MBean that provides access to cache group descriptor.")
-public interface CacheGroupMetricsMXBean {
+public interface CacheGroupMetricsMXBean extends CacheGroupMetrics {
     /**
      * Gets cache group id.
      *
@@ -190,4 +191,8 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Storage space allocated for group adjusted for possible sparsity, in bytes.")
     public long getSparseStorageSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Count of partitions need processed for finished indexes create or rebuilding.")
+    @Override public long getIndexBuildCountPartitionsLeft();
 }

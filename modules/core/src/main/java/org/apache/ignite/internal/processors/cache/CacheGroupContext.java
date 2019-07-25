@@ -189,6 +189,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean hasAtomicCaches;
 
+    /** Store cache group metrics. */
+    private final CacheGroupMetricsImpl metrics;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -249,6 +252,8 @@ public class CacheGroupContext {
         mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
 
         log = ctx.kernalContext().log(getClass());
+
+        metrics = new CacheGroupMetricsImpl();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
@@ -1298,5 +1303,12 @@ public class CacheGroupContext {
      */
     public boolean hasAtomicCaches() {
         return hasAtomicCaches;
+    }
+
+    /**
+     * @return Metrics.
+     */
+    public CacheGroupMetricsImpl metrics0() {
+        return metrics;
     }
 }

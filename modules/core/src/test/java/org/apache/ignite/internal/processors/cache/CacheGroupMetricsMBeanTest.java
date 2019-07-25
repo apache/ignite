@@ -58,7 +58,7 @@ import org.junit.Test;
  */
 public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    private boolean pds = false;
+    protected boolean pds = false;
 
     /** */
     private static class RoundRobinVariableSizeAffinityFunction implements AffinityFunction {
@@ -107,21 +107,20 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
     /**
      * Partition assignment for cache1 with given affinity function:
      *
-     *  P/N 0 1 2
-     *  ---------
-     *  0 | P
-     *  1 |   P B
-     *  2 | B B P
-     *  3 |   P
-     *  4 | B   P
-     *  5 | P B B
-     *  6 |     P
-     *  7 | P B
-     *  8 | B P B
-     *  9 | P
-     *
+     * P/N 0 1 2
+     * ---------
+     * 0 | P
+     * 1 |   P B
+     * 2 | B B P
+     * 3 |   P
+     * 4 | B   P
+     * 5 | P B B
+     * 6 |     P
+     * 7 | P B
+     * 8 | B P B
+     * 9 | P
      */
-    private static final int [][] assignmentMapArr =
+    private static final int[][] assignmentMapArr =
         new int[][] {{0}, {1, 2}, {2, 0, 1}, {1}, {2, 0}, {0, 1, 2}, {2}, {0, 1}, {1, 2, 0}, {0}};
 
     /** {@inheritDoc} */
@@ -187,7 +186,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
      * @param cacheOrGrpName Cache group name.
      * @return MBean instance.
      */
-    private CacheGroupMetricsMXBean mxBean(int nodeIdx, String cacheOrGrpName) throws MalformedObjectNameException {
+    protected CacheGroupMetricsMXBean mxBean(int nodeIdx, String cacheOrGrpName) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();

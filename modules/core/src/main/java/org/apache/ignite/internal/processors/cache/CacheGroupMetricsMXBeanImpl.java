@@ -378,6 +378,11 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         return database().forGroupPageStores(ctx, PageStore::getSparseSize);
     }
 
+    /** {@inheritDoc} */
+    @Override public long getIndexBuildCountPartitionsLeft() {
+        return ctx.metrics0().getIndexBuildCountPartitionsLeft();
+    }
+
     /**
      * @return Database.
      */
