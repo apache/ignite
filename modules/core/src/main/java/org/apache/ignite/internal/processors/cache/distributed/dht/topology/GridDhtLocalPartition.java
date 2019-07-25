@@ -139,10 +139,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @GridToStringExclude
     private final long createTime = U.currentTimeMillis();
 
-    /** Lock. */
-    @GridToStringExclude
-    private final ReentrantLock lock = new ReentrantLock();
-
     /** */
     @GridToStringExclude
     private final ConcurrentMap<Integer, CacheMapHolder> cacheMaps;
