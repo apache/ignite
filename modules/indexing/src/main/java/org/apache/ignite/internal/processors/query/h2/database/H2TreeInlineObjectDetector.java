@@ -167,7 +167,7 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<Sear
             if (ih.type() == Value.JAVA_OBJECT)
                 break;
 
-            remainSize -= ih.size() > 0 ? 1 + ih.size() : 4;
+            remainSize -= ih.size() > 0 ? 1 + ih.size() : 1;
         }
 
         return remainSize >= 4;
