@@ -199,6 +199,7 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("rebalanceBatchesPrefetchCount");
         igniteCfgProps.add("rebalanceTimeout");
         igniteCfgProps.add("rebalanceThrottle");
+        igniteCfgProps.add("metricExporterSpi");
 
         Set<String> igniteCfgPropsDep = new HashSet<>();
         igniteCfgPropsDep.add("gridName");
