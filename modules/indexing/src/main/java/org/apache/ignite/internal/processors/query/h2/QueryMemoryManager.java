@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.metric.SqlStatisticsHolderMemoryQuotas;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,6 +38,9 @@ public class QueryMemoryManager extends H2MemoryTracker {
      * Default memory reservation block size.
      */
     private static final long DFLT_MEMORY_RESERVATION_BLOCK_SIZE = 512 * KB;
+
+    /** Set of metrics that collect info about memory this memory manager tracks. */
+    private final SqlStatisticsHolderMemoryQuotas metrics;
 
     /** */
     static final LongBinaryOperator RELEASE_OP = new LongBinaryOperator() {
@@ -103,6 +107,8 @@ public class QueryMemoryManager extends H2MemoryTracker {
         this.reserveOp = new ReservationOp(globalQuota);
 
         this.log = ctx.log(QueryMemoryManager.class);
+
+        metrics = new SqlStatisticsHolderMemoryQuotas(this, ctx.metric());
     }
 
     /** {@inheritDoc} */
@@ -113,6 +119,8 @@ public class QueryMemoryManager extends H2MemoryTracker {
         assert size > 0;
 
         reserved.accumulateAndGet(size, reserveOp);
+
+        metrics.trackReserve(size);
     }
 
     /** {@inheritDoc} */
