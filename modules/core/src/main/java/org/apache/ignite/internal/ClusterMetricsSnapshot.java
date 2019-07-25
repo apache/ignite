@@ -411,11 +411,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             avgLoad += m.getCurrentCpuLoad();
 
-            // Calculate only cluster-wide blocking PME and exclude client join case.
-            if (!node.isClient()) {
-                cacheOperationsBlockedDuration =
-                    max(cacheOperationsBlockedDuration, m.getCacheOperationsBlockedDuration());
-            }
+            cacheOperationsBlockedDuration = max(cacheOperationsBlockedDuration, m.getCacheOperationsBlockedDuration());
         }
 
         curJobExecTime /= size;
