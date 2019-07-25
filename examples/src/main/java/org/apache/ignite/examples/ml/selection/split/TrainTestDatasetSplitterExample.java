@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.ml.selection.split;
 
+import java.io.IOException;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -31,9 +33,6 @@ import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import javax.cache.Cache;
-import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model over dataset split on train and test subsets ({@link TrainTestDatasetSplitter}).
@@ -51,7 +50,7 @@ import java.io.FileNotFoundException;
  */
 public class TrainTestDatasetSplitterExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over cache based dataset usage example started.");
         // Start ignite grid.
@@ -100,6 +99,8 @@ public class TrainTestDatasetSplitterExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }
