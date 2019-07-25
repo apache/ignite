@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -2385,10 +2384,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void createRows(Collection<GridCacheEntryInfo> infos,
+        @Override public void createRows(Iterator<GridCacheEntryInfo> infos,
             AffinityTopologyVersion topVer) throws IgniteCheckedException {
-            assert ctx.database().checkpointLockIsHeldByThread();
-
             CacheDataStore delegate = init0(false);
 
             delegate.createRows(infos, topVer);

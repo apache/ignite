@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1804,33 +1803,57 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void createRows(Collection<GridCacheEntryInfo> infos, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-            Collection<DataRowStoreAware> rows = new ArrayList<>(infos.size());
+        @Override public void createRows(Iterator<GridCacheEntryInfo> infos, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+            int batchSize = 100;
 
-            for (GridCacheEntryInfo info : infos) {
-                if (info.value() == null)
-                    preloadEntry(info.key(), info.value(), info.version(), info.expireTime(), topVer, info.cacheId(), null);
-                else
-                    rows.add(new DataRowStoreAware(makeDataRow(info.key(),
-                        info.value(),
-                        info.version(),
-                        info.expireTime(),
-                        info.cacheId()), grp.storeCacheIdInDataPage()));
-            }
+            List<DataRowStoreAware> rows = new ArrayList<>(batchSize);
 
-            if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            while (infos.hasNext()) {
+                ctx.database().checkpointReadLock();
 
-            try {
-                rowStore.addRows(rows, grp.statisticsHolderData());
+                try {
+                    do {
+                        GridCacheEntryInfo info = infos.next();
 
-                for (DataRowStoreAware row : rows) {
-                    if (!preloadEntry(row.key(), row.value(), row.version(), row.expireTime(), topVer, row.delegate().cacheId(), row))
-                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                        if (info.value() == null) {
+                            preloadEntry(info.key(),
+                                info.value(),
+                                info.version(),
+                                info.expireTime(),
+                                topVer,
+                                info.cacheId(),
+                                null);
+                        }
+                        else {
+                            rows.add(new DataRowStoreAware(makeDataRow(info.key(),
+                                info.value(),
+                                info.version(),
+                                info.expireTime(),
+                                info.cacheId()), grp.storeCacheIdInDataPage()));
+                        }
+                    }
+                    while (rows.size() < batchSize && infos.hasNext());
+
+                    if (!busyLock.enterBusy())
+                        throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+                    try {
+                        rowStore.addRows(rows, grp.statisticsHolderData());
+
+                        for (DataRowStoreAware row : rows) {
+                            if (!preloadEntry(row.key(), row.value(), row.version(), row.expireTime(), topVer, row.delegate().cacheId(), row))
+                                rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                        }
+                    }
+                    finally {
+                        busyLock.leaveBusy();
+                    }
+
+                    rows.clear();
+                } finally {
+                    ctx.database().checkpointReadUnlock();
                 }
-            }
-            finally {
-                busyLock.leaveBusy();
+
             }
         }
 

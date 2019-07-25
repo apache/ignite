@@ -765,7 +765,7 @@ public class GridDhtPartitionDemander {
                             part.beforeApplyBatch(last);
 
                             try {
-                                List<GridCacheEntryInfo> infos = e.getValue().infos();
+                                Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
 
                                 try {
                                     if (grp.mvccEnabled())
@@ -870,23 +870,21 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private void mvccPreloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
-        List<GridCacheEntryInfo> infos) throws IgniteCheckedException {
-        if (infos.isEmpty())
+        Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+        if (!infos.hasNext())
             return;
 
         List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
 
         GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
-        Iterator<GridCacheEntryInfo> iter = infos.iterator();
-
         // Loop through all received entries and try to preload them.
-        while (iter.hasNext() || !entryHist.isEmpty()) {
+        while (infos.hasNext() || !entryHist.isEmpty()) {
             ctx.database().checkpointReadLock();
 
             try {
                 for (int i = 0; i < CHECKPOINT_THRESHOLD; i++) {
-                    boolean hasMore = iter.hasNext();
+                    boolean hasMore = infos.hasNext();
 
                     assert hasMore || !entryHist.isEmpty();
 
@@ -895,7 +893,7 @@ public class GridDhtPartitionDemander {
                     boolean flushHistory;
 
                     if (hasMore) {
-                        entry = (GridCacheMvccEntryInfo)iter.next();
+                        entry = (GridCacheMvccEntryInfo)infos.next();
 
                         GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : entryHist.get(0);
 
@@ -948,31 +946,21 @@ public class GridDhtPartitionDemander {
     private void preloadEntries(
         AffinityTopologyVersion topVer,
         int p,
-        List<GridCacheEntryInfo> infos
+        Iterator<GridCacheEntryInfo> infos
     ) throws IgniteCheckedException {
-        int cnt = infos.size();
-        int off = 0;
+        try {
+            GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-        while (off < cnt) {
-            Collection<GridCacheEntryInfo> batch = infos.subList(off, Math.min(cnt, off += CHECKPOINT_THRESHOLD));
-
-            ctx.database().checkpointReadLock();
-
-            try {
-                GridDhtLocalPartition part = grp.topology().localPartition(p);
-
-                part.dataStore().createRows(batch, topVer);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteCheckedException("Preloading failed - stopping rebalancing [p=" + p + "]");
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
+            part.dataStore().createRows(infos, topVer);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Preloading failed - stopping rebalancing [p=" + p + "]");
         }
 
         // todo update metrics in batch
-        for (GridCacheEntryInfo entry : infos) {
+        while (infos.hasNext()) {
+            GridCacheEntryInfo entry = infos.next();
+
             if (grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED)) {
                 GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
