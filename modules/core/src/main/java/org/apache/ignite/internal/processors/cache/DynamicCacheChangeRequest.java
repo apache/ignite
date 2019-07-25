@@ -394,7 +394,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return ID of node provided cache configuration in discovery data.
      */
-    @Nullable public UUID receivedFrom() {
+    public @Nullable UUID receivedFrom() {
         return rcvdFrom;
     }
 
