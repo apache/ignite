@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Container with common parsed and validated arguments.
@@ -33,6 +35,7 @@ public class ConnectionAndSslParameters {
     private String user;
 
     /** Password. */
+    @GridToStringExclude
     private String pwd;
 
     /** Force option is used for auto confirmation. */
@@ -60,6 +63,7 @@ public class ConnectionAndSslParameters {
     private String sslKeyStoreType;
 
     /** Keystore Password. */
+    @GridToStringExclude
     private char[] sslKeyStorePassword;
 
     /** Truststore. */
@@ -69,6 +73,7 @@ public class ConnectionAndSslParameters {
     private String sslTrustStoreType;
 
     /** Truststore Password. */
+    @GridToStringExclude
     private char[] sslTrustStorePassword;
 
     /** High-level command. */
@@ -258,5 +263,14 @@ public class ConnectionAndSslParameters {
      */
     public char[] sslTrustStorePassword() {
         return sslTrustStorePassword;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ConnectionAndSslParameters.class, this,
+            "password", pwd == null ? null : "*****",
+            "sslKeyStorePassword", sslKeyStorePassword == null ? null: "*****",
+            "sslTrustStorePassword", sslTrustStorePassword == null? null: "*****"
+            );
     }
 }

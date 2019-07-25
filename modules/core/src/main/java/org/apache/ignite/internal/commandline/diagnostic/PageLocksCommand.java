@@ -32,6 +32,7 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.diagnostic.Operation;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
@@ -43,10 +44,10 @@ import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS;
 import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.ALL;
-import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.NODES;
-import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.PATH;
 import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.DUMP;
 import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.DUMP_LOG;
+import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.NODES;
+import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.PATH;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 
 /**
@@ -76,7 +77,7 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
                 });
             }
 
-            VisorPageLocksTrackerArgs taskArg = new VisorPageLocksTrackerArgs(arguments.op, arguments.filePath, nodeIds);
+            VisorPageLocksTrackerArgs taskArg = new VisorPageLocksTrackerArgs(arguments.operation, arguments.filePath, nodeIds);
 
             res = TaskExecutor.executeTask(
                 client,
@@ -180,7 +181,7 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
     /** */
     public static class Arguments {
         /** */
-        private final Operation op;
+        private final Operation operation;
         /** */
         private final String filePath;
         /** */
@@ -189,21 +190,26 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
         private final Set<String> nodeIds;
 
         /**
-         * @param op Operation.
+         * @param operation Operation.
          * @param filePath File path.
          * @param allNodes If {@code True} include all available nodes for command. If {@code False} include only subset.
          * @param nodeIds Node ids.
          */
         public Arguments(
-            Operation op,
+            Operation operation,
             String filePath,
             boolean allNodes,
             Set<String> nodeIds
         ) {
-            this.op = op;
+            this.operation = operation;
             this.filePath = filePath;
             this.allNodes = allNodes;
             this.nodeIds = nodeIds;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Arguments.class, this);
         }
     }
 
