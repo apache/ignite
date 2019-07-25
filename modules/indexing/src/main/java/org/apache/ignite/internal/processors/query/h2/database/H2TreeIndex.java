@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -80,11 +81,14 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param cctx Cache context.
+     * @param rowCache Row cache.
      * @param tbl Table.
      * @param name Index name.
      * @param pk Primary key.
      * @param colsList Index columns.
      * @param inlineSize Inline size.
+     * @param segmentsCnt number of tree's segments.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     public H2TreeIndex(
@@ -95,7 +99,8 @@ public class H2TreeIndex extends GridH2IndexBase {
         boolean pk,
         List<IndexColumn> colsList,
         int inlineSize,
-        int segmentsCnt
+        int segmentsCnt,
+        IgniteLogger log
     ) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
 
@@ -129,6 +134,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                     segments[i] = new H2Tree(
                         name,
+                        tbl.getName(),
+                        name,
                         cctx.offheap().reuseListForIndex(name),
                         cctx.groupId(),
                         cctx.dataRegion().pageMemory(),
@@ -141,7 +148,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
                         rowCache,
-                        cctx.kernalContext().failure()) {
+                        cctx.kernalContext().failure(),
+                        log) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }

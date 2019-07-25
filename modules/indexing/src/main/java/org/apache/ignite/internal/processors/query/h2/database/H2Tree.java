@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -69,6 +70,15 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     private final int[] columnIds;
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
+    private final String tblName;
+
+    /** */
+    private final String idxName;
+
+    /** */
     private final Comparator<Value> comp = new Comparator<Value>() {
         @Override public int compare(Value o1, Value o2) {
             return compareValues(o1, o2);
@@ -85,6 +95,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * Constructor.
      *
      * @param name Tree name.
+     * @param tblName Table name.
+     * @param idxName Index name.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
@@ -94,10 +106,13 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
      * @param failureProcessor if the tree is corrupted.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
         String name,
+        String tblName,
+        String idxName,
         ReuseList reuseList,
         int grpId,
         PageMemory pageMem,
@@ -110,7 +125,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
         @Nullable H2RowCache rowCache,
-        @Nullable FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor,
+        IgniteLogger log
     ) throws IgniteCheckedException {
         super(
             name,
@@ -124,7 +140,10 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             null
         );
 
+        this.log = log;
         this.rowCache = rowCache;
+        this.tblName = tblName;
+        this.idxName = idxName;
 
         this.rowStore = rowStore;
         this.cols = cols;
@@ -141,7 +160,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             if (metaInfo.useUnwrappedPk())
                 throw new IgniteCheckedException("Unwrapped PK is not supported by current version");
 
-            this.inlineSize = metaInfo.inlineSize();
+            inlineSize = metaInfo.inlineSize();
+
+            this.inlineSize = inlineSize;
 
             setIos(
                 H2ExtrasInnerIO.getVersions(inlineSize),
@@ -183,7 +204,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             try {
                 if (H2TreeInlineObjectDetector.objectMayBeInlined(inlineSize, inlineIdxs)) {
                     H2TreeInlineObjectDetector inlineObjDetector = new H2TreeInlineObjectDetector(
-                        inlineSize, inlineIdxs);
+                        inlineSize, inlineIdxs, tblName, idxName, log);
 
                     findFirst(inlineObjDetector);
 
