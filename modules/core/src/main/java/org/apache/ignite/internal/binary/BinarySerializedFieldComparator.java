@@ -16,7 +16,7 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -311,7 +311,7 @@ public class BinarySerializedFieldComparator {
             if (c1.offheap()) {
                 if (c2.offheap())
                     // Case 1: both offheap.
-                    return GridUnsafeMemory.compare(c1.curFieldPos + c1.ptr + off, c2.curFieldPos + c2.ptr + off, len);
+                    return GridUnsafe.compare(c1.curFieldPos + c1.ptr + off, c2.curFieldPos + c2.ptr + off, len);
             }
             else {
                 if (!c2.offheap()) {

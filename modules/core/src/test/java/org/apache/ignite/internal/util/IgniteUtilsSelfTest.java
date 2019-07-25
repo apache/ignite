@@ -925,11 +925,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(1 << 26, U.ceilPow2((1 << 26) - 100));
         assertEquals(1 << 26, U.ceilPow2(1 << 26));
         assertEquals(1 << 27, U.ceilPow2((1 << 26) + 100));
+        assertEquals((int)Math.pow(2, 30), U.ceilPow2(Integer.MAX_VALUE - 1));
+        assertEquals((int)Math.pow(2, 30), U.ceilPow2(Integer.MAX_VALUE));
+        assertEquals(0, U.ceilPow2(Integer.MIN_VALUE + 1));
 
-        for (int i = (int)Math.pow(2, 30); i < Integer.MAX_VALUE; i++)
+        for (int i = (int)Math.pow(2, 30); i < Integer.MAX_VALUE && i > 0; i += 100)
             assertEquals((int)Math.pow(2, 30), U.ceilPow2(i));
 
-        for (int i = Integer.MIN_VALUE; i < 0; i++)
+        for (int i = Integer.MIN_VALUE; i < 0; i += 100)
             assertEquals(0, U.ceilPow2(i));
     }
 
