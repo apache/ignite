@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Map of partitions demanded during rebalancing.

@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -609,8 +609,7 @@ public class GridDhtPartitionDemander {
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
                 int p = e.getKey();
 
-                fut.queued.computeIfAbsent(p, (ignored) -> new LongAdder()).increment();
-                fut.processed.putIfAbsent(p, new LongAdder());
+                fut.queued.get(p).increment();
 
                 if (fut.historical.contains(p))
                     historical = true;
@@ -1219,10 +1218,10 @@ public class GridDhtPartitionDemander {
         private final ReentrantReadWriteLock cancelLock;
 
         /** Entries batches queued. */
-        private final Map<Integer, LongAdder> queued = new ConcurrentHashMap<>();
+        private final Map<Integer, LongAdder> queued = new HashMap<>();
 
         /** Entries batches processed. */
-        private final Map<Integer, LongAdder> processed = new ConcurrentHashMap<>();
+        private final Map<Integer, LongAdder> processed = new HashMap<>();
 
         /** Historical rebalance set. */
         private final Set<Integer> historical = new HashSet<>();
@@ -1251,6 +1250,12 @@ public class GridDhtPartitionDemander {
                 remaining.put(k.id(), v.partitions());
 
                 historical.addAll(v.partitions().historicalSet());
+
+                Stream.concat(v.partitions().historicalSet().stream(), v.partitions().fullSet().stream()).forEach(
+                    p -> {
+                        queued.put(p, new LongAdder());
+                        processed.put(p, new LongAdder());
+                    });
             });
 
             this.routines = remaining.size();
