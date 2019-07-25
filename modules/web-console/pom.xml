@@ -39,6 +39,7 @@
     </properties>
 
     <modules>
+        <module>web-console-configuration-tests</module>
         <module>web-console-common</module>
         <module>web-console-server</module>
         <module>web-console-mail</module>
