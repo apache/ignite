@@ -149,7 +149,8 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         metrics.setHeapMemoryTotal(48);
         metrics.setTotalNodes(49);
         metrics.setTotalJobsExecutionTime(50);
-        metrics.setCacheOperationsBlockedDuration(51);
+        metrics.setCurrentPmeDuration(51);
+        metrics.setCurrentPMECacheOperationsBlockedDuration(52);
 
         return metrics;
     }
@@ -208,6 +209,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
             obj.getHeapMemoryTotal() == obj1.getHeapMemoryTotal() &&
             obj.getTotalNodes() == obj1.getTotalNodes() &&
             obj.getTotalJobsExecutionTime() == obj1.getTotalJobsExecutionTime() &&
-            obj.getCacheOperationsBlockedDuration() == obj1.getCacheOperationsBlockedDuration();
+            obj.getCurrentPmeDuration() == obj1.getCurrentPmeDuration() &&
+            obj.getCurrentPMECacheOperationsBlockedDuration() == obj1.getCurrentPMECacheOperationsBlockedDuration();
     }
 }

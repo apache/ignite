@@ -696,6 +696,13 @@ public interface ClusterMetrics {
     public int getTotalNodes();
 
     /**
+     * Gets execution duration for current partition map exchange in milliseconds.
+     *
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} if there is no running PME.
+     */
+    public long getCurrentPmeDuration();
+
+    /**
      * Gets cache operations blocked duration in milliseconds caused by current PME.
      *
      * It means that current PME will wait for all ongoing updates and explicit locks on the previous topology. New
@@ -704,5 +711,5 @@ public interface ClusterMetrics {
      * @return Gets cache operations blocked duration in milliseconds. {@code 0} If current partition map exchange don't
      * block operations or there is no running PME.
      */
-    public long getCacheOperationsBlockedDuration();
+    public long getCurrentPMECacheOperationsBlockedDuration();
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -105,8 +106,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
@@ -138,7 +137,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -350,7 +348,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Start time of exchange. */
     private long startTime = System.nanoTime();
 
-    /** Init time of exchange in nanoseconds. */
+    /** Init time of exchange in milliseconds. */
     private volatile long initTime;
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
@@ -555,19 +553,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return Init time in nanoseconds. {@code 0} if future are not initialized yet.
+     * @param blocked {@code True} If take into account only cache operations blocked PME.
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
+     * running PME.
      */
-    public long getInitTime() {
-        return initTime;
-    }
-
-    /**
-     * @return Gets cache operations blocked duration in milliseconds. {@code 0} If current partition map exchange don't
-     * block operations or there is no running PME.
-     */
-    public long cacheOperationsBlockedDuration() {
-        return (isDone() || getInitTime() == 0 || isClientEventExchangeWithoutAffinityChange()) ?
-            0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - getInitTime());
+    public long getCurrentPMEDuration(boolean blocked) {
+        return (isDone() || initTime == 0 || (blocked && isClientEventExchangeWithoutAffinityChange())) ?
+            0 : System.currentTimeMillis() - initTime;
     }
 
     /**
@@ -786,7 +778,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else
                 state = cctx.kernalContext().clientNode() ? ExchangeLocalState.CLIENT : ExchangeLocalState.SRV;
 
-            initTime = System.nanoTime();
+            initTime = System.currentTimeMillis();
 
             if (exchLog.isInfoEnabled()) {
                 exchLog.info("Started exchange init [topVer=" + topVer +
@@ -2327,7 +2319,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (err == null) {
                     timeBag.finishGlobalStage("Exchange done");
 
-                    updateDurationHistogram(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+                    updateDurationHistogram(System.currentTimeMillis() - initTime);
 
                     // Collect all stages timings.
                     List<String> timings = timeBag.stagesTimings();
@@ -2380,20 +2372,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Updates the {@link GridMetricManager#CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM} metric if needed.
+     * Updates the {@link GridMetricManager#PME_CACHE_OPERATIONS_BLOCKED_DURATION} and {@link
+     * GridMetricManager#PME_DURATION} metrics if needed.
      *
      * @param duration The total duration of the current PME.
      */
     private void updateDurationHistogram(long duration) {
-        if (isClientEventExchangeWithoutAffinityChange())
-            return;
+        cctx.exchange().getDurationHistogram().value(duration);
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(GridMetricManager.SYS_METRICS);
-
-        HistogramMetric durationHistogram =
-            (HistogramMetric)mreg.findMetric(CACHE_OPERATIONS_BLOCKED_DURATION_HISTOGRAM);
-
-        durationHistogram.value(duration);
+        if (!isClientEventExchangeWithoutAffinityChange())
+            cctx.exchange().getBlockingDurationHistogram().value(duration);
     }
 
     /**

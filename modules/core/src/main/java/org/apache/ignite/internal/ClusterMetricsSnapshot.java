@@ -93,7 +93,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         4/*outbound messages queue size*/ +
         4/*total nodes*/ +
         8/*total jobs execution time*/ +
-        8/*cache operations blocked duration*/;
+        8/*current PME duration*/ +
+        8/*current PME cache operations blocked duration*/;
 
     /** */
     private long lastUpdateTime = -1;
@@ -258,7 +259,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     private long totalJobsExecTime = -1;
 
     /** */
-    private long cacheOperationsBlockedDuration = -1;
+    private long currentPmeDuration = -1;
+
+    /** */
+    private long currentPMECacheOperationsBlockedDuration = -1;
 
     /**
      * Create empty snapshot.
@@ -333,7 +337,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         outMesQueueSize = 0;
         heapTotal = 0;
         totalNodes = nodes.size();
-        cacheOperationsBlockedDuration = 0;
+        currentPmeDuration = 0;
+        currentPMECacheOperationsBlockedDuration = 0;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -411,7 +416,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             avgLoad += m.getCurrentCpuLoad();
 
-            cacheOperationsBlockedDuration = max(cacheOperationsBlockedDuration, m.getCacheOperationsBlockedDuration());
+            currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
+
+            currentPMECacheOperationsBlockedDuration =
+                max(currentPMECacheOperationsBlockedDuration, m.getCurrentPMECacheOperationsBlockedDuration());
         }
 
         curJobExecTime /= size;
@@ -968,8 +976,13 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCacheOperationsBlockedDuration() {
-        return cacheOperationsBlockedDuration;
+    @Override public long getCurrentPmeDuration() {
+        return currentPmeDuration;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentPMECacheOperationsBlockedDuration() {
+        return currentPMECacheOperationsBlockedDuration;
     }
 
     /**
@@ -1207,12 +1220,21 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
-     * Sets cache operations blocked duration.
+     * Sets execution duration for current partition map exchange.
      *
-     * @param cacheOperationsBlockedDuration Cache operations blocked duration.
+     * @param currentPmeDuration Execution duration for current partition map exchange.
      */
-    public void setCacheOperationsBlockedDuration(long cacheOperationsBlockedDuration) {
-        this.cacheOperationsBlockedDuration = cacheOperationsBlockedDuration;
+    public void setCurrentPmeDuration(long currentPmeDuration) {
+        this.currentPmeDuration = currentPmeDuration;
+    }
+
+    /**
+     * Sets current PME cache operations blocked duration.
+     *
+     * @param currentPMECacheOperationsBlockedDuration Current PME cache operations blocked duration.
+     */
+    public void setCurrentPMECacheOperationsBlockedDuration(long currentPMECacheOperationsBlockedDuration) {
+        this.currentPMECacheOperationsBlockedDuration = currentPMECacheOperationsBlockedDuration;
     }
 
     /**
@@ -1367,7 +1389,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putInt(metrics.getOutboundMessagesQueueSize());
         buf.putInt(metrics.getTotalNodes());
         buf.putLong(metrics.getTotalJobsExecutionTime());
-        buf.putLong(metrics.getCacheOperationsBlockedDuration());
+        buf.putLong(metrics.getCurrentPmeDuration());
+        buf.putLong(metrics.getCurrentPMECacheOperationsBlockedDuration());
 
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
@@ -1451,9 +1474,14 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             metrics.setTotalJobsExecutionTime(0);
 
         if (buf.remaining() >= 8)
-            metrics.setCacheOperationsBlockedDuration(buf.getLong());
+            metrics.setCurrentPmeDuration(buf.getLong());
         else
-            metrics.setCacheOperationsBlockedDuration(0);
+            metrics.setCurrentPmeDuration(0);
+
+        if (buf.remaining() >= 8)
+            metrics.setCurrentPMECacheOperationsBlockedDuration(buf.getLong());
+        else
+            metrics.setCurrentPMECacheOperationsBlockedDuration(0);
 
         return metrics;
     }

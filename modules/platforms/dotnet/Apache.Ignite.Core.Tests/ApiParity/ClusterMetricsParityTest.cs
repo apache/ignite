@@ -30,7 +30,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             // IGNITE-7127
             "TotalJobsExecutionTime",
-            "CacheOperationsBlockedDuration"
+            "CurrentPmeDuration",
+            "CurrentPMECacheOperationsBlockedDuration"
         };
 
         /// <summary>

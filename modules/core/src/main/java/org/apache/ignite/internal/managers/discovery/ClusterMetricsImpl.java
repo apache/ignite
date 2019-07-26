@@ -33,11 +33,13 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_OPERATIONS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PEAK_THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.THREAD_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TOTAL_STARTED_THREAD_CNT;
@@ -162,8 +164,11 @@ public class ClusterMetricsImpl implements ClusterMetrics {
      */
     private final IntMetric daemonThreadCnt;
 
-    /** Cache operations blocked duration. */
-    private final LongMetric cacheOperationsBlockedDuration;
+    /** Current PME duration in milliseconds. */
+    private final LongMetric currentPMEDuration;
+
+    /** Current PME cache cperations blocked duration in milliseconds. */
+    private final LongMetric currentPMECacheOperationsBlockedDuration;
 
     /**
      * @param ctx Kernel context.
@@ -196,7 +201,10 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         nonHeapCommitted = mreg.findMetric(metricName("memory", "nonheap", "committed"));
         nonHeapMax = mreg.findMetric(metricName("memory", "nonheap", "max"));
 
-        cacheOperationsBlockedDuration = mreg.findMetric(CACHE_OPERATIONS_BLOCKED_DURATION);
+        MetricRegistry pmeReg = ctx.metric().registry(PME_METRICS);
+
+        currentPMEDuration = pmeReg.findMetric(CURRENT_PME_DURATION);
+        currentPMECacheOperationsBlockedDuration = pmeReg.findMetric(CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION);
     }
 
     /** {@inheritDoc} */
@@ -494,8 +502,13 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCacheOperationsBlockedDuration() {
-        return cacheOperationsBlockedDuration.value();
+    @Override public long getCurrentPmeDuration() {
+        return currentPMEDuration.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentPMECacheOperationsBlockedDuration() {
+        return currentPMECacheOperationsBlockedDuration.value();
     }
 
     /**

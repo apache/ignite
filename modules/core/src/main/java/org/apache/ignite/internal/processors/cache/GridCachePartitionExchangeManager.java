@@ -108,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -157,8 +158,11 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_OPERATIONS_BLOCKED_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_CACHE_OPERATIONS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 
 /**
  * Partition exchange manager.
@@ -264,6 +268,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
+
+    /** Histogram of PME durations. */
+    private volatile HistogramMetric durationHistogram;
+
+    /** Histogram of blocking PME durations. */
+    private volatile HistogramMetric blockingDurationHistogram;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -480,11 +490,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(SYS_METRICS);
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
 
-        mreg.register(CACHE_OPERATIONS_BLOCKED_DURATION,
-            this::cacheOperationsBlockedDuration,
-            "Cache operations blocked duration in milliseconds.");
+        mreg.register(CURRENT_PME_DURATION,
+            () -> getCurrentPMEDuration(false),
+            "Current PME duration in milliseconds.");
+
+        mreg.register(CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION,
+            () -> getCurrentPMEDuration(true),
+            "Current PME cache cperations blocked duration in milliseconds.");
+
+        durationHistogram = mreg.findMetric(PME_DURATION);
+        blockingDurationHistogram = mreg.findMetric(PME_CACHE_OPERATIONS_BLOCKED_DURATION);
     }
 
     /**
@@ -2715,13 +2732,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return Gets cache operations blocked duration in milliseconds. {@code 0} If current partition map exchange don't
-     * block operations or there is no running PME.
+     * @param blocked {@code True} If take into account only cache operations blocked PME duration.
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
+     * running PME.
      */
-    private long cacheOperationsBlockedDuration() {
+    private long getCurrentPMEDuration(boolean blocked) {
         GridDhtPartitionsExchangeFuture fut = lastTopologyFuture();
 
-        return fut == null ? 0 : fut.cacheOperationsBlockedDuration();
+        return fut == null ? 0 : fut.getCurrentPMEDuration(blocked);
+    }
+
+    /**
+     * @return Histogram of PME durations metric.
+     */
+    public HistogramMetric getDurationHistogram() {
+        return durationHistogram;
+    }
+
+    /**
+     * @return Histogram of blocking PME durations metric
+     */
+    public HistogramMetric getBlockingDurationHistogram() {
+        return blockingDurationHistogram;
     }
 
     /**
