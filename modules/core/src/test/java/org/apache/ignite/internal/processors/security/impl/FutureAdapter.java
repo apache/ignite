@@ -24,12 +24,12 @@ import java.util.concurrent.TimeoutException;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.NotNull;
 
-/** . */
+/** */
 public class FutureAdapter<T> implements Future<T> {
-    /** . */
+    /** */
     private final IgniteFuture<T> igniteFut;
 
-    /** . */
+    /** */
     public FutureAdapter(IgniteFuture<T> igniteFut) {
         this.igniteFut = igniteFut;
     }

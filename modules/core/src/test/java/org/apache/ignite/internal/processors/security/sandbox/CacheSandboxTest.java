@@ -38,7 +38,7 @@ import org.junit.Test;
 
 import static java.util.Collections.singleton;
 
-/** . */
+/** */
 public class CacheSandboxTest extends AbstractSandboxTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -49,7 +49,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
             );
     }
 
-    /** . */
+    /** */
     @Test
     public void test() throws Exception {
         prepareCluster();
@@ -89,7 +89,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
         );
     }
 
-    /** . */
+    /** */
     private CacheEntryProcessor<Object, Object, Object> processor() {
         return (entry, o) -> {
             START_THREAD_RUNNABLE.run();
@@ -138,12 +138,12 @@ public class CacheSandboxTest extends AbstractSandboxTest {
         );
     }
 
-    /** . */
+    /** */
     private void runOperation(Supplier<Object> s) {
         runOperation((Runnable)s::get);
     }
 
-    /** . */
+    /** */
     private void runForbiddenOperation(Supplier<Object> s) {
         try {
             Object res = s.get();
@@ -165,7 +165,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
         throw new AssertionError("Exception has not been thrown.");
     }
 
-    /** . */
+    /** */
     private void runForbiddenOperation(Runnable r) {
         runForbiddenOperation(() -> {
             r.run();
@@ -174,7 +174,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
         });
     }
 
-    /** . */
+    /** */
     private void populateCache() {
         try (IgniteDataStreamer<String, Integer> cache = grid(SRV).dataStreamer(TEST_CACHE)) {
             for (int i = 1; i <= 10; i++)

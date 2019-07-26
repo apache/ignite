@@ -37,21 +37,21 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 import static sun.security.util.SecurityConstants.MODIFY_THREADGROUP_PERMISSION;
 import static sun.security.util.SecurityConstants.MODIFY_THREAD_PERMISSION;
 
-/** . */
+/** */
 public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     /** Flag that shows thread was started. */
     protected static final AtomicBoolean IS_STARTED = new AtomicBoolean(false);
 
-    /** . */
+    /** */
     protected static final String TEST_CACHE = "test_cache";
 
-    /** . */
+    /** */
     private static final ReentrantLock LOCK = new ReentrantLock();
 
-    /** . */
+    /** */
     private static final int LOCK_TIMEOUT = 500;
 
-    /** . */
+    /** */
     private static boolean setupSM;
 
     /** Sever node name. */
@@ -63,7 +63,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     /** Client node that cannot start a new thread. */
     protected static final String CLNT_FORBIDDEN = "clnt_forbidden";
 
-    /** . */
+    /** */
     public static final IgniteRunnable START_THREAD_RUNNABLE = () -> {
         LOCK.lock();
 
@@ -81,7 +81,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         }
     };
 
-    /** . */
+    /** */
     @BeforeClass
     public static void setup() {
         if (System.getSecurityManager() == null) {
@@ -101,7 +101,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         }
     }
 
-    /** . */
+    /** */
     @AfterClass
     public static void tearDown() {
         if (setupSM) {
@@ -110,7 +110,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         }
     }
 
-    /** . */
+    /** */
     protected void prepareCluster() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
@@ -124,7 +124,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         srv.cluster().active(true);
     }
 
-    /** . */
+    /** */
     protected void runOperation(Runnable r) {
         IS_STARTED.set(false);
 
@@ -135,7 +135,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         assertTrue(IS_STARTED.get());
     }
 
-    /** . */
+    /** */
     private void waitStarted() {
         boolean isLocked = false;
 

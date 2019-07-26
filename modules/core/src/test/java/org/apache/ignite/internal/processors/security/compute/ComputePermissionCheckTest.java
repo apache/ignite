@@ -230,7 +230,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             return Collections.singletonMap(
                 new ComputeJob() {
                     @Override public void cancel() {
-                        // no-op
+                        // No-op.
                     }
 
                     @Override public Object execute() {

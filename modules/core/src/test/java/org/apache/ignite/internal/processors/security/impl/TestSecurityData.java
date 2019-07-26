@@ -34,7 +34,7 @@ public class TestSecurityData {
     /** Security permission set. */
     private SecurityPermissionSet prmSet;
 
-    /** . */
+    /** */
     private Permissions smPerms;
 
     /**
@@ -81,12 +81,12 @@ public class TestSecurityData {
         return this;
     }
 
-    /** . */
+    /** */
     public Permissions getSmPermissions() {
         return smPerms;
     }
 
-    /** . */
+    /** */
     public TestSecurityData getSmPermissions(Permissions smPerms) {
         this.smPerms = smPerms;
 

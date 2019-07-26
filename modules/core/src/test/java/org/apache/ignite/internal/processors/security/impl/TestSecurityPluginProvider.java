@@ -35,7 +35,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** Permissions. */
     private final SecurityPermissionSet perms;
 
-    /** . */
+    /** */
     private final Permissions smPerms;
 
     /** Users security data. */
@@ -47,7 +47,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
         this(login, pwd, perms, new Permissions(), clientData);
     }
 
-    /** . */
+    /** */
     public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
         Permissions smPerms, TestSecurityData... clientData) {
         this.login = login;

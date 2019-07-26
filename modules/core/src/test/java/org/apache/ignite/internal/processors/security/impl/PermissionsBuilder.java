@@ -21,12 +21,14 @@ import java.security.AllPermission;
 import java.security.Permission;
 import java.security.Permissions;
 
+/** */
 public class PermissionsBuilder {
-
+    /** */
     public static PermissionsBuilder create() {
         return new PermissionsBuilder();
     }
 
+    /** */
     public static Permissions createAllowAll() {
         Permissions res = new Permissions();
 
@@ -35,20 +37,23 @@ public class PermissionsBuilder {
         return res;
     }
 
-    private final Permissions permissions;
+    /** */
+    private final Permissions perms;
 
+    /** */
     private PermissionsBuilder() {
-        permissions = new Permissions();
+        perms = new Permissions();
     }
 
+    /** */
     public PermissionsBuilder add(Permission perm) {
-        permissions.add(perm);
+        perms.add(perm);
 
         return this;
     }
 
+    /** */
     public Permissions get() {
-        return permissions;
+        return perms;
     }
-
 }

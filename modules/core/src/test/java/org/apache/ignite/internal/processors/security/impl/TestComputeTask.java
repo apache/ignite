@@ -29,12 +29,12 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
-/** . */
+/** */
 public class TestComputeTask implements ComputeTask<Object, Object> {
-    /** . */
+    /** */
     private final IgniteRunnable r;
 
-    /** . */
+    /** */
     public TestComputeTask(IgniteRunnable r) {
         this.r = r;
     }
@@ -45,7 +45,7 @@ public class TestComputeTask implements ComputeTask<Object, Object> {
         return Collections.singletonMap(
             new ComputeJob() {
                 @Override public void cancel() {
-                    // no-op
+                    // No-op.
                 }
 
                 @Override public Object execute() {

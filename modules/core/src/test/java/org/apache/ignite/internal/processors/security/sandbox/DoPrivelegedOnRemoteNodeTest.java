@@ -48,7 +48,7 @@ import static sun.security.util.SecurityConstants.MODIFY_THREAD_PERMISSION;
  * This test shows that an user-defined code with a privileged block cannot execute a secure-sensitive operation.
  */
 public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
-    /** . */
+    /** */
     private static final String RUNNABLE_SRC = "import org.apache.ignite.lang.IgniteRunnable;\n" +
         "\n" +
         "import static org.apache.ignite.internal.processors.security.sandbox.AbstractSandboxTest.START_THREAD_RUNNABLE;\n" +
@@ -59,7 +59,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
         "    }\n" +
         "}";
 
-    /** . */
+    /** */
     private static final String RUNNABLE_DO_PRIVELEGED_SRC = "import java.security.AccessController;\n" +
         "import java.security.PrivilegedActionException;\n" +
         "import java.security.PrivilegedExceptionAction;\n" +
@@ -83,16 +83,16 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
         "    }\n" +
         "}";
 
-    /** . */
+    /** */
     private Path srcTmpDir;
 
-    /** . */
+    /** */
     @Before
     public void prepare() throws IOException {
         srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
     }
 
-    /** . */
+    /** */
     @After
     public void cleanup() {
         U.delete(srcTmpDir);
@@ -107,7 +107,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
             );
     }
 
-    /** . */
+    /** */
     @Test
     public void test() throws Exception {
         prepareCluster();
@@ -123,7 +123,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
             AccessControlException.class);
     }
 
-    /** . */
+    /** */
     @Override protected void prepareCluster() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
@@ -135,7 +135,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
         srv.cluster().active(true);
     }
 
-    /** . */
+    /** */
     IgniteRunnable runnable(String clsName, String src) {
         try {
             URLClassLoader clsLdr = prepareClassLoader(clsName + ".java", src);
@@ -149,7 +149,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
         }
     }
 
-    /** . */
+    /** */
     private URLClassLoader prepareClassLoader(String clsName, String src) throws Exception {
         Files.createDirectories(srcTmpDir);
 

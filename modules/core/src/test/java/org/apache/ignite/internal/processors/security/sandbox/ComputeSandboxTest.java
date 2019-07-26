@@ -30,26 +30,26 @@ import org.junit.Test;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-/** . */
+/** */
 public class ComputeSandboxTest extends AbstractSandboxTest {
-    /** . */
+    /** */
     private static final TestComputeTask COMPUTE_TASK = new TestComputeTask(START_THREAD_RUNNABLE);
 
-    /** . */
+    /** */
     private static final IgniteCallable<Object> CALLABLE = () -> {
         START_THREAD_RUNNABLE.run();
 
         return null;
     };
 
-    /** . */
+    /** */
     private static final IgniteClosure<Object, Object> CLOSURE = a -> {
         START_THREAD_RUNNABLE.run();
 
         return null;
     };
 
-    /** . */
+    /** */
     @Test
     public void test() throws Exception {
         prepareCluster();
@@ -95,7 +95,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
         );
     }
 
-    /** . */
+    /** */
     private void runFailedOperation(Runnable r) {
         IS_STARTED.set(false);
 

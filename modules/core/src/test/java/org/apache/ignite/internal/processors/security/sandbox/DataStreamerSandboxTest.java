@@ -32,7 +32,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-/** . */
+/** */
 public class DataStreamerSandboxTest extends AbstractSandboxTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -40,7 +40,7 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
             .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(TEST_CACHE));
     }
 
-    /** . */
+    /** */
     @Test
     public void test() throws Exception {
         prepareCluster();

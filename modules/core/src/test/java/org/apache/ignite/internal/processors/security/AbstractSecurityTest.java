@@ -81,7 +81,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
                 .setClientMode(isClient));
     }
 
-    /** . */
+    /** */
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
         Permissions smPerms, boolean isClient) throws Exception {
         return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", prmSet, smPerms))

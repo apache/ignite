@@ -23,12 +23,12 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 
-/** . */
+/** */
 public class TestStoreFactory implements Factory<TestStoreFactory.TestCacheStore> {
-    /** . */
+    /** */
     private final T2<Object, Object> keyVal;
 
-    /** . */
+    /** */
     public TestStoreFactory(Object key, Object val) {
         keyVal = new T2<>(key, val);
     }
@@ -38,7 +38,7 @@ public class TestStoreFactory implements Factory<TestStoreFactory.TestCacheStore
         return new TestCacheStore();
     }
 
-    /** . */
+    /** */
     class TestCacheStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {

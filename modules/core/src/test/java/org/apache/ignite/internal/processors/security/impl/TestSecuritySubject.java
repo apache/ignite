@@ -143,7 +143,7 @@ public class TestSecuritySubject implements SecuritySubject {
         return smPerms;
     }
 
-    /** . */
+    /** */
     public TestSecuritySubject smPermissions(Permissions smPerms) {
         this.smPerms = smPerms;
 
