@@ -27,7 +27,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents whole cluster (all available nodes) and also provides a handle on {@link #nodeLocalMap()} which
@@ -558,7 +557,7 @@ public interface IgniteCluster extends ClusterGroup {
      *  or concurrent tag change request was completed before the current one.
      *  Also provided tag is checked for max length.
      */
-    public void tag(@Nullable String tag) throws IgniteCheckedException;
+    public void tag(String tag) throws IgniteCheckedException;
 
     /**
      * @return Value of manual baseline control or auto adjusting baseline. {@code True} If cluster in auto-adjust.
