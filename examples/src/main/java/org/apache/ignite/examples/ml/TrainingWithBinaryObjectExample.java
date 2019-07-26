@@ -60,8 +60,6 @@ public class TrainingWithBinaryObjectExample {
             } finally {
                 dataCache.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 

@@ -87,8 +87,6 @@ public class GDBOnTreesClassificationTrainerExample {
             } finally {
                 trainingSet.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 
