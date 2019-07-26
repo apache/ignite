@@ -2732,9 +2732,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param blocked {@code True} If take into account only cache operations blocked PME duration.
+     * @param blocked {@code True} If take into account only cache operations blocked PME.
      * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
-     * running PME.
+     * running PME or {@code blocked} was set to {@code true} and current PME don't block cache operations.
      */
     private long getCurrentPMEDuration(boolean blocked) {
         GridDhtPartitionsExchangeFuture fut = lastTopologyFuture();
