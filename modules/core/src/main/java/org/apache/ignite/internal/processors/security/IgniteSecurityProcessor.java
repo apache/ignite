@@ -62,7 +62,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
 
-    /** . */
+    /** */
     private static final ProtectionDomain[] NULL_PD_ARRAY = new ProtectionDomain[0];
 
     /** Current security context. */

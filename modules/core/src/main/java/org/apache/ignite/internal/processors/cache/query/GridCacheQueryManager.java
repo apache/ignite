@@ -89,8 +89,8 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.closure.SecurityIgniteBiPredicate;
-import org.apache.ignite.internal.processors.security.closure.SecurityIgniteClosure;
+import org.apache.ignite.internal.processors.security.closure.SandboxAwareIgniteBiPredicate;
+import org.apache.ignite.internal.processors.security.closure.SandboxAwareIgniteClosure;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -853,18 +853,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
-    /** . */
+    /** */
     private IgniteBiPredicate<K, V> securityKeyValFilter(IgniteBiPredicate<K, V> origin) {
         IgniteSecurity sec = cctx.kernalContext().security();
 
-        return origin != null && sec.enabled() ? new SecurityIgniteBiPredicate<>(sec, origin) : origin;
+        return origin != null && sec.enabled() ? new SandboxAwareIgniteBiPredicate<>(sec, origin) : origin;
     }
 
-    /** . */
+    /** */
     private <E, R> IgniteClosure<E, R> securityTransformer(IgniteClosure<E, R> origin) {
         IgniteSecurity sec = cctx.kernalContext().security();
 
-        return origin != null && sec.enabled() ? new SecurityIgniteClosure<>(sec, origin) : origin;
+        return origin != null && sec.enabled() ? new SandboxAwareIgniteClosure<>(sec, origin) : origin;
     }
 
     /**

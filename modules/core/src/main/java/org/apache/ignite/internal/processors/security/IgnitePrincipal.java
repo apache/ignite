@@ -24,10 +24,10 @@ import java.util.Objects;
  * Represents any entity such as a user, a node, etc.
  */
 public class IgnitePrincipal implements Principal {
-    /** . */
+    /** */
     private final String name;
 
-    /** . */
+    /** */
     public IgnitePrincipal(String name) {
         this.name = Objects.requireNonNull(name);
     }

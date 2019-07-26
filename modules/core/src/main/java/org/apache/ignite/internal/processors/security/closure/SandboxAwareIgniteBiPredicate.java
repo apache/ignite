@@ -18,39 +18,33 @@
 package org.apache.ignite.internal.processors.security.closure;
 
 import java.util.Objects;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * Wrapper for {@link ComputeJob} that executes its {@code execute} method with restriction defined by current security
- * context.
+ * Wrapper for {@link IgniteBiPredicate} that executes its {@code apply} method with restriction defined by current
+ * security context.
  *
  * @see IgniteSecurity#execute(java.util.concurrent.Callable)
  */
-public class SecurityComputeJob implements ComputeJob {
-    /** . */
-    private static final long serialVersionUID = 7510836970476698602L;
+public class SandboxAwareIgniteBiPredicate<K, V> implements IgniteBiPredicate<K, V> {
+    /** */
+    private static final long serialVersionUID = 1234751431315974061L;
 
-    /** . */
+    /** */
     private final IgniteSecurity sec;
 
-    /** . */
-    private final ComputeJob origin;
+    /** */
+    private final IgniteBiPredicate<K, V> ogigin;
 
-    /** . */
-    public SecurityComputeJob(IgniteSecurity sec, ComputeJob origin) {
+    /** */
+    public SandboxAwareIgniteBiPredicate(IgniteSecurity sec, IgniteBiPredicate<K, V> ogigin) {
         this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.origin = Objects.requireNonNull(origin, "Origin cannot be null.");
+        this.ogigin = Objects.requireNonNull(ogigin, "Origin cannot be null.");
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() {
-        origin.cancel();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object execute() throws IgniteException {
-        return sec.execute(origin::execute);
+    @Override public boolean apply(K k, V v) {
+        return sec.execute(() -> ogigin.apply(k, v));
     }
 }

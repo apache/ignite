@@ -17,34 +17,38 @@
 
 package org.apache.ignite.internal.processors.security.closure;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.stream.StreamReceiver;
 
 /**
- * Wrapper for {@link IgniteBiPredicate} that executes its {@code apply} method with restriction defined by current
+ * Wrapper for {@link StreamReceiver} that executes its {@code receive} method with restriction defined by current
  * security context.
  *
  * @see IgniteSecurity#execute(java.util.concurrent.Callable)
  */
-public class SecurityIgniteBiPredicate<K, V> implements IgniteBiPredicate<K, V> {
-    /** . */
-    private static final long serialVersionUID = 1234751431315974061L;
+public class SandboxAwareStreamReceiver<K, V> implements StreamReceiver<K, V> {
+    /** */
+    private static final long serialVersionUID = 3783092194186094866L;
 
-    /** . */
+    /** */
     private final IgniteSecurity sec;
 
-    /** . */
-    private final IgniteBiPredicate<K, V> ogigin;
+    /** */
+    private final StreamReceiver<K, V> origin;
 
-    /** . */
-    public SecurityIgniteBiPredicate(IgniteSecurity sec, IgniteBiPredicate<K, V> ogigin) {
+    /** */
+    public SandboxAwareStreamReceiver(IgniteSecurity sec, StreamReceiver<K, V> origin) {
         this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.ogigin = Objects.requireNonNull(ogigin, "Origin cannot be null.");
+        this.origin = Objects.requireNonNull(origin, "Origin cannot be null.");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(K k, V v) {
-        return sec.execute(() -> ogigin.apply(k, v));
+    @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
+        sec.execute(() -> origin.receive(cache, entries));
     }
 }

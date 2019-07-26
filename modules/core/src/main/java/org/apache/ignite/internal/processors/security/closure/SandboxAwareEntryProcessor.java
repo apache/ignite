@@ -18,33 +18,32 @@
 package org.apache.ignite.internal.processors.security.closure;
 
 import java.util.Objects;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.lang.IgniteClosure;
 
 /**
- * Wrapper for {@link IgniteClosure} that executes its {@code apply} method with restriction defined by current security
- * context.
+ * Wrapper for {@link EntryProcessor} that executes its {@code process} method with restriction defined by current
+ * security context.
  *
  * @see IgniteSecurity#execute(java.util.concurrent.Callable)
  */
-public class SecurityIgniteClosure<E, R> implements IgniteClosure<E, R> {
-    /** . */
-    private static final long serialVersionUID = -7040271779139978769L;
-
-    /** . */
+public class SandboxAwareEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
+    /** */
     private final IgniteSecurity sec;
 
-    /** . */
-    private final IgniteClosure<E, R> origin;
+    /** */
+    private final EntryProcessor<K, V, T> origin;
 
-    /** . */
-    public SecurityIgniteClosure(IgniteSecurity sec, IgniteClosure<E, R> origin) {
+    /** */
+    public SandboxAwareEntryProcessor(IgniteSecurity sec, EntryProcessor<K, V, T> origin) {
         this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.origin = Objects.requireNonNull(origin, "Origin cannot be null.");
+        this.origin = Objects.requireNonNull(origin, "Orgin cannot be null.");
     }
 
     /** {@inheritDoc} */
-    @Override public R apply(E e) {
-        return sec.execute(() -> origin.apply(e));
+    @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
+        return sec.execute(() -> origin.process(entry, arguments));
     }
 }

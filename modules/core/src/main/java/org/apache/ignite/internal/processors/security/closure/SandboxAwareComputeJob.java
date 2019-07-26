@@ -17,38 +17,40 @@
 
 package org.apache.ignite.internal.processors.security.closure;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.stream.StreamReceiver;
 
 /**
- * Wrapper for {@link StreamReceiver} that executes its {@code receive} method with restriction defined by current
- * security context.
+ * Wrapper for {@link ComputeJob} that executes its {@code execute} method with restriction defined by current security
+ * context.
  *
  * @see IgniteSecurity#execute(java.util.concurrent.Callable)
  */
-public class SecurityStreamReceiver<K, V> implements StreamReceiver<K, V> {
-    /** . */
-    private static final long serialVersionUID = 3783092194186094866L;
+public class SandboxAwareComputeJob implements ComputeJob {
+    /** */
+    private static final long serialVersionUID = 7510836970476698602L;
 
-    /** . */
+    /** */
     private final IgniteSecurity sec;
 
-    /** . */
-    private final StreamReceiver<K, V> origin;
+    /** */
+    private final ComputeJob origin;
 
-    /** . */
-    public SecurityStreamReceiver(IgniteSecurity sec, StreamReceiver<K, V> origin) {
+    /** */
+    public SandboxAwareComputeJob(IgniteSecurity sec, ComputeJob origin) {
         this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
         this.origin = Objects.requireNonNull(origin, "Origin cannot be null.");
     }
 
     /** {@inheritDoc} */
-    @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
-        sec.execute(() -> origin.receive(cache, entries));
+    @Override public void cancel() {
+        origin.cancel();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object execute() throws IgniteException {
+        return sec.execute(origin::execute);
     }
 }

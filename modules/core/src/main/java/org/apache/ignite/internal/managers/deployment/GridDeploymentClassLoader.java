@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"CustomClassloader"})
 class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInfo {
-    /** . */
+    /** */
     private static final ProtectionDomain PROTECTION_DOMAIN;
 
     static {

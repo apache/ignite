@@ -28,13 +28,13 @@ import javax.security.auth.SubjectDomainCombiner;
  * A {@code IgniteSubjectDomainCombainer} updates ProtectionDomains with passed {@code Permissions}.
  */
 public class IgniteSubjectDomainCombiner extends SubjectDomainCombiner {
-    /** . */
+    /** */
     private final WeakKeyValueMap<ProtectionDomain, ProtectionDomain> cachedPDs = new WeakKeyValueMap<>();
 
-    /** . */
+    /** */
     private final Permissions perms;
 
-    /** . */
+    /** */
     public IgniteSubjectDomainCombiner(Subject subject, Permissions perms) {
         super(subject);
 
@@ -76,7 +76,7 @@ public class IgniteSubjectDomainCombiner extends SubjectDomainCombiner {
         return newDomains == null || newDomains.length == 0 ? null : newDomains;
     }
 
-    /** . */
+    /** */
     private static ProtectionDomain[] optimize(ProtectionDomain[] domains) {
         if (domains == null || domains.length == 0)
             return null;
@@ -111,16 +111,16 @@ public class IgniteSubjectDomainCombiner extends SubjectDomainCombiner {
         return num == 0 || optimized.length == 0 ? null : optimized;
     }
 
-    /** . */
+    /** */
     private static class WeakKeyValueMap<K, V> extends WeakHashMap<K, WeakReference<V>> {
-        /** . */
+        /** */
         public V getValue(K key) {
             WeakReference<V> wr = get(key);
 
             return wr != null ? wr.get() : null;
         }
 
-        /** . */
+        /** */
         public V putValue(K key, V val) {
             WeakReference<V> wr = put(key, new WeakReference<>(val));
 

@@ -82,7 +82,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.closure.SecurityEntryProcessor;
+import org.apache.ignite.internal.processors.security.closure.SandboxAwareEntryProcessor;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -6701,13 +6701,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
 
-        /** . */
+        /** */
         private EntryProcessor<Object, Object, ?> securityEntryProcessor() {
             IgniteSecurity sec = entry.context().kernalContext().security();
 
             EntryProcessor<Object, Object, ?> prc = (EntryProcessor<Object, Object, ?>)writeObj;
 
-            return prc != null && sec.enabled() ? new SecurityEntryProcessor<>(sec, prc) : prc;
+            return prc != null && sec.enabled() ? new SandboxAwareEntryProcessor<>(sec, prc) : prc;
         }
 
         /** {@inheritDoc} */
