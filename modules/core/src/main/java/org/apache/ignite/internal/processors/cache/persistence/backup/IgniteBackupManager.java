@@ -379,6 +379,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         cpFut.beginFuture()
             .get();
 
+        U.log(log, "Backup operation scheduled with the following context: " + bctx0);
+
         return bctx0.result;
     }
 
@@ -398,6 +400,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      */
     private void submitTasks(BackupContext bctx, FilePageStoreManager pageMgr) throws IgniteCheckedException {
         List<CompletableFuture<File>> futs = new ArrayList<>(bctx.partAllocLengths.size());
+
+        U.log(log, "Partition allocated lengths: " + bctx.partAllocLengths);
 
         for (Map.Entry<GroupPartitionId, Long> e : bctx.partAllocLengths.entrySet()) {
             GroupPartitionId pair = e.getKey();
@@ -518,11 +522,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     new LongAdderMetric("NO_OP", null),
                     PageStoreListener.NO_OP);
 
+                store.beginRecover();
                 delta.apply(store);
-
                 store.stop(false);
 
-                U.log(log, "Partition applied");
+                U.log(log, "Partition delta storage applied to: " + from.getName());
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -587,7 +591,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                         written += src.transferTo(written, partSize - written, dest);
                 }
 
-                U.log(log, "Partition has been copied [from=" + from.getAbsolutePath() +
+                U.log(log, "Partition has been copied [from=" + from.getAbsolutePath() + ", fromSize=" + from.length() +
                     ", to=" + to.getAbsolutePath() + ']');
             }
             catch (IOException ex) {

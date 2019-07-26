@@ -189,12 +189,16 @@ public class DeltaPagesStorage implements Closeable {
 
         // Will perform a copy delta file page by page simultaneously with merge pages operation.
         ByteBuffer pageBuff = ByteBuffer.allocate(pageSize);
+        pageBuff.order(ByteOrder.nativeOrder());
 
         pageBuff.clear();
 
         long readed;
         long position = 0;
         long size = storageSize.sum();
+
+        U.log(log, "Prepare partition delta storage to apply [file=" + cfgPath.get().toFile().getName() +
+            ", pages=" + (size/pageSize) + ']');
 
         while ((readed = fileIo.readFully(pageBuff, position)) > 0 && position < size) {
             position += readed;
@@ -218,8 +222,7 @@ public class DeltaPagesStorage implements Closeable {
             pageBuff.rewind();
 
             // Other pages are not related to handled partition file and must be ignored.
-            if (pageOffset < store.size())
-                store.write(pageId, pageBuff, 0, false);
+            store.write(pageId, pageBuff, 0, false);
 
             pageBuff.clear();
         }

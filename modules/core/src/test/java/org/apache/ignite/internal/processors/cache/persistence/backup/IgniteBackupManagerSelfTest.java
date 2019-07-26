@@ -33,7 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -57,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -65,6 +62,7 @@ import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
@@ -114,7 +112,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
 
         try {
             try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX))
+                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX) && p.toFile().getName().endsWith(FILE_SUFFIX))
             ) {
                 for (Path path : partFiles)
                     result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
@@ -189,45 +187,23 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     public void testBackupLocalPartitions() throws Exception {
         final CountDownLatch slowCopy = new CountDownLatch(1);
 
-        IgniteEx ignite = startGrid(0);
+        IgniteEx ig = startGrid(0);
 
-        ignite.cluster().active(true);
+        ig.cluster().active(true);
 
         for (int i = 0; i < 1024; i++)
-            ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+            ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        File cacheWorkDir = ((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .cacheWorkDir(defaultCacheCfg);
+        CheckpointFuture cpFut = ig.context()
+            .cache()
+            .context()
+            .database()
+            .forceCheckpoint("the next one");
 
-        stopGrid(0);
+        cpFut.finishFuture().get();
 
-        // Calculate CRCs
-        final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
-
-        IgniteEx ig0 = startGrid(0);
-
-        final GridCacheSharedContext<?, ?> cctx1 = ig0.context().cache().context();
-
-        // Run the next checkpoint and produce dirty pages to generate onPageWrite events.
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 1024; i < 2048; i++)
-                        ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-                    CheckpointFuture cpFut = cctx1.database().forceCheckpoint("the next one");
-
-                    cpFut.finishFuture().get();
-
-                    slowCopy.countDown();
-
-                    U.log(log, "Parallel changes have made. The checkpoint finished succesfully.");
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        });
+        for (int i = 1024; i < 2048; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
         Set<Integer> parts = Stream.iterate(0, n -> n + 1)
             .limit(CACHE_PARTS_COUNT)
@@ -236,13 +212,22 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         Map<Integer, Set<Integer>> toBackup = new HashMap<>();
         toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME), parts);
 
-        IgniteInternalFuture<?> fut = ig0.context()
+        IgniteInternalFuture<?> backupFut = ig.context()
             .cache()
             .context()
             .backup()
             .createLocalBackup("testBackup", toBackup, backupDir);
 
-        fut.get();
+        backupFut.get();
+
+        File cacheWorkDir = ((FilePageStoreManager)ig.context()
+            .cache()
+            .context()
+            .pageStore())
+            .cacheWorkDir(defaultCacheCfg);
+
+        // Calculate CRCs
+        final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(new File(backupDir.getAbsolutePath(),
             "testBackup"),
