@@ -1138,13 +1138,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     private void submitClearTombstones() {
         if (tombstoneCreated)
-            grp.shared().kernalContext().closure().runLocalSafe(this::clearTombstones, true);
+            grp.shared().evict().clearTombstonesAsync(grp, this);
     }
 
     /**
      *
      */
-    private void clearTombstones() {
+    public void clearTombstones(EvictionContext evictionCtx) {
         final int stopCheckingFreq = 1000;
 
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
@@ -1202,7 +1202,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 cntr++;
 
                 if (cntr % stopCheckingFreq == 0) {
-                    if (ctx.kernalContext().isStopping() || state() != OWNING)
+                    if (evictionCtx.shouldStop() || state() != OWNING)
                         break;
                 }
             }

@@ -164,11 +164,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         tombstoneVal = new CacheObjectImpl(null, tombstoneBytes);
     }
 
+    /**
+     * @return Value to be stored for removed entry.
+     */
     public CacheObject tombstoneValue() {
         return tombstoneVal;
     }
 
-    public boolean isTombstone(CacheDataRow row) throws IgniteCheckedException {
+    /**
+     * @param row Row.
+     * @return {@code True} if given row is tombstone.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean isTombstone(@Nullable CacheDataRow row) throws IgniteCheckedException {
         if (row == null)
             return false;
 
@@ -191,11 +199,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param key Row key.
      * @param incomplete Incomplete object.
      * @return Tombstone flag or {@code null} if there is no enough data.
-     * @throws IgniteCheckedException If failed.
      */
     public Boolean isTombstone(ByteBuffer buf,
         @Nullable KeyCacheObject key,
-        @Nullable IncompleteCacheObject incomplete) throws IgniteCheckedException {
+        @Nullable IncompleteCacheObject incomplete) {
         if (key == null) {
             if (incomplete == null) { // Did not start read key yet.
                 if (buf.remaining() < IncompleteCacheObject.HEAD_LEN) {
@@ -257,9 +264,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param buf Buffer.
      * @param offset Value offset.
      * @return Tombstone flag or {@code null} if there is no enough data.
-     * @throws IgniteCheckedException If failed.
      */
-     private Boolean isTombstone(ByteBuffer buf, int offset) throws IgniteCheckedException {
+     private Boolean isTombstone(ByteBuffer buf, int offset) {
          int valLen = buf.getInt(buf.position() + offset);
          if (valLen != tombstoneBytes.length)
              return Boolean.FALSE;
@@ -279,7 +285,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
          return Boolean.TRUE;
      }
 
-    public boolean isTombstone(long addr) throws IgniteCheckedException {
+    /**
+     * @param addr Row address.
+     * @return {@code True} if stored value is tombstone.
+     */
+    public boolean isTombstone(long addr) {
         int off = 0;
 
         byte type = PageUtils.getByte(addr, off + 4);

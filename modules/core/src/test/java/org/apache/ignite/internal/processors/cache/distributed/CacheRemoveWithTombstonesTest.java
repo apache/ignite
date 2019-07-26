@@ -127,9 +127,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
     public void testRemoveAndRebalanceRaceTxWithPersistence() throws Exception {
         persistence = true;
 
-        cleanPersistenceDir();
-
-        testRemoveAndRebalanceRace(TRANSACTIONAL, true);
+        testRemoveAndRebalanceRaceTx();
     }
 
     /**
@@ -139,7 +137,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
     public void testRemoveAndRebalanceRaceTxMvccWithPersistence() throws Exception {
         persistence = true;
 
-        testRemoveAndRebalanceRace(TRANSACTIONAL_SNAPSHOT, false);
+        testRemoveAndRebalanceRaceTxMvcc();
     }
 
     /**
@@ -149,7 +147,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
     public void testRemoveAndRebalanceRaceAtomicWithPersistence() throws Exception {
         persistence = true;
 
-        testRemoveAndRebalanceRace(ATOMIC, false);
+        testRemoveAndRebalanceRaceAtomic();
     }
 
     /**
@@ -164,7 +162,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.createCache(cacheConfiguration(atomicityMode));
 
-        LongMetric tombstoneMetric0 =  (LongMetric)ignite0.context().metric().registry(
+        LongMetric tombstoneMetric0 = ignite0.context().metric().registry(
                 cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false)).findMetric("Tombstones");
 
         Map<Integer, Integer> map = new HashMap<>();
@@ -203,7 +201,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
             }
         }
 
-        final LongMetric tombstoneMetric1 =  (LongMetric)ignite1.context().metric().registry(
+        final LongMetric tombstoneMetric1 =  ignite1.context().metric().registry(
                 cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false)).findMetric("Tombstones");
 
         // On first node there should not be tombstones.
