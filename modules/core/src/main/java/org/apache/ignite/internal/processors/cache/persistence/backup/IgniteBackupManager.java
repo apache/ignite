@@ -315,7 +315,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         // Stop all corresponding storages.
         bctx0.cpEndFut.thenRun(() -> {
             for (DeltaPagesStorage s : bctx0.partDeltaStores.values())
-                s.writable(false);
+                s.disableWrites();
 
             U.log(log, "All partition delta storages are closed to write after checkpoint finished");
         });
@@ -348,7 +348,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException | IOException e) {
             try {
                 Files.delete(bctx0.backupDir.toPath());
             }

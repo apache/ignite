@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -37,7 +36,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -45,12 +46,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class DeltaPagesStorage implements Closeable {
     /** Ignite logger to use. */
+    @GridToStringExclude
     private final IgniteLogger log;
 
     /** Configuration file path provider. */
     private final Supplier<Path> cfgPath;
 
     /** Factory to produce an IO interface over underlying file. */
+    @GridToStringExclude
     private final FileIOFactory factory;
 
     /** Storage size. */
@@ -67,8 +70,6 @@ public class DeltaPagesStorage implements Closeable {
 
     /** Allow write to storage flag. */
     private volatile boolean writable = true;
-
-    // TODO create a mask based on total allocated pages within this partition.
 
     /**
      * @param log Ignite logger to use.
@@ -87,50 +88,11 @@ public class DeltaPagesStorage implements Closeable {
     }
 
     /**
-     * @throws IgniteCheckedException If failed to initialize store file.
+     * @throws IOException If failed to initialize store file.
      */
-    public DeltaPagesStorage init() throws IgniteCheckedException {
-        if (fileIo != null)
-            return this;
-
-        IgniteCheckedException err = null;
-        FileIO fileIo = null;
-
-        lock.writeLock().lock();
-
-        try {
-            boolean interrupted = false;
-
-            while (true) {
-                try {
-                    fileIo = factory.create(cfgPath.get().toFile());
-
-                    if (interrupted)
-                        Thread.currentThread().interrupt();
-
-                    break;
-                }
-                catch (ClosedByInterruptException e) {
-                    interrupted = true;
-
-                    Thread.interrupted();
-                }
-            }
-        }
-        catch (IOException e) {
-            err = new IgniteCheckedException("Failed to initialize backup partition file: " +
-                cfgPath.get().toAbsolutePath(), e);
-
-            throw err;
-        }
-        finally {
-            if (err == null)
-                this.fileIo = fileIo;
-            else
-                U.closeQuiet(fileIo);
-
-            lock.writeLock().unlock();
-        }
+    public DeltaPagesStorage init() throws IOException {
+        if (fileIo == null)
+            fileIo = factory.create(cfgPath.get().toFile());
 
         return this;
     }
@@ -141,8 +103,7 @@ public class DeltaPagesStorage implements Closeable {
      * @throws IOException If page writing failed (IO error occurred).
      */
     public void write(long pageId, ByteBuffer pageBuf, long off) throws IOException {
-        if (fileIo == null)
-            return;
+        assert fileIo != null : "Delta pages storage is not inited: " + this;
 
         if (!writable())
             return;
@@ -236,10 +197,15 @@ public class DeltaPagesStorage implements Closeable {
     }
 
     /**
-     * @param writable {@code true} if writes to the storage is allowed.
+     * Disable page writing to this storage.
      */
-    public void writable(boolean writable) {
-        this.writable = writable;
+    public void disableWrites() {
+        writable = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DeltaPagesStorage.class, this);
     }
 
     /** {@inheritDoc} */
