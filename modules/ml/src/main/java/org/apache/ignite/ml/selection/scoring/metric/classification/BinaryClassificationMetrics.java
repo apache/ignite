@@ -42,6 +42,7 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
     {
         metric = BinaryClassificationMetricValues::accuracy;
     }
+
     /**
      * Calculates binary metrics values.
      *
