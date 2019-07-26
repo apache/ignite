@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.tree;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -48,7 +48,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * Description of entropy can be found in: https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers .
  */
 public class FraudDetectionExample {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws FileNotFoundException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
@@ -78,11 +78,10 @@ public class FraudDetectionExample {
                         .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(0)),
                     vectorizer, split
                 );
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 

@@ -71,8 +71,6 @@ public class ImputingExample {
             } finally {
                 data.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 

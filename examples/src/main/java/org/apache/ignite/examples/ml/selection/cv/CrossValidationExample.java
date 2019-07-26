@@ -76,19 +76,17 @@ public class CrossValidationExample {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
                 LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
-
                 CrossValidation<DecisionTreeNode, Double, Integer, LabeledVector<Double>> scoreCalculator
                     = new CrossValidation<>();
 
-                double[] accuracyScores = scoreCalculator
-                    .withIgnite(ignite)
-                    .withUpstreamCache(trainingSet)
-                    .withTrainer(trainer)
-                    .withMetric(new Accuracy<>())
-                    .withPreprocessor(vectorizer)
-                    .withAmountOfFolds(4)
-                    .isRunningOnPipeline(false)
-                    .scoreByFolds();
+                double[] accuracyScores = scoreCalculator.score(
+                    trainer,
+                    new Accuracy<>(),
+                    ignite,
+                    trainingSet,
+                    vectorizer,
+                    4
+                );
 
                 System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
 
@@ -97,9 +95,14 @@ public class CrossValidationExample {
                     .withPositiveClsLb(1.0)
                     .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
 
-                double[] balancedAccuracyScores = scoreCalculator
-                    .withMetric(metrics)
-                    .scoreByFolds();
+                double[] balancedAccuracyScores = scoreCalculator.score(
+                    trainer,
+                    metrics,
+                    ignite,
+                    trainingSet,
+                    vectorizer,
+                    4
+                );
 
                 System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
@@ -107,8 +110,6 @@ public class CrossValidationExample {
             } finally {
                 trainingSet.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 

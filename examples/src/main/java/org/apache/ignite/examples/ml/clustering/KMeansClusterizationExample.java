@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.clustering;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -49,7 +49,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class KMeansClusterizationExample {
     /** Run example. */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
         System.out.println(">>> KMeans clustering algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -96,8 +96,6 @@ public class KMeansClusterizationExample {
             } finally {
                 dataCache.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 }
