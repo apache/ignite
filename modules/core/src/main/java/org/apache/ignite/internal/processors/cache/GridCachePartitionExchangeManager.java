@@ -2750,7 +2750,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return Histogram of blocking PME durations metric
+     * @return Histogram of blocking PME durations metric.
      */
     public HistogramMetric getBlockingDurationHistogram() {
         return blockingDurationHistogram;
