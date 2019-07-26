@@ -115,10 +115,11 @@ public class Step_6_KNN {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 6 (kNN) example completed.");
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }
