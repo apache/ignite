@@ -1400,7 +1400,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     void checkCache(Ignite node, String cacheName, boolean exp) throws IgniteCheckedException {
         GridTestUtils.waitForCondition(
             () -> ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture() != null,
-            1000
+            2000
         );
 
         ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture().get();

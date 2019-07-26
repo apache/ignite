@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Class to test correctness of fully-connectet component searching algorithm.
+ * Class to test correctness of fully-connected component searching algorithm.
  */
 @RunWith(Parameterized.class)
 public class FullyConnectedComponentSearcherTest {

@@ -357,6 +357,21 @@ public class IgniteClusterAsyncImpl implements IgniteCluster, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public UUID id() {
+        return cluster.id();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tag() {
+        return cluster.tag();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tag(String tag) throws IgniteCheckedException {
+        cluster.tag(tag);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isBaselineAutoAdjustEnabled() {
         return cluster.isBaselineAutoAdjustEnabled();
     }
