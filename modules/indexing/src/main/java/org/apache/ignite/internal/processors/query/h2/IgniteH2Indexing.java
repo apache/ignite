@@ -714,7 +714,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             H2RowCache cache = rowCache.forGroup(cctx.groupId());
 
-            return new H2TreeIndex(cctx, cache, tbl, name, pk, cols, inlineSize, segments);
+            return new H2TreeIndex(cctx, cache, tbl, name, pk, cols, inlineSize, segments, log);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
