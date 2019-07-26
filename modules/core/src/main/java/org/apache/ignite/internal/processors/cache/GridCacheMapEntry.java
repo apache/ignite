@@ -3311,7 +3311,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         AffinityTopologyVersion topVer,
         GridDrType drType,
         boolean fromStore,
-        CacheDataRow row
+        @Nullable CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         ensureFreeSpace();
 

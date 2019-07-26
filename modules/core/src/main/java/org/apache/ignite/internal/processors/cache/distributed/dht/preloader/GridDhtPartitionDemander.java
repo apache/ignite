@@ -954,7 +954,7 @@ public class GridDhtPartitionDemander {
             part.dataStore().createRows(infos, topVer);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Preloading failed - stopping rebalancing [p=" + p + "]");
+            throw new IgniteCheckedException("Preloading failed - stopping rebalancing [p=" + p + "]", e);
         }
 
         // todo update metrics in batch

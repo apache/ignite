@@ -1816,21 +1816,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         GridCacheEntryInfo info = infos.next();
 
                         if (info.value() == null) {
-                            preloadEntry(info.key(),
-                                info.value(),
-                                info.version(),
-                                info.expireTime(),
-                                topVer,
-                                info.cacheId(),
-                                null);
+                            preloadEntry(info.key(), null, info.version(), info.expireTime(), topVer,
+                                info.cacheId(), null);
+
+                            continue;
                         }
-                        else {
-                            rows.add(new DataRowStoreAware(makeDataRow(info.key(),
-                                info.value(),
-                                info.version(),
-                                info.expireTime(),
-                                info.cacheId()), grp.storeCacheIdInDataPage()));
-                        }
+
+                        rows.add(new DataRowStoreAware(makeDataRow(info.key(),
+                            info.value(),
+                            info.version(),
+                            info.expireTime(),
+                            info.cacheId()), grp.storeCacheIdInDataPage()));
                     }
                     while (rows.size() < batchSize && infos.hasNext());
 
@@ -1841,7 +1837,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         rowStore.addRows(rows, grp.statisticsHolderData());
 
                         for (DataRowStoreAware row : rows) {
-                            if (!preloadEntry(row.key(), row.value(), row.version(), row.expireTime(), topVer, row.delegate().cacheId(), row))
+                            if (!preloadEntry(row.key(), row.value(), row.version(), row.expireTime(), topVer, row.delegate().cacheId(), row.delegate()))
                                 rowStore.removeRow(row.link(), grp.statisticsHolderData());
                         }
                     }
