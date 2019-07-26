@@ -1822,11 +1822,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             continue;
                         }
 
+                        boolean storeCacheId = grp.storeCacheIdInDataPage();
+
                         rows.add(new DataRowStoreAware(makeDataRow(info.key(),
                             info.value(),
                             info.version(),
                             info.expireTime(),
-                            info.cacheId()), grp.storeCacheIdInDataPage()));
+                            grp.sharedGroup() || storeCacheId ? info.cacheId() : CU.UNDEFINED_CACHE_ID), storeCacheId));
                     }
                     while (rows.size() < batchSize && infos.hasNext());
 
