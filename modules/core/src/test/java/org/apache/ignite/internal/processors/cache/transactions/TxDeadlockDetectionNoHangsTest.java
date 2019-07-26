@@ -156,28 +156,26 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
         IgniteInternalFuture<Long> restartFut = null;
 
         try {
-            restartFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-                @Override public void run() {
-                    while (!stop.get()) {
-                        try {
-                            U.sleep(500);
+            restartFut = GridTestUtils.runMultiThreadedAsync(() -> {
+                while (!stop.get()) {
+                    try {
+                        U.sleep(500);
 
-                            startGrid(NODES_CNT);
+                        startGrid(NODES_CNT);
 
-                            awaitPartitionMapExchange();
+                        awaitPartitionMapExchange();
 
-                            U.sleep(500);
+                        U.sleep(500);
 
-                            stopGrid(NODES_CNT);
-                        }
-                        catch (Exception ignored) {
-                            // No-op.
-                        }
+                        stopGrid(NODES_CNT);
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
                     }
                 }
             }, 1, "restart-thread");
 
-            long stopTime = System.currentTimeMillis() + 2 * 60_000L;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(2 * 60_000, 30_000);
 
             for (int i = 0; System.currentTimeMillis() < stopTime; i++) {
                 boolean detectionEnabled = grid(0).context().cache().context().tm().deadlockDetectionEnabled();

@@ -41,6 +41,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assume;
 import org.junit.Test;
@@ -62,10 +63,10 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
     private static final String ACTIVATOR_NODE_ATTR = "split.resolved";
 
     /** */
-    private static final int GRID_CNT = 32;
+    private static final int GRID_CNT = GridTestUtils.SF.applyLB(32, 16);
 
     /** */
-    private static final int CACHES_CNT = 50;
+    private static final int CACHES_CNT = GridTestUtils.SF.applyLB(50, 20);
 
     /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;

@@ -245,7 +245,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         Ignite ig1 = startGrid(1);
 
-        final int KEYS = 1_000_000;
+        final int KEYS = GridTestUtils.SF.applyLB(1_000_000, 300_000);
 
         try (IgniteDataStreamer<Integer, String> st = ig1.dataStreamer(CACHE1)) {
             for (int i = 0; i < KEYS; i++)
@@ -256,25 +256,19 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         final Ignite ig2 = startGrid(2);
 
-        ig2.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                CacheRebalancingEvent rebEvt = (CacheRebalancingEvent)evt;
+        ig2.events().localListen(evt -> {
+            CacheRebalancingEvent rebEvt = (CacheRebalancingEvent)evt;
 
-                if (rebEvt.cacheName().equals(CACHE1)) {
-                    log.info("CountDown rebalance stop latch: " + rebEvt.cacheName());
+            if (rebEvt.cacheName().equals(CACHE1)) {
+                log.info("CountDown rebalance stop latch: " + rebEvt.cacheName());
 
-                    finishRebalanceLatch.countDown();
-                }
-
-                return false;
+                finishRebalanceLatch.countDown();
             }
+
+            return false;
         }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        boolean rebalancingStartTimeGot = waitForCondition(new PA() {
-            @Override public boolean apply() {
-                return ig2.cache(CACHE1).localMetrics().getRebalancingStartTime() != -1L;
-            }
-        }, 5_000);
+        boolean rebalancingStartTimeGot = waitForCondition(() -> ig2.cache(CACHE1).localMetrics().getRebalancingStartTime() != -1L, 5_000);
 
         assertTrue("Unable to resolve rebalancing start time.", rebalancingStartTimeGot);
 
@@ -288,37 +282,34 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        runAsync(new Runnable() {
-            @SuppressWarnings("BusyWait")
-            @Override public void run() {
-                // Waiting 75% keys will be rebalanced.
-                int partKeys = KEYS / 2;
+        runAsync(() -> {
+            // Waiting 75% keys will be rebalanced.
+            int partKeys = KEYS / 2;
 
-                final long keysLine = (long)partKeys / 4L;
+            final long keysLine = (long)partKeys / 4L;
 
-                log.info("Wait until keys left will be less than: " + keysLine);
+            log.info("Wait until keys left will be less than: " + keysLine);
 
-                while (true) {
-                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+            while (true) {
+                CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                    long keyLeft = m.getKeysToRebalanceLeft();
+                long keyLeft = m.getKeysToRebalanceLeft();
 
-                    if (keyLeft > 0 && keyLeft < keysLine) {
-                        latch.countDown();
+                if (keyLeft > 0 && keyLeft < keysLine) {
+                    latch.countDown();
 
-                        break;
-                    }
+                    break;
+                }
 
-                    log.info("Keys left: " + m.getKeysToRebalanceLeft());
+                log.info("Keys left: " + m.getKeysToRebalanceLeft());
 
-                    try {
-                        Thread.sleep(1_000);
-                    }
-                    catch (InterruptedException e) {
-                        log.warning("Interrupt thread", e);
+                try {
+                    Thread.sleep(1_000);
+                }
+                catch (InterruptedException e) {
+                    log.warning("Interrupt thread", e);
 
-                        Thread.currentThread().interrupt();
-                    }
+                    Thread.currentThread().interrupt();
                 }
             }
         });
