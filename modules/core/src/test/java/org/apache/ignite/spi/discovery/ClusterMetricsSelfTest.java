@@ -129,7 +129,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
             ignite.context().cache().context().exchange().lastTopologyFuture().initialVersion().topologyVersion() == 2,
             1000));
 
-        // Check cluster group metric because on server-side PME completes locally.
+        // Check cluster group metric because on server-side PME completes locally in case of client join.
         assertTrue(GridTestUtils.waitForCondition(() -> ignite.cluster().metrics().getCurrentPmeDuration() > 0, 1000));
 
         if (client)
