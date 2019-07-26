@@ -365,8 +365,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 100; i++)
                 cache.put(i, -1);
 
-            final int cnt = 40_000;
-            final int threads = 10;
+            final int cnt = GridTestUtils.SF.apply(40_000);
+            final int threads = GridTestUtils.SF.applyLB(10, 5);
 
             try (final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(DEFAULT_CACHE_NAME)) {
                 final AtomicInteger idxGen = new AtomicInteger();

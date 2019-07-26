@@ -491,11 +491,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         );
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10 * 60_000;
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -513,59 +508,53 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         concurrentStartFinished2 = false;
         concurrentStartFinished3 = false;
 
-        Thread t1 = new Thread() {
-            @Override public void run() {
-                try {
-                    startGrid(1);
-                    startGrid(2);
+        Thread t1 = new Thread(() -> {
+            try {
+                startGrid(1);
+                startGrid(2);
 
-                    while (!concurrentStartFinished2)
-                        U.sleep(10);
+                while (!concurrentStartFinished2)
+                    U.sleep(10);
 
-                    awaitPartitionMapExchange();
+                awaitPartitionMapExchange();
 
-                    //New cache should start rebalancing.
-                    CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+                //New cache should start rebalancing.
+                CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-                    cacheRCfg.setName(CACHE_NAME_DHT_PARTITIONED + "_NEW");
-                    cacheRCfg.setCacheMode(CacheMode.PARTITIONED);
-                    cacheRCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-                    cacheRCfg.setRebalanceBatchesPrefetchCount(1);
+                cacheRCfg.setName(CACHE_NAME_DHT_PARTITIONED + "_NEW");
+                cacheRCfg.setCacheMode(CacheMode.PARTITIONED);
+                cacheRCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+                cacheRCfg.setRebalanceBatchesPrefetchCount(1);
 
-                    grid(0).getOrCreateCache(cacheRCfg);
+                grid(0).getOrCreateCache(cacheRCfg);
 
-                    while (!concurrentStartFinished3)
-                        U.sleep(10);
+                while (!concurrentStartFinished3)
+                    U.sleep(10);
 
-                    concurrentStartFinished = true;
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+                concurrentStartFinished = true;
             }
-        };
-
-        Thread t2 = new Thread() {
-            @Override public void run() {
-                try {
-                    startGrid(3);
-                    startGrid(4);
-
-                    concurrentStartFinished2 = true;
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+            catch (Exception e) {
+                e.printStackTrace();
             }
-        };
+        });
 
-        Thread t3 = new Thread() {
-            @Override public void run() {
-                generateData(ignite, 0, 1);
+        Thread t2 = new Thread(() -> {
+            try {
+                startGrid(3);
+                startGrid(4);
 
-                concurrentStartFinished3 = true;
+                concurrentStartFinished2 = true;
             }
-        };
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        Thread t3 = new Thread(() -> {
+            generateData(ignite, 0, 1);
+
+            concurrentStartFinished3 = true;
+        });
 
         t1.start();
         t2.start();// Should cancel t1 rebalancing.

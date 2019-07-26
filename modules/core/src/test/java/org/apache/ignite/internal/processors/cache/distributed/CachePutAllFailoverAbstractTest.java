@@ -48,7 +48,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     private static final int NODE_CNT = 2;
 
     /** */
-    private static final long TEST_TIME = 60_000;
+    private static final int TEST_TIME = 60_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -125,93 +125,91 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     private void testPutAllFailover(final Test test) throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
-        final long endTime = System.currentTimeMillis() + TEST_TIME;
+        final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(TEST_TIME, 30_000);
 
         IgniteInternalFuture<Object> restartFut = createAndRunConcurrentAction(finished, endTime);
 
         try {
             final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    int iter = 0;
+            GridTestUtils.runMultiThreaded(() -> {
+                int iter = 0;
 
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    long time;
+                long time;
 
-                    long lastInfo = 0;
+                long lastInfo = 0;
 
-                    while ((time = System.currentTimeMillis()) < endTime) {
-                        if (time - lastInfo > 5000) {
-                            log.info("Do putAll [iter=" + iter + ']');
+                while ((time = System.currentTimeMillis()) < endTime) {
+                    if (time - lastInfo > 5000) {
+                        log.info("Do putAll [iter=" + iter + ']');
 
-                            lastInfo = time;
+                        lastInfo = time;
+                    }
+
+                    switch (test) {
+                        case PUT_ALL: {
+                            TreeMap<TestKey, TestValue> map = new TreeMap<>();
+
+                            for (int k = 0; k < 100; k++)
+                                map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
+
+                            cache.putAll(map);
+
+                            break;
                         }
 
-                        switch (test) {
-                            case PUT_ALL: {
+                        case PUT_ALL_ASYNC: {
+                            Collection<IgniteFuture<?>> futs = new ArrayList<>();
+
+                            for (int i = 0 ; i < 10; i++) {
                                 TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
                                 for (int k = 0; k < 100; k++)
                                     map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
 
-                                cache.putAll(map);
+                                IgniteFuture<?> fut = cache.putAllAsync(map);
 
-                                break;
+                                assertNotNull(fut);
+
+                                futs.add(fut);
                             }
 
-                            case PUT_ALL_ASYNC: {
-                                Collection<IgniteFuture<?>> futs = new ArrayList<>();
+                            for (IgniteFuture<?> fut : futs)
+                                fut.get();
 
-                                for (int i = 0 ; i < 10; i++) {
-                                    TreeMap<TestKey, TestValue> map = new TreeMap<>();
-
-                                    for (int k = 0; k < 100; k++)
-                                        map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
-
-                                    IgniteFuture<?> fut = cache.putAllAsync(map);
-
-                                    assertNotNull(fut);
-
-                                    futs.add(fut);
-                                }
-
-                                for (IgniteFuture<?> fut : futs)
-                                    fut.get();
-
-                                break;
-                            }
-
-                            case PUT_ALL_PESSIMISTIC_TX: {
-                                final TreeMap<TestKey, TestValue> map = new TreeMap<>();
-
-                                for (int k = 0; k < 100; k++)
-                                    map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
-
-                                doInTransaction(ignite(0), new Callable<Object>() {
-                                    @Override public Object call() throws Exception {
-                                        for (TestKey key : map.keySet())
-                                            cache.get(key);
-
-                                        cache.putAll(map);
-
-                                        return null;
-                                    }
-                                });
-
-                                break;
-                            }
-
-                            default:
-                                assert false;
+                            break;
                         }
 
-                        iter++;
+                        case PUT_ALL_PESSIMISTIC_TX: {
+                            final TreeMap<TestKey, TestValue> map = new TreeMap<>();
+
+                            for (int k = 0; k < 100; k++)
+                                map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
+
+                            doInTransaction(ignite(0), new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    for (TestKey key : map.keySet())
+                                        cache.get(key);
+
+                                    cache.putAll(map);
+
+                                    return null;
+                                }
+                            });
+
+                            break;
+                        }
+
+                        default:
+                            assert false;
                     }
 
-                    return null;
+                    iter++;
                 }
+
+                return null;
             }, 2, "update-thread");
 
             finished.set(true);

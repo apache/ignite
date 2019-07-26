@@ -139,7 +139,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     public void testPartitionCountersConsistencyOnExchange() throws Exception {
         // Reopen https://issues.apache.org/jira/browse/IGNITE-10766 if starts failing with forced MVCC
 
-        IgniteEx ignite = (IgniteEx) startGrids(4);
+        IgniteEx ignite = startGrids(4);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -167,7 +167,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
 
-        for (int it = 0; it < 10; it++) {
+        for (int it = 0; it < GridTestUtils.SF.applyLB(10, 4); it++) {
             SingleMessageInterceptorCommunicationSpi spi = (SingleMessageInterceptorCommunicationSpi) ignite.configuration().getCommunicationSpi();
             spi.clear();
 
