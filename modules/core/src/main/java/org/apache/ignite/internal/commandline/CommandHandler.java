@@ -245,7 +245,11 @@ public class CommandHandler {
 
                 try {
                     logger.info("Command [" + commandName + "] started");
-                    logger.info("Arguments: " + String.join(" ", rawArgs));
+                    logger.info("Common arguments: " + args.toString());
+
+                    if (command.arg() != null)
+                        logger.info("Command arguments: " + command.argumentString());
+
                     logger.info(DELIM);
                     lastOperationRes = command.execute(clientCfg, logger);
                 }
