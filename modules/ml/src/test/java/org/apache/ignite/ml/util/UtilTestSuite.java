@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.util;
 
-import org.apache.ignite.ml.util.genetic.GeneticAlgorithmTest;
-import org.apache.ignite.ml.util.genetic.PopulationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -27,9 +25,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    LRUCacheTest.class,
-    GeneticAlgorithmTest.class,
-    PopulationTest.class
+    LRUCacheTest.class
 })
 public class UtilTestSuite {
 }

@@ -71,12 +71,10 @@ public class MinMaxScalerExample {
                     new DatasetHelper(dataset).describe();
                 }
 
-                System.out.println(">>> MinMax preprocessing example completed.");
+                System.out.println(">>> Imputing example completed.");
             } finally {
                 data.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 

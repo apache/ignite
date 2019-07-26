@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.naivebayes;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -47,7 +47,8 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class DiscreteNaiveBayesTrainerExample {
     /** Run example. */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws FileNotFoundException {
+        System.out.println();
         System.out.println(">>> Discrete naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
@@ -79,11 +80,8 @@ public class DiscreteNaiveBayesTrainerExample {
 
                 System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
             } finally {
-                if (dataCache != null)
-                    dataCache.destroy();
+                dataCache.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 
