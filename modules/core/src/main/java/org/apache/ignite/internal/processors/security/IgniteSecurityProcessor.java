@@ -192,7 +192,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
                 @Override public AccessControlContext run() {
                     return new AccessControlContext
                         (new AccessControlContext(NULL_PD_ARRAY),
-                            new IgniteSubjectDomainCombainer(subject, secCtx.subject().smPermissions()));
+                            new IgniteSubjectDomainCombiner(subject, secCtx.subject().smPermissions()));
                 }
             });
 

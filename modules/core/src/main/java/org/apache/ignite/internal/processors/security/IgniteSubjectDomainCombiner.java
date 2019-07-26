@@ -27,7 +27,7 @@ import javax.security.auth.SubjectDomainCombiner;
 /**
  * A {@code IgniteSubjectDomainCombainer} updates ProtectionDomains with passed {@code Permissions}.
  */
-public class IgniteSubjectDomainCombainer extends SubjectDomainCombiner {
+public class IgniteSubjectDomainCombiner extends SubjectDomainCombiner {
     /** . */
     private final WeakKeyValueMap<ProtectionDomain, ProtectionDomain> cachedPDs = new WeakKeyValueMap<>();
 
@@ -35,7 +35,7 @@ public class IgniteSubjectDomainCombainer extends SubjectDomainCombiner {
     private final Permissions perms;
 
     /** . */
-    public IgniteSubjectDomainCombainer(Subject subject, Permissions perms) {
+    public IgniteSubjectDomainCombiner(Subject subject, Permissions perms) {
         super(subject);
 
         this.perms = perms;
