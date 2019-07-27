@@ -26,6 +26,11 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
  */
 public interface PageStore {
     /**
+     * @param lsnr Page store listener to set.
+     */
+    public void setListener(PageStoreListener lsnr);
+
+    /**
      * Checks if page exists.
      *
      * @return {@code True} if page exists.
@@ -55,7 +60,18 @@ public interface PageStore {
      * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
-    public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
+    public default void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        readPage(pageId, pageBuf, keepCrc);
+    }
+
+    /**
+     * @param pageId Page id.
+     * @param pageBuf Page buffer to read into.
+     * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
+     * @return Number of readed bytes, or negative value if page readed the first time.
+     * @throws IgniteCheckedException If reading failed (IO error occurred).
+     */
+    public int readPage(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Reads a header.

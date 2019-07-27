@@ -87,8 +87,8 @@ public class FilePageStore implements PageStore {
     /** Region metrics updater. */
     private final LongAdderMetric allocatedTracker;
 
-    /** */
-    private final PageStoreListener pageLsnr;
+    /** Page storage listener. */
+    private volatile PageStoreListener lsnr = PageStoreListener.NO_OP;
 
     /** */
     protected final int pageSize;
@@ -114,11 +114,8 @@ public class FilePageStore implements PageStore {
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        LongAdderMetric allocatedTracker,
-        PageStoreListener pageLsnr
+        LongAdderMetric allocatedTracker
     ) {
-        assert pageLsnr != null;
-
         this.type = type;
         this.pathProvider = pathProvider;
         this.dbCfg = cfg;
@@ -126,7 +123,11 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
-        this.pageLsnr = pageLsnr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setListener(PageStoreListener lsnr) {
+        this.lsnr = lsnr;
     }
 
     /** {@inheritDoc} */
@@ -448,9 +449,7 @@ public class FilePageStore implements PageStore {
             for (int seq = 0; seq < pages; seq++) {
                 serialStrg.readPage(pageBuf, seq);
 
-                long pageId = PageIO.getPageId(pageBuf);
-
-                write(pageId, pageBuf, 0, false);
+                write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
 
                 pageBuf.clear();
             }
@@ -485,7 +484,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+    @Override public int readPage(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         init();
 
         try {
@@ -505,7 +504,7 @@ public class FilePageStore implements PageStore {
             if (n < 0) {
                 pageBuf.put(new byte[pageBuf.remaining()]);
 
-                return;
+                return n;
             }
 
             int savedCrc32 = PageIO.getCrc(pageBuf);
@@ -530,6 +529,8 @@ public class FilePageStore implements PageStore {
 
             if (keepCrc)
                 PageIO.setCrc(pageBuf, savedCrc32);
+
+            return n;
         }
         catch (IOException e) {
             throw new StorageException("Failed to read page [file=" + getFileAbsolutePath() + ", pageId=" + pageId + "]", e);
@@ -727,7 +728,7 @@ public class FilePageStore implements PageStore {
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 
-                    pageLsnr.onPageWrite(pageId, pageBuf, off);
+                    lsnr.onPageWrite(pageId, pageBuf);
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 

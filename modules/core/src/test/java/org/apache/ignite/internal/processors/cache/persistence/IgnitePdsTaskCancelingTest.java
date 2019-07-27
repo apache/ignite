@@ -38,7 +38,6 @@ import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -201,7 +200,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         DataStorageConfiguration dbCfg = getDataStorageConfiguration();
 
         FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, () -> file.toPath(), factory, dbCfg,
-            new LongAdderMetric("NO_OP", null), PageStoreListener.NO_OP);
+            new LongAdderMetric("NO_OP", null));
 
         int pageSize = dbCfg.getPageSize();
 

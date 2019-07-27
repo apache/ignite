@@ -148,6 +148,8 @@ public class FileSerialPageStore implements Closeable {
         assert pageBuf.order() == ByteOrder.nativeOrder() : pageBuf.order();
         assert pageBuf.position() == 0 : pageBuf.position();
 
+        lock.readLock().lock();
+
         try {
             long readed = fileIo.readFully(pageBuf, seq * pageSize);
 
@@ -167,6 +169,9 @@ public class FileSerialPageStore implements Closeable {
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Error reading page from serial storage [seq=" + seq + ']');
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 

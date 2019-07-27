@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -51,7 +52,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
@@ -125,6 +125,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /** Configured data storage page size. */
     private int pageSize;
 
+    /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
+    private ThreadLocal<ByteBuffer> localPageBuff;
+
     //// BELOW IS NOT USED
 
     /** Keep only the first page error. */
@@ -182,9 +185,15 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             DataStorageConfiguration.DFLT_BACKUP_DIRECTORY,
             true);
 
+        localPageBuff = (ThreadLocal.withInitial(() ->
+            ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder())));
+
         U.ensureDirectory(backupWorkDir, "backup store working directory", log);
 
-        pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
+        pageSize = cctx.kernalContext()
+            .config()
+            .getDataStorageConfiguration()
+            .getPageSize();
 
         assert pageSize > 0;
 
@@ -458,11 +467,13 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @param pageId Tracked page id.
      * @param buf Buffer with page data.
      */
-    public void beforeStoreWrite(GroupPartitionId pairId, long pageId, ByteBuffer buf, long off) {
+    public void beforeStoreWrite(GroupPartitionId pairId, long pageId, ByteBuffer buf, PageStore store) {
         assert buf.position() == 0 : buf.position();
         assert buf.order() == ByteOrder.nativeOrder() : buf.order();
 
         try {
+            // TODO if checkpoint ended, but partition still not copied - read from PageStore
+
             List<FileSerialPageStore> deltas = processingParts.get(pairId);
 
             if (deltas == null || deltas.isEmpty())
@@ -522,8 +533,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             try {
                 FilePageStore store = (FilePageStore)factory.createPageStore(FLAG_DATA,
                     from::toPath,
-                    new LongAdderMetric("NO_OP", null),
-                    PageStoreListener.NO_OP);
+                    new LongAdderMetric("NO_OP", null));
 
                 store.doRecover(serial);
 
@@ -600,6 +610,65 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             }
 
             return to;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SerialPageWriter {
+        /** Storage to write pages to. */
+        private final FileSerialPageStore serial;
+
+        /** Local buffer to perpform copy-on-write operations. */
+        private final ThreadLocal<ByteBuffer> localBuff;
+
+        /** {@code true} if need the original page from PageStore instead of given buffer. */
+        private final AtomicBoolean fromStore;
+
+        /**
+         * @param serial Serial storage to write to.
+         * @param fromStore {@code true} if need the original page from PageStore instead of given buffer.
+         * @param pageSize Size of page to use for local buffer.
+         */
+        public SerialPageWriter(
+            FileSerialPageStore serial,
+            AtomicBoolean fromStore,
+            int pageSize
+        ) {
+            this.serial = serial;
+            this.fromStore = fromStore;
+
+            localBuff = ThreadLocal.withInitial(() ->
+                ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder()));
+        }
+
+        /**
+         * @param pageId Page id to write.
+         * @param buf Page buffer.
+         * @param store Storage to write to.
+         */
+        public void write(long pageId, ByteBuffer buf, PageStore store) throws IOException, IgniteCheckedException {
+            if (fromStore.get()) {
+                final ByteBuffer locBuf = localBuff.get();
+
+                assert locBuf.capacity() == store.getPageSize();
+
+                locBuf.clear();
+
+                if (store.readPage(pageId, locBuf, true) < 0)
+                    return;
+
+                locBuf.flip();
+
+                serial.writePage(pageId, locBuf);
+            }
+            else {
+                // Direct buffre is needs to be written, associated checkpoint not finished yet.
+                serial.writePage(pageId, buf);
+
+                buf.rewind();
+            }
         }
     }
 

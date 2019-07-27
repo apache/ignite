@@ -712,11 +712,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
 
             PageStore idxStore =
-            pageStoreFactory.createPageStore(
-                PageMemory.FLAG_IDX,
-                idxFile,
-                allocatedTracker,
-                PageStoreListener.NO_OP);
+                pageStoreFactory.createPageStore(
+                    PageMemory.FLAG_IDX,
+                    idxFile,
+                    allocatedTracker);
+
+            if (cctx.backup() != null)
+                idxStore.setListener(new BackupPageStoreListener(grpId, partitions, cctx.backup(), idxStore));
 
             PageStore[] partStores = new PageStore[partitions];
 
@@ -727,13 +729,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     pageStoreFactory.createPageStore(
                         PageMemory.FLAG_DATA,
                         () -> getPartitionFilePath(cacheWorkDir, p),
-                        allocatedTracker,
-                        cctx.backup() == null ?
-                            PageStoreListener.NO_OP : new BackupPageStoreListener(grpId, partId, cctx.backup())
-                    );
+                        allocatedTracker);
 
-                    partStores[partId] = partStore;
-                }
+                if (cctx.backup() != null)
+                    partStore.setListener(new BackupPageStoreListener(grpId, partId, cctx.backup(), partStore));
+
+                partStores[partId] = partStore;
+            }
 
             return new CacheStoreHolder(idxStore, partStores);
         }
@@ -1487,23 +1489,37 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** */
     private static class BackupPageStoreListener implements PageStoreListener {
-        /** */
+        /** Pair of group id and its partiton id. */
         private final GroupPartitionId key;
 
-        /** */
+        /** Backup manager. */
         private final IgniteBackupManager backup;
 
-        /** */
-        public BackupPageStoreListener(int grpId, int partId, IgniteBackupManager backup) {
+        /** Page store the listener associated with. */
+        private final PageStore store;
+
+        /**
+         * @param grpId Cache group id.
+         * @param partId Partition id.
+         * @param backup Backup manager.
+         * @param store Page store the listener associated with.
+         */
+        public BackupPageStoreListener(
+            int grpId,
+            int partId,
+            IgniteBackupManager backup,
+            PageStore store
+        ) {
             assert backup != null;
 
             key = new GroupPartitionId(grpId, partId);
             this.backup = backup;
+            this.store = store;
         }
 
         /** {@inheritDoc} */
-        @Override public void onPageWrite(long pageId, ByteBuffer buf, long off) {
-            backup.beforeStoreWrite(key, pageId, buf, off);
+        @Override public void onPageWrite(long pageId, ByteBuffer buf) {
+            backup.beforeStoreWrite(key, pageId, buf, store);
         }
     }
 }
