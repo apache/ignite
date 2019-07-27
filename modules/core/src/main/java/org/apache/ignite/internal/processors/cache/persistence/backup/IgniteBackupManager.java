@@ -333,6 +333,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     final GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
 
                     bctx.partAllocLengths.put(pair, 0L);
+
                     bctx.partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(
                             new FileSerialPageStore(log,
@@ -420,7 +421,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                         bctx.partAllocLengths.get(pair)),
                 bctx.execSvc)
                 .thenApply(file -> {
-                    bctx.partDeltaWriters.get(pair).copyFinished = true;
+                    bctx.partDeltaWriters.get(pair).partProcessed = true;
 
                     return file;
                 })
@@ -620,7 +621,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final CompletableFuture<Boolean> cpEndFut;
 
         /** {@code true} if current writer is stopped. */
-        private volatile boolean copyFinished;
+        private volatile boolean partProcessed;
 
         /**
          * @param serial Serial storage to write to.
@@ -652,7 +653,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          * @return {@code true} if writer is stopped and cannot write pages.
          */
         public boolean stopped() {
-            return checkpointComplete() && copyFinished;
+            return checkpointComplete() && partProcessed;
         }
 
         /**
