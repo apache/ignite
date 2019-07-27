@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.backup;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
@@ -31,9 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -44,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class DeltaPagesStorage implements Closeable {
+public class FileSerialPageStore implements Closeable {
     /** Ignite logger to use. */
     @GridToStringExclude
     private final IgniteLogger log;
@@ -57,7 +54,7 @@ public class DeltaPagesStorage implements Closeable {
     private final FileIOFactory factory;
 
     /** Storage size. */
-    private final LongAdder storageSize = new LongAdder();
+    private final AtomicLong pages = new AtomicLong();
 
     /** Page size of stored pages. */
     private final int pageSize;
@@ -77,11 +74,11 @@ public class DeltaPagesStorage implements Closeable {
      * @param factory Factory to produce an IO interface over underlying file.
      * @param pageSize Page size of stored pages.
      */
-    public DeltaPagesStorage(IgniteLogger log, Supplier<Path> cfgPath, FileIOFactory factory, int pageSize) {
+    public FileSerialPageStore(IgniteLogger log, Supplier<Path> cfgPath, FileIOFactory factory, int pageSize) {
         A.notNull(cfgPath, "Configurations path cannot be empty");
         A.notNull(factory, "File configuration factory cannot be empty");
 
-        this.log = log.getLogger(DeltaPagesStorage.class);
+        this.log = log.getLogger(FileSerialPageStore.class);
         this.cfgPath = cfgPath;
         this.factory = factory;
         this.pageSize = pageSize;
@@ -90,7 +87,7 @@ public class DeltaPagesStorage implements Closeable {
     /**
      * @throws IOException If failed to initialize store file.
      */
-    public DeltaPagesStorage init() throws IOException {
+    public FileSerialPageStore init() throws IOException {
         if (fileIo == null)
             fileIo = factory.create(cfgPath.get().toFile());
 
@@ -102,7 +99,7 @@ public class DeltaPagesStorage implements Closeable {
      * @param pageBuf Page buffer to write.
      * @throws IOException If page writing failed (IO error occurred).
      */
-    public void write(long pageId, ByteBuffer pageBuf, long off) throws IOException {
+    public void writePage(long pageId, ByteBuffer pageBuf) throws IOException {
         assert fileIo != null : "Delta pages storage is not inited: " + this;
 
         if (!writable())
@@ -126,15 +123,14 @@ public class DeltaPagesStorage implements Closeable {
                 ", part=" + cfgPath.get().toAbsolutePath() +
                 ", fileSize=" + fileIo.size() +
                 ", crcBuff=" + crc32 +
-                ", crcPage=" + crc +
-                ", pageOffset=" + off + ']');
+                ", crcPage=" + crc + ']');
 
             pageBuf.rewind();
 
             // Write buffer to the end of the file.
             fileIo.writeFully(pageBuf);
 
-            storageSize.add(pageBuf.capacity());
+            pages.incrementAndGet();
         }
         finally {
             lock.readLock().unlock();
@@ -142,50 +138,35 @@ public class DeltaPagesStorage implements Closeable {
     }
 
     /**
-     * @param store File page store to apply deltas to.
+     * @param pageBuf Buffer to read page into.
+     * @param seq Page sequence in serial storage.
+     * @throws IgniteCheckedException If fails.
      */
-    public void apply(PageStore store) throws IOException, IgniteCheckedException {
-        assert !writable;
-        assert fileIo != null;
+    public void readPage(ByteBuffer pageBuf, long seq) throws IgniteCheckedException {
+        assert fileIo != null : cfgPath.get();
+        assert pageBuf.capacity() == pageSize : pageBuf.capacity();
+        assert pageBuf.order() == ByteOrder.nativeOrder() : pageBuf.order();
+        assert pageBuf.position() == 0 : pageBuf.position();
 
-        // Will perform a copy delta file page by page simultaneously with merge pages operation.
-        ByteBuffer pageBuff = ByteBuffer.allocate(pageSize);
-        pageBuff.order(ByteOrder.nativeOrder());
+        try {
+            long readed = fileIo.readFully(pageBuf, seq * pageSize);
 
-        pageBuff.clear();
+            assert readed == pageBuf.capacity();
 
-        long readed;
-        long position = 0;
-        long size = storageSize.sum();
+            pageBuf.flip();
 
-        U.log(log, "Prepare partition delta storage to apply [file=" + cfgPath.get().toFile().getName() +
-            ", pages=" + (size/pageSize) + ']');
+            long pageId = PageIO.getPageId(pageBuf);
+            int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
+            int crc = PageIO.getCrc(pageBuf);
 
-        while ((readed = fileIo.readFully(pageBuff, position)) > 0 && position < size) {
-            position += readed;
+            U.log(log, "Read page from serial storage [path=" + cfgPath.get().toFile().getName() +
+                ", pageId=" + pageId + ", seq=" + seq + ", pages=" + pages.get() + ", crcBuff=" + crc32 +
+                ", crcPage=" + crc + ']');
 
-            pageBuff.flip();
-
-            long pageId = PageIO.getPageId(pageBuff);
-            long pageOffset = store.pageOffset(pageId);
-            int crc32 = FastCrc.calcCrc(new CRC32(), pageBuff, pageBuff.limit());
-            int crc = PageIO.getCrc(pageBuff);
-
-            U.log(log, "handle partition delta [pageId=" + pageId +
-                    ", pageOffset=" + pageOffset +
-                    ", partSize=" + store.size() +
-                    ", skipped=" + (pageOffset >= store.size()) +
-                    ", position=" + position +
-                    ", size=" + size +
-                    ", crcBuff=" + crc32 +
-                    ", crcPage=" + crc + ']');
-
-            pageBuff.rewind();
-
-            // Other pages are not related to handled partition file and must be ignored.
-            store.write(pageId, pageBuff, 0, false);
-
-            pageBuff.clear();
+            pageBuf.rewind();
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Error reading page from serial storage [seq=" + seq + ']');
         }
     }
 
@@ -203,9 +184,16 @@ public class DeltaPagesStorage implements Closeable {
         writable = false;
     }
 
+    /**
+     * @return Total number of pages for this serial page storage.
+     */
+    public long pages() {
+        return pages.get();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DeltaPagesStorage.class, this);
+        return S.toString(FileSerialPageStore.class, this);
     }
 
     /** {@inheritDoc} */
@@ -220,6 +208,7 @@ public class DeltaPagesStorage implements Closeable {
         }
         finally {
             fileIo = null;
+
             lock.writeLock().unlock();
         }
 

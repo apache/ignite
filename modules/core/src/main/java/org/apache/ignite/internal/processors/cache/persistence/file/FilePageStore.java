@@ -26,7 +26,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -107,7 +106,7 @@ public class FilePageStore implements PageStore {
     private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
     /** */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** */
     public FilePageStore(
@@ -393,6 +392,22 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
+            updateAllocatedPages();
+
+            recover = false;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * @throws StorageException If fails.
+     */
+    private void updateAllocatedPages() throws StorageException {
+        assert lock.isWriteLockedByCurrentThread();
+
+        try {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than page.
             if (inited) {
                 long newSize = Math.max(pageSize, fileIO.size() - headerSize());
@@ -407,11 +422,42 @@ public class FilePageStore implements PageStore {
 
                 allocatedTracker.add(delta / pageSize);
             }
-
-            recover = false;
         }
         catch (IOException e) {
-            throw new StorageException("Failed to finish recover partition file [file=" + getFileAbsolutePath() + "]", e);
+            throw new StorageException("Failed to update partition file allocated pages " +
+                "[file=" + getFileAbsolutePath() + "]", e);
+        }
+    }
+
+    /**
+     * @param serialStrg Serial page storage to reover current storage with.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void doRecover(FileSerialPageStore serialStrg) throws IgniteCheckedException {
+        assert !serialStrg.writable() : serialStrg;
+
+        lock.writeLock().lock();
+
+        try {
+            recover = true;
+
+            ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
+                .order(ByteOrder.nativeOrder());
+            long pages = serialStrg.pages();
+
+            for (int seq = 0; seq < pages; seq++) {
+                serialStrg.readPage(pageBuf, seq);
+
+                long pageId = PageIO.getPageId(pageBuf);
+
+                write(pageId, pageBuf, 0, false);
+
+                pageBuf.clear();
+            }
+
+            updateAllocatedPages();
+
+            recover = false;
         }
         finally {
             lock.writeLock().unlock();
