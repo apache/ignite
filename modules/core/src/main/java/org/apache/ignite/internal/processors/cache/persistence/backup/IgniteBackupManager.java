@@ -27,7 +27,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -274,10 +273,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     @Override protected void stop0(boolean cancel) {
         dbMgr.removeCheckpointListener(cpLsnr);
 
-        for (Collection<PageStoreSerialWriter> writers : partWriters.values()) {
-            for (PageStoreSerialWriter w : writers)
-                U.closeQuiet(w);
-        }
+        for (BackupContext ctx : backupCtxs.values())
+            closeBackupResources(ctx);
 
         partWriters.clear();
         backupRunner.shutdown();
