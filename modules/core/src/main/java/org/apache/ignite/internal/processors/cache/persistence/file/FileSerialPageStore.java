@@ -65,9 +65,6 @@ public class FileSerialPageStore implements Closeable {
     /** IO over the underlying file */
     private volatile FileIO fileIo;
 
-    /** Allow write to storage flag. */
-    private volatile boolean writable = true;
-
     /**
      * @param log Ignite logger to use.
      * @param cfgPath Configuration file path provider.
@@ -101,9 +98,6 @@ public class FileSerialPageStore implements Closeable {
      */
     public void writePage(long pageId, ByteBuffer pageBuf) throws IOException {
         assert fileIo != null : "Delta pages storage is not inited: " + this;
-
-        if (!writable())
-            return;
 
         if (!lock.readLock().tryLock())
             return;
@@ -173,20 +167,6 @@ public class FileSerialPageStore implements Closeable {
         finally {
             lock.readLock().unlock();
         }
-    }
-
-    /**
-     * @return {@code true} if writes to the storage is allowed.
-     */
-    public boolean writable() {
-        return writable;
-    }
-
-    /**
-     * Disable page writing to this storage.
-     */
-    public void disableWrites() {
-        writable = false;
     }
 
     /**

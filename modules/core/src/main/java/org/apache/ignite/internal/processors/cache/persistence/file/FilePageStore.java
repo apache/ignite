@@ -435,8 +435,6 @@ public class FilePageStore implements PageStore {
      * @throws IgniteCheckedException If fails.
      */
     public void doRecover(FileSerialPageStore serialStrg) throws IgniteCheckedException {
-        assert !serialStrg.writable() : serialStrg;
-
         lock.writeLock().lock();
 
         try {
