@@ -39,9 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -111,8 +109,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /** Map of registered cache backup processes and their corresponding contexts. */
     private final ConcurrentMap<String, BackupContext> backupCtxs = new ConcurrentHashMap<>();
 
-    /** TODO: CAS on list with temporary page stores */
-    private final ConcurrentMap<GroupPartitionId, List<SerialPageWriter>> partWriters = new ConcurrentHashMap<>();
+    /** All registered page writers of all running backup processes. */
+    private final ConcurrentMap<GroupPartitionId, List<PageStoreSerialWriter>> partWriters = new ConcurrentHashMap<>();
 
     /** Backup thread pool. */
     private IgniteThreadPoolExecutor backupRunner;
@@ -223,15 +221,15 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     if (bctx0.started)
                         continue;
 
-                    for (Map.Entry<GroupPartitionId, SerialPageWriter> e : bctx0.partDeltaWriters.entrySet()) {
+                    for (Map.Entry<GroupPartitionId, PageStoreSerialWriter> e : bctx0.partDeltaWriters.entrySet()) {
                         partWriters.computeIfAbsent(e.getKey(), p -> new LinkedList<>())
                             .add(e.getValue());
                     }
                 }
 
                 // Remove not used delta stores.
-                for (List<SerialPageWriter> list0 : partWriters.values())
-                    list0.removeIf(SerialPageWriter::stopped);
+                for (List<PageStoreSerialWriter> list0 : partWriters.values())
+                    list0.removeIf(PageStoreSerialWriter::stopped);
             }
 
             @Override public void onCheckpointBegin(Context ctx) {
@@ -259,7 +257,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                                     (long)allocRange.getCurrAllocatedPageCnt() * pageSize + store.headerSize());
                         }
 
-                        submitTasks(bctx0, pageMgr);
+                        // Submit all tasks for partitions and deltas processing.
+                        submitTasks(bctx0, pageMgr.workDir());
 
                         bctx0.started = true;
                     }
@@ -275,8 +274,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     @Override protected void stop0(boolean cancel) {
         dbMgr.removeCheckpointListener(cpLsnr);
 
-        for (Collection<SerialPageWriter> writers : partWriters.values()) {
-            for (SerialPageWriter w : writers)
+        for (Collection<PageStoreSerialWriter> writers : partWriters.values()) {
+            for (PageStoreSerialWriter w : writers)
                 U.closeQuiet(w);
         }
 
@@ -290,49 +289,40 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @param dir Local directory to save cache partition deltas to.
      * @return Future which will be completed when backup is done.
      * @throws IgniteCheckedException If initialiation fails.
-     * @throws IOException If fails.
      */
     public IgniteInternalFuture<?> createLocalBackup(
         String name,
         Map<Integer, Set<Integer>> parts,
         File dir
-    ) throws IgniteCheckedException, IOException {
+    ) throws IgniteCheckedException {
         if (backupCtxs.containsKey(name))
             throw new IgniteCheckedException("Backup with requested name is already scheduled: " + name);
 
+        BackupContext bctx = null;
         File backupDir = new File(dir, name);
 
-        // Atomic operation, fails with ex if not.
-        Files.createDirectory(backupDir.toPath());
-
-        final BackupContext bctx0 = new BackupContext(name,
-            backupDir,
-            parts,
-            backupRunner,
-            (from, to, partSize) ->
-                new PartitionCopySupplier(log, from, to, partSize),
-            (from, delta) ->
-                new PartitionDeltaSupplier(log,
-                    ((FilePageStoreManager)cctx.pageStore())
-                        .getFilePageStoreFactory(),
-                    from,
-                    delta));
-
-        // Stop all corresponding storages.
-        final AtomicBoolean cpFinisehed = new AtomicBoolean();
-
-        bctx0.cpEndFut.thenRun(() -> {
-            cpFinisehed.set(true);
-
-            U.log(log, "All partition delta storages are closed to write after checkpoint finished");
-        });
-
         try {
+            // Atomic operation, fails with exception if not.
+            Files.createDirectory(backupDir.toPath());
+
+            bctx = new BackupContext(name,
+                backupDir,
+                parts,
+                backupRunner,
+                (from, to, partSize) ->
+                    new PartitionCopySupplier(log, from, to, partSize),
+                (from, delta) ->
+                    new PartitionDeltaSupplier(log,
+                        ((FilePageStoreManager)cctx.pageStore())
+                            .getFilePageStoreFactory(),
+                        from,
+                        delta));
+
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
 
                 // Create cache backup directory if not.
-                File grpDir = U.resolveWorkDirectory(bctx0.backupDir.getAbsolutePath(),
+                File grpDir = U.resolveWorkDirectory(bctx.backupDir.getAbsolutePath(),
                     cacheDirName(gctx.config()), false);
 
                 U.ensureDirectory(grpDir,
@@ -342,56 +332,57 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 for (int partId : e.getValue()) {
                     final GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
 
-                    bctx0.partAllocLengths.put(pair, 0L);
-                    bctx0.partDeltaWriters.put(pair,
-                        new SerialPageWriter(
+                    bctx.partAllocLengths.put(pair, 0L);
+                    bctx.partDeltaWriters.put(pair,
+                        new PageStoreSerialWriter(
                             new FileSerialPageStore(log,
                                 () -> getPartionDeltaFile(grpDir, partId)
                                     .toPath(),
                                 ioFactory,
                                 cctx.gridConfig()
                                     .getDataStorageConfiguration()
-                                    .getPageSize())
-                                .init(),
-                            cpFinisehed,
+                                    .getPageSize()),
+                            bctx.cpEndFut,
                             pageSize));
                 }
             }
+
+            BackupContext ctx0 = backupCtxs.putIfAbsent(name, bctx);
+
+            assert ctx0 == null : ctx0;
+
+            CheckpointFuture cpFut = dbMgr.forceCheckpoint(String.format(BACKUP_CP_REASON, name));
+
+            BackupContext finalBctx = bctx;
+
+            cpFut.finishFuture()
+                .listen(f -> {
+                    if (f.error() == null)
+                        finalBctx.cpEndFut.complete(true);
+                    else
+                        finalBctx.cpEndFut.completeExceptionally(f.error());
+                });
+
+            cpFut.beginFuture()
+                .get();
+
+            U.log(log, "Backup operation scheduled with the following context: " + bctx);
         }
-        catch (IgniteCheckedException | IOException e) {
+        catch (IOException e) {
+            closeBackupResources(bctx);
+
             try {
-                Files.delete(bctx0.backupDir.toPath());
+                Files.delete(backupDir.toPath());
             }
             catch (IOException ioe) {
                 throw new IgniteCheckedException("Error deleting backup directory during context initialization " +
                     "failed: " + name, e);
             }
 
-            bctx0.result.onDone(e);
-
-            throw e;
+            throw new IgniteCheckedException(e);
         }
 
-        BackupContext tctx = backupCtxs.putIfAbsent(name, bctx0);
-
-        assert tctx == null : tctx;
-
-        CheckpointFuture cpFut = dbMgr.forceCheckpoint(String.format(BACKUP_CP_REASON, name));
-
-        cpFut.finishFuture()
-            .listen(f -> {
-                if (f.error() == null)
-                    bctx0.cpEndFut.complete(true);
-                else
-                    bctx0.cpEndFut.completeExceptionally(f.error());
-            });
-
-        cpFut.beginFuture()
-            .get();
-
-        U.log(log, "Backup operation scheduled with the following context: " + bctx0);
-
-        return bctx0.result;
+        return bctx.result;
     }
 
     /**
@@ -401,14 +392,14 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         if (bctx == null)
             return;
 
-        for (SerialPageWriter writer : bctx.partDeltaWriters.values())
+        for (PageStoreSerialWriter writer : bctx.partDeltaWriters.values())
             U.closeQuiet(writer);
     }
 
     /**
      * @param bctx Context to handle.
      */
-    private void submitTasks(BackupContext bctx, FilePageStoreManager pageMgr) {
+    private void submitTasks(BackupContext bctx, File cacheWorkDir) {
         List<CompletableFuture<File>> futs = new ArrayList<>(bctx.partAllocLengths.size());
 
         U.log(log, "Partition allocated lengths: " + bctx.partAllocLengths);
@@ -422,10 +413,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 bctx.partSuppFactory
                     .apply(
                         getPartitionFile(
-                            cacheWorkDir(pageMgr.workDir(), ccfg),
+                            cacheWorkDir(cacheWorkDir, ccfg),
                             pair.getPartitionId()),
-                        new File(
-                            bctx.backupDir,
+                        new File(bctx.backupDir,
                             cacheDirName(ccfg)),
                         bctx.partAllocLengths.get(pair)),
                 bctx.execSvc)
@@ -435,16 +425,15 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     return file;
                 })
                 .thenCombineAsync(bctx.cpEndFut,
-                    new BiFunction<File, Boolean, File>() {
-                        @Override public File apply(File from, Boolean cp) {
-                            assert cp;
+                    (from, res) -> {
+                        assert res;
 
-                            return bctx.deltaTaskFactory.apply(from,
-                                bctx.partDeltaWriters
-                                    .get(pair)
-                                    .serial)
-                                .get();
-                        }
+                        // Call the factory which creates tasks for page delta processing.
+                        return bctx.deltaTaskFactory.apply(from,
+                            bctx.partDeltaWriters
+                                .get(pair)
+                                .serial)
+                            .get();
                     },
                     bctx.execSvc);
 
@@ -479,12 +468,12 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         assert buf.order() == ByteOrder.nativeOrder() : buf.order();
 
         try {
-            List<SerialPageWriter> writers = partWriters.get(pairId);
+            List<PageStoreSerialWriter> writers = partWriters.get(pairId);
 
             if (writers == null || writers.isEmpty())
                 return;
 
-            for (SerialPageWriter writer : writers) {
+            for (PageStoreSerialWriter writer : writers) {
                 if (writer.stopped())
                     continue;
 
@@ -620,7 +609,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class SerialPageWriter implements Closeable {
+    private static class PageStoreSerialWriter implements Closeable {
         /** Storage to write pages to. */
         private final FileSerialPageStore serial;
 
@@ -628,33 +617,42 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final ThreadLocal<ByteBuffer> localBuff;
 
         /** {@code true} if need the original page from PageStore instead of given buffer. */
-        private final AtomicBoolean checkpointFinished;
+        private final CompletableFuture<Boolean> cpEndFut;
 
         /** {@code true} if current writer is stopped. */
         private volatile boolean copyFinished;
 
         /**
          * @param serial Serial storage to write to.
-         * @param checkpointFinished {@code true} if need the original page from PageStore instead of given buffer.
+         * @param cpEndFut Checkpoint finish future.
          * @param pageSize Size of page to use for local buffer.
          */
-        public SerialPageWriter(
+        public PageStoreSerialWriter(
             FileSerialPageStore serial,
-            AtomicBoolean checkpointFinished,
+            CompletableFuture<Boolean> cpEndFut,
             int pageSize
-        ) {
+        ) throws IOException {
             this.serial = serial;
-            this.checkpointFinished = checkpointFinished;
+            this.cpEndFut = cpEndFut;
 
             localBuff = ThreadLocal.withInitial(() ->
                 ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder()));
+
+            serial.init();
+        }
+
+        /**
+         * @return {@code true} if checkpoint completed normally.
+         */
+        public boolean checkpointComplete() {
+            return cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
         }
 
         /**
          * @return {@code true} if writer is stopped and cannot write pages.
          */
         public boolean stopped() {
-            return checkpointFinished.get() && copyFinished;
+            return checkpointComplete() && copyFinished;
         }
 
         /**
@@ -666,7 +664,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             if (stopped())
                 return;
 
-            if (checkpointFinished.get()) {
+            if (checkpointComplete()) {
                 final ByteBuffer locBuf = localBuff.get();
 
                 assert locBuf.capacity() == store.getPageSize();
@@ -715,7 +713,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final Map<GroupPartitionId, Long> partAllocLengths = new HashMap<>();
 
         /** Map of partitions to backup and theirs corresponding delta PageStores. */
-        private final Map<GroupPartitionId, SerialPageWriter> partDeltaWriters = new HashMap<>();
+        private final Map<GroupPartitionId, PageStoreSerialWriter> partDeltaWriters = new HashMap<>();
 
         /** Future of result completion. */
         @GridToStringExclude
