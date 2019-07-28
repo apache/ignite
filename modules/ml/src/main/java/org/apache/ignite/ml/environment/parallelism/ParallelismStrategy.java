@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.environment.parallelism;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Specifies the behaviour of processes in ML-algorithms that can may be parallelized such as parallel learning in
@@ -39,20 +40,15 @@ public interface ParallelismStrategy {
      * Submit task.
      *
      * @param task Task.
-     *
-     * @return The result of submit operation.
      */
     public <T> Promise<T> submit(IgniteSupplier<T> task);
-
-    /** Returns default parallelism. */
-    public int getParallelism();
 
     /**
      * Submit the list of tasks.
      *
      * @param tasks The task list.
      * @param <T> The type of return value.
-     * @return The results of the submitted operations list.
+     * @return The result of submit operation.
      */
     public default <T> List<Promise<T>> submit(List<IgniteSupplier<T>> tasks) {
         List<Promise<T>> results = new ArrayList<>();

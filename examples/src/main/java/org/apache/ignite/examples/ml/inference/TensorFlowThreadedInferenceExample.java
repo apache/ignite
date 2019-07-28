@@ -91,6 +91,5 @@ public class TensorFlowThreadedInferenceExample {
         long t1 = System.currentTimeMillis();
 
         System.out.println("Threaded model throughput: " + 1.0 * images.size() / ((t1 - t0) / 1000) + " req/sec");
-        System.out.flush();
     }
 }

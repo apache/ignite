@@ -17,10 +17,6 @@
 
 package org.apache.ignite.examples.ml.inference;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -40,6 +36,11 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import javax.cache.Cache;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * This example is based on {@link LinearRegressionLSQRTrainerExample}, but to perform inference it uses an approach
@@ -100,8 +101,6 @@ public class IgniteModelDistributedInferenceExample {
             } finally {
                 dataCache.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 }

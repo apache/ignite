@@ -58,7 +58,7 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
                                      Preprocessor<K, V> preprocessor,
                                      IgniteModel<Vector, L> mdl) {
-        cursor = query(upstreamCache, filter);
+        this.cursor = query(upstreamCache, filter);
         this.preprocessor = preprocessor;
         this.mdl = mdl;
     }
@@ -73,7 +73,7 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache,
                                      Preprocessor<K, V> preprocessor,
                                      IgniteModel<Vector, L> mdl) {
-        cursor = query(upstreamCache);
+        this.cursor = query(upstreamCache);
         this.preprocessor = preprocessor;
         this.mdl = mdl;
     }
