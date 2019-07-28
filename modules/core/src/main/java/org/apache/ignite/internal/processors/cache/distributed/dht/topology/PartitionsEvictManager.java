@@ -105,6 +105,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         }
     }
 
+    /**
+     * @param grp Group context.
+     * @param part Partition to clear tombstones.
+     */
     public void clearTombstonesAsync(CacheGroupContext grp, GridDhtLocalPartition part) {
         if (addAsyncTask(grp, part, TaskType.CLEAR_TOMBSTONES)) {
             if (log.isDebugEnabled())
@@ -303,18 +307,29 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      *
      */
     private class TasksStatistics {
+        /** */
         private int total;
 
+        /** */
         private int inProgress;
 
+        /**
+         *
+         */
         void taskAdded() {
             total++;
         }
 
+        /**
+         *
+         */
         void taskStarted() {
             inProgress++;
         }
 
+        /**
+         *
+         */
         void taskFinished() {
             total--;
             inProgress--;
@@ -358,6 +373,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             return stop || sharedEvictionCtx.shouldStop();
         }
 
+        /**
+         * @param task Task.
+         */
         void taskAdded(AbstractEvictionTask task) {
             totalTasks.incrementAndGet();
 

@@ -75,6 +75,9 @@ public class IncompleteCacheObject extends IncompleteObject<CacheObject> {
             super.readData(buf);
     }
 
+    /**
+     * @return Size of already read data.
+     */
     public int dataOffset() {
         return off;
     }

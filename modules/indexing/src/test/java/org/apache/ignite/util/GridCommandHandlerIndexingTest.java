@@ -374,7 +374,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
 
         GridDhtLocalPartition locPart = ctx.topology().localPartitions().get(0);
 
-        GridIterator<CacheDataRow> it = ctx.group().offheap().partitionIterator(locPart.id());
+        GridIterator<CacheDataRow> it = ctx.group().offheap().partitionIterator(locPart.id(), false);
 
         for (int i = 0; i < 500; i++) {
             if (!it.hasNextX()) {

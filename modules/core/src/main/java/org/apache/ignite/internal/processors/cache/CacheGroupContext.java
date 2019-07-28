@@ -1292,10 +1292,17 @@ public class CacheGroupContext {
         return hasAtomicCaches;
     }
 
+    /**
+     * @return {@code True} if need create temporary tombstones entries for removed data.
+     */
     public boolean supportsTombstone() {
         return !sharedGroup() && !hasAtomicCaches && !mvccEnabled && !isLocal();
     }
 
+    /**
+     * @param part Partition.
+     * @return {@code True} if need create tombstone for remove in given partition.
+     */
     public boolean createTombstone(@Nullable GridDhtLocalPartition part) {
         return part != null && supportsTombstone() && part.state() == GridDhtPartitionState.MOVING;
     }

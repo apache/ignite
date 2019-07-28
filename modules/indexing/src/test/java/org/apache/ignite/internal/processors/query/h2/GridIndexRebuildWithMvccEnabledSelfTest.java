@@ -98,7 +98,7 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
         CacheObjectContext coCtx = icache.context().cacheObjectContext();
 
         for (IgniteCacheOffheapManager.CacheDataStore store : icache.context().offheap().cacheDataStores()) {
-            GridCursor<? extends CacheDataRow> cur = store.cursor();
+            GridCursor<? extends CacheDataRow> cur = store.cursor(false);
 
             while (cur.next()) {
                 CacheDataRow row = cur.get();

@@ -1013,10 +1013,16 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.addPutAndGetTimeNanos(duration);
     }
 
+    /**
+     * Increments tombstones counter.
+     */
     public void tombstoneCreated() {
         tombstones.increment();
     }
 
+    /**
+     * Decrements tombstones counter.
+     */
     public void tombstoneRemoved() {
         tombstones.decrement();
     }

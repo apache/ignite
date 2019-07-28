@@ -2372,6 +2372,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
     }
 
+    /**
+     * Increments tombstones counter.
+     */
     public void tombstoneCreated() {
         GridCacheAdapter cache = this.cache;
 
@@ -2379,6 +2382,9 @@ public class GridCacheContext<K, V> implements Externalizable {
             cache.metrics0().tombstoneCreated();
     }
 
+    /**
+     * Decrements tombstones counter.
+     */
     public void tombstoneRemoved() {
         GridCacheAdapter cache = this.cache;
 

@@ -176,7 +176,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
-    /** */
+    /** Set if tombstone was created in partition. */
     private volatile boolean tombstoneCreated;
 
     /**
@@ -626,8 +626,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             assert partState == MOVING || partState == LOST;
 
             if (casState(state, OWNING)) {
-                if (grp.supportsTombstone())
-                    submitClearTombstones();
+                if (grp.supportsTombstone() && tombstoneCreated)
+                    grp.shared().evict().clearTombstonesAsync(grp, this);
 
                 return true;
             }
@@ -1131,14 +1131,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void tombstoneCreated() {
         tombstoneCreated = true;
-    }
-
-    /**
-     *
-     */
-    private void submitClearTombstones() {
-        if (tombstoneCreated)
-            grp.shared().evict().clearTombstonesAsync(grp, this);
     }
 
     /**

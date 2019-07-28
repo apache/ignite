@@ -260,7 +260,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         int itemId = itemId(nextLink);
 
                         incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
-                                grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+                            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
                         if (incomplete == null || (rowData == KEY_ONLY && key != null))
                             return;
@@ -378,7 +378,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.
      * @param buf Buffer.
-     * @param keyOnly {@code true} If need to read only key object.
+     * @param rowData Required row data.
      * @param readCacheId {@code true} If need to read cache ID.
      * @param incomplete Incomplete object.
      * @param skipVer Whether version read should be skipped.

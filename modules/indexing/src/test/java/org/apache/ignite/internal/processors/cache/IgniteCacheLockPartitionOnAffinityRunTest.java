@@ -85,7 +85,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
         int cnt = 0;
 
-        GridCursor<? extends CacheDataRow> c = pOrgs.dataStore().cursor();
+        GridCursor<? extends CacheDataRow> c = pOrgs.dataStore().cursor(false);
 
         CacheObjectContext ctx = cacheAdapterOrg.context().cacheObjectContext();
 
@@ -120,7 +120,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
         int cnt = 0;
 
-        GridCursor<? extends CacheDataRow> c = pPers.dataStore().cursor();
+        GridCursor<? extends CacheDataRow> c = pPers.dataStore().cursor(false);
 
         CacheObjectContext ctx = cacheAdapterPers.context().cacheObjectContext();
 

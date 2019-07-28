@@ -5711,6 +5711,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
     }
 
+    /**
+     * @param row Data row.
+     * @return {@code True} if row expired.
+     * @throws IgniteCheckedException If failed.
+     */
     private boolean checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
         assert row != null;
 

@@ -409,6 +409,11 @@ public interface IgniteCacheOffheapManager {
         GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
+    /**
+     * @param row Data row.
+     * @return {@code True} if give row is tombstone.
+     * @throws IgniteCheckedException If failed.
+     */
     public boolean isTombstone(@Nullable CacheDataRow row) throws IgniteCheckedException;
 
     /**
@@ -448,6 +453,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param part Partition number.
+     * @param withTombstones {@code True} if should return tombstone entries.
      * @return Iterator for given partition.
      * @throws IgniteCheckedException If failed.
      */
@@ -959,6 +965,7 @@ public interface IgniteCacheOffheapManager {
             throws IgniteCheckedException;
 
         /**
+         * @param withTombstones {@code True} if should return tombstone entries.
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
@@ -980,6 +987,7 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param cacheId Cache ID.
+         * @param withTombstones {@code True} if should return tombstone entries.
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
@@ -1021,6 +1029,7 @@ public interface IgniteCacheOffheapManager {
          * @param upper Upper bound.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          * @param snapshot Mvcc snapshot.
+         * @param withTombstones {@code True} if should return tombstone entries.
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
