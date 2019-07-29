@@ -556,7 +556,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
      * running PME or {@code blocked} was set to {@code true} and current PME don't block cache operations.
      */
-    public long getCurrentPMEDuration(boolean blocked) {
+    public long currentPMEDuration(boolean blocked) {
         return (isDone() || initTime == 0 || (blocked && isClientEventExchangeWithoutAffinityChange())) ?
             0 : System.currentTimeMillis() - initTime;
     }

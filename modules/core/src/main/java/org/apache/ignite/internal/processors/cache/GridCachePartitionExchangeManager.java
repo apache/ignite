@@ -493,11 +493,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
 
         mreg.register(PME_DURATION,
-            () -> getCurrentPMEDuration(false),
+            () -> currentPMEDuration(false),
             "Current PME duration in milliseconds.");
 
         mreg.register(PME_OPS_BLOCKED_DURATION,
-            () -> getCurrentPMEDuration(true),
+            () -> currentPMEDuration(true),
             "Current PME cache operations blocked duration in milliseconds.");
 
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
@@ -2736,10 +2736,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
      * running PME or {@code blocked} was set to {@code true} and current PME don't block cache operations.
      */
-    private long getCurrentPMEDuration(boolean blocked) {
+    private long currentPMEDuration(boolean blocked) {
         GridDhtPartitionsExchangeFuture fut = lastTopologyFuture();
 
-        return fut == null ? 0 : fut.getCurrentPMEDuration(blocked);
+        return fut == null ? 0 : fut.currentPMEDuration(blocked);
     }
 
     /**
