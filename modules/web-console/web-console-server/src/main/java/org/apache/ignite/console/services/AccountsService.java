@@ -30,7 +30,7 @@ import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.ChangeUserRequest;
 import org.apache.ignite.console.web.model.SignUpRequest;
 import org.apache.ignite.console.web.security.MissingConfirmRegistrationException;
-import org.apache.ignite.console.web.socket.WebSocketsManager;
+import org.apache.ignite.console.web.socket.AgentsService;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.springframework.context.support.MessageSourceAccessor;
@@ -59,8 +59,8 @@ public class AccountsService implements UserDetailsService {
     /** Accounts repository. */
     protected AccountsRepository accountsRepo;
 
-    /** Web socket manager. */
-    protected WebSocketsManager wsm;
+    /** Agent service. */
+    protected AgentsService agentsSrvc;
 
     /** Event publisher. */
     protected EventPublisher evtPublisher;
@@ -87,7 +87,7 @@ public class AccountsService implements UserDetailsService {
      * @param signUpCfg Sign up configuration.
      * @param activationCfg Account activation configuration.
      * @param encoder Service interface for encoding passwords.
-     * @param wsm Websocket manager.
+     * @param agentsSrvc Agent manager.
      * @param accountsRepo Accounts repository.
      * @param txMgr Transactions manager.
      * @param evtPublisher Event publisher.
@@ -96,7 +96,7 @@ public class AccountsService implements UserDetailsService {
         SignUpConfiguration signUpCfg,
         ActivationConfiguration activationCfg,
         PasswordEncoder encoder,
-        WebSocketsManager wsm,
+        AgentsService agentsSrvc,
         AccountsRepository accountsRepo,
         TransactionManager txMgr,
         EventPublisher evtPublisher
@@ -107,7 +107,7 @@ public class AccountsService implements UserDetailsService {
         activationSndTimeout = activationCfg.getSendTimeout();
 
         this.encoder = encoder;
-        this.wsm = wsm;
+        this.agentsSrvc = agentsSrvc;
         this.accountsRepo = accountsRepo;
         this.txMgr = txMgr;
         this.evtPublisher = evtPublisher;
@@ -267,7 +267,7 @@ public class AccountsService implements UserDetailsService {
         String oldTok = res.get2();
 
         if (!oldTok.equals(acc.getToken()))
-            wsm.revokeToken(acc, oldTok);
+            agentsSrvc.revokeToken(acc, oldTok);
 
         evtPublisher.publish(new Event<>(ACCOUNT_UPDATE, acc));
 

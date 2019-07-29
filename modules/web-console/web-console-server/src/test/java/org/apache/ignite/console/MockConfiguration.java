@@ -16,16 +16,21 @@
 
 package org.apache.ignite.console;
 
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.repositories.AnnouncementRepository;
+import org.apache.ignite.console.web.socket.AgentsService;
+import org.apache.ignite.console.web.socket.TransitionService;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -61,6 +66,18 @@ public class MockConfiguration {
         return mock(AnnouncementRepository.class);
     }
 
+    /** Agents service mock. */
+    @Bean
+    public AgentsService agentsService() {
+        return mock(AgentsService.class);
+    }
+
+    /** Transition service mock. */
+    @Bean
+    public TransitionService transitionService() {
+        return mock(TransitionService.class);
+    }
+
     /** Ignite mock. */
     @Bean
     public Ignite igniteInstance() {
@@ -75,13 +92,25 @@ public class MockConfiguration {
         when(txs.txStart())
             .thenReturn(new TransactionMock());
 
+        IgniteCluster cluster = mock(IgniteCluster.class);
+
+        when(cluster.nodes())
+            .thenReturn(Collections.singleton(new GridTestNode(UUID.randomUUID())));
+
         return new IgniteMock("testGrid", null, null, null, null, null, null) {
+            /** {@inheritDoc} */
             @Override public IgniteConfiguration configuration() {
                 return cfg;
             }
 
+            /** {@inheritDoc} */
             @Override public IgniteTransactions transactions() {
                 return txs;
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteCluster cluster() {
+                return cluster;
             }
         };
     }

@@ -44,7 +44,7 @@ public class AnnouncementRepository {
     public AnnouncementRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        txMgr.registerStarter("announcement", () -> announcementTbl = new Table<>(ignite, "wc_announcement"));
+        txMgr.registerStarter(() -> announcementTbl = new Table<>(ignite, "wc_announcement"));
     }
 
     /**
@@ -52,7 +52,7 @@ public class AnnouncementRepository {
      */
     public Announcement load() {
         return txMgr.doInTransaction(() -> {
-            Announcement ann = announcementTbl.load(ID);
+            Announcement ann = announcementTbl.get(ID);
 
             if (ann == null) {
                 ann = new Announcement(ID, "", false);

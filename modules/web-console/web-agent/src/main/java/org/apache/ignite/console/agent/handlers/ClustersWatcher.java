@@ -150,7 +150,7 @@ public class ClustersWatcher implements Closeable {
 
                 TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                if (newTop.differentCluster(latestTop))
+                if (!newTop.sameNodes(latestTop))
                     log.info("Connection successfully established to cluster with nodes: " + nid8(newTop.nids()));
                 else if (!Objects.equals(latestTop.nids(), newTop.nids()))
                     log.info("Cluster topology changed, new topology: " + nid8(newTop.nids()));

@@ -16,7 +16,7 @@
 
 package org.apache.ignite.console.tx;
 
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
@@ -54,7 +54,7 @@ public class TransactionManager {
     private final MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
     /** */
-    private final Map<String, Runnable> cachesStarters = new ConcurrentHashMap<>();
+    private final Set<Runnable> cachesStarters = ConcurrentHashMap.newKeySet();
 
     /**
      * @param ignite Ignite.
@@ -94,11 +94,10 @@ public class TransactionManager {
     }
 
     /**
-     * @param name Starter name.
      * @param starter Caches starter.
      */
-    public void registerStarter(String name, Runnable starter) {
-        cachesStarters.putIfAbsent(name, starter);
+    public void registerStarter(Runnable starter) {
+        cachesStarters.add(starter);
 
         starter.run();
     }
@@ -107,12 +106,7 @@ public class TransactionManager {
      * Recreate all caches by executing all registered starters.
      */
     private synchronized void recreateCaches() {
-        cachesStarters.forEach((name, starter) -> {
-            if (log.isDebugEnabled())
-                log.debug("Creating caches for: {}", name);
-
-            starter.run();
-        });
+        cachesStarters.forEach(Runnable::run);
     }
 
     /**

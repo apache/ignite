@@ -58,7 +58,7 @@ public class AccountsRepository {
     public AccountsRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        txMgr.registerStarter("accounts", () ->
+        txMgr.registerStarter(() ->
             accountsTbl = new Table<Account>(ignite, "wc_accounts")
                 .addUniqueIndex(a -> a.getUsername().trim().toLowerCase(),
                     (acc) -> messages.getMessageWithArgs("err.account-with-email-exists", acc.getUsername()))
@@ -77,7 +77,7 @@ public class AccountsRepository {
     public Account getById(UUID accId) throws IllegalStateException {
         return txMgr.doInTransaction(() -> {
             try {
-                Account account = accountsTbl.load(accId);
+                Account account = accountsTbl.get(accId);
 
                 if (account == null)
                     throw new UsernameNotFoundException(accId.toString());
@@ -123,7 +123,7 @@ public class AccountsRepository {
      * @return {@code true} If at least one user was already registered.
      */
     public boolean hasUsers() {
-        return accountsTbl.cache().containsKey(FIRST_USER_MARKER_KEY);
+        return accountsTbl.containsKey(FIRST_USER_MARKER_KEY);
     }
 
     /**

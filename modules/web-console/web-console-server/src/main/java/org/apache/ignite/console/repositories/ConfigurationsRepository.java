@@ -66,16 +66,16 @@ public class ConfigurationsRepository {
     private Table<Model> modelsTbl;
 
     /** */
-    private OneToManyIndex<UUID> cachesIdx;
+    private OneToManyIndex<UUID, UUID> cachesIdx;
 
     /** */
-    private OneToManyIndex<UUID> modelsIdx;
+    private OneToManyIndex<UUID, UUID> modelsIdx;
 
     /** */
-    protected OneToManyIndex<ConfigurationKey> clustersIdx;
+    protected OneToManyIndex<ConfigurationKey, UUID> clustersIdx;
 
     /** */
-    private OneToManyIndex<ConfigurationKey> cfgIdx;
+    private OneToManyIndex<ConfigurationKey, UUID> cfgIdx;
 
     /**
      * @param ignite Ignite.
@@ -84,7 +84,7 @@ public class ConfigurationsRepository {
     public ConfigurationsRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        txMgr.registerStarter("configurations", () -> {
+        txMgr.registerStarter(() -> {
             clustersTbl = new Table<>(ignite, "wc_account_clusters");
             cachesTbl = new Table<>(ignite, "wc_cluster_caches");
             modelsTbl = new Table<>(ignite, "wc_cluster_models");
@@ -122,15 +122,15 @@ public class ConfigurationsRepository {
      */
     public JsonObject loadConfiguration(ConfigurationKey key, UUID clusterId) {
         return txMgr.doInTransaction(() -> {
-            Cluster cluster = clustersTbl.load(clusterId);
+            Cluster cluster = clustersTbl.get(clusterId);
 
             if (cluster == null)
                 throw new IllegalStateException(messages.getMessageWithArgs("err.cluster-not-found-by-id", clusterId));
 
             clustersIdx.validate(key, clusterId);
 
-            Collection<Cache> caches = cachesTbl.loadAll(cachesIdx.load(clusterId));
-            Collection<Model> models = modelsTbl.loadAll(modelsIdx.load(clusterId));
+            Collection<Cache> caches = cachesTbl.loadAll(cachesIdx.get(clusterId));
+            Collection<Model> models = modelsTbl.loadAll(modelsIdx.get(clusterId));
 
             return new JsonObject()
                 .add("cluster", fromJson(cluster.json()))
@@ -146,8 +146,8 @@ public class ConfigurationsRepository {
     protected JsonObject shortCluster(Cluster cluster) {
         UUID clusterId = cluster.getId();
 
-        int cachesCnt = cachesIdx.load(clusterId).size();
-        int modelsCnt = modelsIdx.load(clusterId).size();
+        int cachesCnt = cachesIdx.get(clusterId).size();
+        int modelsCnt = modelsIdx.get(clusterId).size();
 
         return new JsonObject()
             .add("id", cluster.getId())
@@ -163,7 +163,7 @@ public class ConfigurationsRepository {
      */
     public JsonArray loadClusters(ConfigurationKey key) {
         return txMgr.doInTransaction(() -> {
-            Set<UUID> clusterIds = clustersIdx.load(key);
+            Set<UUID> clusterIds = clustersIdx.get(key);
 
             Collection<Cluster> clusters = clustersTbl.loadAll(clusterIds);
 
@@ -182,7 +182,7 @@ public class ConfigurationsRepository {
      */
     public Cluster loadCluster(ConfigurationKey key, UUID clusterId) {
         return txMgr.doInTransaction(() -> {
-            Cluster cluster = clustersTbl.load(clusterId);
+            Cluster cluster = clustersTbl.get(clusterId);
 
             if (cluster == null)
                 throw new IllegalStateException(messages.getMessageWithArgs("err.cluster-not-found-by-id", clusterId));
@@ -200,7 +200,7 @@ public class ConfigurationsRepository {
      */
     public Cache loadCache(ConfigurationKey key, UUID cacheId) {
         return txMgr.doInTransaction(() -> {
-            Cache cache = cachesTbl.load(cacheId);
+            Cache cache = cachesTbl.get(cacheId);
 
             if (cache == null)
                 throw new IllegalStateException(messages.getMessageWithArgs("err.cache-not-found-by-id", cacheId));
@@ -218,7 +218,7 @@ public class ConfigurationsRepository {
      */
     public Model loadModel(ConfigurationKey key, UUID mdlId) {
         return txMgr.doInTransaction(() -> {
-            Model mdl = modelsTbl.load(mdlId);
+            Model mdl = modelsTbl.get(mdlId);
 
             if (mdl == null)
                 throw new IllegalStateException(messages.getMessageWithArgs("err.model-not-found-by-id", mdlId));
@@ -238,7 +238,7 @@ public class ConfigurationsRepository {
         return txMgr.doInTransaction(() -> {
             clustersIdx.validate(key, clusterId);
 
-            Set<UUID> cachesIds = cachesIdx.load(clusterId);
+            Set<UUID> cachesIds = cachesIdx.get(clusterId);
 
             cfgIdx.validateAll(key, cachesIds);
 
@@ -255,7 +255,7 @@ public class ConfigurationsRepository {
         return txMgr.doInTransaction(() -> {
             clustersIdx.validate(key, clusterId);
 
-            Set<UUID> modelsIds = modelsIdx.load(clusterId);
+            Set<UUID> modelsIds = modelsIdx.get(clusterId);
 
             cfgIdx.validateAll(key, modelsIds);
 
@@ -277,7 +277,7 @@ public class ConfigurationsRepository {
     private void removedInCluster(
         ConfigurationKey key,
         Table<? extends DataObject> tbl,
-        OneToManyIndex<UUID> idx,
+        OneToManyIndex<UUID, UUID> idx,
         UUID clusterId,
         JsonObject oldCluster,
         JsonObject newCluster,
@@ -310,7 +310,7 @@ public class ConfigurationsRepository {
 
         clustersIdx.validateBeforeSave(key, clusterId, clustersTbl);
 
-        Cluster oldCluster = clustersTbl.load(clusterId);
+        Cluster oldCluster = clustersTbl.get(clusterId);
 
         if (oldCluster != null) {
             JsonObject oldClusterJson = fromJson(oldCluster.json());

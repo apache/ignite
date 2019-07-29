@@ -49,7 +49,7 @@ public class ActivitiesRepository {
     private Table<Activity> activitiesTbl;
 
     /** */
-    private OneToManyIndex<ActivityKey> activitiesIdx;
+    private OneToManyIndex<ActivityKey, UUID> activitiesIdx;
 
     /**
      * @param ignite Ignite.
@@ -58,7 +58,7 @@ public class ActivitiesRepository {
     public ActivitiesRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        txMgr.registerStarter("activities", () -> {
+        txMgr.registerStarter(() -> {
             MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
             activitiesTbl = new Table<>(ignite, "wc_activities");
@@ -87,7 +87,7 @@ public class ActivitiesRepository {
 
             ActivityKey activityKey = new ActivityKey(accId, date);
 
-            Set<UUID> ids = activitiesIdx.load(activityKey);
+            Set<UUID> ids = activitiesIdx.get(activityKey);
 
             Collection<Activity> activities = activitiesTbl.loadAll(ids);
 
@@ -124,7 +124,7 @@ public class ActivitiesRepository {
             while (dtStart.isBefore(dtEnd)) {
                 ActivityKey key = new ActivityKey(accId, dtStart.toInstant().toEpochMilli());
 
-                Set<UUID> ids = activitiesIdx.load(key);
+                Set<UUID> ids = activitiesIdx.get(key);
 
                 if (!F.isEmpty(ids)) {
                     Collection<Activity> activities = activitiesTbl.loadAll(ids);
@@ -152,7 +152,7 @@ public class ActivitiesRepository {
      */
     public void save(ActivityKey activityKey, Activity activity) {
         txMgr.doInTransaction(() -> {
-            Set<UUID> ids = activitiesIdx.load(activityKey);
+            Set<UUID> ids = activitiesIdx.get(activityKey);
 
             activitiesTbl.save(activity);
 
