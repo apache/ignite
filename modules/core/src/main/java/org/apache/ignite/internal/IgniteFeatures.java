@@ -76,6 +76,9 @@ public enum IgniteFeatures {
     /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
+    /** Support of cluster ID and tag. */
+    CLUSTER_ID_AND_TAG(16),
+
     /** LRT system and user time dump settings.  */
     LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 

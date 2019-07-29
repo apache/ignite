@@ -224,6 +224,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Create all required listeners.
      */
     @Override public void start() throws IgniteCheckedException {
+        if (ctx.isDaemon())
+            return;
+
         if (!isPersistenceEnabled)
             ver = INITIAL_VERSION;
         else {
