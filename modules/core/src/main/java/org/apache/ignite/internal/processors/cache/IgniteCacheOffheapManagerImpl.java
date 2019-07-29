@@ -375,11 +375,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     GridCacheEntryInfo info = infos.next();
 
                     if (info.value() == null) {
-                        boolean loaded = preloadEntry(info.key(), null, info.version(), info.expireTime(), topVer,
-                            info.cacheId(), null);
+                        DataRow row = new DataRow(info.key(), null, info.version(), part, info.expireTime(),
+                            info.cacheId());
 
-                        preloadCb.apply(loaded, new DataRow(info.key(), null, info.version(), part, info.expireTime(),
-                            info.cacheId()));
+                        boolean loaded = preloadEntry(row, topVer);
+
+                        preloadCb.apply(loaded, row);
 
                         continue;
                     }
@@ -393,7 +394,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         info.expireTime(),
                         grp.sharedGroup() || storeCacheId ? info.cacheId() : CU.UNDEFINED_CACHE_ID), storeCacheId));
                 }
-                while (rows.size() < batchSize && infos.hasNext());
+                while (infos.hasNext() && rows.size() < batchSize);
 
                 if (!busyLock.enterBusy())
                     throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -402,8 +403,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     dataStore.rowStore().addRows(rows, grp.statisticsHolderData());
 
                     for (DataRowStoreAware row : rows) {
-                        boolean loaded = preloadEntry(row.key(), row.value(), row.version(), row.expireTime(), topVer,
-                            row.delegate().cacheId(), row.delegate());
+                        boolean loaded = preloadEntry(row.delegate(), topVer);
 
                         if (!loaded)
                             dataStore.rowStore().removeRow(row.link(), grp.statisticsHolderData());
@@ -425,53 +425,40 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      * Adds {@code entry} to partition {@code p}.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
+     * @param row Data row.
      * @param topVer Topology version.
-     * @param cacheId Cache id.
-     * @param row Pre-created data row.
      * @return {@code True} if the initial value was set for the specified cache entry.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean preloadEntry(
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        AffinityTopologyVersion topVer,
-        int cacheId,
-        @Nullable CacheDataRow row
-    ) throws IgniteCheckedException {
+    private boolean preloadEntry(CacheDataRow row, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
-        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(cacheId) : grp.singleCacheContext();
+        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
         if (cctx == null)
             return false;
 
         cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
 
-        GridCacheEntryEx cached = cctx.cache().entryEx(key, topVer);
+        GridCacheEntryEx cached = cctx.cache().entryEx(row.key(), topVer);
 
         try {
             if (log.isTraceEnabled()) {
-                log.trace("Preloading key [key=" + key + ", part=" + cached.partition() +
+                log.trace("Preloading key [key=" + row.key() + ", part=" + cached.partition() +
                     ", grpId=" + grp.groupId() + ']');
             }
 
             try {
                 if (cached.initialValue(
-                    val,
-                    ver,
+                    row.value(),
+                    row.version(),
                     null,
                     null,
                     TxState.NA,
                     TxState.NA,
                     0,
-                    expireTime,
+                    row.expireTime(),
                     true,
                     topVer,
                     cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
@@ -500,7 +487,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             throw e;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Preloading failed [key=" + key +"]", e);
+            throw new IgniteCheckedException("Preloading failed [key=" + row.key() +"]", e);
         }
 
         return false;

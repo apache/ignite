@@ -5731,8 +5731,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            assert newRow == null || val != null;
-
+//            assert newRow == null || val != null;
             if (oldRow != null) {
                 oldRow.key(entry.key);
 
