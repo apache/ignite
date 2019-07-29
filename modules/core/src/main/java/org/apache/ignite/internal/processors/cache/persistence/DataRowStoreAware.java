@@ -83,7 +83,9 @@ public class DataRowStoreAware extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int size() throws IgniteCheckedException {
-        return delegate.size();
+        int size = delegate.size();
+
+        return storeCacheId || delegate.cacheId == 0 ? size : size - 4;
     }
 
     /** {@inheritDoc} */
