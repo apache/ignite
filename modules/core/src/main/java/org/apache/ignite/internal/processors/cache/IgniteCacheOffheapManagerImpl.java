@@ -422,7 +422,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
-    /** */
+    /**
+     * Adds {@code entry} to partition {@code p}.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param ver Version.
+     * @param expireTime Expire time.
+     * @param topVer Topology version.
+     * @param cacheId Cache id.
+     * @param row Pre-created data row.
+     * @return {@code True} if the initial value was set for the specified cache entry.
+     * @throws IgniteCheckedException If failed.
+     */
     private boolean preloadEntry(
         KeyCacheObject key,
         CacheObject val,

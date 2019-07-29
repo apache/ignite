@@ -83,9 +83,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Thread pool for requesting partitions from other nodes and populating local cache.
  */
 public class GridDhtPartitionDemander {
-    /** The maximum number of entries that can be preloaded between checkpoints. */
-    private static final int CHECKPOINT_THRESHOLD = 100;
-
     /** */
     private final GridCacheSharedContext<?, ?> ctx;
 
@@ -883,7 +880,7 @@ public class GridDhtPartitionDemander {
             ctx.database().checkpointReadLock();
 
             try {
-                for (int i = 0; i < CHECKPOINT_THRESHOLD; i++) {
+                for (int i = 0; i < 100; i++) {
                     boolean hasMore = infos.hasNext();
 
                     assert hasMore || !entryHist.isEmpty();
@@ -950,6 +947,8 @@ public class GridDhtPartitionDemander {
     ) throws IgniteCheckedException {
         try {
             grp.offheap().preload(p, topVer, infos, (loaded, row) -> {
+                updateCacheMetrics();
+
                 if (loaded && grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !row.key().internal()) {
                     GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
@@ -962,8 +961,6 @@ public class GridDhtPartitionDemander {
                         null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
                         false, null, null, null, true);
                 }
-
-                updateCacheMetrics();
             });
         }
         catch (IgniteCheckedException e) {
