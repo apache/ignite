@@ -122,26 +122,24 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
-                    .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[]{0.0, 0.25, 0.5});
+                    .addHyperParam("maxDeep", new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", new Double[] {0.0, 0.25, 0.5});
 
                 BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
                     .withNegativeClsLb(0.0)
                     .withPositiveClsLb(1.0)
                     .withMetric(BinaryClassificationMetricValues::accuracy);
 
-                scoreCalculator
-                    .withIgnite(ignite)
-                    .withUpstreamCache(dataCache)
-                    .withTrainer(trainerCV)
-                    .withMetric(metrics)
-                    .withFilter(split.getTrainFilter())
-                    .isRunningOnPipeline(false)
-                    .withPreprocessor(normalizationPreprocessor)
-                    .withAmountOfFolds(3)
-                    .withParamGrid(paramGrid);
-
-                CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
+                CrossValidationResult crossValidationRes = scoreCalculator.score(
+                    trainerCV,
+                    metrics,
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor,
+                    3,
+                    paramGrid
+                );
 
                 System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
                     + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
@@ -181,11 +179,10 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
-            } catch (FileNotFoundException e) {
+            }
+            catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-        } finally {
-            System.out.flush();
         }
     }
 }

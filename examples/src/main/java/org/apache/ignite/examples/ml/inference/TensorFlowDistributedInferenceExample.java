@@ -94,8 +94,6 @@ public class TensorFlowDistributedInferenceExample {
             long t1 = System.currentTimeMillis();
 
             System.out.println("Threaded model throughput: " + images.size() / ((t1 - t0) / 1000.0) + " req/sec");
-        } finally {
-            System.out.flush();
         }
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.svm;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -46,7 +46,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class SVMBinaryClassificationExample {
     /** Run example. */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
         System.out.println(">>> SVM Binary classification model over cached dataset usage example started.");
         // Start ignite grid.
@@ -78,8 +78,6 @@ public class SVMBinaryClassificationExample {
             } finally {
                 dataCache.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 }
