@@ -49,7 +49,7 @@ public class SerializationTests {
      */
     @Test
     public void handshakeTokens() throws IOException {
-        AgentHandshakeResponse exp = new AgentHandshakeResponse(Collections.singletonList("bff05108-404d-4f84-b743-6cd90b0ae205"));
+        AgentHandshakeResponse exp = new AgentHandshakeResponse(Collections.singleton("bff05108-404d-4f84-b743-6cd90b0ae205"));
 
         String payload = toJson(exp);
 

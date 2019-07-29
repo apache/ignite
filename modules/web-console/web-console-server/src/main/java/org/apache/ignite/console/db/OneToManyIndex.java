@@ -17,13 +17,15 @@
 package org.apache.ignite.console.db;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.dto.AbstractDto;
+import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.util.stream.Collectors.toSet;
@@ -31,9 +33,12 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Index for one to many relation.
  */
-public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
+public class OneToManyIndex<K, V> extends CacheHolder<K, Set<V>> {
+    /** Messages accessor. */
+    private static WebConsoleMessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
+
     /** Message generator function */
-    private final Function<T, String> msgGenerator;
+    private final Function<K, String> msgGenerator;
 
     /**
      * Constructor.
@@ -41,26 +46,36 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param ignite Ignite.
      * @param idxName Index name.
      */
-    public OneToManyIndex(Ignite ignite, String idxName, Function<T, String> msgGenerator) {
+    public OneToManyIndex(Ignite ignite, String idxName, Function<K, String> msgGenerator) {
         super(ignite, idxName);
 
         this.msgGenerator = msgGenerator;
     }
 
     /**
+     * Constructor.
+     *
+     * @param ignite Ignite.
+     * @param idxName Index name.
+     */
+    public OneToManyIndex(Ignite ignite, String idxName) {
+        this(ignite, idxName, (key) -> messages.getMessage("err.data-access-violation"));
+    }
+
+    /**
      * @param set Set to check.
      * @return Specified set if it is not {@code null} or new empty {@link TreeSet}.
      */
-    private Set<UUID> ensure(Set<UUID> set) {
-        return (set == null) ? new TreeSet<>() : set;
+    private Set<V> ensure(Set<V> set) {
+        return (set == null) ? new HashSet<>() : set;
     }
 
     /**
      * @param parentId Parent ID.
      * @return Set of children IDs.
      */
-    public Set<UUID> load(T parentId) {
-        return ensure(cache().get(parentId));
+    public Set<V> get(K parentId) {
+        return ensure(super.get(parentId));
     }
 
     /**
@@ -69,8 +84,8 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parentId Parent ID.
      * @param child Child ID to add.
      */
-    public void add(T parentId, UUID child) {
-        Set<UUID> childrenIds = load(parentId);
+    public void add(K parentId, V child) {
+        Set<V> childrenIds = get(parentId);
 
         childrenIds.add(child);
 
@@ -83,8 +98,8 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parent Parent ID.
      * @param childrenToAdd Children IDs to add.
      */
-    public void addAll(T parent, Set<UUID> childrenToAdd) {
-        Set<UUID> children = load(parent);
+    public void addAll(K parent, Set<V> childrenToAdd) {
+        Set<V> children = get(parent);
 
         children.addAll(childrenToAdd);
 
@@ -97,8 +112,8 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parent Parent ID.
      * @param child Child ID to remove.
      */
-    public void remove(T parent, UUID child) {
-        Set<UUID> children = load(parent);
+    public void remove(K parent, V child) {
+        Set<V> children = get(parent);
 
         children.remove(child);
 
@@ -111,8 +126,8 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parent Parent ID.
      * @param childrenToRmv Children IDs to remove.
      */
-    public void removeAll(T parent, Set<UUID> childrenToRmv) {
-        Set<UUID> children = load(parent);
+    public void removeAll(K parent, Set<V> childrenToRmv) {
+        Set<V> children = get(parent);
 
         children.removeAll(childrenToRmv);
 
@@ -125,7 +140,7 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parent Parent ID to delete.
      * @return Children IDs associated with parent ID.
      */
-    public Set<UUID> delete(T parent) {
+    public Set<V> delete(K parent) {
         return ensure(cache().getAndRemove(parent));
     }
 
@@ -135,10 +150,11 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parent Parent key.
      * @param child Child key.
      */
-    public void validate(T parent, UUID child) {
-        Set<UUID> children = load(parent);
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public void validate(K parent, Object child) {
+        Set<V> children = get(parent);
 
-        if (!children.contains(child))
+        if (children != null && !children.contains(child))
             throw new IllegalStateException(message(parent));
     }
 
@@ -149,8 +165,8 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param child Child key.
      * @param tbl Table.
      */
-    public void validateBeforeSave(T parent, UUID child, Table<? extends AbstractDto> tbl) {
-        if (!tbl.contains(child))
+    public <U extends UUID> void validateBeforeSave(K parent, U child, Table<? extends AbstractDto> tbl) {
+        if (!tbl.containsKey(child))
             return;
 
         validate(parent, child);
@@ -162,10 +178,10 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parent Parent key.
      * @param children Children keys.
      */
-    public void validateAll(T parent, Collection<UUID> children) {
-        Set<UUID> allChildren = load(parent);
+    public void validateAll(K parent, Collection<? extends UUID> children) {
+        Set<V> allChildren = get(parent);
 
-        if (!allChildren.containsAll(children))
+        if (allChildren != null && !allChildren.containsAll(children))
             throw new IllegalStateException(message(parent));
     }
 
@@ -175,8 +191,8 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
      * @param parent Parent key.
      * @param children Children keys.
      */
-    public void validateBeforeSave(T parent, Collection<UUID> children, Table<? extends AbstractDto> tbl) {
-        Set<UUID> existing = children.stream().filter(tbl::contains).collect(toSet());
+    public void validateBeforeSave(K parent, Collection<? extends UUID> children, Table<? extends AbstractDto> tbl) {
+        Set<? extends UUID> existing = children.stream().filter(tbl::containsKey).collect(toSet());
 
         if (F.isEmpty(existing))
             return;
@@ -185,11 +201,11 @@ public class OneToManyIndex<T> extends CacheHolder<T, TreeSet<UUID>> {
     }
 
     /**
-     * @param val Value.
+     * @param parent Parent key.
      *
      * @return Message.
      */
-    public String message(T val) {
-        return msgGenerator.apply(val);
+    public String message(K parent) {
+        return msgGenerator.apply(parent);
     }
 }

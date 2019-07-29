@@ -19,8 +19,7 @@ package org.apache.ignite.console.db;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.transactions.TransactionException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -57,14 +56,42 @@ public class CacheHolder<K, V> {
     }
 
     /**
-     * @return Underlying cache.
+     * @param key the key whose associated value is to be returned
+     * @return {@code true} If table containsKey specified key
+     */
+    public boolean containsKey(K key) throws TransactionException {
+        return cache().containsKey(key);
+    }
+
+    /**
+     * @param key the key whose associated value is to be returned
+     * @return DTO.
+     */
+    public V get(K key) throws TransactionException {
+        return cache().get(key);
+    }
+
+    /**
+     * @param key key with which the specified value is to be associated
+     * @param val value to be associated with the specified key
+     */
+    public void put(K key, V val) throws TransactionException {
+        cache().put(key, val);
+    }
+
+    /**
+     * @param key key with which the specified value is to be associated
+     * @param val value to be associated with the specified key
+     * @return the value associated with the key at the start of the operation or null if none was associated
+     */
+    public V getAndPut(K key, V val) throws TransactionException {
+        return cache().getAndPut(key, val);
+    }
+
+    /**
+     * @return Underlying cache
      */
     public IgniteCache<K, V> cache() {
         return cache;
-    }
-
-    /** */
-    public IgniteInternalCache<K, V> internalCache() {
-        return ((IgniteKernal)ignite).getCache(cacheName);
     }
 }

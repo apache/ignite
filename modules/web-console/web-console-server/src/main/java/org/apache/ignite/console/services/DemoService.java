@@ -110,7 +110,7 @@ public class DemoService {
                 clusters = fromJson(content, new TypeReference<List<JsonObject>>() { });
             }
             catch (Exception e) {
-                log.error("Failed to load demo clusters", e);
+                log.error("Failed to get demo clusters", e);
             }
         }
 

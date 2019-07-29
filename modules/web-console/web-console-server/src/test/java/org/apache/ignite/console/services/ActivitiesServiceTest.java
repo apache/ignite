@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Acctivities service test.
+ * Activities service test.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {MockConfiguration.class})

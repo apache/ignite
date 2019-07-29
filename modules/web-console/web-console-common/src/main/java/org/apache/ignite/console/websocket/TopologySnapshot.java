@@ -242,10 +242,10 @@ public class TopologySnapshot {
 
     /**
      * @param other Other topology.
-     * @return {@code true} in case if current topology is a different cluster.
+     * @return {@code true} in case if current topology is a same cluster.
      */
-    public boolean differentCluster(TopologySnapshot other) {
-        return other == null || F.isEmpty(other.nids()) || Collections.disjoint(nids(), other.nids());
+    public boolean sameNodes(TopologySnapshot other) {
+        return !(other == null || F.isEmpty(other.nids()) || Collections.disjoint(nids(), other.nids()));
     }
 
     /**
