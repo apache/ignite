@@ -103,10 +103,7 @@ public class MovieGAExample {
         // Set fitness function.
         gaCfg.setFitnessFunction(function);
 
-        try {
-            // Create an Ignite instance as you would in any other use case.
-            Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
-
+        try(Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             MovieTerminateCriteria termCriteria = new MovieTerminateCriteria(ignite, System.out::println);
 
             gaCfg.setTerminateCriteria(termCriteria);
@@ -116,9 +113,6 @@ public class MovieGAExample {
             Chromosome chromosome = gaGrid.evolve();
 
             System.out.println(">>> Evolution result: " + chromosome);
-
-            Ignition.stop(true);
-
             System.out.println(">>> Movie GA grid example completed.");
         }
         catch (Exception e) {

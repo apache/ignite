@@ -18,23 +18,32 @@ package org.apache.ignite.testsuites;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
+import javassist.CannotCompileException;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
+import javassist.CodeConverter;
 import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.CtNewMethod;
+import javassist.NotFoundException;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -55,11 +64,43 @@ public class IgniteExamplesMLTestSuite {
     /** Test class name pattern. */
     private static final String clsNamePtrn = ".*Example$";
 
+    /** Ignite proxy. */
+    private static Ignite igniteProxy;
+
+    /** Ignite for tests. */
+    private static Ignite localIgnite;
+
     /** */
     @BeforeClass
     public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
+    }
+
+    /** */
+    @AfterClass
+    public static void tearDown() throws Exception {
+        if (localIgnite != null)
+            localIgnite.close();
+    }
+
+    /** */
+    public static Ignite getTestIgnite(String someString) {
+        if (igniteProxy == null) {
+            localIgnite = Ignition.start("examples/config/example-ignite-ml.xml");
+            InvocationHandler handler = new InvocationHandler() {
+                @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    if (method.getName().equals("close"))
+                        return 42;
+                    else
+                        return Ignite.class.getMethod(method.getName(), method.getParameterTypes()).invoke(localIgnite, args);
+                }
+            };
+
+            igniteProxy = (Ignite) Proxy.newProxyInstance(Ignite.class.getClassLoader(), new Class[] {Ignite.class}, handler);
+        }
+
+        return igniteProxy;
     }
 
     /**
@@ -84,13 +125,12 @@ public class IgniteExamplesMLTestSuite {
      */
     private static Class<?> makeTestClass(Class<?> exampleCls) {
         ClassPool cp = ClassPool.getDefault();
+
         cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
 
         CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfTest");
 
         try {
-            cl.setSuperclass(cp.get(GridAbstractExamplesTest.class.getName()));
-
             CtMethod mtd = CtNewMethod.make("public void testExample() { "
                 + exampleCls.getCanonicalName()
                 + ".main("
@@ -136,8 +176,12 @@ public class IgniteExamplesMLTestSuite {
             dirs.add(new File(resources.nextElement().getFile()));
 
         List<Class> classes = new ArrayList<>();
-        for (File directory : dirs)
-            classes.addAll(findClasses(directory, pkgName, clsNamePtrn));
+        for (File directory : dirs) {
+            // Replace Ignition.Start call in Tutorial.
+            List<Class> tutorialClassess = findClassesAndReplaceIgniteStartCall(directory, pkgName, ".*Step_\\d+.*");
+            A.notEmpty(tutorialClassess, "tutorialClassess.size() != 0");
+            classes.addAll(findClassesAndReplaceIgniteStartCall(directory, pkgName, clsNamePtrn));
+        }
 
         return classes;
     }
@@ -151,7 +195,8 @@ public class IgniteExamplesMLTestSuite {
      * @return The classes.
      * @throws ClassNotFoundException If class not found.
      */
-    private static List<Class> findClasses(File dir, String pkgName, String clsNamePtrn) throws ClassNotFoundException {
+    private static List<Class> findClassesAndReplaceIgniteStartCall(File dir, String pkgName,
+        String clsNamePtrn) throws ClassNotFoundException {
         List<Class> classes = new ArrayList<>();
 
         if (!dir.exists())
@@ -161,12 +206,12 @@ public class IgniteExamplesMLTestSuite {
         if (files != null)
             for (File file : files) {
                 if (file.isDirectory())
-                    classes.addAll(findClasses(file, pkgName + "." + file.getName(), clsNamePtrn));
+                    classes.addAll(findClassesAndReplaceIgniteStartCall(file, pkgName + "." + file.getName(), clsNamePtrn));
                 else if (file.getName().endsWith(".class")) {
                     String clsName = pkgName + '.' + file.getName().substring(0, file.getName().length() - 6);
 
                     if (clsName.matches(clsNamePtrn))
-                        classes.add(Class.forName(clsName));
+                        classes.add(replaceIgniteStartCall(clsName));
                 }
             }
 
@@ -174,7 +219,38 @@ public class IgniteExamplesMLTestSuite {
     }
 
     /** */
+    private static Class replaceIgniteStartCall(String clsName) {
+        try {
+            ClassPool cp = ClassPool.getDefault();
+            cp.insertClassPath(new ClassClassPath(Ignition.class));
+            cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
+
+            CtClass ignClass = cp.get(Ignition.class.getName());
+            CtClass suiteClass = cp.get(IgniteExamplesMLTestSuite.class.getName());
+            CtMethod getTestIgniteMethod = suiteClass.getDeclaredMethod("getTestIgnite");
+
+            CtMethod startM = null;
+            for (CtMethod m : ignClass.getDeclaredMethods("start")) {
+                CtClass[] params = m.getParameterTypes();
+                if (params.length == 1 && params[0].getName().equals(String.class.getName())) {
+                    startM = m;
+                    break;
+                }
+            }
+
+            CodeConverter converter = new CodeConverter();
+            converter.redirectMethodCall(startM, getTestIgniteMethod);
+            cp.get(clsName).instrument(converter);
+            return cp.get(clsName).toClass();
+        }
+        catch (NotFoundException | CannotCompileException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
     public static class DynamicSuite extends Suite {
+
         /** */
         public DynamicSuite(Class<?> cls) throws InitializationError, IOException, ClassNotFoundException {
             super(cls, suite());

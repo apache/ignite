@@ -73,7 +73,7 @@ public class TensorFlowThreadedInferenceExample {
             Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_IMG_PATH)).getPath(),
             Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_LBL_PATH)).getPath(),
             new Random(0),
-            10000
+            5000
         );
 
         long t0 = System.currentTimeMillis();

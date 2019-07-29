@@ -44,7 +44,7 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  *  Crossover Rate
  *  Population Size
  *  Selection Method
- *  
+ *
  * <p>
  * How to run from command line:</p>
  * <p>
@@ -65,10 +65,7 @@ public class HelloWorldGAExample {
     public static void main(String args[]) {
         System.out.println(">>> HelloWorld GA grid example started.");
 
-        try {
-            // Create an Ignite instance as you would in any other use case.
-            Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
-
+        try(Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             // Create GAConfiguration.
             GAConfiguration gaCfg = new GAConfiguration();
 
@@ -80,19 +77,19 @@ public class HelloWorldGAExample {
 
             // Initialize gene pool.
             gaCfg.setGenePool(genes);
-             
+
             // Set CrossOver Rate.
             gaCfg.setCrossOverRate(.05);
-            
+
             // Set Mutation Rate.
             gaCfg.setMutationRate(.05);
-           
+
             // Set Selection Method.
             gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_ROULETTE_WHEEL);
-            
+
             // Set Population Size.
-            gaCfg.setPopulationSize(2000);
-            
+            gaCfg.setPopulationSize(500);
+
             // Create and set Fitness function.
             HelloWorldFitnessFunction function = new HelloWorldFitnessFunction();
             gaCfg.setFitnessFunction(function);
@@ -113,9 +110,6 @@ public class HelloWorldGAExample {
             Chromosome chromosome = gaGrid.evolve();
 
             System.out.println(">>> Evolution result: " + chromosome);
-
-            Ignition.stop(true);
-
             System.out.println(">>> HelloWorld GA grid example completed.");
         }
         catch (Exception e) {

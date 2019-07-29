@@ -66,7 +66,7 @@ public class LinearRegressionSGDTrainerExample {
                     new RPropUpdateCalculator(),
                     RPropParameterUpdate.SUM_LOCAL,
                     RPropParameterUpdate.AVG
-                ), 100000, 10, 100, 123L);
+                ), 256, 10, 100, 123L);
 
                 System.out.println(">>> Perform the training to get the model.");
 

@@ -67,8 +67,8 @@ public class LogisticRegressionSGDTrainerExample {
                         SimpleGDParameterUpdate.SUM_LOCAL,
                         SimpleGDParameterUpdate.AVG
                     ))
-                    .withMaxIterations(100000)
-                    .withLocIterations(100)
+                    .withMaxIterations(100)
+                    .withLocIterations(10)
                     .withBatchSize(10)
                     .withSeed(123L);
 

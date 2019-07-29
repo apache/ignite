@@ -55,10 +55,7 @@ public class KnapsackGAExample {
     public static void main(String args[]) {
         System.out.println(">>> Knapsack GA grid example started.");
 
-        try {
-            // Create an Ignite instance as you would in any other use case.
-            Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
-
+        try(Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             // Create GAConfiguration.
             GAConfiguration gaCfg = new GAConfiguration();
 
@@ -90,9 +87,6 @@ public class KnapsackGAExample {
             Chromosome chromosome = gaGrid.evolve();
 
             System.out.println(">>> Evolution result: " + chromosome);
-
-            Ignition.stop(true);
-
             System.out.println(">>> Knapsack GA grid example completed.");
         }
         catch (Exception e) {
