@@ -822,7 +822,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-//        assert val != null : "Value is not ready: " + this;
+        assert val != null : "Value is not ready: " + this;
 
         return val;
     }

@@ -375,8 +375,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     GridCacheEntryInfo info = infos.next();
 
                     if (info.value() == null) {
-                        DataRow row = new DataRow(info.key(), null, info.version(), part, info.expireTime(),
-                            info.cacheId());
+                        CacheDataRow row = new DataRowStoreAware(info.key(), null, info.version(), part,
+                            info.expireTime(), info.cacheId(), true);
 
                         boolean loaded = preloadEntry(row, topVer);
 
@@ -387,12 +387,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     boolean storeCacheId = grp.storeCacheIdInDataPage();
 
-                    rows.add(new DataRowStoreAware(new DataRow(info.key(),
+                    rows.add(new DataRowStoreAware(info.key(),
                         info.value(),
                         info.version(),
                         part,
                         info.expireTime(),
-                        grp.sharedGroup() || storeCacheId ? info.cacheId() : CU.UNDEFINED_CACHE_ID), storeCacheId));
+                        grp.sharedGroup() || storeCacheId ? info.cacheId() : CU.UNDEFINED_CACHE_ID,
+                        storeCacheId));
                 }
                 while (infos.hasNext() && rows.size() < batchSize);
 
@@ -403,7 +404,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     dataStore.rowStore().addRows(rows, grp.statisticsHolderData());
 
                     for (DataRowStoreAware row : rows) {
-                        boolean loaded = preloadEntry(row.delegate(), topVer);
+                        row.storeCacheId(true);
+
+                        boolean loaded = preloadEntry(row, topVer);
 
                         if (!loaded)
                             dataStore.rowStore().removeRow(row.link(), grp.statisticsHolderData());
