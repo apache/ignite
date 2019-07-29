@@ -35,10 +35,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_CACHE_OPERATIONS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -94,11 +94,11 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         MetricRegistry reg = ignite.context().metric().registry(GridMetricManager.PME_METRICS);
 
-        LongMetric currentPMEDuration = reg.findMetric(CURRENT_PME_DURATION);
-        LongMetric currentBlockingPMEDuration = reg.findMetric(CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION);
+        LongMetric currentPMEDuration = reg.findMetric(PME_DURATION);
+        LongMetric currentBlockingPMEDuration = reg.findMetric(PME_OPS_BLOCKED_DURATION);
 
-        HistogramMetric durationHistogram = reg.findMetric(PME_DURATION);
-        HistogramMetric blockindDurationHistogram = reg.findMetric(PME_CACHE_OPERATIONS_BLOCKED_DURATION);
+        HistogramMetric durationHistogram = reg.findMetric(PME_DURATION_HISTOGRAM);
+        HistogramMetric blockindDurationHistogram = reg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)

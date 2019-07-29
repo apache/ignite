@@ -158,10 +158,10 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_CACHE_OPERATIONS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 
 /**
@@ -492,16 +492,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
 
-        mreg.register(CURRENT_PME_DURATION,
+        mreg.register(PME_DURATION,
             () -> getCurrentPMEDuration(false),
             "Current PME duration in milliseconds.");
 
-        mreg.register(CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION,
+        mreg.register(PME_OPS_BLOCKED_DURATION,
             () -> getCurrentPMEDuration(true),
-            "Current PME cache cperations blocked duration in milliseconds.");
+            "Current PME cache operations blocked duration in milliseconds.");
 
-        durationHistogram = mreg.findMetric(PME_DURATION);
-        blockingDurationHistogram = mreg.findMetric(PME_CACHE_OPERATIONS_BLOCKED_DURATION);
+        durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
+        blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
     }
 
     /**
@@ -2745,14 +2745,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @return Histogram of PME durations metric.
      */
-    public HistogramMetric getDurationHistogram() {
+    public HistogramMetric durationHistogram() {
         return durationHistogram;
     }
 
     /**
      * @return Histogram of blocking PME durations metric.
      */
-    public HistogramMetric getBlockingDurationHistogram() {
+    public HistogramMetric blockingDurationHistogram() {
         return blockingDurationHistogram;
     }
 

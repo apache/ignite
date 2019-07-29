@@ -138,18 +138,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Daemon thread count metric name. */
     public static final String DAEMON_THREAD_CNT = "DaemonThreadCount";
 
-    /** Current PME duration metric name. */
-    public static final String CURRENT_PME_DURATION = "CurrentPmeDuration";
+    /** PME duration metric name. */
+    public static final String PME_DURATION = "Duration";
 
-    /** Current PME cache operations blocked duration metric name. */
-    public static final String CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION =
-        "CurrentPMECacheOperationsBlockedDuration";
+    /** PME cache operations blocked duration metric name. */
+    public static final String PME_OPS_BLOCKED_DURATION = "CacheOperationsBlockedDuration";
 
     /** Histogram of PME durations metric name. */
-    public static final String PME_DURATION = "PMEDuration";
+    public static final String PME_DURATION_HISTOGRAM = "DurationHistogram";
 
     /** Histogram of blocking PME durations metric name. */
-    public static final String PME_CACHE_OPERATIONS_BLOCKED_DURATION = "PMECacheOperationsBlockedDuration";
+    public static final String PME_OPS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
 
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
@@ -219,15 +218,15 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         long[] pmeBounds = new long[] {500, 1000, 5000, 30000};
 
-        pmeReg.histogram(PME_DURATION, pmeBounds,
+        pmeReg.histogram(PME_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of PME durations in milliseconds.");
 
-        pmeReg.histogram(PME_CACHE_OPERATIONS_BLOCKED_DURATION, pmeBounds,
+        pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         metricsUpdateTask = ctx.timeout().schedule(new MetricsUpdater(), METRICS_UPDATE_FREQ, METRICS_UPDATE_FREQ);
     }
 

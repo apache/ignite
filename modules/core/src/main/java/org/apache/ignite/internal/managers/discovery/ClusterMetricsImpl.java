@@ -34,7 +34,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CURRENT_PME_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PEAK_THREAD_CNT;
@@ -164,7 +164,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     private final IntMetric daemonThreadCnt;
 
     /** Current PME duration in milliseconds. */
-    private final LongMetric currentPMEDuration;
+    private final LongMetric pmeDuration;
 
     /**
      * @param ctx Kernel context.
@@ -199,7 +199,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
         MetricRegistry pmeReg = ctx.metric().registry(PME_METRICS);
 
-        currentPMEDuration = pmeReg.findMetric(CURRENT_PME_DURATION);
+        pmeDuration = pmeReg.findMetric(PME_DURATION);
     }
 
     /** {@inheritDoc} */
@@ -498,7 +498,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCurrentPmeDuration() {
-        return currentPMEDuration.value();
+        return pmeDuration.value();
     }
 
     /**
