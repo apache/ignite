@@ -46,10 +46,10 @@ import org.junit.Test;
  */
 public class GridCacheSetRebalanceTest extends GridCommonAbstractTest {
     /** */
-    private final static String CUSTOM_KEY_CLS = "org.apache.ignite.tests.p2p.IgniteSetCustomKey";
+    private static final String CUSTOM_KEY_CLS = "org.apache.ignite.tests.p2p.IgniteSetCustomKey";
 
     /** Internal name for atomic partitioned data structures {@link DataStructuresProcessor}. */
-    private final static String DATA_STRUCTURES_CACHE_NAME = "datastructures_ATOMIC_PARTITIONED_1@default-ds-group";
+    private static final String DATA_STRUCTURES_CACHE_NAME = "datastructures_ATOMIC_PARTITIONED_1@default-ds-group";
 
     /** Flag that is raised in case the failure handler was called. */
     private final AtomicBoolean failure = new AtomicBoolean();
