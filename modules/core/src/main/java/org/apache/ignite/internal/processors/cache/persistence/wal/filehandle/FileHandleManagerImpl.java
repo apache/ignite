@@ -211,18 +211,21 @@ public class FileHandleManagerImpl implements FileHandleManager {
     @Override public void onDeactivate() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 
-        if (mode == WALMode.BACKGROUND) {
+        try {
+            if (mode == WALMode.BACKGROUND) {
+                if (currHnd != null)
+                    currHnd.flush(null);
+            }
+
             if (currHnd != null)
-                currHnd.flush(null);
+                currHnd.close(false);
         }
+        finally {
+            if (walSegmentSyncWorker != null)
+                walSegmentSyncWorker.shutdown();
 
-        if (currHnd != null)
-            currHnd.close(false);
-
-        if (walSegmentSyncWorker != null)
-            walSegmentSyncWorker.shutdown();
-
-        walWriter.shutdown();
+            walWriter.shutdown();
+        }
     }
 
     /** {@inheritDoc} */
@@ -398,6 +401,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
                 err = t;
             }
             finally {
+                this.err = err;
+
                 unparkWaiters(Long.MAX_VALUE);
 
                 if (err == null && !isCancelled)
@@ -564,6 +569,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
+                err = e;
+
                 StorageException se = new StorageException("Failed to write buffer.", e);
 
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));

@@ -30,4 +30,5 @@
  *     configuration changes that might be done as result of rebalancing or node failures.</li>
  * </ul>
  */
+
 package org.apache.ignite.tensorflow.cluster;

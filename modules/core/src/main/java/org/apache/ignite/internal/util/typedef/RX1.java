@@ -32,4 +32,4 @@ import org.apache.ignite.internal.util.lang.IgniteReducerX;
 public abstract class RX1<E1, R> extends IgniteReducerX<E1, R> {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+}

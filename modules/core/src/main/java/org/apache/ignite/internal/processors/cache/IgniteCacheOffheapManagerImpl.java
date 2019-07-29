@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshot
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -934,7 +934,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             curPart = ds.partId();
 
                             // Data page scan is disabled by default for scan queries.
-                            CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled == TRUE);
+                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998
+                            CacheDataTree.setDataPageScanEnabled(false);
 
                             try {
                                 if (mvccSnapshot == null)
@@ -1624,10 +1625,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
-            // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
-            boolean sizeWithCacheId = grp.sharedGroup();
-
             int oldLen = oldRow.size();
+
+            // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
+            if (!grp.storeCacheIdInDataPage() && grp.sharedGroup() && oldRow.cacheId() != CU.UNDEFINED_CACHE_ID)
+                oldLen -= 4;
 
             if (oldLen > updateValSizeThreshold)
                 return false;
