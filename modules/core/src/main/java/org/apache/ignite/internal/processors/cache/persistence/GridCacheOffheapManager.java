@@ -1627,7 +1627,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /**
          * @param partId Partition.
-         * @param exists {@code True} if store for this index exists.
+         * @param exists {@code True} if store exists.
          */
         private GridCacheDataStore(int partId, boolean exists) {
             this.partId = partId;
@@ -1663,6 +1663,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /**
+         * @param checkExists If {@code true} data store won't be initialized if it doesn't exists
+         * (has non empty data file). This is an optimization for lazy store initialization on writes.
+         *
          * @return Store delegate.
          * @throws IgniteCheckedException If failed.
          */
@@ -2230,11 +2233,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateInitialCounter(long start, long delta) {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
-                if (delegate0 == null)
-                    throw new IllegalStateException("Should be never called.");
-
+                // Partition may not exists before recovery starts in case of recovering counters from RollbackRecord.
                 delegate0.updateInitialCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
