@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -50,7 +50,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class KNNRegressionExample {
     /** Run example. */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
         System.out.println(">>> kNN regression over cached dataset usage example started.");
         // Start ignite grid.
@@ -82,8 +82,6 @@ public class KNNRegressionExample {
             } finally {
                 dataCache.destroy();
             }
-        } finally {
-            System.out.flush();
         }
     }
 }

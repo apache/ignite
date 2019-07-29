@@ -120,21 +120,19 @@ public class Step_8_CV_with_Param_Grid {
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
-                    .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[]{0.0, 0.25, 0.5});
+                    .addHyperParam("maxDeep", new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", new Double[]{0.0, 0.25, 0.5});
 
-                scoreCalculator
-                    .withIgnite(ignite)
-                    .withUpstreamCache(dataCache)
-                    .withTrainer(trainerCV)
-                    .withMetric(new Accuracy<>())
-                    .withFilter(split.getTrainFilter())
-                    .isRunningOnPipeline(false)
-                    .withPreprocessor(normalizationPreprocessor)
-                    .withAmountOfFolds(3)
-                    .withParamGrid(paramGrid);
-
-                CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
+                CrossValidationResult crossValidationRes = scoreCalculator.score(
+                    trainerCV,
+                    new Accuracy<>(),
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor,
+                    3,
+                    paramGrid
+                );
 
                 System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
                     + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
@@ -177,8 +175,6 @@ public class Step_8_CV_with_Param_Grid {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-        } finally {
-            System.out.flush();
         }
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.ml.environment.parallelism;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -37,11 +36,6 @@ public class DefaultParallelismStrategy implements ParallelismStrategy {
     /** {@inheritDoc} */
     @Override public <T> Promise<T> submit(IgniteSupplier<T> task) {
         return new FutureWrapper<>(pool.submit(task::get));
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getParallelism() {
-        return ((ForkJoinPool) pool).getParallelism();
     }
 
     /**

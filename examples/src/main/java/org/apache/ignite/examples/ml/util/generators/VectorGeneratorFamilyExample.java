@@ -61,6 +61,5 @@ public class VectorGeneratorFamilyExample {
 
         Tracer.showClassificationDatasetHtml("Family of ring sectors [both families as two calsses]", family.asDataStream(),
             2000, 0, 1, true);
-        System.out.flush();
     }
 }
