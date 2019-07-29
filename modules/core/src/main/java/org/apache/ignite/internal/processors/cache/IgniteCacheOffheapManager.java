@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +48,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -574,6 +574,15 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int part) throws IgniteCheckedException;
 
     /**
+     * @param part Partition.
+     * @param topVer Topology version.
+     * @param infos Entries info for preload.
+     * @param preloadCb Preloading callback.
+     */
+    public void preload(int part, AffinityTopologyVersion topVer, Iterator<GridCacheEntryInfo> infos,
+        CI2<Boolean, CacheDataRow> preloadCb) throws IgniteCheckedException;
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
@@ -695,16 +704,6 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
-
-        /**
-         * Create data rows.
-         *
-         * @param infos Entry infos.
-         * @param topVer Topology version.
-         * @throws IgniteCheckedException If failed.
-         */
-        public void createRows(Iterator<GridCacheEntryInfo> infos,
-            AffinityTopologyVersion topVer) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

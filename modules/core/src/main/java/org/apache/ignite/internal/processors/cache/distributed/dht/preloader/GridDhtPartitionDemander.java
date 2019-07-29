@@ -949,33 +949,25 @@ public class GridDhtPartitionDemander {
         Iterator<GridCacheEntryInfo> infos
     ) throws IgniteCheckedException {
         try {
-            GridDhtLocalPartition part = grp.topology().localPartition(p);
+            grp.offheap().preload(p, topVer, infos, (loaded, row) -> {
+                if (loaded && grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !row.key().internal()) {
+                    GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
-            part.dataStore().createRows(infos, topVer);
+                    if (cctx == null)
+                        return;
+
+                    cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
+
+                    cctx.events().addEvent(p, row.key(), cctx.localNodeId(), null,
+                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
+                        false, null, null, null, true);
+                }
+
+                updateCacheMetrics();
+            });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Preloading failed - stopping rebalancing [p=" + p + "]", e);
-        }
-
-        // todo update metrics in batch
-        while (infos.hasNext()) {
-            GridCacheEntryInfo entry = infos.next();
-
-            if (grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED)) {
-                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
-
-                if (cctx == null)
-                    continue;
-
-                cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
-
-                if (!entry.key().internal())
-                    cctx.events().addEvent(p, entry.key(), cctx.localNodeId(), null,
-                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
-                        false, null, null, null, true);
-            }
-
-            updateCacheMetrics();
         }
     }
 

@@ -2384,14 +2384,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void createRows(Iterator<GridCacheEntryInfo> infos,
-            AffinityTopologyVersion topVer) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            delegate.createRows(infos, topVer);
-        }
-
-        /** {@inheritDoc} */
         @Override public int cleanup(GridCacheContext cctx,
             @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
