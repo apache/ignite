@@ -174,7 +174,7 @@ public class GridLocalConfigManager {
 
                     String cacheName = storedCacheData.config().getName();
 
-                    CacheType type = CacheType.cacheType(cacheName);
+                    CacheType type = ctx.cache().cacheType(cacheName);
 
                     if (!caches.containsKey(cacheName))
                         // No static cache - add the configuration.
@@ -276,7 +276,7 @@ public class GridLocalConfigManager {
                     "assign unique name to each cache): " + cacheName);
             }
 
-            CacheType cacheType = CacheType.cacheType(cacheName);
+            CacheType cacheType = ctx.cache().cacheType(cacheName);
 
             if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
                 cfg.setDataRegionName(cacheProcessor.context().database().systemDateRegionName());
