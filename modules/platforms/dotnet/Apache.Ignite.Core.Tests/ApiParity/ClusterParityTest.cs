@@ -44,7 +44,9 @@
         {
             "enableStatistics",         // IGNITE-7276
             "clearStatistics",          // IGNITE-9017
-            "currentBaselineTopology"   // GG-21247
+            "currentBaselineTopology",   // GG-21247
+            "id",                       // GG-21621
+            "tag"                       // GG-21621
         };
 
         /// <summary>

@@ -29,6 +29,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
     /**
+     * Prefix for keys in metastorage used by Ignite internally. No user keys should start with this prefix.
+     */
+    public static final String IGNITE_INTERNAL_KEY_PREFIX = "ignite.internal.";
+
+    /**
      * Write value into distributed metastorage.
      *
      * @param key The key.
