@@ -235,16 +235,16 @@ public class IgniteThrottlingUnitTest {
 
     /** */
     @Test
-    public void wakeupThrottledThread() throws IgniteInterruptedCheckedException, InterruptedException {
+    public void wakeupThrottledThread() throws IgniteInterruptedCheckedException {
         PagesWriteThrottlePolicy plc = new PagesWriteThrottle(pageMemory2g, null, stateChecker, true, log);
 
         AtomicBoolean stopLoad = new AtomicBoolean();
         List<Thread> loadThreads = new ArrayList<>();
 
-        for (int i=0; i<3; i++) {
+        for (int i = 0; i < 3; i++) {
             loadThreads.add(new Thread(
-                ()->{
-                    while(!stopLoad.get())
+                () -> {
+                    while (!stopLoad.get())
                         plc.onMarkDirty(true);
                 },
                 "load-" + i
