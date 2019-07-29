@@ -142,7 +142,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public static final String CURRENT_PME_DURATION = "CurrentPmeDuration";
 
     /** Current PME cache operations blocked duration metric name. */
-    public static final String CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION = "CurrentPMECacheOperationsBlockedDuration";
+    public static final String CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION =
+        "CurrentPMECacheOperationsBlockedDuration";
 
     /** Histogram of PME durations metric name. */
     public static final String PME_DURATION = "PMEDuration";
