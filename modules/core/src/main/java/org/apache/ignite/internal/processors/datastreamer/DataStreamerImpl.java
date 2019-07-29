@@ -2205,18 +2205,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (cctx.kernalContext().security().enabled())
                 AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
-                    receive0(cache, entries);
+                    body(cache, entries);
 
                     return null;
                 });
             else
-                receive0(cache, entries);
+                body(cache, entries);
         }
 
         /**
          *
          */
-        private void receive0(
+        private void body(
             IgniteCache<KeyCacheObject, CacheObject> cache,
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;

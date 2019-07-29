@@ -42,11 +42,6 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * </ul>
  */
 public interface IgniteSecurity {
-    /** */
-    public static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
-        "is not equal to remote node's grid security processor class " +
-        "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
-
     /**
      * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
@@ -129,7 +124,7 @@ public interface IgniteSecurity {
      * @return Result of {@code callable}.
      * @see #withContext(UUID)
      * @see #withContext(SecurityContext)
-     * @see SecuritySubject#smPermissions()
+     * @see SecuritySubject#securityManagerPermissions()
      */
     public <T> T execute(Callable<T> call) throws IgniteException;
 
@@ -139,7 +134,7 @@ public interface IgniteSecurity {
      * @param runnable Runnable to execute.
      * @see #withContext(UUID)
      * @see #withContext(SecurityContext)
-     * @see SecuritySubject#smPermissions()
+     * @see SecuritySubject#securityManagerPermissions()
      */
     public default void execute(Runnable runnable) throws IgniteException {
         execute(() -> {

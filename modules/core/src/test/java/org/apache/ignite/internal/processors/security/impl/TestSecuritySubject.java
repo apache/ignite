@@ -43,6 +43,7 @@ public class TestSecuritySubject implements SecuritySubject {
     /** Permissions. */
     private SecurityPermissionSet perms;
 
+    /** Permissions for SecurityManager checks. */
     private Permissions smPerms;
 
     /**
@@ -139,12 +140,12 @@ public class TestSecuritySubject implements SecuritySubject {
     }
 
     /** {@inheritDoc} */
-    @Override public Permissions smPermissions() {
+    @Override public Permissions securityManagerPermissions() {
         return smPerms;
     }
 
     /** */
-    public TestSecuritySubject smPermissions(Permissions smPerms) {
+    public TestSecuritySubject securityManagerPermissions(Permissions smPerms) {
         this.smPerms = smPerms;
 
         return this;

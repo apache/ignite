@@ -32,19 +32,19 @@ public class SandboxAwareIgniteBiPredicate<K, V> implements IgniteBiPredicate<K,
     private static final long serialVersionUID = 1234751431315974061L;
 
     /** */
-    private final IgniteSecurity sec;
+    private final IgniteSecurity security;
 
     /** */
-    private final IgniteBiPredicate<K, V> ogigin;
+    private final IgniteBiPredicate<K, V> ogiginal;
 
     /** */
-    public SandboxAwareIgniteBiPredicate(IgniteSecurity sec, IgniteBiPredicate<K, V> ogigin) {
-        this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.ogigin = Objects.requireNonNull(ogigin, "Origin cannot be null.");
+    public SandboxAwareIgniteBiPredicate(IgniteSecurity security, IgniteBiPredicate<K, V> ogiginal) {
+        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+        this.ogiginal = Objects.requireNonNull(ogiginal, "Original cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean apply(K k, V v) {
-        return sec.execute(() -> ogigin.apply(k, v));
+        return security.execute(() -> ogiginal.apply(k, v));
     }
 }

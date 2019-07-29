@@ -33,24 +33,24 @@ public class SandboxAwareComputeJob implements ComputeJob {
     private static final long serialVersionUID = 7510836970476698602L;
 
     /** */
-    private final IgniteSecurity sec;
+    private final IgniteSecurity security;
 
     /** */
-    private final ComputeJob origin;
+    private final ComputeJob original;
 
     /** */
-    public SandboxAwareComputeJob(IgniteSecurity sec, ComputeJob origin) {
-        this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.origin = Objects.requireNonNull(origin, "Origin cannot be null.");
+    public SandboxAwareComputeJob(IgniteSecurity security, ComputeJob original) {
+        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+        this.original = Objects.requireNonNull(original, "Original cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        origin.cancel();
+        original.cancel();
     }
 
     /** {@inheritDoc} */
     @Override public Object execute() throws IgniteException {
-        return sec.execute(origin::execute);
+        return security.execute(original::execute);
     }
 }

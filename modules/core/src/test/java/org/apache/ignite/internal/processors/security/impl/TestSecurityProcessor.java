@@ -79,7 +79,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin(cred.getLogin())
                 .setPerms(PERMS.get(cred))
-                .smPermissions(SM_PERMS.get(cred))
+                .securityManagerPermissions(SM_PERMS.get(cred))
         );
     }
 
@@ -97,7 +97,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setAddr(ctx.address())
                 .setLogin(ctx.credentials().getLogin())
                 .setPerms(PERMS.get(ctx.credentials()))
-                .smPermissions(SM_PERMS.get(ctx.credentials()))
+                .securityManagerPermissions(SM_PERMS.get(ctx.credentials()))
         );
     }
 

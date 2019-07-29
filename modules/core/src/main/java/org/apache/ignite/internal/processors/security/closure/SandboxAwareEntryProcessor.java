@@ -31,19 +31,19 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
  */
 public class SandboxAwareEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
     /** */
-    private final IgniteSecurity sec;
+    private final IgniteSecurity security;
 
     /** */
-    private final EntryProcessor<K, V, T> origin;
+    private final EntryProcessor<K, V, T> original;
 
     /** */
-    public SandboxAwareEntryProcessor(IgniteSecurity sec, EntryProcessor<K, V, T> origin) {
-        this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.origin = Objects.requireNonNull(origin, "Orgin cannot be null.");
+    public SandboxAwareEntryProcessor(IgniteSecurity security, EntryProcessor<K, V, T> original) {
+        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+        this.original = Objects.requireNonNull(original, "Orginal cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
-        return sec.execute(() -> origin.process(entry, arguments));
+        return security.execute(() -> original.process(entry, arguments));
     }
 }

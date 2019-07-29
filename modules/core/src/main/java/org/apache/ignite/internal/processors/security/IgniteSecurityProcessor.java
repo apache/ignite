@@ -53,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
@@ -192,7 +193,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
                 @Override public AccessControlContext run() {
                     return new AccessControlContext
                         (new AccessControlContext(NULL_PD_ARRAY),
-                            new IgniteSubjectDomainCombiner(subject, secCtx.subject().smPermissions()));
+                            new IgniteSubjectDomainCombiner(subject, secCtx.subject().securityManagerPermissions()));
                 }
             });
 

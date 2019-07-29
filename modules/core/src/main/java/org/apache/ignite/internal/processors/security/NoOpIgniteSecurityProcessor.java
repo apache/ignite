@@ -34,6 +34,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.IgniteSecurityProcessor.ATTR_GRID_SEC_PROC_CLASS;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 
 /**
  * No operation IgniteSecurity.

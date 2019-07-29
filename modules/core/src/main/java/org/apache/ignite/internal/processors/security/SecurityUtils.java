@@ -36,6 +36,11 @@ import org.apache.ignite.plugin.security.SecurityPermission;
  * Security utilities.
  */
 public class SecurityUtils {
+    /** */
+    public static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
+        "is not equal to remote node's grid security processor class " +
+        "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
+
     /** Default serialization version. */
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 

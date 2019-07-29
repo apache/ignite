@@ -36,19 +36,19 @@ public class SandboxAwareStreamReceiver<K, V> implements StreamReceiver<K, V> {
     private static final long serialVersionUID = 3783092194186094866L;
 
     /** */
-    private final IgniteSecurity sec;
+    private final IgniteSecurity security;
 
     /** */
-    private final StreamReceiver<K, V> origin;
+    private final StreamReceiver<K, V> original;
 
     /** */
-    public SandboxAwareStreamReceiver(IgniteSecurity sec, StreamReceiver<K, V> origin) {
-        this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.origin = Objects.requireNonNull(origin, "Origin cannot be null.");
+    public SandboxAwareStreamReceiver(IgniteSecurity security, StreamReceiver<K, V> original) {
+        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+        this.original = Objects.requireNonNull(original, "Original cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
-        sec.execute(() -> origin.receive(cache, entries));
+        security.execute(() -> original.receive(cache, entries));
     }
 }

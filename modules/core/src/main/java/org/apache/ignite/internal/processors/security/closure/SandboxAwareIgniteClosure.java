@@ -32,19 +32,19 @@ public class SandboxAwareIgniteClosure<E, R> implements IgniteClosure<E, R> {
     private static final long serialVersionUID = -7040271779139978769L;
 
     /** */
-    private final IgniteSecurity sec;
+    private final IgniteSecurity security;
 
     /** */
-    private final IgniteClosure<E, R> origin;
+    private final IgniteClosure<E, R> original;
 
     /** */
-    public SandboxAwareIgniteClosure(IgniteSecurity sec, IgniteClosure<E, R> origin) {
-        this.sec = Objects.requireNonNull(sec, "Sec cannot be null.");
-        this.origin = Objects.requireNonNull(origin, "Origin cannot be null.");
+    public SandboxAwareIgniteClosure(IgniteSecurity security, IgniteClosure<E, R> original) {
+        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+        this.original = Objects.requireNonNull(original, "Original cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public R apply(E e) {
-        return sec.execute(() -> origin.apply(e));
+        return security.execute(() -> original.apply(e));
     }
 }
