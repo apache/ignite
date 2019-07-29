@@ -81,6 +81,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Map of security contexts. Key is the node's id. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
+    /** True if at start of this processor security manager was exist. */
+    private volatile boolean isExistsSecurityMgr;
+
     /**
      * @param ctx Grid kernal context.
      * @param secPrc Security processor.
@@ -171,6 +174,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         Objects.requireNonNull(call);
 
         if (System.getSecurityManager() == null) {
+            if (isExistsSecurityMgr)
+                throw new SecurityException("SecurityManager was, but it disappeared!");
+
             try {
                 return call.call();
             }
@@ -216,6 +222,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             ctx.log(getClass()).warning("IgniteSecurity enabled, but system SecurityManager is not defined, " +
                 "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
         }
+        else
+            isExistsSecurityMgr = true;
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
