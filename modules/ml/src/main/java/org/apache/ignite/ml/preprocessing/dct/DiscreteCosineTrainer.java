@@ -19,8 +19,6 @@ package org.apache.ignite.ml.preprocessing.dct;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 
@@ -31,9 +29,32 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
  * @param <V> Type of a value in {@code upstream} data.
  */
 public class DiscreteCosineTrainer<K, V> implements PreprocessingTrainer<K, V> {
+    /** DCT type. Must be between 1 and 4. Default is 2. */
+    private int type = 2;
 
     /** {@inheritDoc} */
     @Override public DiscreteCosinePreprocessor<K, V> fit(LearningEnvironmentBuilder envBuilder, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> basePreprocessor) {
-        return new DiscreteCosinePreprocessor<>(basePreprocessor);
+        return new DiscreteCosinePreprocessor<>(basePreprocessor, type);
+    }
+
+    /**
+     * Gets the DCT type.
+     *
+     * @return The parameter value.
+     */
+    public double type() {
+        return type;
+    }
+
+    /**
+     * Sets the DCT type. Must be between 1 and 4.
+     *
+     * @param type The given value.
+     * @return The Discrete Cosine trainer.
+     */
+    public DiscreteCosineTrainer<K, V> withType(int type) {
+        assert type >= 1 && type <= 4;
+        this.type = type;
+        return this;
     }
 }

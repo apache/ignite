@@ -34,13 +34,18 @@ public class DiscreteCosinePreprocessor<K, V> implements Preprocessor<K, V> {
     /** Base preprocessor */
     private final Preprocessor<K, V> basePreprocessor;
 
+    /** DCT type, default is 2 */
+    private final int type;
+
     /**
      * Constructs a new instance of Discrete Cosine preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
+     * @param type DCT type.
      */
-    public DiscreteCosinePreprocessor(Preprocessor<K, V> basePreprocessor) {
+    public DiscreteCosinePreprocessor(Preprocessor<K, V> basePreprocessor, int type) {
         this.basePreprocessor = basePreprocessor;
+        this.type = type;
     }
 
     /**
@@ -57,8 +62,29 @@ public class DiscreteCosinePreprocessor<K, V> implements Preprocessor<K, V> {
         for (int i = 0; i < res.length; i++) {
             double sum = 0;
 
-            for (int j = 0; j < tmp.size(); j++)
-                sum += 2 * tmp.get(j) * Math.cos((Math.PI/tmp.size()) * (j + 0.5) * i);
+            if (type == 1) {
+                sum += tmp.get(0) + Math.pow(-1, i) * tmp.get(tmp.size() - 1);
+
+                for (int j = 1; j < tmp.size() - 1; j++)
+                    sum += 2 * tmp.get(j) * Math.cos((Math.PI / (tmp.size() - 1)) * j * i);
+            }
+            else if (type == 2) {
+                for (int j = 0; j < tmp.size(); j++)
+                    sum += 2 * tmp.get(j) * Math.cos((Math.PI / tmp.size()) * (j + 0.5) * i);
+            }
+            else if (type == 3) {
+                sum += tmp.get(0);
+
+                for (int j = 1; j < tmp.size(); j++)
+                    sum += 2 * tmp.get(j) * Math.cos((Math.PI / tmp.size()) * j * (i + 0.5));
+            }
+            else if (type == 4) {
+                for (int j = 0; j < tmp.size(); j++)
+                    sum += 2 * tmp.get(j) * Math.cos((Math.PI / tmp.size()) * (j + 0.5) * (i + 0.5));
+            }
+            else {
+                assert false;
+            }
 
             res[i] = sum;
         }

@@ -61,6 +61,7 @@ public class DiscreteCosineExample {
 
                 // Defines second preprocessor that normalizes features.
                 Preprocessor<Integer, Vector> preprocessor = new DiscreteCosineTrainer<Integer, Vector>()
+                        .withType(2)
                         .fit(ignite, data, vectorizer);
 
                 // Creates a cache based simple dataset containing features and providing standard dataset API.
