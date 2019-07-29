@@ -89,6 +89,7 @@ emailAddress           = ${CLIENT_EMAIL}
 subjectAltName         = @alt_names
 [ alt_names ]
 DNS.1                  = ${CLIENT_DOMAIN_NAME}
+IP.1                   = 127.0.0.1
 EOF
 
 # Generate certificates.
@@ -101,7 +102,7 @@ openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 
 openssl rsa -passin pass:${PWD} -in server.key -out server.nopass.key
 
 openssl req -new -utf8 -nameopt multiline,utf8 -newkey rsa:1024 -nodes -keyout client.key -config client.cnf -out client.csr
-openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 02 -out client.crt
+openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 02 -extensions req_ext -extfile client.cnf -out client.crt
 
 openssl pkcs12 -export -in server.crt -inkey server.key -certfile server.crt -out server.p12 -passin pass:${PWD} -passout pass:${PWD}
 openssl pkcs12 -export -in client.crt -inkey client.key -certfile ca.crt -out client.p12 -passout pass:${PWD}
