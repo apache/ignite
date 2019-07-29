@@ -2629,7 +2629,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          * @param ptr Pointer.
          */
-        private void flushOrWait(FileWALPointer ptr) {
+        private void flushOrWait(FileWALPointer ptr) throws IgniteCheckedException {
             if (ptr != null) {
                 // If requested obsolete file index, it must be already flushed by close.
                 if (ptr.index() != getSegmentId())
@@ -2642,7 +2642,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param ptr Pointer.
          */
-        private void flush(FileWALPointer ptr) {
+        private void flush(FileWALPointer ptr) throws IgniteCheckedException {
             if (ptr == null) { // Unconditional flush.
                 walWriter.flushAll();
 
@@ -3258,8 +3258,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            Throwable err = null;
-
             try {
                 while (!isCancelled()) {
                     while (waiters.isEmpty()) {
@@ -3399,21 +3397,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * Forces all made changes to the file.
          */
-        void force() {
+        void force() throws IgniteCheckedException {
             flushBuffer(FILE_FORCE);
         }
 
         /**
          * Closes file.
          */
-        void close() {
+        void close() throws IgniteCheckedException {
             flushBuffer(FILE_CLOSE);
         }
 
         /**
          * Flushes all data from the buffer.
          */
-        void flushAll() {
+        void flushAll() throws IgniteCheckedException {
             flushBuffer(UNCONDITIONAL_FLUSH);
         }
 
@@ -3421,7 +3419,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param expPos Expected position.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        void flushBuffer(long expPos) {
+        void flushBuffer(long expPos) throws IgniteCheckedException {
             if (mmap)
                 return;
 
@@ -3446,6 +3444,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 if (val == Long.MIN_VALUE) {
                     waiters.remove(t);
+
+                    Throwable walWriterError = walWriter.err;
+
+                    if (walWriterError != null)
+                        throw new IgniteCheckedException("Flush buffer failed.", walWriterError);
 
                     return;
                 }

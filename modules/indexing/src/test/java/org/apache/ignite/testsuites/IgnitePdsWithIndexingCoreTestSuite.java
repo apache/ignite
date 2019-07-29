@@ -78,7 +78,9 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryPPCTest.class);
+
         suite.addTestSuite(IgnitePdsDiskErrorsRecoveringTest.class);
+
         suite.addTestSuite(IgnitePdsCacheDestroyDuringCheckpointTest.class);
 
         suite.addTestSuite(IgnitePdsBinaryMetadataOnClusterRestartTest.class);
