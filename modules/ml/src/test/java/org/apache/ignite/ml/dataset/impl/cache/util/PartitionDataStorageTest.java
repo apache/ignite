@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class PartitionDataStorageTest {
     /** Data storage. */
-    private PartitionDataStorage dataStorage = new PartitionDataStorage();
+    private PartitionDataStorage dataStorage = new PartitionDataStorage(-1);
 
     /** Tests {@code computeDataIfAbsent()} method. */
     @Test

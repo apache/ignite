@@ -161,7 +161,6 @@ public class ComputeUtils {
         int part,
         LearningEnvironmentBuilder envBuilder) {
 
-        @SuppressWarnings("unchecked")
         ConcurrentMap<Integer, LearningEnvironment> envStorage = (ConcurrentMap<Integer, LearningEnvironment>)ignite
             .cluster()
             .nodeLocalMap()
@@ -201,7 +200,7 @@ public class ComputeUtils {
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
             .cluster()
             .nodeLocalMap()
-            .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage());
+            .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage(env.dataTtl()));
 
         final int part = env.partition();
 

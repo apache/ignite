@@ -60,7 +60,8 @@ public class KNNClassificationExample {
                 KNNClassificationTrainer trainer = new KNNClassificationTrainer()
                     .withK(3)
                     .withDistanceMeasure(new EuclideanDistance())
-                    .withWeighted(true);
+                    .withWeighted(true)
+                    .withDataTtl(60);
 
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
                     .labeled(Vectorizer.LabelCoordinate.FIRST);

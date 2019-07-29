@@ -98,6 +98,17 @@ public abstract class KNNTrainer<M extends KNNModel<Double>, Self extends KNNTra
     }
 
     /**
+     * Sets up {@code dataTtl} parameter.
+     *
+     * @param dataTtl Partition data time-to-live in seconds (-1 for an infinite lifetime).
+     * @return This instance.
+     */
+    public Self withDataTtl(long dataTtl) {
+        envBuilder = envBuilder.withDataTtl(dataTtl);
+        return self();
+    }
+
+    /**
      * Sets up {@code distanceMeasure} parameter.
      *
      * @param distanceMeasure Distance measure.
