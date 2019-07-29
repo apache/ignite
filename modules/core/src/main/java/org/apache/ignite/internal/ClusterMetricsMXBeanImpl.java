@@ -367,11 +367,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCurrentPMECacheOperationsBlockedDuration() {
-        return metrics().getCurrentPMECacheOperationsBlockedDuration();
-    }
-
-    /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
         Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
 

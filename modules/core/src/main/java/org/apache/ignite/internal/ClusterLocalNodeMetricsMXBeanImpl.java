@@ -340,11 +340,6 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCurrentPMECacheOperationsBlockedDuration() {
-        return node.metrics().getCurrentPMECacheOperationsBlockedDuration();
-    }
-
-    /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
         if (!node.isClient() && !node.isDaemon()) {
             List<? extends BaselineNode> baselineNodes = discoMgr.baselineNodes(discoMgr.topologyVersionEx());

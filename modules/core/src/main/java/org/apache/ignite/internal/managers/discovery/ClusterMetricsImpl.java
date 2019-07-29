@@ -167,9 +167,6 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     /** Current PME duration in milliseconds. */
     private final LongMetric currentPMEDuration;
 
-    /** Current PME cache cperations blocked duration in milliseconds. */
-    private final LongMetric currentPMECacheOperationsBlockedDuration;
-
     /**
      * @param ctx Kernel context.
      * @param nodeStartTime Node start time.
@@ -204,7 +201,6 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         MetricRegistry pmeReg = ctx.metric().registry(PME_METRICS);
 
         currentPMEDuration = pmeReg.findMetric(CURRENT_PME_DURATION);
-        currentPMECacheOperationsBlockedDuration = pmeReg.findMetric(CURRENT_PME_CACHE_OPERATIONS_BLOCKED_DURATION);
     }
 
     /** {@inheritDoc} */
@@ -504,11 +500,6 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     /** {@inheritDoc} */
     @Override public long getCurrentPmeDuration() {
         return currentPMEDuration.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getCurrentPMECacheOperationsBlockedDuration() {
-        return currentPMECacheOperationsBlockedDuration.value();
     }
 
     /**
