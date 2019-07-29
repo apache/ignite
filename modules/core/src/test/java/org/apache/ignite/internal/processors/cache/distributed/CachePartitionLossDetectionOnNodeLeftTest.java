@@ -28,8 +28,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,7 +37,6 @@ import static org.apache.ignite.testframework.GridTestUtils.mergeExchangeWaitVer
 /**
  * Tests if lost partitions are same on left nodes after other owners removal.
  */
-@RunWith(JUnit4.class)
 public class CachePartitionLossDetectionOnNodeLeftTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
