@@ -209,7 +209,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
                 int part = store.partId();
 
                 if (partsFilter == null || partsFilter.applyPartition(part))
-                    cursors.add(store.cursor(cctx.cacheId()));
+                    cursors.add(store.cursor(cctx.cacheId(), false));
             }
 
             Cursor pkHashCursor = new H2PkHashIndexCursor(cursors.iterator());
