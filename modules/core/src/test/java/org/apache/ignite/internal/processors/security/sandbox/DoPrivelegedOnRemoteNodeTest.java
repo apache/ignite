@@ -163,7 +163,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
 
         assertTrue("Failed to remove source file.", srcFile.delete());
 
-        return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
+        return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()}, getClass().getClassLoader());
     }
 
 }
