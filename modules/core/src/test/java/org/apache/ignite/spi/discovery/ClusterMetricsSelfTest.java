@@ -131,7 +131,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(() -> ignite.cluster().metrics().getCurrentPmeDuration() > 0, 1000));
 
         if (client)
-            assertTrue(currentBlockingPMEDuration.value() == 0);
+            assertEquals(0, currentBlockingPMEDuration.value());
         else
             assertTrue(currentBlockingPMEDuration.value() > 0);
 
@@ -143,17 +143,17 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, 1000));
-        assertTrue(currentBlockingPMEDuration.value() == 0);
+        assertEquals(0, currentBlockingPMEDuration.value());
 
         if (client) {
             // There was non-blocking exchange: client node start.
-            assertTrue(Arrays.stream(durationHistogram.value()).sum() == 3);
-            assertTrue(Arrays.stream(blockindDurationHistogram.value()).sum() == 2);
+            assertEquals(3, Arrays.stream(durationHistogram.value()).sum());
+            assertEquals(2, Arrays.stream(blockindDurationHistogram.value()).sum());
         }
         else {
             // There was two blocking exchange: server node start and rebalance completing.
-            assertTrue(Arrays.stream(durationHistogram.value()).sum() == 4);
-            assertTrue(Arrays.stream(blockindDurationHistogram.value()).sum() == 4);
+            assertEquals(4, Arrays.stream(durationHistogram.value()).sum());
+            assertEquals(4, Arrays.stream(blockindDurationHistogram.value()).sum());
         }
     }
 }
