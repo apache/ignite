@@ -60,6 +60,9 @@ public class VisorCacheConfigurationCollectorJob
         Map<String, VisorCacheConfiguration> res = U.newHashMap(caches.size());
 
         for (IgniteCacheProxy<?, ?> cache : caches) {
+            if (!cache.context().userCache())
+                continue;
+
             String cacheName = cache.getName();
 
             boolean matched = hasPtrn ? ptrn.matcher(cacheName).find() : all || arg.getCacheNames().contains(cacheName);

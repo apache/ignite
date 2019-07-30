@@ -1189,14 +1189,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         IgniteCompute comp = clusterGroupAdapter.compute();
 
-        return comp.callAsync(new IgniteCallable<Boolean>() {
-            @IgniteInstanceResource
-            private Ignite ig;
-
-            @Override public Boolean call() throws Exception {
-                return ig.active();
-            }
-        });
+        return comp.callAsync(new CheckGlobalStateComputeRequest());
     }
 
     /** {@inheritDoc} */
@@ -1815,6 +1808,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      *
      */
+    @GridInternal
     private static class CheckGlobalStateComputeRequest implements IgniteCallable<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;

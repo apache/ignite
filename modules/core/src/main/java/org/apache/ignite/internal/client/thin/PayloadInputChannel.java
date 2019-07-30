@@ -15,19 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.client.thin;
+
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 
 /**
- * Tracks allocated pages.
+ * Thin client payload input channel.
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
+class PayloadInputChannel {
+    /** Client channel. */
+    private final ClientChannel ch;
+
+    /** Input stream. */
+    private final BinaryInputStream in;
 
     /**
-     * Updates totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
+     * Constructor.
      */
-    public void updateTotalAllocatedPages(long delta);
+    PayloadInputChannel(ClientChannel ch, byte[] payload) {
+        in = new BinaryHeapInputStream(payload);
+        this.ch = ch;
+    }
+
+    /**
+     * Gets client channel.
+     */
+    public ClientChannel clientChannel() {
+        return ch;
+    }
+
+    /**
+     * Gets input stream.
+     */
+    public BinaryInputStream in() {
+        return in;
+    }
 }

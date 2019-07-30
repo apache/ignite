@@ -60,8 +60,11 @@ public enum IgniteFeatures {
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
 
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
+
     /** Support of lightweight PME without affinity change for a not baseline server join or leave case. */
-    NOT_BASELINE_SERVER_EXCHANGE(12);
+    NOT_BASELINE_SERVER_EXCHANGE(15);
 
     /**
      * Unique feature identifier.

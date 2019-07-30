@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -906,9 +907,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Perform memory restore before {@link GridDiscoveryManager} start.
      *
      * @param kctx Current kernal context.
+     * @param startTimer Holder of start time of stages.
      * @throws IgniteCheckedException If fails.
      */
-    public void startMemoryRestore(GridKernalContext kctx) throws IgniteCheckedException {
+    public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -1154,7 +1156,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             cctx,
             memCfg.getPageSize(),
             memPlcCfg,
-            memMetrics,
+            memMetrics.totalAllocatedPages(),
             false
         );
 

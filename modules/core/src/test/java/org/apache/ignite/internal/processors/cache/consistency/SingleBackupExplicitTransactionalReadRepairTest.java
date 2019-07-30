@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
+package org.apache.ignite.internal.processors.cache.consistency;
 
 /**
  *
  */
-public class MvccCacheGroupMetricsMBeanTest extends CacheGroupMetricsMBeanTest {
+public class SingleBackupExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+    @Override protected Integer backupsCount() {
+        return 1; // Single backup possible optimisations check.
     }
 }

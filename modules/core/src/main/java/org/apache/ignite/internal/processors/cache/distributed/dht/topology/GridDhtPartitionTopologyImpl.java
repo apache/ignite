@@ -1671,17 +1671,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public void collectUpdateCounters(CachePartitionPartialCountersMap cntrMap) {
         assert cntrMap != null;
 
-        long now = U.currentTimeMillis();
+        long nowNanos = System.nanoTime();
 
         lock.writeLock().lock();
 
         try {
-            long acquired = U.currentTimeMillis();
+            long acquiredNanos = System.nanoTime();
 
-            if (acquired - now >= 100) {
+            if (acquiredNanos - nowNanos >= U.millisToNanos(100)) {
                 if (timeLog.isInfoEnabled())
                     timeLog.info("Waited too long to acquire topology write lock " +
-                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" + (acquired - now) + ']');
+                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" +
+                        U.nanosToMillis(acquiredNanos - nowNanos) + ']');
             }
 
             if (stopping)
@@ -1706,17 +1707,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void applyUpdateCounters() {
-        long now = U.currentTimeMillis();
+        long nowNanos = System.nanoTime();
 
         lock.writeLock().lock();
 
         try {
-            long acquired = U.currentTimeMillis();
+            long acquiredNanos = System.nanoTime();
 
-            if (acquired - now >= 100) {
+            if (acquiredNanos - nowNanos >= U.millisToNanos(100)) {
                 if (timeLog.isInfoEnabled())
                     timeLog.info("Waited too long to acquire topology write lock " +
-                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" + (acquired - now) + ']');
+                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" +
+                        U.nanosToMillis(acquiredNanos - nowNanos) + ']');
             }
 
             if (stopping)
