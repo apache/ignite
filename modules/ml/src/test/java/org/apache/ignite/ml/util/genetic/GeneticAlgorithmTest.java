@@ -62,7 +62,6 @@ public class GeneticAlgorithmTest {
             rawData.add(i, chromosomeData);
         }
 
-
         ga = new GeneticAlgorithm(rawData);
         BiFunction<Integer, Double, Double> mutator = (integer, aDouble) -> rnd.nextDouble() > 0.5 ? aDouble + (rnd.nextDouble() / 100) : aDouble - (rnd.nextDouble() / 100);
 
