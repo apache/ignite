@@ -20,28 +20,18 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
-
-import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
  * Convenience adapter for cache managers.
  */
 public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManager<K, V> {
-    /** Last data version metric name. */
-    public static final String LAST_DATA_VER = "LastDataVersion";
-
     /** */
     private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
 
     /** Context. */
     protected GridCacheSharedContext<K, V> cctx;
-
-    /** Last version metric. */
-    protected AtomicLongMetric lastDataVer;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -67,10 +57,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         log = cctx.logger(getClass());
 
         diagnosticLog = cctx.logger(DIAGNOSTIC_LOG_CATEGORY);
-
-        MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
-
-        lastDataVer = sysreg.longMetric(LAST_DATA_VER, "The latest data version on the node.");
 
         start0();
 

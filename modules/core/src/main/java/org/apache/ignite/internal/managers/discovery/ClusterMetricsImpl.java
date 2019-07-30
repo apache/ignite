@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoManager.RC
 import static org.apache.ignite.internal.managers.communication.GridIoManager.SENT_BYTES_CNT;
 import static org.apache.ignite.internal.managers.communication.GridIoManager.SENT_MSG_CNT;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
-import static org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter.LAST_DATA_VER;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.LAST_DATA_VER;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
