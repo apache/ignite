@@ -129,7 +129,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
-    /** Io communication metrics prefix. */
+    /** Io communication metrics registry name. */
     public static final String COMM_METRICS = metricName("io", "communication");
 
     /** Empty array of message factories. */
@@ -238,17 +238,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         CommunicationSpi spi = ctx.config().getCommunicationSpi();
 
         ioMetric.register("OutboundMessagesQueueSize", spi::getOutboundMessagesQueueSize,
-            "Outbound messages queue size metric.");
+            "Outbound messages queue size.");
 
-        ioMetric.register("SentMessagesCount", spi::getSentMessagesCount, "Sent messages count metric.");
+        ioMetric.register("SentMessagesCount", spi::getSentMessagesCount, "Sent messages count.");
 
-        ioMetric.register("SentBytesCount", spi::getSentBytesCount, "Sent bytes count metric.");
+        ioMetric.register("SentBytesCount", spi::getSentBytesCount, "Sent bytes count.");
 
         ioMetric.register("ReceivedMessagesCount", spi::getReceivedMessagesCount,
-            "Received messages count metric.");
+            "Received messages count.");
 
-        ioMetric.register("ReceivedBytesCount", spi::getReceivedBytesCount,
-            "Received bytes count metric.");
+        ioMetric.register("ReceivedBytesCount", spi::getReceivedBytesCount, "Received bytes count.");
     }
 
     /**

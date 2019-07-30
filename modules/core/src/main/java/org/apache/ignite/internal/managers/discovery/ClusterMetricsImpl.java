@@ -28,9 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.IntGauge;
-import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -73,7 +70,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     private final long nodeStartTime;
 
     /** Total executed tasks metric. */
-    private final LongMetric executedTasks;
+    private final LongMetric execTasks;
 
     /** GC CPU load. */
     private final DoubleMetric gcCpuLoad;
@@ -151,22 +148,22 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     private final IntMetric threadCnt;
 
     /** Last data version metric. */
-    private final AtomicLongMetric lastDataVer;
+    private final LongMetric lastDataVer;
 
     /** Sent messages count metric. */
-    private final IntGauge sentMessagesCnt;
+    private final IntMetric sentMsgsCnt;
 
     /** Sent bytes count metric. */
-    private final LongGauge sentBytesCnt;
+    private final LongMetric sentBytesCnt;
 
     /** Received messages count metric. */
-    private final IntGauge rcvdMessagesCnt;
+    private final IntMetric rcvdMsgsCnt;
 
     /** Received bytes count metric. */
-    private final LongGauge rcvdBytesCnt;
+    private final LongMetric rcvdBytesCnt;
 
     /** Outbound message queue size metric. */
-    private final IntGauge outboundMsgCnt;
+    private final IntMetric outboundMsgCnt;
 
     /**
      * Metric reflecting {@link ThreadMXBean#getPeakThreadCount()}.
@@ -210,7 +207,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         peakThreadCnt = mreg.findMetric(PEAK_THREAD_CNT);
         totalStartedThreadCnt = mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
         daemonThreadCnt = mreg.findMetric(DAEMON_THREAD_CNT);
-        executedTasks = mreg.findMetric("TotalExecutedTasks");
+        execTasks = mreg.findMetric("TotalExecutedTasks");
 
         availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
@@ -232,9 +229,9 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
         MetricRegistry ioReg = ctx.metric().registry(COMM_METRICS);
 
-        sentMessagesCnt = ioReg.findMetric("SentMessagesCount");
+        sentMsgsCnt = ioReg.findMetric("SentMessagesCount");
         sentBytesCnt = ioReg.findMetric("SentBytesCount");
-        rcvdMessagesCnt = ioReg.findMetric("ReceivedMessagesCount");
+        rcvdMsgsCnt = ioReg.findMetric("ReceivedMessagesCount");
         rcvdBytesCnt = ioReg.findMetric("ReceivedBytesCount");
         outboundMsgCnt = ioReg.findMetric("OutboundMessagesQueueSize");
     }
@@ -356,7 +353,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTotalExecutedTasks() {
-        return (int)executedTasks.value();
+        return (int)execTasks.value();
     }
 
     /** {@inheritDoc} */
@@ -505,7 +502,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
-        return sentMessagesCnt.value();
+        return sentMsgsCnt.value();
     }
 
     /** {@inheritDoc} */
@@ -515,7 +512,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
-        return rcvdMessagesCnt.value();
+        return rcvdMsgsCnt.value();
     }
 
     /** {@inheritDoc} */

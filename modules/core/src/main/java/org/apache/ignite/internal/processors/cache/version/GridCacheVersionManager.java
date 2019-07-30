@@ -296,6 +296,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             dataCenterId);
 
         last = next;
+
         lastDataVer.value(last.order());
 
         return next;

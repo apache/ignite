@@ -125,7 +125,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private final GridLocalEventListener discoLsnr;
 
     /** Total executed tasks metric. */
-    LongAdderMetric execTasks;
+    private final LongAdderMetric execTasks;
 
     /** */
     private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocal<>();
@@ -150,7 +150,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         discoLsnr = new TaskDiscoveryListener();
 
         MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
-        execTasks = sysreg.longAdderMetric("TotalExecutedTasks", "Total executed tasks metric.");
+
+        execTasks = sysreg.longAdderMetric("TotalExecutedTasks", "Total executed tasks.");
     }
 
     /** {@inheritDoc} */
