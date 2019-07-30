@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -265,9 +266,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** */
     private CacheAffinityChangeMessage affChangeMsg;
 
-    /** Init timestamp in nanoseconds. Used to track the amount of time spent to complete the future. */
-    private long initTs;
-
     /**
      * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
      * partitions maps to nodes using discovery (ring) instead of communication.
@@ -356,7 +354,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final TimeBag timeBag;
 
     /** Start time of exchange. */
-    private long startTime = System.nanoTime();
+    private long startTime = System.currentTimeMillis();
+
+    /** Init time of exchange in milliseconds. */
+    private volatile long initTime;
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
@@ -567,10 +568,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @param blocked {@code True} if take into account only cache operations blocked PME.
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
+     * running PME or {@code blocked} was set to {@code true} and current PME don't block cache operations.
+     */
+    public long currentPMEDuration(boolean blocked) {
+        return (isDone() || initTime == 0 || (blocked && !changedAffinity())) ?
+            0 : System.currentTimeMillis() - initTime;
+    }
+
+    /**
      * @return Start of initialization in nanoseconds.
      */
     public long getInitTime() {
-        return initTs;
+        return initTime;
     }
 
     /**
@@ -781,7 +792,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else
                 state = cctx.kernalContext().clientNode() ? ExchangeLocalState.CLIENT : ExchangeLocalState.SRV;
 
-            initTs = System.nanoTime();
+            initTime = System.currentTimeMillis();
 
             if (exchLog.isInfoEnabled()) {
                 exchLog.info("Started exchange init [topVer=" + topVer +
@@ -1733,7 +1744,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
             catch (IgniteCheckedException e) {
-                U.warn(log,"Unable to await partitions release future", e);
+                U.warn(log, "Unable to await partitions release future", e);
 
                 throw e;
             }
@@ -2334,6 +2345,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (err == null) {
                     timeBag.finishGlobalStage("Exchange done");
 
+                    updateDurationHistogram(System.currentTimeMillis() - initTime);
+
                     // Collect all stages timings.
                     List<String> timings = timeBag.stagesTimings();
 
@@ -2379,7 +2392,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             logExchange(evt);
                     }
                 }
-
             }
 
             return true;
@@ -2389,11 +2401,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Updates the {@link GridMetricManager#PME_OPS_BLOCKED_DURATION_HISTOGRAM} and {@link
+     * GridMetricManager#PME_DURATION_HISTOGRAM} metrics if needed.
+     *
+     * @param duration The total duration of the current PME.
+     */
+    private void updateDurationHistogram(long duration) {
+        cctx.exchange().durationHistogram().value(duration);
+
+        if (changedAffinity())
+            cctx.exchange().blockingDurationHistogram().value(duration);
+    }
+
+    /**
      * Calculates discovery lag (Maximal difference between exchange start times across all nodes).
      *
      * @param declared Single messages that were expected to be received during exchange.
      * @param merged Single messages from nodes that were merged during exchange.
-     *
      * @return Pair with discovery lag and node id which started exchange later than others.
      */
     private T2<Long, UUID> calculateDiscoveryLag(
@@ -2421,7 +2445,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 latestStartedNode = nodeId;
         }
 
-        return new T2<>(U.nanosToMillis(maxStartTime - minStartTime), latestStartedNode);
+        return new T2<>(maxStartTime - minStartTime, latestStartedNode);
     }
 
     /**
