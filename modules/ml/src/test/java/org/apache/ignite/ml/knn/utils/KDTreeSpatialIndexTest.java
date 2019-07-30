@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.structures;
+package org.apache.ignite.ml.knn.utils;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.knn.utils.indices.KDTreeSpatialIndex;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * Tests for {@link KDTreeSpatialIndex}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    DatasetStructureTest.class,
-    LabeledVectorSetTest.class
-})
-public class StructuresTestSuite {
+public class KDTreeSpatialIndexTest extends SpatialIndexTest {
+    /**
+     * Constructs a new instance of KD tree spatial index test.
+     */
+    public KDTreeSpatialIndexTest() {
+        super(KDTreeSpatialIndex::new);
+    }
 }

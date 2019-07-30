@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn;
+package org.apache.ignite.ml.structures;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import org.apache.ignite.ml.knn.LabeledDatasetHelper;
 import org.apache.ignite.ml.math.ExternalizableTest;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
