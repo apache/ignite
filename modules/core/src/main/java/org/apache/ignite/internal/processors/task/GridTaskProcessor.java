@@ -125,7 +125,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private final GridLocalEventListener discoLsnr;
 
     /** Total executed tasks metric. */
-    LongAdderMetric executedTasks;
+    LongAdderMetric execTasks;
 
     /** */
     private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocal<>();
@@ -150,7 +150,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         discoLsnr = new TaskDiscoveryListener();
 
         MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
-        executedTasks = sysreg.longAdderMetric("TotalExecutedTasks", null);
+        execTasks = sysreg.longAdderMetric("TotalExecutedTasks", null);
     }
 
     /** {@inheritDoc} */
@@ -1225,7 +1225,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * Resets processor metrics.
      */
     public void resetMetrics() {
-        executedTasks.reset();
+        execTasks.reset();
     }
 
     /** {@inheritDoc} */
@@ -1315,7 +1315,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             release(worker.getDeployment());
 
             if (!worker.isInternal())
-                executedTasks.increment();
+                execTasks.increment();
 
             // Unregister job message listener from all job topics.
             if (ses.isFullSupport()) {

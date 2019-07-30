@@ -36,6 +36,7 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
@@ -226,9 +227,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
         pmeDuration = pmeReg.findMetric(PME_DURATION);
 
-        MetricRegistry cacheReg = ctx.metric().registry("cache");
-
-        lastDataVer = cacheReg.findMetric("LastDataVersion");
+        lastDataVer = ctx.metric().registry(CACHE_METRICS).findMetric("LastDataVersion");
 
         MetricRegistry ioReg = ctx.metric().registry("io");
 

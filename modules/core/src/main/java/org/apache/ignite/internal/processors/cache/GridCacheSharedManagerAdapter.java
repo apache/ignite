@@ -66,6 +66,7 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         diagnosticLog = cctx.logger(DIAGNOSTIC_LOG_CATEGORY);
 
         MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
+
         lastDataVer = sysreg.longMetric("LastDataVersion", "Node start time.");
 
         start0();

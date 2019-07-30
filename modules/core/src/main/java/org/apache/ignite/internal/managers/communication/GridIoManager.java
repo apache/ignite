@@ -143,7 +143,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final byte DIRECT_PROTO_VER = 3;
 
     /** Sent messages count metric. */
-    private final IntGauge sentMessagesCnt;
+    private final IntGauge sentMsgCnt;
 
     /** Sent bytes count metric. */
     private final LongGauge sentBytesCnt;
@@ -254,9 +254,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             spi::getOutboundMessagesQueueSize);
         ioMetric.register(outBoundMsg);
 
-        sentMessagesCnt = new IntGauge("SentMessagesCount", null,
+        sentMsgCnt = new IntGauge("SentMessagesCount", null,
             spi::getSentMessagesCount);
-        ioMetric.register(sentMessagesCnt);
+        ioMetric.register(sentMsgCnt);
 
         sentBytesCnt = new LongGauge("SentBytesCount", null,
             spi::getSentBytesCount);
