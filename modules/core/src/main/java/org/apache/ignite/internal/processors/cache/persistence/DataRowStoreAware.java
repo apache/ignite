@@ -22,12 +22,13 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Data row implementation that can optionally hide cache identifier and set {@code null} as value.
  */
 public class DataRowStoreAware extends DataRow {
-    /** */
+    /** Store cache identifier flag. */
     private boolean storeCacheId;
 
     /**
@@ -37,15 +38,18 @@ public class DataRowStoreAware extends DataRow {
      * @param part Partition.
      * @param expireTime Expire time.
      * @param cacheId Cache ID.
+     * @param storeCacheId Store cache ididentifier flag.
      */
-    public DataRowStoreAware(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime,
-        int cacheId, boolean storeCacheId) {
+    public DataRowStoreAware(KeyCacheObject key, @Nullable CacheObject val, GridCacheVersion ver, int part,
+        long expireTime, int cacheId, boolean storeCacheId) {
         super(key, val, ver, part, expireTime, cacheId);
 
         storeCacheId(storeCacheId);
     }
 
-    /** */
+    /**
+     * @param storeCacheId Store cache identifier flag.
+     */
     public void storeCacheId(boolean storeCacheId) {
         this.storeCacheId = storeCacheId;
     }
@@ -56,7 +60,7 @@ public class DataRowStoreAware extends DataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject value() {
+    @Override public @Nullable CacheObject value() {
         return val;
     }
 }

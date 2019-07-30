@@ -940,11 +940,8 @@ public class GridDhtPartitionDemander {
      * @param infos Entries info for preload.
      * @throws IgniteCheckedException If failed.
      */
-    private void preloadEntries(
-        AffinityTopologyVersion topVer,
-        int p,
-        Iterator<GridCacheEntryInfo> infos
-    ) throws IgniteCheckedException {
+    private void preloadEntries(AffinityTopologyVersion topVer, int p,
+        Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
         try {
             grp.offheap().preload(p, topVer, infos, (loaded, row) -> {
                 updateCacheMetrics();
