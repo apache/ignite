@@ -69,8 +69,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.IntGauge;
-import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -123,6 +121,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SER
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
@@ -130,6 +129,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** Io communication metrics prefix. */
+    public static final String COMM_METRICS = metricName("io", "communication");
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -141,21 +143,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Direct protocol version. */
     public static final byte DIRECT_PROTO_VER = 3;
-
-    /** Sent messages count metric. */
-    private final IntGauge sentMsgCnt;
-
-    /** Sent bytes count metric. */
-    private final LongGauge sentBytesCnt;
-
-    /** Received messages count metric. */
-    private final IntGauge rcvdMessagesCnt;
-
-    /** Received bytes count metric. */
-    private final LongGauge rcvdBytesCnt;
-
-    /** Outbound messages queue size metric. */
-    private final IntGauge outBoundMsg;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
@@ -234,8 +221,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
-        CommunicationSpi spi = ctx.config().getCommunicationSpi();
-
         pools = ctx.pools();
 
         assert pools != null;
@@ -248,27 +233,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
 
-        MetricRegistry ioMetric = ctx.metric().registry("io");
+        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
 
-        outBoundMsg = new IntGauge("OutboundMessagesQueueSize", null,
-            spi::getOutboundMessagesQueueSize);
-        ioMetric.register(outBoundMsg);
+        CommunicationSpi spi = ctx.config().getCommunicationSpi();
 
-        sentMsgCnt = new IntGauge("SentMessagesCount", null,
-            spi::getSentMessagesCount);
-        ioMetric.register(sentMsgCnt);
+        ioMetric.register("OutboundMessagesQueueSize", spi::getOutboundMessagesQueueSize,
+            "Outbound messages queue size metric.");
 
-        sentBytesCnt = new LongGauge("SentBytesCount", null,
-            spi::getSentBytesCount);
-        ioMetric.register(sentBytesCnt);
+        ioMetric.register("SentMessagesCount", spi::getSentMessagesCount, "Sent messages count metric.");
 
-        rcvdMessagesCnt = new IntGauge("ReceivedMessagesCount", null,
-            spi::getReceivedMessagesCount);
-        ioMetric.register(rcvdMessagesCnt);
+        ioMetric.register("SentBytesCount", spi::getSentBytesCount, "Sent bytes count metric.");
 
-        rcvdBytesCnt = new LongGauge("ReceivedBytesCount", null,
-            spi::getReceivedBytesCount);
-        ioMetric.register(rcvdBytesCnt);
+        ioMetric.register("ReceivedMessagesCount", spi::getReceivedMessagesCount,
+            "Received messages count metric.");
+
+        ioMetric.register("ReceivedBytesCount", spi::getReceivedBytesCount,
+            "Received bytes count metric.");
     }
 
     /**

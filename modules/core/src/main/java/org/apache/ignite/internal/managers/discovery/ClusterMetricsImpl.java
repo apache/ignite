@@ -36,6 +36,7 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.managers.communication.GridIoManager.COMM_METRICS;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
@@ -229,7 +230,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
         lastDataVer = ctx.metric().registry(CACHE_METRICS).findMetric("LastDataVersion");
 
-        MetricRegistry ioReg = ctx.metric().registry("io");
+        MetricRegistry ioReg = ctx.metric().registry(COMM_METRICS);
 
         sentMessagesCnt = ioReg.findMetric("SentMessagesCount");
         sentBytesCnt = ioReg.findMetric("SentBytesCount");
