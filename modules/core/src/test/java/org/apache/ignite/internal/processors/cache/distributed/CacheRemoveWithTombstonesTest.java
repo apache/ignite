@@ -238,6 +238,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
 
         assertEquals(0, tombstoneMetric1.get());
     }
+
     /**
      *
      */

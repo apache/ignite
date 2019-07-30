@@ -398,7 +398,7 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
-     * @param partId Partition number.
+     * @param ver Version.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
@@ -919,10 +919,14 @@ public interface IgniteCacheOffheapManager {
          * @param cctx Cache context.
          * @param key Key.
          * @param ver Version.
-         * @param partId Partition number.
+         * @param part Partition.
          * @throws IgniteCheckedException If failed.
          */
-        public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver, GridDhtLocalPartition part) throws IgniteCheckedException;
+        public void removeWithTombstone(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            GridCacheVersion ver,
+            GridDhtLocalPartition part) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
