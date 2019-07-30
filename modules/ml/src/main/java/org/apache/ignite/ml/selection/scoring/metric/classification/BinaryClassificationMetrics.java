@@ -122,7 +122,7 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
 
     /** */
     public BinaryClassificationMetrics withEnablingROCAUC(boolean enableROCAUC) {
-        this.enableROCAUC = this.enableROCAUC;
+        this.enableROCAUC = enableROCAUC;
         return this;
     }
 
@@ -130,7 +130,6 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
     public boolean isROCAUCenabled() {
         return enableROCAUC;
     }
-
 
     /** {@inheritDoc} */
     @Override public String name() {
