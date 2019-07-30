@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 
 /**
  * Read only metric registry.
@@ -30,4 +31,11 @@ public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
      * @param lsnr Listener.
      */
     public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
+
+    /**
+     * Adds listener of list creation events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addListCreationListener(Consumer<MonitoringList<?>> lsnr);
 }

@@ -665,7 +665,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // no matter what references these futures are holding.
         lastFut = null;
 
-        ctx.kernalContext().metric().remove(MetricUtils.cacheMetricsRegistryName(ctx.name(), isNear()));
+        ctx.kernalContext().metric().removeMetricRegistry(MetricUtils.cacheMetricsRegistryName(ctx.name(), isNear()));
     }
 
     /**

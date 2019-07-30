@@ -39,10 +39,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -154,8 +154,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
+    /** Lists registry. */
+    private ConcurrentHashMap<String, MonitoringList<?>> lists = new ConcurrentHashMap<>();
+
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** List creation listeners. */
+    private final List<Consumer<MonitoringList<?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -171,9 +177,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
-
-    /** Lists registry. */
-    private ConcurrentHashMap<String, MonitoringList> lreg;
 
     /**
      * @param ctx Kernal context.
@@ -241,6 +244,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         });
     }
 
+    /**
+     * Gets or creates monitoring list.
+     *
+     * @param name Name of the list.
+     * @return Monitoring list.
+     */
+    public <Id> MonitoringList<Id> list(String name) {
+        return (MonitoringList<Id>)lists.computeIfAbsent(name, n -> {
+            MonitoringList<Id> list = new MonitoringList<>(name);
+
+            notifyListeners(list, listCreationLsnrs);
+
+            return list;
+        });
+    }
+
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<MetricRegistry> iterator() {
         return registries.values().iterator();
@@ -251,13 +270,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         metricRegCreationLsnrs.add(lsnr);
     }
 
+    /** {@inheritDoc} */
+    @Override public void addListCreationListener(Consumer<MonitoringList<?>> lsnr) {
+        listCreationLsnrs.add(lsnr);
+    }
+
     /**
-     * Removes group.
+     * Removes registry.
      *
-     * @param grpName Group name.
+     * @param regName Registry name.
      */
-    public void remove(String grpName) {
-        registries.remove(grpName);
+    public void removeMetricRegistry(String regName) {
+        registries.remove(regName);
     }
 
     /**
@@ -271,17 +295,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 lsnr.accept(t);
             }
             catch (Exception e) {
-                U.warn(log, "Metric listener error", e);
+                U.warn(log, "Listener error", e);
             }
         }
-    }
-
-    /**
-     * @param name Name of the list.
-     * @return Monitoring list.
-     */
-    public MonitoringList list(String name) {
-        return lreg.computeIfAbsent(name, n -> new MonitoringList(name));
     }
 
     /**

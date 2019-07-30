@@ -26,11 +26,6 @@ import org.apache.ignite.cluster.ClusterNode;
  */
 public interface MonitoringRow<Id> {
     /**
-     * @return Idenitifier of entity described by this row.
-     */
-    public Id id();
-
-    /**
      * Return idenitifier of activity that created this row.
      * Such activity can be one(but not limited):
      * <ul>

@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  */
 public class MonitoringList<Id> {
-    /** Name of the list */
+    /** Name of the list. */
     private final String name;
 
     /** Data of the list. */

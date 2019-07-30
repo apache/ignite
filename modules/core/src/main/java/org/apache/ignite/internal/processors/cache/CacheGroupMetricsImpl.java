@@ -437,7 +437,7 @@ public class CacheGroupMetricsImpl {
 
     /** Removes all metric for cache group. */
     public void remove() {
-        ctx.shared().kernalContext().metric().remove(metricGroupName());
+        ctx.shared().kernalContext().metric().removeMetricRegistry(metricGroupName());
     }
 
     /**
