@@ -22,7 +22,8 @@ public class DiscreteCosineTrainerTest extends TrainerTest {
     /**
      * Tests {@code fit()} method.
      */
-    @Test public void testFit() {
+    @Test
+    public void testFit() {
         Map<Integer, Vector> data = new HashMap<>();
         data.put(1, VectorUtils.of(2, 4, 1));
         data.put(2, VectorUtils.of(1, 8, 22));

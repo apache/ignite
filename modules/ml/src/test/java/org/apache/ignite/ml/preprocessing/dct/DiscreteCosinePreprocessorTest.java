@@ -27,18 +27,21 @@ import static org.junit.Assert.assertArrayEquals;
  * Test for {@link DiscreteCosinePreprocessor}
  */
 public class DiscreteCosinePreprocessorTest {
-    double[][] data = new double[][]{
+    /** */
+    private final double[][] data = new double[][]{
             {1, 2, 1},
             {1, 1, 1},
             {1, 0, 0},
     };
 
-    Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<>(0, 1, 2);
+    /** */
+    private final Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<>(0, 1, 2);
 
     /**
      * Tests {@code apply()} method for DCT type 1.
      */
-    @Test public void testApplyType1() {
+    @Test
+    public void testApplyType1() {
         DiscreteCosinePreprocessor<Integer, double[]> preprocessor = new DiscreteCosinePreprocessor<>(
                 vectorizer, 1
         );
@@ -56,7 +59,8 @@ public class DiscreteCosinePreprocessorTest {
     /**
      * Tests {@code apply()} method for DCT type 2.
      */
-    @Test public void testApplyType2() {
+    @Test
+    public void testApplyType2() {
         DiscreteCosinePreprocessor<Integer, double[]> preprocessor = new DiscreteCosinePreprocessor<>(
                 vectorizer, 2
         );
@@ -74,7 +78,8 @@ public class DiscreteCosinePreprocessorTest {
     /**
      * Tests {@code apply()} method for DCT type 3.
      */
-    @Test public void testApplyType3() {
+    @Test
+    public void testApplyType3() {
         DiscreteCosinePreprocessor<Integer, double[]> preprocessor = new DiscreteCosinePreprocessor<>(
                 vectorizer, 3
         );
@@ -92,7 +97,8 @@ public class DiscreteCosinePreprocessorTest {
     /**
      * Tests {@code apply()} method for DCT type 4.
      */
-    @Test public void testApplyType4() {
+    @Test
+    public void testApplyType4() {
         DiscreteCosinePreprocessor<Integer, double[]> preprocessor = new DiscreteCosinePreprocessor<>(
                 vectorizer, 4
         );

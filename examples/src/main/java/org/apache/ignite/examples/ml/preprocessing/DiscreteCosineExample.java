@@ -59,7 +59,7 @@ public class DiscreteCosineExample {
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer
                         = new DummyVectorizer<>(1, 2);
 
-                // Defines second preprocessor that normalizes features.
+                // Defines second preprocessor that applies DCT.
                 Preprocessor<Integer, Vector> preprocessor = new DiscreteCosineTrainer<Integer, Vector>()
                         .withType(2)
                         .fit(ignite, data, vectorizer);

@@ -82,9 +82,8 @@ public class DiscreteCosinePreprocessor<K, V> implements Preprocessor<K, V> {
                 for (int j = 0; j < tmp.size(); j++)
                     sum += 2 * tmp.get(j) * Math.cos((Math.PI / tmp.size()) * (j + 0.5) * (i + 0.5));
             }
-            else {
-                assert false;
-            }
+            else
+                throw new IllegalArgumentException("Invalid type: " + type);
 
             res[i] = sum;
         }
