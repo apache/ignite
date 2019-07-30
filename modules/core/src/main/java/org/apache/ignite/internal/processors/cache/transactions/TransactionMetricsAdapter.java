@@ -30,6 +30,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,6 +41,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.apache.ignite.transactions.TransactionState;
+
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 
 /**
  * Tx metrics adapter.
@@ -50,22 +55,22 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     private static final long serialVersionUID = 0L;
 
     /** Number of transaction commits. */
-    private volatile int txCommits;
+    private final IntMetricImpl txCommits = new IntMetricImpl("txCommits", "Number of transaction commits.");
 
     /** Number of transaction rollbacks. */
-    private volatile int txRollbacks;
+    private final IntMetricImpl txRollbacks = new IntMetricImpl("txRollbacks", "Number of transaction rollbacks.");
 
     /** Last commit time. */
-    private volatile long commitTime;
+    private final AtomicLongMetric commitTime = new AtomicLongMetric("commitTime", "Last commit time.");
 
     /** Last rollback time. */
-    private volatile long rollbackTime;
+    private final AtomicLongMetric rollbackTime = new AtomicLongMetric("rollbackTime", "Last rollback time.");
 
     /**
      * Create TransactionMetricsAdapter.
      */
     public TransactionMetricsAdapter() {
-        this(null);
+        gridKernalCtx = null;
     }
 
     /**
@@ -73,26 +78,58 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      */
     public TransactionMetricsAdapter(GridKernalContext ctx) {
         gridKernalCtx = ctx;
+
+        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
+
+        mreg.register(txCommits);
+        mreg.register(txRollbacks);
+        mreg.register(commitTime);
+        mreg.register(rollbackTime);
+
+        mreg.register("getAllOwnerTransactions",
+            this::getAllOwnerTransactions,
+            Map.class,
+            "Map of local node owning transactions.");
+
+        mreg.register("getTransactionsCommittedNumber",
+            this::getTransactionsCommittedNumber,
+            "The number of transactions which were committed on the local node.");
+
+        mreg.register("getTransactionsRolledBackNumber",
+            this::getTransactionsRolledBackNumber,
+            "The number of transactions which were rolled back on the local node.");
+
+        mreg.register("getTransactionsHoldingLockNumber",
+            this::getTransactionsHoldingLockNumber,
+            "The number of active transactions holding at least one key lock.");
+
+        mreg.register("getLockedKeysNumber",
+            this::getLockedKeysNumber,
+            "The number of keys locked on the node.");
+
+        mreg.register("getOwnerTransactionsNumber",
+            this::getOwnerTransactionsNumber,
+            "The number of active transactions for which this node is the initiator.");
     }
 
     /** {@inheritDoc} */
     @Override public long commitTime() {
-        return commitTime;
+        return commitTime.value();
     }
 
     /** {@inheritDoc} */
     @Override public long rollbackTime() {
-        return rollbackTime;
+        return rollbackTime.value();
     }
 
     /** {@inheritDoc} */
     @Override public int txCommits() {
-        return txCommits;
+        return txCommits.value();
     }
 
     /** {@inheritDoc} */
     @Override public int txRollbacks() {
-        return txRollbacks;
+        return txRollbacks.value();
     }
 
     /** {@inheritDoc} */
@@ -134,28 +171,28 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      * Transaction commit callback.
      */
     public void onTxCommit() {
-        commitTime = U.currentTimeMillis();
+        commitTime.value(U.currentTimeMillis());
 
-        txCommits++;
+        txCommits.add(1);
     }
 
     /**
      * Transaction rollback callback.
      */
     public void onTxRollback() {
-        rollbackTime = U.currentTimeMillis();
+        rollbackTime.value(U.currentTimeMillis());
 
-        txRollbacks++;
+        txRollbacks.add(1);
     }
 
     /**
      * Reset.
      */
     public void reset() {
-        commitTime = 0;
-        txCommits = 0;
-        rollbackTime = 0;
-        txRollbacks = 0;
+        commitTime.value(0);
+        txCommits.value(0);
+        rollbackTime.value(0);
+        txRollbacks.value(0);
     }
 
     /**
@@ -290,18 +327,18 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(commitTime);
-        out.writeLong(rollbackTime);
-        out.writeInt(txCommits);
-        out.writeInt(txRollbacks);
+        out.writeLong(commitTime.value());
+        out.writeLong(rollbackTime.value());
+        out.writeInt(txCommits.value());
+        out.writeInt(txRollbacks.value());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        commitTime = in.readLong();
-        rollbackTime = in.readLong();
-        txCommits = in.readInt();
-        txRollbacks = in.readInt();
+        commitTime.value(in.readLong());
+        rollbackTime.value(in.readLong());
+        txCommits.value(in.readInt());
+        txRollbacks.value(in.readInt());
     }
 
     /** {@inheritDoc} */
