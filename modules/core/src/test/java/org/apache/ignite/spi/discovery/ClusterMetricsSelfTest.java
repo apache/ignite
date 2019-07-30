@@ -57,9 +57,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = igniteInstanceName.startsWith("client");
-
-        cfg.setClientMode(client);
+        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
