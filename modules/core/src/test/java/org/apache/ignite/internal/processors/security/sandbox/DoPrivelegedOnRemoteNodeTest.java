@@ -29,10 +29,7 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
-import org.apache.ignite.internal.processors.security.impl.TestStoreFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.After;
@@ -50,6 +47,7 @@ import static sun.security.util.SecurityConstants.MODIFY_THREAD_PERMISSION;
 public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
     /** */
     private static final String RUNNABLE_SRC = "import org.apache.ignite.lang.IgniteRunnable;\n" +
+        "import org.apache.ignite.internal.processors.security.sandbox.DoPrivelegedOnRemoteNodeTest;\n" +
         "\n" +
         "import static org.apache.ignite.internal.processors.security.sandbox.AbstractSandboxTest.START_THREAD_RUNNABLE;\n" +
         "\n" +
@@ -61,6 +59,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
 
     /** */
     private static final String RUNNABLE_DO_PRIVELEGED_SRC = "import java.security.AccessController;\n" +
+        "import org.apache.ignite.internal.processors.security.sandbox.DoPrivelegedOnRemoteNodeTest;\n" +
         "import java.security.PrivilegedActionException;\n" +
         "import java.security.PrivilegedExceptionAction;\n" +
         "import org.apache.ignite.lang.IgniteRunnable;\n" +
@@ -98,23 +97,14 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
         U.delete(srcTmpDir);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(
-                new CacheConfiguration<String, String>(TEST_CACHE)
-                    .setCacheStoreFactory(new TestStoreFactory("1", "val"))
-            );
-    }
-
     /** */
     @Test
     public void test() throws Exception {
         prepareCluster();
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED);
+        Ignite node = grid(CLNT_ALLOWED);
 
-        IgniteCompute compute = clntAllowed.compute(clntAllowed.cluster().forRemotes());
+        IgniteCompute compute = node.compute(node.cluster().forRemotes());
 
         runOperation(() -> compute.broadcast(runnable("TestIgniteRunnable", RUNNABLE_SRC)));
 
@@ -163,7 +153,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
 
         assertTrue("Failed to remove source file.", srcFile.delete());
 
-        return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()}, getClass().getClassLoader());
+        return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
     }
 
 }
