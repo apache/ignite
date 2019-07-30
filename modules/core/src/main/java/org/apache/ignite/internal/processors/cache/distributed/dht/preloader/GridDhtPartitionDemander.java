@@ -64,7 +64,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -950,11 +950,8 @@ public class GridDhtPartitionDemander {
      * @param infos Entries info for preload.
      * @throws IgniteCheckedException If failed.
      */
-    private void preloadEntries(
-        AffinityTopologyVersion topVer,
-        int p,
-        List<GridCacheEntryInfo> infos
-    ) throws IgniteCheckedException {
+    private void preloadEntries(AffinityTopologyVersion topVer, int p,
+        List<GridCacheEntryInfo> infos) throws IgniteCheckedException {
         int cnt = infos.size();
         int off = 0;
 
@@ -966,10 +963,9 @@ public class GridDhtPartitionDemander {
             try {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-                part.dataStore().createRows(batch, new IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow>() {
-                    @Override public boolean applyx(GridCacheEntryInfo info, CacheDataRow row)
-                        throws IgniteCheckedException {
-                        return !preloadEntry(info, topVer, row);
+                part.dataStore().createRows(batch, new IgnitePredicateX<CacheDataRow>() {
+                    @Override public boolean applyx(CacheDataRow row) throws IgniteCheckedException {
+                        return preloadEntry(row, topVer);
                     }
                 });
             }
@@ -982,45 +978,40 @@ public class GridDhtPartitionDemander {
     /**
      * Adds {@code entry} to partition {@code p}.
      *
-     * @param entry Preloaded entry.
+     * @param row Data row.
      * @param topVer Topology version.
-     * @param row Pre-created data row, associated with this cache entry.
      * @return {@code True} if the initial value was set for the specified cache entry.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    private boolean preloadEntry(
-        GridCacheEntryInfo entry,
-        AffinityTopologyVersion topVer,
-        @Nullable CacheDataRow row
-    ) throws IgniteCheckedException {
+    private boolean preloadEntry(CacheDataRow row, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
-        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
+        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
         if (cctx == null)
             return false;
 
         cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
 
-        GridCacheEntryEx cached = cctx.cache().entryEx(entry.key(), topVer);
+        GridCacheEntryEx cached = cctx.cache().entryEx(row.key(), topVer);
 
         try {
             if (log.isTraceEnabled()) {
-                log.trace("Rebalancing key [key=" + entry.key() + ", part=" + cached.partition() +
+                log.trace("Rebalancing key [key=" + row.key() + ", part=" + cached.partition() +
                     ", grpId=" + grp.groupId() + ']');
             }
 
             try {
                 if (cached.initialValue(
-                    entry.value(),
-                    entry.version(),
+                    row.value(),
+                    row.version(),
                     null,
                     null,
                     TxState.NA,
                     TxState.NA,
-                    entry.ttl(),
-                    entry.expireTime(),
+                    0,
+                    row.expireTime(),
                     true,
                     topVer,
                     cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
@@ -1031,7 +1022,7 @@ public class GridDhtPartitionDemander {
 
                     if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                         cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
-                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
+                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
                             false, null, null, null, true);
 
                     return true;
@@ -1055,7 +1046,7 @@ public class GridDhtPartitionDemander {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [" +
-                "key=" + entry.key() + ", part=" + cached.partition() + ']', e);
+                "key=" + row.key() + ", part=" + cached.partition() + ']', e);
         } finally {
             updateCacheMetrics();
         }

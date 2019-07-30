@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowStoreAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -108,7 +108,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.lang.IgnitePredicate2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1731,33 +1731,31 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void createRows(Collection<GridCacheEntryInfo> infos,
-            IgnitePredicate2X<GridCacheEntryInfo, CacheDataRow> rmvPred) throws IgniteCheckedException {
-            Collection<DataRow> rows = new ArrayList<>(infos.size());
+            IgnitePredicateX<CacheDataRow> loadPred) throws IgniteCheckedException {
+            Collection<DataRowStoreAware> rows = new ArrayList<>(infos.size());
 
             for (GridCacheEntryInfo info : infos) {
-                rows.add(info.value() == null ? null :
-                    makeDataRow(info.key(),
-                        info.value(),
-                        info.version(),
-                        info.expireTime(),
-                        grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
+                rows.add(new DataRowStoreAware(info.key(),
+                    info.value(),
+                    info.version(),
+                    partId,
+                    info.expireTime(),
+                    info.cacheId(),
+                    grp.storeCacheIdInDataPage()));
             }
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                rowStore.addRows(F.view(rows, Objects::nonNull), grp.statisticsHolderData());
+                rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
 
-                Iterator<DataRow> iter = rows.iterator();
+                boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
 
-                for (GridCacheEntryInfo info : infos) {
-                    DataRow row = iter.next();
+                for (DataRowStoreAware row : rows) {
+                    row.storeCacheId(cacheIdAwareGrp);
 
-                    if (row != null && grp.sharedGroup() && row.cacheId() == CU.UNDEFINED_CACHE_ID)
-                        row.cacheId(info.cacheId());
-
-                    if (rmvPred.apply(info, row) && row != null)
+                    if (!loadPred.apply(row) && row.value() != null)
                         rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
             }

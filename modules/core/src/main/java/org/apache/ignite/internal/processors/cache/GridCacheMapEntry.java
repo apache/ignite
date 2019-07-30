@@ -5731,8 +5731,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            assert newRow == null || val != null;
-
             if (oldRow != null) {
                 oldRow.key(entry.key);
 
@@ -5748,21 +5746,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (val != null) {
-                // If there is a pre created row, we cannot update the old one.
-                // The old row will be removed after the operation is completed, as usual.
-                if (newRow != null) {
-                    treeOp = IgniteTree.OperationType.PUT;
-
-                    return;
+                if (newRow == null) {
+                    newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
+                        entry.cctx,
+                        entry.key,
+                        val,
+                        ver,
+                        expireTime,
+                        oldRow);
                 }
-
-                newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
-                    entry.cctx,
-                    entry.key,
-                    val,
-                    ver,
-                    expireTime,
-                    oldRow);
 
                 treeOp = oldRow != null && oldRow.link() == newRow.link() ?
                     IgniteTree.OperationType.IN_PLACE : IgniteTree.OperationType.PUT;
