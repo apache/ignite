@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -73,6 +74,13 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.TOMBSTONES);
     }
 
     /** {@inheritDoc} */

@@ -47,7 +47,8 @@ public class MvccFeatureChecker {
         EVICTION,
         EXPIRATION,
         METRICS,
-        INTERCEPTOR
+        INTERCEPTOR,
+        TOMBSTONES
     }
 
     /**

@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -108,14 +109,6 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testRemoveAndRebalanceRaceTxMvcc() throws Exception {
-        testRemoveAndRebalanceRace(TRANSACTIONAL_SNAPSHOT, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testRemoveAndRebalanceRaceAtomic() throws Exception {
         testRemoveAndRebalanceRace(ATOMIC, false);
     }
@@ -128,16 +121,6 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
         persistence = true;
 
         testRemoveAndRebalanceRaceTx();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRemoveAndRebalanceRaceTxMvccWithPersistence() throws Exception {
-        persistence = true;
-
-        testRemoveAndRebalanceRaceTxMvcc();
     }
 
     /**
@@ -161,6 +144,9 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
             ignite0.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache0 = ignite0.createCache(cacheConfiguration(atomicityMode));
+
+        if (MvccFeatureChecker.forcedMvcc())
+            expTombstone = false;
 
         LongMetric tombstoneMetric0 = ignite0.context().metric().registry(
                 cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false)).findMetric("Tombstones");
