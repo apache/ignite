@@ -120,8 +120,17 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     private void checkInvariantSwitchSegmentSize(int serVer) throws Exception {
         GridKernalContext kctx = new StandaloneGridKernalContext(
             log, null, null) {
+            private GridMetricManager mmgr;
+
             @Override public IgniteCacheObjectProcessor cacheObjects() {
                 return new CacheObjectBinaryProcessorImpl(this);
+            }
+
+            @Override public GridMetricManager metric() {
+                if (mmgr == null)
+                    mmgr = new GridMetricManager(this);
+
+                return mmgr;
             }
         };
 

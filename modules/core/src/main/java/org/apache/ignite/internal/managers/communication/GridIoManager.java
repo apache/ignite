@@ -248,30 +248,27 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
 
+        MetricRegistry ioMetric = ctx.metric().registry("io");
+
         outBoundMsg = new IntGauge("OutboundMessagesQueueSize", null,
             spi::getOutboundMessagesQueueSize);
+        ioMetric.register(outBoundMsg);
 
         sentMessagesCnt = new IntGauge("SentMessagesCount", null,
             spi::getSentMessagesCount);
+        ioMetric.register(sentMessagesCnt);
 
         sentBytesCnt = new LongGauge("SentBytesCount", null,
             spi::getSentBytesCount);
+        ioMetric.register(sentBytesCnt);
 
         rcvdMessagesCnt = new IntGauge("ReceivedMessagesCount", null,
             spi::getReceivedMessagesCount);
+        ioMetric.register(rcvdMessagesCnt);
 
         rcvdBytesCnt = new LongGauge("ReceivedBytesCount", null,
             spi::getReceivedBytesCount);
-
-        if (ctx.metric() != null) { // In case of StandaloneGridKernalContext usage.
-            MetricRegistry ioMetric = ctx.metric().registry("io");
-
-            ioMetric.register(outBoundMsg);
-            ioMetric.register(sentMessagesCnt);
-            ioMetric.register(sentBytesCnt);
-            ioMetric.register(rcvdMessagesCnt);
-            ioMetric.register(rcvdBytesCnt);
-        }
+        ioMetric.register(rcvdBytesCnt);
     }
 
     /**

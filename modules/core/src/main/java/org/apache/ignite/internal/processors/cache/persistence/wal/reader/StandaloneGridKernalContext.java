@@ -200,6 +200,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
         cfg.setCommunicationSpi(new StandaloneNoopCommunicationSpi());
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
         final Marshaller marshaller = new BinaryMarshaller();
         cfg.setMarshaller(marshaller);
