@@ -108,7 +108,6 @@ public class Step_12_Parallel_Random_Search {
                         imputingPreprocessor
                     );
 
-
                 NormalizationTrainer<Integer, Vector> normalizationTrainer = new NormalizationTrainer<Integer, Vector>()
                     .withP(1);
 
@@ -120,7 +119,6 @@ public class Step_12_Parallel_Random_Search {
                     );
 
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.
-
                 DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
                 CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
@@ -135,8 +133,7 @@ public class Step_12_Parallel_Random_Search {
                     .addHyperParam("p", normalizationTrainer::withP, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
                     .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
                     .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[]{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0});
-
-
+                
                 BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
                     .withNegativeClsLb(0.0)
                     .withPositiveClsLb(1.0)
