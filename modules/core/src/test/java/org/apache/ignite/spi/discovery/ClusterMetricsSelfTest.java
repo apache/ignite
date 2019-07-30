@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -44,7 +43,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Cluster metrics test.
  */
-@GridCommonTest(group = "Utils")
 public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -97,7 +95,9 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, 1000));
+        int timeout = 5000;
+
+        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, timeout));
         assertEquals(0, currentBlockingPMEDuration.value());
 
         // There was two blocking exchange: server node start and cache start.
@@ -116,7 +116,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() ->
             ignite.context().cache().context().exchange().lastTopologyFuture().initialVersion().topologyVersion() == 2,
-            1000));
+            timeout));
 
         if (client)
             assertEquals(0, currentBlockingPMEDuration.value());
@@ -130,7 +130,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, 1000));
+        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, timeout));
         assertEquals(0, currentBlockingPMEDuration.value());
 
         if (client) {
