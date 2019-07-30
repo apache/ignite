@@ -545,7 +545,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param blocked {@code True} If take into account only cache operations blocked PME.
+     * @param blocked {@code True} if take into account only cache operations blocked PME.
      * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
      * running PME or {@code blocked} was set to {@code true} and current PME don't block cache operations.
      */

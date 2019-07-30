@@ -46,14 +46,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @GridCommonTest(group = "Utils")
 public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final long METRIC_UPDATE_FREQUENCY = 100;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMetricsUpdateFrequency(METRIC_UPDATE_FREQUENCY);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
@@ -67,17 +62,13 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
     public void testPmeMetricsWithBlockingEvent() throws Exception {
         checkPmeMetricsOnNodeJoin(false);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
     public void testPmeMetricsWithNotBlockingEvent() throws Exception {
         checkPmeMetricsOnNodeJoin(true);
@@ -126,9 +117,6 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() ->
             ignite.context().cache().context().exchange().lastTopologyFuture().initialVersion().topologyVersion() == 2,
             1000));
-
-        // Check cluster group metric because on server-side PME completes locally in case of client join.
-        assertTrue(GridTestUtils.waitForCondition(() -> ignite.cluster().metrics().getCurrentPmeDuration() > 0, 1000));
 
         if (client)
             assertEquals(0, currentBlockingPMEDuration.value());
