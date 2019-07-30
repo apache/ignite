@@ -98,11 +98,11 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, 1000));
-        assertTrue(currentBlockingPMEDuration.value() == 0);
+        assertEquals(0, currentBlockingPMEDuration.value());
 
         // There was two blocking exchange: server node start and cache start.
-        assertTrue(Arrays.stream(durationHistogram.value()).sum() == 2);
-        assertTrue(Arrays.stream(blockindDurationHistogram.value()).sum() == 2);
+        assertEquals(2, Arrays.stream(durationHistogram.value()).sum());
+        assertEquals(2, Arrays.stream(blockindDurationHistogram.value()).sum());
 
         Lock lock = cache.lock(1);
 
