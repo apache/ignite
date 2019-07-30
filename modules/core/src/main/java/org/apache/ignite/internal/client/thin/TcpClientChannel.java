@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.io.DataInput;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -63,6 +62,7 @@ import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -73,7 +73,6 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
@@ -107,14 +106,8 @@ class TcpClientChannel implements ClientChannel {
     /** Output stream. */
     private final OutputStream out;
 
-    /** Input stream. */
-    private final InputStream in;
-
     /** Data input. */
-    private final DataInput dataInput;
-
-    /** Total bytes read by channel. */
-    private long totalBytesRead;
+    private final ByteCountingDataInput dataInput;
 
     /** Request id. */
     private final AtomicLong reqId = new AtomicLong(1);
@@ -136,11 +129,7 @@ class TcpClientChannel implements ClientChannel {
             sock = createSocket(cfg);
 
             out = sock.getOutputStream();
-            in = sock.getInputStream();
-
-            GridUnsafeDataInput dis = new GridUnsafeDataInput();
-            dis.inputStream(in);
-            dataInput = dis;
+            dataInput = new ByteCountingDataInput(sock.getInputStream());
         }
         catch (IOException e) {
             throw handleIOError("addr=" + cfg.getAddress(), e);
@@ -151,7 +140,7 @@ class TcpClientChannel implements ClientChannel {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        in.close();
+        dataInput.close();
         out.close();
         sock.close();
 
@@ -265,14 +254,14 @@ class TcpClientChannel implements ClientChannel {
      * Process next response from the input stream and complete corresponding future.
      */
     private void processNextResponse() throws ClientProtocolError, ClientConnectionException {
-        int resSize = readInt();
+        int resSize = dataInput.readInt();
 
         if (resSize <= 0)
             throw new ClientProtocolError(String.format("Invalid response size: %s", resSize));
 
-        long bytesReadOnStartReq = totalBytesRead;
+        long bytesReadOnStartReq = dataInput.totalBytesRead();
 
-        long resId = readLong();
+        long resId = dataInput.readLong();
 
         ClientRequestFuture pendingReq = pendingReqs.get(resId);
 
@@ -284,30 +273,30 @@ class TcpClientChannel implements ClientChannel {
         BinaryInputStream resIn;
 
         if (ver.compareTo(V1_4_0) >= 0) {
-            short flags = readShort();
+            short flags = dataInput.readShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
                 // TODO: IGNITE-11898 Implement Best Effort Affinity for java thin client.
-                readLong(); // topVer.
-                readInt(); // minorTopVer.
+                dataInput.readLong(); // topVer.
+                dataInput.readInt(); // minorTopVer.
             }
 
             if ((flags & ClientFlag.ERROR) != 0)
-                status = readInt();
+                status = dataInput.readInt();
         }
         else
-            status = readInt();
+            status = dataInput.readInt();
 
-        int hdrSize = (int)(totalBytesRead - bytesReadOnStartReq);
+        int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartReq);
 
         if (status == 0) {
             if (resSize <= hdrSize)
                 pendingReq.onDone();
             else
-                pendingReq.onDone(read(resSize - hdrSize));
+                pendingReq.onDone(dataInput.read(resSize - hdrSize));
         }
         else {
-            resIn = new BinaryHeapInputStream(read(resSize - hdrSize));
+            resIn = new BinaryHeapInputStream(dataInput.read(resSize - hdrSize));
 
             String err = new BinaryReaderExImpl(null, resIn, null, true).readString();
 
@@ -402,12 +391,12 @@ class TcpClientChannel implements ClientChannel {
     /** Receive and handle handshake response. */
     private void handshakeRes(String user, String pwd)
         throws ClientConnectionException, ClientAuthenticationException {
-        int resSize = readInt();
+        int resSize = dataInput.readInt();
 
         if (resSize <= 0)
             throw new ClientProtocolError(String.format("Invalid handshake response size: %s", resSize));
 
-        BinaryInputStream res = new BinaryHeapInputStream(read(resSize));
+        BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
 
         try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
             if (res.readBoolean()) { // Success flag.
@@ -451,79 +440,6 @@ class TcpClientChannel implements ClientChannel {
         }
     }
 
-    /** Read bytes from the input stream. */
-    private byte[] read(int len) throws ClientConnectionException {
-        byte[] bytes = new byte[len];
-        int bytesNum;
-        int readBytesNum = 0;
-
-        while (readBytesNum < len) {
-            try {
-                bytesNum = in.read(bytes, readBytesNum, len - readBytesNum);
-            }
-            catch (IOException e) {
-                throw handleIOError(e);
-            }
-
-            if (bytesNum < 0)
-                throw handleIOError(null);
-
-            readBytesNum += bytesNum;
-        }
-
-        totalBytesRead += readBytesNum;
-
-        return bytes;
-    }
-
-    /**
-     * Read long value from input stream.
-     */
-    private long readLong() {
-        try {
-            long val = dataInput.readLong();
-
-            totalBytesRead += Long.BYTES;
-
-            return val;
-        }
-        catch (IOException e) {
-            throw handleIOError(e);
-        }
-    }
-
-    /**
-     * Read int value from input stream.
-     */
-    private int readInt() {
-        try {
-            int val = dataInput.readInt();
-
-            totalBytesRead += Integer.BYTES;
-
-            return val;
-        }
-        catch (IOException e) {
-            throw handleIOError(e);
-        }
-    }
-
-    /**
-     * Read short value from input stream.
-     */
-    private short readShort() {
-        try {
-            short val = dataInput.readShort();
-
-            totalBytesRead += Short.BYTES;
-
-            return val;
-        }
-        catch (IOException e) {
-            throw handleIOError(e);
-        }
-    }
-
     /** Write bytes to the output stream. */
     private void write(byte[] bytes, int len) throws ClientConnectionException {
         try {
@@ -548,6 +464,105 @@ class TcpClientChannel implements ClientChannel {
      */
     private ClientException handleIOError(String chInfo, @Nullable IOException ex) {
         return new ClientConnectionException("Ignite cluster is unavailable [" + chInfo + ']', ex);
+    }
+
+    /**
+     * Auxiliary class to read byte buffers and numeric values, counting total bytes read.
+     * Numeric values are read in the little-endian byte order.
+     */
+    private class ByteCountingDataInput {
+        /** Input stream. */
+        private final InputStream in;
+
+        /** Total bytes read from the input stream. */
+        private long totalBytesRead;
+
+        /** Temporary buffer to read long, int and short values. */
+        private byte[] tmpBuf = new byte[Long.BYTES];
+
+        /**
+         * @param in Input stream.
+         */
+        public ByteCountingDataInput(InputStream in) {
+            this.in = in;
+        }
+
+        /**
+         * Read bytes from the input stream to the buffer.
+         *
+         * @param bytes Bytes buffer.
+         * @param len Length.
+         */
+        private void read(byte[] bytes, int len) throws ClientConnectionException {
+            int bytesNum;
+            int readBytesNum = 0;
+
+            while (readBytesNum < len) {
+                try {
+                    bytesNum = in.read(bytes, readBytesNum, len - readBytesNum);
+                }
+                catch (IOException e) {
+                    throw handleIOError(e);
+                }
+
+                if (bytesNum < 0)
+                    throw handleIOError(null);
+
+                readBytesNum += bytesNum;
+            }
+
+            totalBytesRead += readBytesNum;
+        }
+
+        /** Read bytes from the input stream. */
+        public byte[] read(int len) throws ClientConnectionException {
+            byte[] bytes = new byte[len];
+
+            read(bytes, len);
+
+            return bytes;
+        }
+
+        /**
+         * Read long value from the input stream.
+         */
+        public long readLong() throws ClientConnectionException {
+            read(tmpBuf, Long.BYTES);
+
+            return BinaryPrimitives.readLong(tmpBuf, 0);
+        }
+
+        /**
+         * Read int value from the input stream.
+         */
+        public int readInt() throws ClientConnectionException {
+            read(tmpBuf, Integer.BYTES);
+
+            return BinaryPrimitives.readInt(tmpBuf, 0);
+        }
+
+        /**
+         * Read short value from the input stream.
+         */
+        public short readShort() throws ClientConnectionException {
+            read(tmpBuf, Short.BYTES);
+
+            return BinaryPrimitives.readShort(tmpBuf, 0);
+        }
+
+        /**
+         * Gets total bytes read from the input stream.
+         */
+        public long totalBytesRead() {
+            return totalBytesRead;
+        }
+
+        /**
+         * Close input stream.
+         */
+        public void close() throws IOException {
+            in.close();
+        }
     }
 
     /**
