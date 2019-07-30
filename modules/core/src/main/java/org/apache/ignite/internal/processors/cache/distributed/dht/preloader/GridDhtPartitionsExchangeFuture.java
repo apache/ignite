@@ -545,19 +545,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return Start time in nanoseconds.
-     */
-    public long getStartTime() {
-        return startTime;
-    }
-
-    /**
      * @param blocked {@code True} If take into account only cache operations blocked PME.
      * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
      * running PME or {@code blocked} was set to {@code true} and current PME don't block cache operations.
      */
     public long currentPMEDuration(boolean blocked) {
-        return (isDone() || initTime == 0 || (blocked && isClientEventExchangeWithoutAffinityChange())) ?
+        return (isDone() || initTime == 0 || (blocked && !changedAffinity())) ?
             0 : System.currentTimeMillis() - initTime;
     }
 
@@ -576,8 +569,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param discoCache Discovery data cache.
      */
     public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt, DiscoCache discoCache) {
-        // TODO: IGNITE-12017 Avoid calling GridDhtPartitionsExchangeFuture#onEvent more than once.
-        assert exchId.equals(this.exchId) && (firstDiscoEvt == null || firstDiscoEvt == discoEvt);
+        assert exchId.equals(this.exchId);
 
         this.exchId.discoveryEvent(discoEvt);
         this.firstDiscoEvt = discoEvt;
@@ -631,22 +623,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public boolean changedAffinity() {
-        assert firstDiscoEvt != null;
+        DiscoveryEvent firstDiscoEvt0 = firstDiscoEvt;
 
-        return firstDiscoEvt.eventNode().isLocal() || !isClientEventExchangeWithoutAffinityChange();
-    }
+        assert firstDiscoEvt0 != null;
 
-    /**
-     * @return {@code True} if exchange triggered by client node join/left and didn't not change affinity in cluster.
-     */
-    private boolean isClientEventExchangeWithoutAffinityChange() {
-        assert firstDiscoEvt != null;
-
-        boolean hasCachesReceivedFromJoin = (firstDiscoEvt.type() == EVT_NODE_JOINED) &&
-            cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode());
-
-        return firstDiscoEvt.eventNode().isClient() &&
-            firstDiscoEvt.type() != DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT && !hasCachesReceivedFromJoin;
+        return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
+            || !firstDiscoEvt0.eventNode().isClient()
+            || firstDiscoEvt0.eventNode().isLocal()
+            || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
+            cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
     }
 
     /**
@@ -2379,7 +2364,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void updateDurationHistogram(long duration) {
         cctx.exchange().durationHistogram().value(duration);
 
-        if (!isClientEventExchangeWithoutAffinityChange())
+        if (changedAffinity())
             cctx.exchange().blockingDurationHistogram().value(duration);
     }
 
