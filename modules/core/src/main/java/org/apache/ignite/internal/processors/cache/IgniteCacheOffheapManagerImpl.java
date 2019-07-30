@@ -687,7 +687,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx,
-        KeyCacheObject key, Object x) throws IgniteCheckedException {
+        KeyCacheObject key, CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(cctx, key);
 
         return dataStore != null ? dataStore.mvccAllVersionsCursor(cctx, key, x) : EMPTY_CURSOR;
@@ -2889,7 +2889,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
+        @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, CacheDataRowAdapter.RowData x)
             throws IgniteCheckedException {
             int cacheId = cctx.cacheId();
 
@@ -3014,7 +3014,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
+        @Override public GridCursor<? extends CacheDataRow> cursor(CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
             GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null, x);
 
             return x == CacheDataRowAdapter.RowData.TOMBSTONES ? cursorSkipEmpty(cur) : cursorSkipTombstone(cur);
@@ -3055,7 +3055,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
-            KeyCacheObject upper, Object x) throws IgniteCheckedException {
+            KeyCacheObject upper, CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
             return cursor(cacheId, lower, upper, null, null, false);
         }
 
@@ -3063,7 +3063,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             KeyCacheObject lower,
             KeyCacheObject upper,
-            Object x,
+            CacheDataRowAdapter.RowData x,
             MvccSnapshot snapshot,
             boolean withTombstones) throws IgniteCheckedException {
             SearchRow lowerRow;

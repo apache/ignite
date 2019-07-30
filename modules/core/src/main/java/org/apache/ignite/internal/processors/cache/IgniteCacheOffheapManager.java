@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
@@ -215,7 +216,7 @@ public interface IgniteCacheOffheapManager {
      * @return Iterator over all versions.
      * @throws IgniteCheckedException If failed.
      */
-    GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
+    GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, CacheDataRowAdapter.RowData x)
         throws IgniteCheckedException;
 
     /**
@@ -945,7 +946,7 @@ public interface IgniteCacheOffheapManager {
          * @return Iterator over all versions.
          * @throws IgniteCheckedException If failed.
          */
-        GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
+        GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, CacheDataRowAdapter.RowData x)
             throws IgniteCheckedException;
 
         /**
@@ -980,7 +981,7 @@ public interface IgniteCacheOffheapManager {
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
-        public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException;
+        public GridCursor<? extends CacheDataRow> cursor(CacheDataRowAdapter.RowData x) throws IgniteCheckedException;
 
         /**
          * @param mvccSnapshot MVCC snapshot.
@@ -1025,7 +1026,7 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
-            KeyCacheObject upper, Object x) throws IgniteCheckedException;
+            KeyCacheObject upper, CacheDataRowAdapter.RowData x) throws IgniteCheckedException;
 
         /**
          * @param cacheId Cache ID.
@@ -1040,7 +1041,7 @@ public interface IgniteCacheOffheapManager {
         public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             KeyCacheObject lower,
             KeyCacheObject upper,
-            Object x,
+            CacheDataRowAdapter.RowData x,
             MvccSnapshot snapshot,
             boolean withTombstones) throws IgniteCheckedException;
 

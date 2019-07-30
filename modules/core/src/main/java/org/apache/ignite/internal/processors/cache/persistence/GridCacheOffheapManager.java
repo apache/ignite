@@ -2469,7 +2469,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx,
-            KeyCacheObject key, Object x) throws IgniteCheckedException {
+            KeyCacheObject key, CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
@@ -2490,7 +2490,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
+        @Override public GridCursor<? extends CacheDataRow> cursor(CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
@@ -2527,7 +2527,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             KeyCacheObject lower,
             KeyCacheObject upper,
-            Object x)
+            CacheDataRowAdapter.RowData x)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
@@ -2541,7 +2541,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             KeyCacheObject lower,
             KeyCacheObject upper,
-            Object x,
+            CacheDataRowAdapter.RowData x,
             MvccSnapshot mvccSnapshot,
             boolean withTombstones)
             throws IgniteCheckedException {
