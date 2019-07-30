@@ -190,7 +190,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         for (GridDhtPartitionsExchangeFuture fut : futs) {
             assertTrue(0 != fut.getInitTime());
             assertTrue(0 != fut.getStartTime());
-            assertTrue(fut.getInitTime() > fut.getStartTime());
+            assertTrue(fut.getInitTime() >= fut.getStartTime());
         }
     }
 
