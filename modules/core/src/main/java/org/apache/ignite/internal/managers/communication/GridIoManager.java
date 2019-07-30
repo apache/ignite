@@ -132,6 +132,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Io communication metrics registry name. */
     public static final String COMM_METRICS = metricName("io", "communication");
 
+    /** Outbound message queue size metric name. */
+    public static final String OUTBOUND_MSG_QUEUE_SIZE = "OutboundMessagesQueueSize";
+
+    /** Sent messages count metric name. */
+    public static final String SENT_MSG_CNT = "SentMessagesCount";
+
+    /** Sent bytes count metric name. */
+    public static final String SENT_BYTES_CNT = "SentBytesCount";
+
+    /** Received messages count metric name. */
+    public static final String RCVD_MSGS_CNT = "ReceivedMessagesCount";
+
+    /** Received bytes count metric name. */
+    public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -237,17 +252,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         CommunicationSpi spi = ctx.config().getCommunicationSpi();
 
-        ioMetric.register("OutboundMessagesQueueSize", spi::getOutboundMessagesQueueSize,
+        ioMetric.register(OUTBOUND_MSG_QUEUE_SIZE, spi::getOutboundMessagesQueueSize,
             "Outbound messages queue size.");
 
-        ioMetric.register("SentMessagesCount", spi::getSentMessagesCount, "Sent messages count.");
+        ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");
 
-        ioMetric.register("SentBytesCount", spi::getSentBytesCount, "Sent bytes count.");
+        ioMetric.register(SENT_BYTES_CNT, spi::getSentBytesCount, "Sent bytes count.");
 
-        ioMetric.register("ReceivedMessagesCount", spi::getReceivedMessagesCount,
+        ioMetric.register(RCVD_MSGS_CNT, spi::getReceivedMessagesCount,
             "Received messages count.");
 
-        ioMetric.register("ReceivedBytesCount", spi::getReceivedBytesCount, "Received bytes count.");
+        ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
     }
 
     /**

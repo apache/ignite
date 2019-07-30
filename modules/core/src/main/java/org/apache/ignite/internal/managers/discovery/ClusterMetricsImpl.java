@@ -34,7 +34,13 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.managers.communication.GridIoManager.COMM_METRICS;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.OUTBOUND_MSG_QUEUE_SIZE;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.RCVD_BYTES_CNT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.RCVD_MSGS_CNT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.SENT_BYTES_CNT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.SENT_MSG_CNT;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter.LAST_DATA_VER;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
@@ -46,6 +52,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.THR
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TOTAL_STARTED_THREAD_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.UP_TIME;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TOTAL_EXEC_TASKS;
 
 /**
  * Cluster metrics proxy.
@@ -207,7 +214,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         peakThreadCnt = mreg.findMetric(PEAK_THREAD_CNT);
         totalStartedThreadCnt = mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
         daemonThreadCnt = mreg.findMetric(DAEMON_THREAD_CNT);
-        execTasks = mreg.findMetric("TotalExecutedTasks");
+        execTasks = mreg.findMetric(TOTAL_EXEC_TASKS);
 
         availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
@@ -225,15 +232,15 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
         pmeDuration = pmeReg.findMetric(PME_DURATION);
 
-        lastDataVer = ctx.metric().registry(CACHE_METRICS).findMetric("LastDataVersion");
+        lastDataVer = ctx.metric().registry(CACHE_METRICS).findMetric(LAST_DATA_VER);
 
         MetricRegistry ioReg = ctx.metric().registry(COMM_METRICS);
 
-        sentMsgsCnt = ioReg.findMetric("SentMessagesCount");
-        sentBytesCnt = ioReg.findMetric("SentBytesCount");
-        rcvdMsgsCnt = ioReg.findMetric("ReceivedMessagesCount");
-        rcvdBytesCnt = ioReg.findMetric("ReceivedBytesCount");
-        outboundMsgCnt = ioReg.findMetric("OutboundMessagesQueueSize");
+        sentMsgsCnt = ioReg.findMetric(SENT_MSG_CNT);
+        sentBytesCnt = ioReg.findMetric(SENT_BYTES_CNT);
+        rcvdMsgsCnt = ioReg.findMetric(RCVD_MSGS_CNT);
+        rcvdBytesCnt = ioReg.findMetric(RCVD_BYTES_CNT);
+        outboundMsgCnt = ioReg.findMetric(OUTBOUND_MSG_QUEUE_SIZE);
     }
 
     /** {@inheritDoc} */

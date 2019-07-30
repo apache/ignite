@@ -102,6 +102,9 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  * This class defines task processor.
  */
 public class GridTaskProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** Total executed tasks metric name. */
+    public static final String TOTAL_EXEC_TASKS = "TotalExecutedTasks";
+
     /** Wait for 5 seconds to allow discovery to take effect (best effort). */
     private static final long DISCO_TIMEOUT = 5000;
 
@@ -151,7 +154,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
 
-        execTasks = sysreg.longAdderMetric("TotalExecutedTasks", "Total executed tasks.");
+        execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
     }
 
     /** {@inheritDoc} */

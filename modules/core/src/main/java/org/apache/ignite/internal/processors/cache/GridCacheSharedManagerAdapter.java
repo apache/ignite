@@ -31,6 +31,9 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  * Convenience adapter for cache managers.
  */
 public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManager<K, V> {
+    /** Last data version metric name. */
+    public static final String LAST_DATA_VER = "LastDataVersion";
+
     /** */
     private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
 
@@ -67,7 +70,7 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
         MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
 
-        lastDataVer = sysreg.longMetric("LastDataVersion", "The latest data version on the node.");
+        lastDataVer = sysreg.longMetric(LAST_DATA_VER, "The latest data version on the node.");
 
         start0();
 
