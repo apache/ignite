@@ -138,7 +138,7 @@ class GridCacheQuerySqlMetadataJobV2 implements IgniteCallable<Collection<GridCa
                                     descendings.add(idxFieldUpper);
                             }
 
-                            indexesCol.add(new GridCacheQueryManager.CacheSqlIndexMetadata(e.getKey().toUpperCase(),
+                            indexesCol.add(new GridCacheQueryManager.CacheSqlIndexMetadata(e.getKey(),
                                 idxFields, descendings, false));
                         }
                     }

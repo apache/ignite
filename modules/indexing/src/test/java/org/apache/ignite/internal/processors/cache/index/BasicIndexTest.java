@@ -27,17 +27,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -498,6 +504,61 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             cleanPersistenceDir();
         }
+    }
+
+    /**
+     * @throws Exception If can't start ignite node.
+     */
+    @Test
+    public void testCaseSensitiveIndexNamesInGridCacheQueryManager() throws Exception {
+        inlineSize = 1;
+
+        String idxName1 = "test_v1_IDX";
+
+        String idxName2 = idxName1.toLowerCase();
+
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        CacheConfiguration ccfg = new CacheConfiguration("testIndexesCache");
+        ccfg.setIndexedTypes(Integer.class, Person.class);
+
+        IgniteCache cache = ignite.createCache(ccfg);
+
+        cache.query(new SqlFieldsQuery("CREATE INDEX \""+idxName1+"\" on \"PERSON\" (name)")).getAll();
+
+        cache.query(new SqlFieldsQuery("CREATE INDEX \""+idxName2+"\" on \"PERSON\" (name)")).getAll();
+
+        GridCacheQueryManager cmgr = ((IgniteCacheProxy)cache).context().queries();
+
+        assertTrue("Index " + idxName1 + " not found in meta", indexExists(cmgr.sqlMetadata(), idxName1));
+
+        assertTrue("Index " + idxName2 + " not found in meta", indexExists(cmgr.sqlMetadata(), idxName2));
+
+        assertTrue("Index " + idxName1 + " not found in meta v2", indexExists(cmgr.sqlMetadataV2(), idxName1));
+
+        assertTrue("Index " + idxName2 + " not found in meta v2", indexExists(cmgr.sqlMetadataV2(), idxName2));
+    }
+
+    /**
+     * Check if index exists in Collection of GridCacheSqlMetadata.
+     *
+     * @param metadata Metadata from grid.
+     * @param idxName Index name.
+     * @return True if index exists in metadata, otherwise false.
+     */
+    private boolean indexExists(Collection<GridCacheSqlMetadata> metadata, String idxName) {
+        for (GridCacheSqlMetadata meta : metadata) {
+            for (Collection<GridCacheSqlIndexMetadata> idxMetas : meta.indexes().values()) {
+                for (GridCacheSqlIndexMetadata idxMeta : idxMetas) {
+                    if (idxMeta.name().equals(idxName))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** */
