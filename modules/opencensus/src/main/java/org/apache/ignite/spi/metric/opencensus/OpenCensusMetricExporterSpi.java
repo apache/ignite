@@ -185,14 +185,21 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         mmap.put(msr, val);
                     }
                     else if (metric instanceof HistogramMetric) {
+                        /*
+                            Histogram exports as a separate long metric for each interval.
+                            Example of metric names if bounds are 10,100:
+                                histogram_0_10 (less than 10)
+                                histogram_10_100 (between 10 and 100)
+                                histogram_100 (more than 100)
+                         */
                         long[] value = ((HistogramMetric)metric).value();
                         long[] bounds = ((HistogramMetric)metric).bounds();
 
                         for (int i = 0; i < value.length; i++) {
-                            String minBound = i == 0 ? "MIN" : String.valueOf(bounds[i - 1]);
-                            String maxBound = i == value.length - 1 ? "MAX" : String.valueOf(bounds[i]);
+                            String minBound = i == 0 ? "_0" : "_" + bounds[i - 1];
+                            String maxBound = i == value.length - 1 ? "" : "_" + bounds[i];
 
-                            String bucketName = metric.name() + "_" + minBound + "_" + maxBound;
+                            String bucketName = metric.name() + minBound + maxBound;
 
                             MeasureLong msr = (MeasureLong)measures.computeIfAbsent(bucketName,
                                 k -> createMeasureLong(bucketName, metric.description()));

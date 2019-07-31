@@ -177,11 +177,10 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         String[] expectedMetrics = new String[bounds.length + 1];
 
         for (int i = 0; i < expectedMetrics.length; i++) {
-            String minBound = i == 0 ? "MIN" : String.valueOf(bounds[i - 1]);
-            String maxBound = i == expectedMetrics.length - 1 ? "MAX" : String.valueOf(bounds[i]);
+            String minBound = i == 0 ? "_0" : "_" + bounds[i - 1];
+            String maxBound = i == expectedMetrics.length - 1 ? "" : "_" + bounds[i];
 
-            expectedMetrics[i] = registryName + "_" + histogramName + "_" + minBound + "_" + maxBound + ".* " +
-                expectedValues[i];
+            expectedMetrics[i] = registryName + "_" + histogramName + minBound + maxBound + ".* " + expectedValues[i];
         }
 
         boolean res = waitForCondition(() -> {
