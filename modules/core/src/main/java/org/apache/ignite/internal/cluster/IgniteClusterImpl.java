@@ -29,7 +29,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -409,6 +412,22 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             if (baselineTop.isEmpty())
                 throw new IgniteException("BaselineTopology must contain at least one node.");
 
+            List<BaselineNode> currBlT = Optional.ofNullable(ctx.state().clusterState().baselineTopology()).
+                map(BaselineTopology::currentBaseline).orElse(Collections.emptyList());
+
+            Collection<ClusterNode> srvrs = ctx.cluster().get().forServers().nodes();
+
+            for (BaselineNode node : baselineTop) {
+                Object consistentId = node.consistentId();
+
+                if (currBlT.stream().noneMatch(
+                    currBlTNode -> Objects.equals(currBlTNode.consistentId(), consistentId)) &&
+                    srvrs.stream().noneMatch(
+                        currServersNode -> Objects.equals(currServersNode.consistentId(), consistentId)))
+                    throw new IgniteException("Check arguments. Node with consistent ID [" + consistentId +
+                        "] not found in server nodes.");
+            }
+
             Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
 
             if (onlineNodes != null) {
@@ -470,7 +489,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             Collection<BaselineNode> target = new ArrayList<>(top.size());
 
             for (ClusterNode node : top) {
-                if (!node.isClient())
+                if (!node.isClient() && !node.isDaemon())
                     target.add(node);
             }
 
@@ -709,7 +728,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                     Collections.<ClusterStartNodeResult>emptyList());
 
             // Exceeding max line width for readability.
-            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut = 
+            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut =
                 new GridCompoundFuture<>(CU.<ClusterStartNodeResult>objectsReducer());
 
             AtomicInteger cnt = new AtomicInteger(nodeCallCnt);
