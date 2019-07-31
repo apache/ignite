@@ -17,6 +17,7 @@
 
 package org.apache.ignite.console.agent;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.Authenticator;
@@ -153,12 +154,26 @@ public class AgentLauncher {
                 return;
             }
 
-            IOException ignore = X.cause(e, IOException.class);
-
-            if (ignore != null && "404".equals(ignore.getMessage())) {
-                log.error("Failed to receive response from server (connection refused).");
+            if (X.hasCause(e, EOFException.class)) {
+                log.error("Failed to receive response from server (connection lost).");
 
                 return;
+            }
+
+            IOException ignore = X.cause(e, IOException.class);
+
+            if (ignore != null) {
+                if ("404".equals(ignore.getMessage())) {
+                    log.error("Failed to receive response from server (connection refused).");
+
+                    return;
+                }
+
+                if ("504".equals(ignore.getMessage())) {
+                    log.error("Failed to receive response from server (connection timeout).");
+
+                    return;
+                }
             }
 
             log.error("Connection error.", e);
@@ -173,10 +188,13 @@ public class AgentLauncher {
 
         IOException ioCause = X.cause(e, IOException.class);
 
-        if (ioCause != null && "404".equals(ioCause.getMessage())) {
-            log.error("You are using outdated version of Web agent. Please download latest version of Web agent from Web console");
+        if (ioCause != null) {
+            if ("404".equals(ioCause.getMessage())) {
+                log.error("You have configured invalid server-uri property or are using outdated version of Web agent.");
+                log.error("Please check you configuration file or download latest version of Web agent from Web console.");
 
-            System.exit(1);
+                System.exit(1);
+            }
         }
 
         onError.call(args);
