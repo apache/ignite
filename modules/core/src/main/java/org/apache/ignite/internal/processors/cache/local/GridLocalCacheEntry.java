@@ -198,8 +198,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
     /**
      * Rechecks if lock should be reassigned.
+     * @return owner
      */
-    public void recheck() {
+    public CacheLockCandidates recheck(GridCacheMvccCandidate checkingCandidate) {
         CacheObject val;
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
@@ -224,7 +225,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             unlockEntry();
         }
 
-        checkOwnerChanged(prev, owner, val);
+        checkOwnerChanged(prev, owner, val, checkingCandidate);
+
+        return owner;
     }
 
     /** {@inheritDoc} */
@@ -247,10 +250,14 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
                     // At this point candidate may have been removed and entry destroyed,
                     // so we check for null.
-                    if (e != null)
-                        e.recheck();
-
-                    break;
+                    if (e != null) {
+                        CacheLockCandidates newOwner = e.recheck(owner);
+                        if(newOwner == null || !newOwner.hasCandidate(cand.version()))
+                            // the lock from the chain hasn't been acquired, no sense to check the rest of the chain
+                            break;
+                    }
+                    else
+                        break;
                 }
             }
         }
