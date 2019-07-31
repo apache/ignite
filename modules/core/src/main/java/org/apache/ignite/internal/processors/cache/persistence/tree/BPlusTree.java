@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree;
 
 import java.io.Externalizable;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1026,6 +1027,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         catch (RuntimeException | AssertionError e) {
+            if (e.getCause() instanceof SQLException)
+                throw e;
+
             long[] pageIds = pages(
                 lower == null || cursor == null || cursor.getCursor == null,
                 () -> new long[]{cursor.getCursor.pageId}
