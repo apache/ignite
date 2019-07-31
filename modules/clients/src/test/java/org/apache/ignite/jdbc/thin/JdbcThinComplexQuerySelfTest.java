@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityKey;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -267,6 +269,37 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testWrongArgumentType() throws Exception {
+        try (ResultSet rs = stmt.executeQuery("select * from \"org\".Organization where name = '2'")) {
+            assertFalse(rs.next());
+        }
+
+        // Check non-indexed field.
+        GridTestUtils.assertThrowsWithCause(() -> {
+            try (ResultSet rs = stmt.executeQuery("select * from \"org\".Organization where name = 2")) {
+                assertFalse(rs.next());
+            }
+
+            return null;
+        }, SQLException.class);
+
+        // Check indexed field.
+        try (ResultSet rs = stmt.executeQuery("select * from \"pers\".Person where name = '2'")) {
+            assertFalse(rs.next());
+        }
+
+        GridTestUtils.assertThrowsWithCause(() -> {
+            try (ResultSet rs = stmt.executeQuery("select * from \"pers\".Person where name = 2")) {
+                assertFalse(rs.next());
+            }
+
+            return null;
+        }, SQLException.class);
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -276,7 +309,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
         private final int id;
 
         /** Name. */
-        @QuerySqlField(index = false)
+        @QuerySqlField(index = true)
         private final String name;
 
         /** Age. */
