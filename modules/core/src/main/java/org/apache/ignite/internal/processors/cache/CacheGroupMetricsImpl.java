@@ -206,6 +206,9 @@ public class CacheGroupMetricsImpl {
      * @param pred Predicate.
      */
     private int numberOfPartitionCopies(IntBiPredicate pred) {
+        if (ctx.offheap() == null)
+            return 0;
+
         int parts = ctx.topology().partitions();
 
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
@@ -213,7 +216,7 @@ public class CacheGroupMetricsImpl {
         int res = -1;
 
         if (partFullMap == null)
-            return res;
+            return 0;
 
         for (int part = 0; part < parts; part++) {
             int cnt = 0;
@@ -290,10 +293,10 @@ public class CacheGroupMetricsImpl {
      * @param state State.
      */
     private int localNodePartitionsCountByState(GridDhtPartitionState state) {
-        int cnt = 0;
-
-        if (!ctx.topology().initialized())
+        if (ctx.offheap() == null)
             return 0;
+
+        int cnt = 0;
 
         for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
             if (part.state() == state)
@@ -320,6 +323,9 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getLocalNodeRentingEntriesCount() {
+        if (ctx.offheap() == null)
+            return 0;
+
         long entriesCnt = 0;
 
         for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
@@ -347,6 +353,9 @@ public class CacheGroupMetricsImpl {
      * @return Partitions allocation map.
      */
     private Map<Integer, Set<String>> clusterPartitionsMapByState(GridDhtPartitionState state) {
+        if (ctx.offheap() == null)
+            return Collections.emptyMap();
+
         int parts = ctx.topology().partitions();
 
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
@@ -382,7 +391,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap() {
-        if (ctx.affinity().lastVersion().topologyVersion() < 0)
+        if (ctx.affinity() == null || ctx.affinity().lastVersion().topologyVersion() < 0)
             return Collections.EMPTY_MAP;
 
         AffinityAssignment assignment = ctx.affinity().cachedAffinity(AffinityTopologyVersion.NONE);
@@ -414,6 +423,9 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public List<Integer> getPartitionIds() {
+        if (ctx.offheap() == null)
+            return Collections.emptyList();
+
         List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
 
         List<Integer> partsRes = new ArrayList<>(parts.size());
@@ -426,6 +438,9 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
+        if (groupPageAllocationTracker == null)
+            return 0;
+
         return groupPageAllocationTracker.longValue();
     }
 

@@ -309,6 +309,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemorySize() {
+        if (pageMem == null)
+            return 0;
+
         return getPhysicalMemoryPages() * pageMem.systemPageSize();
     }
 
@@ -324,6 +327,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getUsedCheckpointBufferSize() {
+        if (pageMem == null)
+            return 0;
+
         return getUsedCheckpointBufferPages() * pageMem.systemPageSize();
     }
 

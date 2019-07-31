@@ -28,7 +28,7 @@ import org.junit.Test;
 /** */
 public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
     /** */
-    public static final int EXPORT_TIMEOUT = 50;
+    public static final int EXPORT_TIMEOUT = 10;
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
