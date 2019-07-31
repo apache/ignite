@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
-import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -441,7 +440,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 );
 
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
-                cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
                 return cfg;
             }
