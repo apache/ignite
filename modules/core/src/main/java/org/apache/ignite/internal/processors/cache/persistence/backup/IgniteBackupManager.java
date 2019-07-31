@@ -326,6 +326,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     "temporary directory for cache group: " + gctx.groupId(),
                     null);
 
+                CompletableFuture<Boolean> cpEndFut0 = bctx.cpEndFut;
+
                 for (int partId : e.getValue()) {
                     final GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
 
@@ -340,7 +342,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                                 cctx.gridConfig()
                                     .getDataStorageConfiguration()
                                     .getPageSize()),
-                            bctx.cpEndFut,
+                            () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
                             pageSize));
                 }
             }
@@ -615,23 +617,23 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final ThreadLocal<ByteBuffer> localBuff;
 
         /** {@code true} if need the original page from PageStore instead of given buffer. */
-        private final CompletableFuture<Boolean> cpEndFut;
+        private final Supplier<Boolean> checkpointComplete;
 
         /** {@code true} if current writer is stopped. */
         private volatile boolean partProcessed;
 
         /**
          * @param serial Serial storage to write to.
-         * @param cpEndFut Checkpoint finish future.
+         * @param checkpointComplete Checkpoint finish flag.
          * @param pageSize Size of page to use for local buffer.
          */
         public PageStoreSerialWriter(
             FileSerialPageStore serial,
-            CompletableFuture<Boolean> cpEndFut,
+            Supplier<Boolean> checkpointComplete,
             int pageSize
         ) throws IOException {
             this.serial = serial;
-            this.cpEndFut = cpEndFut;
+            this.checkpointComplete = checkpointComplete;
 
             localBuff = ThreadLocal.withInitial(() ->
                 ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder()));
@@ -640,17 +642,10 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         }
 
         /**
-         * @return {@code true} if checkpoint completed normally.
-         */
-        public boolean checkpointComplete() {
-            return cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
-        }
-
-        /**
          * @return {@code true} if writer is stopped and cannot write pages.
          */
         public boolean stopped() {
-            return checkpointComplete() && partProcessed;
+            return checkpointComplete.get() && partProcessed;
         }
 
         /**
@@ -662,7 +657,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             if (stopped())
                 return;
 
-            if (checkpointComplete()) {
+            if (checkpointComplete.get()) {
                 final ByteBuffer locBuf = localBuff.get();
 
                 assert locBuf.capacity() == store.getPageSize();
