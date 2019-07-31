@@ -70,7 +70,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      * Create TransactionMetricsAdapter.
      */
     public TransactionMetricsAdapter() {
-        this(null);
+        gridKernalCtx = null;
     }
 
     /**
@@ -79,40 +79,39 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     public TransactionMetricsAdapter(GridKernalContext ctx) {
         gridKernalCtx = ctx;
 
-        if (gridKernalCtx == null || gridKernalCtx.metric() == null)
-            return;
+        if (gridKernalCtx.metric() != null) {
+            MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
-        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
+            mreg.register(txCommits);
+            mreg.register(txRollbacks);
+            mreg.register(commitTime);
+            mreg.register(rollbackTime);
 
-        mreg.register(txCommits);
-        mreg.register(txRollbacks);
-        mreg.register(commitTime);
-        mreg.register(rollbackTime);
+            mreg.register("getAllOwnerTransactions",
+                this::getAllOwnerTransactions,
+                Map.class,
+                "Map of local node owning transactions.");
 
-        mreg.register("getAllOwnerTransactions",
-            this::getAllOwnerTransactions,
-            Map.class,
-            "Map of local node owning transactions.");
+            mreg.register("getTransactionsCommittedNumber",
+                this::getTransactionsCommittedNumber,
+                "The number of transactions which were committed on the local node.");
 
-        mreg.register("getTransactionsCommittedNumber",
-            this::getTransactionsCommittedNumber,
-            "The number of transactions which were committed on the local node.");
+            mreg.register("getTransactionsRolledBackNumber",
+                this::getTransactionsRolledBackNumber,
+                "The number of transactions which were rolled back on the local node.");
 
-        mreg.register("getTransactionsRolledBackNumber",
-            this::getTransactionsRolledBackNumber,
-            "The number of transactions which were rolled back on the local node.");
+            mreg.register("getTransactionsHoldingLockNumber",
+                this::getTransactionsHoldingLockNumber,
+                "The number of active transactions holding at least one key lock.");
 
-        mreg.register("getTransactionsHoldingLockNumber",
-            this::getTransactionsHoldingLockNumber,
-            "The number of active transactions holding at least one key lock.");
+            mreg.register("getLockedKeysNumber",
+                this::getLockedKeysNumber,
+                "The number of keys locked on the node.");
 
-        mreg.register("getLockedKeysNumber",
-            this::getLockedKeysNumber,
-            "The number of keys locked on the node.");
-
-        mreg.register("getOwnerTransactionsNumber",
-            this::getOwnerTransactionsNumber,
-            "The number of active transactions for which this node is the initiator.");
+            mreg.register("getOwnerTransactionsNumber",
+                this::getOwnerTransactionsNumber,
+                "The number of active transactions for which this node is the initiator.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -338,12 +337,10 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert false;
-
-//        commitTime.value(in.readLong());
-//        rollbackTime.value(in.readLong());
-//        txCommits.value(in.readInt());
-//        txRollbacks.value(in.readInt());
+        commitTime.value(in.readLong());
+        rollbackTime.value(in.readLong());
+        txCommits.value(in.readInt());
+        txRollbacks.value(in.readInt());
     }
 
     /** {@inheritDoc} */
