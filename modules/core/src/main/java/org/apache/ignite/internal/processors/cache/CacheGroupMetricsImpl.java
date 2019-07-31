@@ -38,8 +38,8 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -212,6 +212,9 @@ public class CacheGroupMetricsImpl {
 
         int res = -1;
 
+        if (partFullMap == null)
+            return res;
+
         for (int part = 0; part < parts; part++) {
             int cnt = 0;
 
@@ -289,6 +292,9 @@ public class CacheGroupMetricsImpl {
     private int localNodePartitionsCountByState(GridDhtPartitionState state) {
         int cnt = 0;
 
+        if (!ctx.topology().initialized())
+            return 0;
+
         for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
             if (part.state() == state)
                 cnt++;
@@ -346,6 +352,9 @@ public class CacheGroupMetricsImpl {
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
 
         Map<Integer, Set<String>> partsMap = new LinkedHashMap<>();
+
+        if (partFullMap == null)
+            return partsMap;
 
         for (int part = 0; part < parts; part++) {
             Set<String> partNodesSet = new HashSet<>();
@@ -427,12 +436,16 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getStorageSize() {
-        return database().forGroupPageStores(ctx, PageStore::size);
+        GridCacheDatabaseSharedManager dbMgr = database();
+
+        return dbMgr == null ? 0 : database().forGroupPageStores(ctx, PageStore::size);
     }
 
     /** */
     public long getSparseStorageSize() {
-        return database().forGroupPageStores(ctx, PageStore::getSparseSize);
+        GridCacheDatabaseSharedManager dbMgr = database();
+
+        return dbMgr == null ? 0 : database().forGroupPageStores(ctx, PageStore::getSparseSize);
     }
 
     /** Removes all metric for cache group. */
@@ -444,6 +457,9 @@ public class CacheGroupMetricsImpl {
      * @return Database.
      */
     private GridCacheDatabaseSharedManager database() {
+        if (!(ctx.shared().database() instanceof GridCacheDatabaseSharedManager))
+            return null;
+
         return (GridCacheDatabaseSharedManager)ctx.shared().database();
     }
 
