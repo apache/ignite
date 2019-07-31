@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
@@ -2385,11 +2385,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void createRows(Iterator<GridCacheEntryInfo> infos,
+        @Override public void insertRows(Collection<DataRowStoreAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            delegate.createRows(infos, initPred);
+            ctx.database().checkpointReadLock();
+
+            try {
+                delegate.insertRows(rows, initPred);
+            } finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
 
         /** {@inheritDoc} */

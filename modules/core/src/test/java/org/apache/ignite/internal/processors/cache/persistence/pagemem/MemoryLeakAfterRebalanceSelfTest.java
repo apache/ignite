@@ -161,7 +161,7 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
 
         GridCacheContext cctx = cache1.context();
 
-        // Make sure that there are no duplicate entries on the data pages in the pages memory.
+        // Make sure that there are no duplicate entries on the data pages in the page memory.
         try (GridCloseableIterator<Cache.Entry<Integer, String>> iter = cctx.offheap().cacheEntriesIterator(
             cctx,
             true,

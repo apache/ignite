@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1212,6 +1213,31 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return iter;
     }
 
+    /** {@inheritDoc} */
+    @Override public void preload(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+        CacheDataStore dataStore = dataStore(partId);
+
+        while (infos.hasNext()) {
+            List<DataRowStoreAware> batch = new ArrayList<>(PRELOAD_CHECKPOINT_THRESHOLD);
+
+            do {
+                GridCacheEntryInfo info = infos.next();
+
+                batch.add(new DataRowStoreAware(info.key(),
+                    info.value(),
+                    info.version(),
+                    partId,
+                    info.expireTime(),
+                    info.cacheId(),
+                    grp.storeCacheIdInDataPage()));
+            }
+            while (infos.hasNext() && batch.size() < PRELOAD_CHECKPOINT_THRESHOLD);
+
+            dataStore.insertRows(batch, initPred);
+        }
+    }
+
     /**
      * @param partCntrs Partition counters map.
      * @param missing Set of partitions need to populate if partition is missing or failed to reserve.
@@ -1732,50 +1758,25 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void createRows(Iterator<GridCacheEntryInfo> infos,
+        @Override public void insertRows(Collection<DataRowStoreAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            while (infos.hasNext()) {
-                List<DataRowStoreAware> batch = new ArrayList<>(PRELOAD_CHECKPOINT_THRESHOLD);
+            try {
+                rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
 
-                do {
-                    GridCacheEntryInfo info = infos.next();
+                boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
 
-                    batch.add(new DataRowStoreAware(info.key(),
-                        info.value(),
-                        info.version(),
-                        partId(),
-                        info.expireTime(),
-                        info.cacheId(),
-                        grp.storeCacheIdInDataPage()));
+                for (DataRowStoreAware row : rows) {
+                    row.storeCacheId(cacheIdAwareGrp);
+
+                    if (!initPred.apply(row) && row.value() != null)
+                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
-                while (infos.hasNext() && batch.size() < PRELOAD_CHECKPOINT_THRESHOLD);
-
-                ctx.database().checkpointReadLock();
-
-                try {
-                    if (!busyLock.enterBusy())
-                        throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
-
-                    try {
-                        rowStore.addRows(F.view(batch, row -> row.value() != null), grp.statisticsHolderData());
-
-                        boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
-
-                        for (DataRowStoreAware row : batch) {
-                            row.storeCacheId(cacheIdAwareGrp);
-
-                            if (!initPred.apply(row) && row.value() != null)
-                                rowStore.removeRow(row.link(), grp.statisticsHolderData());
-                        }
-                    }
-                    finally {
-                        busyLock.leaveBusy();
-                    }
-                }
-                finally {
-                    ctx.database().checkpointReadUnlock();
-                }
+            }
+            finally {
+                busyLock.leaveBusy();
             }
         }
 

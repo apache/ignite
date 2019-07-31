@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowStoreAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -463,6 +465,17 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * Preload entries.
+     *
+     * @param partId Partition number.
+     * @param infos Entry infos.
+     * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void preload(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
+
+    /**
      * @param cctx Cache context.
      * @param primary {@code True} if need to return primary entries.
      * @param backup {@code True} if need to return backup entries.
@@ -697,13 +710,13 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
-         * Create data rows.
+         * Insert rows into page memory.
          *
-         * @param infos Entry infos.
-         * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
+         * @param rows Rows.
+         * @param initPred Applied to all rows. Each row that not matches the predicate is removed.
          * @throws IgniteCheckedException If failed.
          */
-        public void createRows(Iterator<GridCacheEntryInfo> infos,
+        public void insertRows(Collection<DataRowStoreAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
         /**

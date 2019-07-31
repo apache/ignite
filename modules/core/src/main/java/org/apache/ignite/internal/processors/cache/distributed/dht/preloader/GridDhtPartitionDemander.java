@@ -949,9 +949,7 @@ public class GridDhtPartitionDemander {
     private void preloadEntries(AffinityTopologyVersion topVer, int p,
         Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
 
-        GridDhtLocalPartition part = grp.topology().localPartition(p);
-
-        part.dataStore().createRows(infos, new IgnitePredicateX<CacheDataRow>() {
+        grp.offheap().preload(p, infos, new IgnitePredicateX<CacheDataRow>() {
             @Override public boolean applyx(CacheDataRow row) throws IgniteCheckedException {
                 return preloadEntry(row, topVer);
             }
