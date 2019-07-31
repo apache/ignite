@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAf
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossDetectionOnNodeLeftTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLostWhileClearingTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
@@ -106,6 +108,9 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
 
         suite.addTestSuite(CachePageWriteLockUnlockTest.class);
+
+        suite.addTestSuite(CachePartitionLossDetectionOnNodeLeftTest.class);
+        suite.addTestSuite(CachePartitionLostWhileClearingTest.class);
 
         return suite;
     }

@@ -588,17 +588,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public boolean own() {
         while (true) {
-            assert !clear : "Could not own clearing partition " + this;
-
             long state = this.state.get();
 
             GridDhtPartitionState partState = getPartState(state);
-
             if (partState == RENTING || partState == EVICTED)
                 return false;
 
             if (partState == OWNING)
                 return true;
+
+            // Note what partition can be owned while clearing.
+            // This is possible if no owners are left other than current node.
+            assert !group().topology().initialized() ||
+                    group().topology().owners(id).isEmpty() ||
+                    !clear : this;
 
             assert partState == MOVING || partState == LOST;
 
