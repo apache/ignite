@@ -310,6 +310,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public AffinityTopologyVersion readyTopologyVersion() {
         AffinityTopologyVersion topVer = this.readyTopVer;
 
+        log.error("RTV@RTV");
+
         assert topVer.topologyVersion() > 0 : "Invalid topology version [topVer=" + topVer +
             ", group=" + grp.cacheOrGroupName() + ']';
 
