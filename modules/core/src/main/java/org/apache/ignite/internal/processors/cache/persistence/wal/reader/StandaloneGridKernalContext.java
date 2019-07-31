@@ -98,6 +98,7 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -211,6 +212,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         cfg.setDataStorageConfiguration(pstCfg);
 
         marshaller.setContext(marshallerCtx);
+
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
         return cfg;
     }
