@@ -70,7 +70,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      * Create TransactionMetricsAdapter.
      */
     public TransactionMetricsAdapter() {
-        gridKernalCtx = null;
+        this(null);
     }
 
     /**
@@ -78,6 +78,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      */
     public TransactionMetricsAdapter(GridKernalContext ctx) {
         gridKernalCtx = ctx;
+
+        if (gridKernalCtx == null || gridKernalCtx.metric() == null)
+            return;
 
         MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
@@ -335,10 +338,12 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        commitTime.value(in.readLong());
-        rollbackTime.value(in.readLong());
-        txCommits.value(in.readInt());
-        txRollbacks.value(in.readInt());
+        assert false;
+
+//        commitTime.value(in.readLong());
+//        rollbackTime.value(in.readLong());
+//        txCommits.value(in.readInt());
+//        txRollbacks.value(in.readInt());
     }
 
     /** {@inheritDoc} */
