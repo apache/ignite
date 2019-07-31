@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,31 +43,21 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_
 /**
  * Tx metrics adapter.
  */
-public class TransactionMetricsAdapter implements TransactionMetrics, Externalizable {
+public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Grid kernal context. */
     private final GridKernalContext gridKernalCtx;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Number of transaction commits. */
-    private final IntMetricImpl txCommits = new IntMetricImpl("txCommits", "Number of transaction commits.");
+    private final IntMetricImpl txCommits;
 
     /** Number of transaction rollbacks. */
-    private final IntMetricImpl txRollbacks = new IntMetricImpl("txRollbacks", "Number of transaction rollbacks.");
+    private final IntMetricImpl txRollbacks;
 
     /** Last commit time. */
-    private final AtomicLongMetric commitTime = new AtomicLongMetric("commitTime", "Last commit time.");
+    private final AtomicLongMetric commitTime;
 
     /** Last rollback time. */
-    private final AtomicLongMetric rollbackTime = new AtomicLongMetric("rollbackTime", "Last rollback time.");
-
-    /**
-     * Create TransactionMetricsAdapter.
-     */
-    public TransactionMetricsAdapter() {
-        gridKernalCtx = null;
-    }
+    private final AtomicLongMetric rollbackTime;
 
     /**
      * @param ctx Kernal context.
@@ -79,39 +65,37 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     public TransactionMetricsAdapter(GridKernalContext ctx) {
         gridKernalCtx = ctx;
 
-        if (gridKernalCtx.metric() != null) {
-            MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
+        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
-            mreg.register(txCommits);
-            mreg.register(txRollbacks);
-            mreg.register(commitTime);
-            mreg.register(rollbackTime);
+        txCommits = mreg.intMetric("txCommits", "Number of transaction commits.");
+        txRollbacks = mreg.intMetric("txRollbacks", "Number of transaction rollbacks.");
+        commitTime = mreg.longMetric("commitTime", "Last commit time.");
+        rollbackTime = mreg.longMetric("rollbackTime", "Last rollback time.");
 
-            mreg.register("getAllOwnerTransactions",
-                this::getAllOwnerTransactions,
-                Map.class,
-                "Map of local node owning transactions.");
+        mreg.register("AllOwnerTransactions",
+            this::getAllOwnerTransactions,
+            Map.class,
+            "Map of local node owning transactions.");
 
-            mreg.register("getTransactionsCommittedNumber",
-                this::getTransactionsCommittedNumber,
-                "The number of transactions which were committed on the local node.");
+        mreg.register("TransactionsCommittedNumber",
+            this::getTransactionsCommittedNumber,
+            "The number of transactions which were committed on the local node.");
 
-            mreg.register("getTransactionsRolledBackNumber",
-                this::getTransactionsRolledBackNumber,
-                "The number of transactions which were rolled back on the local node.");
+        mreg.register("TransactionsRolledBackNumber",
+            this::getTransactionsRolledBackNumber,
+            "The number of transactions which were rolled back on the local node.");
 
-            mreg.register("getTransactionsHoldingLockNumber",
-                this::getTransactionsHoldingLockNumber,
-                "The number of active transactions holding at least one key lock.");
+        mreg.register("TransactionsHoldingLockNumber",
+            this::getTransactionsHoldingLockNumber,
+            "The number of active transactions holding at least one key lock.");
 
-            mreg.register("getLockedKeysNumber",
-                this::getLockedKeysNumber,
-                "The number of keys locked on the node.");
+        mreg.register("LockedKeysNumber",
+            this::getLockedKeysNumber,
+            "The number of keys locked on the node.");
 
-            mreg.register("getOwnerTransactionsNumber",
-                this::getOwnerTransactionsNumber,
-                "The number of active transactions for which this node is the initiator.");
-        }
+        mreg.register("OwnerTransactionsNumber",
+            this::getOwnerTransactionsNumber,
+            "The number of active transactions for which this node is the initiator.");
     }
 
     /** {@inheritDoc} */
@@ -191,10 +175,10 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      * Reset.
      */
     public void reset() {
-        commitTime.value(0);
-        txCommits.value(0);
-        rollbackTime.value(0);
-        txRollbacks.value(0);
+        commitTime.reset();
+        txCommits.reset();
+        rollbackTime.reset();
+        txRollbacks.reset();
     }
 
     /**
@@ -325,22 +309,6 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
         GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
 
         return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(commitTime.value());
-        out.writeLong(rollbackTime.value());
-        out.writeInt(txCommits.value());
-        out.writeInt(txRollbacks.value());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        commitTime.value(in.readLong());
-        rollbackTime.value(in.readLong());
-        txCommits.value(in.readInt());
-        txRollbacks.value(in.readInt());
     }
 
     /** {@inheritDoc} */

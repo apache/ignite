@@ -454,10 +454,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             @Override public GridEventStorageManager event() {
                 return new GridEventStorageManager(this);
             }
-
-            @Override public GridMetricManager metric() {
-                return new GridMetricManager(this);
-            }
         };
 
         IgniteWriteAheadLogManager walMgr = new FileWriteAheadLogManager(kctx);

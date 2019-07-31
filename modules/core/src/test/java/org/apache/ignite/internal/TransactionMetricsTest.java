@@ -110,7 +110,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         ignite.transactions().txStart().commit();
 
         //then:
-        assertEquals(1, mreg.<LongMetric>findMetric("getTransactionsCommittedNumber").value());
+        assertEquals(1, mreg.<LongMetric>findMetric("TransactionsCommittedNumber").value());
 
         //when: transaction is opening
         final Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
@@ -125,18 +125,18 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         }
 
         //then:
-        assertEquals(localKeysNum, mreg.<LongMetric>findMetric("getLockedKeysNumber").value());
-        assertEquals(1, mreg.<LongMetric>findMetric("getTransactionsHoldingLockNumber").value());
-        assertEquals(1, mreg.<LongMetric>findMetric("getOwnerTransactionsNumber").value());
+        assertEquals(localKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(1, mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
+        assertEquals(1, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 
         //when: transaction rollback
         tx1.rollback();
 
         //then:
-        assertEquals(1, mreg.<LongMetric>findMetric("getTransactionsRolledBackNumber").value());
-        assertEquals(0, mreg.<LongMetric>findMetric("getLockedKeysNumber").value());
-        assertEquals(0, mreg.<LongMetric>findMetric("getTransactionsHoldingLockNumber").value());
-        assertEquals(0, mreg.<LongMetric>findMetric("getOwnerTransactionsNumber").value());
+        assertEquals(1, mreg.<LongMetric>findMetric("TransactionsRolledBackNumber").value());
+        assertEquals(0, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(0, mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
+        assertEquals(0, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 
         //when: keysNumber transactions from owner node + keysNumber transactions from client.
         CountDownLatch commitAllower = new CountDownLatch(1);
@@ -163,10 +163,10 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         transactionStarter.await();
 
         //then:
-        assertEquals(txNumFromOwner + txNumFromClient, mreg.<LongMetric>findMetric("getLockedKeysNumber").value());
+        assertEquals(txNumFromOwner + txNumFromClient, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
         assertEquals(keysNumber + txNumFromClient,
-            mreg.<LongMetric>findMetric("getTransactionsHoldingLockNumber").value());
-        assertEquals(keysNumber, mreg.<LongMetric>findMetric("getOwnerTransactionsNumber").value());
+            mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
+        assertEquals(keysNumber, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 
         commitAllower.countDown();
     }
@@ -205,7 +205,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         transactionStarter.await();
 
         final Map<String, String> transactions =
-            mreg.<ObjectGauge<Map<String, String>>>findMetric("getAllOwnerTransactions").value();
+            mreg.<ObjectGauge<Map<String, String>>>findMetric("AllOwnerTransactions").value();
 
         assertEquals(TRANSACTIONS, transactions.size());
 

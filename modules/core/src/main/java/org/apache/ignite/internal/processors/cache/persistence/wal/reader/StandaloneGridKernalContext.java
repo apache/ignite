@@ -118,6 +118,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
 
+    /** Metrics manager. */
+    private final GridMetricManager metricMgr;
+
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
      * convert is configured. All entries in this case will be lazy data entries.
@@ -163,6 +166,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
+
+        metricMgr = new GridMetricManager(this);
     }
 
     /**
@@ -296,7 +301,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridMetricManager metric() {
-        return null;
+        return metricMgr;
     }
 
     /** {@inheritDoc} */
