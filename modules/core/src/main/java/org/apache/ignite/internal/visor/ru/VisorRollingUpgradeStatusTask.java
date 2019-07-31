@@ -61,7 +61,7 @@ public class VisorRollingUpgradeStatusTask extends VisorOneNodeTask<Void, VisorR
             RollingUpgradeStatus state = ignite.context().rollingUpgrade().getStatus();
 
             return new VisorRollingUpgradeStatusResult(
-                state,
+                new VisorRollingUpgradeStatus(state),
                 RollingUpgradeUtil.initialNodes(ignite.context(), state),
                 RollingUpgradeUtil.updatedNodes(ignite.context(), state));
         }

@@ -73,6 +73,8 @@ public class LogRegFromSparkExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

@@ -84,9 +84,10 @@ export default function UserFactory(
         async save(user: Partial<User>): Promise<User> {
             try {
                 const {data: updatedUser} = await $http.post<User>('/api/v1/profile/save', user);
-                await this.load();
-                IgniteMessages.showInfo('Profile saved.');
                 current$.next(updatedUser);
+
+                IgniteMessages.showInfo('Profile saved.');
+
                 return updatedUser;
             }
             catch (e) {

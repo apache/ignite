@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -63,7 +63,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     private static final int TOTAL_CNT = SRV_CNT + CLNT_CNT;
 
     /** */
-    public static final int ITERATIONS = 100;
+    public static final int ITERATIONS = GridTestUtils.SF.applyLB(100, 50);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -128,72 +128,68 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         AtomicInteger idGen = new AtomicInteger();
 
-        final IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                int key = idGen.getAndIncrement();
+        final IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {
+            int key = idGen.getAndIncrement();
 
-                List<Integer> keys = new ArrayList<>();
+            List<Integer> keys = new ArrayList<>();
 
-                for (int k = 0; k < keysCnt; k++)
-                    keys.add(k);
+            for (int k = 0; k < keysCnt; k++)
+                keys.add(k);
 
-                int cntr = 0;
+            int cntr = 0;
 
-                for (int i = 0; i < ITERATIONS; i++) {
-                    cntr++;
+            for (int i = 0; i < ITERATIONS; i++) {
+                cntr++;
 
-                    int nodeId;
+                int nodeId;
 
-                    while(!reservedIdx.compareAndSet((nodeId = r.nextInt(TOTAL_CNT)), 0, 1))
-                        doSleep(10);
+                while(!reservedIdx.compareAndSet((nodeId = r.nextInt(TOTAL_CNT)), 0, 1))
+                    doSleep(10);
 
-                    U.awaitQuiet(b);
+                U.awaitQuiet(b);
 
-                    final IgniteEx grid = grid(nodeId);
+                final IgniteEx grid = grid(nodeId);
 
-                    try (final Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
-                        reservedIdx.set(nodeId, 0);
+                try (final Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                    reservedIdx.set(nodeId, 0);
 
-                        // Construct deadlock
-                        grid.cache(CACHE_NAME).get(keys.get(key));
+                    // Construct deadlock
+                    grid.cache(CACHE_NAME).get(keys.get(key));
 
-                        // Should block.
-                        grid.cache(CACHE_NAME).get(keys.get((key + 1) % keysCnt));
+                    // Should block.
+                    grid.cache(CACHE_NAME).get(keys.get((key + 1) % keysCnt));
 
-                        fail("Deadlock expected");
-                    }
-                    catch (Throwable t) {
-                        // Expected.
-                    }
-
-                    if (key == 0)
-                        log.info("Rolled back: " + cntr);
+                    fail("Deadlock expected");
                 }
+                catch (Throwable t) {
+                    // Expected.
+                }
+
+                if (key == 0)
+                    log.info("Rolled back: " + cntr);
             }
         }, keysCnt, "tx-lock-thread");
 
-        final IgniteInternalFuture<?> restartFut = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                while(!stop.get()) {
-                    final int nodeId = r.nextInt(TOTAL_CNT);
+        final IgniteInternalFuture<?> restartFut = multithreadedAsync(() -> {
+            while(!stop.get()) {
+                final int nodeId = r.nextInt(TOTAL_CNT);
 
-                    if (!reservedIdx.compareAndSet(nodeId, 0, 1)) {
-                        yield();
+                if (!reservedIdx.compareAndSet(nodeId, 0, 1)) {
+                    yield();
 
-                        continue;
-                    }
-
-                    stopGrid(nodeId);
-
-                    doSleep(500 + r.nextInt(1000));
-
-                    startGrid(nodeId);
-
-                    reservedIdx.set(nodeId, 0);
+                    continue;
                 }
 
-                return null;
+                stopGrid(nodeId);
+
+                doSleep(500 + r.nextInt(1000));
+
+                startGrid(nodeId);
+
+                reservedIdx.set(nodeId, 0);
             }
+
+            return null;
         }, 1, "tx-restart-thread");
 
         txFut.get(); // Wait for iterations to complete.

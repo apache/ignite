@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -71,10 +72,10 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     protected static final int ORGS_COUNT_PER_NODE = 2;
 
     /** Test duration. */
-    protected static final long TEST_DURATION = 2 * 60_000;
+    protected static final long TEST_DURATION = 40_000;
 
     /** Test timeout. */
-    protected static final long TEST_TIMEOUT = TEST_DURATION + 2 * 60_000;
+    protected static final long TEST_TIMEOUT = TEST_DURATION + 60_000;
 
     /** Timeout between restart of a node. */
     protected static final long RESTART_TIMEOUT = 3_000;
@@ -181,7 +182,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        endTime = System.currentTimeMillis() + TEST_DURATION;
+        endTime = System.currentTimeMillis() + SF.applyLB((int)TEST_DURATION, 20_000);
 
         super.beforeTest();
     }

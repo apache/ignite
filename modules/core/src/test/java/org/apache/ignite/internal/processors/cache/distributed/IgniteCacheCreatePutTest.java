@@ -144,7 +144,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ignite0.createCache(cacheConfiguration("tx-cache", TRANSACTIONAL));
         ignite0.createCache(cacheConfiguration("mvcc-tx-cache", TRANSACTIONAL_SNAPSHOT));
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+        final long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 20_000);
 
         final AtomicInteger updateThreadIdx = new AtomicInteger();
 

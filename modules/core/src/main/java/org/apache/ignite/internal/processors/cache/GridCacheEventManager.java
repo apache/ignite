@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -387,11 +388,18 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         GridCacheContext cctx0 = cctx;
 
         // Event recording is impossible in recovery mode.
-        if (cctx0 != null && cctx0.kernalContext().recoveryMode())
+        if (cctx0 == null || cctx0.kernalContext().recoveryMode())
             return false;
 
-        return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type)
-            && cctx0.config() != null && !cctx0.config().isEventsDisabled();
+        try {
+            CacheConfiguration cfg = cctx0.config();
+
+            return cctx0.userCache() && cctx0.gridEvents().isRecordable(type) && !cfg.isEventsDisabled();
+        }
+        catch (IllegalStateException e) {
+            // Cache context was cleaned up.
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

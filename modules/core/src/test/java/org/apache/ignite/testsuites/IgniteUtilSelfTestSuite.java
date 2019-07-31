@@ -29,10 +29,6 @@ import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKeySelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSslSelfTest;
 import org.apache.ignite.internal.util.nio.impl.GridNioFilterChainSelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMapSelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemorySelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapSelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTest;
 import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
@@ -104,12 +100,6 @@ import org.junit.runners.Suite;
     // Metrics.
     ClusterMetricsSnapshotSerializeSelfTest.class,
     ClusterMetricsSnapshotSerializeCompatibilityTest.class,
-
-    // Unsafe.
-    GridUnsafeMemorySelfTest.class,
-    GridUnsafeStripedLruSefTest.class,
-    GridUnsafeMapSelfTest.class,
-    GridUnsafePartitionedMapSelfTest.class,
 
     // NIO.
     GridNioSessionMetaKeySelfTest.class,

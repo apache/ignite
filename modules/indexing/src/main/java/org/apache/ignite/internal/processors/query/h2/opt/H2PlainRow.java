@@ -17,7 +17,9 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.engine.Constants;
 import org.h2.result.Row;
 import org.h2.value.Value;
 
@@ -28,6 +30,9 @@ public class H2PlainRow extends H2Row {
     /** */
     @GridToStringInclude
     private Value[] vals;
+
+    /** Row size. */
+    int memory = MEMORY_CALCULATE;
 
     /**
      * @param vals Values.
@@ -70,6 +75,28 @@ public class H2PlainRow extends H2Row {
             return vals == ((H2PlainRow) other).vals;
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMemory() {
+        if (memory != MEMORY_CALCULATE)
+            return memory;
+
+        int size = 24 /* H2PlainRow obj size. */;
+        if (!F.isEmpty(vals)) {
+            int len = vals.length;
+
+            size += Constants.MEMORY_ARRAY + len * Constants.MEMORY_POINTER;
+
+            for (Value v : vals) {
+                if (v != null)
+                    size += v.getMemory();
+            }
+        }
+
+        memory = size;
+
+        return memory;
     }
 
     /** {@inheritDoc} */

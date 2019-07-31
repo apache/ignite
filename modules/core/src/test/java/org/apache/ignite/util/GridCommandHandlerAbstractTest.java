@@ -123,12 +123,12 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         log.info("Test output for " + currentTestMethod());
         log.info("----------------------------------------");
 
+        System.setOut(sysOut);
+
         if (testOut != null)
             System.out.println(testOut.toString());
 
         testOut = null;
-
-        System.setOut(sysOut);
 
         stopAllGrids();
 

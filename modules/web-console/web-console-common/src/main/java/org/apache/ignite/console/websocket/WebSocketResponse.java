@@ -17,10 +17,12 @@
 package org.apache.ignite.console.websocket;
 
 import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Websocket event POJO.
+ * Websocket response POJO.
  */
 public class WebSocketResponse implements WebSocketEvent<Object> {
     /** */
@@ -49,51 +51,44 @@ public class WebSocketResponse implements WebSocketEvent<Object> {
      * @param evtType Event type.
      * @param payload Payload.
      */
-    WebSocketResponse(String reqId, String evtType, Object payload) {
+    @JsonCreator
+    WebSocketResponse(
+        @JsonProperty("requestId") String reqId,
+        @JsonProperty("eventType") String evtType,
+        @JsonProperty("payload") Object payload
+    ) {
         this.reqId = reqId;
         this.evtType = evtType;
         this.payload = payload;
     }
 
-    /**
-     * @return Request ID.
-     */
-    public String getRequestId() {
+    /** {@inheritDoc} */
+    @Override public String getRequestId() {
         return reqId;
     }
 
-    /**
-     * @param reqId New request ID.
-     */
-    public void setRequestId(String reqId) {
+    /** {@inheritDoc} */
+    @Override public void setRequestId(String reqId) {
         this.reqId = reqId;
     }
 
-    /**
-     * @return Event type.
-     */
-    public String getEventType() {
+    /** {@inheritDoc} */
+    @Override public String getEventType() {
         return evtType;
     }
 
-    /**
-     * @param evtType New event type.
-     */
-    public void setEventType(String evtType) {
+    /** {@inheritDoc} */
+    @Override public void setEventType(String evtType) {
         this.evtType = evtType;
     }
 
-    /**
-     * @return Payload.
-     */
-    public Object getPayload() {
+    /** {@inheritDoc} */
+    @Override public Object getPayload() {
         return payload;
     }
 
-    /**
-     * @param payload New payload.
-     */
-    public void setPayload(Object payload) {
+    /** {@inheritDoc} */
+    @Override public void setPayload(Object payload) {
         this.payload = payload;
     }
 

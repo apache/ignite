@@ -106,7 +106,8 @@ public class SegmentCompressStorage {
      * @param compressedIdx Index of compressed segment.
      */
     synchronized void onSegmentCompressed(long compressedIdx) {
-        log.info("Segment compressed notification [idx=" + compressedIdx + ']');
+        if (log.isInfoEnabled())
+            log.info("Segment compressed notification [idx=" + compressedIdx + ']');
 
         if (compressedIdx > lastMaxCompressedIdx)
             lastMaxCompressedIdx = compressedIdx;
@@ -175,7 +176,8 @@ public class SegmentCompressStorage {
      */
     private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
         while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled) {
-            log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
+            if (log.isInfoEnabled())
+                log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
 
             segmentsToCompress.add(++lastEnqueuedToCompressIdx);
         }

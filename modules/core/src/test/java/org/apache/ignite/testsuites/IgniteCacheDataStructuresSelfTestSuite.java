@@ -20,6 +20,7 @@ import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurat
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSetRebalanceTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDiscoveryDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
@@ -142,6 +143,7 @@ import org.junit.runners.Suite;
 
     GridCachePartitionedSetFailoverSelfTest.class,
     GridCachePartitionedAtomicSetFailoverSelfTest.class,
+    GridCacheSetRebalanceTest.class,
 
     GridCachePartitionedQueueRotativeMultiNodeTest.class,
     GridCachePartitionedAtomicQueueRotativeMultiNodeTest.class,

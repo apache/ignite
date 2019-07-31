@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -119,32 +118,30 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
             for (int i = 0; i < ENTRY_COUNT; i++)
                 keys.add(i);
 
-            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    for (int i = 0; i < 50; i++) {
-                        stopGrid(0);
+            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+                for (int i = 0; i < GridTestUtils.SF.applyLB(50, 20); i++) {
+                    stopGrid(0);
 
-                        startGrid(0);
+                    startGrid(0);
 
-                        stopGrid(1);
+                    stopGrid(1);
 
-                        startGrid(1);
+                    startGrid(1);
 
-                        stopGrid(2);
+                    stopGrid(2);
 
-                        startGrid(2);
+                    startGrid(2);
 
-                        synchronized (lastUpdateTs) {
-                            while (System.currentTimeMillis() - lastUpdateTs.get() > 1_000) {
-                                info("Will wait for an update operation to finish.");
+                    synchronized (lastUpdateTs) {
+                        while (System.currentTimeMillis() - lastUpdateTs.get() > 1_000) {
+                            info("Will wait for an update operation to finish.");
 
-                                lastUpdateTs.wait(1_000);
-                            }
+                            lastUpdateTs.wait(1_000);
                         }
                     }
-
-                    return null;
                 }
+
+                return null;
             });
 
             int currVal = 0;

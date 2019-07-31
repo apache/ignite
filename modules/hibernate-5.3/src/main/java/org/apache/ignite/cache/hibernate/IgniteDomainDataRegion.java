@@ -32,7 +32,9 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.cache.spi.support.AbstractDomainDataRegion;
 
-/** */
+/**
+ * Ignite implementation of {@code DomainDataRegion} interface for Hibernate integration.
+ */
 public class IgniteDomainDataRegion extends AbstractDomainDataRegion implements ExtendedStatisticsSupport {
     /** */
     private final HibernateCacheProxy cache;

@@ -281,7 +281,7 @@
             <![CDATA[The Apache Ignite Twitter module + dependencies.]]>
         </details>
         <feature prerequisite="true">wrap</feature>
-        <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava14.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.twitter/hbc-core/${twitter.hbc.version}$Bundle-SymbolicName=Hosebird Client Core&amp;Bundle-Version=${twitter.hbc.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.twitter/hbc-twitter4j/${twitter.hbc.version}$Bundle-SymbolicName=Hosebird Client Twitter4J&amp;Bundle-Version=${twitter.hbc.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-twitter/${project.version}</bundle>
@@ -322,7 +322,7 @@
             <![CDATA[The Apache Ignite ZooKeeper module + dependencies.]]>
         </details>
         <bundle start="true" dependency="true">mvn:org.apache.zookeeper/zookeeper/${zookeeper.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava16.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-client/${curator.version}</bundle>

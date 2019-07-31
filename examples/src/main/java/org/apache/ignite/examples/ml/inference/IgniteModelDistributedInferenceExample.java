@@ -100,6 +100,8 @@ public class IgniteModelDistributedInferenceExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

@@ -66,8 +66,9 @@ public class CacheBasedDatasetExample {
             } finally {
                 persons.destroy();
             }
+        } finally {
+            System.out.flush();
         }
-
     }
 
     /** */

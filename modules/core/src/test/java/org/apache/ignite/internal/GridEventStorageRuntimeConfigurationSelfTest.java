@@ -137,7 +137,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
         try {
             Ignite g = startGrid();
 
-            g.events().enableLocal(EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_STARTED);
+            g.events().enableLocal(EVT_TASK_STARTED, EVT_JOB_STARTED);
 
             final AtomicInteger cnt = new AtomicInteger();
 
@@ -147,17 +147,17 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
                     return true;
                 }
-            }, EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_STARTED);
+            }, EVT_TASK_STARTED, EVT_JOB_STARTED);
+
+            g.compute().run(F.noop());
+
+            assertEquals(2, cnt.get());
+
+            g.events().disableLocal(EVT_TASK_STARTED, EVT_JOB_FAILED);
 
             g.compute().run(F.noop());
 
             assertEquals(3, cnt.get());
-
-            g.events().disableLocal(EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_FAILED);
-
-            g.compute().run(F.noop());
-
-            assertEquals(4, cnt.get());
         }
         finally {
             stopAllGrids();

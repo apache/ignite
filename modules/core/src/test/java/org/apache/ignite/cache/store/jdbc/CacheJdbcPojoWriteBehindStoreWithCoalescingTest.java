@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -447,15 +448,17 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
-        AtomicInteger t1Count = new AtomicInteger(5);
+        AtomicInteger t1Count = new AtomicInteger(GridTestUtils.SF.applyLB(5, 2));
 
-        AtomicInteger t2Count = new AtomicInteger(5);
+        AtomicInteger t2Count = new AtomicInteger(GridTestUtils.SF.applyLB(5, 2));
+
+        int stepSize = GridTestUtils.SF.applyLB(200_000, 20_000);
 
         Thread t1 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
                     while (t1Count.get() > 0) {
-                        for (int i = 0; i < 200000; i++) {
+                        for (int i = 0; i < stepSize; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
                             cache.put(1, next);
@@ -477,7 +480,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             @Override public void run() {
                 try {
                     while (t2Count.get() > 0) {
-                        for (int i = 200000; i < 400000; i++) {
+                        for (int i = stepSize; i < 2 * stepSize; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
                             cache.put(2, next);
@@ -522,15 +525,17 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
-        AtomicInteger t1Count = new AtomicInteger(5);
+        AtomicInteger t1Count = new AtomicInteger(GridTestUtils.SF.applyLB(5, 2));
 
-        AtomicInteger t2Count = new AtomicInteger(5);
+        AtomicInteger t2Count = new AtomicInteger(GridTestUtils.SF.applyLB(5, 2));
+
+        int stepSize = GridTestUtils.SF.applyLB(200_000, 20_000);
 
         Thread t1 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
                     while (t1Count.get() > 0) {
-                        for (int i = 0; i < 200000; i++) {
+                        for (int i = 0; i < stepSize; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
                             cache.put(i, next);
@@ -552,7 +557,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             @Override public void run() {
                 try {
                     while (t2Count.get() > 0) {
-                        for (int i = 200000; i < 400000; i++) {
+                        for (int i = stepSize; i < 2 * stepSize; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
                             cache.put(i, next);
@@ -597,44 +602,40 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
-        AtomicInteger t1Count = new AtomicInteger(10);
+        AtomicInteger t1Count = new AtomicInteger(GridTestUtils.SF.applyLB(10, 5));
 
-        AtomicInteger t2Count = new AtomicInteger(10);
+        AtomicInteger t2Count = new AtomicInteger(GridTestUtils.SF.applyLB(10, 5));
 
-        Thread t1 = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (t1Count.get() > 0) {
-                        for (int i = 0; i < 5000; i++)
-                            cache.put(i, new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime())));
+        Thread t1 = new Thread(() -> {
+            try {
+                while (t1Count.get() > 0) {
+                    for (int i = 0; i < 5000; i++)
+                        cache.put(i, new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime())));
 
-                        t1Count.decrementAndGet();
-                    }
-                } catch (CacheException e) {
-                    //ignore
+                    t1Count.decrementAndGet();
                 }
+            } catch (CacheException e) {
+                //ignore
             }
         });
 
-        Thread t2 = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (t2Count.get() > 0) {
-                        for (int i = 0; i < 5000; i++)
-                            cache.put(i, new TestPojo("UPDATE" + i, i, new java.sql.Date(new java.util.Date().getTime())));
+        Thread t2 = new Thread(() -> {
+            try {
+                while (t2Count.get() > 0) {
+                    for (int i = 0; i < 5000; i++)
+                        cache.put(i, new TestPojo("UPDATE" + i, i, new java.sql.Date(new java.util.Date().getTime())));
 
-                        try {
-                            U.sleep(500);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            e.printStackTrace();
-                        }
-
-                        t2Count.decrementAndGet();
+                    try {
+                        U.sleep(500);
                     }
-                } catch (CacheException e) {
-                    //ignore
+                    catch (IgniteInterruptedCheckedException e) {
+                        e.printStackTrace();
+                    }
+
+                    t2Count.decrementAndGet();
                 }
+            } catch (CacheException e) {
+                //ignore
             }
         });
 
@@ -642,16 +643,13 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         t2.start();
 
-        //t1 should be completed before 10 seconds.
-        U.sleep(10_000);
-
-        assertEquals(0, t1Count.get());
+        assertTrue(GridTestUtils.waitForCondition(() -> t1Count.get() == 0, 10_000));
 
         t1.join();
 
         t2.join();
 
-        assertEquals(0, t2Count.get());
+        assertTrue(GridTestUtils.waitForCondition(() -> t2Count.get() == 0, 10_000));
 
         //now wait for updates will be done on store size and check that the data set is the same
         if (isHangOnWriteAll)

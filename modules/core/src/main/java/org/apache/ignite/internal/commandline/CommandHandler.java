@@ -43,6 +43,7 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.util.VisorIllegalStateException;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
@@ -245,10 +246,7 @@ public class CommandHandler {
             GridClientConfiguration clientCfg = getClientConfiguration(args);
 
             logger.info("Command [" + commandName + "] started");
-            logger.info("Common arguments: " + args.toString());
-
-            if (command.arg() != null)
-                logger.info("Command arguments: " + command.argumentString());
+            logger.info("Arguments: " + argumentsToString(rawArgs));
 
             logger.info(DELIM);
 
@@ -344,6 +342,34 @@ public class CommandHandler {
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
         }
+    }
+
+    /**
+     * @param rawArgs Arguments which user has provided.
+     * @return String which could be shown in console and pritned to log.
+     */
+    private String argumentsToString(List<String> rawArgs) {
+        boolean hide = false;
+
+        SB sb = new SB();
+
+        for (int i = 0; i < rawArgs.size(); i++) {
+            if (hide) {
+                sb.a("***** ");
+
+                hide = false;
+
+                continue;
+            }
+
+            String arg = rawArgs.get(i);
+
+            sb.a(arg).a(' ');
+
+            hide = CommonArgParser.isSensitiveArgument(arg);
+        }
+
+        return sb.toString();
     }
 
     /**

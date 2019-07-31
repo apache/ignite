@@ -203,6 +203,7 @@ import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySel
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
+import org.apache.ignite.internal.processors.query.SqlMetricsOnWebConsoleSelfTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
@@ -241,6 +242,7 @@ import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedTransactio
 import org.apache.ignite.internal.processors.sql.IgniteSQLColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteTransactionSQLColumnConstraintTest;
 import org.apache.ignite.internal.processors.sql.SqlConnectorConfigurationValidationSelfTest;
+import org.apache.ignite.internal.product.IndexingFeatureIsAvailableTest;
 import org.apache.ignite.internal.sql.SqlParserBulkLoadSelfTest;
 import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
 import org.apache.ignite.internal.sql.SqlParserDropIndexSelfTest;
@@ -280,6 +282,8 @@ import org.junit.runners.Suite;
 
     SqlConnectorConfigurationValidationSelfTest.class,
     ClientConnectorConfigurationValidationSelfTest.class,
+
+    IndexingFeatureIsAvailableTest.class,
 
     SqlSchemaSelfTest.class,
     SqlIllegalSchemaSelfTest.class,
@@ -500,6 +504,7 @@ import org.junit.runners.Suite;
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
     OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,
+    SqlMetricsOnWebConsoleSelfTest.class,
 
     GridIndexRebuildSelfTest.class,
     GridIndexFullRebuildTest.class,

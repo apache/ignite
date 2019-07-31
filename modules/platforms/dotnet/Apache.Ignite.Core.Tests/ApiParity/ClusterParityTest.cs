@@ -35,14 +35,18 @@
             "isBaselineAutoAdjustEnabled",
             "baselineAutoAdjustEnabled",
             "baselineAutoAdjustTimeout",
-            "baselineAutoAdjustStatus"
+            "baselineAutoAdjustStatus",
+            "clientReconnectFuture"
         };
 
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
-            "enableStatistics",  // IGNITE-7276
-            "clearStatistics"  // IGNITE-9017
+            "enableStatistics",         // IGNITE-7276
+            "clearStatistics",          // IGNITE-9017
+            "currentBaselineTopology",   // GG-21247
+            "id",                       // GG-21621
+            "tag"                       // GG-21621
         };
 
         /// <summary>

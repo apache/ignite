@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -38,8 +39,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
@@ -47,28 +50,33 @@ import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersist
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- * Testing corner cases in cache group functionality:
- * -stopping cache in shared group and immediate node leaving;
- * -starting cache in shared group with the same name as destroyed one;
- * -etc.
+ * Testing corner cases in cache group functionality: -stopping cache in shared group and immediate node leaving;
+ * -starting cache in shared group with the same name as destroyed one; -etc.
  */
-@WithSystemProperty(key=IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value="true")
+@WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /** Group name. */
     public static final String GROUP = "group";
 
+    /**
+     *
+     */
+    private volatile boolean startExtraStaticCache;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(gridName);
+
+        configuration.setConsistentId(gridName);
 
         configuration.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -79,6 +87,9 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
             .setMaxSize(256 * 1024 * 1024));
 
         configuration.setDataStorageConfiguration(cfg);
+
+        if (startExtraStaticCache)
+            configuration.setCacheConfiguration(getCacheConfiguration(3));
 
         return configuration;
     }
@@ -146,7 +157,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         assertNull(ex.cachex(getCacheName(0)));
 
-        IgniteProcessProxy.kill(grid(2).configuration().getIgniteInstanceName());
+        stopGrid(2, true);
 
         startGrid(2);
 
@@ -163,10 +174,87 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testNodeRestartBetweenCacheStop() throws Exception {
+        IgniteEx ex = startGrids(3);
+
+        prepareCachesAndData(ex);
+
+        stopGrid(2, true);
+
+        ex.destroyCache(getCacheName(0));
+
+        assertNull(ex.cachex(getCacheName(0)));
+
+        try {
+            startGrid(2);
+
+            fail();
+        }
+        catch (Exception e) {
+            List<Throwable> list = X.getThrowableList(e);
+
+            assertTrue(list.stream().
+                anyMatch(x -> x.getMessage().
+                    contains("Joining node has caches with data which are not presented on cluster")));
+        }
+
+        removeCacheDir(getTestIgniteInstanceName(2), "cacheGroup-group");
+
+        IgniteEx node2 = startGrid(2);
+
+        assertEquals(3, node2.cluster().nodes().size());
+    }
+
+    /**
+     * @param instanceName Instance name.
+     * @param cacheGroup Cache group.
+     */
+    private void removeCacheDir(String instanceName, String cacheGroup) throws IgniteCheckedException {
+        String dn2DirName = instanceName.replace(".", "_");
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(),
+            DFLT_STORE_DIR + "/" + dn2DirName + "/" + cacheGroup, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-21755")
+    @Test
+    public void testNodeRestartWithNewStaticallyConfiguredCache() throws Exception {
+        IgniteEx ex = startGrids(3);
+
+        prepareCachesAndData(ex);
+
+        stopGrid(2, true);
+
+        assertNull(ex.cachex(getCacheName(3)));
+
+        startExtraStaticCache = true;
+
+        IgniteEx node2;
+        try {
+            node2 = startGrid(2);
+        }
+        finally {
+            startExtraStaticCache = false;
+        }
+
+        assertNotNull(ex.cachex(getCacheName(3)));
+        assertNotNull(node2.cachex(getCacheName(3)));
+
+        IgniteCache<Object, Object> cache = ex.cache(getCacheName(3));
+
+        assertEquals(0, cache.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCleaningGarbageAfterCacheDestroyedAndNodeStop() throws Exception {
         testFindAndDeleteGarbage(this::executeTask);
     }
-
 
     /**
      * @throws Exception If failed.
@@ -244,24 +332,24 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite to execute task on.
-     * @param deleteFoundGarbage If clearing mode should be used.
+     * @param delFoundGarbage If clearing mode should be used.
      * @return Result of task run.
      */
     private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTaskViaControlConsoleUtil(
         IgniteEx ignite,
-        boolean deleteFoundGarbage
+        boolean delFoundGarbage
     ) {
-        CommandHandler handler = new CommandHandler();
+        CommandHandler hnd = new CommandHandler();
 
         List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
             ignite.localNode().id().toString()));
 
-        if (deleteFoundGarbage)
+        if (delFoundGarbage)
             args.add(FindAndDeleteGarbageArg.DELETE.argName());
 
-        handler.execute(args);
+        hnd.execute(args);
 
-        return handler.getLastOperationResult();
+        return hnd.getLastOperationResult();
     }
 
     /**
@@ -287,7 +375,9 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      *
      */
     static class Account {
-        /** */
+        /**
+         *
+         */
         private final int val;
 
         /**

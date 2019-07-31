@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,7 +100,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut = null;
 
         try {
-            final long stopTime = System.currentTimeMillis() + 60_000;
+            final long stopTime = System.currentTimeMillis() + SF.applyLB(30_000, 10_000);
 
             final AtomicInteger idx = new AtomicInteger();
 

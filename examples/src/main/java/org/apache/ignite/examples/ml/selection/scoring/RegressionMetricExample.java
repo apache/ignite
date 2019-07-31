@@ -78,6 +78,8 @@ public class RegressionMetricExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

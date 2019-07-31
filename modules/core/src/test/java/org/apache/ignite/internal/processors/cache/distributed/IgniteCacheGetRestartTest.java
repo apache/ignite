@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -47,7 +46,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /** */
-    private static final long TEST_TIME = 60_000;
+    private static final int TEST_TIME = 60_000;
 
     /** */
     private static final int SRVS = 3;
@@ -166,70 +165,66 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
                     streamer.addData(i, i);
             }
 
-            final long stopTime = U.currentTimeMillis() + TEST_TIME;
+            final long stopTime = U.currentTimeMillis() + GridTestUtils.SF.applyLB(TEST_TIME, 10_000);
 
             final AtomicInteger nodeIdx = new AtomicInteger();
 
-            IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    Ignite ignite = ignite(nodeIdx.getAndIncrement());
+            IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(() -> {
+                Ignite ignite = ignite(nodeIdx.getAndIncrement());
 
-                    log.info("Check get [node=" + ignite.name() +
-                        ", client=" + ignite.configuration().isClientMode() + ']');
+                log.info("Check get [node=" + ignite.name() +
+                    ", client=" + ignite.configuration().isClientMode() + ']');
 
-                    IgniteCache<Object, Object> cache = ignite.cache(ccfg.getName());
+                IgniteCache<Object, Object> cache = ignite.cache(ccfg.getName());
 
-                    while (U.currentTimeMillis() < stopTime)
-                        checkGet(cache);
+                while (U.currentTimeMillis() < stopTime)
+                    checkGet(cache);
 
-                    return null;
-                }
+                return null;
             }, SRVS + CLIENTS, "get-thread");
 
             final AtomicInteger restartNodeIdx = new AtomicInteger(SRVS + CLIENTS);
 
             final AtomicBoolean clientNode = new AtomicBoolean();
 
-            IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    int nodeIdx = restartNodeIdx.getAndIncrement();
+            IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(() -> {
+                int nodeIdx1 = restartNodeIdx.getAndIncrement();
 
-                    Thread.currentThread().setName("restart-thread-" + nodeIdx);
+                Thread.currentThread().setName("restart-thread-" + nodeIdx1);
 
-                    boolean clientMode = clientNode.compareAndSet(false, true);
+                boolean clientMode = clientNode.compareAndSet(false, true);
 
-                    while (U.currentTimeMillis() < stopTime) {
-                        if (clientMode)
-                            client.set(true);
+                while (U.currentTimeMillis() < stopTime) {
+                    if (clientMode)
+                        client.set(true);
 
-                        log.info("Restart node [node=" + nodeIdx + ", client=" + clientMode + ']');
+                    log.info("Restart node [node=" + nodeIdx1 + ", client=" + clientMode + ']');
 
-                        try {
-                            Ignite ignite = startGrid(nodeIdx);
+                    try {
+                        Ignite ignite = startGrid(nodeIdx1);
 
-                            IgniteCache<Object, Object> cache;
+                        IgniteCache<Object, Object> cache;
 
-                            if (clientMode && ccfg.getNearConfiguration() != null)
-                                cache = ignite.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
-                            else
-                                cache = ignite.cache(ccfg.getName());
+                        if (clientMode && ccfg.getNearConfiguration() != null)
+                            cache = ignite.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+                        else
+                            cache = ignite.cache(ccfg.getName());
 
+                        checkGet(cache);
+
+                        IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
+
+                        while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
                             checkGet(cache);
 
-                            IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
-
-                            while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
-                                checkGet(cache);
-
-                            checkGet(cache);
-                        }
-                        finally {
-                            stopGrid(nodeIdx);
-                        }
+                        checkGet(cache);
                     }
-
-                    return null;
+                    finally {
+                        stopGrid(nodeIdx1);
+                    }
                 }
+
+                return null;
             }, restartCnt + 1, "restart-thread");
 
             fut1.get();

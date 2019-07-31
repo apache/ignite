@@ -163,7 +163,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
             ks.load(keyStoreFile, keyStorePwd);
 
-            if (log != null)
+            if (log != null && log.isInfoEnabled())
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
             masterKey = new KeystoreEncryptionKey(ks.getKey(masterKeyName, keyStorePwd), null);

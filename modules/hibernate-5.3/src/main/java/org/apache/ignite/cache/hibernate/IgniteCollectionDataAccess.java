@@ -24,7 +24,9 @@ import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 
-/** */
+/**
+ * Ignite implementation of {@code CollectionDataAccess} interface for Hibernate integration.
+ */
 public class IgniteCollectionDataAccess extends IgniteCachedDomainDataAccess implements CollectionDataAccess {
     /** */
     private final AccessType accessType;

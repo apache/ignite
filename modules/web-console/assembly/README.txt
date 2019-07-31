@@ -60,6 +60,7 @@ spring.mail.properties.*= # Additional JavaMail Session properties.
 spring.mail.protocol=smtp # Protocol used by the SMTP server.
 spring.mail.test-connection=false # Whether to test that the mail server is available on startup.
 spring.mail.username= # Login user of the SMTP server.
+spring.mail.web-console-url= # Web console url for links in notifications.
 
 # SSL options.
 server.ssl.ciphers= # Supported SSL ciphers.
@@ -87,6 +88,7 @@ spring.mail.host=smtp.gmail.com
 spring.mail.port=587
 spring.mail.username=<login user to smtp server>
 spring.mail.password=<login password to smtp server>
+spring.mail.web-console-url=http://<your-web-console-host>:<port-if-needed>
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 

@@ -312,35 +312,33 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
         final TransactionConcurrency txConcurrency,
         final TransactionIsolation txIsolation,
         final boolean oneEntry) throws Exception {
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                IgniteTransactions txs = grid(0).transactions();
+        GridTestUtils.runMultiThreaded((Callable<Void>)() -> {
+            IgniteTransactions txs = grid(0).transactions();
 
-                long stopTime = System.currentTimeMillis() + 3000;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(3000, 1000);
 
-                while (System.currentTimeMillis() < stopTime) {
-                    Set<Integer> keys = new LinkedHashSet<>();
+            while (System.currentTimeMillis() < stopTime) {
+                Set<Integer> keys = new LinkedHashSet<>();
+
+                for (int i = 0; i < 100; i++)
+                    keys.add(i);
+
+                try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+                    if (oneEntry) {
+                        for (int i = 0; i < 100; i++)
+                            cache.getEntry(i);
+                    }
+                    else
+                        cache.getEntries(keys);
 
                     for (int i = 0; i < 100; i++)
-                        keys.add(i);
+                        cache.put(i, new TestValue(i));
 
-                    try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
-                        if (oneEntry) {
-                            for (int i = 0; i < 100; i++)
-                                cache.getEntry(i);
-                        }
-                        else
-                            cache.getEntries(keys);
-
-                        for (int i = 0; i < 100; i++)
-                            cache.put(i, new TestValue(i));
-
-                        tx.commit();
-                    }
+                    tx.commit();
                 }
-
-                return null;
             }
+
+            return null;
         }, 10, "tx-thread");
     }
 

@@ -192,7 +192,7 @@ public final class GridJavaProcess {
 
         int exitVal = killProc.exitValue();
 
-        if (exitVal != 0)
+        if (exitVal != 0 && log.isInfoEnabled())
             log.info(String.format("Abnormal exit value of %s for pid %s", exitVal, pid));
 
         if (procKilledC != null)

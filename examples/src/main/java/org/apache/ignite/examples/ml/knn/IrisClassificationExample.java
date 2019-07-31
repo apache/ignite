@@ -87,6 +87,8 @@ public class IrisClassificationExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

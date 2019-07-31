@@ -82,6 +82,8 @@ public class RandomForestRegressionFromSparkExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

@@ -23,6 +23,7 @@ import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -90,7 +91,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
-        cfg.setCacheConfiguration(cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
+        cfg.setCacheConfiguration(
+            cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
             cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE));
 
         return cfg;
@@ -130,6 +132,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(cacheMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setDataRegionName(dataRegName);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         if (NO_PERSISTENCE.equals(dataRegName))
             ccfg.setDiskPageCompression(null);

@@ -211,12 +211,6 @@ public class CacheCommands implements Command<CacheSubcommands> {
     }
 
     /** {@inheritDoc} */
-    @Override public String argumentString() {
-        return "cacheSubcommand=" + subcommand.name() +
-            (subcommand.subcommand() == null ? "" : ", " + subcommand.subcommand().argumentString());
-    }
-
-    /** {@inheritDoc} */
     @Override public String name() {
         return CACHE.toCommandName();
     }

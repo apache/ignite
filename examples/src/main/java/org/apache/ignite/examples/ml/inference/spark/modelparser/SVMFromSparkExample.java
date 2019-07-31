@@ -73,6 +73,8 @@ public class SVMFromSparkExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

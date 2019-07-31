@@ -40,7 +40,7 @@ public class NotebooksRepository {
     private Table<Notebook> notebooksTbl;
 
     /** */
-    private OneToManyIndex<UUID> notebooksIdx;
+    private OneToManyIndex<UUID, UUID> notebooksIdx;
 
     /**
      * @param ignite Ignite.
@@ -49,7 +49,7 @@ public class NotebooksRepository {
     public NotebooksRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        txMgr.registerStarter("notebooks", () -> {
+        txMgr.registerStarter(() -> {
             MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
             notebooksTbl = new Table<>(ignite, "wc_notebooks");
@@ -68,7 +68,7 @@ public class NotebooksRepository {
      */
     public Collection<Notebook> list(UUID accId) {
         return txMgr.doInTransaction(() -> {
-            Set<UUID> notebooksIds = notebooksIdx.load(accId);
+            Set<UUID> notebooksIds = notebooksIdx.get(accId);
 
             return notebooksTbl.loadAll(notebooksIds);
         });
@@ -100,7 +100,7 @@ public class NotebooksRepository {
         txMgr.doInTransaction(() -> {
             notebooksIdx.validate(accId, notebookId);
 
-            Notebook notebook = notebooksTbl.load(notebookId);
+            Notebook notebook = notebooksTbl.get(notebookId);
 
             if (notebook != null) {
                 notebooksTbl.delete(notebookId);

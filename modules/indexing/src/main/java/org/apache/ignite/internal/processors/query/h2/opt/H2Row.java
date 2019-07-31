@@ -48,11 +48,6 @@ public abstract class H2Row implements Row, MvccVersionAware {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMemory() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public int getByteCount(Data dummy) {
         throw new UnsupportedOperationException();
     }

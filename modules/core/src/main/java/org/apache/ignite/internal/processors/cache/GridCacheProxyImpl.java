@@ -103,7 +103,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         gate = ctx.gate();
 
-        aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
+        GridCacheAdapter adapter = ctx.cache();
+        if (adapter == null)
+            throw new IllegalStateException(new CacheStoppedException(ctx.name()));
+
+        aff = new GridCacheAffinityProxy<>(ctx, adapter.affinity());
     }
 
     /**

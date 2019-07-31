@@ -31,25 +31,25 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.BROWSERS_PATH;
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
     /** */
-    private final AgentsHandler agentsHnd;
+    private final AgentsService agentsSrvc;
 
     /** */
-    private final BrowsersHandler browsersHnd;
+    private final BrowsersService browsersSrvc;
 
     /**
-     * @param agentsHnd Agents handler.
-     * @param browsersHnd Browsers handler.
+     * @param agentsSrvc Agents service.
+     * @param browsersSrvc Browsers service.
      */
-    public WebSocketConfig(AgentsHandler agentsHnd, BrowsersHandler browsersHnd) {
-        this.agentsHnd = agentsHnd;
-        this.browsersHnd = browsersHnd;
+    public WebSocketConfig(AgentsService agentsSrvc, BrowsersService browsersSrvc) {
+        this.agentsSrvc = agentsSrvc;
+        this.browsersSrvc = browsersSrvc;
     }
 
     /**
      * @param registry Registry.
      */
     @Override public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(agentsHnd, AGENTS_PATH);
-        registry.addHandler(browsersHnd, BROWSERS_PATH);
+        registry.addHandler(agentsSrvc, AGENTS_PATH);
+        registry.addHandler(browsersSrvc, BROWSERS_PATH);
     }
 }

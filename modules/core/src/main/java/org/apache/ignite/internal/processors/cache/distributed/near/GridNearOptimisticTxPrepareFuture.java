@@ -1012,6 +1012,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          *
          */
         private void remap() {
+            if (parent.tx.isRollbackOnly()) {
+                onDone(new IgniteTxRollbackCheckedException(
+                    "Failed to prepare the transaction, due to the transaction is marked as rolled back " +
+                        "[tx=" + CU.txString(parent.tx) + ']'));
+
+                return;
+            }
+
             parent.prepareOnTopology(true, new Runnable() {
                 @Override public void run() {
                     onDone((GridNearTxPrepareResponse) null);

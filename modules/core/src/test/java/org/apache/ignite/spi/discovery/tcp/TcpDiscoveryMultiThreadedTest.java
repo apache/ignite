@@ -54,6 +54,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -201,7 +202,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                 CLIENT_GRID_CNT,
                 "client-restart");
 
-            Thread.sleep(getTestTimeout() - 60 * 1000);
+            Thread.sleep(SF.applyLB(10_000, 30_000));
 
             done.set(true);
 
@@ -381,12 +382,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                 srvs - 1,
                 "server-restart");
 
-            final long timeToExec = getTestTimeout() - 60_000;
-
-            final long endTime = System.currentTimeMillis() + timeToExec;
+            final long endTime = System.currentTimeMillis() + SF.applyLB(10_000, 30_000);
 
             while (System.currentTimeMillis() < endTime) {
-                Thread.sleep(3000);
+                Thread.sleep(1000);
 
                 if (error.get() != null) {
                     Throwable err = error.get();

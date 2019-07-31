@@ -70,7 +70,7 @@ public class WebConsoleLauncher {
         if (cfgMap.isEmpty())
             throw new IgniteCheckedException("Can't find grid factory configuration in: " + springCfgPath);
         else if (cfgMap.size() > 1)
-            throw new IgniteCheckedException("More than one configuration provided for cache load test: " + cfgMap.values());
+            throw new IgniteCheckedException("More than one configuration provided for cache get test: " + cfgMap.values());
 
         IgniteConfiguration cfg = (IgniteConfiguration)cfgMap.values().iterator().next();
 

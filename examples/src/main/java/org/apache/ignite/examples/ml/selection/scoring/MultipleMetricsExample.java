@@ -75,6 +75,8 @@ public class MultipleMetricsExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

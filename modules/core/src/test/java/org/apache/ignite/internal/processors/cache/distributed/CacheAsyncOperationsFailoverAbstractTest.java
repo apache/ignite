@@ -51,7 +51,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     private static final int NODE_CNT = 4;
 
     /** */
-    private static final long TEST_TIME = 60_000;
+    private static final int TEST_TIME = 60_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -211,72 +211,68 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
         final AtomicBoolean finished = new AtomicBoolean();
 
-        final long endTime = System.currentTimeMillis() + TEST_TIME;
+        final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(TEST_TIME, 30_000);
 
-        IgniteInternalFuture<Object> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                Thread.currentThread().setName("restart-thread");
+        IgniteInternalFuture<Object> restartFut = GridTestUtils.runAsync(() -> {
+            Thread.currentThread().setName("restart-thread");
 
-                while (!finished.get() && System.currentTimeMillis() < endTime) {
-                    startGrid(NODE_CNT);
+            while (!finished.get() && System.currentTimeMillis() < endTime) {
+                startGrid(NODE_CNT);
 
-                    U.sleep(500);
+                U.sleep(500);
 
-                    stopGrid(NODE_CNT);
-                }
-
-                return null;
+                stopGrid(NODE_CNT);
             }
+
+            return null;
         });
 
         try {
             final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    int iter = 0;
+            GridTestUtils.runMultiThreaded(() -> {
+                int iter = 0;
 
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    long time;
+                long time;
 
-                    long lastInfo = 0;
+                long lastInfo = 0;
 
-                    while ((time = System.currentTimeMillis()) < endTime) {
-                        if (time - lastInfo > 5000)
-                            log.info("Starting operations [iter=" + iter + ']');
+                while ((time = System.currentTimeMillis()) < endTime) {
+                    if (time - lastInfo > 5000)
+                        log.info("Starting operations [iter=" + iter + ']');
 
-                        List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
+                    List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
 
-                        for (int i = 0; i < opsPerThread; i++) {
-                            TreeMap<TestKey, TestValue> map = new TreeMap<>();
+                    for (int i = 0; i < opsPerThread; i++) {
+                        TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
-                            int keys = rnd.nextInt(1, 50);
+                        int keys = rnd.nextInt(1, 50);
 
-                            for (int k = 0; k < keys; k++)
-                                map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
+                        for (int k = 0; k < keys; k++)
+                            map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
 
-                            IgniteFuture<?> fut = cache.putAllAsync(map);
+                        IgniteFuture<?> fut = cache.putAllAsync(map);
 
-                            assertNotNull(fut);
+                        assertNotNull(fut);
 
-                            futs.add(fut);
-                        }
-
-                        if (time - lastInfo > 5000) {
-                            log.info("Waiting for futures [iter=" + iter + ']');
-
-                            lastInfo = time;
-                        }
-
-                        for (IgniteFuture<?> fut : futs)
-                            fut.get();
-
-                        iter++;
+                        futs.add(fut);
                     }
 
-                    return null;
+                    if (time - lastInfo > 5000) {
+                        log.info("Waiting for futures [iter=" + iter + ']');
+
+                        lastInfo = time;
+                    }
+
+                    for (IgniteFuture<?> fut : futs)
+                        fut.get();
+
+                    iter++;
                 }
+
+                return null;
             }, threads, "update-thread");
 
             finished.set(true);

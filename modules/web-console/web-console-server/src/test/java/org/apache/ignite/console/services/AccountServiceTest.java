@@ -28,7 +28,7 @@ import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.ChangeUserRequest;
 import org.apache.ignite.console.web.model.SignUpRequest;
 import org.apache.ignite.console.web.security.MissingConfirmRegistrationException;
-import org.apache.ignite.console.web.socket.WebSocketsManager;
+import org.apache.ignite.console.web.socket.AgentsService;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -64,6 +64,10 @@ public class AccountServiceTest {
     /** Account repository. */
     @Mock
     private AccountsRepository accountsRepo;
+
+    /** Agents service. */
+    @Mock
+    private AgentsService agentsSrvc;
 
     /** Event publisher. */
     @Mock
@@ -322,7 +326,7 @@ public class AccountServiceTest {
                 new SignUpConfiguration().setEnabled(disableSignUp),
                 activationCfg,
                 NoOpPasswordEncoder.getInstance(),
-                new WebSocketsManager(),
+                agentsSrvc,
                 accountsRepo,
                 txMgr,
                 evtPublisher

@@ -103,7 +103,7 @@ public abstract class TableStatisticsAbstractTest extends GridCommonAbstractTest
             .query(new SqlFieldsQueryEx("EXPLAIN ANALYZE " + sql, null)
                 .setEnforceJoinOrder(enfJoinOrder)
                 .setLocal(true)
-                .setMaxMemory(Long.MAX_VALUE))
+                .setMaxMemory(-1))
             .getAll();
 
         if (log.isDebugEnabled())

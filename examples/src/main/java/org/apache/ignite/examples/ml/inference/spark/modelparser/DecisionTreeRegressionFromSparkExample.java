@@ -82,6 +82,8 @@ public class DecisionTreeRegressionFromSparkExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -180,6 +181,8 @@ public class WalScannerTest {
 
         IgniteLogger log = mock(IgniteLogger.class);
 
+        when(log.isInfoEnabled()).thenReturn(true);
+
         ArgumentCaptor<String> valCapture = ArgumentCaptor.forClass(String.class);
         doNothing().when(log).info(valCapture.capture());
 
@@ -270,6 +273,8 @@ public class WalScannerTest {
 
         IgniteLogger log = mock(IgniteLogger.class);
 
+        when(log.isInfoEnabled()).thenReturn(true);
+
         ArgumentCaptor<String> valCapture = ArgumentCaptor.forClass(String.class);
         doNothing().when(log).info(valCapture.capture());
 
@@ -299,6 +304,10 @@ public class WalScannerTest {
         finally {
             targetFile.delete();
         }
+
+        actualFileRecords = actualFileRecords.stream()
+            .filter(it -> it.startsWith("Next WAL record ::"))
+            .collect(Collectors.toList());
 
         // then: Should be find only expected value from file.
         assertEquals(actualFileRecords.size(), 3);

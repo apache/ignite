@@ -23,7 +23,8 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * Reset query detail metrics.
+ * Reset query detailed metrics from cache context only
+ * This task should be used to reset query metrics when indexing feature not available.
  */
 @GridInternal
 public class VisorQueryResetDetailMetricsTask extends VisorOneNodeTask<Void, Void> {

@@ -1912,7 +1912,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 }
             }, THREADS, "update-thread");
 
-            long stopTime = System.currentTimeMillis() + 60_000;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 20_000);
 
             while (System.currentTimeMillis() < stopTime) {
                 boolean restartClient = ThreadLocalRandom.current().nextBoolean();

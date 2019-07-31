@@ -134,19 +134,23 @@ public final class IgniteStopwatch {
     ) throws IgniteCheckedException {
         long start = System.currentTimeMillis();
 
-        log.info("Operation was started: operation = " + operationName);
+        if (log.isInfoEnabled())
+            log.info("Operation was started: " + operationName);
+
         try {
             operation.run();
         }
         catch (Throwable ex) {
-            log.info("Operation was failed: operation = " + operationName
-                + ", elapsedTime = " + (System.currentTimeMillis() - start) + " ms");
+            if (log.isInfoEnabled())
+                log.info("Operation failed [operation=" + operationName
+                    + ", elapsedTime=" + (System.currentTimeMillis() - start) + "ms]");
 
             throw ex;
         }
 
-        log.info("Operation was success: operation = " + operationName
-            + ", elapsedTime = " + (System.currentTimeMillis() - start) + " ms");
+        if (log.isInfoEnabled())
+            log.info("Operation succeeded [operation=" + operationName
+                + ", elapsedTime=" + (System.currentTimeMillis() - start) + "ms]");
     }
 
     /**

@@ -22,14 +22,12 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.console.db.Table;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.tx.TransactionManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Repository;
@@ -60,7 +58,7 @@ public class AccountsRepository {
     public AccountsRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        txMgr.registerStarter("accounts", () ->
+        txMgr.registerStarter(() ->
             accountsTbl = new Table<Account>(ignite, "wc_accounts")
                 .addUniqueIndex(a -> a.getUsername().trim().toLowerCase(),
                     (acc) -> messages.getMessageWithArgs("err.account-with-email-exists", acc.getUsername()))
@@ -79,7 +77,7 @@ public class AccountsRepository {
     public Account getById(UUID accId) throws IllegalStateException {
         return txMgr.doInTransaction(() -> {
             try {
-                Account account = accountsTbl.load(accId);
+                Account account = accountsTbl.get(accId);
 
                 if (account == null)
                     throw new UsernameNotFoundException(accId.toString());
@@ -125,7 +123,7 @@ public class AccountsRepository {
      * @return {@code true} If at least one user was already registered.
      */
     public boolean hasUsers() {
-        return accountsTbl.cache().containsKey(FIRST_USER_MARKER_KEY);
+        return accountsTbl.containsKey(FIRST_USER_MARKER_KEY);
     }
 
     /**
@@ -184,12 +182,7 @@ public class AccountsRepository {
      * @return List of accounts.
      */
     public List<Account> list() {
-        try {
-            return accountsTbl.loadAll();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        return accountsTbl.loadAll();
     }
 
 

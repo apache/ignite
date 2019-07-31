@@ -486,7 +486,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState state = globalState;
 
         if (msg.requestId().equals(state.transitionRequestId())) {
-            log.info("Received state change finish message: " + msg.clusterActive());
+            if (log.isInfoEnabled())
+                log.info("Received state change finish message: " + msg.clusterActive());
 
             globalState = state.finish(msg.success());
 
@@ -1217,14 +1218,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         IgniteCompute comp = clusterGrpAdapter.compute();
 
-        return comp.callAsync(new IgniteCallable<Boolean>() {
-            @IgniteInstanceResource
-            private Ignite ig;
-
-            @Override public Boolean call() throws Exception {
-                return ig.active();
-            }
-        });
+        return comp.callAsync(new CheckGlobalStateComputeRequest());
     }
 
     /** {@inheritDoc} */
@@ -1924,6 +1918,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      *
      */
+    @GridInternal
     private static class CheckGlobalStateComputeRequest implements IgniteCallable<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;

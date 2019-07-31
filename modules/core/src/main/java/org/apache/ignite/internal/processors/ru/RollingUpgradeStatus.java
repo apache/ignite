@@ -19,7 +19,6 @@ import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a cluster-wide state of Rolling Upgrade process.
@@ -53,7 +52,7 @@ public interface RollingUpgradeStatus extends Serializable {
      *
      * @return Target version.
      */
-    public @Nullable IgniteProductVersion targetVersion();
+    public IgniteProductVersion targetVersion();
 
     /**
      * Returns a set of features that is supported by all nodes in the cluster.

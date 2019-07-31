@@ -19,6 +19,7 @@ package org.apache.ignite.console.agent.handlers;
 import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestResult;
@@ -101,12 +102,15 @@ public class ClusterHandler extends AbstractClusterHandler {
 
                 return res;
             }
-            catch (Throwable ignored) {
+            catch (ConnectException | InterruptedException | TimeoutException ignored) {
                 // No-op.
+            }
+            catch (Throwable e) {
+                LT.error(log, e, "Failed execute request on node [url=" + nodeUrl + ", parameters=" + params + "]");
             }
         }
 
-        LT.warn(log, "Failed connect to cluster. " +
+        LT.warn(log, "Failed to connect to cluster. " +
             "Please ensure that nodes have [ignite-rest-http] module in classpath " +
             "(was copied from libs/optional to libs folder).");
 

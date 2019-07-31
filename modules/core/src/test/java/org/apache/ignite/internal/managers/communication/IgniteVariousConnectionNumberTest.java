@@ -93,7 +93,7 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
 
         ignite(0).createCache(ccfg);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < GridTestUtils.SF.applyLB(10, 4); i++) {
             log.info("Iteration: " + i);
 
             runOperations(5000);

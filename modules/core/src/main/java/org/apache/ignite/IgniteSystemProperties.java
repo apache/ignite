@@ -910,6 +910,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
+     * Threshold time (in millis) to print warning to log if waiting for next wal segment took longer than the threshold.
+     *
+     * Default value is 1000 ms.
+     */
+    public static final String IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = "IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT";
+
+    /**
      * Count of WAL compressor worker threads. Default value is 4.
      */
     public static final String IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT = "IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT";
@@ -1194,12 +1201,28 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_LOCAL_RESULT_FACTORY = "IGNITE_H2_LOCAL_RESULT_FACTORY";
 
     /**
-     * Defines default memory limit for sql query.
+     * Defines default memory limit for every single sql query (query quota).
+     * Note: Negative value disables memory tracking (for both: query and global quotas) for query by default.
      *
      * Default: MaxHeapSize/AvailableCPUs.
      */
-    // TODO: GG-18629: Move to memory quotas configuration.
-    public static final String IGNITE_SQL_QUERY_MEMORY_LIMIT = "IGNITE_SQL_QUERY_MEMORY_LIMIT";
+    public static final String IGNITE_DEFAULT_SQL_QUERY_MEMORY_LIMIT = "IGNITE_DEFAULT_SQL_QUERY_MEMORY_LIMIT";
+
+    /**
+     * Defines memory pool size available for sql queries on node (global quota).
+     * Note: Negative value disables global memory quota for SQL, but it doesn't affects query quota.
+     *
+     * Default: 60% MaxHeapSize.
+     */
+
+    public static final String IGNITE_DEFAULT_SQL_MEMORY_POOL_SIZE = "IGNITE_DEFAULT_SQL_MEMORY_POOL_SIZE";
+
+    /**
+     * Defines default memory reservation block size.
+     *
+     * Default: 512K.
+     */
+    public static final String IGNITE_SQL_MEMORY_RESERVATION_BLOCK_SIZE = "IGNITE_SQL_MEMORY_RESERVATION_BLOCK_SIZE";
 
     /**
      * Page lock tracker type.

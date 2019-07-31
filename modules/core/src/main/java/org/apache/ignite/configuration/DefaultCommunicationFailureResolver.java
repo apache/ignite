@@ -47,11 +47,12 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
         if (largestCluster == null)
             return;
 
-        log.info("Communication problem resolver found fully connected independent cluster ["
-            + "serverNodesCnt=" + largestCluster.srvNodesCnt + ", "
-            + "clientNodesCnt=" + largestCluster.connectedClients.size() + ", "
-            + "totalAliveNodes=" + ctx.topologySnapshot().size() + ", "
-            + "serverNodesIds=" + clusterNodeIds(largestCluster.srvNodesSet, ctx.topologySnapshot(), 1000) + "]");
+        if (log.isInfoEnabled())
+            log.info("Communication problem resolver found fully connected independent cluster ["
+                + "serverNodesCnt=" + largestCluster.srvNodesCnt + ", "
+                + "clientNodesCnt=" + largestCluster.connectedClients.size() + ", "
+                + "totalAliveNodes=" + ctx.topologySnapshot().size() + ", "
+                + "serverNodesIds=" + clusterNodeIds(largestCluster.srvNodesSet, ctx.topologySnapshot(), 1000) + "]");
 
         keepCluster(ctx, largestCluster);
     }

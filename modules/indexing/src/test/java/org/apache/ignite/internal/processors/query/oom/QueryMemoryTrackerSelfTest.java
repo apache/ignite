@@ -16,7 +16,20 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import javax.cache.CacheException;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
 /**
  * Query memory manager test for distributed queries.
@@ -30,7 +43,7 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
     /** {@inheritDoc} */
     @Test
     @Override public void testUnionOfSmallDataSetsWithLargeResult() {
-        maxMem = 2 * 1024 * 1024;
+        maxMem = 2 * MB;
 
         // OOM on reducer.
         checkQueryExpectOOM("select * from T as T0, T as T1 where T0.id < 1 " +
@@ -40,12 +53,12 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
         assertEquals(5, localResults.size());
 
         // Map side
-        assertTrue(maxMem > localResults.get(0).memoryAllocated() + localResults.get(1).memoryAllocated());
+        assertTrue(maxMem > localResults.get(0).memoryReserved() + localResults.get(1).memoryReserved());
         assertEquals(1000, localResults.get(0).getRowCount());
         assertEquals(1000, localResults.get(1).getRowCount());
 
         // Reduce side
-        assertTrue(maxMem > localResults.get(3).memoryAllocated() + localResults.get(4).memoryAllocated());
+        assertTrue(maxMem > localResults.get(3).memoryReserved() + localResults.get(4).memoryReserved());
         assertEquals(1000, localResults.get(3).getRowCount());
         assertEquals(1000, localResults.get(4).getRowCount());
         assertTrue(2000 > localResults.get(2).getRowCount());
@@ -53,7 +66,7 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testQueryWithLimit() {
+    @Override public void testQueryWithLimit() throws Exception {
         execQuery("select * from K LIMIT 500", false);
 
         assertEquals(2, localResults.size());
@@ -87,10 +100,10 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
-    /** Check lazy query with GROUP BY indexed col (small result), then sort. */
+    /** {@inheritDoc} */
     @Test
     @Override public void testLazyQueryWithGroupByThenSort() {
-        maxMem = 512 * 1024;
+        maxMem = MB / 2;
 
         // Query failed on map side due too many groups.
         checkQueryExpectOOM("select K.indexed, sum(K.grp) as a from K " +
@@ -98,24 +111,24 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
 
         // Result on reduce side.
         assertEquals(1, localResults.size());
-        assertEquals(0, localResults.get(0).memoryAllocated());
+        assertEquals(0, localResults.get(0).memoryReserved());
         assertEquals(0, localResults.get(0).getRowCount());
     }
 
-    /** Check query with DISTINCT and GROUP BY indexed col (small result). */
+    /** {@inheritDoc} */
     @Test
     @Override public void testQueryWithDistinctAndGroupBy() {
         checkQueryExpectOOM("select DISTINCT K.name from K GROUP BY K.id", true);
 
         // Local result is quite small.
         assertEquals(1, localResults.size());
-        assertTrue(maxMem > localResults.get(0).memoryAllocated());
+        assertTrue(maxMem > localResults.get(0).memoryReserved());
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
-    /** Check GROUP BY operation on large data set with small result set. */
+    /** {@inheritDoc} */
     @Test
-    @Override public void testQueryWithGroupsSmallResult() {
+    @Override public void testQueryWithGroupsSmallResult() throws Exception {
         execQuery("select K.grp, avg(K.id), min(K.id), sum(K.id) from K GROUP BY K.grp", false); // Tiny local result.
 
         assertEquals(2, localResults.size());
@@ -125,9 +138,9 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
         assertEquals(100, localResults.get(1).getRowCount());
     }
 
-    /** Check GROUP BY operation on indexed col. */
+    /** {@inheritDoc} */
     @Test
-    @Override public void testQueryWithGroupThenSort() {
+    @Override public void testQueryWithGroupThenSort() throws Exception {
         // Tiny local result with sorting.
         execQuery("select K.grp_indexed, sum(K.id) as s from K GROUP BY K.grp_indexed ORDER BY s", false);
 
@@ -138,36 +151,88 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
         assertEquals(100, localResults.get(1).getRowCount());
     }
 
-    /** Check GROUP BY operation on indexed col. */
+    /** {@inheritDoc} */
     @Test
     @Override public void testQueryWithGroupByIndexedCol() {
         // OOM on reducer.
         checkQueryExpectOOM("select K.indexed, sum(K.grp) from K GROUP BY K.indexed", true);
 
         assertEquals(1, localResults.size());
-        assertTrue(maxMem > localResults.get(0).memoryAllocated());
+        assertTrue(maxMem > localResults.get(0).memoryReserved());
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
-    /** Check GROUP BY operation on indexed col. */
+    /** {@inheritDoc} */
     @Test
     @Override public void testQueryWithGroupByPrimaryKey() {
         // OOM on reducer.
         checkQueryExpectOOM("select K.indexed, sum(K.grp) from K GROUP BY K.indexed", true);
 
         assertEquals(1, localResults.size());
-        assertTrue(maxMem > localResults.get(0).memoryAllocated());
+        assertTrue(maxMem > localResults.get(0).memoryReserved());
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
     }
 
-    /** Check lazy query with GROUP BY indexed col and with and DISTINCT aggregates. */
+    /** Check simple query with DISTINCT constraint. */
+    @Test
+    @Override public void testQueryWithDistinctAndLowCardinality() throws Exception {
+        // Distinct on indexed column with small cardinality.
+        execQuery("select DISTINCT K.grp_indexed from K", false);
+
+        assertEquals(2, localResults.size());
+        assertEquals(100, localResults.get(0).getRowCount());
+        assertEquals(100, localResults.get(1).getRowCount());
+    }
+
+    /** {@inheritDoc} */
     @Test
     @Override public void testLazyQueryWithGroupByIndexedColAndDistinctAggregates() {
         // OOM on reducer.
         checkQueryExpectOOM("select K.grp_indexed, count(DISTINCT k.name) from K GROUP BY K.grp_indexed", true);
 
         assertEquals(1, localResults.size());
-        assertTrue(maxMem > localResults.get(0).memoryAllocated());
+        assertTrue(maxMem > localResults.get(0).memoryReserved());
         assertTrue(BIG_TABLE_SIZE > localResults.get(0).getRowCount());
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testGlobalQuota() throws Exception {
+        final List<QueryCursor> cursors = new ArrayList<>();
+
+        try {
+            CacheException ex = (CacheException)GridTestUtils.assertThrows(log, () -> {
+                for (int i = 0; i < 100; i++) {
+                    QueryCursor<List<?>> cur = query("select DISTINCT T.name, T.id from T ORDER BY T.name",
+                        true);
+
+                    cursors.add(cur);
+
+                    Iterator<List<?>> iter = cur.iterator();
+                    iter.next();
+                }
+
+                return null;
+            }, CacheException.class, "SQL query run out of memory: Global quota exceeded.");
+
+            IgniteSQLException sqlEx = X.cause(ex, IgniteSQLException.class);
+
+            assertNotNull("SQL exception missed.", sqlEx);
+            assertEquals(IgniteQueryErrorCode.QUERY_OUT_OF_MEMORY, sqlEx.statusCode());
+            assertEquals(IgniteQueryErrorCode.codeToSqlState(IgniteQueryErrorCode.QUERY_OUT_OF_MEMORY), sqlEx.sqlState());
+
+            assertEquals(61, localResults.size());
+            assertEquals(21, cursors.size());
+
+            IgniteH2Indexing h2 = (IgniteH2Indexing)grid(1).context().query().getIndexing();
+
+            long globalAllocated = h2.memoryManager().memoryReserved();
+
+            assertTrue(h2.memoryManager().maxMemory() < globalAllocated + MB);
+        }
+        finally {
+            for (QueryCursor c : cursors)
+                IgniteUtils.closeQuiet(c);
+        }
     }
 }

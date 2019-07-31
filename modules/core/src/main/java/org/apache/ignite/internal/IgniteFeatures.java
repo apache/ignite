@@ -64,8 +64,17 @@ public enum IgniteFeatures {
     /** Supports tracking update counter for transactions. */
     TX_TRACKING_UPDATE_COUNTER(12),
 
-    /** Support new security processor */
-    IGNITE_SECURITY_PROCESSOR(13);
+    /** Support new security processor. */
+    IGNITE_SECURITY_PROCESSOR(13),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
+
+    /** Indexing enabled. */
+    INDEXING(15),
+
+    /** Support of cluster ID and tag. */
+    CLUSTER_ID_AND_TAG(16);
 
     /**
      * Unique feature identifier.
@@ -156,14 +165,19 @@ public enum IgniteFeatures {
     /**
      * Features supported by the current node.
      *
+     * @param ctx Kernal context.
      * @return Byte array representing all supported features by current node.
      */
-    public static byte[] allFeatures() {
+    public static byte[] allFeatures(GridKernalContext ctx) {
         final BitSet set = new BitSet();
 
         for (IgniteFeatures value : IgniteFeatures.values()) {
             // After rolling upgrade, our security has more strict validation. This may come as a surprise to customers.
             if (IGNITE_SECURITY_PROCESSOR == value && !getBoolean(IGNITE_SECURITY_PROCESSOR.name(), true))
+                continue;
+
+            // Add only when indexing is enabled.
+            if (INDEXING == value && !ctx.query().moduleEnabled())
                 continue;
 
             final int featureId = value.getFeatureId();

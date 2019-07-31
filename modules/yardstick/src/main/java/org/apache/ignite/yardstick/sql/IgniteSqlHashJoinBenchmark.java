@@ -190,6 +190,18 @@ public class IgniteSqlHashJoinBenchmark extends IgniteAbstractBenchmark {
                 "WHERE D.FACT0_ID=F0.FACT_ID " +
                 "AND D.NO_IDX_ID >=? AND D.NO_IDX_ID < ?");
 
+        qrys.put("SQL_HJ_2_TBLS_BY_LONG_CONVERTED_FILTERED_BY_IDX",
+            "SELECT D.VAL, F0.VAL " +
+                "FROM DATA_TBL AS D, FACT0_INT AS F0 USE INDEX (HASH_JOIN_IDX) " +
+                "WHERE D.FACT0_ID=F0.FACT_ID " +
+                "AND D.IDX_ID >=? AND D.IDX_ID < ?");
+
+        qrys.put("SQL_HJ_2_TBLS_BY_LONG_CONVERTED_FILTERED_BY_NOIDX",
+            "SELECT D.VAL, F0.VAL " +
+                "FROM DATA_TBL AS D, FACT0_INT AS F0 USE INDEX (HASH_JOIN_IDX) " +
+                "WHERE D.FACT0_ID=F0.FACT_ID " +
+                "AND D.NO_IDX_ID >=? AND D.NO_IDX_ID < ?");
+
         qrys.put("SQL_HJ_2_TBLS_BY_STR_FILTERED_BY_IDX",
             "SELECT D.VAL, F1.VAL " +
                 "FROM DATA_TBL AS D, FACT1 AS F1 USE INDEX (HASH_JOIN_IDX) " +
@@ -259,6 +271,12 @@ public class IgniteSqlHashJoinBenchmark extends IgniteAbstractBenchmark {
                     "VAL VARCHAR) " +
                     "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT0,VALUE_TYPE=FACT0_VAL\"");
 
+                sql("CREATE TABLE FACT0_INT(" +
+                    "ID LONG PRIMARY KEY, " +
+                    "FACT_ID INT, " +
+                    "VAL VARCHAR) " +
+                    "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT0_INT,VALUE_TYPE=FACT0_INT_VAL\"");
+
                 sql("CREATE TABLE FACT1(" +
                     "ID LONG PRIMARY KEY, " +
                     "FACT_ID_STR VARCHAR, " +
@@ -284,6 +302,13 @@ public class IgniteSqlHashJoinBenchmark extends IgniteAbstractBenchmark {
                 fillCache("FACT0", "FACT0_VAL", fact0Size,
                     (k, bob) -> {
                         bob.setField("FACT_ID", k);
+                        bob.setField("VAL", "FACT0_" + k);
+                    });
+
+                println(cfg, "Populate FACT0_INT: " + fact0Size);
+                fillCache("FACT0_INT", "FACT0_INT_VAL", fact0Size,
+                    (k, bob) -> {
+                        bob.setField("FACT_ID", k.intValue());
                         bob.setField("VAL", "FACT0_" + k);
                     });
 

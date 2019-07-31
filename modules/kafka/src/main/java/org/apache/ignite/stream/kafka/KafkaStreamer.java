@@ -180,7 +180,8 @@ public class KafkaStreamer<K, V> extends StreamAdapter<ConsumerRecord, K, V> {
                 }
             }
             catch (WakeupException we) {
-                log.info("Consumer is being stopped.");
+                if (log.isInfoEnabled())
+                    log.info("Consumer is being stopped.");
             }
             catch (KafkaException ke) {
                 log.error("Kafka error", ke);

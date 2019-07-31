@@ -16,10 +16,10 @@
 
 package org.apache.ignite.console.agent.handlers;
 
-import java.net.ConnectException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.AgentConfiguration;
+import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.json.JsonObject;
@@ -46,7 +47,6 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -63,10 +63,8 @@ import static org.apache.ignite.console.agent.AgentUtils.configureProxy;
 import static org.apache.ignite.console.agent.AgentUtils.entriesToMap;
 import static org.apache.ignite.console.agent.AgentUtils.entry;
 import static org.apache.ignite.console.agent.AgentUtils.secured;
-import static org.apache.ignite.console.agent.AgentUtils.send;
 import static org.apache.ignite.console.agent.AgentUtils.sslContextFactory;
 import static org.apache.ignite.console.agent.handlers.DemoClusterHandler.DEMO_CLUSTER_ID;
-import static org.apache.ignite.console.utils.Utils.extractErrorMessage;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 import static org.apache.ignite.console.websocket.AgentHandshakeRequest.CURRENT_VER;
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENTS_PATH;
@@ -124,7 +122,7 @@ public class WebSocketRouter implements AutoCloseable {
     private int reconnectCnt = -1;
 
     /** Active tokens after handshake. */
-    private List<String> validTokens;
+    private Collection<String> validTokens;
 
     /** Connector pool. */
     private ExecutorService connectorPool = Executors.newSingleThreadExecutor(r -> new Thread(r, "Connect thread"));
@@ -239,7 +237,7 @@ public class WebSocketRouter implements AutoCloseable {
 
             httpClient.start();
             client.start();
-            client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(10L, TimeUnit.SECONDS);
+            client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);
 
             reconnectCnt = -1;
         }
@@ -286,7 +284,7 @@ public class WebSocketRouter implements AutoCloseable {
         AgentHandshakeRequest req = new AgentHandshakeRequest(CURRENT_VER, cfg.tokens());
 
         try {
-            send(ses, new WebSocketResponse(AGENT_HANDSHAKE, req));
+            AgentUtils.send(ses, new WebSocketResponse(AGENT_HANDSHAKE, req), 10L, TimeUnit.SECONDS);
         }
         catch (Throwable e) {
             log.error("Failed to send handshake to server", e);
@@ -363,22 +361,22 @@ public class WebSocketRouter implements AutoCloseable {
                     break;
 
                 case AGENT_REVOKE_TOKEN:
-                    processRevokeToken(fromJson(evt.getPayload(), String.class));
+                    processRevokeToken(evt.getPayload());
 
                     return;
 
                 case SCHEMA_IMPORT_DRIVERS:
-                    send(ses, evt.withPayload(dbHnd.collectJdbcDrivers()));
+                    send(ses, evt.response(dbHnd.collectJdbcDrivers()));
 
                     break;
 
                 case SCHEMA_IMPORT_SCHEMAS:
-                    send(ses, evt.withPayload(dbHnd.collectDbSchemas(evt)));
+                    send(ses, evt.response(dbHnd.collectDbSchemas(evt)));
 
                     break;
 
                 case SCHEMA_IMPORT_METADATA:
-                    send(ses, evt.withPayload(dbHnd.collectDbMetadata(evt)));
+                    send(ses, evt.response(dbHnd.collectDbMetadata(evt)));
 
                     break;
 
@@ -401,7 +399,7 @@ public class WebSocketRouter implements AutoCloseable {
                         res = RestResult.fail(HTTP_INTERNAL_ERROR, e.getMessage());
                     }
 
-                    send(ses, evt.withPayload(res));
+                    send(ses, evt.response(res));
 
                     break;
 
@@ -415,13 +413,11 @@ public class WebSocketRouter implements AutoCloseable {
 
                 return;
             }
-
-            String errMsg = ERROR_MSGS.get(evt.getEventType());
-
-            log.error(errMsg, e);
+            
+            log.error("Failed to send response: " + evt, e);
 
             try {
-                send(ses, evt.withError(extractErrorMessage(errMsg, e)));
+                send(ses, evt.withError(ERROR_MSGS.get(evt.getEventType()), e));
             }
             catch (Exception ex) {
                 log.error("Failed to send response with error", e);
@@ -451,16 +447,14 @@ public class WebSocketRouter implements AutoCloseable {
     }
 
     /**
-     * @param e Error.
+     * @param ignored Error.
      */
     @OnWebSocketError
-    public void onError(Throwable e) {
-        if (e instanceof ConnectException || e instanceof UpgradeException) {
-            if (reconnectCnt <= 0)
-                log.error("Failed to establish websocket connection with server: " + cfg.serverUri());
+    public void onError(Throwable ignored) {
+        if (reconnectCnt <= 0)
+            log.error("Failed to establish websocket connection with server: " + cfg.serverUri());
 
-            connect();
-        }
+        connect();
     }
 
     /**
@@ -473,5 +467,16 @@ public class WebSocketRouter implements AutoCloseable {
             log.info("Websocket connection closed with code: " + statusCode);
 
         connect();
+    }
+
+    /**
+     * Send event to websocket.
+     *
+     * @param ses Websocket session.
+     * @param evt Event.
+     * @throws Exception If failed to send event.
+     */
+    private static void send(Session ses, WebSocketResponse evt) throws Exception {
+        AgentUtils.send(ses, evt, 60L, TimeUnit.SECONDS);
     }
 }

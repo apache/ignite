@@ -23,10 +23,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.ignite.console.json.RawContentDeserializer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.console.utils.Utils.extractErrorMessage;
 import static org.apache.ignite.console.websocket.WebSocketEvents.ERROR;
 
 /**
- * Websocket event POJO.
+ * Websocket request POJO.
  */
 public class WebSocketRequest implements WebSocketEvent<String> {
     /** */
@@ -38,54 +39,35 @@ public class WebSocketRequest implements WebSocketEvent<String> {
     /** */
     private String payload;
 
-    /**
-     * Default constructor for deserialization.
-     */
-    public WebSocketRequest() {
-        // No-op.
-    }
-
-    /**
-     * @return Request ID.
-     */
-    public String getRequestId() {
+    /** {@inheritDoc} */
+    @Override public String getRequestId() {
         return reqId;
     }
 
-    /**
-     * @param reqId New request ID.
-     */
-    public void setRequestId(String reqId) {
+    /** {@inheritDoc} */
+    @Override public void setRequestId(String reqId) {
         this.reqId = reqId;
     }
 
-    /**
-     * @return Event type.
-     */
-    public String getEventType() {
+    /** {@inheritDoc} */
+    @Override public String getEventType() {
         return evtType;
     }
 
-    /**
-     * @param evtType New event type.
-     */
-    public void setEventType(String evtType) {
+    /** {@inheritDoc} */
+    @Override public void setEventType(String evtType) {
         this.evtType = evtType;
     }
 
-    /**
-     * @return Payload.
-     */
+    /** {@inheritDoc} */
     @JsonRawValue
-    public String getPayload() {
+    @Override public String getPayload() {
         return payload;
     }
 
-    /**
-     * @param payload New payload.
-     */
+    /** {@inheritDoc} */
     @JsonDeserialize(using = RawContentDeserializer.class)
-    public void setPayload(String payload) {
+    @Override public void setPayload(String payload) {
         this.payload = payload;
     }
 
@@ -94,30 +76,24 @@ public class WebSocketRequest implements WebSocketEvent<String> {
      *
      * @param payload Payload.
      */
-    public WebSocketResponse withPayload(Object payload) {
-        return new WebSocketResponse(this.reqId, evtType, payload);
-    }
-
-    /**
-     * Create event with payload for response with same ID.
-     */
-    public WebSocketResponse response() {
+    public WebSocketResponse response(Object payload) {
         return new WebSocketResponse(this.reqId, evtType, payload);
     }
 
     /**
      * Create event with error for response with same ID.
      *
-     * @param msg Message.
+     * @param prefix Message prefix.
+     * @param e Exception.
      */
-    public WebSocketResponse withError(String msg) {
+    public WebSocketResponse withError(String prefix, Throwable e) {
         Map<String, String> err = new HashMap<>();
 
-        err.put("message", msg);
+        err.put("message", e != null ? extractErrorMessage(prefix, e) : prefix);
 
-        return new WebSocketResponse(this.reqId, ERROR, err);
+        return new WebSocketResponse(getRequestId(), ERROR, err);
     }
-    
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WebSocketRequest.class, this);

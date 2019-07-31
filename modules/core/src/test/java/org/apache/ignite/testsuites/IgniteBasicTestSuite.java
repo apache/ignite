@@ -25,6 +25,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.ClusterProcessorCheckGlobalStateComputeRequestTest;
 import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
 import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
@@ -85,6 +87,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.product.IndexingFeatureIsNotAvailableTest;
 import org.apache.ignite.internal.util.BitSetIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
@@ -133,6 +136,7 @@ import org.junit.runners.Suite;
     IgniteMessagingWithClientTest.class,
     IgniteMessagingSendAsyncTest.class,
 
+    ClusterProcessorCheckGlobalStateComputeRequestTest.class,
     ClusterGroupSelfTest.class,
     GridMessagingSelfTest.class,
     GridMessagingNoPeerClassLoadingSelfTest.class,
@@ -169,6 +173,8 @@ import org.junit.runners.Suite;
     TransactionsMXBeanImplTest.class,
     SetTxTimeoutOnPartitionMapExchangeTest.class,
     DiscoveryDataDeserializationFailureHanderTest.class,
+
+    IndexingFeatureIsNotAvailableTest.class,
 
     IgniteExceptionInNioWorkerSelfTest.class,
     IgniteLocalNodeMapBeforeStartTest.class,
@@ -237,16 +243,18 @@ import org.junit.runners.Suite;
 
     ConsistentIdImplicitlyExplicitlyTest.class,
 
-        // Tests against configuration variations framework.
-        ParametersTest.class,
-        VariationsIteratorTest.class,
-        NotStringSystemPropertyTest.class,
-        ConfigVariationsExecutionTest.class,
-        ConfigVariationsTestSuiteBuilderTest.class,
+    // Tests against configuration variations framework.
+    ParametersTest.class,
+    VariationsIteratorTest.class,
+    NotStringSystemPropertyTest.class,
+    ConfigVariationsExecutionTest.class,
+    ConfigVariationsTestSuiteBuilderTest.class,
 
     DeadLockOnNodeLeftExchangeTest.class,
 
-    ClassPathContentLoggingTest.class
+    ClassPathContentLoggingTest.class,
+
+    IncompleteDeserializationExceptionTest.class
 })
 public class IgniteBasicTestSuite {
 }

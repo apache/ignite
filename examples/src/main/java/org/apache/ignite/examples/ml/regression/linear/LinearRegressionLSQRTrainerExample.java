@@ -87,6 +87,8 @@ public class LinearRegressionLSQRTrainerExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

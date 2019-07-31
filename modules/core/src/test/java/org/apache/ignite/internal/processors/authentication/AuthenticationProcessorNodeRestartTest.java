@@ -37,7 +37,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     private static final int NODES_COUNT = 4;
 
     /** Nodes restarts count. */
-    private static final int RESTARTS = 10;
+    private static final int RESTARTS = GridTestUtils.SF.applyLB(10, 5);
 
     /** Client node. */
     private static final int CLI_NODE = NODES_COUNT - 1;

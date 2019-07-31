@@ -37,7 +37,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 
 /**
- * Task to collect cache query metrics.
+ * Collect query detailed metrics from cache context only.
+ * This task should be used to collect query metrics when indexing feature not available.
  */
 @GridInternal
 public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<VisorQueryDetailMetricsCollectorTaskArg,

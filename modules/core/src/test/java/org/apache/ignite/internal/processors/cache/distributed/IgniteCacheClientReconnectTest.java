@@ -172,7 +172,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20801")
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-20850")
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
     public void testClientInForceServerModeStopsOnExchangeHistoryExhaustionManyClients() throws Exception {
         startGrids(SRV_CNT);

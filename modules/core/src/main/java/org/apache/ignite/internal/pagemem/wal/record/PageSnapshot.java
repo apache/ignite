@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -146,10 +145,6 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
                 + PageIO.printPage(addr, realPageSize)
                 + "],\nsuper = ["
                 + super.toString() + "]]";
-        }
-        catch (IgniteCheckedException ignored) {
-            return "Error during call 'toString' of PageSnapshot [fullPageId=" + fullPageId() +
-                ", pageData = " + Arrays.toString(pageData()) + ", super=" + super.toString() + "]";
         }
         finally {
             GridUnsafe.cleanDirectBuffer(buf);

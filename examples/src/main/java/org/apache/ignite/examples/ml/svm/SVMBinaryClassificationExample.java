@@ -77,6 +77,8 @@ public class SVMBinaryClassificationExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

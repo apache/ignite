@@ -74,4 +74,7 @@ public final class SqlStateCode {
 
     /** Query canceled. */
     public static final String QUERY_CANCELLED = "57014";
+
+    /** Query canceled. */
+    public static final String MEMORY_ALLOCATION_ERROR = "HY001";
 }

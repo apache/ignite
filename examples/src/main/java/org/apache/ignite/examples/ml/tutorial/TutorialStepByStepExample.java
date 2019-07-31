@@ -33,5 +33,6 @@ public class TutorialStepByStepExample {
         Step_7_Split_train_test.main(args);
         Step_8_CV.main(args);
         Step_8_CV_with_Param_Grid.main(args);
+        Step_9_Scaling_With_Stacking.main(args);
     }
 }

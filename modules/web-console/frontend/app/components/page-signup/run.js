@@ -33,6 +33,27 @@ export function registerState($uiRouter) {
             }
         },
         unsaved: true,
+        redirectTo: (trans) => {
+            const skipStates = new Set(['signin', 'forgotPassword', 'landing']);
+
+            if (skipStates.has(trans.from().name))
+                return;
+
+            return trans.injector().get('User').read()
+                .then(() => {
+                    try {
+                        const {name, params} = JSON.parse(localStorage.getItem('lastStateChangeSuccess'));
+
+                        const restored = trans.router.stateService.target(name, params);
+
+                        return restored.valid() ? restored : 'default-state';
+                    }
+                    catch (ignored) {
+                        return 'default-state';
+                    }
+                })
+                .catch(() => true);
+        },
         tfMetaTags: {
             title: 'Sign Up'
         }
