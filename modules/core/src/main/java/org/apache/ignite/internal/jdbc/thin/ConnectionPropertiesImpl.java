@@ -212,6 +212,18 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "The size of partition distributions cache that is used within affinity awareness optimization.",
         1_000, false, 1, Integer.MAX_VALUE);
 
+    /** Query timeout. */
+    private IntegerProperty qryTimeout = new IntegerProperty("queryTimeout",
+        "Sets the number of seconds the driver will wait for a <code>Statement</code> object to execute." +
+            " Zero means there is no limits.",
+        0L, false, 0, Integer.MAX_VALUE);
+
+    /** JDBC connection timeout. */
+    private IntegerProperty connTimeout = new IntegerProperty("connectionTimeout",
+        "Sets the number of milliseconds JDBC client will waits for server to response." +
+            " Zero means there is no limits.",
+        0L, false, 0, Integer.MAX_VALUE);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -225,7 +237,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         affinityAwareness,
         updateBatchSize,
         affinityAwarenessSQLCacheSize,
-        affinityAwarenessPartDistributionsCacheSize
+        affinityAwarenessPartDistributionsCacheSize,
+        qryTimeout,
+        connTimeout
     };
 
     /** {@inheritDoc} */
@@ -572,6 +586,27 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         int affinityAwarenessPartDistributionsCacheSize) throws SQLException {
         this.affinityAwarenessPartDistributionsCacheSize.setValue(
             affinityAwarenessPartDistributionsCacheSize);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public Integer getQueryTimeout() {
+        return qryTimeout.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setQueryTimeout(@Nullable Integer timeout) throws SQLException {
+        qryTimeout.setValue(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getConnectionTimeout() {
+        return connTimeout.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setConnectionTimeout(@Nullable Integer timeout) throws SQLException {
+        connTimeout.setValue(timeout);
     }
 
     /**
