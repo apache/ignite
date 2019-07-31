@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -146,6 +145,9 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
  *
  */
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
+    /** The maximum number of entries that can be preloaded between checkpoints. */
+    public static final int PRELOAD_CHECKPOINT_THRESHOLD = 100;
+
     /** */
     private final boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
         IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY);
@@ -1730,37 +1732,50 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void createRows(Collection<GridCacheEntryInfo> infos,
+        @Override public void createRows(Iterator<GridCacheEntryInfo> infos,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
-            Collection<DataRowStoreAware> rows = new ArrayList<>(infos.size());
 
-            for (GridCacheEntryInfo info : infos) {
-                rows.add(new DataRowStoreAware(info.key(),
-                    info.value(),
-                    info.version(),
-                    partId,
-                    info.expireTime(),
-                    info.cacheId(),
-                    grp.storeCacheIdInDataPage()));
-            }
+            while (infos.hasNext()) {
+                List<DataRowStoreAware> batch = new ArrayList<>(PRELOAD_CHECKPOINT_THRESHOLD);
 
-            if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                do {
+                    GridCacheEntryInfo info = infos.next();
 
-            try {
-                rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
-
-                boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
-
-                for (DataRowStoreAware row : rows) {
-                    row.storeCacheId(cacheIdAwareGrp);
-
-                    if (!initPred.apply(row) && row.value() != null)
-                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                    batch.add(new DataRowStoreAware(info.key(),
+                        info.value(),
+                        info.version(),
+                        partId(),
+                        info.expireTime(),
+                        info.cacheId(),
+                        grp.storeCacheIdInDataPage()));
                 }
-            }
-            finally {
-                busyLock.leaveBusy();
+                while (infos.hasNext() && batch.size() < PRELOAD_CHECKPOINT_THRESHOLD);
+
+                ctx.database().checkpointReadLock();
+
+                try {
+                    if (!busyLock.enterBusy())
+                        throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+                    try {
+                        rowStore.addRows(F.view(batch, row -> row.value() != null), grp.statisticsHolderData());
+
+                        boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
+
+                        for (DataRowStoreAware row : batch) {
+                            row.storeCacheId(cacheIdAwareGrp);
+
+                            if (!initPred.apply(row) && row.value() != null)
+                                rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                        }
+                    }
+                    finally {
+                        busyLock.leaveBusy();
+                    }
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
             }
         }
 
