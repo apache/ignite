@@ -33,6 +33,7 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -80,7 +81,7 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.TOMBSTONES);
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
     }
 
     /** {@inheritDoc} */
@@ -138,8 +139,8 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
 
         Map<TestKey, TestValue> data = new HashMap<>();
 
-        final int KEYS = 10_000;
-        final int ADD_NODES = 3;
+        final int KEYS = persistence ? 5_000 : 10_000;
+        final int ADD_NODES = persistence ? 2 : 3;
 
         for (int i = 0; i < KEYS; i++) {
             TestKey key = new TestKey(i, new byte[rnd.nextInt(pageSize * 3)]);
@@ -164,7 +165,7 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
                 }
             });
 
-            long endTime = System.currentTimeMillis() + 5000;
+            long endTime = System.currentTimeMillis() + 2500;
 
             while (System.currentTimeMillis() < endTime) {
                 for (int i = 0; i < 100; i++) {
@@ -180,6 +181,8 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
                         cache0.put(key, val);
                         data.put(key, val);
                     }
+
+                    Thread.sleep(10);
                 }
             }
 
@@ -209,7 +212,7 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
                 }
             });
 
-            long endTime = System.currentTimeMillis() + 5000;
+            long endTime = System.currentTimeMillis() + 2500;
 
             while (System.currentTimeMillis() < endTime) {
                 for (int i = 0; i < 100; i++) {
@@ -226,6 +229,8 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
                         data.put(key, val);
                     }
                 }
+
+                Thread.sleep(10);
             }
 
             fut.get(30_000);
@@ -238,6 +243,10 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param keys Keys to check.
+     * @param data Expected data.
+     */
     private void checkData(List<TestKey> keys, Map<TestKey, TestValue> data) {
         for (Ignite node : Ignition.allGrids()) {
             if (!node.name().endsWith("CacheRemoveWithTombstonesLoadTest1"))
