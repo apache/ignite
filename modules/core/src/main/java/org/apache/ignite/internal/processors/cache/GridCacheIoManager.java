@@ -253,6 +253,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 }
             }
 
+            if(fut == null) {
+                log.error("Received unordered cache communication message [nodeId=" + nodeId +
+                    ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
+            }
+
             log.error("RTV@EX: " + fut);
 
             if (fut != null && !fut.isDone()) {
