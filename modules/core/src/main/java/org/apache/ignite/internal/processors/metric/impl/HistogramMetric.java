@@ -66,6 +66,15 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
     }
 
     /**
+     * Gets histogram bounds.
+     *
+     * @return Bounds.
+     */
+    public long[] bounds() {
+        return holder.bounds;
+    }
+
+    /**
      * Resets histogram state with the specified bounds.
      *
      * @param bounds Bounds.

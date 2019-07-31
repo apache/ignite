@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
 import org.junit.Test;
@@ -141,6 +142,51 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
                 assertFalse("Filtered prefix shouldn't export.",
                     httpMetrics.contains(FILTERED_PREFIX.replaceAll("\\.", "_")));
+
+                for (String expMetric : expectedMetrics) {
+                    if (!Pattern.compile(expMetric).matcher(httpMetrics).find())
+                        return false;
+                }
+
+                return true;
+            }
+            catch (IOException e) {
+                return false;
+            }
+        }, EXPORT_TIMEOUT * 10);
+
+        assertTrue("Additional metrics should be exported via http", res);
+    }
+
+    /** */
+    @Test
+    public void testHistogram() throws Exception {
+        String registryName = "test_registry";
+        String histogramName = "test_histogram";
+        String histogramDesc = "Test histogram description.";
+        long[] bounds = new long[] {10, 100};
+        long[] testValues = new long[] {5, 50, 50, 500, 500, 500};
+        long[] expectedValues = new long[] {1, 2, 3};
+
+        HistogramMetric histogramMetric =
+            ignite.context().metric().registry(registryName).histogram(histogramName, bounds, histogramDesc);
+
+        for (long value : testValues)
+            histogramMetric.value(value);
+
+        String[] expectedMetrics = new String[bounds.length + 1];
+
+        for (int i = 0; i < expectedMetrics.length; i++) {
+            String minBound = i == 0 ? "MIN" : String.valueOf(bounds[i - 1]);
+            String maxBound = i == expectedMetrics.length - 1 ? "MAX" : String.valueOf(bounds[i]);
+
+            expectedMetrics[i] = registryName + "_" + histogramName + "_" + minBound + "_" + maxBound + ".* " +
+                expectedValues[i];
+        }
+
+        boolean res = waitForCondition(() -> {
+            try {
+                String httpMetrics = metricsFromHttp();
 
                 for (String expMetric : expectedMetrics) {
                     if (!Pattern.compile(expMetric).matcher(httpMetrics).find())

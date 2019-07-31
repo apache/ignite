@@ -42,6 +42,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -183,6 +184,22 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
                         mmap.put(msr, val);
                     }
+                    else if (metric instanceof HistogramMetric) {
+                        long[] value = ((HistogramMetric)metric).value();
+                        long[] bounds = ((HistogramMetric)metric).bounds();
+
+                        for (int i = 0; i < value.length; i++) {
+                            String minBound = i == 0 ? "MIN" : String.valueOf(bounds[i - 1]);
+                            String maxBound = i == value.length - 1 ? "MAX" : String.valueOf(bounds[i]);
+
+                            String bucketName = metric.name() + "_" + minBound + "_" + maxBound;
+
+                            MeasureLong msr = (MeasureLong)measures.computeIfAbsent(bucketName,
+                                k -> createMeasureLong(bucketName, metric.description()));
+
+                            mmap.put(msr, value[i]);
+                        }
+                    }
                     else if (log.isDebugEnabled()) {
                         log.debug(metric.name() +
                             "[" + metric.getClass() + "] not supported by Opencensus exporter");
@@ -213,6 +230,15 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** */
     private Measure createMeasure(Metric m, Function<Metric, Measure> factory) {
         Measure msr = factory.apply(m);
+
+        addView(msr);
+
+        return msr;
+    }
+
+    /** */
+    private MeasureLong createMeasureLong(String name, String desc) {
+        MeasureLong msr = MeasureLong.create(name, desc == null ? name : desc, "");
 
         addView(msr);
 
