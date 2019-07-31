@@ -1731,7 +1731,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void createRows(Collection<GridCacheEntryInfo> infos,
-            IgnitePredicateX<CacheDataRow> loadPred) throws IgniteCheckedException {
+            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
             Collection<DataRowStoreAware> rows = new ArrayList<>(infos.size());
 
             for (GridCacheEntryInfo info : infos) {
@@ -1755,7 +1755,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 for (DataRowStoreAware row : rows) {
                     row.storeCacheId(cacheIdAwareGrp);
 
-                    if (!loadPred.apply(row) && row.value() != null)
+                    if (!initPred.apply(row) && row.value() != null)
                         rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
             }
