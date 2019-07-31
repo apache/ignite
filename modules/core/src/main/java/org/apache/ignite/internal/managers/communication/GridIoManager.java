@@ -133,7 +133,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String COMM_METRICS = metricName("io", "communication");
 
     /** Outbound message queue size metric name. */
-    public static final String OUTBOUND_MSG_QUEUE_SIZE = "OutboundMessagesQueueSize";
+    public static final String OUTBOUND_MSG_QUEUE_CNT = "OutboundMessagesQueueSize";
 
     /** Sent messages count metric name. */
     public static final String SENT_MSG_CNT = "SentMessagesCount";
@@ -252,7 +252,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         CommunicationSpi spi = ctx.config().getCommunicationSpi();
 
-        ioMetric.register(OUTBOUND_MSG_QUEUE_SIZE, spi::getOutboundMessagesQueueSize,
+        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
             "Outbound messages queue size.");
 
         ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");

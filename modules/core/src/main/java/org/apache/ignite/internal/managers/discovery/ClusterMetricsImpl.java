@@ -34,7 +34,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.managers.communication.GridIoManager.COMM_METRICS;
-import static org.apache.ignite.internal.managers.communication.GridIoManager.OUTBOUND_MSG_QUEUE_SIZE;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.OUTBOUND_MSG_QUEUE_CNT;
 import static org.apache.ignite.internal.managers.communication.GridIoManager.RCVD_BYTES_CNT;
 import static org.apache.ignite.internal.managers.communication.GridIoManager.RCVD_MSGS_CNT;
 import static org.apache.ignite.internal.managers.communication.GridIoManager.SENT_BYTES_CNT;
@@ -240,7 +240,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         sentBytesCnt = ioReg.findMetric(SENT_BYTES_CNT);
         rcvdMsgsCnt = ioReg.findMetric(RCVD_MSGS_CNT);
         rcvdBytesCnt = ioReg.findMetric(RCVD_BYTES_CNT);
-        outboundMsgCnt = ioReg.findMetric(OUTBOUND_MSG_QUEUE_SIZE);
+        outboundMsgCnt = ioReg.findMetric(OUTBOUND_MSG_QUEUE_CNT);
     }
 
     /** {@inheritDoc} */
