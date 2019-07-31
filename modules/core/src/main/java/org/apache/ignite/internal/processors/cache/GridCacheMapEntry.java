@@ -4867,6 +4867,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject val) {
         checkOwnerChanged(prevOwners, owners, val, null);
     }
+
     /**
      * @param prevOwners Previous owners.
      * @param owners Current owners.
