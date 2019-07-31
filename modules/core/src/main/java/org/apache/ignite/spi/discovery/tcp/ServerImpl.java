@@ -49,12 +49,11 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2823,6 +2822,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private DiscoveryDataPacket gridDiscoveryData;
 
+        private volatile TcpDiscoveryMetricsUpdateMessage actualFirstLapMetricsUpdate;
+
+        private volatile TcpDiscoveryMetricsUpdateMessage actualSecondLapMetricsUpdate;
         /**
          * @param log Logger.
          */
@@ -2854,41 +2856,86 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Adds message to queue. Equivalent to {@code addMessage(msg, false)}.
+         * Adds message to queue.
          *
          * @param msg Message to add.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
-            addMessage(msg, false);
-        }
-
-        /**
-         * Adds message to queue.
-         *
-         * @param msg Message to add.
-         * @param ignoreHighPriority If {@code true}, high priority messages will be added to the top of the queue.
-         */
-        void addMessage(TcpDiscoveryAbstractMessage msg, boolean ignoreHighPriority) {
-            DebugLogger log = messageLogger(msg);
-
             if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
                 msg instanceof TcpDiscoveryJoinRequestMessage ||
                 msg instanceof TcpDiscoveryCustomEventMessage ||
                 msg instanceof TcpDiscoveryClientReconnectMessage) &&
                 queue.contains(msg)) {
+                DebugLogger log = messageLogger(msg);
+
                 if (log.isDebugEnabled())
                     log.debug("Ignoring duplicate message: " + msg);
 
                 return;
             }
 
-            if (msg.highPriority() && !ignoreHighPriority)
-                queue.addFirst(msg);
+            if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
+                addMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
             else
-                queue.add(msg);
+                addToQueue(msg);
+        }
+
+        private void addMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg) {
+            int laps = passedLaps(msg);
+
+            if (laps == 2)
+                addToQueue(msg);
+            else {
+                boolean addToQueue;
+
+                if (laps == 0) {
+                    addToQueue = actualFirstLapMetricsUpdate == null;
+
+                    actualFirstLapMetricsUpdate = msg;
+                }
+                else {
+                    assert laps == 1 : "Unexpected number of laps passed by a metric update message: " + laps;
+
+                    addToQueue = actualSecondLapMetricsUpdate == null;
+
+                    actualSecondLapMetricsUpdate = msg;
+                }
+
+                if (addToQueue)
+                    addToQueue(msg);
+                else {
+                    DebugLogger log = messageLogger(msg);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Metric update message has been replaced in a worker's queue: " + msg);
+                }
+            }
+        }
+
+        private void addToQueue(TcpDiscoveryAbstractMessage msg) {
+            queue.add(msg);
+
+            DebugLogger log = messageLogger(msg);
 
             if (log.isDebugEnabled())
-                log.debug("Message has been added to queue: " + msg);
+                log.debug("Message has been added to a worker's queue: " + msg);
+        }
+
+        /**
+         * @param msg Metrics update message.
+         * @return Number of laps, that the provided message passed.
+         */
+        int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
+            UUID locNodeId = getLocalNodeId();
+
+            boolean hasLocMetrics = hasMetrics(msg, locNodeId);
+
+            if (locNodeId.equals(msg.creatorNodeId()) && !hasLocMetrics && msg.senderNodeId() != null)
+                return 2;
+            else if (msg.senderNodeId() == null || !hasLocMetrics)
+                return 0;
+            else
+                return 1;
         }
 
         /** */
@@ -3227,7 +3274,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         !(msg instanceof TcpDiscoveryStatusCheckMessage && msg.creatorNodeId().equals(locNodeId))) {
                         msg.senderNodeId(locNodeId);
 
-                        addMessage(msg, true);
+                        addMessage(msg);
                     }
 
                     break;
@@ -5642,6 +5689,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert !msg.client();
 
+            int laps = passedLaps(msg);
+
+            if (laps == 0) {
+                msg = actualFirstLapMetricsUpdate;
+
+                actualFirstLapMetricsUpdate = null;
+            }
+            else if (laps == 1) {
+                msg = actualSecondLapMetricsUpdate;
+
+                actualSecondLapMetricsUpdate = null;
+            }
+
             UUID locNodeId = getLocalNodeId();
 
             if (ring.node(msg.creatorNodeId()) == null) {
@@ -5667,7 +5727,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (locNodeId.equals(msg.creatorNodeId()) && !hasMetrics(msg, locNodeId) && msg.senderNodeId() != null) {
+            if (laps == 2) {
                 if (log.isTraceEnabled())
                     log.trace("Discarding metrics update message that has made two passes: " + msg);
 
@@ -5695,8 +5755,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (sendMessageToRemotes(msg)) {
-                if ((locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null ||
-                    !hasMetrics(msg, locNodeId)) && spiStateCopy() == CONNECTED) {
+                if (laps == 0 && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
                     msg.setMetrics(locNodeId, spi.metricsProvider.metrics());
                     msg.setCacheMetrics(locNodeId, spi.metricsProvider.cacheMetrics());
@@ -7395,10 +7454,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
             T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
 
-            if (msg.highPriority())
-                queue.addFirst(t);
-            else
-                queue.add(t);
+            queue.add(t);
 
             DebugLogger log = messageLogger(msg);
 
@@ -7666,7 +7722,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private abstract class MessageWorker<T> extends GridWorker {
         /** Message queue. */
-        protected final BlockingDeque<T> queue = new LinkedBlockingDeque<>();
+        protected final BlockingQueue<T> queue = new LinkedBlockingQueue<>();
 
         /** Polling timeout. */
         private final long pollingTimeout;
