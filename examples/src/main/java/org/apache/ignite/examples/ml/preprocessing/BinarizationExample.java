@@ -71,6 +71,8 @@ public class BinarizationExample {
             } finally {
                 data.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

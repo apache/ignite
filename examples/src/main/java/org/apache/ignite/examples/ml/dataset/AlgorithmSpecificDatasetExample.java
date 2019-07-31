@@ -32,6 +32,7 @@ import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -86,24 +87,24 @@ public class AlgorithmSpecificDatasetExample {
                 SimpleLabeledDatasetDataBuilder<Integer, Vector, AlgorithmSpecificPartitionContext> builder =
                     new SimpleLabeledDatasetDataBuilder<>(preprocessor);
 
+                IgniteBiFunction<SimpleLabeledDatasetData, AlgorithmSpecificPartitionContext, SimpleLabeledDatasetData> builderFun = (data, ctx) -> {
+                    double[] features = data.getFeatures();
+                    int rows = data.getRows();
+
+                    // Makes a copy of features to supplement it by columns with values equal to 1.0.
+                    double[] a = new double[features.length + rows];
+                    Arrays.fill(a, 1.0);
+
+                    System.arraycopy(features, 0, a, rows, features.length);
+
+                    return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
+                };
+
                 try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                     ignite,
                     persons,
                     (env, upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
-                    builder.andThen((data, ctx) -> {
-                        double[] features = data.getFeatures();
-                        int rows = data.getRows();
-
-                        // Makes a copy of features to supplement it by columns with values equal to 1.0.
-                        double[] a = new double[features.length + rows];
-
-                        for (int i = 0; i < rows; i++)
-                            a[i] = 1.0;
-
-                        System.arraycopy(features, 0, a, rows, features.length);
-
-                        return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
-                    })
+                    builder.andThen(builderFun)
                 ).wrap(AlgorithmSpecificDataset::new)) {
                     // Trains linear regression model using gradient descent.
                     double[] linearRegressionMdl = new double[2];
@@ -122,10 +123,11 @@ public class AlgorithmSpecificDatasetExample {
                 }
 
                 System.out.println(">>> Algorithm Specific Dataset example completed.");
-            }
-            finally {
+            } finally {
                 persons.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 
