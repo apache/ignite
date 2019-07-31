@@ -2118,7 +2118,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testCheckRingLatency() throws Exception {
         int hops = 1;
 
