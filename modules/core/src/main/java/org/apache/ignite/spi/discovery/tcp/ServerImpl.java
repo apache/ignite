@@ -5143,7 +5143,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (log.isInfoEnabled())
                 log.info("Latency check processing: " + msg.id());
 
-            if (sendMessageToRemotes(msg))
+            if (ring.hasRemoteServerNodes())
                 sendMessageAcrossRing(msg);
             else {
                 if (log.isInfoEnabled())
