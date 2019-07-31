@@ -20,6 +20,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -33,7 +34,7 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  */
 public class DeactivateCommand implements Command<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage(Logger logger) {
         Command.usage(logger, "Deactivate cluster:", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
     }
 
@@ -48,16 +49,16 @@ public class DeactivateCommand implements Command<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to deactivate.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientClusterState state = client.state();
 
             state.active(false);
 
-            logger.log("Cluster deactivated");
+            logger.info("Cluster deactivated");
         }
         catch (Exception e) {
-            logger.log("Failed to deactivate cluster.");
+            logger.severe("Failed to deactivate cluster.");
 
             throw e;
         }
@@ -68,5 +69,10 @@ public class DeactivateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return DEACTIVATE.toCommandName();
     }
 }

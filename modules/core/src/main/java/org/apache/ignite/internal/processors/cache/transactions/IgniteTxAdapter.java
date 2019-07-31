@@ -127,6 +127,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
 
+    /** */
+    private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
+
     /** Logger. */
     protected static IgniteLogger log;
 
@@ -259,6 +263,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
+    /** {@code True} if tx should skip adding itself to completed version map on finish. */
+    private boolean skipCompletedVers;
+
+    /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
+    private volatile TxCounters txCounters;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -375,6 +387,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @return {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public boolean skipCompletedVersions() {
+        return skipCompletedVers;
+    }
+
+    /**
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public void skipCompletedVersions(boolean skipCompletedVers) {
+        this.skipCompletedVers = skipCompletedVers;
     }
 
     /**
@@ -728,18 +754,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
         assert e != null : "Exception is expected";
 
-        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s, plc=%s]";
+        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s]";
 
         try {
             // First try printing a full transaction. This is error prone.
-            U.error(log, String.format(fmt, commit, this,
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, this), e);
         }
         catch (Throwable e0) {
             e.addSuppressed(e0);
 
-            U.error(log, String.format(fmt, commit, CU.txString(this),
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, CU.txString(this)), e);
         }
     }
 
@@ -1865,6 +1889,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
+    @Override public TxCounters txCounters(boolean createIfAbsent) {
+        if (createIfAbsent && txCounters == null)
+            TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
+
+        return txCounters;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxAdapter.class, this,
             "duration", (U.currentTimeMillis() - startTime) + "ms",
@@ -2124,6 +2156,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public UUID originatingNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+            return null;
         }
 
         /** {@inheritDoc} */

@@ -51,7 +51,6 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -171,6 +170,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
+
+    /** */
+    private static final String EXCHANGE_WORKER_THREAD_NAME = "exchange-worker";
 
     /** Atomic reference for pending partition resend timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -684,7 +686,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         else if (reconnect)
             reconnectExchangeFut.onDone();
 
-        new IgniteThread(cctx.igniteInstanceName(), "exchange-worker", exchWorker).start();
+        new IgniteThread(cctx.igniteInstanceName(), exchWorker.name(), exchWorker).start();
 
         if (reconnect) {
             if (fut != null) {
@@ -1754,7 +1756,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
                             partsSizes.getOrDefault(grpId, Collections.emptyMap()),
-                            msg.topologyVersion());
+                            msg.topologyVersion(), null);
                     }
                 }
 
@@ -1842,7 +1844,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         U.warn(log, "Client node tries to connect but its exchange " +
                             "info is cleaned up from exchange history. " +
                             "Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
-                            "or start clients in  smaller batches. " +
+                            "or start clients in smaller batches. " +
                             "Current settings and versions: " +
                             "[IGNITE_EXCHANGE_HISTORY_SIZE=" + EXCHANGE_HISTORY_SIZE + ", " +
                             "initVer=" + initVer + ", " +
@@ -2674,7 +2676,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * Constructor.
          */
         private ExchangeWorker() {
-            super(cctx.igniteInstanceName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log,
+            super(cctx.igniteInstanceName(), EXCHANGE_WORKER_THREAD_NAME, GridCachePartitionExchangeManager.this.log,
                 cctx.kernalContext().workersRegistry());
         }
 
@@ -2935,11 +2937,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
-                    updateHeartbeat();
+                    blockingSectionBegin();
 
-                    task = futQ.poll(timeout, MILLISECONDS);
-
-                    updateHeartbeat();
+                    try {
+                        task = futQ.poll(timeout, MILLISECONDS);
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     if (task == null)
                         continue; // Main while loop.
@@ -3018,7 +3023,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             int dumpCnt = 0;
 
-                            long waitStart = U.currentTimeMillis();
+                            long waitStartNanos = System.nanoTime();
 
                             // Call rollback logic only for client node, for server nodes
                             // rollback logic is in GridDhtPartitionsExchangeFuture.
@@ -3039,7 +3044,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         ? Math.min(curTimeout, dumpTimeout)
                                         : dumpTimeout;
 
-                                    blockingSectionEnd();
+                                   blockingSectionBegin();
 
                                     try {
                                         resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
@@ -3073,7 +3078,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
                                     }
 
-                                    if (!txRolledBack && curTimeout > 0 && U.currentTimeMillis() - waitStart >= curTimeout) {
+                                    long passedMillis = U.millisSinceNanos(waitStartNanos);
+
+                                    if (!txRolledBack && curTimeout > 0 && passedMillis >= curTimeout) {
                                         txRolledBack = true; // Try automatic rollback only once.
 
                                         cctx.tm().rollbackOnTopologyChange(exchFut.initialVersion());

@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -884,6 +883,24 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
+     * Property for setup percentage of archive size for checkpoint trigger. Default value is 0.25
+     */
+    public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Property for setup percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
+     * Default value is 0.5
+     */
+    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Threshold time (in millis) to print warning to log if waiting for next wal segment took longer than the threshold.
+     *
+     * Default value is 1000 ms.
+     */
+    public static final String IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = "IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT";
+
+    /**
      * Count of WAL compressor worker threads. Default value is 4.
      */
     public static final String IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT = "IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT";
@@ -1038,6 +1055,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
 
     /**
+     * Limit the maximum number of objects in memory during the recovery procedure.
+     */
+    public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
+
+    /**
      * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
      */
     public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
@@ -1048,7 +1070,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
-     * Default value of lazy query execution (Special for ver 2.5). Lazy mode must be used by default later.
+     * Flag to enable triggering failure handler for node if unrecoverable partition inconsistency is
+     * discovered during partition update counters exchange.
+     */
+    public static final String IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY =
+        "IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY";
+
+    /**
+     * Enforces singleton.
      */
     public static final String IGNITE_QUERY_LAZY_DEFAULT = "IGNITE_QUERY_LAZY_DEFAULT";
 
@@ -1071,6 +1100,52 @@ public final class IgniteSystemProperties {
      * owner thread.
      */
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
+
+    /**
+     * Page lock tracker type.
+     * -1 - Disable lock tracking.
+     *  1 - HEAP_STACK
+     *  2 - HEAP_LOG
+     *  3 - OFF_HEAP_STACK
+     *  4 - OFF_HEAP_LOG
+     *
+     * Default is 2 - HEAP_LOG.
+     */
+    public static final String IGNITE_PAGE_LOCK_TRACKER_TYPE = "IGNITE_PAGE_LOCK_TRACKER_TYPE";
+
+    /**
+     * Capacity in pages for storing in page lock tracker strucuture.
+     *
+     * Default is 512 pages.
+     */
+    public static final String IGNITE_PAGE_LOCK_TRACKER_CAPACITY = "IGNITE_PAGE_LOCK_TRACKER_CAPACITY";
+
+    /**
+     * Page lock tracker thread for checking hangs threads interval.
+     *
+     * Default is 60_000 ms.
+     */
+    public static final String IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL = "IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL";
+
+    /**
+     * Enables threads locks dumping on critical node failure.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DUMP_PAGE_LOCK_ON_FAILURE = "IGNITE_DUMP_PAGE_LOCK_ON_FAILURE";
+
+    /**
+     * Scan the classpath on startup and log all the files containing in it.
+     */
+    public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
+
+    /**
+     * Index rebuilding parallelism level. If specified, sets the count of threads that are used for index rebuilding
+     * and can only be greater than <code>0</code>, otherwise default value will be used. Maximum count of threads
+     * can't be greater than total available processors count.
+     * Default value is minimum of <code>4</code> and processors count / 4, but always greater than <code>0</code>.
+     */
+    public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
     /**
      * Enforces singleton.
@@ -1137,7 +1212,7 @@ public final class IgniteSystemProperties {
     public static boolean getBoolean(String name, boolean dflt) {
         String val = getString(name);
 
-        return val == null ? dflt : Boolean.valueOf(val);
+        return val == null ? dflt : Boolean.parseBoolean(val);
     }
 
     /**

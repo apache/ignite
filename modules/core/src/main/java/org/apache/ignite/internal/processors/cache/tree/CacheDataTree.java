@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -60,9 +62,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         ReuseList reuseList,
         CacheDataRowStore rowStore,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        PageLockListener lockLsnr
     ) throws IgniteCheckedException {
-        super(name,
+        super(
+            name,
             grp.groupId(),
             grp.dataRegion().pageMemory(),
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
@@ -71,7 +75,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
             grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS,
-            grp.shared().kernalContext().failure());
+            grp.shared().kernalContext().failure(),
+            lockLsnr
+        );
 
         assert rowStore != null;
 
@@ -145,6 +151,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             CacheDataRowAdapter.RowData.FULL;
 
         return rowStore.dataRow(cacheId, hash, link, x);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IoStatisticsHolder statisticsHolder() {
+        return grp.statisticsHolderIdx();
     }
 
     /**

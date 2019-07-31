@@ -50,30 +50,41 @@ import org.h2.value.ValueUuid;
  * Helper class for in-page indexes.
  */
 public class InlineIndexHelper {
+    /** Value for comparison meaning 'Not enough information to compare'. */
+    public static final int CANT_BE_COMPARE = -2;
+
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     /** PageContext for use in IO's */
     private static final ThreadLocal<List<InlineIndexHelper>> currentIndex = new ThreadLocal<>();
 
     /** */
-    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(
-        Value.BOOLEAN,
-        Value.BYTE,
-        Value.SHORT,
-        Value.INT,
-        Value.LONG,
-        Value.FLOAT,
-        Value.DOUBLE,
-        Value.DATE,
-        Value.TIME,
-        Value.TIMESTAMP,
-        Value.UUID,
-        Value.STRING,
-        Value.STRING_FIXED,
-        Value.STRING_IGNORECASE,
-        Value.BYTES,
-        Value.JAVA_OBJECT
-    );
+    public static final List<Integer> AVAILABLE_TYPES;
+
+    static {
+        List<Integer> integers = Arrays.asList(
+            Value.BOOLEAN,
+            Value.BYTE,
+            Value.SHORT,
+            Value.INT,
+            Value.LONG,
+            Value.FLOAT,
+            Value.DOUBLE,
+            Value.DATE,
+            Value.TIME,
+            Value.TIMESTAMP,
+            Value.UUID,
+            Value.STRING,
+            Value.STRING_FIXED,
+            Value.STRING_IGNORECASE,
+            Value.BYTES,
+            Value.JAVA_OBJECT
+        );
+        AVAILABLE_TYPES = integers;
+    }
+
+    /** */
+    private final String colName;
 
     /** */
     private final int type;
@@ -94,11 +105,16 @@ public class InlineIndexHelper {
     private final boolean compareStringsOptimized;
 
     /**
+     * @param colName Column name.
      * @param type Index type (see {@link Value}).
      * @param colIdx Index column index.
      * @param sortType Column sort type (see {@link IndexColumn#sortType}).
+     * @param compareMode Compare mode.
      */
-    public InlineIndexHelper(int type, int colIdx, int sortType, CompareMode compareMode) {
+    public InlineIndexHelper(String colName, int type, int colIdx, int sortType,
+        CompareMode compareMode) {
+
+        this.colName = colName;
         this.type = type;
         this.colIdx = colIdx;
         this.sortType = sortType;
@@ -165,6 +181,13 @@ public class InlineIndexHelper {
     }
 
     /**
+     * @return Column name
+     */
+    public String colName() {
+        return colName;
+    }
+
+    /**
      * @return Index type.
      */
     public int type() {
@@ -227,7 +250,7 @@ public class InlineIndexHelper {
         if (size > 0)
             return size + 1;
         else
-            return PageUtils.getShort(pageAddr, off + 1) + 3;
+            return (PageUtils.getShort(pageAddr, off + 1) & 0x7FFF) + 3;
     }
 
     /**
@@ -347,7 +370,7 @@ public class InlineIndexHelper {
      * @param maxSize Maximum size to read.
      * @param v Value to compare.
      * @param comp Comparator.
-     * @return Compare result (-2 means we can't compare).
+     * @return Compare result ( {@code CANT_BE_COMPARE} means we can't compare).
      */
     public int compare(long pageAddr, int off, int maxSize, Value v, Comparator<Value> comp) {
         int c = tryCompareOptimized(pageAddr, off, maxSize, v);
@@ -358,7 +381,7 @@ public class InlineIndexHelper {
         Value v1 = get(pageAddr, off, maxSize);
 
         if (v1 == null)
-            return -2;
+            return CANT_BE_COMPARE;
 
         c = Integer.signum(comp.compare(v1, v));
 
@@ -368,7 +391,7 @@ public class InlineIndexHelper {
         if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
             return fixSort(c, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
     }
 
     /**
@@ -376,7 +399,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param maxSize Maximum size to read.
      * @param v Value to compare.
-     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation; {@code -2} - can't compare).
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation; {@code CANT_BE_COMPARE} - can't compare).
      */
     private int tryCompareOptimized(long pageAddr, int off, int maxSize, Value v) {
         int type;
@@ -384,7 +407,7 @@ public class InlineIndexHelper {
         if ((size > 0 && size + 1 > maxSize)
                 || maxSize < 1
                 || (type = PageUtils.getByte(pageAddr, off)) == Value.UNKNOWN)
-            return -2;
+            return CANT_BE_COMPARE;
 
         if (type == Value.NULL)
             return Integer.MIN_VALUE;
@@ -568,7 +591,7 @@ public class InlineIndexHelper {
      * @param pageAddr Page address.
      * @param off Offset.
      * @param v Value to compare.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code CANT_BE_COMPARE} means we can't compare).
      */
     private int compareAsBytes(long pageAddr, int off, Value v) {
         byte[] bytes = v.getBytesNoCopy();
@@ -620,7 +643,7 @@ public class InlineIndexHelper {
             // b) Even truncated current value is longer, so that it's bigger.
             return fixSort(1, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
     }
 
     /**
@@ -628,7 +651,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param v Value to compare.
      * @param ignoreCase {@code True} if a case-insensitive comparison should be used.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code CANT_BE_COMPARE} means we can't compare).
      */
     private int compareAsString(long pageAddr, int off, Value v, boolean ignoreCase) {
         String s = v.getString();
@@ -931,7 +954,6 @@ public class InlineIndexHelper {
 
                     return maxSize;
                 }
-
             }
 
             default:

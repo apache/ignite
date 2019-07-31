@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.InvalidEnvironmentException;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -51,6 +51,9 @@ import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -351,7 +354,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 false,
-                false);
+                false,
+                IgniteFeatures.nodeSupports(n, IgniteFeatures.TX_TRACKING_UPDATE_COUNTER) ?
+                    cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n) : null);
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -424,10 +429,17 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             add(fut); // Append new future.
 
-            Collection<Long> updCntrs = new ArrayList<>(dhtMapping.entries().size());
+            Collection<Long> updCntrs = null;
 
-            for (IgniteTxEntry e : dhtMapping.entries())
-                updCntrs.add(e.updateCounter());
+            if (!IgniteFeatures.nodeSupports(n, IgniteFeatures.TX_TRACKING_UPDATE_COUNTER)) {
+                updCntrs = new ArrayList<>(dhtMapping.entries().size());
+
+                for (IgniteTxEntry e : dhtMapping.entries()) {
+                    assert e.op() != CREATE && e.op() != UPDATE && e.op() != DELETE || e.updateCounter() != 0 : e;
+
+                    updCntrs.add(e.updateCounter());
+                }
+            }
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
@@ -454,7 +466,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 updCntrs,
                 false,
-                false);
+                false,
+                commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -523,7 +536,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     false,
-                    false);
+                    false,
+                    null);
 
                 req.writeVersion(tx.writeVersion());
 

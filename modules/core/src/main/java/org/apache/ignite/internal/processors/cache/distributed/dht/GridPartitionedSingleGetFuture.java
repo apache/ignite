@@ -391,7 +391,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AffinityTopologyVersion topVer,
         List<ClusterNode> affNodes
     ) {
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        boolean fastLocGet = ((!forcePrimary && cctx.config().isReadFromBackup()) || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {

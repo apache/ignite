@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+
 /**
  * Simple interface for data, store in some RowStore.
  */
@@ -35,4 +39,15 @@ public interface Storable {
      * @return Partition.
      */
     public int partition();
+
+    /**
+     * @return Row size in page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int size() throws IgniteCheckedException;
+
+    /**
+     * @return I/O for handling this storable.
+     */
+    public IOVersions<? extends AbstractDataPageIO> ioVersions();
 }

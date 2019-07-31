@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
@@ -42,6 +44,8 @@ import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
 import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
@@ -68,7 +72,7 @@ import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTes
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
-import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
@@ -85,20 +89,17 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
-import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.MessageOrderLogListenerTest;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ListeningTestLoggerTest;
 import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Set;
 
 /**
  * Basic test suite.
@@ -134,6 +135,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteStreamSelfTestSuite.suite());
 
         suite.addTest(IgnitePlatformsTestSuite.suite());
+
+        suite.addTest(SecurityTestSuite.suite());
 
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
@@ -197,12 +200,14 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTestSuite(AttributeNodeFilterSelfTest.class);
 
+        suite.addTestSuite(WALRecordTest.class);
+
         // Basic DB data structures.
         suite.addTestSuite(BPlusTreeSelfTest.class);
         suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
         suite.addTestSuite(BPlusTreeReuseSelfTest.class);
         suite.addTestSuite(IndexStorageSelfTest.class);
-        suite.addTestSuite(CacheFreeListImplSelfTest.class);
+        suite.addTestSuite(CacheFreeListSelfTest.class);
         suite.addTestSuite(DataRegionMetricsSelfTest.class);
         suite.addTestSuite(SwapPathConstructionSelfTest.class);
         suite.addTestSuite(BitSetIntSetTest.class);
@@ -231,6 +236,12 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(ListeningTestLoggerTest.class);
 
         suite.addTestSuite(DeadLockOnNodeLeftExchangeTest.class);
+
+        suite.addTestSuite(MessageOrderLogListenerTest.class);
+
+        suite.addTestSuite(ClassPathContentLoggingTest.class);
+
+        suite.addTestSuite(IncompleteDeserializationExceptionTest.class);
 
         return suite;
     }

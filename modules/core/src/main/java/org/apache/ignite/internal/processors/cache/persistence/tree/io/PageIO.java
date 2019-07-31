@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastoreDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
+import org.apache.ignite.internal.stat.IndexPageType;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -71,7 +74,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener)}
+ *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener, IoStatisticsHolder)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {
@@ -190,6 +193,33 @@ public abstract class PageIO {
 
     /** */
     public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_INNER = 24;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_LEAF = 25;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 26;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 27;
+
+    /** */
+    public static final short T_H2_MVCC_REF_LEAF = 28;
+
+    /** */
+    public static final short T_H2_MVCC_REF_INNER = 29;
+
+    /** */
+    public static final short T_TX_LOG_LEAF = 30;
+
+    /** */
+    public static final short T_TX_LOG_INNER = 31;
+
+    /** */
+    public static final short T_DATA_PART = 32;
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
@@ -471,6 +501,9 @@ public abstract class PageIO {
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
             case T_DATA_METASTORAGE:
+                return (Q)MetastoreDataPageIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_PART:
                 return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
 
             default:
@@ -567,6 +600,34 @@ public abstract class PageIO {
     }
 
     /**
+     * @param pageAddr Address of page.
+     * @return Index page type.
+     */
+    public static IndexPageType deriveIndexPageType(long pageAddr) {
+        int pageIoType = PageIO.getType(pageAddr);
+        switch (pageIoType) {
+            case PageIO.T_DATA_REF_INNER:
+            case PageIO.T_H2_REF_INNER:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_INNER:
+                return IndexPageType.INNER;
+
+            case PageIO.T_DATA_REF_LEAF:
+            case PageIO.T_H2_REF_LEAF:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_LEAF:
+                return IndexPageType.LEAF;
+
+            default:
+                if (PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END)
+                    return IndexPageType.LEAF;
+
+                if (PageIO.T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_INNER_END)
+                    return IndexPageType.INNER;
+        }
+
+        return IndexPageType.NOT_INDEX;
+    }
+
+    /**
      * @param type Type to test.
      * @return {@code True} if data page.
      */
@@ -584,17 +645,22 @@ public abstract class PageIO {
     /**
      * @param addr Address.
      */
-    public static String printPage(long addr, int pageSize) throws IgniteCheckedException {
-        PageIO io = getPageIO(addr);
-
+    public static String printPage(long addr, int pageSize) {
         GridStringBuilder sb = new GridStringBuilder("Header [\n\ttype=");
 
-        sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
-            .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
-            .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
-            .a("\n],\n");
+        try {
+            PageIO io = getPageIO(addr);
 
-        io.printPage(addr, pageSize, sb);
+            sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
+                .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
+                .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
+                .a("\n],\n");
+
+            io.printPage(addr, pageSize, sb);
+        }
+        catch (IgniteCheckedException e) {
+            sb.a("Failed to print page: ").a(e.getMessage());
+        }
 
         return sb.toString();
     }

@@ -24,18 +24,19 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
@@ -73,7 +74,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
  */
 public class CacheViewer implements Command<CacheViewer.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage(Logger logger) {
         String description = "Show information about caches, groups or sequences that match a regular expression. " +
             "When executed without parameters, this subcommand prints the list of caches.";
 
@@ -149,6 +150,11 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
          * @return Full config flag.
          */
         public boolean fullConfig(){ return fullConfig; }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Arguments.class, this);
+        }
     }
 
     /** Command parsed arguments */
@@ -160,7 +166,7 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(args.regex(), args.cacheCommand());
 
         VisorViewCacheTaskResult res;
@@ -341,7 +347,7 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
         Map<String, VisorCacheConfiguration> caches,
         OutputFormat outputFormat,
         Map<String, Integer> cacheToMapped,
-        CommandLogger logger
+        Logger logger
     ) {
 
         for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
@@ -353,19 +359,19 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
 
                     params.put("Mapped", cacheToMapped.get(cacheName));
 
-                    logger.log("[cache = '%s']%n", cacheName);
+                    logger.info(String.format("[cache = '%s']%n", cacheName));
 
                     for (Map.Entry<String, Object> innerEntry : params.entrySet())
-                        logger.log("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
+                        logger.info(String.format("%s: %s%n", innerEntry.getKey(), innerEntry.getValue()));
 
-                    logger.nl();
+                    logger.info("");
 
                     break;
 
                 default:
                     int mapped = cacheToMapped.get(cacheName);
 
-                    logger.log("%s: %s %s=%s%n", entry.getKey(), toString(entry.getValue()), "mapped", mapped);
+                    logger.info(String.format("%s: %s %s=%s%n", entry.getKey(), toString(entry.getValue()), "mapped", mapped));
 
                     break;
             }
@@ -393,7 +399,7 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
         Arguments cacheArgs,
         VisorViewCacheTaskResult viewRes,
         GridClientConfiguration clientCfg,
-        CommandLogger logger
+        Logger logger
     ) throws GridClientException {
         VisorCacheConfigurationCollectorTaskArg taskArg = new VisorCacheConfigurationCollectorTaskArg(cacheArgs.regex());
 
@@ -414,7 +420,7 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
      * @param infos Caches info.
      * @param cmd Command.
      */
-    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, CommandLogger logger) {
+    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, Logger logger) {
         for (CacheInfo info : infos) {
             Map<String, Object> map = info.toMap(cmd);
 
@@ -427,7 +433,12 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
 
             sb.a("]");
 
-            logger.log(sb.toString());
+            logger.info(sb.toString());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return LIST.text().toUpperCase();
     }
 }

@@ -229,7 +229,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @param node Node to connect to.
      * @return Thin JDBC connection to specified node.
      */
-    static Connection connect(IgniteEx node) {
+    public static Connection connect(IgniteEx node) {
         Collection<GridPortRecord> recs = node.context().ports().records();
 
         GridPortRecord cliLsnrRec = null;
@@ -572,17 +572,5 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         public String field() {
             return field;
         }
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    protected interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
     }
 }

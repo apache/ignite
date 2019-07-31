@@ -26,11 +26,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -73,6 +77,16 @@ public interface IgniteCacheOffheapManager {
     public void stop();
 
     /**
+     * Pre-create partitions that resides in page memory or WAL and restores their state.
+     *
+     * @param partitionRecoveryStates Partition recovery states.
+     * @return Number of processed partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates)
+        throws IgniteCheckedException;
+
+    /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
      *
      * @param part Partition.
@@ -84,9 +98,10 @@ public interface IgniteCacheOffheapManager {
      * Initial counter will be updated on state restore only
      *
      * @param part Partition
-     * @param cntr New initial counter
+     * @param start Start.
+     * @param delta Delta.
      */
-    public void onPartitionInitialCounterUpdated(int part, long cntr);
+    public void onPartitionInitialCounterUpdated(int part, long start, long delta);
 
     /**
      * Partition counter provider. May be overridden by plugin-provided subclasses.
@@ -373,65 +388,82 @@ public interface IgniteCacheOffheapManager {
      */
     interface CacheDataStore {
         /**
+         * Initialize data store if it exists.
+         *
+         * @return {@code True} if initialized.
+         */
+        public boolean init();
+
+        /**
          * @return Partition ID.
          */
-        int partId();
-
-        /**
-         * @return Store name.
-         */
-        String name();
-
-        /**
-         * @param size Size to init.
-         * @param updCntr Update counter to init.
-         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
-         */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes);
+        public int partId();
 
         /**
          * @param cacheId Cache ID.
          * @return Size.
          */
-        long cacheSize(int cacheId);
+        public long cacheSize(int cacheId);
 
         /**
          * @return Cache sizes if store belongs to group containing multiple caches.
          */
-        Map<Integer, Long> cacheSizes();
+        public Map<Integer, Long> cacheSizes();
 
         /**
          * @return Total size.
          */
-        long fullSize();
+        public long fullSize();
 
         /**
          * @return {@code True} if there are no items in the store.
          */
-        boolean isEmpty();
+        public boolean isEmpty();
 
         /**
-         * @return Update counter.
+         * @return Update counter (LWM).
          */
-        long updateCounter();
+        public long updateCounter();
 
         /**
-         *
+         * @return Reserved counter (HWM).
          */
-        void updateCounter(long val);
+        public long reservedCounter();
+
+        /**
+         * @return Update counter or {@code null} if store is not yet created.
+         */
+        public @Nullable PartitionUpdateCounter partUpdateCounter();
+
+        /**
+         * @param delta Delta.
+         */
+        public long reserve(long delta);
+
+        /**
+         * @param val Update counter.
+         */
+        public void updateCounter(long val);
 
         /**
          * Updates counters from start value by delta value.
-         *
          * @param start Start.
-         * @param delta Delta
+         * @param delta Delta.
          */
-        void updateCounter(long start, long delta);
+        public boolean updateCounter(long start, long delta);
 
         /**
          * @return Next update counter.
          */
         public long nextUpdateCounter();
+
+        /**
+         * Returns current value and updates counter by delta.
+         *
+         * @param delta Delta.
+         * @return Current value.
+         */
+        public long getAndIncrementUpdateCounter(long delta);
 
         /**
          * @return Initial update counter.
@@ -552,9 +584,10 @@ public interface IgniteCacheOffheapManager {
         public RowStore rowStore();
 
         /**
-         * @param cntr Counter.
+         * @param start Counter.
+         * @param delta Delta.
          */
-        public void updateInitialCounter(long cntr);
+        public void updateInitialCounter(long start, long delta);
 
         /**
          * Inject rows cache cleaner.
@@ -567,10 +600,30 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
-         * @throws IgniteCheckedException
          */
-        PendingEntriesTree pendingTree();
+        public PendingEntriesTree pendingTree();
 
+        /**
+         * Flushes pending update counters closing all possible gaps.
+         *
+         * @return Even-length array of pairs [start, end] for each gap.
+         */
+        public GridLongList finalizeUpdateCounters();
+
+        /**
+         * Preload a store into page memory.
+         * @throws IgniteCheckedException If failed.
+         */
         public void preload() throws IgniteCheckedException;
+
+        /**
+         * Reset counters for partition.
+         */
+        public void resetUpdateCounter();
+
+        /**
+         * Partition storage.
+         */
+        public PartitionMetaStorage<SimpleDataRow> partStorage();
     }
 }

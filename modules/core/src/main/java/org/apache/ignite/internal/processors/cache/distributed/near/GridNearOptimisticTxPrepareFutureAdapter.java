@@ -23,11 +23,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -105,7 +106,11 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             }
 
             if (topFut.isDone()) {
-                topVer = topFut.topologyVersion();
+                if ((topVer = topFut.topologyVersion()) == null && topFut.error() != null) {
+                    onDone(topFut.error()); // Prevent stack overflow if topFut has error.
+
+                    return;
+                }
 
                 if (remap)
                     tx.onRemap(topVer);
@@ -132,6 +137,14 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                 return;
             }
 
+            if (tx.isRollbackOnly()) {
+                onDone(new IgniteTxRollbackCheckedException(
+                    "Failed to prepare the transaction, due to the transaction is marked as rolled back " +
+                        "[tx=" + CU.txString(tx) + ']'));
+
+                return;
+            }
+
             prepare0(remap, false);
 
             if (c != null)
@@ -143,6 +156,14 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                     return;
 
                 try {
+                    if (tx.isRollbackOnly()) {
+                        onDone(new IgniteTxRollbackCheckedException(
+                            "Failed to prepare the transaction, due to the transaction is marked as rolled back " +
+                                "[tx=" + CU.txString(tx) + ']'));
+
+                        return;
+                    }
+
                     prepareOnTopology(remap, c);
                 }
                 finally {

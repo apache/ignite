@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -31,11 +32,13 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
@@ -47,7 +50,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
  */
 public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage(Logger logger) {
         String GROUPS = "groupName1,...,groupNameN";
         String description = "Find and optionally delete garbage from shared cache groups which could be left " +
             "after cache destroy.";
@@ -98,6 +101,11 @@ public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Argume
         public boolean delete() {
             return delete;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Arguments.class, this);
+        }
     }
 
     /** Command parsed arguments. */
@@ -109,7 +117,7 @@ public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Argume
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         VisorFindAndDeleteGarbageInPersistenceTaskArg taskArg = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
             args.groups(),
             args.delete(),
@@ -120,16 +128,16 @@ public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Argume
             VisorFindAndDeleteGarbageInPersistenceTaskResult taskRes = executeTask(
                 client, VisorFindAndDeleteGarbageInPersistenceTask.class, taskArg, clientCfg);
 
-            logger.printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:");
+            CommandLogger.printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:", logger);
 
             for (Map.Entry<UUID, VisorFindAndDeleteGarbageInPersistenceJobResult> nodeEntry : taskRes.result().entrySet()) {
                 if (!nodeEntry.getValue().hasGarbage()) {
-                    logger.log("Node " + nodeEntry.getKey() + " - garbage not found.");
+                    logger.info("Node " + nodeEntry.getKey() + " - garbage not found.");
 
                     continue;
                 }
 
-                logger.log("Garbage found on node " + nodeEntry.getKey() + ":");
+                logger.info("Garbage found on node " + nodeEntry.getKey() + ":");
 
                 VisorFindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
 
@@ -138,14 +146,14 @@ public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Argume
                 if (!grpPartErrorsCount.isEmpty()) {
                     for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCount.entrySet()) {
                         for (Map.Entry<Integer, Long> e : entry.getValue().entrySet()) {
-                            logger.logWithIndent("Group=" + entry.getKey() +
+                            logger.info(INDENT + "Group=" + entry.getKey() +
                                 ", partition=" + e.getKey() +
                                 ", count of keys=" + e.getValue());
                         }
                     }
                 }
 
-                logger.nl();
+                logger.info("");
             }
 
             return taskRes;
@@ -184,5 +192,10 @@ public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Argume
         }
 
         args = new Arguments(groups, nodeId, delete);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return FIND_AND_DELETE_GARBAGE.text().toUpperCase();
     }
 }

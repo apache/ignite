@@ -23,6 +23,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -102,6 +103,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SegmentRouter getSegmentRouter() {
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -33,12 +33,6 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
  */
 public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAbstractNodeRestartSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-1090");
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

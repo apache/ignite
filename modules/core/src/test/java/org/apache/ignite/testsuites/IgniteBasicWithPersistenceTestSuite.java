@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
@@ -27,14 +28,13 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLoc
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
+import org.apache.ignite.internal.visor.VisorCacheRebalanceCollectorTaskSelfTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Set;
 
 /**
  * Basic test suite.
@@ -72,6 +72,7 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(PluginNodeValidationTest.class);
 
         suite.addTestSuite(SingleNodePersistenceSslTest.class);
+        suite.addTestSuite(VisorCacheRebalanceCollectorTaskSelfTest.class);
 
         return suite;
     }

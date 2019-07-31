@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
@@ -777,8 +778,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             new QueryField[] { c("age", Integer.class.getName()), c("city", String.class.getName()) };
 
         // Check index create.
-        reconnectClientNode(srv, cli, restartCache, dynamicCache, new RunnableX() {
-            @Override public void run() throws Exception {
+        reconnectClientNode(srv, cli, restartCache, dynamicCache, new GridTestUtils.RunnableX() {
+            @Override public void runx() throws Exception {
                 addCols(srv, schemaName, cols).get();
 
                 dropCols(srv, schemaName, "NAME").get();
@@ -799,7 +800,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     private void reconnectClientNode(final Ignite srvNode, final Ignite cliNode, final boolean restart,
-        final boolean dynamicCache, final RunnableX clo) throws Exception {
+        final boolean dynamicCache, final GridTestUtils.RunnableX clo) throws Exception {
         IgniteClientReconnectAbstractTest.reconnectClientNode(log, cliNode, srvNode, new Runnable() {
             @Override public void run() {
                 if (restart) {
@@ -1199,19 +1200,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             cfg.setUserAttributes(Collections.singletonMap(ATTR_FILTERED, true));
 
         return cfg;
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        @SuppressWarnings("UnnecessaryInterfaceModifier")
-        public void run() throws Exception;
     }
 
     /**

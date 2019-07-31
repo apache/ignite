@@ -26,9 +26,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -156,6 +161,9 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
@@ -166,6 +174,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -206,6 +215,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
@@ -738,6 +748,109 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** */
+    private void ackClassPathElementRecursive(File clsPathEntry, SB clsPathContent) {
+        if (clsPathEntry.isDirectory()) {
+            String[] list = clsPathEntry.list();
+
+            for (String listElement : list)
+                ackClassPathElementRecursive(new File(clsPathEntry, listElement), clsPathContent);
+        }
+        else {
+            String path = clsPathEntry.getAbsolutePath();
+
+            if (path.endsWith(".class"))
+                clsPathContent.a(path).a(";");
+        }
+    }
+
+    /** */
+    private void ackClassPathEntry(String clsPathEntry, SB clsPathContent) {
+        File clsPathElementFile = new File(clsPathEntry);
+
+        if (clsPathElementFile.isDirectory())
+            ackClassPathElementRecursive(clsPathElementFile, clsPathContent);
+        else {
+            String extension = clsPathEntry.length() >= 4
+                ? clsPathEntry.substring(clsPathEntry.length() - 4).toLowerCase()
+                : null;
+
+            if (".jar".equals(extension) || ".zip".equals(extension))
+                clsPathContent.a(clsPathEntry).a(";");
+        }
+    }
+
+    /** */
+    private void ackClassPathWildCard(String clsPathEntry, SB clsPathContent) {
+        final int lastSeparatorIdx = clsPathEntry.lastIndexOf(File.separator);
+
+        final int asteriskIdx = clsPathEntry.indexOf('*');
+
+        //just to log possibly incorrent entries to err
+        if (asteriskIdx >= 0 && asteriskIdx < lastSeparatorIdx)
+            throw new RuntimeException("Could not parse classpath entry");
+
+        final int fileMaskFirstIdx = lastSeparatorIdx + 1;
+
+        final String fileMask =
+            (fileMaskFirstIdx >= clsPathEntry.length()) ? "*.jar" : clsPathEntry.substring(fileMaskFirstIdx);
+
+        Path path = Paths.get(lastSeparatorIdx > 0 ? clsPathEntry.substring(0, lastSeparatorIdx) : ".")
+            .toAbsolutePath()
+            .normalize();
+
+        if (lastSeparatorIdx == 0)
+            path = path.getRoot();
+
+        try {
+            DirectoryStream<Path> files =
+                Files.newDirectoryStream(path, fileMask);
+
+            for (Path f : files) {
+                String s = f.toString();
+
+                if (s.toLowerCase().endsWith(".jar"))
+                    clsPathContent.a(f.toString()).a(";");
+            }
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Prints the list of *.jar and *.class files containing in classpath.
+     */
+    private void ackClassPathContent() {
+        assert log != null;
+
+        boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, true);
+
+        if (enabled) {
+            String clsPath = System.getProperty("java.class.path", ".");
+
+            String[] clsPathElements = clsPath.split(File.pathSeparator);
+
+            U.log(log, "Classpath value: " + clsPath);
+
+            SB clsPathContent = new SB("List of files containing in classpath: ");
+
+            for (String clsPathEntry : clsPathElements) {
+                try {
+                    if (clsPathEntry.contains("*"))
+                        ackClassPathWildCard(clsPathEntry, clsPathContent);
+                    else
+                        ackClassPathEntry(clsPathEntry, clsPathContent);
+                }
+                catch (Exception e) {
+                    U.warn(log, String.format("Could not log class path entry '%s': %s", clsPathEntry, e.getMessage()));
+                }
+            }
+
+            U.log(log, clsPathContent.toString());
+        }
+    }
+
     /**
      * @param cfg Configuration to use.
      * @param utilityCachePool Utility cache pool.
@@ -781,7 +894,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd,
         WorkersRegistry workerRegistry,
-        Thread.UncaughtExceptionHandler hnd
+        Thread.UncaughtExceptionHandler hnd,
+        TimeBag startTimer
     )
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
@@ -970,7 +1084,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridTimeoutProcessor(ctx));
 
             // Start security processors.
-            startProcessor(createComponent(GridSecurityProcessor.class, ctx));
+            startProcessor(securityProcessor());
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
@@ -999,7 +1113,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+
+                startTimer.finishGlobalStage("Start managers");
+
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
+
+                startTimer.finishGlobalStage("Configure binary metadata");
+
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
                 startProcessor(new IgniteAuthenticationProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
@@ -1019,11 +1139,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
 
+                startTimer.finishGlobalStage("Start processors");
+
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {
                     ctx.add(new GridPluginComponent(provider));
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
+
+                    startTimer.finishGlobalStage("Start '"+ provider.name() + "' plugin");
                 }
 
                 // Start platform plugins.
@@ -1034,9 +1158,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
-                ctx.cache().context().database().startMemoryRestore(ctx);
+                ctx.cache().context().database().startMemoryRestore(ctx, startTimer);
 
                 ctx.recoveryMode(false);
+
+                startTimer.finishGlobalStage("Finish recovery");
             }
             catch (Throwable e) {
                 U.error(
@@ -1059,6 +1185,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             finally {
                 gw.writeUnlock();
             }
+
+            startTimer.finishGlobalStage("Join topology");
 
             // Check whether physical RAM is not exceeded.
             checkPhysicalRam();
@@ -1096,6 +1224,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
             else
                 active = joinData.active();
+
+            startTimer.finishGlobalStage("Await transition");
 
             boolean recon = false;
 
@@ -1355,11 +1485,27 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
 
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_QUIET, true))
+            ackClassPathContent();
+
         ackStart(rtBean);
 
         if (!isDaemon())
             ctx.discovery().ackTopology(ctx.discovery().localJoin().joinTopologyVersion().topologyVersion(),
                 EventType.EVT_NODE_JOINED, localNode());
+
+        startTimer.finishGlobalStage("Await exchange");
+    }
+
+    /**
+     * @return GridProcessor that implements {@link IgniteSecurity}
+     */
+    private GridProcessor securityProcessor() throws IgniteCheckedException {
+        GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
+
+        return prc != null && prc.enabled()
+            ? new IgniteSecurityProcessor(ctx, prc)
+            : new NoOpIgniteSecurityProcessor(ctx, prc);
     }
 
     /**
@@ -2309,6 +2455,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 // Preserve interrupt status.
                 Thread.currentThread().interrupt();
             }
+
+            ctx.ioStats().stop();
         }
         else {
             // Proper notification.
@@ -3452,6 +3600,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         Ignition.stop(igniteInstanceName, true);
     }
 
+    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         CU.validateCacheName(cacheName);
         checkClusterState();
@@ -3971,6 +4120,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
+
+        if(cls.equals(GridSecurityProcessor.class))
+            return null;
 
         Class<T> implCls = null;
 

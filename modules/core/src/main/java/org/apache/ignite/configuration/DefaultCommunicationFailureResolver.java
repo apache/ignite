@@ -49,11 +49,12 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
         if (largestCluster == null)
             return;
 
-        log.info("Communication problem resolver found fully connected independent cluster ["
-            + "serverNodesCnt=" + largestCluster.srvNodesCnt + ", "
-            + "clientNodesCnt=" + largestCluster.connectedClients.size() + ", "
-            + "totalAliveNodes=" + ctx.topologySnapshot().size() + ", "
-            + "serverNodesIds=" + clusterNodeIds(largestCluster.srvNodesSet, ctx.topologySnapshot(), 1000) + "]");
+        if (log.isInfoEnabled())
+            log.info("Communication problem resolver found fully connected independent cluster ["
+                + "serverNodesCnt=" + largestCluster.srvNodesCnt + ", "
+                + "clientNodesCnt=" + largestCluster.connectedClients.size() + ", "
+                + "totalAliveNodes=" + ctx.topologySnapshot().size() + ", "
+                + "serverNodesIds=" + clusterNodeIds(largestCluster.srvNodesSet, ctx.topologySnapshot(), 1000) + "]");
 
         keepCluster(ctx, largestCluster);
     }
@@ -88,9 +89,15 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             boolean fullyConnected = graph.checkFullyConnected(nodesSet);
 
             if (fullyConnected && nodeCnt == srvNodes.size()) {
-                U.warn(log, "All alive nodes are fully connected, this should be resolved automatically.");
+                Set<ClusterNode> clients = findConnectedClients(ctx, nodesSet);
 
-                return null;
+                if (clients.size() + nodeCnt == ctx.topologySnapshot().size()) {
+                    U.warn(log, "All alive nodes are fully connected, this should be resolved automatically.");
+
+                    return null;
+                }
+                else
+                    return new ClusterPart(nodesSet, clients);
             }
 
             if (log.isInfoEnabled())

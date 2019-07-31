@@ -583,23 +583,28 @@ public class GridMapQueryExecutor {
             if (lazy)
                 stopAndUnregisterCurrentLazyWorker();
 
-            GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
-
-            if (retryErr != null) {
-                final String retryCause = String.format(
-                    "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
-                    "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, retryErr.getMessage()
-                );
-
-                sendRetry(node, reqId, segmentId, retryCause);
+            if (e instanceof QueryCancelledException) {
+                sendError(node, reqId, e);
             }
             else {
-                U.error(log, "Failed to execute local query.", e);
+                GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
 
-                sendError(node, reqId, e);
+                if (retryErr != null) {
+                    final String retryCause = String.format(
+                        "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
+                            "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, retryErr.getMessage()
+                    );
 
-                if (e instanceof Error)
-                    throw (Error)e;
+                    sendRetry(node, reqId, segmentId, retryCause);
+                }
+                else {
+                    U.error(log, "Failed to execute local query.", e);
+
+                    sendError(node, reqId, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+                }
             }
         }
         finally {
@@ -733,7 +738,17 @@ public class GridMapQueryExecutor {
             GridQueryFailResponse msg = new GridQueryFailResponse(qryReqId, err);
 
             if (node.isLocal()) {
-                U.error(log, "Failed to run map query on local node.", err);
+                if (err instanceof QueryCancelledException) {
+                    String errMsg = "Failed to run cancelled map query on local node: [localNodeId="
+                        + node.id() + ", reqId=" + qryReqId + ']';
+
+                    if (log.isDebugEnabled())
+                        U.warn(log, errMsg, err);
+                    else if (log.isInfoEnabled())
+                        log.info(errMsg);
+                }
+                else
+                    U.error(log, "Failed to run map query on local node.", err);
 
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             }

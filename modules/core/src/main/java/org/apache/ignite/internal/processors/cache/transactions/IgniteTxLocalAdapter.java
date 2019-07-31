@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.io.Externalizable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -35,6 +38,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -57,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -95,6 +98,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -445,6 +450,67 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
+     * Calculates partition update counters for current transaction. Each partition will be supplied with
+     * pair (init, delta) values, where init - initial update counter, and delta - updates count made
+     * by current transaction for a given partition.
+     */
+    public void calculatePartitionUpdateCounters() {
+        TxCounters counters = txCounters(false);
+
+        if (counters != null && F.isEmpty(counters.updateCounters())) {
+            List<PartitionUpdateCountersMessage> cntrMsgs = new ArrayList<>();
+
+            for (Map.Entry<Integer, Map<Integer, AtomicLong>> record : counters.accumulatedUpdateCounters().entrySet()) {
+                int cacheId = record.getKey();
+
+                Map<Integer, AtomicLong> partToCntrs = record.getValue();
+
+                assert partToCntrs != null;
+
+                if (F.isEmpty(partToCntrs))
+                    continue;
+
+                PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
+
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+                GridDhtPartitionTopology top = ctx0.topology();
+
+                assert top != null;
+
+                for (Map.Entry<Integer, AtomicLong> e : partToCntrs.entrySet()) {
+                    AtomicLong acc = e.getValue();
+
+                    assert acc != null;
+
+                    long cntr = acc.get();
+
+                    assert cntr >= 0;
+
+                    if (cntr != 0) {
+                        int p = e.getKey();
+
+                        GridDhtLocalPartition part = top.localPartition(p);
+
+                        // LOST state is possible if tx is started over LOST partition.
+                        assert part != null && (part.state() == OWNING || part.state() == LOST):
+                            part == null ?
+                                "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
+                                "part=" + part.toString();
+
+                        msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
+                    }
+                }
+
+                if (msg.size() > 0)
+                    cntrMsgs.add(msg);
+            }
+
+            counters.updateCounters(cntrMsgs);
+        }
+    }
+
+    /**
      * Checks that locks are in proper state for commit.
      *
      * @param entry Cache entry to check.
@@ -517,6 +583,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 cctx.tm().txContext(this);
 
                 AffinityTopologyVersion topVer = topologyVersion();
+
+                TxCounters txCounters = txCounters(false);
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -834,7 +902,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
                         }
                     }
+                }
 
+                if (txCounters != null) {
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+
+                    for (IgniteTxEntry entry : commitEntries) {
+                        if (entry.cqNotifyClosure() != null)
+                            entry.cqNotifyClosure().applyx();
+                    }
                 }
 
                 if (ptr != null && !cctx.tm().logTxRecords())
@@ -1005,7 +1081,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            cctx.tm().rollbackTx(this, clearThreadMap, false);
+            TxCounters txCounters = txCounters(false);
+
+            if (txCounters != null)
+                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
+
+            cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);

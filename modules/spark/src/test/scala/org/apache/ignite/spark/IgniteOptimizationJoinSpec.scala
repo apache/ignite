@@ -279,7 +279,7 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
 
             checkOptimizationResult(df, "SELECT jt1.id as id1, jt1.val1, jt2.id as id2, jt2.val2 " +
                 "FROM jt1 JOIN jt2 ON jt1.val1 = jt2.val2 " +
-                "WHERE jt1.id IS NOT NULL AND jt1.id < 10 AND jt1.val1 IS NOT NULL and jt2.val2 IS NOT NULL")
+                "WHERE jt1.id < 10 AND jt1.val1 IS NOT NULL and jt2.val2 IS NOT NULL")
 
             val data = (
                 (2, "B", 1, "B"),
@@ -427,9 +427,7 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
                 "SELECT jt1.id + jt2.id as sum_id, jt1.val1, jt2.val2 FROM " +
                     "jt1 JOIN jt2 ON NOT jt1.id + jt2.id = 15 AND jt1.val1 = jt2.val2 " +
                     "WHERE " +
-                    "jt1.id IS NOT NULL AND " +
                     "jt1.val1 IS NOT NULL AND " +
-                    "jt2.id IS NOT NULL AND " +
                     "jt2.val2 IS NOT NULL"
             )
 
@@ -458,7 +456,7 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
             checkOptimizationResult(df,
                 "SELECT CAST(SUM(JT1.ID + JT2.ID) AS BIGINT) AS \"sum(sum_id)\" " +
                     "FROM JT1 JOIN JT2 ON NOT JT1.id + JT2.id = 15 AND JT1.val1 = JT2.val2 " +
-                    "WHERE JT1.id IS NOT NULL AND JT1.val1 IS NOT NULL AND JT2.id IS NOT NULL AND JT2.val2 IS NOT NULL")
+                    "WHERE JT1.val1 IS NOT NULL AND JT2.val2 IS NOT NULL")
 
             val data = Tuple1(8)
 

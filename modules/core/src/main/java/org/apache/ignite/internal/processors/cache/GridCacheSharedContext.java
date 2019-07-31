@@ -136,6 +136,9 @@ public class GridCacheSharedContext<K, V> {
     /** Tx metrics. */
     private final TransactionMetricsAdapter txMetrics;
 
+    /** Cache diagnostic manager. */
+    private CacheDiagnosticManager diagnosticMgr;
+
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
@@ -208,7 +211,8 @@ public class GridCacheSharedContext<K, V> {
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
         CacheJtaManagerAdapter jtaMgr,
-        Collection<CacheStoreSessionListener> storeSesLsnrs
+        Collection<CacheStoreSessionListener> storeSesLsnrs,
+        CacheDiagnosticManager diagnosticMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -228,7 +232,8 @@ public class GridCacheSharedContext<K, V> {
             affMgr,
             ioMgr,
             ttlMgr,
-            evictMgr
+            evictMgr,
+            diagnosticMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -394,7 +399,8 @@ public class GridCacheSharedContext<K, V> {
             affMgr,
             ioMgr,
             ttlMgr,
-            evictMgr
+            evictMgr,
+            diagnosticMgr
         );
 
         this.mgrs = mgrs;
@@ -453,8 +459,10 @@ public class GridCacheSharedContext<K, V> {
         CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
-        PartitionsEvictManager evictMgr
+        PartitionsEvictManager evictMgr,
+        CacheDiagnosticManager diagnosticMgr
     ) {
+        this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -806,6 +814,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public PartitionsEvictManager evict() {
         return evictMgr;
+    }
+
+    /**
+     * @return Diagnostic manager.
+     */
+    public CacheDiagnosticManager diagnostic(){
+        return diagnosticMgr;
     }
 
     /**

@@ -3105,6 +3105,39 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test verifies scenario when communication connectivity is broken between one client node
+     * and the rest of the cluster.
+     *
+     * In that case client node should be shut down by the default {@link CommunicationFailureResolver}.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDefaultCommunicationFailureResolver6() throws Exception {
+        testCommSpi = true;
+        sesTimeout = 5000;
+
+        startGrids(2);
+
+        clientMode(true);
+
+        startGrid(2);
+        startGrid(3);
+
+        clientMode(false);
+
+        ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(4, 0, 1, 2);
+        ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(4, 0, 1, 2);
+        ZkTestCommunicationSpi.testSpi(ignite(2)).initCheckResult(4, 0, 1, 2);
+        ZkTestCommunicationSpi.testSpi(ignite(3)).initCheckResult(4, 3);
+
+        ZookeeperDiscoverySpi spi = spi(ignite(0));
+
+        spi.resolveCommunicationFailure(spi.getNode(ignite(1).cluster().localNode().id()), new Exception("test"));
+
+        waitForTopology(3);
+    }
+
+    /**
      * @param startNodes Initial nodes number.
      * @param breakNodes Node indices where communication server is closed.
      * @throws Exception If failed.
