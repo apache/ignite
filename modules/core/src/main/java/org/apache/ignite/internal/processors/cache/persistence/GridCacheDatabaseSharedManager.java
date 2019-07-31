@@ -146,7 +146,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridReadOnlyArrayView;
@@ -2564,7 +2563,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         int grpId = pageSnapshotRecord.fullPageId().groupId();
         long pageId = pageSnapshotRecord.fullPageId().pageId();
 
-        long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
+        long page = pageMem.acquirePage(grpId, pageId, true);
 
         try {
             long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
@@ -2592,7 +2591,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         // Here we do not require tag check because we may be applying memory changes after
         // several repetitive restarts and the same pages may have changed several times.
-        long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
+        long page = pageMem.acquirePage(grpId, pageId, true);
 
         try {
             long pageAddr = pageMem.writeLock(grpId, pageId, page, true);

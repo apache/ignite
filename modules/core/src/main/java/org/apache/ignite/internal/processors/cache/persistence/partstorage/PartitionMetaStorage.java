@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.partstorage;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 
 /**
  * Provides a way to associate any {@link Storable} implementation as partition metadata.
@@ -34,16 +33,14 @@ public interface PartitionMetaStorage<T extends Storable> {
 
     /**
      * @param row Row.
-     * @param statHolder Stat holder.
      */
-    public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public void insertDataRow(T row) throws IgniteCheckedException;
 
     /**
      * @param link Row link.
-     * @param statHolder Stat holder.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public void removeDataRowByLink(long link) throws IgniteCheckedException;
 
     /**
      * Saves storage metadata.

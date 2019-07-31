@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -138,16 +136,15 @@ public abstract class DataStructure {
 
     /**
      * @param pageId Page ID.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Page absolute pointer.
      * @throws IgniteCheckedException If failed.
      */
-    protected final long acquirePage(long pageId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    protected final long acquirePage(long pageId) throws IgniteCheckedException {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
             PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
             U.hexLong(pageId) + " flag=" + PageIdUtils.flag(pageId) + " part=" + PageIdUtils.partId(pageId);
 
-        return pageMem.acquirePage(grpId, pageId, statHolder);
+        return pageMem.acquirePage(grpId, pageId);
     }
 
     /**
@@ -232,7 +229,6 @@ public abstract class DataStructure {
      * @param h Handler.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -241,10 +237,9 @@ public abstract class DataStructure {
         PageHandler<?, R> h,
         int intArg,
         R lockFailed
-    ,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, lockLsnr, h,
-            null, null, null, null, intArg, lockFailed, statHolder);
+            null, null, null, null, intArg, lockFailed);
     }
 
     /**
@@ -253,7 +248,6 @@ public abstract class DataStructure {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -263,10 +257,9 @@ public abstract class DataStructure {
         X arg,
         int intArg,
         R lockFailed
-    ,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, lockLsnr, h,
-            null, null, null, arg, intArg, lockFailed, statHolder);
+            null, null, null, arg, intArg, lockFailed);
     }
 
     /**
@@ -276,7 +269,6 @@ public abstract class DataStructure {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -287,10 +279,9 @@ public abstract class DataStructure {
         X arg,
         int intArg,
         R lockFailed
-    ,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, page, lockLsnr, h,
-            null, null, null, arg, intArg, lockFailed, statHolder);
+            null, null, null, arg, intArg, lockFailed);
     }
 
     /**
@@ -300,7 +291,6 @@ public abstract class DataStructure {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -311,10 +301,9 @@ public abstract class DataStructure {
         X arg,
         int intArg,
         R lockFailed
-    ,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, lockLsnr, h,
-            init, wal, null, arg, intArg, lockFailed, statHolder);
+            init, wal, null, arg, intArg, lockFailed);
     }
 
     /**
@@ -323,7 +312,6 @@ public abstract class DataStructure {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -333,10 +321,9 @@ public abstract class DataStructure {
         X arg,
         int intArg,
         R lockFailed
-    ,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         return PageHandler.readPage(pageMem, grpId, pageId, lockLsnr,
-            h, arg, intArg, lockFailed, statHolder);
+            h, arg, intArg, lockFailed);
     }
 
     /**
@@ -346,7 +333,6 @@ public abstract class DataStructure {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -357,10 +343,9 @@ public abstract class DataStructure {
         X arg,
         int intArg,
         R lockFailed
-    ,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         return PageHandler.readPage(pageMem, grpId, pageId, page, lockLsnr, h,
-            arg, intArg, lockFailed, statHolder);
+            arg, intArg, lockFailed);
     }
 
     /**
@@ -369,7 +354,7 @@ public abstract class DataStructure {
      * @throws IgniteCheckedException if failed.
      */
     protected final void init(long pageId, PageIO init) throws IgniteCheckedException {
-        PageHandler.initPage(pageMem, grpId, pageId, init, wal, lockLsnr, IoStatisticsHolderNoOp.INSTANCE);
+        PageHandler.initPage(pageMem, grpId, pageId, init, wal, lockLsnr);
     }
 
     /**

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 
 /**
  * Reuse list.
@@ -78,12 +77,12 @@ public class ReuseListImpl extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
-        put(bag, 0, 0, 0, 0, IoStatisticsHolderNoOp.INSTANCE);
+        put(bag, 0, 0, 0, 0);
     }
 
     /** {@inheritDoc} */
     @Override public long takeRecycledPage() throws IgniteCheckedException {
-        return takeEmptyPage(0, null, IoStatisticsHolderNoOp.INSTANCE);
+        return takeEmptyPage(0, null);
     }
 
     /** {@inheritDoc} */

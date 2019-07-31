@@ -53,6 +53,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -75,8 +76,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -632,18 +631,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int grpId, long pageId) throws IgniteCheckedException {
-        return acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, false);
+        return acquirePage(grpId, pageId, false);
     }
 
     /** {@inheritDoc} */
-    @Override public long acquirePage(int grpId, long pageId,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        return acquirePage(grpId, pageId, statHolder, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder,
-        boolean restore) throws IgniteCheckedException {
+    @Override public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException {
         FullPageId fullId = new FullPageId(pageId, grpId);
 
         int partId = PageIdUtils.partId(pageId);
@@ -666,8 +658,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long absPtr = seg.absolute(relPtr);
 
                 seg.acquirePage(absPtr);
-
-                statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
                 return absPtr;
             }
@@ -772,9 +762,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             seg.acquirePage(absPtr);
 
-            if(!readPageFromStore)
-                statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
-
             return absPtr;
         }
         catch (IgniteOutOfMemoryException oom) {
@@ -803,8 +790,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 try {
                     storeMgr.read(grpId, pageId, buf);
 
-                    statHolder.trackPhysicalAndLogicalRead(pageAddr);
-
                     actualPageId = PageIO.getPageId(buf);
 
                     memMetrics.onPageRead();
@@ -816,8 +801,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                     buf.rewind();
 
                     tryToRestorePage(fullId, buf);
-
-                    statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
                     memMetrics.onPageRead();
                 }

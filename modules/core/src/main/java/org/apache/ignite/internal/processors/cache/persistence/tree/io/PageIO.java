@@ -40,8 +40,6 @@ import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
-import org.apache.ignite.internal.stat.IndexPageType;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -74,7 +72,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener, IoStatisticsHolder)}
+ *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {
@@ -597,34 +595,6 @@ public abstract class PageIO {
         }
 
         throw new IgniteCheckedException("Unknown page IO type: " + type);
-    }
-
-    /**
-     * @param pageAddr Address of page.
-     * @return Index page type.
-     */
-    public static IndexPageType deriveIndexPageType(long pageAddr) {
-        int pageIoType = PageIO.getType(pageAddr);
-        switch (pageIoType) {
-            case PageIO.T_DATA_REF_INNER:
-            case PageIO.T_H2_REF_INNER:
-            case PageIO.T_CACHE_ID_AWARE_DATA_REF_INNER:
-                return IndexPageType.INNER;
-
-            case PageIO.T_DATA_REF_LEAF:
-            case PageIO.T_H2_REF_LEAF:
-            case PageIO.T_CACHE_ID_AWARE_DATA_REF_LEAF:
-                return IndexPageType.LEAF;
-
-            default:
-                if (PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END)
-                    return IndexPageType.LEAF;
-
-                if (PageIO.T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_INNER_END)
-                    return IndexPageType.INNER;
-        }
-
-        return IndexPageType.NOT_INDEX;
     }
 
     /**

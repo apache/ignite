@@ -51,9 +51,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -72,7 +69,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  *
@@ -168,12 +164,6 @@ public class CacheGroupContext {
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
-    /** Statistics holder to track IO operations for PK index pages. */
-    private final IoStatisticsHolder statHolderIdx;
-
-    /** Statistics holder to track IO operations for data pages. */
-    private final IoStatisticsHolder statHolderData;
-
     /** */
     private volatile boolean hasAtomicCaches;
 
@@ -237,18 +227,6 @@ public class CacheGroupContext {
         log = ctx.kernalContext().log(getClass());
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
-
-        if (systemCache()) {
-            statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
-            statHolderData = IoStatisticsHolderNoOp.INSTANCE;
-        }
-        else {
-            statHolderIdx = ctx.kernalContext().ioStats().register(IoStatisticsType.HASH_INDEX,
-                cacheOrGroupName(), HASH_PK_IDX_NAME);
-
-            statHolderData = ctx.kernalContext().ioStats().register(IoStatisticsType.CACHE_GROUP,
-                cacheOrGroupName());
-        }
     }
 
     /**
@@ -1232,19 +1210,5 @@ public class CacheGroupContext {
      */
     public boolean hasAtomicCaches() {
         return hasAtomicCaches;
-    }
-
-    /**
-     * @return Statistics holder to track cache IO operations.
-     */
-    public IoStatisticsHolder statisticsHolderIdx() {
-        return statHolderIdx;
-    }
-
-    /**
-     * @return Statistics holder to track cache IO operations.
-     */
-    public IoStatisticsHolder statisticsHolderData() {
-        return statHolderData;
     }
 }

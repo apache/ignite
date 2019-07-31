@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -80,9 +79,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     private final String idxName;
 
     /** */
-    private final IoStatisticsHolder stats;
-
-    /** */
     private final Comparator<Value> comp = new Comparator<Value>() {
         @Override public int compare(Value o1, Value o2) {
             return compareValues(o1, o2);
@@ -110,9 +106,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
      * @param failureProcessor if the tree is corrupted.
-     * @param log Logger.
-     * @param stats Statistics holder.
      * @throws IgniteCheckedException If failed.
+     * @param log Logger.
      */
     protected H2Tree(
         String name,
@@ -131,8 +126,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         int inlineSize,
         @Nullable H2RowCache rowCache,
         @Nullable FailureProcessor failureProcessor,
-        IgniteLogger log,
-        IoStatisticsHolder stats
+        IgniteLogger log
     ) throws IgniteCheckedException {
         super(
             name,
@@ -147,7 +141,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         );
 
         this.log = log;
-        this.stats = stats;
         this.rowCache = rowCache;
         this.tblName = tblName;
         this.idxName = idxName;

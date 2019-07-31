@@ -40,8 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -101,8 +99,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PageIO iox,
             Boolean walPlc,
             T row,
-            int itemId,
-            IoStatisticsHolder statHolder)
+            int itemId)
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
@@ -148,8 +145,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PageIO iox,
             Boolean walPlc,
             T row,
-            int written,
-            IoStatisticsHolder statHolder)
+            int written)
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
@@ -168,7 +164,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int bucket = bucket(newFreeSpace, false);
 
-                put(null, pageId, page, pageAddr, bucket, statHolder);
+                put(null, pageId, page, pageAddr, bucket);
             }
 
             if (written == rowSize)
@@ -282,8 +278,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PageIO iox,
             Boolean walPlc,
             Void ignored,
-            int itemId,
-            IoStatisticsHolder statHolder)
+            int itemId)
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
@@ -307,12 +302,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
                         pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
-                        if (removeDataPage(pageId, page, pageAddr, io, oldBucket, statHolder))
-                            put(null, pageId, page, pageAddr, newBucket, statHolder);
+                        if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
+                            put(null, pageId, page, pageAddr, newBucket);
                     }
                 }
                 else
-                    put(null, pageId, page, pageAddr, newBucket, statHolder);
+                    put(null, pageId, page, pageAddr, newBucket);
 
                 if (io.isEmpty(pageAddr))
                     evictionTracker.forgetPage(pageId);
@@ -471,7 +466,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void insertDataRow(T row) throws IgniteCheckedException {
         int rowSize = row.size();
 
         int written = 0;
@@ -488,14 +483,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 long pageId = 0L;
 
                 if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
-                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions, statHolder);
+                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions);
 
                 boolean reuseBucket = false;
 
                 // TODO: properly handle reuse bucket.
                 if (pageId == 0L) {
                     for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
-                        pageId = takeEmptyPage(b, ioVersions, statHolder);
+                        pageId = takeEmptyPage(b, ioVersions);
 
                         if (pageId != 0L) {
                             reuseBucket = isReuseBucket(b);
@@ -514,7 +509,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 PageIO init = reuseBucket || allocated ? ioVersions.latest() : null;
 
-                written = write(pageId, writeRow, init, row, written, FAIL_I, statHolder);
+                written = write(pageId, writeRow, init, row, written, FAIL_I);
 
                 assert written != FAIL_I; // We can't fail here.
             }
@@ -529,18 +524,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(long link, T row,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public boolean updateDataRow(long link, T row) throws IgniteCheckedException {
         assert link != 0;
 
         try {
             long pageId = PageIdUtils.pageId(link);
             int itemId = PageIdUtils.itemId(link);
 
-            Boolean updated = write(pageId, updateRow, row, itemId, null, statHolder);
+            Boolean updated = write(pageId, updateRow, row, itemId, null);
 
             assert updated != null; // Can't fail here.
-            
+
             return updated;
         }
         catch (IgniteCheckedException | Error e) {
@@ -552,14 +546,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void removeDataRowByLink(long link) throws IgniteCheckedException {
         assert link != 0;
 
         try {
             long pageId = PageIdUtils.pageId(link);
             int itemId = PageIdUtils.itemId(link);
 
-            long nextLink = write(pageId, rmvRow, itemId, FAIL_L, statHolder);
+            long nextLink = write(pageId, rmvRow, itemId, FAIL_L);
 
             assert nextLink != FAIL_L; // Can't fail here.
 
@@ -569,7 +563,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 itemId = PageIdUtils.itemId(nextLink);
                 pageId = PageIdUtils.pageId(nextLink);
 
-                nextLink = write(pageId, rmvRow, itemId, FAIL_L, statHolder);
+                nextLink = write(pageId, rmvRow, itemId, FAIL_L);
 
                 assert nextLink != FAIL_L; // Can't fail here.
             }
@@ -609,7 +603,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         assert reuseList == this : "not allowed to be a reuse list";
 
         try {
-            put(bag, 0, 0, 0L, REUSE_BUCKET, IoStatisticsHolderNoOp.INSTANCE);
+            put(bag, 0, 0, 0L, REUSE_BUCKET);
         }
         catch (IgniteCheckedException | Error e) {
             throw e;
@@ -624,7 +618,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         assert reuseList == this : "not allowed to be a reuse list";
 
         try {
-            return takeEmptyPage(REUSE_BUCKET, null, IoStatisticsHolderNoOp.INSTANCE);
+            return takeEmptyPage(REUSE_BUCKET, null);
         }
         catch (IgniteCheckedException | Error e) {
             throw e;

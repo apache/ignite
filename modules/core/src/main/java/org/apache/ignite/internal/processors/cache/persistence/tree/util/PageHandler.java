@@ -24,7 +24,6 @@ import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,8 +38,7 @@ public abstract class PageHandler<X, R> {
     private static final PageHandler<Void, Boolean> NO_OP = new PageHandler<Void, Boolean>() {
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             Void arg,
-            int intArg,
-            IoStatisticsHolder statHolder) throws IgniteCheckedException {
+            int intArg) throws IgniteCheckedException {
             return Boolean.TRUE;
         }
     };
@@ -54,7 +52,6 @@ public abstract class PageHandler<X, R> {
      * @param walPlc Full page WAL record policy.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -66,9 +63,7 @@ public abstract class PageHandler<X, R> {
         PageIO io,
         Boolean walPlc,
         X arg,
-        int intArg,
-        IoStatisticsHolder statHolder
-    )
+        int intArg)
         throws IgniteCheckedException;
 
     /**
@@ -99,7 +94,6 @@ public abstract class PageHandler<X, R> {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -111,10 +105,9 @@ public abstract class PageHandler<X, R> {
         PageHandler<X, R> h,
         X arg,
         int intArg,
-        R lockFailed,
-        IoStatisticsHolder statHolder
+        R lockFailed
     ) throws IgniteCheckedException {
-        long page = pageMem.acquirePage(cacheId, pageId, statHolder);
+        long page = pageMem.acquirePage(cacheId, pageId);
         try {
             long pageAddr = readLock(pageMem, cacheId, pageId, page, lsnr);
 
@@ -122,7 +115,7 @@ public abstract class PageHandler<X, R> {
                 return lockFailed;
             try {
                 PageIO io = PageIO.getPageIO(pageAddr);
-                return h.run(cacheId, pageId, page, pageAddr, io, null, arg, intArg, statHolder);
+                return h.run(cacheId, pageId, page, pageAddr, io, null, arg, intArg);
             }
             finally {
                 readUnlock(pageMem, cacheId, pageId, page, pageAddr, lsnr);
@@ -143,7 +136,6 @@ public abstract class PageHandler<X, R> {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -156,8 +148,7 @@ public abstract class PageHandler<X, R> {
         PageHandler<X, R> h,
         X arg,
         int intArg,
-        R lockFailed,
-        IoStatisticsHolder statHolder
+        R lockFailed
     ) throws IgniteCheckedException {
         long pageAddr = 0L;
 
@@ -166,7 +157,7 @@ public abstract class PageHandler<X, R> {
                 return lockFailed;
 
             PageIO io = PageIO.getPageIO(pageAddr);
-            return h.run(cacheId, pageId, page, pageAddr, io, null, arg, intArg, statHolder);
+            return h.run(cacheId, pageId, page, pageAddr, io, null, arg, intArg);
         }
         finally {
             if (pageAddr != 0L)
@@ -224,7 +215,6 @@ public abstract class PageHandler<X, R> {
      * @param init IO for new page initialization.
      * @param wal Write ahead log.
      * @param lsnr Lock listener.
-     * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
     public static void initPage(
@@ -233,10 +223,9 @@ public abstract class PageHandler<X, R> {
         long pageId,
         PageIO init,
         IgniteWriteAheadLogManager wal,
-        PageLockListener lsnr,
-        IoStatisticsHolder statHolder
+        PageLockListener lsnr
     ) throws IgniteCheckedException {
-        Boolean res = writePage(pageMem, cacheId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE, statHolder);
+        Boolean res = writePage(pageMem, cacheId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE);
 
         assert res != FALSE;
     }
@@ -253,7 +242,6 @@ public abstract class PageHandler<X, R> {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -268,11 +256,10 @@ public abstract class PageHandler<X, R> {
         Boolean walPlc,
         X arg,
         int intArg,
-        R lockFailed,
-        IoStatisticsHolder statHolder
+        R lockFailed
     ) throws IgniteCheckedException {
         boolean releaseAfterWrite = true;
-        long page = pageMem.acquirePage(cacheId, pageId, statHolder);
+        long page = pageMem.acquirePage(cacheId, pageId);
         try {
             long pageAddr = writeLock(pageMem, cacheId, pageId, page, lsnr, false);
 
@@ -290,7 +277,7 @@ public abstract class PageHandler<X, R> {
                 else
                     init = PageIO.getPageIO(pageAddr);
 
-                R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
+                R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg);
 
                 ok = true;
 
@@ -322,7 +309,6 @@ public abstract class PageHandler<X, R> {
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -338,8 +324,7 @@ public abstract class PageHandler<X, R> {
         Boolean walPlc,
         X arg,
         int intArg,
-        R lockFailed,
-        IoStatisticsHolder statHolder
+        R lockFailed
     ) throws IgniteCheckedException {
         long pageAddr = writeLock(pageMem, cacheId, pageId, page, lsnr, false);
 
@@ -357,7 +342,7 @@ public abstract class PageHandler<X, R> {
             else
                 init = PageIO.getPageIO(pageAddr);
 
-            R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
+            R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg);
 
             ok = true;
 

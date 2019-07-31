@@ -362,7 +362,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         long link = io.getGapsLink(partMetaPageAddr);
 
                         if (updCntrsBytes == null && link != 0) {
-                            partStore.removeDataRowByLink(link, grp.statisticsHolderData());
+                            partStore.removeDataRowByLink(link);
 
                             io.setGapsLink(partMetaPageAddr, (link = 0));
 
@@ -371,7 +371,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else if (updCntrsBytes != null && link == 0) {
                             SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
-                            partStore.insertDataRow(row, grp.statisticsHolderData());
+                            partStore.insertDataRow(row);
 
                             io.setGapsLink(partMetaPageAddr, (link = row.link()));
 
@@ -383,11 +383,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             assert prev != null : "Read null gaps using link=" + link;
 
                             if (!Arrays.equals(prev, updCntrsBytes)) {
-                                partStore.removeDataRowByLink(link, grp.statisticsHolderData());
+                                partStore.removeDataRowByLink(link);
 
                                 SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
-                                partStore.insertDataRow(row, grp.statisticsHolderData());
+                                partStore.insertDataRow(row);
 
                                 io.setGapsLink(partMetaPageAddr, (link = row.link()));
 
