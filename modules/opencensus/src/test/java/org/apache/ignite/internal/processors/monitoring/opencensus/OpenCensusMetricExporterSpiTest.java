@@ -200,7 +200,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
             }
         }, EXPORT_TIMEOUT * 10);
 
-        assertTrue("Additional metrics should be exported via http", res);
+        assertTrue("Histogram metrics should be exported via http", res);
     }
 
     /** */
