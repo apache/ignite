@@ -24,8 +24,10 @@ import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -134,6 +136,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg2.setBackups(1);
         cachePCfg2.setRebalanceOrder(2);
         //cachePCfg2.setRebalanceDelay(5000);//Known issue, possible deadlock in case of low priority cache rebalancing delayed.
+        cachePCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cachePCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -142,7 +146,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheRCfg.setRebalanceBatchSize(1);
         cacheRCfg.setRebalanceBatchesPrefetchCount(Integer.MAX_VALUE);
-        ((TcpCommunicationSpi)iCfg.getCommunicationSpi()).setSharedMemoryPort(-1);//Shmem fail fix for Integer.MAX_VALUE.
+        cacheRCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheRCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -150,6 +155,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg2.setCacheMode(CacheMode.REPLICATED);
         cacheRCfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheRCfg2.setRebalanceOrder(4);
+        cacheRCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheRCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
@@ -624,5 +631,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
             super.sendMessage(node, msg, ackC);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 2;
     }
 }
