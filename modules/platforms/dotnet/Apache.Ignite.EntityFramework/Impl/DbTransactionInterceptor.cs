@@ -33,7 +33,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly DbCache _cache;
 
         /** Map from tx to dependent sets. HashSet because same sets can be affected multiple times within a tx. */
-        private readonly ConcurrentDictionary<DbTransaction, HashSet<EntitySetBase>> _entitySets 
+        private readonly ConcurrentDictionary<DbTransaction, HashSet<EntitySetBase>> _entitySets
             = new ConcurrentDictionary<DbTransaction, HashSet<EntitySetBase>>();
 
         /// <summary>
@@ -48,6 +48,10 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public void InvalidateCache(ICollection<EntitySetBase> entitySets, DbTransaction transaction)
         {
+            // Stored procedure is used, nothing to invalidate.
+            if (entitySets == null)
+                return;
+
             if (transaction == null)
             {
                 // Invalidate immediately.
