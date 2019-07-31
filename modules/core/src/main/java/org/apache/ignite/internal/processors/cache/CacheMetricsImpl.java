@@ -28,8 +28,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1286,11 +1286,13 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Rebalance entry store callback.
+     *
+     * @param keysCnt Count of received keys.
      */
-    public void onRebalanceKeyReceived() {
-        rebalancedKeys.increment();
+    public void onRebalanceKeysReceived(int keysCnt) {
+        rebalancedKeys.add(keysCnt);
 
-        rebalancingKeysRate.increment();
+        rebalancingKeysRate.add(keysCnt);
     }
 
     /**

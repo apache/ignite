@@ -577,10 +577,10 @@ public interface IgniteCacheOffheapManager {
      * @param part Partition.
      * @param topVer Topology version.
      * @param infos Entries info for preload.
-     * @param preloadCb Preloading callback.
+     * @param onSuccess Preloading callback.
      */
     public void preload(int part, AffinityTopologyVersion topVer, Iterator<GridCacheEntryInfo> infos,
-        CI2<Boolean, CacheDataRow> preloadCb) throws IgniteCheckedException;
+        CI2<GridCacheContext, CacheDataRow> onSuccess) throws IgniteCheckedException;
 
     /**
      *

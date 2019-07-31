@@ -769,6 +769,12 @@ public class GridDhtPartitionDemander {
                                         mvccPreloadEntries(topVer, node, p, infos);
                                     else
                                         preloadEntries(topVer, p, infos);
+
+                                    // TODO: IGNITE-11330: Update metrics for touched cache only.
+                                    for (GridCacheContext cctx : grp.caches()) {
+                                        if (cctx.statisticsEnabled())
+                                            cctx.cache().metrics0().onRebalanceKeysReceived(e.getValue().infos().size());
+                                    }
                                 }
                                 catch (GridDhtInvalidPartitionException ignored) {
                                     if (log.isDebugEnabled())
@@ -911,11 +917,8 @@ public class GridDhtPartitionDemander {
                             cctx = grp.shared().cacheContext(cacheId);
                         }
 
-                        if (cctx != null) {
+                        if (cctx != null)
                             mvccPreloadEntry(cctx, node, entryHist, topVer, p);
-
-                            updateCacheMetrics();
-                        }
 
                         if (!hasMore)
                             return;
@@ -943,22 +946,16 @@ public class GridDhtPartitionDemander {
     private void preloadEntries(AffinityTopologyVersion topVer, int p,
         Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
         try {
-            grp.offheap().preload(p, topVer, infos, (loaded, row) -> {
-                updateCacheMetrics();
-
-                if (loaded && grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !row.key().internal()) {
-                    GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
-
-                    if (cctx == null)
-                        return;
-
-                    cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
-
+            grp.offheap().preload(p, topVer, infos, (cctx, row) -> {
+                if (grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !row.key().internal()) {
                     cctx.events().addEvent(p, row.key(), cctx.localNodeId(), null,
                         null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
                         false, null, null, null, true);
                 }
             });
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw e;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Preloading failed - stopping rebalancing [p=" + p + "]", e);
@@ -1043,19 +1040,6 @@ public class GridDhtPartitionDemander {
      */
     private String demandRoutineInfo(int topicId, UUID supplier, GridDhtPartitionSupplyMessage supplyMsg) {
         return "grp=" + grp.cacheOrGroupName() + ", topVer=" + supplyMsg.topologyVersion() + ", supplier=" + supplier + ", topic=" + topicId;
-    }
-
-    /**
-     * Update rebalancing metrics.
-     */
-    private void updateCacheMetrics() {
-        // TODO: IGNITE-11330: Update metrics for touched cache only.
-        // Due to historical rebalancing "EstimatedRebalancingKeys" metric is currently calculated for the whole cache
-        // group (by partition counters), so "RebalancedKeys" and "RebalancingKeysRate" is calculated in the same way.
-        for (GridCacheContext cctx0 : grp.caches()) {
-            if (cctx0.statisticsEnabled())
-                cctx0.cache().metrics0().onRebalanceKeyReceived();
-        }
     }
 
     /** {@inheritDoc} */
