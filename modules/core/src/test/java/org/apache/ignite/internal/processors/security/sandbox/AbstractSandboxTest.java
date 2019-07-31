@@ -83,7 +83,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
 
     /** */
     @BeforeClass
-    public static void setup() {
+    public static void beforeClass() {
         if (System.getSecurityManager() == null) {
             Policy.setPolicy(new Policy() {
                 @Override public PermissionCollection getPermissions(CodeSource cs) {
@@ -103,7 +103,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
 
     /** */
     @AfterClass
-    public static void tearDown() {
+    public static void afterClass() {
         if (setupSM) {
             System.setSecurityManager(null);
             Policy.setPolicy(null);

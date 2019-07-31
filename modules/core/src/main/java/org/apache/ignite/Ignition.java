@@ -19,15 +19,20 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -483,7 +488,9 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite() throws IgniteIllegalStateException {
-        return IgnitionEx.grid();
+        return SecurityUtils.ignite(
+            AccessController.doPrivileged((PrivilegedAction<Ignite>)IgnitionEx::grid)
+        );
     }
 
     /**
@@ -492,7 +499,10 @@ public class Ignition {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
-        return IgnitionEx.allGrids();
+        PrivilegedAction<List<Ignite>> act = IgnitionEx::allGrids;
+
+        return AccessController.doPrivileged(act).stream()
+            .map(SecurityUtils::ignite).collect(Collectors.toList());
     }
 
     /**
@@ -508,7 +518,9 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(locNodeId);
+        return SecurityUtils.ignite(
+            AccessController.doPrivileged((PrivilegedAction<Ignite>)() -> IgnitionEx.grid(locNodeId))
+        );
     }
 
     /**
@@ -525,7 +537,9 @@ public class Ignition {
      *      initialized or Ignite instance was stopped or was not started.
      */
     public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(name);
+        return SecurityUtils.ignite(
+            AccessController.doPrivileged((PrivilegedAction<Ignite>)() -> IgnitionEx.grid(name))
+        );
     }
 
     /**
@@ -540,7 +554,9 @@ public class Ignition {
      * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
      */
     public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
-        return IgnitionEx.localIgnite();
+        return SecurityUtils.ignite(
+            AccessController.doPrivileged((PrivilegedAction<IgniteKernal>)IgnitionEx::localIgnite)
+        );
     }
 
     /**

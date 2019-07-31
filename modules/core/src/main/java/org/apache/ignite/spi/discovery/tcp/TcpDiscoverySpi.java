@@ -597,6 +597,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     @Override protected void injectResources(Ignite ignite) {
         super.injectResources(ignite);
 
+        init();
+    }
+
+    /** */
+    private void init() {
         // Inject resource.
         if (ignite != null) {
             setLocalAddress(ignite.configuration().getLocalHost());

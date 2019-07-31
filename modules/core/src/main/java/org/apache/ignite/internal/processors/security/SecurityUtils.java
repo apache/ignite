@@ -18,15 +18,19 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.security.AllPermission;
+import java.security.Permission;
 import java.security.Permissions;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.security.closure.SandboxIgnite;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -128,5 +132,32 @@ public class SecurityUtils {
         catch (IgniteCheckedException e) {
             throw new SecurityException("Failed to get security context.", e);
         }
+    }
+
+    /**
+     * Checks passed permission by installed SecurityManager.
+     *
+     * @param perm The requested permission.
+     * @see SecurityManager#checkPermission(Permission)
+     */
+    public static void checkPermission(Permission perm) {
+        SecurityManager sm = System.getSecurityManager();
+
+        if (sm != null)
+            sm.checkPermission(perm);
+    }
+
+    /**
+     *
+     */
+    public static Ignite ignite(Ignite ignite) {
+        if (ignite instanceof IgniteEx) {
+            IgniteEx ex = (IgniteEx)ignite;
+
+            if (ex.context().security().enabled())
+                return new SandboxIgnite(ignite);
+        }
+
+        return ignite;
     }
 }

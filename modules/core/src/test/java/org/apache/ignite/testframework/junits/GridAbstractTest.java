@@ -1295,7 +1295,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected IgniteEx grid(String name) {
         if (!isRemoteJvm(name))
-            return (IgniteEx)G.ignite(name);
+            return (IgniteEx)IgnitionEx.grid(name);
         else {
             if (isRemoteJvm())
                 return IgniteNodeRunner.startedInstance();

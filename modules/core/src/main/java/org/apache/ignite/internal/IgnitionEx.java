@@ -151,6 +151,10 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_PO
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.IGNITIONEX_ADDLISTENER_PERMISSION;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.IGNITIONEX_GRID_PERMISSION;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.IGNITIONEX_REMOVELISTENER_PERMISSION;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.checkPermission;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
 /**
@@ -1240,6 +1244,8 @@ public class IgnitionEx {
      * @return List of all grids started so far.
      */
     private static List<Ignite> allGrids(boolean wait) {
+        checkPermission(IGNITIONEX_GRID_PERMISSION);
+
         List<Ignite> allIgnites = new ArrayList<>(grids.size() + 1);
 
         for (IgniteNamedInstance grid : grids.values()) {
@@ -1276,6 +1282,8 @@ public class IgnitionEx {
     public static Ignite grid(UUID locNodeId) throws IgniteIllegalStateException {
         A.notNull(locNodeId, "locNodeId");
 
+        checkPermission(IGNITIONEX_GRID_PERMISSION);
+
         IgniteNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
@@ -1303,6 +1311,8 @@ public class IgnitionEx {
      * @return Grid instance or {@code null}.
      */
     public static IgniteKernal gridxx(UUID locNodeId) {
+        checkPermission(IGNITIONEX_GRID_PERMISSION);
+
         IgniteNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
@@ -1339,6 +1349,8 @@ public class IgnitionEx {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite grid(@Nullable String name) throws IgniteIllegalStateException {
+        checkPermission(IGNITIONEX_GRID_PERMISSION);
+
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         Ignite res;
@@ -1375,6 +1387,8 @@ public class IgnitionEx {
      * @return Grid instance.
      */
     public  static IgniteKernal gridx(@Nullable String name) {
+        checkPermission(IGNITIONEX_GRID_PERMISSION);
+
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1401,6 +1415,8 @@ public class IgnitionEx {
     public static void addListener(IgnitionListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
+        checkPermission(IGNITIONEX_ADDLISTENER_PERMISSION);
+
         lsnrs.add(lsnr);
     }
 
@@ -1412,6 +1428,8 @@ public class IgnitionEx {
      */
     public static boolean removeListener(IgnitionListener lsnr) {
         A.notNull(lsnr, "lsnr");
+
+        checkPermission(IGNITIONEX_REMOVELISTENER_PERMISSION);
 
         return lsnrs.remove(lsnr);
     }

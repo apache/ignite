@@ -36,6 +36,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
@@ -261,10 +262,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      */
     @IgniteInstanceResource
     protected void injectResources(Ignite ignite) {
-        this.ignite = ignite;
-
-        if (ignite != null)
+        if (ignite != null) {
             igniteInstanceName = ignite.name();
+
+            this.ignite = ignite instanceof IgniteKernal ? ignite : IgnitionEx.grid(igniteInstanceName);
+        }
     }
 
     /**
