@@ -47,6 +47,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Grid kernal context. */
     private final GridKernalContext gridKernalCtx;
 
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Number of transaction commits. */
     private final IntMetricImpl txCommits;
 
