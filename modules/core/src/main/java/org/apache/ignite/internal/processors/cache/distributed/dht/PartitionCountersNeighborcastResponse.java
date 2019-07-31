@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -31,13 +32,17 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
     /** */
     private IgniteUuid futId;
 
+    /** Topology version. */
+    private AffinityTopologyVersion topVer;
+
     /** */
     public PartitionCountersNeighborcastResponse() {
     }
 
     /** */
-    public PartitionCountersNeighborcastResponse(IgniteUuid futId) {
+    public PartitionCountersNeighborcastResponse(IgniteUuid futId, AffinityTopologyVersion topVer) {
         this.futId = futId;
+        this.topVer = topVer;
     }
 
     /**
@@ -45,6 +50,11 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
      */
     public IgniteUuid futId() {
         return futId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -64,6 +74,12 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
         switch (writer.state()) {
             case 4:
                 if (!writer.writeIgniteUuid("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -92,6 +108,14 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
 
                 reader.incrementState();
 
+            case 5:
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(PartitionCountersNeighborcastResponse.class);
@@ -104,7 +128,7 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */
