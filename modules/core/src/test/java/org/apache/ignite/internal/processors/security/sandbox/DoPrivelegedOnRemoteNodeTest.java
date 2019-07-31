@@ -29,9 +29,11 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -84,6 +86,12 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
 
     /** */
     private Path srcTmpDir;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDeploymentSpi(new LocalDeploymentSpi());
+    }
 
     /** */
     @Before
