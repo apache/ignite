@@ -459,4 +459,32 @@ public interface ConnectionProperties {
      */
     public void setAffinityAwarenessPartitionDistributionsCacheSize(
         int affinityAwarenessPartDistributionsCacheSize) throws SQLException;
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @return Query timeout in seconds.
+     */
+    @Nullable public Integer getQueryTimeout();
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @param qryTimeout Query timeout in seconds.
+     */
+    public void setQueryTimeout(@Nullable Integer qryTimeout) throws SQLException;
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @return Connection timeout in milliseconds.
+     */
+    @Nullable public int getConnectionTimeout();
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @param connTimeout Connection timeout in milliseconds.
+     */
+    public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
 }
