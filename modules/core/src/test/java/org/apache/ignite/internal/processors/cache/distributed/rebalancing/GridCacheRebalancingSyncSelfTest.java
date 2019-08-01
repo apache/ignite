@@ -491,6 +491,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         );
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */
