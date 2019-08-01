@@ -785,6 +785,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ConnectionKey connKey,
                 ChannelCreateRequest msg
             ) {
+                cleanupLocalNodeRecoveryDescriptor(connKey);
+
                 ses.send(new ChannelCreateResponse())
                     .listen(sendFut -> {
                         try {
@@ -796,8 +798,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ses.close().listen(closeFut -> {
                                 try {
                                     closeFut.get(); // Exception not ocurred.
-
-                                    cleanupLocalNodeRecoveryDescriptor(connKey);
 
                                     SelectableChannel channel = ses.key().channel();
 
