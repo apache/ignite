@@ -4401,8 +4401,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             assert ses != null : "Session must be established [remoteId=" + remote.id() + ", key=" + key + ']';
 
-            final GridNioSession finalSes = ses;
-
             channelReqs.put(key, result = new GridFutureAdapter<>());
 
             // Send configuration message over the created session.
@@ -4421,7 +4419,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             @Override public void onTimeout() {
                                 // Close session if request not complete yet.
                                 if (result.onDone(handshakeTimeoutException()))
-                                    finalSes.close();
+                                    ses.close();
                             }
                         });
                     }
