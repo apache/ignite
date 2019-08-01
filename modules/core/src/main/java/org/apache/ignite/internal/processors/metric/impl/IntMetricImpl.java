@@ -49,6 +49,11 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
         updater.addAndGet(this, x);
     }
 
+    /** Adds 1 to the metric. */
+    public void increment() {
+        add(1);
+    }
+
     /**
      * Sets value.
      *

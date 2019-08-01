@@ -118,6 +118,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Partition map exchange metrics prefix. */
     public static final String PME_METRICS = "pme";
 
+    /** Transaction metrics prefix. */
+    public static final String TX_METRICS = "tx";
+
     /** GC CPU load metric name. */
     public static final String GC_CPU_LOAD = "GcCpuLoad";
 
