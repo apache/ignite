@@ -211,7 +211,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         return waitForCondition(() -> {
             try {
                 String httpMetrics = metricsFromHttp();
-                System.out.println("\n\n\n\n\n\n\n\n\n\n\n\nhttpMetrics="+httpMetrics);
 
                 for (String exp : patterns) {
                     if (!Pattern.compile(exp).matcher(httpMetrics).find())
