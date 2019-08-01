@@ -767,16 +767,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ses.closeSocketOnSessionClose(false);
 
                 ses.close().listen(f -> {
-                    try {
-                        f.get(); // Exception not ocurred.
-
-                        SelectableChannel nioChannel = ses.key().channel();
-
-                        reqFut.onDone(nioChannel);
-                    }
-                    catch (IgniteCheckedException e) {
-                        reqFut.onDone(e);
-                    }
+                    if (f.error() == null)
+                        reqFut.onDone(ses.key().channel());
+                    else
+                        reqFut.onDone(f.error());
                 });
             }
 
