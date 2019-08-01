@@ -2244,7 +2244,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (connectionsPerNode > 1)
-            connPlc = new RoundRobinConnectionPolicy(0, connectionsPerNode);
+            connPlc = new RoundRobinConnectionPolicy();
         else
             connPlc = new FirstConnectionPolicy();
 
