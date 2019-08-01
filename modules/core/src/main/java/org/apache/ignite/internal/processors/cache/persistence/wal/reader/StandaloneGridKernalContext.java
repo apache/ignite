@@ -97,6 +97,7 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -116,6 +117,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
+
+    /** Metrics manager. */
+    private final GridMetricManager metricMgr;
 
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
@@ -162,6 +166,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
+
+        metricMgr = new GridMetricManager(this);
     }
 
     /**
@@ -205,6 +211,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         cfg.setDataStorageConfiguration(pstCfg);
 
         marshaller.setContext(marshallerCtx);
+
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
         return cfg;
     }
@@ -295,7 +303,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridMetricManager metric() {
-        return null;
+        return metricMgr;
     }
 
     /** {@inheritDoc} */

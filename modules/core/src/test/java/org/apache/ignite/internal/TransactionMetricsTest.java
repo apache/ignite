@@ -29,8 +29,12 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -38,13 +42,14 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
  */
-public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
+public class TransactionMetricsTest extends GridCommonAbstractTest {
     /** */
     private static final int TRANSACTIONS = 10;
 
@@ -105,6 +110,8 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
 
         TransactionMetricsMxBean txMXBean = txMetricsMXBean(0);
 
+        MetricRegistry mreg = grid(0).context().metric().registry(TX_METRICS);
+
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         //when: one transaction commit
@@ -112,6 +119,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
 
         //then:
         assertEquals(1, txMXBean.getTransactionsCommittedNumber());
+        assertEquals(1, mreg.<IntMetric>findMetric("txCommits").value());
 
         //when: transaction is opening
         final Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
@@ -126,20 +134,21 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         }
 
         //then:
-        assertEquals(localKeysNum, txMXBean.getLockedKeysNumber());
-        assertEquals(1, txMXBean.getTransactionsHoldingLockNumber());
-        assertEquals(1, txMXBean.getOwnerTransactionsNumber());
+        assertEquals(localKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(1, mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
+        assertEquals(1, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 
         //when: transaction rollback
         tx1.rollback();
 
         //then:
         assertEquals(1, txMXBean.getTransactionsRolledBackNumber());
-        assertEquals(0, txMXBean.getLockedKeysNumber());
-        assertEquals(0, txMXBean.getTransactionsHoldingLockNumber());
-        assertEquals(0, txMXBean.getOwnerTransactionsNumber());
+        assertEquals(1, mreg.<IntMetric>findMetric("txRollbacks").value());
+        assertEquals(0, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(0, mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
+        assertEquals(0, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 
-        //when: keysNumber transactions from MXbean owner node + keysNumber transactions from client.
+        //when: keysNumber transactions from owner node + keysNumber transactions from client.
         CountDownLatch commitAllower = new CountDownLatch(1);
         CountDownLatch transactionStarter = new CountDownLatch(keysNumber + keysNumber);
 
@@ -164,9 +173,10 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         transactionStarter.await();
 
         //then:
-        assertEquals(txNumFromOwner + txNumFromClient, txMXBean.getLockedKeysNumber());
-        assertEquals(keysNumber + txNumFromClient, txMXBean.getTransactionsHoldingLockNumber());
-        assertEquals(keysNumber, txMXBean.getOwnerTransactionsNumber());
+        assertEquals(txNumFromOwner + txNumFromClient, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(keysNumber + txNumFromClient,
+            mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
+        assertEquals(keysNumber, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 
         commitAllower.countDown();
     }
@@ -180,7 +190,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         IgniteEx primaryNode2 = startGrid(1);
         IgniteEx nearNode = startGrid(2);
 
-        TransactionMetricsMxBean txMXBeanBackup = txMetricsMXBean(2);
+        MetricRegistry mreg = grid(2).context().metric().registry(TX_METRICS);
 
         awaitPartitionMapExchange();
 
@@ -204,7 +214,8 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
 
         transactionStarter.await();
 
-        final Map<String, String> transactions = txMXBeanBackup.getAllOwnerTransactions();
+        final Map<String, String> transactions =
+            mreg.<ObjectGauge<Map<String, String>>>findMetric("AllOwnerTransactions").value();
 
         assertEquals(TRANSACTIONS, transactions.size());
 

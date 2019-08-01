@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.TransactionMetricsMxBeanImplTest;
+import org.apache.ignite.internal.TransactionMetricsTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsCacheSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsEntitiesCountTest;
@@ -78,7 +78,7 @@ public class IgniteCacheMetricsSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsForClusterGroupSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OffheapCacheMetricsForClusterGroupSelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, TransactionMetricsMxBeanImplTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TransactionMetricsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridEvictionPolicyMBeansTest.class, ignoredTests);
 
