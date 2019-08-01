@@ -327,13 +327,17 @@ public class GridNioSessionImpl implements GridNioSession {
         return closeTime.compareAndSet(0, U.currentTimeMillis());
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean closeSocketOnSessionClose() {
+    /**
+     * @return {@code True} to close SocketChannel on current session close occured.
+     */
+    public boolean closeSocketOnSessionClose() {
         return closeSocket;
     }
 
-    /** {@inheritDoc} */
-    @Override public void closeSocketOnSessionClose(boolean closeSocket) {
+    /**
+     * @param closeSocket {@code False} remain SocketChannel open on session close.
+     */
+    public void closeSocketOnSessionClose(boolean closeSocket) {
         this.closeSocket = closeSocket;
     }
 
