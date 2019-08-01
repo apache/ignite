@@ -4406,7 +4406,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             // Send configuration message over the created session.
             ses.send(new ChannelCreateRequest(initMsg))
                 .listen(f -> {
-                    if (f.error() == null) {
+                    if (f.error() != null)
+                        result.onDone(f.error());
+                    else {
                         addTimeoutObject(new IgniteSpiTimeoutObject() {
                             @Override public IgniteUuid id() {
                                 return IgniteUuid.randomUuid();
@@ -4423,8 +4425,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             }
                         });
                     }
-                    else
-                        result.onDone(f.error());
                 });
 
             return result;
