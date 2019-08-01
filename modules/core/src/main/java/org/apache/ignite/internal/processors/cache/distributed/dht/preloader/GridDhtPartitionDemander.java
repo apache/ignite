@@ -983,6 +983,8 @@ public class GridDhtPartitionDemander {
                     ", grpId=" + grp.groupId() + ']');
             }
 
+            assert row.expireTime() >= 0 : row.expireTime();
+
             if (cached.initialValue(
                 row.value(),
                 row.version(),

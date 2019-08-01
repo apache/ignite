@@ -1218,9 +1218,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(partId);
 
-        while (infos.hasNext()) {
-            List<DataRowStoreAware> batch = new ArrayList<>(PRELOAD_CHECKPOINT_THRESHOLD);
+        List<DataRowStoreAware> batch = new ArrayList<>(PRELOAD_CHECKPOINT_THRESHOLD);
 
+        while (infos.hasNext()) {
             do {
                 GridCacheEntryInfo info = infos.next();
 
@@ -1235,6 +1235,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             while (infos.hasNext() && batch.size() < PRELOAD_CHECKPOINT_THRESHOLD);
 
             dataStore.insertRows(batch, initPred);
+
+            batch.clear();
         }
     }
 
