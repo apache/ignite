@@ -483,7 +483,7 @@ public class CacheGroupMetricsImpl {
         return metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName());
     }
 
-    /** @return {@code true} if topology started. */
+    /** @return {@code True} if topology started. */
     private boolean isTopologyStarted() {
         try {
             ctx.topology();
