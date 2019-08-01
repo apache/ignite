@@ -285,7 +285,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                if (histSupplier != null && exchFut.isHistoryPartition(grp, p)) {
+                if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
@@ -303,6 +303,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {
+                    // If for some reason (for example if supplier fails and new supplier is elected) partition is
+                    // assigned for full rebalance force clearing if not yet set.
+                    if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p))
+                        part.clearAsync();
+
                     List<ClusterNode> picked = remoteOwners(p, topVer);
 
                     if (picked.isEmpty()) {
