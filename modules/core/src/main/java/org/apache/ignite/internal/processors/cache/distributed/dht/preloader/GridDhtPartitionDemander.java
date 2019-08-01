@@ -673,9 +673,9 @@ public class GridDhtPartitionDemander {
 
         final RebalanceFuture fut = rebalanceFut;
 
-        try {
-            fut.cancelLock.readLock().lock();
+        fut.cancelLock.readLock().lock();
 
+        try {
             ClusterNode node = ctx.node(nodeId);
 
             if (node == null) {
@@ -1113,11 +1113,11 @@ public class GridDhtPartitionDemander {
          * @return {@code True}.
          */
         @Override public boolean cancel() {
-            try {
-                // Cancel lock is needed only for case when some message might be on the fly while rebalancing is
-                // cancelled.
-                cancelLock.writeLock().lock();
+            // Cancel lock is needed only for case when some message might be on the fly while rebalancing is
+            // cancelled.
+            cancelLock.writeLock().lock();
 
+            try {
                 synchronized (this) {
                     if (isDone())
                         return true;
