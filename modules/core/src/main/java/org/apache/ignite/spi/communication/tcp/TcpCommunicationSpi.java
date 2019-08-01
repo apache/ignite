@@ -50,6 +50,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -382,9 +383,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Maximum {@link GridNioSession} connections per node. */
     public static final int MAX_CONN_PER_NODE = 1024;
-
-    /** Maximum {@link Channel} connections per node. */
-    public static final int MAX_CHANNEL_CONN_PER_NODE = 256;
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
@@ -771,8 +769,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ses.close().listen(f -> {
                     try {
                         f.get(); // Exception not ocurred.
-
-                        cleanupLocalNodeRecoveryDescriptor(connKey);
 
                         SelectableChannel nioChannel = ses.key().channel();
 
@@ -2252,8 +2248,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         else
             connPlc = new FirstConnectionPolicy();
 
-        chConnPlc = new RoundRobinConnectionPolicy(connectionsPerNode + 1,
-            MAX_CHANNEL_CONN_PER_NODE);
+        chConnPlc = new ConnectionPolicy() {
+            /** Sequential connection index provider. */
+            private final AtomicInteger connIdx = new AtomicInteger(connectionsPerNode + 1);
+
+            @Override public int connectionIndex() {
+                return connIdx.incrementAndGet();
+            }
+        };
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -4387,27 +4389,32 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
 
-        GridFutureAdapter<Channel> result;
+        if (channelReqs.get(key) != null) {
+            throw new IgniteSpiException("The channel connection cannot be established to remote node. " +
+                "Connection key already in use [key=" + key + ']');
+        }
+
+        GridFutureAdapter<Channel> result = new GridFutureAdapter<>();
 
         connectGate.enter();
 
         try {
-            if (channelReqs.get(key) != null) {
-                throw new IgniteSpiException("The channel connection cannot be established to remote node. " +
-                    "Connection key already in use [key=" + key + ']');
-            }
-
             GridNioSession ses = createNioSession(remote, key.connectionIndex());
+
+            cleanupLocalNodeRecoveryDescriptor(key);
 
             assert ses != null : "Session must be established [remoteId=" + remote.id() + ", key=" + key + ']';
 
-            channelReqs.put(key, result = new GridFutureAdapter<>());
+            channelReqs.put(key, result);
 
             // Send configuration message over the created session.
             ses.send(new ChannelCreateRequest(initMsg))
                 .listen(f -> {
-                    if (f.error() != null)
+                    if (f.error() != null) {
                         result.onDone(f.error());
+
+                        ses.close();
+                    }
                     else {
                         addTimeoutObject(new IgniteSpiTimeoutObject() {
                             @Override public IgniteUuid id() {

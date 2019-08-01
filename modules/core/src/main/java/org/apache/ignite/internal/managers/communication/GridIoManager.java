@@ -2663,6 +2663,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ", fromNodeId=" + nodeId + ']'));
 
                 out.writeObject(new TransmissionMeta(ex));
+                out.flush();
 
                 return;
             }
