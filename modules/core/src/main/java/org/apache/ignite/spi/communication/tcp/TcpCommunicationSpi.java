@@ -411,8 +411,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** */
     private ConnectionPolicy connPlc = new FirstConnectionPolicy();
 
-    /** */
-    private ConnectionPolicy sockConnPlc = new ChannelRandomConnectionPolicy();
+    /** Channel connection index provider. */
+    private ConnectionPolicy chConnPlc;
 
     /** */
     private boolean enableForcibleNodeKill = IgniteSystemProperties
@@ -2248,9 +2248,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (connectionsPerNode > 1)
-            connPlc = new RoundRobinConnectionPolicy();
+            connPlc = new RoundRobinConnectionPolicy(0, connectionsPerNode);
         else
             connPlc = new FirstConnectionPolicy();
+
+        chConnPlc = new RoundRobinConnectionPolicy(connectionsPerNode + 1,
+            MAX_CHANNEL_CONN_PER_NODE);
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -4378,10 +4381,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     ) throws IgniteSpiException {
         assert !remote.isLocal() : remote;
         assert initMsg != null;
+        assert chConnPlc != null;
         assert nodeSupports(remote, CHANNEL_COMMUNICATION) : "Node doesn't support direct connection over socket channel " +
                 "[nodeId=" + remote.id() + ']';
 
-        ConnectionKey key = new ConnectionKey(remote.id(), sockConnPlc.connectionIndex());
+        ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
 
         GridFutureAdapter<Channel> result;
 
@@ -5105,18 +5109,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** */
-    private class RoundRobinConnectionPolicy implements ConnectionPolicy {
-        /** {@inheritDoc} */
-        @Override public int connectionIndex() {
-            return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
-        }
-    }
+    private static class RoundRobinConnectionPolicy implements ConnectionPolicy {
+        /** Position to start index at. */
+        private final int startIdx;
 
-    /** */
-    private static class ChannelRandomConnectionPolicy implements ConnectionPolicy {
+        /** Max distinct number of indexes to produce. */
+        private final int maxConn;
+
+        /**
+         * @param startIdx Position to start index at.
+         * @param maxConn Max distinct number of indexes to produce.
+         */
+        public RoundRobinConnectionPolicy(int startIdx, int maxConn) {
+            this.startIdx = startIdx;
+            this.maxConn = maxConn;
+        }
+
         /** {@inheritDoc} */
         @Override public int connectionIndex() {
-            return MAX_CONN_PER_NODE + (int)(U.safeAbs(Thread.currentThread().getId() % MAX_CHANNEL_CONN_PER_NODE));
+            return startIdx + (int)(U.safeAbs(Thread.currentThread().getId()) % maxConn);
         }
     }
 
