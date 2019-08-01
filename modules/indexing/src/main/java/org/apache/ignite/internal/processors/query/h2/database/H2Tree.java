@@ -261,7 +261,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             try {
                 if (H2TreeInlineObjectDetector.objectMayBeInlined(inlineSize, inlineIdxs)) {
                     H2TreeInlineObjectDetector inlineObjDetector = new H2TreeInlineObjectDetector(
-                        inlineSize, inlineIdxs);
+                        inlineSize, inlineIdxs, tblName, idxName, log);
 
                     findFirst(inlineObjDetector);
 
