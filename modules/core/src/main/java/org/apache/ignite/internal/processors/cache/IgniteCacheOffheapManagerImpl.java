@@ -123,6 +123,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
@@ -1223,6 +1224,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         while (infos.hasNext()) {
             do {
                 GridCacheEntryInfo info = infos.next();
+
+                assert info.ttl() == TTL_ETERNAL : info.ttl();
 
                 batch.add(new DataRowStoreAware(info.key(),
                     info.value(),
