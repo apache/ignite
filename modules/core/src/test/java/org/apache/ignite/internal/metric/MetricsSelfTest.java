@@ -311,15 +311,17 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHitRateMetric() throws Exception {
-        long rateTimeInterval = 100;
+        long rateTimeInterval = 500;
 
         HitRateMetric metric = mreg.hitRateMetric("testHitRate", null, rateTimeInterval, 10);
 
         assertEquals(0, metric.value());
 
+        long startTs = U.currentTimeMillis();
+
         GridTestUtils.runMultiThreaded(metric::increment, 10, "test-thread");
 
-        assertTrue(metric.value() > 0);
+        assertTrue(metric.value() > 0 || U.currentTimeMillis() - startTs > rateTimeInterval);
 
         U.sleep(rateTimeInterval * 2);
 
