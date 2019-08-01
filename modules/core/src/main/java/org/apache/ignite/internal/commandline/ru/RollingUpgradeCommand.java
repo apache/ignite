@@ -163,6 +163,6 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
             log.info("Rolling upgrade mode successfully " +
                 (RollingUpgradeSubCommands.ENABLE == rollingUpgradeArgs.command()? "enabled." : "disabled."));
         else
-            log.info("Rolling upgrade operation failed due to " + res.getCause());
+            log.info("Rolling upgrade operation failed. " + res.getCause().getMessage());
     }
 }
