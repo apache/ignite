@@ -85,11 +85,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             "The number of active transactions holding at least one key lock.");
 
         mreg.register("LockedKeysNumber",
-            this::getLockedKeysNumber,
+            this::txLockedKeysNum,
             "The number of keys locked on the node.");
 
         mreg.register("OwnerTransactionsNumber",
-            this::getOwnerTransactionsNumber,
+            this::nearTxNum,
             "The number of active transactions for which this node is the initiator.");
     }
 
