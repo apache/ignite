@@ -44,7 +44,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -128,9 +127,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /** Keep only the first page error. */
     private final ConcurrentMap<GroupPartitionId, IgniteCheckedException> pageTrackErrors = new ConcurrentHashMap<>();
 
-    /** Base working directory for saving copied pages. */
-    private File backupWorkDir;
-
     /** */
     public IgniteBackupManager(GridKernalContext ctx) {
         assert CU.isPersistenceEnabled(ctx.config());
@@ -161,26 +157,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         return getPartitionFile(cacheDir, partId);
     }
 
-    /**
-     * @param ccfg Cache configuration.
-     * @param partId Partiton identifier.
-     * @return The cache partiton delta file.
-     */
-    private File resolvePartitionDeltaFileCfg(CacheConfiguration ccfg, int partId) {
-        File cacheTempDir = cacheWorkDir(backupWorkDir, ccfg);
-
-        return getPartionDeltaFile(cacheTempDir, partId);
-    }
-
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
-
-        backupWorkDir = U.resolveWorkDirectory(cctx.kernalContext().config().getWorkDirectory(),
-            DataStorageConfiguration.DFLT_BACKUP_DIRECTORY,
-            true);
-
-        U.ensureDirectory(backupWorkDir, "backup store working directory", log);
 
         pageSize = cctx.kernalContext()
             .config()
@@ -478,7 +457,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     continue;
 
                 writer.write(pageId, buf, store);
-
             }
         }
         catch (Exception e) {
