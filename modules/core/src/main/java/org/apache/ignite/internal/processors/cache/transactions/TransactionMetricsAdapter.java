@@ -80,14 +80,6 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             Map.class,
             "Map of local node owning transactions.");
 
-        mreg.register("TransactionsCommittedNumber",
-            this::getTransactionsCommittedNumber,
-            "The number of transactions which were committed on the local node.");
-
-        mreg.register("TransactionsRolledBackNumber",
-            this::getTransactionsRolledBackNumber,
-            "The number of transactions which were rolled back on the local node.");
-
         mreg.register("TransactionsHoldingLockNumber",
             this::getTransactionsHoldingLockNumber,
             "The number of active transactions holding at least one key lock.");
@@ -162,7 +154,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     public void onTxCommit() {
         commitTime.value(U.currentTimeMillis());
 
-        txCommits.add(1);
+        txCommits.increment();
     }
 
     /**
@@ -171,7 +163,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     public void onTxRollback() {
         rollbackTime.value(U.currentTimeMillis());
 
-        txRollbacks.add(1);
+        txRollbacks.increment();
     }
 
     /**
