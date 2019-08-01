@@ -80,6 +80,9 @@ public class GridNioSessionImpl implements GridNioSession {
     /** For debug purposes. */
     private volatile boolean markedForClose;
 
+    /** Close channel on session #close() called. */
+    private volatile boolean closeSocket = true;
+
     /**
      * @param filterChain Chain.
      * @param locAddr Local address.
@@ -322,6 +325,16 @@ public class GridNioSessionImpl implements GridNioSession {
      */
     public boolean setClosed() {
         return closeTime.compareAndSet(0, U.currentTimeMillis());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean closeSocketOnSessionClose() {
+        return closeSocket;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void closeSocketOnSessionClose(boolean closeSocket) {
+        this.closeSocket = closeSocket;
     }
 
     /**

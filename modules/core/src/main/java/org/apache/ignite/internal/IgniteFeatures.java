@@ -57,6 +57,9 @@ public enum IgniteFeatures {
     /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
 
+    /** The node can communicate with other via socket channel. */
+    CHANNEL_COMMUNICATION(9),
+
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
 
