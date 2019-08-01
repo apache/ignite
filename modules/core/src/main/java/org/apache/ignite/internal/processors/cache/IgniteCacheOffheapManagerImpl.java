@@ -374,6 +374,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 do {
                     GridCacheEntryInfo info = infos.next();
 
+                    assert info.ttl() == 0 : info.ttl();
+
                     batch.add(new DataRowStoreAware(info.key(),
                         info.value(),
                         info.version(),
