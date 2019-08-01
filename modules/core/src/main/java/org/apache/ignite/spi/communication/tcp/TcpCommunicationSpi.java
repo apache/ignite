@@ -5114,25 +5114,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** */
-    private static class RoundRobinConnectionPolicy implements ConnectionPolicy {
-        /** Position to start index at. */
-        private final int startIdx;
-
-        /** Max distinct number of indexes to produce. */
-        private final int maxConn;
-
-        /**
-         * @param startIdx Position to start index at.
-         * @param maxConn Max distinct number of indexes to produce.
-         */
-        public RoundRobinConnectionPolicy(int startIdx, int maxConn) {
-            this.startIdx = startIdx;
-            this.maxConn = maxConn;
-        }
-
+    private class RoundRobinConnectionPolicy implements ConnectionPolicy {
         /** {@inheritDoc} */
         @Override public int connectionIndex() {
-            return startIdx + (int)(U.safeAbs(Thread.currentThread().getId()) % maxConn);
+            return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
         }
     }
 
