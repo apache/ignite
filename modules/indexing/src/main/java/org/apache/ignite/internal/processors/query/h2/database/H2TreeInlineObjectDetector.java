@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -38,17 +39,31 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<H2Ro
     /** Inline object supported flag. */
     private boolean inlineObjSupported = true;
 
+    /** */
+    private final String tblName;
+
+    /** */
+    private final String idxName;
+
+    /** */
+    private final IgniteLogger log;
+
     /**
      * @param inlineSize Inline size.
      * @param inlineHelpers Inline helpers.
      */
-    H2TreeInlineObjectDetector(int inlineSize, List<InlineIndexHelper> inlineHelpers) {
+    H2TreeInlineObjectDetector(int inlineSize, List<InlineIndexHelper> inlineHelpers, String tblName, String idxName,
+        IgniteLogger log) {
         this.inlineSize = inlineSize;
         this.inlineHelpers = inlineHelpers;
+        this.tblName = tblName;
+        this.idxName = idxName;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(BPlusTree<H2Row, H2Row> tree, BPlusIO<H2Row> io, long pageAddr,
+    @Override public boolean apply(BPlusTree<H2Row, H2Row> tree, BPlusIO<H2Row> io,
+        long pageAddr,
         int idx) throws IgniteCheckedException {
         H2Row r = tree.getRow(io, pageAddr, idx);
 
@@ -56,37 +71,72 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<H2Ro
 
         int fieldOff = 0;
 
+        boolean varLenPresents = false;
+
         for (InlineIndexHelper ih : inlineHelpers) {
             if (fieldOff >= inlineSize)
                 return false;
 
             if (ih.type() != Value.JAVA_OBJECT) {
+                if (ih.size() < 0)
+                    varLenPresents = true;
+
                 fieldOff += ih.fullSize(pageAddr, off + fieldOff);
 
                 continue;
             }
 
-            if (r.getValue(ih.columnIndex()) == ValueNull.INSTANCE)
+            Value val = r.getValue(ih.columnIndex());
+
+            if (val == ValueNull.INSTANCE)
                 return false;
 
             int type = PageUtils.getByte(pageAddr, off + fieldOff);
 
-            if (type == 0) {
-                inlineObjSupported = false;
+            //We can have garbage in memory and need to compare data.
+            if (type == Value.JAVA_OBJECT) {
+                int len = PageUtils.getShort(pageAddr, off + fieldOff + 1);
+
+                len = len & 0x7FFF;
+
+                byte[] originalObjBytes = val.getBytesNoCopy();
+
+                // read size more then available space or more then origin length
+                if (len > inlineSize - fieldOff - 3 || len > originalObjBytes.length) {
+                    inlineObjectSupportedDecision(false, "length is big " + len);
+
+                    return true;
+                }
+
+                // try compare byte by byte for fully or partial inlined object.
+                byte[] inlineBytes = PageUtils.getBytes(pageAddr, off + fieldOff + 3, len);
+
+                for (int i = 0; i < len; i++) {
+                    if (inlineBytes[i] != originalObjBytes[i]) {
+                        inlineObjectSupportedDecision(false, i + " byte compare");
+
+                        return true;
+                    }
+                }
+
+                inlineObjectSupportedDecision(true, len + " bytes compared");
 
                 return true;
             }
-            else if (type == Value.JAVA_OBJECT) {
-                inlineObjSupported = true;
 
-                return true;
-            }
-            else {
-                assert type == Value.UNKNOWN;
-
+            if (type == Value.UNKNOWN && varLenPresents) {
+                // we can't guarantee in case unknown type and should check next row:
+                //1: long string, UNKNOWN for java object.
+                //2: short string, inlined java object
                 return false;
             }
+
+            inlineObjectSupportedDecision(false, "inline type " + type);
+
+            return true;
         }
+
+        inlineObjectSupportedDecision(true, "no java objects for inlining");
 
         return true;
     }
@@ -99,13 +149,11 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<H2Ro
     }
 
     /**
-     * Static analyze inline_size and inline helpers set.
-     * e.g.: indexed: (long, obj) and inline_size < 12.
-     * In this case there is no space ti inline object.
+     * Static analyze inline_size and inline helpers set. e.g.: indexed: (long, obj) and inline_size < 12. In this case
+     * there is no space to inline object.
      *
      * @param inlineHelpers Inline helpers.
      * @param inlineSize Inline size.
-     *
      * @return {@code true} If the object may be inlined.
      */
     public static boolean objectMayBeInlined(int inlineSize, List<InlineIndexHelper> inlineHelpers) {
@@ -115,9 +163,24 @@ public class H2TreeInlineObjectDetector implements BPlusTree.TreeRowClosure<H2Ro
             if (ih.type() == Value.JAVA_OBJECT)
                 break;
 
-            remainSize -= ih.size() > 0 ? 1 + ih.size() : 4;
+            remainSize -= ih.size() > 0 ? 1 + ih.size() : 1;
         }
 
         return remainSize >= 4;
+    }
+
+    /**
+     * @param inlineObjSupported {@code true} if inline object is supported on current tree.
+     * @param reason Reason why has been made decision.
+     */
+    private void inlineObjectSupportedDecision(boolean inlineObjSupported, String reason) {
+        this.inlineObjSupported = inlineObjSupported;
+
+        if (inlineObjSupported)
+            log.info("Index supports JAVA_OBJECT type inlining [tblName=" + tblName + ", idxName=" +
+                idxName + ", reason='" + reason + "']");
+        else
+            log.info("Index doesn't support JAVA_OBJECT type inlining [tblName=" + tblName + ", idxName=" +
+                idxName + ", reason='" + reason + "']");
     }
 }
