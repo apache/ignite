@@ -120,10 +120,25 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
      */
     private Map<String, Measure> measures = new HashMap<>();
 
-    /**
-     *
-     */
+    /** Histogram metrics intervals names. */
     private Map<T2<String, long[]>, String[]> histogramNames = new HashMap<>();
+
+    /** Create histogram interval names. */
+    private static final Function<T2<String, long[]>, String[]> CREATE_INTERVAL_NAMES = k -> {
+        String histogramName = k.get1();
+        long[] bounds = k.get2();
+        System.out.println("MY CREATE="+histogramName);
+        String[] names = new String[bounds.length + 1];
+
+        for (int i = 0; i < bounds.length + 1; i++) {
+            String minBound = i == 0 ? "_0" : "_" + bounds[i - 1];
+            String maxBound = i == bounds.length ? "_inf" : "_" + bounds[i];
+
+            names[i] = histogramName + minBound + maxBound;
+        }
+
+        return names;
+    };
 
     /** */
     private static final Function<Metric, Measure> CREATE_LONG = m ->
@@ -201,14 +216,14 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         long[] value = ((HistogramMetric)metric).value();
                         long[] bounds = ((HistogramMetric)metric).bounds();
 
+                        String[] intervalNames = histogramNames.computeIfAbsent(new T2<>(metric.name(), bounds),
+                            CREATE_INTERVAL_NAMES);
+
                         for (int i = 0; i < value.length; i++) {
-                            String minBound = i == 0 ? "_0" : "_" + bounds[i - 1];
-                            String maxBound = i == value.length - 1 ? "_inf" : "_" + bounds[i];
+                            String mName = intervalNames[i];
 
-                            String bucketName = metric.name() + minBound + maxBound;
-
-                            MeasureLong msr = (MeasureLong)measures.computeIfAbsent(bucketName,
-                                k -> createMeasureLong(bucketName, metric.description()));
+                            MeasureLong msr = (MeasureLong)measures.computeIfAbsent(mName,
+                                k -> createMeasureLong(mName, metric.description()));
 
                             mmap.put(msr, value[i]);
                         }

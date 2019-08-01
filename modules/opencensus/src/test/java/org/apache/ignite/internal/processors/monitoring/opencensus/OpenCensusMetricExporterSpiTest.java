@@ -166,7 +166,10 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         String histogramDesc = "Test histogram description.";
         long[] bounds = new long[] {10, 100};
         long[] testValues = new long[] {5, 50, 50, 500, 500, 500};
-        long[] expectedValues = new long[] {1, 2, 3};
+        String[] expectedValuesPtrn = new String[] {
+            "test_registry_test_histogram_0_10.* 1",
+            "test_registry_test_histogram_10_100.* 2",
+            "test_registry_test_histogram_100_inf.* 3"};
 
         HistogramMetric histogramMetric =
             ignite.context().metric().registry(registryName).histogram(histogramName, bounds, histogramDesc);
@@ -174,22 +177,48 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         for (long value : testValues)
             histogramMetric.value(value);
 
-        String[] expectedMetrics = new String[bounds.length + 1];
+        assertTrue("Histogram metrics should be exported via http",
+            checkHttpMetrics(expectedValuesPtrn, false, EXPORT_TIMEOUT * 10));
 
-        for (int i = 0; i < expectedMetrics.length; i++) {
-            String minBound = i == 0 ? "_0" : "_" + bounds[i - 1];
-            String maxBound = i == expectedMetrics.length - 1 ? "" : "_" + bounds[i];
+        long[] newBounds = new long[] {1};
 
-            expectedMetrics[i] = registryName + "_" + histogramName + minBound + maxBound + ".* " + expectedValues[i];
-        }
+        histogramMetric.reset(newBounds);
 
-        boolean res = waitForCondition(() -> {
+        for (long value : testValues)
+            histogramMetric.value(value);
+
+        String[] unexpectedValuesPtrn = expectedValuesPtrn;
+
+        expectedValuesPtrn = new String[] {
+            "test_registry_test_histogram_0_1.* 0",
+            "test_registry_test_histogram_1_inf.* 6"};
+
+        assertTrue("Updated histogram metrics should be exported via http",
+            checkHttpMetrics(expectedValuesPtrn, false, EXPORT_TIMEOUT * 10));
+
+        assertFalse("Old histogram metrics should not be exported via http",
+            checkHttpMetrics(unexpectedValuesPtrn, false, EXPORT_TIMEOUT));
+    }
+
+    /**
+     * @param patterns Patterns to find.
+     * @param atLeastOne At least one pattern should be found.
+     * @param timeout Timeout.
+     * @return {@code True} if given patterns present in metrics from http.
+     * @throws Exception If failed.
+     */
+    private boolean checkHttpMetrics(String[] patterns, boolean atLeastOne, long timeout) throws Exception {
+        return waitForCondition(() -> {
             try {
                 String httpMetrics = metricsFromHttp();
+                System.out.println("\n\n\n\n\n\n\n\n\n\n\n\nhttpMetrics="+httpMetrics);
 
-                for (String expMetric : expectedMetrics) {
-                    if (!Pattern.compile(expMetric).matcher(httpMetrics).find())
+                for (String exp : patterns) {
+                    if (!Pattern.compile(exp).matcher(httpMetrics).find())
                         return false;
+
+                    if (atLeastOne)
+                        return true;
                 }
 
                 return true;
@@ -198,8 +227,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
                 return false;
             }
         }, EXPORT_TIMEOUT * 10);
-
-        assertTrue("Histogram metrics should be exported via http", res);
     }
 
     /** */
