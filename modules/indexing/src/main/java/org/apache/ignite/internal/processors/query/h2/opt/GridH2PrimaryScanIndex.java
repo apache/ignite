@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.query.h2.database.H2TreeInde
 @SuppressWarnings("PackageVisibleInnerClass")
 public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
     /** */
-    static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
+    public static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
     /** Parent table. */
     private final GridH2Table tbl;
