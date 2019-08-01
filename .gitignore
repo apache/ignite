@@ -65,7 +65,6 @@ ipch/
 !/bin
 !/modules/core/src/test/bin
 !/modules/sqlline/bin
-!/modules/web-console/web-agent/bin
 [Dd]ebug*/
 [Rr]elease*/
 packages

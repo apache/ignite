@@ -1,7 +1,0 @@
-.git
-*Dockerfile*
-*docker-compose*
-**/build/
-**/node_modules/
-**/target/
-!web-agent/target/*.zip

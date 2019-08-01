@@ -130,12 +130,6 @@
                 <exclude>org.gridgain:ignite-cassandra</exclude>
                 <exclude>org.gridgain:ignite-yardstick</exclude>
                 <exclude>org.gridgain:ignite-benchmarks</exclude>
-                <exclude>org.gridgain:ignite-web-console</exclude>
-                <exclude>org.gridgain:ignite-web-console-agent</exclude>
-                <exclude>org.gridgain:ignite-web-console-common</exclude>
-                <exclude>org.gridgain:ignite-web-console-configuration-tests</exclude>
-                <exclude>org.gridgain:ignite-web-console-mail</exclude>
-                <exclude>org.gridgain:ignite-web-console-server</exclude>
                 <exclude>org.gridgain:ignite-dev-utils</exclude>
                 <exclude>org.gridgain:ignite-extdata-platform</exclude>
                 <exclude>org.gridgain:ignite-compatibility</exclude>
