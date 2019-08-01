@@ -4415,7 +4415,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             }
 
                             @Override public long endTime() {
-                                return U.currentTimeMillis() + DFLT_CONN_TIMEOUT;
+                                return U.currentTimeMillis() + connTimeout;
                             }
 
                             @Override public void onTimeout() {
