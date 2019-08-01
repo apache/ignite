@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -119,6 +120,11 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
      */
     private Map<String, Measure> measures = new HashMap<>();
 
+    /**
+     *
+     */
+    private Map<T2<String, long[]>, String[]> histogramNames = new HashMap<>();
+
     /** */
     private static final Function<Metric, Measure> CREATE_LONG = m ->
         MeasureLong.create(m.name(), m.description() == null ? m.name() : m.description(), "");
@@ -190,14 +196,14 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                             Example of metric names if bounds are 10,100:
                                 histogram_0_10 (less than 10)
                                 histogram_10_100 (between 10 and 100)
-                                histogram_100 (more than 100)
+                                histogram_100_inf (more than 100)
                          */
                         long[] value = ((HistogramMetric)metric).value();
                         long[] bounds = ((HistogramMetric)metric).bounds();
 
                         for (int i = 0; i < value.length; i++) {
                             String minBound = i == 0 ? "_0" : "_" + bounds[i - 1];
-                            String maxBound = i == value.length - 1 ? "" : "_" + bounds[i];
+                            String maxBound = i == value.length - 1 ? "_inf" : "_" + bounds[i];
 
                             String bucketName = metric.name() + minBound + maxBound;
 
