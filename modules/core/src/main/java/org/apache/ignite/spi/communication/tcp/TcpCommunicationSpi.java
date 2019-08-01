@@ -4413,6 +4413,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (f.error() != null) {
                         result.onDone(f.error());
 
+                        channelReqs.remove(key);
+
                         ses.close();
                     }
                     else {
@@ -4427,8 +4429,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                             @Override public void onTimeout() {
                                 // Close session if request not complete yet.
-                                if (result.onDone(handshakeTimeoutException()))
+                                if (result.onDone(handshakeTimeoutException())) {
                                     ses.close();
+
+                                    channelReqs.remove(key);
+                                }
                             }
                         });
                     }
