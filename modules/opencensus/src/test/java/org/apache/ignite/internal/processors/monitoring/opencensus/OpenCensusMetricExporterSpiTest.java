@@ -197,7 +197,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
             checkHttpMetrics(expectedValuesPtrn, false, EXPORT_TIMEOUT * 10));
 
         assertFalse("Old histogram metrics should not be exported via http",
-            checkHttpMetrics(unexpectedValuesPtrn, true, EXPORT_TIMEOUT * 10));
+            checkHttpMetrics(unexpectedValuesPtrn, true, EXPORT_TIMEOUT));
     }
 
     /**
