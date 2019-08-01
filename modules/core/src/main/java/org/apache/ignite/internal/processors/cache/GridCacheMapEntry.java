@@ -4505,6 +4505,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             CacheDataRow row = cctx.offheap().read(this);
 
+            if (cctx.offheap().isTombstone(row))
+                return;
+
             if (row != null && (filter == null || filter.apply(row)))
                 clo.apply(row);
         }

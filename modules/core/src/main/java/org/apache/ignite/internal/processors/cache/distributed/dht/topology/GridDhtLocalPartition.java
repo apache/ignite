@@ -1174,8 +1174,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                             cached.removeTombstone(row.version());
 
-                            cached.touch();
-
                             break;
                         }
                         catch (GridCacheEntryRemovedException e) {

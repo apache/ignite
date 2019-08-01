@@ -628,6 +628,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheVersion ver,
         GridDhtLocalPartition part) throws IgniteCheckedException {
         assert part != null;
+        assert !cctx.isNear();
+        assert !cctx.isLocal();
 
         dataStore(part).removeWithTombstone(cctx, key, ver, part);
     }

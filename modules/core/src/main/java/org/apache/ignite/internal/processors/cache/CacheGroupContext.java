@@ -1296,7 +1296,7 @@ public class CacheGroupContext {
      * @return {@code True} if need create temporary tombstones entries for removed data.
      */
     public boolean supportsTombstone() {
-        return !sharedGroup() && !hasAtomicCaches && !mvccEnabled && !isLocal();
+        return !mvccEnabled && !isLocal();
     }
 
     /**
