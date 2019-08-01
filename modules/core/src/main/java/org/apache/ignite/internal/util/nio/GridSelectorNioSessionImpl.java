@@ -78,6 +78,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     /** */
     private Object sysMsg;
 
+    /** Close channel on session #close() called. */
+    private volatile boolean closeSocket = true;
+
     /**
      * Creates session instance.
      *
@@ -178,6 +181,20 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      */
     public SelectionKey key() {
         return key;
+    }
+
+    /**
+     * @return {@code True} to close SocketChannel on current session close occured.
+     */
+    public boolean closeSocketOnSessionClose() {
+        return closeSocket;
+    }
+
+    /**
+     * @param closeSocket {@code False} remain SocketChannel open on session close.
+     */
+    public void closeSocketOnSessionClose(boolean closeSocket) {
+        this.closeSocket = closeSocket;
     }
 
     /**
