@@ -138,9 +138,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         if (createStaticCache)
             igniteCfg.setCacheConfiguration(ccfg);
 
-        if (srvLog != null)
-            igniteCfg.setGridLogger(srvLog);
-
         if (isPersistenceEnabled) {
             igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
