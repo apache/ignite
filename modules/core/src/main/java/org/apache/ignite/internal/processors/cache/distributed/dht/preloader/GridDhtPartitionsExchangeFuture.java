@@ -357,8 +357,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
 
-    /** Partitions scheduled for historical reblanace for this topology version. */
-    private Map<Integer, Set<Integer>> histPartitions;
+    /** Partitions scheduled for clearing before rebalance for this topology version. */
+    private Map<Integer, Set<Integer>> clearingPartitions;
 
     /**
      * @param cctx Cache context.
@@ -1466,7 +1466,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionEnd();
         }
 
-        histPartitions = new HashMap();
+        clearingPartitions = new HashMap();
 
         timeBag.finishGlobalStage("WAL history reservation");
 
@@ -5114,38 +5114,37 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Checks if a partition switched to moving state due to outdated counter (for historical rebalance).
-     *
      * @param grp Group.
      * @param part Partition.
-     * @return {@code True} if partition is historical.
+     * @return {@code True} if partition has to be cleared before rebalance.
      */
-    public boolean isHistoryPartition(CacheGroupContext grp, int part) {
+    public boolean isClearingPartition(CacheGroupContext grp, int part) {
         if (!grp.persistenceEnabled())
             return false;
 
         synchronized (mux) {
-            if (histPartitions == null)
+            if (clearingPartitions == null)
                 return false;
 
-            Set<Integer> parts = histPartitions.get(grp.groupId());
+            Set<Integer> parts = clearingPartitions.get(grp.groupId());
 
             return parts != null && parts.contains(part);
         }
     }
 
     /**
-     * Marks a partition for historical rebalance.
+     * Marks a partition for clearing before rebalance.
+     * Fully cleared partitions should never be historically rebalanced.
      *
      * @param grp Group.
      * @param part Partition.
      */
-    public void addHistoryPartition(CacheGroupContext grp, int part) {
+    public void addClearingPartition(CacheGroupContext grp, int part) {
         if (!grp.persistenceEnabled())
             return;
 
         synchronized (mux) {
-            histPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
+            clearingPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
         }
     }
 

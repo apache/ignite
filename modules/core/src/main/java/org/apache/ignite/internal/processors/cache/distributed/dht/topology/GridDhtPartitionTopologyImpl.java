@@ -795,9 +795,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     // Node1 removes k2 but update has not been delivered to Node1 because of failure.
                                     // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
                                     // NOTE: avoid calling clearAsync for partition twice per topology version.
-                                    // TODO FIXME clearing is not always needed see IGNITE-11799
-                                    if (grp.persistenceEnabled() && !exchFut.isHistoryPartition(grp, locPart.id()) &&
-                                        !locPart.isClearing() && !locPart.isEmpty())
+                                    if (grp.persistenceEnabled() &&
+                                            exchFut.isClearingPartition(grp, locPart.id()) &&
+                                            !locPart.isClearing() &&
+                                            !locPart.isEmpty())
                                         locPart.clearAsync();
                                 }
                                 else
@@ -1615,7 +1616,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
                         else if (state == MOVING) {
-                            rebalancePartition(p, partsToReload.contains(p), exchFut);
+                            GridDhtLocalPartition locPart = locParts.get(p);
+
+                            rebalancePartition(p, partsToReload.contains(p) ||
+                                locPart != null && locPart.state() == MOVING && exchFut.localJoinExchange(), exchFut);
 
                             changed = true;
                         }
@@ -2376,8 +2380,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        if (!clear)
-            exchFut.addHistoryPartition(grp, part.id());
+        if (clear)
+            exchFut.addClearingPartition(grp, part.id());
 
         assert part.state() == MOVING : part;
 
