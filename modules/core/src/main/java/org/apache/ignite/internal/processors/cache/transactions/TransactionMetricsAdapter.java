@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,9 +50,6 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_
 public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Grid kernal context. */
     private final GridKernalContext gridKernalCtx;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Number of transaction commits. */
     private final IntMetricImpl txCommits;
@@ -174,6 +175,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         txCommits.reset();
         rollbackTime.reset();
         txRollbacks.reset();
+    }
+
+    /** @return Current metrics values. */
+    public TransactionMetrics snapshot() {
+        return new TransactionMetricsSnapshot(this);
     }
 
     /**
@@ -309,5 +315,108 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TransactionMetricsAdapter.class, this);
+    }
+
+    /** Transaction metrics snapshot. */
+    public static class TransactionMetricsSnapshot implements TransactionMetrics, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Number of transaction commits. */
+        private volatile int txCommits;
+
+        /** Number of transaction rollbacks. */
+        private volatile int txRollbacks;
+
+        /** Last commit time. */
+        private volatile long commitTime;
+
+        /** Last rollback time. */
+        private volatile long rollbackTime;
+
+        /** Transaction metrics adapter. */
+        private volatile TransactionMetricsAdapter adapter;
+
+        /** Required by {@link Externalizable}. */
+        public TransactionMetricsSnapshot() {
+        }
+
+        /**
+         * @param adapter Transaction metrics adapter.
+         */
+        public TransactionMetricsSnapshot(TransactionMetricsAdapter adapter) {
+            this.adapter = adapter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long commitTime() {
+            return adapter != null ? adapter.commitTime() : commitTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long rollbackTime() {
+            return adapter != null ? adapter.rollbackTime() : rollbackTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int txCommits() {
+            return adapter != null ? adapter.txCommits() : txCommits;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int txRollbacks() {
+            return adapter != null ? adapter.txRollbacks() : txRollbacks;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, String> getAllOwnerTransactions() {
+            return adapter != null ? adapter.getAllOwnerTransactions() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, String> getLongRunningOwnerTransactions(int duration) {
+            return adapter != null ? adapter.getLongRunningOwnerTransactions(duration) : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTransactionsCommittedNumber() {
+            return adapter != null ? adapter.getTransactionsCommittedNumber() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTransactionsRolledBackNumber() {
+            return adapter != null ? adapter.getTransactionsRolledBackNumber() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTransactionsHoldingLockNumber() {
+            return adapter != null ? adapter.getTransactionsHoldingLockNumber() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getLockedKeysNumber() {
+            return adapter != null ? adapter.getLockedKeysNumber() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getOwnerTransactionsNumber() {
+            return adapter != null ? adapter.getOwnerTransactionsNumber() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(commitTime);
+            out.writeLong(rollbackTime);
+            out.writeInt(txCommits);
+            out.writeInt(txRollbacks);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            commitTime = in.readLong();
+            rollbackTime = in.readLong();
+            txCommits = in.readInt();
+            txRollbacks = in.readInt();
+        }
     }
 }
