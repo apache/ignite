@@ -339,6 +339,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
         /** Required by {@link Externalizable}. */
         public TransactionMetricsSnapshot() {
+            this(null);
         }
 
         /**
