@@ -127,7 +127,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     private static final Function<T2<String, long[]>, String[]> CREATE_INTERVAL_NAMES = k -> {
         String histogramName = k.get1();
         long[] bounds = k.get2();
-        System.out.println("MY CREATE="+histogramName);
+
         String[] names = new String[bounds.length + 1];
 
         for (int i = 0; i < bounds.length + 1; i++) {
