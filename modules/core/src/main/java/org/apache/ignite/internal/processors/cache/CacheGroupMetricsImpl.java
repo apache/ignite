@@ -486,7 +486,7 @@ public class CacheGroupMetricsImpl {
     /** @return {@code true} if topology started. */
     private boolean isTopologyStarted() {
         try {
-            ctx.topology().initialized();
+            ctx.topology();
 
             return true;
         } catch (IllegalStateException ignored) {
