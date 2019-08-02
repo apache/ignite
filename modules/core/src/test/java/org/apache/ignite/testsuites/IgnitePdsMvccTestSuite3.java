@@ -25,9 +25,7 @@ import org.junit.runners.Suite;
  * Mvcc version of {@link IgnitePdsTestSuite3}.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgnitePdsTestSuite3.class,
-})
+@Suite.SuiteClasses(IgnitePdsTestSuite3.class)
 public class IgnitePdsMvccTestSuite3 {
     /**
      * Enforce MVCC
