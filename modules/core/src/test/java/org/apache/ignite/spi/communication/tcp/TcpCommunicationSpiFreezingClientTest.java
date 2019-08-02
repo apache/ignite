@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import javax.cache.Cache;
 import java.lang.management.ManagementFactory;
 import java.util.Iterator;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
@@ -106,7 +106,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     @Test
     public void testFreezingClient() throws Exception {
         try {
-            final IgniteEx srv = startGrid(0);
+            final IgniteEx srv = (IgniteEx) startGrids(2);
 
             final IgniteEx client = startGrid("client");
 
