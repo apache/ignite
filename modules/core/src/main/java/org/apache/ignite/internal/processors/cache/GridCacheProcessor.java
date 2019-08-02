@@ -4072,29 +4072,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Last data version.
-     */
-    public long lastDataVersion() {
-        long max = 0;
-
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            GridCacheContext<?, ?> ctx = cache.context();
-
-            if (ctx.versions().last().order() > max)
-                max = ctx.versions().last().order();
-
-            if (ctx.isNear()) {
-                ctx = ctx.near().dht().context();
-
-                if (ctx.versions().last().order() > max)
-                    max = ctx.versions().last().order();
-            }
-        }
-
-        return max;
-    }
-
-    /**
      * @return Keep static cache configuration flag. If {@code true}, static cache configuration will override
      * configuration persisted on disk.
      */

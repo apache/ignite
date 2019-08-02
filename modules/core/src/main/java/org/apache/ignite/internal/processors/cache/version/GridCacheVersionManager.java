@@ -25,10 +25,13 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
  * Makes sure that cache lock order values come in proper sequence.
@@ -43,6 +46,12 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
+
+    /** Last data version metric name. */
+    public static final String LAST_DATA_VER = "LastDataVersion";
+
+    /** Last version metric. */
+    protected AtomicLongMetric lastDataVer;
 
     /**
      * Current order. Initialize to current time to make sure that
@@ -88,7 +97,13 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
+        MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
+
+        lastDataVer = sysreg.longMetric(LAST_DATA_VER, "The latest data version on the node.");
+
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
+
+        lastDataVer.value(last.order());
 
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
 
@@ -109,6 +124,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         this.dataCenterId = dataCenterId;
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
+
+        lastDataVer.value(last.order());
 
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
     }
@@ -296,6 +313,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             dataCenterId);
 
         last = next;
+
+        lastDataVer.value(last.order());
 
         return next;
     }

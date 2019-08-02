@@ -153,6 +153,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
+        this.metricMgr = new GridMetricManager(this);
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
@@ -164,8 +165,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
-
-        metricMgr = new GridMetricManager(this);
     }
 
     /**
