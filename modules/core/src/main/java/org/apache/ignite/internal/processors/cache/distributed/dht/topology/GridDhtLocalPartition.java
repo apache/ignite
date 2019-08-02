@@ -607,6 +607,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public boolean own() {
         while (true) {
+            assert !clear : "Could not own clearing partition " + this;
+
             long state = this.state.get();
 
             GridDhtPartitionState partState = getPartState(state);

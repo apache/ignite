@@ -858,6 +858,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             sb.append("nodeId=")
                 .append(k.context().localNodeId())
+                .append(" consistentId=")
+                .append(k.localNode().consistentId())
                 .append(" isDone=")
                 .append(syncFut.isDone())
                 .append("\n");
@@ -938,7 +940,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
                         .append(" fullSize=")
                         .append(part == null ? "NA" : part.fullSize())
-                        .append(" state=").append(part.state());
+                        .append(" state=").append(part.state())
+                        .append(" reservations=").append(part.reservations());
                 }
                 else
                     sb.append(p).append(" is null");

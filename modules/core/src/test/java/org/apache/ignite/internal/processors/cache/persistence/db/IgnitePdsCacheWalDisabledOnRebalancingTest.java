@@ -352,6 +352,43 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         verifyCache(ig1.cache(CACHE3_NAME), GENERATING_FUNC);
     }
 
+    /**
+     * Scenario: when rebalanced MOVING partitions are owning by checkpointer,
+     * concurrent no-op exchange should not trigger partition clearing.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalancedPartitionsOwningWithAffinitySwitch() throws Exception {
+        Ignite ig0 = startGridsMultiThreaded(4);
+        fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
+
+        // Stop idx=2 to prepare for baseline topology change later.
+        stopGrid(2);
+
+        // Stop idx=1 and cleanup LFS to trigger full rebalancing after it restart.
+        String ig1Name = "node01-" + grid(1).localNode().consistentId();
+        stopGrid(1);
+        cleanPersistenceFiles(ig1Name);
+
+        // Blocking fileIO and blockMessagePredicate to block checkpointer and rebalancing for node idx=1.
+        useBlockingFileIO = true;
+
+        // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
+        fileIoBlockingSemaphore.drainPermits();
+
+        // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
+        startGrid(1).cachex(CACHE3_NAME).context().group().preloader().rebalanceFuture().get();
+
+        startGrid("client");
+
+        fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid(0), CACHE3_NAME));
+    }
+
     /** FileIOFactory implementation that enables blocking of writes to disk so checkpoint can be blocked. */
     private static class BlockingCheckpointFileIOFactory implements FileIOFactory {
         /** Serial version uid. */
