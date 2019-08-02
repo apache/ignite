@@ -783,33 +783,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 ses.send(new ChannelCreateResponse())
                     .listen(sendFut -> {
-                        try {
-                            sendFut.get(); // Exception not ocurred.
-
+                        if (sendFut.error() == null) {
                             ses.closeSocketOnSessionClose(false);
 
                             // Close session and send response.
                             ses.close().listen(closeFut -> {
-                                try {
-                                    closeFut.get(); // Exception not ocurred.
-
-                                    SelectableChannel channel = ses.key().channel();
-
-                                    notifyChannelEvtListener(connKey.nodeId(), channel, msg.message());
-                                }
-                                catch (IgniteCheckedException e) {
+                                if (closeFut.error() == null)
+                                    notifyChannelEvtListener(connKey.nodeId(), ses.key().channel(), msg.message());
+                                else {
                                     U.error(log, "Nio session has not been properly closed " +
-                                        "[nodeId=" + connKey.nodeId() + ", idx=" + connKey.connectionIndex() + ']', e);
+                                        "[nodeId=" + connKey.nodeId() + ", idx=" + connKey.connectionIndex() + ']',
+                                        closeFut.error());
 
                                     ses.closeSocketOnSessionClose(true);
+
                                     U.closeQuiet(ses.key().channel());
                                 }
                             });
                         }
-                        catch (IgniteCheckedException e) {
+                        else {
                             U.error(log, "Fail to send channel creation response to the remote node. " +
                                 "Session will be closed [nodeId=" + connKey.nodeId() +
-                                ", idx=" + connKey.connectionIndex() + ']', e);
+                                ", idx=" + connKey.connectionIndex() + ']', sendFut.error());
 
                             ses.close();
                         }
