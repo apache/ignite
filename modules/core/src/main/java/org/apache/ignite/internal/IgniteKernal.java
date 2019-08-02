@@ -166,8 +166,8 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
@@ -1399,7 +1399,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 private final DecimalFormat dblFmt = new DecimalFormat("#.##");
 
                 @Override public void run() {
-                    ackNodeMetrics(dblFmt, execSvc, sysExecSvc, customExecSvcs);
+                    ackNodeMetrics(dblFmt, execSvc, sysExecSvc, stripedExecSvc, customExecSvcs);
                 }
             }, metricsLogFreq, metricsLogFreq);
         }
@@ -1456,19 +1456,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param execSvc service to create a description for
      */
     private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
+        int poolSize = 0;
         int poolActiveThreads = 0;
-        int poolIdleThreads = 0;
         int poolQSize = 0;
 
         if (execSvc instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
-            int poolSize = exec.getPoolSize();
-
+            poolSize = exec.getPoolSize();
             poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-            poolIdleThreads = poolSize - poolActiveThreads;
             poolQSize = exec.getQueue().size();
         }
+        else if (execSvc instanceof StripedExecutor) {
+            StripedExecutor exec = (StripedExecutor) execSvc;
+
+            poolSize = exec.stripes();
+            poolActiveThreads = exec.activeStripesCount();
+            poolQSize = exec.queueSize();
+        }
+
+        int poolIdleThreads = poolSize - poolActiveThreads;
 
         return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
     }
@@ -2173,6 +2180,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackNodeMetrics(DecimalFormat dblFmt,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
+        ExecutorService stripedExecSvc,
         Map<String, ? extends ExecutorService> customExecSvcs
     ) {
         if (!log.isInfoEnabled())
@@ -2300,7 +2308,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 pdsInfo +
                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
                 "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
-                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);
+                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc) + NL +
+                "    ^-- " + createExecutorDescription("Striped thread pool", stripedExecSvc);
 
             if (customExecSvcs != null) {
                 StringBuilder customSvcsMsg = new StringBuilder();
