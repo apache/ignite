@@ -18,86 +18,27 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
-
-    <!-- Set up jetty port from the spring config. -->
-    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject">
-            <!-- System.getProperties() -->
-            <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-                <property name="targetClass" value="java.lang.System"/>
-                <property name="targetMethod" value="getProperties"/>
-            </bean>
-        </property>
-        
-        <property name="targetMethod" value="putAll"/>
-        <property name="arguments">
-            <map>
-                <entry key="IGNITE_JETTY_PORT" value="${IGNITE_JETTY_PORT:60080}"/>
-            </map>
-        </property>
-    </bean>
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="authenticationEnabled" value="false"/>
+        <property name="consistentId" value="we-console-data"/>
         <property name="metricsLogFrequency" value="0"/>
-
         <property name="queryThreadPoolSize" value="16"/>
         <property name="failureDetectionTimeout" value="10000"/>
-        <property name="clientFailureDetectionTimeout" value="10000"/>
         <property name="networkTimeout" value="10000"/>
 
-        <property name="cacheConfiguration">
-            <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                <property name="name" value="*"/>
-                <property name="cacheMode" value="PARTITIONED"/>
-                <property name="backups" value="1"/>
-
-                <property name="affinity">
-                    <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
-                        <property name="partitions" value="256"/>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-
-        <property name="connectorConfiguration">
-            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
-                <property name="port" value="60300"/>
-            </bean>
-        </property>
-
+        <!-- Disable all clients. -->
+        <property name="connectorConfiguration"><null/></property>
         <property name="clientConnectorConfiguration"><null/></property>
 
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-                <property name="localPort" value="60200"/>
-                <!-- Sets socket write timeout for TCP connection. -->
-                <property name="socketWriteTimeout" value="10000"/>
-            </bean>
-        </property>
-
-        <!-- Allows encryption with SSL and TLS. For more details refer to https://apacheignite.readme.io/docs/ssltls -->
-        <!--
-            <property name="sslContextFactory">
-              <bean class="org.apache.ignite.ssl.SslContextFactory">
-                <property name="keyStoreFilePath" value="keystore/server.jks"/>
-                <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="keystore/trust.jks"/>
-                <property name="trustStorePassword" value="123456"/>
-                <property name="setProtocol" value="SSL"/>
-              </bean>
-            </property>
-        -->
-
+        <!-- Recommened by CS team. -->
         <property name="transactionConfiguration">
             <bean class="org.apache.ignite.configuration.TransactionConfiguration">
                 <property name="txTimeoutOnPartitionMapExchange" value="#{60L * 1000L}"/>
             </bean>
         </property>
 
+        <!-- Persitence required to store user data on disk. -->
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">
@@ -123,16 +64,12 @@
             <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>
         </property>
 
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="localPort" value="60100"/>
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.console.discovery.IsolatedCommunicationSpi"/>
+        </property>
 
-                <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="shared" value="true" />
-                    </bean>
-                </property>
-            </bean>
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.console.discovery.IsolatedDiscoverySpi"/>
         </property>
     </bean>
 </beans>

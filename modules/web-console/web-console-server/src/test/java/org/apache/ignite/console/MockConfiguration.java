@@ -17,11 +17,14 @@
 package org.apache.ignite.console;
 
 import java.util.Collections;
+import java.util.Spliterators;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.repositories.AnnouncementRepository;
 import org.apache.ignite.console.web.socket.AgentsService;
@@ -111,6 +114,16 @@ public class MockConfiguration {
             /** {@inheritDoc} */
             @Override public IgniteCluster cluster() {
                 return cluster;
+            }
+
+            /** {@inheritDoc} */
+            @SuppressWarnings("unchecked")
+            @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+                IgniteCache<K, V> mockedCache = mock(IgniteCache.class);
+
+                when(mockedCache.spliterator()).thenReturn(Spliterators.emptySpliterator());
+
+                return mockedCache;
             }
         };
     }

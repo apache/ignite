@@ -62,7 +62,7 @@ public class AgentsRepository {
      * @param key Agent key
      */
     public Set<UUID> get(AgentKey key) {
-        return this.txMgr.doInTransaction(() -> backendByAgent.get(key));
+        return txMgr.doInTransaction(() -> backendByAgent.get(key));
     }
 
     /**
@@ -73,7 +73,7 @@ public class AgentsRepository {
     public void add(Set<UUID> accIds) {
         UUID nid = ignite.cluster().localNode().id();
 
-        this.txMgr.doInTransaction(() -> accIds.forEach(accId -> backendByAgent.add(new AgentKey(accId), nid)));
+        txMgr.doInTransaction(() -> accIds.forEach(accId -> backendByAgent.add(new AgentKey(accId), nid)));
     }
 
     /**
@@ -85,7 +85,7 @@ public class AgentsRepository {
     public void addCluster(Set<UUID> accIds, String clusterId) {
         UUID nid = ignite.cluster().localNode().id();
 
-        this.txMgr.doInTransaction(() ->
+        txMgr.doInTransaction(() ->
             accIds.forEach(accId -> backendByAgent.add(new AgentKey(accId, clusterId), nid))
         );
     }

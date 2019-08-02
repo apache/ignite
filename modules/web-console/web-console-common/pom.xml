@@ -41,18 +41,6 @@
             <version>${web-console.ignite.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-rest-http</artifactId>
-            <version>${web-console.ignite.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <!-- Third-party dependencies -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

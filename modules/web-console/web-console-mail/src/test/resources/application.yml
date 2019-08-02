@@ -19,3 +19,4 @@ spring.mail:
   username: username@test.com
   password: password
   from: alias <username@test.com>
+  webConsoleUrl: http://localhost:3000

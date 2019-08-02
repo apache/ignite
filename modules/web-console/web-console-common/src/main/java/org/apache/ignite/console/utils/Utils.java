@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.console.json.JsonObject;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class Utils {
     /** */
-    private static final GridJettyObjectMapper MAPPER = new GridJettyObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * Private constructor for utility class.

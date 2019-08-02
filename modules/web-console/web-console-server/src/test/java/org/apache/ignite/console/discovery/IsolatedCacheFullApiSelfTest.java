@@ -14,41 +14,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.console.websocket;
+package org.apache.ignite.console.discovery;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 
 /**
- * Websocket event with payload.
- *
- * @param <T> payload type.
+ * Test сache API .
  */
-public interface WebSocketEvent<T> {
-    /**
-     * @return Request ID.
-     */
-    public String getRequestId();
+public class IsolatedCacheFullApiSelfTest extends GridCacheAbstractFullApiSelfTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-    /**
-     * @param reqId New request ID.
-     */
-    public void setRequestId(String reqId);
+        cfg
+            .setDiscoverySpi(new IsolatedDiscoverySpi())
+            .setCommunicationSpi(new IsolatedCommunicationSpi());
 
-    /**
-     * @return Event type.
-     */
-    public String getEventType();
-
-    /**
-     * @param evtType New event type.
-     */
-    public void setEventType(String evtType);
-
-    /**
-     * @return Payload.
-     */
-    public T getPayload();
-
-    /**
-     * @param payload New payload.
-     */
-    public void setPayload(T payload);
+        return cfg;
+    }
 }
