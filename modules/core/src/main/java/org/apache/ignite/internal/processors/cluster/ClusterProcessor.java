@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.ClusterTagUpdatedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
@@ -78,6 +79,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_TAG_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
@@ -244,6 +246,54 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             localClusterId = idAndTag.id();
             localClusterTag = idAndTag.tag();
         }
+
+        metastorage.listen(
+            (k) -> k.equals(CLUSTER_ID_TAG_KEY),
+            (String k, ClusterIdAndTag oldVal, ClusterIdAndTag newVal) -> {
+                if (log.isInfoEnabled())
+                    log.info(
+                        "Cluster tag will be set to new value: " +
+                            newVal != null ? newVal.tag() : "null" +
+                            ", previous value was: " +
+                            oldVal != null ? oldVal.tag() : "null");
+
+                if (oldVal != null && newVal != null) {
+                    if (ctx.event().isRecordable(EVT_CLUSTER_TAG_UPDATED)) {
+                        String msg = "Tag of cluster with id " +
+                            oldVal.id() +
+                            " has been updated to new value: " +
+                            newVal.tag() +
+                            ", previous value was " +
+                            oldVal.tag();
+
+                        ctx.closure().runLocalSafe(() -> ctx.event().record(
+                            new ClusterTagUpdatedEvent(
+                                ctx.discovery().localNode(),
+                                msg,
+                                oldVal.id(),
+                                oldVal.tag(),
+                                newVal.tag()
+                            )
+                        ));
+                    }
+                }
+
+                cluster.setTag(newVal != null ? newVal.tag() : null);
+
+                if (compatibilityMode) {
+                    // In compatibility mode ID and tag
+                    // will be stored to metastorage on coordinator instead of receiving them on join.
+                    assert oldVal == null;
+
+                    if (log.isInfoEnabled())
+                        log.info("Cluster ID will be initialized to the value: " + newVal.id());
+
+                    cluster.setId(newVal.id());
+
+                    compatibilityMode = false;
+                }
+            }
+        );
     }
 
     /**
@@ -265,33 +315,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /** {@inheritDoc} */
     @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
         this.metastorage = metastorage;
-
-        metastorage.listen(
-            (k) -> k.equals(CLUSTER_ID_TAG_KEY),
-            (String k, ClusterIdAndTag oldVal, ClusterIdAndTag newVal) -> {
-                if (log.isInfoEnabled())
-                    log.info(
-                        "Cluster tag will be set to new value: " +
-                            newVal != null ? newVal.tag() : "null" +
-                            ", previous value was: " +
-                            oldVal != null ? oldVal.tag() : "null");
-
-                cluster.setTag(newVal != null ? newVal.tag() : null);
-
-                if (compatibilityMode) {
-                    // In compatibility mode ID and tag
-                    // will be stored to metastorage on coordinator instead of receiving them on join.
-                    assert oldVal == null;
-
-                    if (log.isInfoEnabled())
-                        log.info("Cluster ID will be initialized to the value: " + newVal.id());
-
-                    cluster.setId(newVal.id());
-
-                    compatibilityMode = false;
-                }
-            }
-        );
 
         //TODO GG-21718 - implement optimization so only coordinator makes a write to metastorage.
 
