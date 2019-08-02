@@ -16,22 +16,24 @@
  */
 package org.apache.ignite.testsuites;
 
-import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Mvcc version of {@link IgnitePdsTestSuite3}.
  */
-@RunWith(DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgnitePdsTestSuite3.class,
+})
 public class IgnitePdsMvccTestSuite3 {
     /**
-     * @return Suite.
+     * Enforce MVCC
      */
-    public static List<Class<?>> suite() {
+    @BeforeClass
+    public static void enforceMvcc() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        return IgnitePdsTestSuite3.suite();
     }
 }
