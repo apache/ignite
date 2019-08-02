@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import org.apache.ignite.Ignite;
@@ -387,6 +389,134 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
     }
 
+    /**
+     * Tests reproduces the problem: if coordinator is a demander after activation and supplier has left, new
+     * rebalance will finish and cause no partition inconsistencies.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
+        backups = 2;
+
+        Ignite crd = startGrids(SERVER_NODES);
+
+        crd.cluster().active(true);
+
+        int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
+
+        IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+        List<Integer> p1Keys = partitionKeys(cache, primaryParts[0], 2, 0);
+
+        assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.cluster().localNode(), p1Keys.get(0)));
+
+        final String primName = crd.name();
+
+        cache.put(p1Keys.get(0), 0);
+        cache.put(p1Keys.get(1), 1);
+
+        forceCheckpoint();
+
+        List<Ignite> backups = Arrays.asList(grid(1), grid(2));
+
+        assertFalse(backups.contains(crd));
+
+        final String demanderName = backups.get(0).name();
+
+        stopGrid(true, demanderName);
+
+        // Create counters delta.
+        cache.remove(p1Keys.get(1));
+
+        stopAllGrids();
+
+        crd = startGrid(0);
+        startGrid(1);
+        startGrid(2);
+
+        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
+
+        // Block all rebalance from crd.
+        crdSpi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+
+        crd.cluster().active(true);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            try {
+                crdSpi.waitForBlocked();
+
+                // Stop before supplying rebalance. New rebalance must start with second backup as supplier
+                // doing full rebalance.
+                stopGrid(primName);
+            }
+            catch (InterruptedException e) {
+                fail();
+            }
+        });
+
+        fut.get();
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid(demanderName), DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Tests reproduces the problem: if node joins after missing some updates no partition inconsistency happens.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_NoOp() throws Exception {
+        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(s -> {}, s -> {});
+    }
+
+    /**
+     * Tests reproduces the problem: if node re-joins having MOVING partitions no partition inconsistency happens.
+     *
+     * @throws Exception
+     */
+    public void testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange_DemanderRestart() throws Exception {
+        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(
+            demanderNodeName -> stopGrid(true, demanderNodeName),
+            demanderNodeName -> {
+                try {
+                    startGrid(demanderNodeName);
+                }
+                catch (Exception e) {
+                    fail(X.getFullStackTrace(e));
+                }
+            });
+    }
+
+    /**
+     * Tests reproduces the problem: if cache is started during rebalance no partition inconsistency happens.
+     *
+     * @throws Exception
+     */
+    public void testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange_CacheStart() throws Exception {
+        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(
+            demanderNodeName -> grid(0).getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME + "2")),
+            demanderNodeName -> {});
+    }
+
+    /**
+     * Tests reproduces the problem: if non-BLT node is started during rebalance no partition inconsistency happens.
+     *
+     * @throws Exception
+     */
+    public void testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange_NonBLTNodeStart() throws Exception {
+        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(
+            demanderNodeName -> {
+                try {
+                    startGrid(SERVER_NODES);
+                }
+                catch (Exception e) {
+                    fail(X.getFullStackTrace(e));
+                }
+            },
+            demanderNodeName -> {});
+    }
+
     /** */
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME() throws Exception {
         backups = 2;
@@ -557,6 +687,11 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         awaitPartitionMapExchange();
 
         assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+
+        // Expect correct reservation counters.
+        PartitionUpdateCounter cntr = counter(key, grid(0).name());
+        assertNotNull(cntr);
+        assertEquals(cntr.toString(), 2, cntr.reserved());
     }
 
     /**
@@ -801,6 +936,71 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         }, Runtime.getRuntime().availableProcessors() * 2, "tx-update-thread");
     }
 
+    /**
+     * @param rebBlockClo Closure called after supply message is blocked in the middle of rebalance.
+     * @param rebUnblockClo Closure called after supply message is unblocked.
+     *
+     * @throws Exception If failed.
+     */
+    protected void testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(
+        Consumer<String> rebBlockClo,
+        Consumer<String> rebUnblockClo)
+        throws Exception {
+        backups = 2;
+
+        Ignite crd = startGridsMultiThreaded(SERVER_NODES);
+
+        int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
+
+        IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+        List<Integer> keys = partitionKeys(cache, primaryParts[0], 2, 0);
+
+        cache.put(keys.get(0), 0);
+        cache.put(keys.get(1), 0);
+
+        forceCheckpoint();
+
+        Ignite backup = backupNode(keys.get(0), DEFAULT_CACHE_NAME);
+
+        final String backupName = backup.name();
+
+        stopGrid(false, backupName);
+
+        cache.remove(keys.get(1));
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+
+        // Prevent rebalance completion.
+        spi.blockMessages((node, msg) -> {
+            String name = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
+
+            if (name.equals(backupName) && msg instanceof GridDhtPartitionSupplyMessage) {
+                GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                Map<Integer, CacheEntryInfoCollection> infos = U.field(msg0, "infos");
+
+                return infos.keySet().contains(primaryParts[0]);
+            }
+
+            return false;
+        });
+
+        startGrid(backupName);
+
+        spi.waitForBlocked();
+
+        rebBlockClo.accept(backupName);
+
+        spi.stopBlock();
+
+        rebUnblockClo.accept(backupName);
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+    }
+
     /** */
     private static class TestVal {
         /** */
@@ -821,5 +1021,4 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     @Override protected long getPartitionMapExchangeTimeout() {
         return getTestTimeout();
     }
-
 }
