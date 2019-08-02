@@ -4406,9 +4406,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             ses.send(new ChannelCreateRequest(initMsg))
                 .listen(f -> {
                     if (f.error() != null) {
-                        result.onDone(f.error());
+                        GridFutureAdapter<Channel> rq = channelReqs.remove(key);
 
-                        channelReqs.remove(key);
+                        assert rq != null;
+
+                        rq.onDone(f.error());
 
                         ses.close();
 
@@ -4426,11 +4428,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         @Override public void onTimeout() {
                             // Close session if request not complete yet.
-                            if (result.onDone(handshakeTimeoutException())) {
-                                ses.close();
+                            GridFutureAdapter<Channel> rq = channelReqs.remove(key);
 
-                                channelReqs.remove(key);
-                            }
+                            if (rq == null)
+                                return;
+
+                            if (rq.onDone(handshakeTimeoutException()))
+                                ses.close();
                         }
                     });
                 });
