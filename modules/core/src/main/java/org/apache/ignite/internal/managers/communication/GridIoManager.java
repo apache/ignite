@@ -68,6 +68,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -120,6 +121,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SER
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
@@ -127,6 +129,24 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** Io communication metrics registry name. */
+    public static final String COMM_METRICS = metricName("io", "communication");
+
+    /** Outbound message queue size metric name. */
+    public static final String OUTBOUND_MSG_QUEUE_CNT = "OutboundMessagesQueueSize";
+
+    /** Sent messages count metric name. */
+    public static final String SENT_MSG_CNT = "SentMessagesCount";
+
+    /** Sent bytes count metric name. */
+    public static final String SENT_BYTES_CNT = "SentBytesCount";
+
+    /** Received messages count metric name. */
+    public static final String RCVD_MSGS_CNT = "ReceivedMessagesCount";
+
+    /** Received bytes count metric name. */
+    public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -227,6 +247,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
+
+        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
+
+        CommunicationSpi spi = ctx.config().getCommunicationSpi();
+
+        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
+            "Outbound messages queue size.");
+
+        ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");
+
+        ioMetric.register(SENT_BYTES_CNT, spi::getSentBytesCount, "Sent bytes count.");
+
+        ioMetric.register(RCVD_MSGS_CNT, spi::getReceivedMessagesCount,
+            "Received messages count.");
+
+        ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
     }
 
     /**
