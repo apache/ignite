@@ -1266,7 +1266,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Clients. */
     private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
 
-    /** Java NIO channels. */
+    /** Channel creation local requests (registered on #openChannel()) */
     private final ConcurrentMap<ConnectionKey, GridFutureAdapter<Channel>> channelReqs = new ConcurrentHashMap<>();
 
     /** SPI listener. */
@@ -4061,7 +4061,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     private void notifyChannelEvtListener(UUID nodeId, Channel channel, Message initMsg) {
         if (log.isDebugEnabled())
-            log.debug("Notify corresponding listeners due to the new channel opened: " + channel);
+            log.debug("Notify appropriate listeners due to a new channel opened: " + channel);
 
         CommunicationListenerEx<Message> lsnr0 = lsnr;
 
