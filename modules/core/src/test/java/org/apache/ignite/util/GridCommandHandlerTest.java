@@ -96,7 +96,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeChangeModeResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -131,7 +130,6 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
-import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Result.FAIL;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -190,6 +188,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     @Override public String getTestIgniteInstanceName() {
         return "gridCommandHandlerTest";
     }
+
     /**
      * Test activation works via control.sh
      *
@@ -2727,55 +2726,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         assertNotContains(log, out, nodes.get(1));
 
         assertNotContains(log, out, "error");
-    }
-
-    /**
-     * Tests enabling/disabling rolling upgrade.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRollingUpgrade() throws Exception {
-        Ignite ignite = startGrid(0);
-
-        CommandHandler hnd = new CommandHandler();
-
-        // Apache Ignite does not support rolling upgrade from out of the box.
-        assertEquals(EXIT_CODE_OK, execute(hnd, "--rolling-upgrade", "on"));
-
-        VisorRollingUpgradeChangeModeResult res = hnd.getLastOperationResult();
-
-        assertTrue("Enabling rolling upgrade should fail [res=" + res + ']', FAIL == res.getResult());
-        assertEquals(
-            "The cause of the failure should be UnsupportedOperationException [cause=" + res.getCause() + ']',
-            res.getCause().getClassName(), UnsupportedOperationException.class.getName());
-
-        assertEquals(EXIT_CODE_OK, execute(hnd, "--rolling-upgrade", "off"));
-
-        res = hnd.getLastOperationResult();
-
-        assertTrue("Disabling rolling upgrade should fail [res=" + res + ']', FAIL == res.getResult());
-        assertEquals(
-            "The cause of the failure should be UnsupportedOperationException [cause=" + res.getCause() + ']',
-            res.getCause().getClassName(), UnsupportedOperationException.class.getName());
-    }
-
-    /**
-     * Tests execution of '--rolling-upgrade state' command.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRollingUpgradeStatus() throws Exception {
-        Ignite ignite = startGrid(0);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--rolling-upgrade", "status"));
-
-        String out = testOut.toString();
-
-        assertContains(log, out, "Rolling upgrade is disabled");
     }
 
     /**

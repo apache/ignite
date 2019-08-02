@@ -100,7 +100,7 @@ import org.junit.Rule;
  * Test methods do not inherit their annotations from overriden methods of super class.<br/>
  * <br/>
  * If there are several annotation are present on class/method then they will be applied in the same order as they
- * appear in code. It is acheved with the help of {@link Repeatable} fuature of Java annotations -
+ * appear in code. It is achieved with the help of {@link Repeatable} feature of Java annotations -
  * {@link SystemPropertiesList} is automatically generated in such cases. For that reason it is not recommended
  * to use {@link SystemPropertiesList} directly.
  *

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatus;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatusResult;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatusTask;
 
+import static org.apache.ignite.internal.commandline.CommandArgIterator.isCommandOrOption;
 import static org.apache.ignite.internal.commandline.CommandList.ROLLING_UPGRADE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.ru.RollingUpgradeSubCommands.of;
@@ -98,11 +99,15 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
         RollingUpgradeArguments.Builder rollingUpgradeArgs = new RollingUpgradeArguments.Builder(cmd);
 
         if (RollingUpgradeSubCommands.ENABLE == cmd) {
-            RollingUpgradeCommandArg cmdArg = CommandArgUtils.of(
-                argIter.nextArg("Unknown parameter for enabling rolling upgrade"), RollingUpgradeCommandArg.class);
+            if (argIter.peekNextArg() != null && !isCommandOrOption(argIter.peekNextArg())) {
+                RollingUpgradeCommandArg cmdArg = CommandArgUtils.of(
+                    argIter.nextArg("Unknown parameter for enabling rolling upgrade"), RollingUpgradeCommandArg.class);
 
-            if (RollingUpgradeCommandArg.FORCE == cmdArg)
+                if (RollingUpgradeCommandArg.FORCE != cmdArg)
+                    throw new IllegalArgumentException("Unknown parameter for enabling rolling upgrade");
+
                 rollingUpgradeArgs.withForcedMode(true);
+            }
         }
 
         this.rollingUpgradeArgs = rollingUpgradeArgs.build();

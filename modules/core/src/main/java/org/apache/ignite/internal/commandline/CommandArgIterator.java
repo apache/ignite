@@ -148,7 +148,7 @@ public class CommandArgIterator {
     /**
      * Check if raw arg is command or option.
      *
-     * @return {@code true} If raw arg is command, overwise {@code false}.
+     * @return {@code true} If raw arg is command, otherwise {@code false}.
      */
     public static boolean isCommandOrOption(String raw) {
         return raw != null && raw.contains("--");
