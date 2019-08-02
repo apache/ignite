@@ -116,7 +116,7 @@ class FileSender extends AbstractTransmission {
         if (connMeta != null)
             state(connMeta);
 
-        // Write to remote about transission `is in active` mode.
+        // Write flag to remote to keep currnet transmission opened.
         oo.writeBoolean(false);
 
         // Send meta about current file to remote.
@@ -150,7 +150,7 @@ class FileSender extends AbstractTransmission {
         assert connMeta != null;
         assert fileIo != null;
 
-        // Remote note doesn't have file info.
+        // The remote node doesn't have a file meta info.
         if (connMeta.offset() < 0)
             return;
 
