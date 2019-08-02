@@ -761,16 +761,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         "response message. Message will be ignored [remoteId=" + connKey.nodeId() +
                         ", idx=" + connKey.connectionIndex() + ']');
 
+                    ses.close();
+
+                    assert cleanupLocalNodeRecoveryDescriptor(connKey) : connKey;
+
                     return;
                 }
 
                 ses.closeSocketOnSessionClose(false);
 
                 ses.close().listen(f -> {
-                    if (f.error() == null)
-                        reqFut.onDone(ses.key().channel());
-                    else
+                    if (f.error() != null) {
                         reqFut.onDone(f.error());
+
+                        return;
+                    }
+
+                    reqFut.onDone(ses.key().channel());
                 });
             }
 
@@ -783,31 +790,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 ses.send(new ChannelCreateResponse())
                     .listen(sendFut -> {
-                        if (sendFut.error() == null) {
-                            ses.closeSocketOnSessionClose(false);
-
-                            // Close session and send response.
-                            ses.close().listen(closeFut -> {
-                                if (closeFut.error() == null)
-                                    notifyChannelEvtListener(connKey.nodeId(), ses.key().channel(), msg.message());
-                                else {
-                                    U.error(log, "Nio session has not been properly closed " +
-                                        "[nodeId=" + connKey.nodeId() + ", idx=" + connKey.connectionIndex() + ']',
-                                        closeFut.error());
-
-                                    ses.closeSocketOnSessionClose(true);
-
-                                    U.closeQuiet(ses.key().channel());
-                                }
-                            });
-                        }
-                        else {
+                        if (sendFut.error() != null) {
                             U.error(log, "Fail to send channel creation response to the remote node. " +
                                 "Session will be closed [nodeId=" + connKey.nodeId() +
                                 ", idx=" + connKey.connectionIndex() + ']', sendFut.error());
 
                             ses.close();
+
+                            return;
                         }
+
+                        ses.closeSocketOnSessionClose(false);
+
+                        // Close session and send response.
+                        ses.close().listen(closeFut -> {
+                            if (closeFut.error() != null) {
+                                U.error(log, "Nio session has not been properly closed " +
+                                        "[nodeId=" + connKey.nodeId() + ", idx=" + connKey.connectionIndex() + ']',
+                                    closeFut.error());
+
+                                ses.closeSocketOnSessionClose(true);
+
+                                U.closeQuiet(ses.key().channel());
+
+                                return;
+                            }
+
+                            notifyChannelEvtListener(connKey.nodeId(), ses.key().channel(), msg.message());
+                        });
                     });
             }
 
@@ -4156,16 +4166,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /**
      * @param key The connection key to cleanup descriptors on local node.
+     * @return {@code true} if there is no descriptors for the given {@code key}.
      */
-    private void cleanupLocalNodeRecoveryDescriptor(ConnectionKey key) {
+    private boolean cleanupLocalNodeRecoveryDescriptor(ConnectionKey key) {
         ClusterNode node = getLocalNode();
 
-        if (usePairedConnections(node)){
-            inRecDescs.remove(key);
-            outRecDescs.remove(key);
+        boolean empty = true;
+
+        if (usePairedConnections(node)) {
+            empty &= inRecDescs.remove(key) == null;
+            empty &= outRecDescs.remove(key) == null;
         }
         else
-            recoveryDescs.remove(key);
+            empty &= recoveryDescs.remove(key) == null;
+
+        return empty;
     }
 
     /**
@@ -4405,27 +4420,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         channelReqs.remove(key);
 
                         ses.close();
+
+                        return;
                     }
-                    else {
-                        addTimeoutObject(new IgniteSpiTimeoutObject() {
-                            @Override public IgniteUuid id() {
-                                return IgniteUuid.randomUuid();
-                            }
 
-                            @Override public long endTime() {
-                                return U.currentTimeMillis() + connTimeout;
-                            }
+                    addTimeoutObject(new IgniteSpiTimeoutObject() {
+                        @Override public IgniteUuid id() {
+                            return IgniteUuid.randomUuid();
+                        }
 
-                            @Override public void onTimeout() {
-                                // Close session if request not complete yet.
-                                if (result.onDone(handshakeTimeoutException())) {
-                                    ses.close();
+                        @Override public long endTime() {
+                            return U.currentTimeMillis() + connTimeout;
+                        }
 
-                                    channelReqs.remove(key);
-                                }
+                        @Override public void onTimeout() {
+                            // Close session if request not complete yet.
+                            if (result.onDone(handshakeTimeoutException())) {
+                                ses.close();
+
+                                channelReqs.remove(key);
                             }
-                        });
-                    }
+                        }
+                    });
                 });
 
             return result;
