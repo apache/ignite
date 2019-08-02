@@ -807,8 +807,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                         "[nodeId=" + connKey.nodeId() + ", idx=" + connKey.connectionIndex() + ']',
                                     closeFut.error());
 
-                                ses.closeSocketOnSessionClose(true);
-
                                 U.closeQuiet(ses.key().channel());
 
                                 return;
