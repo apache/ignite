@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
 class FileSender extends AbstractTransmission {
     /** Default factory to provide IO oprations over given file. */
     @GridToStringExclude
-    private final FileIOFactory fileIoFactory;
+    private final FileIOFactory factory;
 
     /** File which will be send to remote by chunks. */
     private final File file;
@@ -60,7 +60,7 @@ class FileSender extends AbstractTransmission {
 
     /**
      * @param file File which is going to be send by chunks.
-     * @param pos File offset.
+     * @param off File offset.
      * @param cnt Number of bytes to transfer.
      * @param params Additional file params.
      * @param stopChecker Node stop or prcoess interrupt checker.
@@ -70,7 +70,7 @@ class FileSender extends AbstractTransmission {
      */
     public FileSender(
         File file,
-        long pos,
+        long off,
         long cnt,
         Map<String, Serializable> params,
         BooleanSupplier stopChecker,
@@ -78,7 +78,7 @@ class FileSender extends AbstractTransmission {
         FileIOFactory factory,
         int chunkSize
     ) {
-        super(new TransmissionMeta(file.getName(), pos, cnt, params, null, null),
+        super(new TransmissionMeta(file.getName(), off, cnt, params, null, null),
             stopChecker,
             log,
             chunkSize);
@@ -86,7 +86,7 @@ class FileSender extends AbstractTransmission {
         assert file != null;
 
         this.file = file;
-        fileIoFactory = factory;
+        this.factory = factory;
     }
 
     /**
@@ -105,7 +105,7 @@ class FileSender extends AbstractTransmission {
         try {
             // Can be not null if reconnection is going to be occurred.
             if (fileIo == null)
-                fileIo = fileIoFactory.create(file);
+                fileIo = factory.create(file);
         }
         catch (IOException e) {
             // Consider this IO exeption as a user one (not the network exception) and interrupt upload process.
@@ -145,9 +145,8 @@ class FileSender extends AbstractTransmission {
 
     /**
      * @param connMeta Conneciton meta info.
-     * @throws IgniteCheckedException If fails.
      */
-    private void state(TransmissionMeta connMeta) throws IgniteCheckedException {
+    private void state(TransmissionMeta connMeta) {
         assert connMeta != null;
         assert fileIo != null;
 

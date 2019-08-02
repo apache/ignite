@@ -4396,9 +4396,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         try {
             GridNioSession ses = createNioSession(remote, key.connectionIndex());
 
-            cleanupLocalNodeRecoveryDescriptor(key);
-
             assert ses != null : "Session must be established [remoteId=" + remote.id() + ", key=" + key + ']';
+
+            cleanupLocalNodeRecoveryDescriptor(key);
 
             channelReqs.put(key, result);
 
