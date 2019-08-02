@@ -763,8 +763,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     ses.close();
 
-                    assert cleanupLocalNodeRecoveryDescriptor(connKey) : connKey;
-
                     return;
                 }
 
@@ -4166,21 +4164,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /**
      * @param key The connection key to cleanup descriptors on local node.
-     * @return {@code true} if there is no descriptors for the given {@code key}.
      */
-    private boolean cleanupLocalNodeRecoveryDescriptor(ConnectionKey key) {
+    private void cleanupLocalNodeRecoveryDescriptor(ConnectionKey key) {
         ClusterNode node = getLocalNode();
 
-        boolean empty = true;
-
         if (usePairedConnections(node)) {
-            empty &= inRecDescs.remove(key) == null;
-            empty &= outRecDescs.remove(key) == null;
+            inRecDescs.remove(key);
+            outRecDescs.remove(key);
         }
         else
-            empty &= recoveryDescs.remove(key) == null;
-
-        return empty;
+            recoveryDescs.remove(key);
     }
 
     /**
