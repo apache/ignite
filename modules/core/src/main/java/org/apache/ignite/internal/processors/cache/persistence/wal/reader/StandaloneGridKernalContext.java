@@ -158,7 +158,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         this.cfg = prepareIgniteConfiguration();
         metricMgr = new GridMetricManager(this);
 
-
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
             binaryMetadataFileStoreDir = new File(BINARY_META_FOLDER).getAbsoluteFile();
