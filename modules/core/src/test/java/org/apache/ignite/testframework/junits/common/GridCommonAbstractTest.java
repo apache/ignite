@@ -106,6 +106,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -2118,7 +2119,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (node == null)
             throw new IgniteException("None server node for verification.");
 
-        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
+        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames, null, false, CacheFilterEnum.ALL, false);
 
         return ig.compute().execute(
             VisorIdleVerifyTaskV2.class.getName(),
