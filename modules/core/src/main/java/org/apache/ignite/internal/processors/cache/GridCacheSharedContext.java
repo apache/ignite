@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -178,8 +179,8 @@ public class GridCacheSharedContext<K, V> {
     /** Concurrent DHT atomic updates counters. */
     private AtomicIntegerArray dhtAtomicUpdCnt;
 
-    /** Rebalance enabled flag. */
-    private boolean rebalanceEnabled = true;
+    /** Rebalance enabled metric. */
+    private BooleanMetricImpl rebalanceEnabled;
 
     /** */
     private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
@@ -358,16 +359,16 @@ public class GridCacheSharedContext<K, V> {
      * @return rebalance enabled flag.
      */
     public boolean isRebalanceEnabled() {
-        return this.rebalanceEnabled;
+        return rebalanceEnabled.value();
     }
 
     /**
      * @param rebalanceEnabled rebalance enabled flag.
      */
     public void rebalanceEnabled(boolean rebalanceEnabled) {
-        this.rebalanceEnabled = rebalanceEnabled;
+        this.rebalanceEnabled.value(rebalanceEnabled);
 
-        if (rebalanceEnabled)
+        if (this.rebalanceEnabled.value())
             cache().enableRebalance();
     }
 

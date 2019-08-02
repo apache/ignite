@@ -223,6 +223,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -292,6 +293,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 
@@ -370,6 +372,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private GridKernalContextImpl ctx;
 
     /** Helper which registers and unregisters MBeans. */
+    private BooleanMetric isRebalanceEnabled;
+
+    /** Helper which registers and unregisters MBeans. */
     @GridToStringExclude
     private IgniteMBeansManager mBeansMgr;
 
@@ -434,6 +439,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteKernal() {
         this(null);
+
+        MetricRegistry mReg = ctx.metric().registry(CACHE_METRICS);
+
+        isRebalanceEnabled = mReg.booleanMetric("isRebalanceEnabled", "Is rebalance enabled");
     }
 
     /**
