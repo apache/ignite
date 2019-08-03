@@ -2672,6 +2672,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         ctx.interrupted = true;
 
+        if (ctx.rcv != null)
+            ctx.rcv.cleanup();
+
         ctx.hnd.onException(nodeId, ex);
     }
 

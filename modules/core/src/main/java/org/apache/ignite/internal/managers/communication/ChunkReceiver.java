@@ -109,6 +109,11 @@ class ChunkReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
+    @Override public void cleanup() {
+        // Nothing to clean.
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IOException {
         buf = null;
     }

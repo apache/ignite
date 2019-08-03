@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -39,6 +40,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * {@link FileChannel#transferFrom(ReadableByteChannel, long, long)}.
  */
 class FileReceiver extends AbstractReceiver {
+    /** Future will be done when receiver is closed. */
+    protected final GridFutureAdapter<?> closeFut = new GridFutureAdapter<>();
+
     /** The default factory to provide IO oprations over underlying file. */
     @GridToStringExclude
     private final FileIOFactory factory;
@@ -91,6 +95,7 @@ class FileReceiver extends AbstractReceiver {
     /** {@inheritDoc} */
     @Override protected void init() throws IgniteCheckedException {
         assert fileIo == null;
+        assert !closeFut.isDone();
 
         try {
             fileIo = factory.create(file);
@@ -113,18 +118,25 @@ class FileReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
+    @Override public void cleanup() {
+        try {
+            closeFut.get();
+
+            if (transferred != meta.count())
+                Files.delete(file.toPath());
+        }
+        catch (IOException | IgniteCheckedException e) {
+            U.error(log, "Error deleting not fully loaded file: " + file, e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IOException {
         U.closeQuiet(fileIo);
 
         fileIo = null;
 
-        try {
-            if (stopped() && transferred != meta.count())
-                Files.delete(file.toPath());
-        }
-        catch (IOException e) {
-            U.error(log, "Error deleting not fully loaded file: " + file, e);
-        }
+        closeFut.onDone();
     }
 
     /** {@inheritDoc} */

@@ -66,6 +66,11 @@ abstract class AbstractReceiver extends AbstractTransmission {
     }
 
     /**
+     * Cleanup unused or unfinished receivers resources.
+     */
+    public abstract void cleanup();
+
+    /**
      * @throws IgniteCheckedException If fails.
      */
     protected abstract void init() throws IgniteCheckedException;
