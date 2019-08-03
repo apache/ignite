@@ -120,15 +120,12 @@ class FileSender extends AbstractTransmission {
         oo.writeBoolean(false);
 
         // Send meta about current file to remote.
-        new TransmissionMeta(initMeta.name(),
+        oo.writeObject(new TransmissionMeta(initMeta.name(),
             initMeta.offset() + transferred,
             initMeta.count() - transferred,
             initMeta.params(),
             plc,
-            null)
-            .writeExternal(oo);
-
-        oo.flush();
+            null));
 
         while (hasNextChunk()) {
             if (Thread.currentThread().isInterrupted() || stopped()) {

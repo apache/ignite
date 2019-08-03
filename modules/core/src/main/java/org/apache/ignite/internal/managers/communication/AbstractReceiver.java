@@ -90,7 +90,7 @@ abstract class AbstractReceiver extends AbstractTransmission {
     public TransmissionMeta state() {
         return new TransmissionMeta(initMeta.name(),
             initMeta.offset() + transferred,
-            initMeta.count(),
+            initMeta.count() - transferred,
             initMeta.params(),
             policy(),
             null);

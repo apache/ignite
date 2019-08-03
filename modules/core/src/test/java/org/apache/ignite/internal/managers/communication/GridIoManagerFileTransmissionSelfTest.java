@@ -449,7 +449,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore) {
             @Override public void onException(UUID nodeId, Throwable err) {
                 assertEquals("Previous session is not closed properly", IgniteCheckedException.class, err.getClass());
-                assertTrue(err.getMessage().startsWith("The handler has been aborted"));
             }
 
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
@@ -460,6 +459,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
+        IgniteCheckedException expectedErr = null;
+
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
@@ -467,8 +468,10 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
         catch (IgniteCheckedException e) {
             // Expected exception.
-            assertTrue(e.toString(), e.getCause().getMessage().startsWith("Channel processing error"));
+            expectedErr = e;
         }
+
+        assertNotNull("Transmission must ends with an exception", expectedErr);
 
         //Open next session and complete successfull.
         try (GridIoManager.TransmissionSender sender = snd.context()
@@ -483,8 +486,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         // Remove topic handler and fail
         rcv.context().io().removeTransmissionHandler(topic);
 
-        IgniteCheckedException err = null;
-
         // Open next writer on removed topic.
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
@@ -493,10 +494,10 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
         catch (IgniteCheckedException e) {
             // Must catch execption here.
-            err = e;
+            expectedErr = e;
         }
 
-        assertNotNull(err);
+        assertNotNull("Transmission must ends with an exception", expectedErr);
     }
 
     /**
