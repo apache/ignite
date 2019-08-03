@@ -1469,6 +1469,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setNodeId(null);
 
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
         if (GridTestProperties.getProperty(GridTestProperties.BINARY_COMPACT_FOOTERS) != null) {
             if (!Boolean.valueOf(GridTestProperties.getProperty(GridTestProperties.BINARY_COMPACT_FOOTERS))) {
                 BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
