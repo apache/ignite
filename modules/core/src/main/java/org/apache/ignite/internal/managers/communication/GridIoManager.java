@@ -2762,7 +2762,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
 
             // Send previous context state to sync remote and local node (on manager connected).
-            out.writeObject(rcvCtx.lastState);
+            out.writeObject(rcvCtx.lastState == null ? new TransmissionMeta() : rcvCtx.lastState);
 
             receiveFromChannel(topic, rcvCtx, in, out, ch);
         }
@@ -2773,10 +2773,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 IgniteCheckedException ex = new IgniteCheckedException("Channel processing error " +
                     "[nodeId=" + nodeId + ']', t);
 
-                if (rcvCtx.lastRcv == null)
-                    rcvCtx.lastState.error(ex);
-                else
-                    rcvCtx.lastState = rcvCtx.lastRcv.state().error(ex);
+                rcvCtx.lastState = rcvCtx.lastState == null ?
+                    new TransmissionMeta(ex) : rcvCtx.lastState.error(ex);
 
                 rcvCtx.hnd.onException(nodeId, t);
             }
@@ -2830,15 +2828,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 TransmissionMeta meta = (TransmissionMeta)in.readObject();
 
-                if (rcvCtx.lastRcv != null)
-                    validate(rcvCtx.lastRcv.state(), meta);
+                if (rcvCtx.lastState == null)
+                    rcvCtx.lastState = meta;
 
-                rcvCtx.lastRcv = createReceiver(rcvCtx.nodeId,
+                validate(rcvCtx.lastState, meta);
+
+                try (AbstractReceiver rcv = createReceiver(rcvCtx.nodeId,
                     rcvCtx.hnd,
                     meta,
-                    () -> stopping || rcvCtx.interrupted);
+                    () -> stopping || rcvCtx.interrupted)
+                ) {
+                    rcvCtx.rcv = rcv;
 
-                try (AbstractReceiver rcv = rcvCtx.lastRcv) {
                     long startTime = U.currentTimeMillis();
 
                     rcv.receive(ch);
@@ -2847,14 +2848,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     out.writeBoolean(true);
                     out.flush();
 
-                    rcvCtx.lastRcv = null;
-
                     long downloadTime = U.currentTimeMillis() - startTime;
 
                     U.log(log, "File has been received " +
                         "[name=" + rcv.state().name() + ", transferred=" + rcv.transferred() +
                         ", time=" + (double)((downloadTime) / 1000) + " sec" +
                         ", retries=" + rcvCtx.retries + ", remoteId=" + rcvCtx.nodeId + ']');
+
+                    rcvCtx.lastState = null;
+                }
+                catch (Throwable e) {
+                    rcvCtx.lastState = rcvCtx.rcv.state();
+
+                    throw e;
                 }
             }
         }
@@ -3004,13 +3010,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private int retries;
 
         /** Last infinished downloading object. */
-        private AbstractReceiver lastRcv;
+        private AbstractReceiver rcv;
 
         /** Flag indicates that current file handling process must be interrupted. */
         private volatile boolean interrupted;
 
         /** Last saved state about file data processing. */
-        private TransmissionMeta lastState = new TransmissionMeta();
+        private TransmissionMeta lastState;
 
         /**
          * @param nodeId Remote node id.
