@@ -15,31 +15,22 @@
  */
 package org.apache.ignite.testsuites;
 
-import java.util.HashSet;
-import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
-import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Mvcc version of {@link IgnitePdsTestSuite3}.
  */
-@RunWith(DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses(IgnitePdsTestSuite3.class)
 public class IgnitePdsMvccTestSuite3 {
     /**
-     * @return Suite.
+     * Enforce MVCC
      */
-    public static List<Class<?>> suite() {
+    @BeforeClass
+    public static void enforceMvcc() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        HashSet<Class> ignoredTests = new HashSet<>();
-
-        // TODO https://issues.apache.org/jira/browse/IGNITE-11937
-        ignoredTests.add(IgnitePdsContinuousRestartTest.class);
-        ignoredTests.add(IgnitePdsContinuousRestartTestWithExpiryPolicy.class);
-
-        return IgnitePdsTestSuite3.suite(ignoredTests);
     }
 }
