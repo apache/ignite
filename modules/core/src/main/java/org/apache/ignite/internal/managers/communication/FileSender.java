@@ -63,6 +63,7 @@ class FileSender extends AbstractTransmission {
      * @param off File offset.
      * @param cnt Number of bytes to transfer.
      * @param params Additional file params.
+     * @param plc Policy of handling data on remote.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param log Ignite logger.
      * @param factory Factory to produce IO interface on given file.
@@ -73,15 +74,13 @@ class FileSender extends AbstractTransmission {
         long off,
         long cnt,
         Map<String, Serializable> params,
+        TransmissionPolicy plc,
         BooleanSupplier stopChecker,
         IgniteLogger log,
         FileIOFactory factory,
         int chunkSize
     ) {
-        super(new TransmissionMeta(file.getName(), off, cnt, params, null, null),
-            stopChecker,
-            log,
-            chunkSize);
+        super(new TransmissionMeta(file.getName(), off, cnt, params, plc, null), stopChecker, log, chunkSize);
 
         assert file != null;
 
@@ -120,10 +119,10 @@ class FileSender extends AbstractTransmission {
         oo.writeBoolean(false);
 
         // Send meta about current file to remote.
-        oo.writeObject(new TransmissionMeta(initMeta.name(),
-            initMeta.offset() + transferred,
-            initMeta.count() - transferred,
-            initMeta.params(),
+        oo.writeObject(new TransmissionMeta(meta.name(),
+            meta.offset() + transferred,
+            meta.count() - transferred,
+            meta.params(),
             plc,
             null));
 
@@ -136,7 +135,7 @@ class FileSender extends AbstractTransmission {
             writeChunk(ch);
         }
 
-        assert transferred == initMeta.count() : "File is not fully transferred [expect=" + initMeta.count() +
+        assert transferred == meta.count() : "File is not fully transferred [expect=" + meta.count() +
             ", actual=" + transferred + ']';
     }
 
@@ -151,13 +150,13 @@ class FileSender extends AbstractTransmission {
         if (connMeta.offset() < 0)
             return;
 
-        long uploadedBytes = connMeta.offset() - initMeta.offset();
+        long uploadedBytes = connMeta.offset() - meta.offset();
 
-        assertParameter(initMeta.name().equals(connMeta.name()), "Attempt to transfer different file " +
-            "while previous is not completed [initMeta=" + initMeta + ", meta=" + connMeta + ']');
+        assertParameter(meta.name().equals(connMeta.name()), "Attempt to transfer different file " +
+            "while previous is not completed [meta=" + meta + ", meta=" + connMeta + ']');
 
         assertParameter(uploadedBytes >= 0, "Incorrect sync meta [offset=" + connMeta.offset() +
-            ", initMeta=" + initMeta + ']');
+            ", meta=" + meta + ']');
 
         // No need to set new file position, if it is not changed.
         if (uploadedBytes == 0)
@@ -173,9 +172,9 @@ class FileSender extends AbstractTransmission {
      * @throws IOException If fails.
      */
     private void writeChunk(WritableByteChannel ch) throws IOException {
-        long batchSize = Math.min(chunkSize, initMeta.count() - transferred);
+        long batchSize = Math.min(chunkSize, meta.count() - transferred);
 
-        long sent = fileIo.transferTo(initMeta.offset() + transferred, batchSize, ch);
+        long sent = fileIo.transferTo(meta.offset() + transferred, batchSize, ch);
 
         if (sent > 0)
             transferred += sent;

@@ -39,41 +39,48 @@ abstract class AbstractTransmission implements Closeable {
     protected final IgniteLogger log;
 
     /** Initial meta with file transferred attributes. */
-    protected final TransmissionMeta initMeta;
+    protected TransmissionMeta meta;
 
     /** The number of bytes successfully transferred druring iteration. */
     protected long transferred;
 
     /**
-     * @param initMeta Initial file meta info.
+     * @param meta Initial file meta info.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param log Ignite logger.
      * @param chunkSize Size of chunks.
      */
     protected AbstractTransmission(
-        TransmissionMeta initMeta,
+        TransmissionMeta meta,
         BooleanSupplier stopChecker,
         IgniteLogger log,
         int chunkSize
     ) {
-        A.notNull(initMeta, "Initial file meta cannot be null");
-        A.notNullOrEmpty(initMeta.name(), "Trasmisson name cannot be empty or null");
-        A.ensure(initMeta.offset() >= 0, "File start position cannot be negative");
-        A.ensure(initMeta.count() > 0, "Total number of bytes to transfer must be greater than zero");
+        A.notNull(meta, "Initial file meta cannot be null");
+        A.notNullOrEmpty(meta.name(), "Trasmisson name cannot be empty or null");
+        A.ensure(meta.offset() >= 0, "File start position cannot be negative");
+        A.ensure(meta.count() > 0, "Total number of bytes to transfer must be greater than zero");
         A.notNull(stopChecker, "Process stop checker cannot be null");
         A.ensure(chunkSize > 0, "Size of chunks to transfer data must be positive");
 
         this.stopChecker = stopChecker;
-        this.initMeta = initMeta;
         this.log = log.getLogger(AbstractTransmission.class);
         this.chunkSize = chunkSize;
+        this.meta = meta;
     }
 
     /**
-     * @return Initial transmission meta.
+     * @return Current receiver state written to a {@link TransmissionMeta} instance.
      */
-    public TransmissionMeta initMeta() {
-        return initMeta;
+    public TransmissionMeta state() {
+        assert meta != null;
+
+        return new TransmissionMeta(meta.name(),
+            meta.offset() + transferred,
+            meta.count() - transferred,
+            meta.params(),
+            meta.policy(),
+            null);
     }
 
     /**
@@ -94,7 +101,7 @@ abstract class AbstractTransmission implements Closeable {
      * @return {@code true} if and only if a chunked object has received all the data it expects.
      */
     protected boolean hasNextChunk() {
-        return transferred < initMeta.count();
+        return transferred < meta.count();
     }
 
     /** {@inheritDoc} */

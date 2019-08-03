@@ -23,52 +23,33 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 
-import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
-
 /**
  * Class represents a receiver of data which can be pulled from a channel by chunks of
  * predefined size. Closes when a transmission of represented object ends.
  */
 abstract class AbstractReceiver extends AbstractTransmission {
     /**
-     * @param initMeta Initial file meta info.
+     * @param meta Initial file meta info.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param log Ignite logger.
      * @param chunkSize Size of chunks.
      */
     protected AbstractReceiver(
-        TransmissionMeta initMeta,
+        TransmissionMeta meta,
         BooleanSupplier stopChecker,
         IgniteLogger log,
         int chunkSize
     ) {
-        super(initMeta, stopChecker, log, chunkSize);
+        super(meta, stopChecker, log, chunkSize);
     }
 
     /**
      * @param ch Input channel to read data from.
-     * @param meta Meta information about receiving file.
      * @throws IOException If an io exception occurred.
      * @throws IgniteCheckedException If some check failed.
      */
-    public void receive(
-        ReadableByteChannel ch,
-        TransmissionMeta meta
-    ) throws IOException, IgniteCheckedException {
-        assert meta != null;
-
-        assertParameter(initMeta.name().equals(meta.name()), "Attempt to load different file " +
-            "[initMeta=" + initMeta + ", meta=" + meta + ']');
-
-        assertParameter(initMeta.offset() + transferred == meta.offset(),
-            "The next chunk offest is incorrect [initMeta=" + initMeta +
-                ", transferred=" + transferred + ", meta=" + meta + ']');
-
-        assertParameter(initMeta.count() == meta.count() + transferred, " The count of bytes to transfer for " +
-            "the next chunk is incorrect [total=" + initMeta.count() + ", transferred=" + transferred +
-            ", initMeta=" + initMeta + ", meta=" + meta + ']');
-
-        init(meta);
+    public void receive(ReadableByteChannel ch) throws IOException, IgniteCheckedException {
+        init();
 
         // Read data from the input.
         while (hasNextChunk()) {
@@ -80,34 +61,14 @@ abstract class AbstractReceiver extends AbstractTransmission {
             readChunk(ch);
         }
 
-        assert transferred == initMeta.count() : "The number of transferred bytes are not as expected " +
-            "[expect=" + initMeta.count() + ", actual=" + transferred + ']';
+        assert transferred == meta.count() : "The number of transferred bytes are not as expected " +
+            "[expect=" + meta.count() + ", actual=" + transferred + ']';
     }
 
     /**
-     * @return Current receiver state written to a {@link TransmissionMeta} instance.
-     */
-    public TransmissionMeta state() {
-        return new TransmissionMeta(initMeta.name(),
-            initMeta.offset() + transferred,
-            initMeta.count() - transferred,
-            initMeta.params(),
-            policy(),
-            null);
-    }
-
-    /**
-     * @return Read policy of data handling.
-     */
-    protected TransmissionPolicy policy() {
-        return initMeta.policy();
-    }
-
-    /**
-     * @param meta Meta information about receiving file.
      * @throws IgniteCheckedException If fails.
      */
-    protected abstract void init(TransmissionMeta meta) throws IgniteCheckedException;
+    protected abstract void init() throws IgniteCheckedException;
 
     /**
      * @param ch Channel to read data from.

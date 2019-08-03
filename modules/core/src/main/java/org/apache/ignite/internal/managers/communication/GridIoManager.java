@@ -105,7 +105,9 @@ import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2670,8 +2672,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         ctx.interrupted = true;
 
-        U.closeQuiet(ctx.lastRcv);
-
         ctx.hnd.onException(nodeId, ex);
     }
 
@@ -2762,10 +2762,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
 
             // Send previous context state to sync remote and local node (on manager connected).
-            TransmissionMeta meta = rcvCtx.lastRcv == null ? new TransmissionMeta(rcvCtx.lastSeenErr) :
-                rcvCtx.lastRcv.state().error(rcvCtx.lastSeenErr);
-
-            out.writeObject(meta);
+            out.writeObject(rcvCtx.lastState);
 
             receiveFromChannel(topic, rcvCtx, in, out, ch);
         }
@@ -2773,7 +2770,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
 
             if (rcvCtx != null) {
-                rcvCtx.lastSeenErr = new IgniteCheckedException("Channel processing error [nodeId=" + nodeId + ']', t);
+                IgniteCheckedException ex = new IgniteCheckedException("Channel processing error " +
+                    "[nodeId=" + nodeId + ']', t);
+
+                if (rcvCtx.lastRcv == null)
+                    rcvCtx.lastState.error(ex);
+                else
+                    rcvCtx.lastState = rcvCtx.lastRcv.state().error(ex);
 
                 rcvCtx.hnd.onException(nodeId, t);
             }
@@ -2798,7 +2801,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ReceiverContext rcvCtx,
         ObjectInputStream in,
         ObjectOutputStream out,
-        ReadableByteChannel channel
+        ReadableByteChannel ch
     ) throws IgniteCheckedException {
         // Begin method must be called only once.
         if (!rcvCtx.sesStarted) {
@@ -2827,20 +2830,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 TransmissionMeta meta = (TransmissionMeta)in.readObject();
 
-                if (rcvCtx.lastRcv == null) {
-                    rcvCtx.lastRcv = createReceiver(rcvCtx.nodeId,
-                        rcvCtx.hnd,
-                        meta,
-                        () -> stopping || rcvCtx.interrupted);
-                }
+                if (rcvCtx.lastRcv != null)
+                    validate(rcvCtx.lastRcv.state(), meta);
+
+                rcvCtx.lastRcv = createReceiver(rcvCtx.nodeId,
+                    rcvCtx.hnd,
+                    meta,
+                    () -> stopping || rcvCtx.interrupted);
 
                 try (AbstractReceiver rcv = rcvCtx.lastRcv) {
                     long startTime = U.currentTimeMillis();
 
-                    rcv.receive(channel, meta);
+                    rcv.receive(ch);
 
                     // Write processing ack.
-                    out.writeLong(rcv.transferred());
+                    out.writeBoolean(true);
                     out.flush();
 
                     rcvCtx.lastRcv = null;
@@ -2848,7 +2852,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     long downloadTime = U.currentTimeMillis() - startTime;
 
                     U.log(log, "File has been received " +
-                        "[name=" + rcv.initMeta().name() + ", transferred=" + rcv.transferred() +
+                        "[name=" + rcv.state().name() + ", transferred=" + rcv.transferred() +
                         ", time=" + (double)((downloadTime) / 1000) + " sec" +
                         ", retries=" + rcvCtx.retries + ", remoteId=" + rcvCtx.nodeId + ']');
                 }
@@ -2869,6 +2873,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         catch (InterruptedException | ClassNotFoundException e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * @param prev Previous available transmission meta.
+     * @param next Next transmission meta.
+     * @throws IgniteCheckedException If fails.
+     */
+    private void validate(TransmissionMeta prev, TransmissionMeta next) throws IgniteCheckedException {
+        assertParameter(prev.name().equals(next.name()), "Attempt to load different file " +
+            "[prev=" + prev + ", next=" + next + ']');
+
+        assertParameter(prev.offset() == next.offset(),
+            "The next chunk offest is incorrect [prev=" + prev + ", meta=" + next + ']');
+
+        assertParameter(prev.count() == next.count(), " The count of bytes to transfer for " +
+            "the next chunk is incorrect [prev=" + prev + ", next=" + next + ']');
+
+        assertParameter(prev.policy() == next.policy(), "Attemt to continue file upload with" +
+            " different transmission policy [prev=" + prev + ", next=" + next + ']');
     }
 
     /**
@@ -2898,23 +2921,26 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         switch (meta.policy()) {
             case FILE:
                 return new FileReceiver(
-                    nodeId,
                     meta,
                     chunkSize,
                     stopChecker,
                     fileIoFactory,
-                    hnd,
+                    new IgniteOutClosureX<IgniteThrowableConsumer<File>>() {
+                        @Override public IgniteThrowableConsumer<File> applyx() throws IgniteCheckedException {
+                            return hnd.fileHandler(nodeId, meta);
+                        }
+                    },
+                    hnd.filePath(nodeId, meta),
                     log);
 
             case CHUNK:
                 return new ChunkReceiver(
-                    nodeId,
                     meta,
                     ctx.config()
                         .getDataStorageConfiguration()
                         .getPageSize(),
                     stopChecker,
-                    hnd,
+                    hnd.chunkHandler(nodeId, meta),
                     log);
 
             default:
@@ -2980,11 +3006,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** Last infinished downloading object. */
         private AbstractReceiver lastRcv;
 
-        /** Last error occurred while channel is processed by registered session handler. */
-        private IgniteCheckedException lastSeenErr;
-
         /** Flag indicates that current file handling process must be interrupted. */
         private volatile boolean interrupted;
+
+        /** Last saved state about file data processing. */
+        private TransmissionMeta lastState = new TransmissionMeta();
 
         /**
          * @param nodeId Remote node id.
@@ -3175,6 +3201,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 offset,
                 cnt,
                 params,
+                plc,
                 () -> stopping || senderStopFlags.get(sesKey).get(),
                 log,
                 fileIoFactory,
@@ -3211,10 +3238,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         snd.send(channel, out, connMeta, plc);
 
                         // Read file received acknowledge.
-                        long total = in.readLong();
+                        boolean written = in.readBoolean();
 
-                        assert total == snd.transferred() : "File is not fully written [expect=" + total +
-                            ", transferred=" + snd.transferred() + ']';
+                        assert written : "File is not fully written :" + file.getAbsolutePath();
 
                         break;
                     }
@@ -3226,7 +3252,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             "will be re-establishing [remoteId=" + remoteId + ", file=" + file.getName() +
                             ", sesKey=" + sesKey + ", retries=" + retries +
                             ", transferred=" + snd.transferred() +
-                            ", total=" + snd.initMeta().count() + ']', e);
+                            ", total=" + snd.state().count() + ']', e);
 
                         retries++;
 

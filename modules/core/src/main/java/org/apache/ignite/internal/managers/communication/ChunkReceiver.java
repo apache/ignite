@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
-import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -40,34 +40,28 @@ class ChunkReceiver extends AbstractReceiver {
     private ByteBuffer buf;
 
     /**
-     * @param nodeId The remote node id receive request for transmission from.
-     * @param initMeta Initial file meta info.
+     * @param meta Initial file meta info.
      * @param chunkSize Size of chunks.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param hnd Transmission handler to process download result.
      * @param log Ignite looger.
-     * @throws IgniteCheckedException If fails.
      */
     public ChunkReceiver(
-        UUID nodeId,
-        TransmissionMeta initMeta,
+        TransmissionMeta meta,
         int chunkSize,
         BooleanSupplier stopChecker,
-        TransmissionHandler hnd,
+        IgniteThrowableConsumer<ByteBuffer> hnd,
         IgniteLogger log
-    ) throws IgniteCheckedException {
-        super(initMeta, stopChecker, log, chunkSize);
+    ) {
+        super(meta, stopChecker, log, chunkSize);
 
-        assert initMeta.policy() == TransmissionPolicy.CHUNK : initMeta.policy();
+        A.notNull(hnd, "ChunkHandler must be provided by transmission handler");
 
-        this.hnd = hnd.chunkHandler(nodeId, initMeta);
-
-        assert this.hnd != null : "ChunkHandler must be provided by transmission handler";
+        this.hnd = hnd;
     }
 
     /** {@inheritDoc} */
-    @Override protected void init(TransmissionMeta meta) throws IgniteCheckedException {
-        assert meta != null;
+    @Override protected void init() throws IgniteCheckedException {
         assert buf == null;
 
         buf = ByteBuffer.allocate(chunkSize);
@@ -90,9 +84,9 @@ class ChunkReceiver extends AbstractReceiver {
 
             // Read will return -1 if remote node close connection.
             if (res < 0) {
-                if (transferred + readed != initMeta.count()) {
+                if (transferred + readed != meta.count()) {
                     throw new IOException("Input data channel reached its end, but file has not fully loaded " +
-                        "[transferred=" + transferred + ", readed=" + readed + ", total=" + initMeta.count() + ']');
+                        "[transferred=" + transferred + ", readed=" + readed + ", total=" + meta.count() + ']');
                 }
 
                 break;

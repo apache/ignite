@@ -22,18 +22,17 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
-import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
 
 /**
  * Class represents a chunk data receiver which is pulling data from channel vi
@@ -42,10 +41,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
 class FileReceiver extends AbstractReceiver {
     /** The default factory to provide IO oprations over underlying file. */
     @GridToStringExclude
-    private final FileIOFactory fileIoFactory;
+    private final FileIOFactory factory;
 
     /** Handler to notify when a file has been processed. */
-    private final IgniteThrowableConsumer<File> hnd;
+    private final IgniteOutClosureX<IgniteThrowableConsumer<File>> hndProvider;
 
     /** The abstract java representation of the chunked file. */
     private File file;
@@ -55,65 +54,48 @@ class FileReceiver extends AbstractReceiver {
     private FileIO fileIo;
 
     /**
-     * @param nodeId The remote node id receive request for transmission from.
-     * @param initMeta Initial file meta info.
+     * @param meta Initial file meta info.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param factory Factory to produce IO interface on files.
-     * @param hnd Transmission handler to process download result.
+     * @param hndProvider Transmission handler provider to process download result.
      * @param log Ignite logger.
-     * @throws IgniteCheckedException If fails.
      */
     public FileReceiver(
-        UUID nodeId,
-        TransmissionMeta initMeta,
+        TransmissionMeta meta,
         int chunkSize,
         BooleanSupplier stopChecker,
         FileIOFactory factory,
-        TransmissionHandler hnd,
+        IgniteOutClosureX<IgniteThrowableConsumer<File>> hndProvider,
+        String fileAbsPath,
         IgniteLogger log
-    ) throws IgniteCheckedException {
-        super(initMeta, stopChecker, log, chunkSize);
+    ) {
+        super(meta, stopChecker, log, chunkSize);
 
-        assert initMeta.policy() == TransmissionPolicy.FILE : initMeta.policy();
+        A.notNull(hndProvider, "FileHandler must be provided by transmission handler");
+        A.notNull(fileAbsPath, "File absolute path cannot be null");
+        A.ensure(!fileAbsPath.trim().isEmpty(), "File absolute path cannot be empty ");
 
-        fileIoFactory = factory;
-        this.hnd = hnd.fileHandler(nodeId, initMeta);
-
-        assert this.hnd != null : "FileHandler must be provided by transmission handler";
-
-        String fileAbsPath = hnd.filePath(nodeId, initMeta);
-
-        if (fileAbsPath == null || fileAbsPath.trim().isEmpty())
-            throw new IgniteCheckedException("File receiver absolute path cannot be empty or null. Receiver cannot be" +
-                " initialized: " + this);
-
+        this.factory = factory;
+        this.hndProvider = hndProvider;
         file = new File(fileAbsPath);
     }
 
     /** {@inheritDoc} */
-    @Override public void receive(
-        ReadableByteChannel ch,
-        TransmissionMeta meta
-    ) throws IOException, IgniteCheckedException {
-        super.receive(ch, meta);
+    @Override public void receive(ReadableByteChannel ch) throws IOException, IgniteCheckedException {
+        super.receive(ch);
 
-        if (transferred == initMeta.count())
-            hnd.accept(file);
+        if (transferred == meta.count())
+            hndProvider.apply().accept(file);
     }
 
     /** {@inheritDoc} */
-    @Override protected void init(TransmissionMeta meta) throws IgniteCheckedException {
-        assert meta != null;
+    @Override protected void init() throws IgniteCheckedException {
         assert fileIo == null;
 
-        assertParameter(meta.name().equals(initMeta.name()), "Read operation stopped. " +
-            "Attempt to receive a new file from channel, while the previous was not fully loaded " +
-            "[meta=" + meta + ", prevFile=" + initMeta.name() + ']');
-
         try {
-            fileIo = fileIoFactory.create(file);
+            fileIo = factory.create(file);
 
-            fileIo.position(initMeta.offset() + transferred);
+            fileIo.position(meta.offset() + transferred);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to open destination file. Receiver will will be stopped", e);
@@ -122,9 +104,9 @@ class FileReceiver extends AbstractReceiver {
 
     /** {@inheritDoc} */
     @Override protected void readChunk(ReadableByteChannel ch) throws IOException {
-        long batchSize = Math.min(chunkSize, initMeta.count() - transferred);
+        long batchSize = Math.min(chunkSize, meta.count() - transferred);
 
-        long readed = fileIo.transferFrom(ch, initMeta.offset() + transferred, batchSize);
+        long readed = fileIo.transferFrom(ch, meta.offset() + transferred, batchSize);
 
         if (readed > 0)
             transferred += readed;
@@ -137,7 +119,7 @@ class FileReceiver extends AbstractReceiver {
         fileIo = null;
 
         try {
-            if (transferred != initMeta.count())
+            if (stopped() && transferred != meta.count())
                 Files.delete(file.toPath());
         }
         catch (IOException e) {
