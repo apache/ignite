@@ -128,7 +128,7 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
         for (int i = 0; i < attempts; ++i) {
             try {
                 for (int key = 0; key < 500_000; ++key)
-                    cache.put(key, new byte[4096]);
+                    cache.put(key, new byte[4000]);
 
                 fail("OutOfMemoryException hasn't been thrown");
             }
