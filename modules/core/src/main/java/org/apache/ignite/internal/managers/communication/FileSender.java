@@ -91,14 +91,14 @@ class FileSender extends AbstractTransmission {
     /**
      * @param ch Output channel to write file to.
      * @param oo Channel to write meta info to.
-     * @param connMeta Connection meta received.
+     * @param rcvMeta Connection meta received.
      * @param plc Policy of how data will be handled on remote node.
      * @throws IOException If a transport exception occurred.
      * @throws IgniteCheckedException If fails.
      */
     public void send(WritableByteChannel ch,
         ObjectOutput oo,
-        @Nullable TransmissionMeta connMeta,
+        @Nullable TransmissionMeta rcvMeta,
         TransmissionPolicy plc
     ) throws IOException, IgniteCheckedException {
         try {
@@ -112,8 +112,7 @@ class FileSender extends AbstractTransmission {
         }
 
         // If not the initial connection for the current session.
-        if (connMeta != null)
-            state(connMeta);
+        updateSenderState(rcvMeta);
 
         // Write flag to remote to keep currnet transmission opened.
         oo.writeBoolean(false);
@@ -140,22 +139,21 @@ class FileSender extends AbstractTransmission {
     }
 
     /**
-     * @param connMeta Conneciton meta info.
+     * @param rcvMeta Conneciton meta info.
      */
-    private void state(TransmissionMeta connMeta) {
-        assert connMeta != null;
+    private void updateSenderState(TransmissionMeta rcvMeta) {
         assert fileIo != null;
 
         // The remote node doesn't have a file meta info.
-        if (connMeta.offset() < 0)
+        if (rcvMeta == null || rcvMeta.offset() < 0)
             return;
 
-        long uploadedBytes = connMeta.offset() - meta.offset();
+        long uploadedBytes = rcvMeta.offset() - meta.offset();
 
-        assertParameter(meta.name().equals(connMeta.name()), "Attempt to transfer different file " +
-            "while previous is not completed [meta=" + meta + ", meta=" + connMeta + ']');
+        assertParameter(meta.name().equals(rcvMeta.name()), "Attempt to transfer different file " +
+            "while previous is not completed [meta=" + meta + ", meta=" + rcvMeta + ']');
 
-        assertParameter(uploadedBytes >= 0, "Incorrect sync meta [offset=" + connMeta.offset() +
+        assertParameter(uploadedBytes >= 0, "Incorrect sync meta [offset=" + rcvMeta.offset() +
             ", meta=" + meta + ']');
 
         // No need to set new file position, if it is not changed.

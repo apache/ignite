@@ -3232,19 +3232,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
                     try {
-                        TransmissionMeta connMeta = null;
+                        TransmissionMeta rcvMeta = null;
 
                         if (out == null && in == null) {
-                            connMeta = connect();
+                            rcvMeta = connect();
 
-                            assert connMeta != null;
+                            assert rcvMeta != null;
 
                             // Stop in case of any error occurred on remote node during file processing.
-                            if (connMeta.error() != null)
-                                throw connMeta.error();
+                            if (rcvMeta.error() != null)
+                                throw rcvMeta.error();
                         }
 
-                        snd.send(channel, out, connMeta, plc);
+                        snd.send(channel, out, rcvMeta, plc);
 
                         // Read file received acknowledge.
                         boolean written = in.readBoolean();
