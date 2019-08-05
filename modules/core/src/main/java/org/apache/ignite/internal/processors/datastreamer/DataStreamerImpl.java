@@ -964,6 +964,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                     resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
                                         + remaps, e1));
                                 }
+                                else if (X.hasCause(e1, ClusterReadOnlyModeCheckedException.class)) {
+                                    resFut.onDone(new ClusterReadOnlyModeCheckedException(
+                                        "Failed to finish operation. Cluster in read-only mode!",
+                                        e1
+                                    ));
+                                }
                                 else {
                                     try {
                                         remapSem.acquire();

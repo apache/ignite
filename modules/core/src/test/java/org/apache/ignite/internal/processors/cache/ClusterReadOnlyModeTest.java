@@ -173,7 +173,6 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
                 Exception e = eMap.get(cacheName);
 
                 assertNotNull(cacheName, e);
-                assertTrue(cacheName + " " + e.getClass().toString(), e instanceof CacheException);
                 assertTrue(cacheName + " " + e, X.hasCause(e, ClusterReadOnlyModeCheckedException.class));
             }
         }
