@@ -1944,6 +1944,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         startGrid(0);
 
+        forceCheckpoint();
+
         awaitPartitionMapExchange();
 
         injectTestSystemOut();

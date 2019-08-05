@@ -48,6 +48,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -80,6 +81,13 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     protected IgnitePdsContinuousRestartTest(boolean cancel) {
         this.cancel = cancel;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11937", MvccFeatureChecker.forcedMvcc());
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */

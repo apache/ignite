@@ -127,7 +127,7 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
 
         if (descending) {
             if (descendings == null)
-                descendings  = new HashSet<>();
+                descendings = new HashSet<>();
 
             descendings.add(field);
         }

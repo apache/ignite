@@ -108,14 +108,14 @@ public class Step_9_Scaling_With_Stacking {
 
                 StackedModel<Vector, Vector, Double, LogisticRegressionModel> mdl =
                     new StackedVectorDatasetTrainer<>(aggregator)
-                    .addTrainerWithDoubleOutput(trainer)
-                    .addTrainerWithDoubleOutput(trainer1)
-                    .addTrainerWithDoubleOutput(trainer2)
-                    .fit(
-                        ignite,
-                        dataCache,
-                        normalizationPreprocessor
-                    );
+                        .addTrainerWithDoubleOutput(trainer)
+                        .addTrainerWithDoubleOutput(trainer1)
+                        .addTrainerWithDoubleOutput(trainer2)
+                        .fit(
+                            ignite,
+                            dataCache,
+                            normalizationPreprocessor
+                        );
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
@@ -130,10 +130,11 @@ public class Step_9_Scaling_With_Stacking {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 5 (scaling) example completed.");
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }
