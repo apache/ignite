@@ -53,6 +53,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
@@ -158,6 +159,10 @@ import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingPro
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
+import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
+import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -223,7 +228,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -370,9 +374,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** The main kernal context which holds all the {@link GridComponent}s. */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
-
-    /** Helper which registers and unregisters MBeans. */
-    private BooleanMetric isRebalanceEnabled;
+    
+    private BooleanMetricImpl rebalanceEnabled;
+    private LongGauge upTime;
+    private ObjectMetricImpl<String> upTimeFormatted;
+    private ObjectMetricImpl<String> fullVersion;
+    private ObjectMetricImpl<String> copyRight;
+    private ObjectMetricImpl<String> startTimestampFormatted;
+    private ObjectGauge<List> userAttributesFormatted;
 
     /** Helper which registers and unregisters MBeans. */
     @GridToStringExclude
@@ -439,10 +448,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteKernal() {
         this(null);
-
-        MetricRegistry mReg = ctx.metric().registry(CACHE_METRICS);
-
-        isRebalanceEnabled = mReg.booleanMetric("isRebalanceEnabled", "Is rebalance enabled");
     }
 
     /**
@@ -538,17 +543,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean isRebalanceEnabled() {
-        return ctx.cache().context().isRebalanceEnabled();
+        return rebalanceEnabled.value();
     }
 
     /** {@inheritDoc} */
     @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
-        ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
+        this.rebalanceEnabled.value(rebalanceEnabled);
     }
 
     /** {@inheritDoc} */
     @Override public long getUpTime() {
-        return U.currentTimeMillis() - startTime;
+        return upTime.value();
     }
 
     /** {@inheritDoc} */
@@ -568,12 +573,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String getUpTimeFormatted() {
-        return X.timeSpan2DHMSM(U.currentTimeMillis() - startTime);
+        return upTimeFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return VER_STR + '-' + BUILD_TSTAMP_STR;
+        return fullVersion.value();
     }
 
     /** {@inheritDoc} */
@@ -731,11 +736,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public List<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return (List<String>)F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override public String apply(Map.Entry<String, ?> e) {
-                return e.getKey() + ", " + e.getValue().toString();
-            }
-        });
+        return userAttributesFormatted.value();
     }
 
     /** {@inheritDoc} */
@@ -1513,6 +1514,42 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 EventType.EVT_NODE_JOINED, localNode());
 
         startTimer.finishGlobalStage("Await exchange");
+
+        MetricRegistry mReg = ctx.metric().registry(CACHE_METRICS);
+
+        rebalanceEnabled = mReg.findMetric("rebalanceEnabled");
+
+        upTime = new LongGauge("upTime", "Up-time for the kernal.",
+            () -> U.currentTimeMillis() - startTime);
+        mReg.register(upTime);
+
+        fullVersion = mReg.objectMetric("fullVersion", String.class,
+            "String presentation of the Ignite version.");
+        fullVersion.value(VER_STR + '-' + BUILD_TSTAMP_STR);
+
+        upTimeFormatted = mReg.objectMetric("upTimeFormatted", String.class,
+            "String presentation of up-time for the kernal.");
+        upTimeFormatted.value(X.timeSpan2DHMSM(upTime.value()));
+
+        copyRight = mReg.objectMetric("copyRight", String.class,
+            "Copyright statement for Ignite product.");
+        copyRight.value(COPYRIGHT);
+
+        startTimestampFormatted = mReg.objectMetric("startTimestampFormatted", String.class,
+            "String presentation of the kernal start timestamp.");
+        startTimestampFormatted.value(DateFormat.getDateTimeInstance().format(new Date(startTime)));
+
+        userAttributesFormatted = new ObjectGauge<List>("userAttributesFormatted",
+            "Collection of formatted user-defined attributes added to this node.", new Supplier<List>() {
+            @Override public List<String> get() {
+                return (List<String>)F.transform(cfg.getUserAttributes().entrySet(),
+                    new C1<Map.Entry<String, ?>, String>() {
+                    @Override public String apply(Map.Entry<String, ?> e) {
+                        return e.getKey() + ", " + e.getValue().toString();
+                    }
+                });
+            }
+        }, List.class);
     }
 
     /**

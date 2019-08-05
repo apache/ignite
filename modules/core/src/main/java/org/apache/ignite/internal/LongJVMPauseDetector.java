@@ -22,6 +22,9 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -33,6 +36,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
  * Class for detection of long JVM pauses.
@@ -68,10 +72,13 @@ public class LongJVMPauseDetector {
     private final AtomicReference<Thread> workerRef = new AtomicReference<>();
 
     /** Long pause count. */
-    private long longPausesCnt;
+    private LongAdderMetric longPausesCnt;
 
     /** Long pause total duration. */
-    private long longPausesTotalDuration;
+    private LongAdderMetric longPausesTotalDuration;
+
+    /** Long jvm pause last events. */
+    private ObjectGauge<Map> longJVMPauseLastEvents;
 
     /** Last detector's wake up time. */
     private long lastWakeUpTime;
@@ -123,11 +130,11 @@ public class LongJVMPauseDetector {
                             log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
 
                             synchronized (LongJVMPauseDetector.this) {
-                                final int next = (int)(longPausesCnt % EVT_CNT);
+                                final int next = (int)(longPausesCnt.value() % EVT_CNT);
 
-                                longPausesCnt++;
+                                longPausesCnt.increment();
 
-                                longPausesTotalDuration += pause;
+                                longPausesTotalDuration.add(pause);
 
                                 longPausesTimestamps[next] = now;
 
@@ -188,15 +195,15 @@ public class LongJVMPauseDetector {
     /**
      * @return Long JVM pauses count.
      */
-    synchronized long longPausesCount() {
-        return longPausesCnt;
+    public long longPausesCount() {
+        return longPausesCnt.value();
     }
 
     /**
      * @return Long JVM pauses total duration.
      */
-    synchronized long longPausesTotalDuration() {
-        return longPausesTotalDuration;
+    public long longPausesTotalDuration() {
+        return longPausesTotalDuration.value();
     }
 
     /**
@@ -209,13 +216,8 @@ public class LongJVMPauseDetector {
     /**
      * @return Last long JVM pause events.
      */
-    synchronized Map<Long, Long> longPauseEvents() {
-        final Map<Long, Long> evts = new TreeMap<>();
-
-        for (int i = 0; i < longPausesTimestamps.length && longPausesTimestamps[i] != 0; i++)
-            evts.put(longPausesTimestamps[i], longPausesDurations[i]);
-
-        return evts;
+    public Map longPauseEvents() {
+        return longJVMPauseLastEvents.value();
     }
 
     /**
@@ -223,7 +225,7 @@ public class LongJVMPauseDetector {
      * wasn't occurred.
      */
     public synchronized @Nullable IgniteBiTuple<Long, Long> getLastLongPause() {
-        int lastPauseIdx = (int)((EVT_CNT + longPausesCnt - 1) % EVT_CNT);
+        int lastPauseIdx = (int)((EVT_CNT + longPausesCnt.value() - 1) % EVT_CNT);
 
         if (longPausesTimestamps[lastPauseIdx] == 0)
             return null;
@@ -234,5 +236,29 @@ public class LongJVMPauseDetector {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LongJVMPauseDetector.class, this);
+    }
+
+    /**
+     * Initialize LongJVMPauseDetector metrics.
+     *
+     * @param ctx Context.
+     */
+    void initMetrics(GridKernalContextImpl ctx) {
+        MetricRegistry mReg = ctx.metric().registry(CACHE_METRICS);
+
+        longPausesCnt = mReg.longAdderMetric("longPausesCnt", "Long pause count.");
+        longPausesTotalDuration = mReg.longAdderMetric("longPausesTotalDuration",
+            "Long pause total duration.");
+        longJVMPauseLastEvents = new ObjectGauge<>("longJVMPauseLastEvents", "Long JVM pause last events.",
+            () -> {
+                final Map<Long, Long> evts = new TreeMap<>();
+
+                for (int i = 0; i < longPausesTimestamps.length && longPausesTimestamps[i] != 0; i++)
+                    evts.put(longPausesTimestamps[i], longPausesDurations[i]);
+
+                return evts;
+            }, Map.class);
+
+        mReg.register(longJVMPauseLastEvents);
     }
 }
