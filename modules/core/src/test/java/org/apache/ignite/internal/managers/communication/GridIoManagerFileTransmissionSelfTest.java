@@ -529,7 +529,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        IgniteCheckedException[] errs = new IgniteCheckedException[1];
+        Exception[] errs = new Exception[1];
 
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
@@ -542,7 +542,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 try {
                     sender.send(fileToSend, TransmissionPolicy.FILE);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException | IOException | InterruptedException e) {
                     errs[0] = e;
                 }
                 finally {
@@ -554,7 +554,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 try {
                     anotherSender.send(fileToSend, TransmissionPolicy.FILE);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException | IOException | InterruptedException e) {
                     errs[0] = e;
                 }
                 finally {
