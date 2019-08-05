@@ -68,7 +68,7 @@ class FileSender extends AbstractTransmission {
      * @param log Ignite logger.
      * @param factory Factory to produce IO interface on given file.
      * @param chunkSize Size of chunks.
-     * @throws IgniteCheckedException If fails.
+     * @throws IOException If fails.
      */
     public FileSender(
         File file,
@@ -80,7 +80,7 @@ class FileSender extends AbstractTransmission {
         IgniteLogger log,
         FileIOFactory factory,
         int chunkSize
-    ) throws IgniteCheckedException {
+    ) throws IOException {
         super(new TransmissionMeta(file.getName(), off, cnt, params, plc, null), stopChecker, log, chunkSize);
 
         assert file != null;
@@ -88,15 +88,9 @@ class FileSender extends AbstractTransmission {
         this.file = file;
         this.factory = factory;
 
-        try {
-            // Can be not null if reconnection is going to be occurred.
-            if (fileIo == null)
-                fileIo = factory.create(file);
-        }
-        catch (IOException e) {
-            // Consider this IO exeption as a user one (not the network exception) and interrupt upload process.
-            throw new IgniteCheckedException("Unable to initialize source file. File  sender upload will be stopped", e);
-        }
+        // Can be not null if reconnection is going to be occurred.
+        if (fileIo == null)
+            fileIo = factory.create(file);
     }
 
     /**
@@ -104,12 +98,12 @@ class FileSender extends AbstractTransmission {
      * @param oo Channel to write meta info to.
      * @param rcvMeta Connection meta received.
      * @throws IOException If a transport exception occurred.
-     * @throws IgniteCheckedException If fails.
+     * @throws InterruptedException If thread interrupted.
      */
     public void send(WritableByteChannel ch,
         ObjectOutput oo,
         @Nullable TransmissionMeta rcvMeta
-    ) throws IOException, IgniteCheckedException {
+    ) throws IOException, InterruptedException, IgniteCheckedException {
         // If not the initial connection for the current session.
         updateSenderState(rcvMeta);
 
@@ -125,10 +119,11 @@ class FileSender extends AbstractTransmission {
             null));
 
         while (hasNextChunk()) {
-            if (Thread.currentThread().isInterrupted() || stopped()) {
-                throw new IgniteCheckedException("Thread has been interrupted or operation has been cancelled " +
-                    "due to node is stopping. Channel processing has been stopped.");
-            }
+            if (Thread.currentThread().isInterrupted())
+                throw new InterruptedException("Sender thread has been interruped");
+
+            if (stopped())
+                throw new IgniteCheckedException("Sender has been cancelled due to the local node is stopping");
 
             writeChunk(ch);
         }

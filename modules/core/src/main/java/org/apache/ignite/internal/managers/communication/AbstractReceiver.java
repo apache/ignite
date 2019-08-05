@@ -48,13 +48,14 @@ abstract class AbstractReceiver extends AbstractTransmission {
      * @throws IOException If an io exception occurred.
      * @throws IgniteCheckedException If some check failed.
      */
-    public void receive(ReadableByteChannel ch) throws IOException, IgniteCheckedException {
+    public void receive(ReadableByteChannel ch) throws IOException, InterruptedException, IgniteCheckedException {
         // Read data from the input.
         while (hasNextChunk()) {
-            if (Thread.currentThread().isInterrupted() || stopped()) {
-                throw new IgniteCheckedException("Thread has been interrupted or operation has been cancelled " +
-                    "due to node is stopping. Channel processing has been stopped.");
-            }
+            if (Thread.currentThread().isInterrupted())
+                throw new InterruptedException("Recevier has been interrupted");
+
+            if (stopped())
+                throw new IgniteCheckedException("Receiver has been cancelled. Channel processing has been stopped.");
 
             readChunk(ch);
         }

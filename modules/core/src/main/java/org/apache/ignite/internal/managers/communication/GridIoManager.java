@@ -2805,7 +2805,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ObjectInputStream in,
         ObjectOutputStream out,
         ReadableByteChannel ch
-    ) throws IgniteCheckedException {
+    ) throws IgniteCheckedException, InterruptedException, ClassNotFoundException {
         // Begin method must be called only once.
         if (!rcvCtx.sesStarted) {
             rcvCtx.hnd.onBegin(rcvCtx.nodeId);
@@ -2899,9 +2899,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         "reconnect timeout has been occured"));
                 }
             });
-        }
-        catch (InterruptedException | ClassNotFoundException e) {
-            throw new IgniteCheckedException(e);
         }
     }
 
@@ -3162,7 +3159,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @throws IgniteCheckedException If fails.
          * @throws IOException If fails.
          */
-        private TransmissionMeta connect() throws IgniteCheckedException, IOException {
+        private TransmissionMeta connect() throws IgniteCheckedException, IOException, ClassNotFoundException {
             senderStopFlags.putIfAbsent(sesKey, new AtomicBoolean());
 
             SocketChannel channel = (SocketChannel)openChannel(remoteId,
@@ -3178,13 +3175,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             TransmissionMeta syncMeta;
 
-            try {
-                // Synchronize state between remote and local nodes.
-                syncMeta = (TransmissionMeta)in.readObject();
-            }
-            catch (ClassNotFoundException e) {
-                throw new IgniteCheckedException(e);
-            }
+            // Synchronize state between remote and local nodes.
+            syncMeta = (TransmissionMeta)in.readObject();
 
             return syncMeta;
         }
@@ -3199,7 +3191,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             File file,
             Map<String, Serializable> params,
             TransmissionPolicy plc
-        ) throws IgniteCheckedException {
+        ) throws IgniteCheckedException, InterruptedException, IOException {
             send(file, 0, file.length(), params, plc);
         }
 
@@ -3211,7 +3203,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         public void send(
             File file,
             TransmissionPolicy plc
-        ) throws IgniteCheckedException {
+        ) throws IgniteCheckedException, InterruptedException, IOException {
             send(file, 0, file.length(), new HashMap<>(), plc);
         }
 
@@ -3229,7 +3221,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             long cnt,
             Map<String, Serializable> params,
             TransmissionPolicy plc
-        ) throws IgniteCheckedException {
+        ) throws IgniteCheckedException, InterruptedException, IOException {
             try (FileSender snd = new FileSender(file,
                 offset,
                 cnt,
@@ -3304,11 +3296,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ", transferred=" + snd.transferred() + ", remoteId=" + remoteId +']');
 
             }
-            catch (Exception e) {
+            catch (IgniteCheckedException | InterruptedException e) {
                 closeChannelQuiet();
 
-                throw new IgniteCheckedException("Exception while uploading file to the remote node. The process stopped " +
-                    "[remoteId=" + remoteId + ", file=" + file.getName() + ", sesKey=" + sesKey + ']', e);
+                throw e;
+            }
+            catch (Throwable t) {
+                closeChannelQuiet();
+
+                throw new IgniteException("Exception while uploading file to the remote node. The process stopped " +
+                    "[remoteId=" + remoteId + ", file=" + file.getName() + ", sesKey=" + sesKey + ']', t);
             }
         }
 
