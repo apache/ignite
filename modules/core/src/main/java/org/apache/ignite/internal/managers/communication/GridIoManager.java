@@ -3244,7 +3244,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                 throw rcvMeta.error();
                         }
 
-                        snd.send(channel, out, rcvMeta, plc);
+                        snd.send(channel, out, rcvMeta);
 
                         // Read file received acknowledge.
                         boolean written = in.readBoolean();

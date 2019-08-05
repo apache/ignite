@@ -92,14 +92,12 @@ class FileSender extends AbstractTransmission {
      * @param ch Output channel to write file to.
      * @param oo Channel to write meta info to.
      * @param rcvMeta Connection meta received.
-     * @param plc Policy of how data will be handled on remote node.
      * @throws IOException If a transport exception occurred.
      * @throws IgniteCheckedException If fails.
      */
     public void send(WritableByteChannel ch,
         ObjectOutput oo,
-        @Nullable TransmissionMeta rcvMeta,
-        TransmissionPolicy plc
+        @Nullable TransmissionMeta rcvMeta
     ) throws IOException, IgniteCheckedException {
         try {
             // Can be not null if reconnection is going to be occurred.
@@ -122,7 +120,7 @@ class FileSender extends AbstractTransmission {
             meta.offset() + transferred,
             meta.count() - transferred,
             meta.params(),
-            plc,
+            meta.policy(),
             null));
 
         while (hasNextChunk()) {
