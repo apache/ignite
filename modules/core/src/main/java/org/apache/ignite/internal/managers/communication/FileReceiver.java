@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,13 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * {@link FileChannel#transferFrom(ReadableByteChannel, long, long)}.
  */
 class FileReceiver extends AbstractReceiver {
-    /** Future will be done when receiver is closed. */
-    protected final GridFutureAdapter<?> closeFut = new GridFutureAdapter<>();
-
-    /** The default factory to provide IO oprations over underlying file. */
-    @GridToStringExclude
-    private final FileIOFactory factory;
-
     /** Handler to notify when a file has been processed. */
     private final Consumer<File> hnd;
 
@@ -81,7 +73,6 @@ class FileReceiver extends AbstractReceiver {
         A.notNull(path, "File absolute path cannot be null");
         A.ensure(!path.trim().isEmpty(), "File absolute path cannot be empty ");
 
-        this.factory = factory;
         this.hnd = hnd;
 
         file = new File(path);
@@ -97,7 +88,7 @@ class FileReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
-    @Override public void receive(ReadableByteChannel ch) throws IOException, InterruptedException, NodeStoppingException {
+    @Override public void receive(ReadableByteChannel ch) throws IOException, InterruptedException {
         super.receive(ch);
 
         if (transferred == meta.count())

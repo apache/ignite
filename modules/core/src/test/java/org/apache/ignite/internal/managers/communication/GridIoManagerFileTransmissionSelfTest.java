@@ -194,10 +194,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
                 params.put(file.getName(), file.hashCode());
 
-                sender.send(file,
-                    // Put additional params <file_name, file_hashcode> to map.
-                    params,
-                    TransmissionPolicy.FILE);
+                sender.send(file, params, TransmissionPolicy.FILE);
             }
         }
 
@@ -258,7 +255,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test(expected = IgniteException.class)
     public void testFileHandlerOnReceiverLeft() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicInteger chunksCnt = new AtomicInteger();
@@ -331,16 +328,19 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore));
 
+        Exception err = null;
+
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
             sender.send(fileToSend, TransmissionPolicy.FILE);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             // Ignore node stopping exception.
-            U.log(log,"Expected node stopping exception", e);
+            err = e;
         }
 
+        assertEquals(IgniteException.class, err.getClass());
         assertEquals("Uncomplete resources must be cleaned up on sender left",
             1, // only fileToSend is expected to exist
             fileCount(tempStore.toPath()));
@@ -396,7 +396,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      * @throws Exception If fails.
      */
     @Test(expected = IgniteCheckedException.class)
-    public void testFileHandlerReconnectOnInitFail() throws Exception {
+    public void testFileHandlerSenderStoppedIfReceiverInitFail() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicBoolean throwFirstTime = new AtomicBoolean();
 

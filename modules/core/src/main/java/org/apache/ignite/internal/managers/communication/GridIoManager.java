@@ -286,10 +286,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
     /** The maximum number of retry attempts (read or write attempts). */
-    private int retryCnt;
-
-    /** Size of each chunk transferred over the network of data recevier or sender. */
-    private int chunkSize = DFLT_CHUNK_SIZE_BYTES;
+    private final int retryCnt;
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
@@ -2805,7 +2802,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ObjectInputStream in,
         ObjectOutputStream out,
         ReadableByteChannel ch
-    ) throws IgniteCheckedException, InterruptedException, ClassNotFoundException {
+    ) throws IgniteCheckedException, InterruptedException {
         // Begin method must be called only once.
         if (!rcvCtx.sesStarted) {
             rcvCtx.hnd.onBegin(rcvCtx.nodeId);
@@ -2870,6 +2867,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     throw e;
                 }
             }
+        }
+        catch (ClassNotFoundException e) {
+            throw new IgniteException(e);
         }
         catch (IOException e) {
             // Waiting for re-establishing connection.
@@ -2949,7 +2949,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             case FILE:
                 return new FileReceiver(
                     meta,
-                    chunkSize,
+                    DFLT_CHUNK_SIZE_BYTES,
                     stopChecker,
                     fileIoFactory,
                     hnd.fileHandler(nodeId, meta),
@@ -3155,7 +3155,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @throws IgniteCheckedException If fails.
          * @throws IOException If fails.
          */
-        private TransmissionMeta connect() throws IgniteCheckedException, IOException, ClassNotFoundException {
+        private TransmissionMeta connect() throws IgniteCheckedException, IOException {
             senderStopFlags.putIfAbsent(sesKey, new AtomicBoolean());
 
             SocketChannel channel = (SocketChannel)openChannel(remoteId,
@@ -3171,8 +3171,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             TransmissionMeta syncMeta;
 
-            // Synchronize state between remote and local nodes.
-            syncMeta = (TransmissionMeta)in.readObject();
+            try {
+                // Synchronize state between remote and local nodes.
+                syncMeta = (TransmissionMeta)in.readObject();
+            }
+            catch (ClassNotFoundException e) {
+                throw new IgniteException (e);
+            }
 
             return syncMeta;
         }
@@ -3226,7 +3231,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 () -> stopping || senderStopFlags.get(sesKey).get(),
                 log,
                 fileIoFactory,
-                chunkSize)
+                DFLT_CHUNK_SIZE_BYTES)
             ) {
                 if (log.isDebugEnabled()) {
                     log.debug("Start writing file to remote node [file=" + file.getName() +

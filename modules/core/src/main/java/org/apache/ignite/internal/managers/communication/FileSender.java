@@ -25,9 +25,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -100,12 +99,11 @@ class FileSender extends AbstractTransmission {
      * @param rcvMeta Connection meta received.
      * @throws IOException If a transport exception occurred.
      * @throws InterruptedException If thread interrupted.
-     * @throws NodeStoppingException If stopping.
      */
     public void send(WritableByteChannel ch,
         ObjectOutput oo,
         @Nullable TransmissionMeta rcvMeta
-    ) throws IOException, InterruptedException, NodeStoppingException {
+    ) throws IOException, InterruptedException {
         // If not the initial connection for the current session.
         updateSenderState(rcvMeta);
 
@@ -125,7 +123,7 @@ class FileSender extends AbstractTransmission {
                 throw new InterruptedException("Sender thread has been interruped");
 
             if (stopped())
-                throw new NodeStoppingException("Sender has been cancelled due to the local node is stopping");
+                throw new IgniteException("Sender has been cancelled due to the local node is stopping");
 
             writeChunk(ch);
         }
