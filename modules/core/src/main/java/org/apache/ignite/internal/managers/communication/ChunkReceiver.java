@@ -58,11 +58,6 @@ class ChunkReceiver extends AbstractReceiver {
         A.notNull(hnd, "ChunkHandler must be provided by transmission handler");
 
         this.hnd = hnd;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void init() throws IgniteCheckedException {
-        assert buf == null;
 
         buf = ByteBuffer.allocate(chunkSize);
         buf.order(ByteOrder.nativeOrder());
@@ -109,12 +104,7 @@ class ChunkReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanup() {
-        // Nothing to clean.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws IOException {
+    @Override public void close() {
         buf = null;
     }
 

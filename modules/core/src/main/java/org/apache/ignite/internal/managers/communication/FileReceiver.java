@@ -62,7 +62,9 @@ class FileReceiver extends AbstractReceiver {
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param factory Factory to produce IO interface on files.
      * @param hndProvider Transmission handler provider to process download result.
+     * @param path File path to destination receiver source.
      * @param log Ignite logger.
+     * @throws IgniteCheckedException If fails.
      */
     public FileReceiver(
         TransmissionMeta meta,
@@ -70,18 +72,28 @@ class FileReceiver extends AbstractReceiver {
         BooleanSupplier stopChecker,
         FileIOFactory factory,
         IgniteOutClosureX<IgniteThrowableConsumer<File>> hndProvider,
-        String fileAbsPath,
+        String path,
         IgniteLogger log
-    ) {
+    ) throws IgniteCheckedException {
         super(meta, stopChecker, log, chunkSize);
 
         A.notNull(hndProvider, "FileHandler must be provided by transmission handler");
-        A.notNull(fileAbsPath, "File absolute path cannot be null");
-        A.ensure(!fileAbsPath.trim().isEmpty(), "File absolute path cannot be empty ");
+        A.notNull(path, "File absolute path cannot be null");
+        A.ensure(!path.trim().isEmpty(), "File absolute path cannot be empty ");
 
         this.factory = factory;
         this.hndProvider = hndProvider;
-        file = new File(fileAbsPath);
+
+        file = new File(path);
+
+        try {
+            fileIo = factory.create(file);
+
+            fileIo.position(meta.offset());
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Unable to open destination file. Receiver will will be stopped", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -93,22 +105,9 @@ class FileReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
-    @Override protected void init() throws IgniteCheckedException {
-        assert fileIo == null;
-        assert !closeFut.isDone();
-
-        try {
-            fileIo = factory.create(file);
-
-            fileIo.position(meta.offset() + transferred);
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to open destination file. Receiver will will be stopped", e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override protected void readChunk(ReadableByteChannel ch) throws IOException {
+        assert fileIo != null;
+
         long batchSize = Math.min(chunkSize, meta.count() - transferred);
 
         long readed = fileIo.transferFrom(ch, meta.offset() + transferred, batchSize);
@@ -118,25 +117,18 @@ class FileReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanup() {
-        try {
-            closeFut.get();
-
-            if (transferred != meta.count())
-                Files.delete(file.toPath());
-        }
-        catch (IOException | IgniteCheckedException e) {
-            U.error(log, "Error deleting not fully loaded file: " + file, e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws IOException {
+    @Override public void close() {
         U.closeQuiet(fileIo);
 
         fileIo = null;
 
-        closeFut.onDone();
+        try {
+            if (transferred != meta.count())
+                Files.delete(file.toPath());
+        }
+        catch (IOException e) {
+            U.error(log, "Error deleting not fully loaded file: " + file, e);
+        }
     }
 
     /** {@inheritDoc} */

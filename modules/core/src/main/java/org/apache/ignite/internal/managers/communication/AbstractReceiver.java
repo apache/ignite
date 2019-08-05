@@ -49,8 +49,6 @@ abstract class AbstractReceiver extends AbstractTransmission {
      * @throws IgniteCheckedException If some check failed.
      */
     public void receive(ReadableByteChannel ch) throws IOException, IgniteCheckedException {
-        init();
-
         // Read data from the input.
         while (hasNextChunk()) {
             if (Thread.currentThread().isInterrupted() || stopped()) {
@@ -64,16 +62,6 @@ abstract class AbstractReceiver extends AbstractTransmission {
         assert transferred == meta.count() : "The number of transferred bytes are not as expected " +
             "[expect=" + meta.count() + ", actual=" + transferred + ']';
     }
-
-    /**
-     * Cleanup unused or unfinished receivers resources.
-     */
-    public abstract void cleanup();
-
-    /**
-     * @throws IgniteCheckedException If fails.
-     */
-    protected abstract void init() throws IgniteCheckedException;
 
     /**
      * @param ch Channel to read data from.

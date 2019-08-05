@@ -68,6 +68,7 @@ class FileSender extends AbstractTransmission {
      * @param log Ignite logger.
      * @param factory Factory to produce IO interface on given file.
      * @param chunkSize Size of chunks.
+     * @throws IgniteCheckedException If fails.
      */
     public FileSender(
         File file,
@@ -79,13 +80,23 @@ class FileSender extends AbstractTransmission {
         IgniteLogger log,
         FileIOFactory factory,
         int chunkSize
-    ) {
+    ) throws IgniteCheckedException {
         super(new TransmissionMeta(file.getName(), off, cnt, params, plc, null), stopChecker, log, chunkSize);
 
         assert file != null;
 
         this.file = file;
         this.factory = factory;
+
+        try {
+            // Can be not null if reconnection is going to be occurred.
+            if (fileIo == null)
+                fileIo = factory.create(file);
+        }
+        catch (IOException e) {
+            // Consider this IO exeption as a user one (not the network exception) and interrupt upload process.
+            throw new IgniteCheckedException("Unable to initialize source file. File  sender upload will be stopped", e);
+        }
     }
 
     /**
@@ -99,16 +110,6 @@ class FileSender extends AbstractTransmission {
         ObjectOutput oo,
         @Nullable TransmissionMeta rcvMeta
     ) throws IOException, IgniteCheckedException {
-        try {
-            // Can be not null if reconnection is going to be occurred.
-            if (fileIo == null)
-                fileIo = factory.create(file);
-        }
-        catch (IOException e) {
-            // Consider this IO exeption as a user one (not the network exception) and interrupt upload process.
-            throw new IgniteCheckedException("Unable to initialize source file. File  sender upload will be stopped", e);
-        }
-
         // If not the initial connection for the current session.
         updateSenderState(rcvMeta);
 
