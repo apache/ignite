@@ -306,6 +306,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd.cluster().active(true);
 
         File fileToSend = createFileRandomData("tempFile15Mb", 15 * 1024 * 1024);
+        File downloadTo = U.resolveWorkDirectory(tempStore.getAbsolutePath(), "download", true);
 
         snd.context().io().transfererFileIoFactory(new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
@@ -326,7 +327,12 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore));
+        rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore){
+            /** {@inheritDoc} */
+            @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
+                return new File(downloadTo, fileMeta.name()).getAbsolutePath();
+            }
+        });
 
         Exception err = null;
 
@@ -342,8 +348,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         assertEquals(IgniteException.class, err.getClass());
         assertEquals("Uncomplete resources must be cleaned up on sender left",
-            1, // only fileToSend is expected to exist
-            fileCount(tempStore.toPath()));
+            0,
+            fileCount(downloadTo.toPath()));
     }
 
     /**
