@@ -240,6 +240,30 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 throw new IgniteException(exTestMessage);
             }
 
+            @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
+                fail("filePath must never be called");
+
+                return null;
+            }
+
+            @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
+                fail("fileHandler must never be called");
+
+                return super.fileHandler(nodeId, initMeta);
+            }
+
+            @Override public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
+                fail("chunkHandler must never be called");
+
+                return super.chunkHandler(nodeId, initMeta);
+            }
+
+            @Override public void onEnd(UUID nodeId) {
+                fail("onEnd must never be called");
+
+                super.onEnd(nodeId);
+            }
+
             @Override public void onException(UUID nodeId, Throwable err) {
                 assertEquals(exTestMessage, err.getMessage());
             }

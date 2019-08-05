@@ -173,7 +173,7 @@ class FileSender extends AbstractTransmission {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IOException {
+    @Override public void close() {
         U.closeQuiet(fileIo);
 
         fileIo = null;
