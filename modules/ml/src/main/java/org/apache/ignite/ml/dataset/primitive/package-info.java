@@ -25,4 +25,5 @@
  * algorithm doesn't need to keep specific data and can work with standard primitive {@code data} or {@code context}.
  * Extensions of dataset provides basic most often used functions that can be used for debugging or data analysis.
  */
+
 package org.apache.ignite.ml.dataset.primitive;

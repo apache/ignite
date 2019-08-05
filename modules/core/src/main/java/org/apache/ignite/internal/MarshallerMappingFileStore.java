@@ -146,8 +146,8 @@ final class MarshallerMappingFileStore {
                                 rnd = ThreadLocalRandom.current();
 
                             if (time == 0)
-                                time = U.currentTimeMillis();
-                            else if ((U.currentTimeMillis() - time) >= FILE_LOCK_TIMEOUT_MS)
+                                time = System.nanoTime();
+                            else if (U.millisSinceNanos(time) >= FILE_LOCK_TIMEOUT_MS)
                                 return null;
 
                             U.sleep(rnd.nextLong(50));

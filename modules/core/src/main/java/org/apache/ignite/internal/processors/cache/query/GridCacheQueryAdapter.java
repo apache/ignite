@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -109,9 +108,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final boolean incMeta;
 
     /** */
-    private volatile GridCacheQueryMetricsAdapter metrics;
-
-    /** */
     private volatile int pageSize = Query.DFLT_PAGE_SIZE;
 
     /** */
@@ -178,8 +174,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         log = cctx.logger(getClass());
 
-        metrics = new GridCacheQueryMetricsAdapter();
-
         this.incMeta = false;
         this.clsName = null;
         this.clause = null;
@@ -222,8 +216,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
-
-        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**
@@ -483,16 +475,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** {@inheritDoc} */
     @Override public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         return execute0(rmtReducer, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryMetrics metrics() {
-        return metrics.copy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains high performance file system processor.
  */
+
 package org.apache.ignite.internal.processors.igfs;
