@@ -100,7 +100,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testMultipleIndexedTypes() throws Exception {
         final String cacheName = "test_multi_type";
 
@@ -170,7 +170,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testConcurrentUpdatesWithMvcc() throws Exception {
         doTestConcurrentUpdates(true);
     }
@@ -179,7 +179,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testConcurrentUpdatesNoMvcc() throws Exception {
         try {
             doTestConcurrentUpdates(false);
@@ -307,7 +307,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-20800")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScan() throws Exception {
         final String cacheName = "test";
 

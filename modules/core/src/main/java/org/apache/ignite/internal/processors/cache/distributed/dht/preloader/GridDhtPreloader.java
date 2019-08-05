@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
@@ -113,16 +111,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         demander = new GridDhtPartitionDemander(grp);
 
         demander.start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
-        super.preloadPredicate(preloadPred);
-
-        assert supplier != null && demander != null : "preloadPredicate may be called only after start()";
-
-        supplier.preloadPredicate(preloadPred);
-        demander.preloadPredicate(preloadPred);
     }
 
     /** {@inheritDoc} */

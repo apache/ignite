@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.ml.selection.paramgrid;
 
 /**
- * Cache group metrics
+ * The parent abstract class of all hyper-parameter tuning strategies.
  */
-public interface CacheGroupMetrics {
+public abstract class HyperParameterTuningStrategy {
     /**
-     * @return Number of partitions need processed for finished indexes create or rebuilding.
-     * It is calculated as the number of local partition minus the processed.
-     * A value of 0 indicates that the index is built.
+     * Returns the name of strategy.
      */
-    public long getIndexBuildCountPartitionsLeft();
+    public abstract String getName();
 }

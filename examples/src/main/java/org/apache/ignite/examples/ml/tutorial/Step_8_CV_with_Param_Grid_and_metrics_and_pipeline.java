@@ -80,11 +80,13 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
+
                 Pipeline<Integer, Vector, Integer, Double> pipeline = new Pipeline<Integer, Vector, Integer, Double>()
                     .addVectorizer(vectorizer)
                     .addPreprocessingTrainer(new ImputerTrainer<Integer, Vector>())
                     .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
-                    .addTrainer(new DecisionTreeClassificationTrainer(5, 0));
+                    .addTrainer(trainer);
 
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
@@ -92,23 +94,25 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
-                    .addHyperParam("maxDeep", new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", new Double[]{0.0, 0.25, 0.5});
+                    .addHyperParam("maxDeep", trainer::withMaxDeep, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", trainer::withMinImpurityDecrease, new Double[]{0.0, 0.25, 0.5});
 
                 BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
                     .withNegativeClsLb(0.0)
                     .withPositiveClsLb(1.0)
                     .withMetric(BinaryClassificationMetricValues::accuracy);
 
-                CrossValidationResult crossValidationRes = scoreCalculator.score(
-                    pipeline,
-                    metrics,
-                    ignite,
-                    dataCache,
-                    split.getTrainFilter(),
-                    3,
-                    paramGrid
-                );
+                scoreCalculator
+                    .withIgnite(ignite)
+                    .withUpstreamCache(dataCache)
+                    .withPipeline(pipeline)
+                    .withMetric(metrics)
+                    .withFilter(split.getTrainFilter())
+                    .withPreprocessor(vectorizer)
+                    .withAmountOfFolds(3)
+                    .withParamGrid(paramGrid);
+
+                CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
 
                 System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
                     + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
@@ -125,6 +129,8 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

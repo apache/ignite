@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -60,97 +60,97 @@ public class CacheMetricsImpl implements CacheMetrics {
     public static final String CACHE_METRICS = "cache";
 
     /** Number of reads. */
-    private final LongMetricImpl reads;
+    private final AtomicLongMetric reads;
 
     /** Number of invocations caused update. */
-    private final LongMetricImpl entryProcessorPuts;
+    private final AtomicLongMetric entryProcessorPuts;
 
     /** Number of invocations caused removal. */
-    private final LongMetricImpl entryProcessorRemovals;
+    private final AtomicLongMetric entryProcessorRemovals;
 
     /** Number of invocations caused update. */
-    private final LongMetricImpl entryProcessorReadOnlyInvocations;
+    private final AtomicLongMetric entryProcessorReadOnlyInvocations;
 
     /** Entry processor invoke time taken nanos. */
-    private final LongMetricImpl entryProcessorInvokeTimeNanos;
+    private final AtomicLongMetric entryProcessorInvokeTimeNanos;
 
     /** So far, the minimum time to execute cache invokes. */
-    private final LongMetricImpl entryProcessorMinInvocationTime;
+    private final AtomicLongMetric entryProcessorMinInvocationTime;
 
     /** So far, the maximum time to execute cache invokes. */
-    private final LongMetricImpl entryProcessorMaxInvocationTime;
+    private final AtomicLongMetric entryProcessorMaxInvocationTime;
 
     /** Number of entry processor invokes on keys, which exist in cache. */
-    private final LongMetricImpl entryProcessorHits;
+    private final AtomicLongMetric entryProcessorHits;
 
     /** Number of entry processor invokes on keys, which don't exist in cache. */
-    private final LongMetricImpl entryProcessorMisses;
+    private final AtomicLongMetric entryProcessorMisses;
 
     /** Number of writes. */
-    private final LongMetricImpl writes;
+    private final AtomicLongMetric writes;
 
     /** Number of hits. */
-    private final LongMetricImpl hits;
+    private final AtomicLongMetric hits;
 
     /** Number of misses. */
-    private final LongMetricImpl misses;
+    private final AtomicLongMetric misses;
 
     /** Number of transaction commits. */
-    private final LongMetricImpl txCommits;
+    private final AtomicLongMetric txCommits;
 
     /** Number of transaction rollbacks. */
-    private final LongMetricImpl txRollbacks;
+    private final AtomicLongMetric txRollbacks;
 
     /** Number of evictions. */
-    private final LongMetricImpl evictCnt;
+    private final AtomicLongMetric evictCnt;
 
     /** Number of removed entries. */
-    private final LongMetricImpl rmCnt;
+    private final AtomicLongMetric rmCnt;
 
     /** Put time taken nanos. */
-    private final LongMetricImpl putTimeNanos;
+    private final AtomicLongMetric putTimeNanos;
 
     /** Get time taken nanos. */
-    private final LongMetricImpl getTimeNanos;
+    private final AtomicLongMetric getTimeNanos;
 
     /** Remove time taken nanos. */
-    private final LongMetricImpl rmvTimeNanos;
+    private final AtomicLongMetric rmvTimeNanos;
 
     /** Commit transaction time taken nanos. */
-    private final LongMetricImpl commitTimeNanos;
+    private final AtomicLongMetric commitTimeNanos;
 
     /** Commit transaction time taken nanos. */
-    private final LongMetricImpl rollbackTimeNanos;
+    private final AtomicLongMetric rollbackTimeNanos;
 
     /** Number of reads from off-heap memory. */
-    private final LongMetricImpl offHeapGets;
+    private final AtomicLongMetric offHeapGets;
 
     /** Number of writes to off-heap memory. */
-    private final LongMetricImpl offHeapPuts;
+    private final AtomicLongMetric offHeapPuts;
 
     /** Number of removed entries from off-heap memory. */
-    private final LongMetricImpl offHeapRemoves;
+    private final AtomicLongMetric offHeapRemoves;
 
     /** Number of evictions from off-heap memory. */
-    private final LongMetricImpl offHeapEvicts;
+    private final AtomicLongMetric offHeapEvicts;
 
     /** Number of off-heap hits. */
-    private final LongMetricImpl offHeapHits;
+    private final AtomicLongMetric offHeapHits;
 
     /** Number of off-heap misses. */
-    private final LongMetricImpl offHeapMisses;
+    private final AtomicLongMetric offHeapMisses;
 
     /** Rebalanced keys count. */
-    private final LongMetricImpl rebalancedKeys;
+    private final AtomicLongMetric rebalancedKeys;
 
     /** Total rebalanced bytes count. */
-    private final LongMetricImpl totalRebalancedBytes;
+    private final AtomicLongMetric totalRebalancedBytes;
 
     /** Rebalanced start time. */
-    private final LongMetricImpl rebalanceStartTime;
+    private final AtomicLongMetric rebalanceStartTime;
 
     /** Estimated rebalancing keys count. */
-    private final LongMetricImpl estimatedRebalancingKeys;
+    private final AtomicLongMetric estimatedRebalancingKeys;
 
     /** Rebalancing rate in keys. */
     private final HitRateMetric rebalancingKeysRate;
@@ -159,7 +159,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     private final HitRateMetric rebalancingBytesRate;
 
     /** Number of currently clearing partitions for rebalancing. */
-    private final LongMetricImpl rebalanceClearingPartitions;
+    private final AtomicLongMetric rebalanceClearingPartitions;
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -204,98 +204,98 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
 
-        reads = mreg.metric("CacheGets",
+        reads = mreg.longMetric("CacheGets",
             "The total number of gets to the cache.");
 
-        entryProcessorPuts = mreg.metric("EntryProcessorPuts",
+        entryProcessorPuts = mreg.longMetric("EntryProcessorPuts",
             "The total number of cache invocations, caused update.");
 
-        entryProcessorRemovals = mreg.metric("EntryProcessorRemovals",
+        entryProcessorRemovals = mreg.longMetric("EntryProcessorRemovals",
             "The total number of cache invocations, caused removals.");
 
-        entryProcessorReadOnlyInvocations = mreg.metric("EntryProcessorReadOnlyInvocations",
+        entryProcessorReadOnlyInvocations = mreg.longMetric("EntryProcessorReadOnlyInvocations",
             "The total number of cache invocations, caused no updates.");
 
-        entryProcessorInvokeTimeNanos = mreg.metric("EntryProcessorInvokeTimeNanos",
+        entryProcessorInvokeTimeNanos = mreg.longMetric("EntryProcessorInvokeTimeNanos",
             "The total time of cache invocations, in nanoseconds.");
 
-        entryProcessorMinInvocationTime = mreg.metric("EntryProcessorMinInvocationTime",
+        entryProcessorMinInvocationTime = mreg.longMetric("EntryProcessorMinInvocationTime",
             "So far, the minimum time to execute cache invokes.");
 
-        entryProcessorMaxInvocationTime = mreg.metric("EntryProcessorMaxInvocationTime",
+        entryProcessorMaxInvocationTime = mreg.longMetric("EntryProcessorMaxInvocationTime",
             "So far, the maximum time to execute cache invokes.");
 
-        entryProcessorHits = mreg.metric("EntryProcessorHits",
+        entryProcessorHits = mreg.longMetric("EntryProcessorHits",
             "The total number of invocations on keys, which exist in cache.");
 
-        entryProcessorMisses = mreg.metric("EntryProcessorMisses",
+        entryProcessorMisses = mreg.longMetric("EntryProcessorMisses",
             "The total number of invocations on keys, which don't exist in cache.");
 
-        writes = mreg.metric("CachePuts",
+        writes = mreg.longMetric("CachePuts",
             "The total number of puts to the cache.");
 
-        hits = mreg.metric("CacheHits",
+        hits = mreg.longMetric("CacheHits",
             "The number of get requests that were satisfied by the cache.");
 
-        misses = mreg.metric("CacheMisses",
+        misses = mreg.longMetric("CacheMisses",
             "A miss is a get request that is not satisfied.");
 
-        txCommits = mreg.metric("CacheTxCommits",
+        txCommits = mreg.longMetric("CacheTxCommits",
             "Total number of transaction commits.");
 
-        txRollbacks = mreg.metric("CacheTxRollbacks",
+        txRollbacks = mreg.longMetric("CacheTxRollbacks",
             "Total number of transaction rollbacks.");
 
-        evictCnt = mreg.metric("CacheEvictions",
+        evictCnt = mreg.longMetric("CacheEvictions",
             "The total number of evictions from the cache.");
 
-        rmCnt = mreg.metric("CacheRemovals", "The total number of removals from the cache.");
+        rmCnt = mreg.longMetric("CacheRemovals", "The total number of removals from the cache.");
 
-        putTimeNanos = mreg.metric("PutTime",
+        putTimeNanos = mreg.longMetric("PutTime",
             "The total time of cache puts, in nanoseconds.");
 
-        getTimeNanos = mreg.metric("GetTime",
+        getTimeNanos = mreg.longMetric("GetTime",
             "The total time of cache gets, in nanoseconds.");
 
-        rmvTimeNanos = mreg.metric("RemovalTime",
+        rmvTimeNanos = mreg.longMetric("RemovalTime",
             "The total time of cache removal, in nanoseconds.");
 
-        commitTimeNanos = mreg.metric("CommitTime",
+        commitTimeNanos = mreg.longMetric("CommitTime",
             "The total time of commit, in nanoseconds.");
 
-        rollbackTimeNanos = mreg.metric("RollbackTime",
+        rollbackTimeNanos = mreg.longMetric("RollbackTime",
             "The total time of rollback, in nanoseconds.");
 
-        offHeapGets = mreg.metric("OffHeapGets",
+        offHeapGets = mreg.longMetric("OffHeapGets",
             "The total number of get requests to the off-heap memory.");
 
-        offHeapPuts = mreg.metric("OffHeapPuts",
+        offHeapPuts = mreg.longMetric("OffHeapPuts",
             "The total number of put requests to the off-heap memory.");
 
-        offHeapRemoves = mreg.metric("OffHeapRemovals",
+        offHeapRemoves = mreg.longMetric("OffHeapRemovals",
             "The total number of removals from the off-heap memory.");
 
-        offHeapEvicts = mreg.metric("OffHeapEvictions",
+        offHeapEvicts = mreg.longMetric("OffHeapEvictions",
             "The total number of evictions from the off-heap memory.");
 
-        offHeapHits = mreg.metric("OffHeapHits",
+        offHeapHits = mreg.longMetric("OffHeapHits",
             "The number of get requests that were satisfied by the off-heap memory.");
 
-        offHeapMisses = mreg.metric("OffHeapMisses",
+        offHeapMisses = mreg.longMetric("OffHeapMisses",
             "A miss is a get request that is not satisfied by off-heap memory.");
 
-        rebalancedKeys = mreg.metric("RebalancedKeys",
+        rebalancedKeys = mreg.longMetric("RebalancedKeys",
             "Number of already rebalanced keys.");
 
-        totalRebalancedBytes = mreg.metric("TotalRebalancedBytes",
+        totalRebalancedBytes = mreg.longMetric("TotalRebalancedBytes",
             "Number of already rebalanced bytes.");
 
-        rebalanceStartTime = mreg.metric("RebalanceStartTime",
+        rebalanceStartTime = mreg.longMetric("RebalanceStartTime",
             "Rebalance start time");
 
         rebalanceStartTime.value(-1);
 
-        estimatedRebalancingKeys = mreg.metric("EstimatedRebalancingKeys",
+        estimatedRebalancingKeys = mreg.longMetric("EstimatedRebalancingKeys",
             "Number estimated to rebalance keys.");
 
         rebalancingKeysRate = mreg.hitRateMetric("RebalancingKeysRate",
@@ -308,7 +308,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             REBALANCE_RATE_INTERVAL,
             20);
 
-        rebalanceClearingPartitions = mreg.metric("RebalanceClearingPartitionsLeft",
+        rebalanceClearingPartitions = mreg.longMetric("RebalanceClearingPartitionsLeft",
             "Number of partitions need to be cleared before actual rebalance start.");
     }
 

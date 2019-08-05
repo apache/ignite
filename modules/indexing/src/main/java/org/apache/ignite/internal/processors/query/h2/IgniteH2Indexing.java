@@ -849,7 +849,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public void enableDataPageScan(Boolean dataPageScanEnabled) {
         // Data page scan is enabled by default for SQL.
-        // TODO https://ggsystems.atlassian.net/browse/GG-20800
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11998
         CacheDataTree.setDataPageScanEnabled(false);
     }
 
@@ -1826,8 +1826,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         markIndexRebuild(cctx.name(), true);
 
-        if (cctx.group().metrics0() != null)
-            cctx.group().metrics0().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+        if (cctx.group().metrics() != null)
+            cctx.group().metrics().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
 
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
             @Override protected void body() {

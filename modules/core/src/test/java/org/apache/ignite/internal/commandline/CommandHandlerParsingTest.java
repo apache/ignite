@@ -26,8 +26,8 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
@@ -36,12 +36,12 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.Rule;
 import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
@@ -245,16 +245,6 @@ public class CommandHandlerParsingTest {
 
             generateAllCombinations(res0, sourceCopy, stopFunc, acc);
         }
-    }
-
-    /**
-     * Test that experimental command (i.e. WAL command) is disabled by default.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
-    public void testExperimentalCommandIsDisabled() {
-        assertParseArgsThrows(null, WAL.text(), WAL_PRINT);
-        assertParseArgsThrows(null, WAL.text(), WAL_DELETE);
     }
 
     /**

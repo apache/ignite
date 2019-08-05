@@ -238,7 +238,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                         try {
-                            // TODO https://ggsystems.atlassian.net/browse/GG-20800.
+                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998.
                             // Here we should also exclude fragmented pages that don't contain the head of the entry.
                             if (PageIO.getType(pageAddr) != T_DATA)
                                 continue; // Not a data page.

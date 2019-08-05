@@ -53,5 +53,7 @@ public class DatasetHelper {
         System.out.println("Correlation matrix ");
         for (double[] row : corr)
             System.out.println("\t" + Arrays.toString(row));
+
+        System.out.flush();
     }
 }
