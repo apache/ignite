@@ -103,14 +103,18 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         testDataStreamerReadOnlyConcurrent(true, true);
     }
 
-
+    /**
+     * Common logic for different datastreamers' tests.
+     *
+     * @param manualFlush If {@code True} {@link IgniteDataStreamer#flush()} will be invoked in the each batch load.
+     * @param allowOverride value for {@link IgniteDataStreamer#allowOverwrite(boolean)} method.
+     * @throws Exception If something goes wrong.
+     */
     private void testDataStreamerReadOnlyConcurrent(boolean manualFlush, boolean allowOverride) throws Exception {
         final CountDownLatch firstPackLatch = new CountDownLatch(cacheNames().size());
-        final CountDownLatch secondPackLatch = new CountDownLatch(cacheNames().size());
         final CountDownLatch finishLatch = new CountDownLatch(cacheNames().size());
 
         final CountDownLatch readOnlyEnabled = new CountDownLatch(1);
-        final CountDownLatch readOnlyDisabled = new CountDownLatch(1);
 
         final Map<String, Exception> eMap = new ConcurrentHashMap<>(cacheNames().size());
 
@@ -131,12 +135,6 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
 
                         doLoad(streamer, entries,  entries, manualFlush);
 
-                        secondPackLatch.countDown();
-
-                        readOnlyDisabled.await(5, TimeUnit.SECONDS);
-
-                        doLoad(streamer, 2 * entries,  entries, manualFlush);
-
                         finishLatch.countDown();
                     }
                     catch (Exception e) {
@@ -147,7 +145,6 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
                     finally {
                         // Avoid to hanging test in case of unexpected behaviour.
                         firstPackLatch.countDown();
-                        secondPackLatch.countDown();
                         finishLatch.countDown();
                     }
                 }));
@@ -158,12 +155,6 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
             changeClusterReadOnlyMode(true);
 
             readOnlyEnabled.countDown();
-
-            secondPackLatch.await(5, TimeUnit.SECONDS);
-
-            changeClusterReadOnlyMode(false);
-
-            readOnlyDisabled.countDown();
 
             finishLatch.await(5, TimeUnit.SECONDS);
 
@@ -179,12 +170,12 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         finally {
             // Avoid to hanging test in case of unexpected behaviour.
             readOnlyEnabled.countDown();
-            readOnlyDisabled.countDown();
 
             awaitThreads(futs);
         }
     }
 
+    /** */
     private void awaitThreads(Map<String, IgniteInternalFuture<?>> futs) {
         for (String cacheName : futs.keySet()) {
             IgniteInternalFuture<?> fut = futs.get(cacheName);
@@ -205,6 +196,7 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         }
     }
 
+    /** */
     private void doLoad(IgniteDataStreamer<Integer, Integer> streamer, int from, int count, boolean flush) {
         assertTrue(count > 0);
 
