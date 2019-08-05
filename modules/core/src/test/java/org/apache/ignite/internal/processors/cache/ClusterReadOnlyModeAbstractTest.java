@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -43,6 +44,9 @@ public class ClusterReadOnlyModeAbstractTest extends GridCommonAbstractTest {
         super.afterTest();
 
         changeClusterReadOnlyMode(false);
+
+        for (String cacheName : CACHE_NAMES)
+            grid(0).cache(cacheName).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -50,6 +54,8 @@ public class ClusterReadOnlyModeAbstractTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(ClusterReadOnlyModeTestUtils.cacheConfigurations());
+
+        cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
         return cfg;
     }

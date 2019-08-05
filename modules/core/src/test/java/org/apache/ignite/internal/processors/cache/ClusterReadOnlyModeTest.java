@@ -129,13 +129,13 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
 
                         readOnlyEnabled.await(5, TimeUnit.SECONDS);
 
-                        doLoad(streamer, entries, 2 * entries, manualFlush);
+                        doLoad(streamer, entries,  entries, manualFlush);
 
                         secondPackLatch.countDown();
 
                         readOnlyDisabled.await(5, TimeUnit.SECONDS);
 
-                        doLoad(streamer, 2 * entries, 3 * entries, manualFlush);
+                        doLoad(streamer, 2 * entries,  entries, manualFlush);
 
                         finishLatch.countDown();
                     }
@@ -206,10 +206,10 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         }
     }
 
-    private void doLoad(IgniteDataStreamer<Integer, Integer> streamer, int from, int to, boolean flush) {
-        assertTrue(from < to);
+    private void doLoad(IgniteDataStreamer<Integer, Integer> streamer, int from, int count, boolean flush) {
+        assertTrue(count > 0);
 
-        for (int i = from; i < to; i++)
+        for (int i = from; i < from + count; i++)
             streamer.addData(i, i);
 
         if (flush)
