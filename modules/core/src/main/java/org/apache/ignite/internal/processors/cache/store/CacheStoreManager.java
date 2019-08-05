@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -58,11 +57,6 @@ public interface CacheStoreManager extends GridCacheManager {
      * @return Unwrapped store provided in configuration.
      */
     public CacheStore<?, ?> configuredStore();
-
-    /**
-     * @return {@code true} If local store is configured.
-     */
-    public boolean isLocal();
 
     /**
      * @return {@code True} is write-through is enabled.
@@ -102,15 +96,6 @@ public interface CacheStoreManager extends GridCacheManager {
         IgniteBiInClosure<KeyCacheObject, Object> vis) throws IgniteCheckedException;
 
     /**
-     * @param tx Cache transaction.
-     * @param keys Cache keys.
-     * @param vis Closure to apply for loaded elements.
-     * @throws IgniteCheckedException If data loading failed.
-     */
-    public void localStoreLoadAll(@Nullable IgniteInternalTx tx, Collection<? extends KeyCacheObject> keys,
-        final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> vis) throws IgniteCheckedException;
-
-    /**
      * Loads data from persistent store.
      *
      * @param vis Closer to cache loaded elements.
@@ -118,7 +103,7 @@ public interface CacheStoreManager extends GridCacheManager {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If data loading failed.
      */
-    public boolean loadCache(final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> vis, Object[] args)
+    public boolean loadCache(final IgniteBiInClosure<KeyCacheObject, Object> vis, Object[] args)
         throws IgniteCheckedException;
 
     /**

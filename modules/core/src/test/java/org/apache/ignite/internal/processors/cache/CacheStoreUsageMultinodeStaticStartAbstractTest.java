@@ -51,50 +51,6 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
      * @throws Exception If failed.
      */
     @Test
-    public void testStaticConfigurationLocalStore() throws Exception {
-        locStore = true;
-
-        checkStoreUpdateStaticConfig(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStaticConfigurationLocalStoreNearEnabled() throws Exception {
-        locStore = true;
-
-        nearCache = true;
-
-        checkStoreUpdateStaticConfig(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStaticConfigurationTxLocalStoreNoClientStore() throws Exception {
-        locStore = true;
-
-        checkStoreUpdateStaticConfig(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStaticConfigurationTxLocalStoreNoClientStoreNearEnabled() throws Exception {
-        locStore = true;
-
-        nearCache = true;
-
-        checkStoreUpdateStaticConfig(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testStaticConfigurationTxWriteBehindStore() throws Exception {
         writeBehind = true;
 

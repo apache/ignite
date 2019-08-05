@@ -200,14 +200,14 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
         if (cacheCtx == null)
-            return null;
+            return Collections.emptyList();
 
         CacheStoreManager store = cacheCtx.store();
 
         if (store.configured())
             return Collections.singleton(store);
 
-        return null;
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */

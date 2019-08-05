@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -120,10 +121,16 @@ public interface IgniteTxState {
     public boolean hasInterceptor(GridCacheSharedContext cctx);
 
     /**
+     * Returnes cache stores for all caches enlisted in the transaction. Since regular store transaction
+     * is committed on near node and write-behind transaction is committed on primary nodes, it is required
+     * that all stores have the same {@link CacheStoreManager#isWriteToStoreFromDht()} property value.
+     *
      * @param cctx Context.
      * @return Configured stores for active caches.
      */
-    public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx);
+    public default Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
+        return Collections.emptyList();
+    }
 
     /**
      * @param cctx Context.

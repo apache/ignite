@@ -1378,23 +1378,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /**
      * @param stores Store managers.
-     * @return If {@code isWriteToStoreFromDht} value same for all stores.
-     */
-    protected boolean isWriteToStoreFromDhtValid(Collection<CacheStoreManager> stores) {
-        if (stores != null && !stores.isEmpty()) {
-            boolean exp = F.first(stores).isWriteToStoreFromDht();
-
-            for (CacheStoreManager store : stores) {
-                if (store.isWriteToStoreFromDht() != exp)
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @param stores Store managers.
      * @param commit Commit flag.
      * @throws IgniteCheckedException In case of error.
      */
@@ -1425,16 +1408,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         Collection<CacheStoreManager> stores = txState().stores(cctx);
 
-        if (stores == null || stores.isEmpty())
+        if (F.isEmpty(stores))
             return;
-
-        assert isWriteToStoreFromDhtValid(stores) : "isWriteToStoreFromDht can't be different within one transaction";
 
         CacheStoreManager first = F.first(stores);
 
         boolean isWriteToStoreFromDht = first.isWriteToStoreFromDht();
 
-        if ((local() || first.isLocal()) && (near() || isWriteToStoreFromDht)) {
+        if (local() && (near() || isWriteToStoreFromDht)) {
             try {
                 if (writeEntries != null) {
                     Map<KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> putMap = null;
@@ -1451,10 +1432,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                 e.cached().detached() ||
                                 !e.context().affinity().primaryByPartition(e.cached().partition(), topologyVersion()).isLocal();
                         }
-
-                        if (!skip && !local() && // Update local store at backups only if needed.
-                            cctx.localStorePrimaryOnly())
-                            skip = true;
 
                         if (skip)
                             continue;

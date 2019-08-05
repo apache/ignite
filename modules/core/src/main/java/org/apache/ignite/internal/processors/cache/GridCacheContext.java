@@ -1061,7 +1061,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *      are set to {@code true} or the store is local.
      */
     public boolean writeToStoreFromDht() {
-        return store().isLocal() || config().isWriteBehindEnabled();
+        return config().isWriteBehindEnabled();
     }
 
     /**

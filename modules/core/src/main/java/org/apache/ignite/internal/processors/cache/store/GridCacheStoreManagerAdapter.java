@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSetWrapper;
-import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -96,9 +95,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /** */
     private ThreadLocalSession locSes;
-
-    /** */
-    private boolean locStore;
 
     /** */
     private boolean writeThrough;
@@ -150,8 +146,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         sesHolder = sesHolder0;
-
-        locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
 
         if (cfgStore instanceof CacheJdbcPojoStore)
             alwaysKeepBinary = true;
@@ -271,11 +265,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocal() {
-        return locStore;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean configured() {
         return store != null;
     }
@@ -288,7 +277,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** {@inheritDoc} */
     @Override @Nullable public final Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key)
         throws IgniteCheckedException {
-        return loadFromStore(tx, key, true);
+        return loadFromStore(tx, key);
     }
 
     /**
@@ -296,14 +285,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      *
      * @param tx Cache transaction.
      * @param key Cache key.
-     * @param convert Convert flag.
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
     @Nullable private Object loadFromStore(@Nullable IgniteInternalTx tx,
-        KeyCacheObject key,
-        boolean convert)
-        throws IgniteCheckedException {
+        KeyCacheObject key
+    ) throws IgniteCheckedException {
         if (store != null) {
             if (key.internal())
                 // Never load internal keys from store as they are never persisted.
@@ -349,27 +336,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     "key", key, true,
                     "val", val, true));
 
-            if (convert) {
-                val = convert(val);
-
-                return val;
-            }
-            else
-                return val;
+            return val;
         }
 
         return null;
-    }
-
-    /**
-     * @param val Internal value.
-     * @return User value.
-     */
-    private Object convert(Object val) {
-        if (val == null)
-            return null;
-
-        return locStore ? ((IgniteBiTuple<Object, GridCacheVersion>)val).get1() : val;
     }
 
     /** {@inheritDoc} */
@@ -379,23 +349,14 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /** {@inheritDoc} */
     @Override public boolean isWriteToStoreFromDht() {
-        return isWriteBehind() || locStore;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final void localStoreLoadAll(@Nullable IgniteInternalTx tx, Collection keys, GridInClosure3 vis)
-        throws IgniteCheckedException {
-        assert store != null;
-        assert locStore;
-
-        loadAllFromStore(tx, keys, null, vis);
+        return isWriteBehind();
     }
 
     /** {@inheritDoc} */
     @Override public final boolean loadAll(@Nullable IgniteInternalTx tx, Collection keys, IgniteBiInClosure vis)
         throws IgniteCheckedException {
         if (store != null) {
-            loadAllFromStore(tx, keys, vis, null);
+            loadAllFromStore(tx, keys, vis);
 
             return true;
         }
@@ -411,32 +372,19 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      * @param tx Cache transaction.
      * @param keys Keys to load.
      * @param vis Key/value closure (only one of vis or verVis can be specified).
-     * @param verVis Key/value/version closure (only one of vis or verVis can be specified).
      * @throws IgniteCheckedException If failed.
      */
     private void loadAllFromStore(@Nullable IgniteInternalTx tx,
         Collection<? extends KeyCacheObject> keys,
-        @Nullable final IgniteBiInClosure<KeyCacheObject, Object> vis,
-        @Nullable final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> verVis)
-        throws IgniteCheckedException {
-        assert vis != null ^ verVis != null;
-        assert verVis == null || locStore;
-
-        final boolean convert = verVis == null;
+        @Nullable final IgniteBiInClosure<KeyCacheObject, Object> vis
+    ) throws IgniteCheckedException {
+        assert vis != null;
 
         if (!keys.isEmpty()) {
             if (keys.size() == 1) {
                 KeyCacheObject key = F.first(keys);
 
-                if (convert)
-                    vis.apply(key, load(tx, key));
-                else {
-                    IgniteBiTuple<Object, GridCacheVersion> t =
-                        (IgniteBiTuple<Object, GridCacheVersion>)loadFromStore(tx, key, false);
-
-                    if (t != null)
-                        verVis.apply(key, t.get1(), t.get2());
-                }
+                vis.apply(key, load(tx, key));
 
                 return;
             }
@@ -458,17 +406,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             try {
                 IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
                     @Override public void apply(Object k, Object val) {
-                        if (convert) {
-                            Object v = convert(val);
-
-                            vis.apply(cctx.toCacheKeyObject(k), v);
-                        }
-                        else {
-                            IgniteBiTuple<Object, GridCacheVersion> v = (IgniteBiTuple<Object, GridCacheVersion>)val;
-
-                            if (v != null)
-                                verVis.apply(cctx.toCacheKeyObject(k), v.get1(), v.get2());
-                        }
+                        vis.apply(cctx.toCacheKeyObject(k), val);
                     }
                 };
 
@@ -504,7 +442,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean loadCache(final GridInClosure3 vis, Object[] args) throws IgniteCheckedException {
+    @Override public final boolean loadCache(final IgniteBiInClosure<KeyCacheObject, Object> vis, Object[] args) throws IgniteCheckedException {
         if (store != null) {
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");
@@ -516,21 +454,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             try {
                 store.loadCache(new IgniteBiInClosure<Object, Object>() {
                     @Override public void apply(Object k, Object o) {
-                        Object v;
-                        GridCacheVersion ver = null;
-
-                        if (locStore) {
-                            IgniteBiTuple<Object, GridCacheVersion> t = (IgniteBiTuple<Object, GridCacheVersion>)o;
-
-                            v = t.get1();
-                            ver = t.get2();
-                        }
-                        else
-                            v = o;
-
                         KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
 
-                        vis.apply(cacheKey, v, ver);
+                        vis.apply(cacheKey, o);
                     }
                 }, args);
 
@@ -580,7 +506,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             boolean threwEx = true;
 
             try {
-                store.write(new CacheEntryImpl<>(key0, locStore ? F.t(val0, ver) : val0));
+                store.write(new CacheEntryImpl<>(key0, val0));
 
                 threwEx = false;
             }
@@ -1196,7 +1122,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object k = e.getKey();
 
-                        Object v = locStore ? e.getValue() : e.getValue().get1();
+                        Object v = e.getValue().get1();
 
                         k = cctx.unwrapBinaryIfNeeded(k, !convertBinary());
                         v = cctx.unwrapBinaryIfNeeded(v, !convertBinary());

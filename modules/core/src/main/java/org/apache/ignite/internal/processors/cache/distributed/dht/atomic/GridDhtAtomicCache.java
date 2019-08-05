@@ -2006,8 +2006,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (req.size() > 1 &&                    // Several keys ...
             writeThrough() && !req.skipStore() && // and store is enabled ...
-            !ctx.store().isLocal() &&             // and this is not local store ...
-            // (conflict resolver should be used for local store)
             !ctx.dr().receiveEnabled()            // and no DR.
             ) {
             // This method can only be used when there are no replicated entries in the batch.
@@ -3343,8 +3341,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 op,
                                 op == TRANSFORM ? entryProcessor : val,
                                 op == TRANSFORM ? req.invokeArguments() : null,
-                                /*write-through*/(ctx.store().isLocal() && !ctx.shared().localStorePrimaryOnly())
-                                    && writeThrough() && !req.skipStore(),
+                                /*write-through*/false,
                                 /*read-through*/false,
                                 /*retval*/false,
                                 req.keepBinary(),

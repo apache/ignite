@@ -77,38 +77,6 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
      * @throws Exception If failed.
      */
     @Test
-    public void testDynamicStartLocalStore() throws Exception {
-        locStore = true;
-
-        checkStoreWithDynamicStart(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDynamicStartFromClientLocalStore() throws Exception {
-        locStore = true;
-
-        checkStoreWithDynamicStart(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDynamicStartLocalStoreNearEnabled() throws Exception {
-        locStore = true;
-
-        nearCache = true;
-
-        checkStoreWithDynamicStart(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testDynamicStartWriteBehindStore() throws Exception {
         writeBehind = true;
 

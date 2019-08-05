@@ -383,19 +383,29 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (!cacheIds.isEmpty()) {
             Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
 
+            Boolean writeToStoreFromDht = null;
+
             for (int i = 0; i < cacheIds.size(); i++) {
                 int cacheId = cacheIds.get(i);
 
                 CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
-                if (store.configured())
+                if (store.configured()) {
+                    // Transaction must be committed to store either on originating node,
+                    // or on primary nodes (write-behind). Mixed stores are not allowed.
+                    if (writeToStoreFromDht == null)
+                        writeToStoreFromDht = store.isWriteToStoreFromDht();
+                    else
+                        assert writeToStoreFromDht == store.isWriteToStoreFromDht();
+
                     stores.add(store);
+                }
             }
 
             return stores;
         }
 
-        return null;
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,6 @@ import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +42,6 @@ public class CacheDeploymentTestStoreFactory implements Factory<CacheStore<Integ
     /**
      *
      */
-    @CacheLocalStore
     public static class TestLocalStore<K, V> implements CacheStore<K, IgniteBiTuple<V, ?>>, Serializable {
         /** */
         private Map<K, IgniteBiTuple<V, ?>> map = new ConcurrentHashMap<>();

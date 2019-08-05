@@ -33,7 +33,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -61,9 +60,6 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
     /** */
     protected boolean cacheStore;
-
-    /** */
-    protected boolean locStore;
 
     /** */
     protected boolean writeBehind;
@@ -106,7 +102,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
             ccfg.setWriteThrough(true);
 
-            ccfg.setCacheStoreFactory(locStore ? new TestLocalStoreFactory() : new TestStoreFactory());
+            ccfg.setCacheStoreFactory(new TestStoreFactory());
         }
 
         if (nearCache)
@@ -156,7 +152,6 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         }
 
         log.info("Start test [atomicityMode=" + atomicityMode() +
-            ", locStore=" + locStore +
             ", writeBehind=" + writeBehind +
             ", nearCache=" + nearCache +
             ", clientStore=" + clientStore + ']');
@@ -187,7 +182,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
        @Nullable TransactionConcurrency tc)
         throws Exception
     {
-        boolean storeOnPrimary = atomicityMode() == ATOMIC || locStore || writeBehind;
+        boolean storeOnPrimary = atomicityMode() == ATOMIC || writeBehind;
 
         assertTrue(writeMap.isEmpty());
 
@@ -224,18 +219,16 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         }
 
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return !writeMap.isEmpty();
             }
         }, 1000);
 
         assertTrue("Store is not updated", wait);
 
-        assertEquals("Write on wrong node: " + writeMap, locStore ? 2 : 1, writeMap.size());
+        assertEquals("Write on wrong node: " + writeMap, 1, writeMap.size());
 
-        if (!locStore)
-            assertEquals(expNode, writeMap.keySet().iterator().next());
+        assertEquals(expNode, writeMap.keySet().iterator().next());
 
         writeMap.clear();
     }
@@ -247,16 +240,6 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         /** {@inheritDoc} */
         @Override public CacheStore create() {
             return new TestStore();
-        }
-    }
-
-    /**
-     *
-     */
-    public static class TestLocalStoreFactory implements Factory<CacheStore> {
-        /** {@inheritDoc} */
-        @Override public CacheStore create() {
-            return new TestLocalStore();
         }
     }
 
@@ -296,17 +279,6 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
             throw new UnsupportedOperationException();
-        }
-    }
-
-    /**
-     *
-     */
-    @CacheLocalStore
-    public static class TestLocalStore extends TestStore {
-        /** {@inheritDoc} */
-        @Override public void delete(Object key) {
-            // No-op.
         }
     }
 }

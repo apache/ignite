@@ -1103,13 +1103,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);
 
-                if (stores != null && !stores.isEmpty()) {
-                    assert isWriteToStoreFromDhtValid(stores) :
-                        "isWriteToStoreFromDht can't be different within one transaction";
-
+                if (!F.isEmpty(stores)) {
                     boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
 
-                    if (!stores.isEmpty() && (near() || isWriteToStoreFromDht))
+                    if (near() || isWriteToStoreFromDht)
                         sessionEnd(stores, false);
                 }
             }
