@@ -510,7 +510,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         Set<ClusterNode> blt2 = new HashSet<>(ignite.cluster().nodes());
 
         ignite.cluster().setBaselineTopology(baselineNodes(
-            blt2.stream().filter(n -> ! n.isClient()).collect(Collectors.toSet())));
+            blt2.stream().filter(n -> !n.isClient()).collect(Collectors.toSet())));
 
         awaitPartitionMapExchange();
 
@@ -532,7 +532,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         Set<ClusterNode> blt3 = new HashSet<>(ignite.cluster().nodes());
 
         ignite.cluster().setBaselineTopology(baselineNodes(
-            blt3.stream().filter(n -> ! n.isClient()).collect(Collectors.toSet())));
+            blt3.stream().filter(n -> !n.isClient()).collect(Collectors.toSet())));
 
         awaitPartitionMapExchange();
 
