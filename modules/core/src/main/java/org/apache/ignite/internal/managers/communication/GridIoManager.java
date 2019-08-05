@@ -3283,7 +3283,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         retries++;
 
                         if (retries == retryCnt) {
-                            throw new IgniteCheckedException("The number of retry attempts to upload file exceeded " +
+                            throw new IgniteException("The number of retry attempts to upload file exceeded " +
                                 "the limit: " + retryCnt, e);
                         }
                     }
@@ -3304,7 +3304,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             catch (Throwable t) {
                 closeChannelQuiet();
 
-                throw new IgniteException("Exception while uploading file to the remote node. The process stopped " +
+                throw new IgniteException("Exception while sending file to the remote node. The process stopped " +
                     "[remoteId=" + remoteId + ", file=" + file.getName() + ", sesKey=" + sesKey + ']', t);
             }
         }

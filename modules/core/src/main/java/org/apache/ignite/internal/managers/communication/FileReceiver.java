@@ -97,7 +97,7 @@ class FileReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
-    @Override public void receive(ReadableByteChannel ch) throws IOException, IgniteCheckedException {
+    @Override public void receive(ReadableByteChannel ch) throws IOException, InterruptedException, IgniteCheckedException {
         super.receive(ch);
 
         if (transferred == meta.count())

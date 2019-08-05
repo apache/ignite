@@ -22,6 +22,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.NodeStoppingException;
 
 /**
  * Class represents a receiver of data which can be pulled from a channel by chunks of
@@ -55,7 +56,7 @@ abstract class AbstractReceiver extends AbstractTransmission {
                 throw new InterruptedException("Recevier has been interrupted");
 
             if (stopped())
-                throw new IgniteCheckedException("Receiver has been cancelled. Channel processing has been stopped.");
+                throw new NodeStoppingException("Receiver has been cancelled. Channel processing has been stopped.");
 
             readChunk(ch);
         }

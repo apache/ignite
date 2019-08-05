@@ -459,7 +459,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        IgniteCheckedException expectedErr = null;
+        Exception expectedErr = null;
 
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
@@ -492,7 +492,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             .openTransmissionSender(rcv.localNode().id(), topic)) {
             sender.send(fileToSend, TransmissionPolicy.FILE);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Must catch execption here.
             expectedErr = e;
         }
