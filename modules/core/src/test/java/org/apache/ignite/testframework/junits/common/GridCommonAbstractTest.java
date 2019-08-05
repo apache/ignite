@@ -2119,7 +2119,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (node == null)
             throw new IgniteException("None server node for verification.");
 
-        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames, null, false, CacheFilterEnum.ALL, false);
+        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
 
         return ig.compute().execute(
             VisorIdleVerifyTaskV2.class.getName(),
