@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -123,17 +122,16 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         try {
             for (String cacheName : cacheNames()) {
                 futs.put(cacheName, GridTestUtils.runAsync(() -> {
-                    final int entries = 10000;
                     try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(cacheName)) {
                         streamer.allowOverwrite(allowOverride);
 
-                        doLoad(streamer, 0, entries, manualFlush);
+                        doLoad(streamer, 0, 100, manualFlush);
 
                         firstPackLatch.countDown();
 
                         readOnlyEnabled.await(5, TimeUnit.SECONDS);
 
-                        doLoad(streamer, entries,  entries, manualFlush);
+                        doLoad(streamer, 100, 1000000, manualFlush);
 
                         finishLatch.countDown();
                     }
@@ -175,7 +173,9 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private void awaitThreads(Map<String, IgniteInternalFuture<?>> futs) {
         for (String cacheName : futs.keySet()) {
             IgniteInternalFuture<?> fut = futs.get(cacheName);
@@ -196,7 +196,9 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private void doLoad(IgniteDataStreamer<Integer, Integer> streamer, int from, int count, boolean flush) {
         assertTrue(count > 0);
 
