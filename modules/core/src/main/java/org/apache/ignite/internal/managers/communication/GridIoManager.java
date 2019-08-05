@@ -105,9 +105,7 @@ import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2939,7 +2937,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @return Chunk data recevier.
      * @throws IgniteCheckedException If fails.
      */
-    private AbstractReceiver createReceiver(
+    private TransmissionReceiver createReceiver(
         UUID nodeId,
         TransmissionHandler hnd,
         TransmissionMeta meta,
@@ -3030,7 +3028,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private int retries;
 
         /** Last infinished downloading object. */
-        private AbstractReceiver rcv;
+        private TransmissionReceiver rcv;
 
         /** Last saved state about file data processing. */
         private TransmissionMeta lastState;

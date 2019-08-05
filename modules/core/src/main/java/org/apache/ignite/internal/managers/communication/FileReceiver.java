@@ -25,8 +25,8 @@ import java.nio.file.Files;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Class represents a chunk data receiver which is pulling data from channel vi
  * {@link FileChannel#transferFrom(ReadableByteChannel, long, long)}.
  */
-class FileReceiver extends AbstractReceiver {
+class FileReceiver extends TransmissionReceiver {
     /** Handler to notify when a file has been processed. */
     private final Consumer<File> hnd;
 
@@ -56,7 +56,6 @@ class FileReceiver extends AbstractReceiver {
      * @param hnd Transmission handler provider to process download result.
      * @param path File path to destination receiver source.
      * @param log Ignite logger.
-     * @throws IgniteCheckedException If fails.
      */
     public FileReceiver(
         TransmissionMeta meta,
@@ -66,7 +65,7 @@ class FileReceiver extends AbstractReceiver {
         Consumer<File> hnd,
         String path,
         IgniteLogger log
-    ) throws IgniteCheckedException {
+    ) {
         super(meta, stopChecker, log, chunkSize);
 
         A.notNull(hnd, "FileHandler must be provided by transmission handler");
@@ -83,7 +82,7 @@ class FileReceiver extends AbstractReceiver {
             fileIo.position(meta.offset());
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Unable to open destination file. Receiver will will be stopped", e);
+            throw new IgniteException("Unable to open destination file. Receiver will will be stopped", e);
         }
     }
 

@@ -27,14 +27,14 @@ import org.apache.ignite.IgniteLogger;
  * Class represents a receiver of data which can be pulled from a channel by chunks of
  * predefined size. Closes when a transmission of represented object ends.
  */
-abstract class AbstractReceiver extends AbstractTransmission {
+abstract class TransmissionReceiver extends AbstractTransmission {
     /**
      * @param meta Initial file meta info.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param log Ignite logger.
      * @param chunkSize Size of chunks.
      */
-    protected AbstractReceiver(
+    protected TransmissionReceiver(
         TransmissionMeta meta,
         BooleanSupplier stopChecker,
         IgniteLogger log,

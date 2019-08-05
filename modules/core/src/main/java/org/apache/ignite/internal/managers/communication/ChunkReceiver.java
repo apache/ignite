@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Buffered chunked receiver can handle input socket channel by chunks of data and
  * deliver it to an allocated {@link ByteBuffer}.
  */
-class ChunkReceiver extends AbstractReceiver {
+class ChunkReceiver extends TransmissionReceiver {
     /** Chunked channel handler to process data with chunks. */
     private final Consumer<ByteBuffer> hnd;
 
