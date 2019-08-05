@@ -3234,10 +3234,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     try {
                         TransmissionMeta rcvMeta = null;
 
+                        // in/out streams are not null if file has been sent successfully
                         if (out == null && in == null) {
                             rcvMeta = connect();
 
-                            assert rcvMeta != null;
+                            assert rcvMeta != null : "Remote recevier has not sent its meta";
 
                             // Stop in case of any error occurred on remote node during file processing.
                             if (rcvMeta.error() != null)
