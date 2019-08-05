@@ -56,7 +56,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -135,8 +134,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTa
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -192,7 +189,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
@@ -626,32 +622,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (IgniteComponentType.HADOOP.inClassPath())
             internalCaches.add(CU.SYS_CACHE_HADOOP_MR);
-    }
-
-    /**
-     * @param rmtNode Remote node to check.
-     * @return Data storage configuration
-     */
-    private DataStorageConfiguration extractDataStorage(ClusterNode rmtNode) {
-        return GridCacheUtils.extractDataStorage(
-            rmtNode,
-            ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())
-        );
-    }
-
-    /**
-     * @param dataStorageCfg User-defined data regions.
-     */
-    private Map<String, DataRegionConfiguration> dataRegionCfgs(DataStorageConfiguration dataStorageCfg) {
-        if(dataStorageCfg != null) {
-            return Optional.ofNullable(dataStorageCfg.getDataRegionConfigurations())
-                .map(Stream::of)
-                .orElseGet(Stream::empty)
-                .collect(Collectors.toMap(DataRegionConfiguration::getName, e -> e));
-        }
-
-        return Collections.emptyMap();
     }
 
     /**
@@ -3074,52 +3044,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return new IgniteNodeValidationResult(node.id(), validationRes, validationRes);
 
         return ValidationOnNodeJoinUtils.validateNode(node, discoData, marsh, ctx, this::cacheDescriptor);
-    }
-
-    /**
-     * @param rmtNode Joining node.
-     * @return List of validation errors.
-     */
-    private List<String> validateRmtRegions(ClusterNode rmtNode) {
-        List<String> errorMessages = new ArrayList<>();
-
-        DataStorageConfiguration rmtStorageCfg = extractDataStorage(rmtNode);
-        Map<String, DataRegionConfiguration> rmtRegionCfgs = dataRegionCfgs(rmtStorageCfg);
-
-        DataStorageConfiguration locStorageCfg = ctx.config().getDataStorageConfiguration();
-
-        if (isDefaultDataRegionPersistent(locStorageCfg) != isDefaultDataRegionPersistent(rmtStorageCfg)) {
-            errorMessages.add(String.format(
-                INVALID_REGION_CONFIGURATION_MESSAGE,
-                "DEFAULT",
-                ctx.localNodeId(),
-                isDefaultDataRegionPersistent(locStorageCfg),
-                rmtNode.id(),
-                isDefaultDataRegionPersistent(rmtStorageCfg)
-            ));
-        }
-
-        for (ClusterNode clusterNode : ctx.discovery().aliveServerNodes()) {
-            Map<String, DataRegionConfiguration> nodeRegionCfg = dataRegionCfgs(extractDataStorage(clusterNode));
-
-            for (Map.Entry<String, DataRegionConfiguration> nodeRegionCfgEntry : nodeRegionCfg.entrySet()) {
-                String regionName = nodeRegionCfgEntry.getKey();
-
-                DataRegionConfiguration rmtRegionCfg = rmtRegionCfgs.get(regionName);
-
-                if (rmtRegionCfg != null && rmtRegionCfg.isPersistenceEnabled() != nodeRegionCfgEntry.getValue().isPersistenceEnabled())
-                    errorMessages.add(String.format(
-                        INVALID_REGION_CONFIGURATION_MESSAGE,
-                        regionName,
-                        ctx.localNodeId(),
-                        nodeRegionCfgEntry.getValue().isPersistenceEnabled(),
-                        rmtNode.id(),
-                        rmtRegionCfg.isPersistenceEnabled()
-                    ));
-            }
-        }
-
-        return errorMessages;
     }
 
     /**
