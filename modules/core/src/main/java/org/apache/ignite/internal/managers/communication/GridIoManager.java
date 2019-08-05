@@ -2952,11 +2952,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     chunkSize,
                     stopChecker,
                     fileIoFactory,
-                    new IgniteOutClosureX<IgniteThrowableConsumer<File>>() {
-                        @Override public IgniteThrowableConsumer<File> applyx() throws IgniteCheckedException {
-                            return hnd.fileHandler(nodeId, meta);
-                        }
-                    },
+                    hnd.fileHandler(nodeId, meta),
                     hnd.filePath(nodeId, meta),
                     log);
 

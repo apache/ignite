@@ -23,13 +23,13 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,7 +48,7 @@ class FileReceiver extends AbstractReceiver {
     private final FileIOFactory factory;
 
     /** Handler to notify when a file has been processed. */
-    private final IgniteOutClosureX<IgniteThrowableConsumer<File>> hndProvider;
+    private final Consumer<File> hnd;
 
     /** The abstract java representation of the chunked file. */
     private File file;
@@ -61,7 +61,7 @@ class FileReceiver extends AbstractReceiver {
      * @param meta Initial file meta info.
      * @param stopChecker Node stop or prcoess interrupt checker.
      * @param factory Factory to produce IO interface on files.
-     * @param hndProvider Transmission handler provider to process download result.
+     * @param hnd Transmission handler provider to process download result.
      * @param path File path to destination receiver source.
      * @param log Ignite logger.
      * @throws IgniteCheckedException If fails.
@@ -71,18 +71,18 @@ class FileReceiver extends AbstractReceiver {
         int chunkSize,
         BooleanSupplier stopChecker,
         FileIOFactory factory,
-        IgniteOutClosureX<IgniteThrowableConsumer<File>> hndProvider,
+        Consumer<File> hnd,
         String path,
         IgniteLogger log
     ) throws IgniteCheckedException {
         super(meta, stopChecker, log, chunkSize);
 
-        A.notNull(hndProvider, "FileHandler must be provided by transmission handler");
+        A.notNull(hnd, "FileHandler must be provided by transmission handler");
         A.notNull(path, "File absolute path cannot be null");
         A.ensure(!path.trim().isEmpty(), "File absolute path cannot be empty ");
 
         this.factory = factory;
-        this.hndProvider = hndProvider;
+        this.hnd = hnd;
 
         file = new File(path);
 
@@ -97,11 +97,11 @@ class FileReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
-    @Override public void receive(ReadableByteChannel ch) throws IOException, InterruptedException, IgniteCheckedException {
+    @Override public void receive(ReadableByteChannel ch) throws IOException, InterruptedException, NodeStoppingException {
         super.receive(ch);
 
         if (transferred == meta.count())
-            hndProvider.apply().accept(file);
+            hnd.accept(file);
     }
 
     /** {@inheritDoc} */

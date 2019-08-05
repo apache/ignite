@@ -21,8 +21,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import java.util.function.Consumer;
 
 /**
  * Class represents a handler for the set of files considered to be transferred from the remote node. This handler
@@ -70,10 +69,8 @@ public interface TransmissionHandler {
      * @param nodeId Remote node id from which request has been received.
      * @param initMeta Initial handler meta info.
      * @return Instance of chunk handler to process incoming data by chunks.
-     * @throws IgniteCheckedException If fails.
      */
-    public IgniteThrowableConsumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta)
-        throws IgniteCheckedException;
+    public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta);
 
     /**
      * <em>File handler</em> represents by itself the way of input data stream processing. All the data will
@@ -83,8 +80,6 @@ public interface TransmissionHandler {
      * @param nodeId Remote node id from which request has been received.
      * @param initMeta Initial handler meta info.
      * @return Intance of read handler to process incoming data like the {@link FileChannel} manner.
-     * @throws IgniteCheckedException If fails.
      */
-    public IgniteThrowableConsumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta)
-        throws IgniteCheckedException;
+    public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta);
 }

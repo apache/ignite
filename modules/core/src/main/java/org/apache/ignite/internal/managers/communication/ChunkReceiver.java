@@ -22,9 +22,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.util.function.BooleanSupplier;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -34,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 class ChunkReceiver extends AbstractReceiver {
     /** Chunked channel handler to process data with chunks. */
-    private final IgniteThrowableConsumer<ByteBuffer> hnd;
+    private final Consumer<ByteBuffer> hnd;
 
     /** The destination object to transfer data to\from. */
     private ByteBuffer buf;
@@ -50,7 +49,7 @@ class ChunkReceiver extends AbstractReceiver {
         TransmissionMeta meta,
         int chunkSize,
         BooleanSupplier stopChecker,
-        IgniteThrowableConsumer<ByteBuffer> hnd,
+        Consumer<ByteBuffer> hnd,
         IgniteLogger log
     ) {
         super(meta, stopChecker, log, chunkSize);
@@ -64,7 +63,7 @@ class ChunkReceiver extends AbstractReceiver {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readChunk(ReadableByteChannel ch) throws IOException, IgniteCheckedException {
+    @Override protected void readChunk(ReadableByteChannel ch) throws IOException {
         assert buf != null : "Buffer is used to deilver readed data to the used and cannot be null: " + this;
 
         buf.rewind();

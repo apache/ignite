@@ -47,9 +47,9 @@ abstract class AbstractReceiver extends AbstractTransmission {
     /**
      * @param ch Input channel to read data from.
      * @throws IOException If an io exception occurred.
-     * @throws IgniteCheckedException If some check failed.
+     * @throws NodeStoppingException If some check failed.
      */
-    public void receive(ReadableByteChannel ch) throws IOException, InterruptedException, IgniteCheckedException {
+    public void receive(ReadableByteChannel ch) throws IOException, InterruptedException, NodeStoppingException {
         // Read data from the input.
         while (hasNextChunk()) {
             if (Thread.currentThread().isInterrupted())
@@ -68,7 +68,6 @@ abstract class AbstractReceiver extends AbstractTransmission {
     /**
      * @param ch Channel to read data from.
      * @throws IOException If fails.
-     * @throws IgniteCheckedException If fails.
      */
-    protected abstract void readChunk(ReadableByteChannel ch) throws IOException, IgniteCheckedException;
+    protected abstract void readChunk(ReadableByteChannel ch) throws IOException;
 }

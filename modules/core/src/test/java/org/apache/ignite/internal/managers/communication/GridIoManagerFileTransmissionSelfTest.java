@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -53,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -91,10 +91,10 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     private File tempStore;
 
     /**
-     * @throws Exception If fails.
+     * Called before tests started.
      */
     @BeforeClass
-    public static void beforeAll() throws Exception {
+    public static void beforeAll() {
         topic = GridTopic.TOPIC_CACHE.topic("test", 0);
 
         fileBinFilter = new FilenameFilter() {
@@ -115,10 +115,10 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @throws Exception if failed.
+     * Called after test run.
      */
     @After
-    public void after() throws Exception {
+    public void after() {
         stopAllGrids();
 
         U.closeQuiet(fileIo[0]);
@@ -165,9 +165,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 return new File(tempStore, fileMeta.name()).getAbsolutePath();
             }
 
-            @Override public IgniteThrowableConsumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
-                return new IgniteThrowableConsumer<File>() {
-
+            @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
+                return new Consumer<File>() {
                     @Override public void accept(File file) {
                         assertTrue(fileSizes.containsKey(file.getName()));
                         // Save all params.
@@ -304,8 +303,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testFileHandlerCleanedUpIfSenderLeft() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-
         IgniteEx snd = startGrid(0);
         IgniteEx rcv = startGrid(1);
 
@@ -618,8 +615,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
 
             /** {@inheritDoc} */
-            @Override public IgniteThrowableConsumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta)
-                throws IgniteCheckedException {
+            @Override public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
 
                 if (fileIo[0] == null) {
                     try {
@@ -627,14 +623,14 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                         fileIo[0].position(initMeta.offset());
                     }
                     catch (IOException e) {
-                        throw new IgniteCheckedException(e);
+                        throw new IgniteException(e);
                     }
                 }
 
-                return new IgniteThrowableConsumer<ByteBuffer>() {
+                return new Consumer<ByteBuffer>() {
                     final LongAdder transferred = new LongAdder();
 
-                    @Override public void accept(ByteBuffer buff) throws IgniteCheckedException {
+                    @Override public void accept(ByteBuffer buff) {
                         try {
                             assertTrue(buff.order() == ByteOrder.nativeOrder());
                             assertEquals(0, buff.position());
@@ -646,7 +642,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                             transferred.add(buff.capacity());
                         }
                         catch (Throwable e) {
-                            throw new IgniteCheckedException(e);
+                            throw new IgniteException(e);
                         }
                         finally {
                             closeIfTransferred();
@@ -692,7 +688,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
             /** {@inheritDoc} */
-            @Override public IgniteThrowableConsumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
+            @Override public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
                 throw new IgniteException("Test exception. Initialization failed");
             }
         });
@@ -799,9 +795,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteThrowableConsumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta)
-            throws IgniteCheckedException {
-            return new IgniteThrowableConsumer<File>() {
+        @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
+            return new Consumer<File>() {
                 @Override public void accept(File file) {
                     assertEquals(fileToSend.length(), file.length());
                     assertCrcEquals(fileToSend, file);
@@ -825,14 +820,12 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteThrowableConsumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta)
-            throws IgniteCheckedException {
+        @Override public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteThrowableConsumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta)
-            throws IgniteCheckedException {
+        @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
             return null;
         }
 
