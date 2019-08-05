@@ -62,12 +62,12 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -96,7 +96,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         VisorIdleVerifyTaskArg arg
     ) throws IgniteException {
@@ -119,7 +119,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         if (results.size() != exceptions.size())
             return checkConflicts(clusterHashes, exceptions);
         else
-            return new IdleVerifyResultV2(new HashMap<>(), new HashMap<>(), new HashMap<>(), exceptions, false);
+            return new IdleVerifyResultV2(new HashMap<>(), new HashMap<>(), new HashMap<>(), exceptions);
     }
 
     /** {@inheritDoc} */
@@ -187,7 +187,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions, true);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
     }
 
     /** */
@@ -253,7 +253,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             DbCheckpointListener lsnr = null;
 
-            if (arg.isCheckCrc() &&
+            if (arg.checkCrc() &&
                 ignite.context().cache().context().database() instanceof GridCacheDatabaseSharedManager) {
                 db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
 
@@ -276,7 +276,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             try {
-                if (arg.isCheckCrc() && IdleVerifyUtility.isCheckpointNow(db))
+                if (arg.checkCrc() && IdleVerifyUtility.isCheckpointNow(db))
                     throw new GridNotIdleException(IdleVerifyUtility.CLUSTER_NOT_IDLE_MSG);
 
                 List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts =
@@ -422,10 +422,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param cachesToFilter cache groups to filter
          */
         private void filterByExcludeCaches(Set<CacheGroupContext> cachesToFilter) {
-            if (!F.isEmpty(arg.getExcludeCaches())) {
+            if (!F.isEmpty(arg.excludeCaches())) {
                 Set<Pattern> excludedNamesPatterns = new HashSet<>();
 
-                for (String excluded : arg.getExcludeCaches())
+                for (String excluded : arg.excludeCaches())
                     excludedNamesPatterns.add(Pattern.compile(excluded));
 
                 cachesToFilter.removeIf(grp -> doesGrpMatchOneOfPatterns(grp, excludedNamesPatterns));
@@ -448,10 +448,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param cachesToFilter cache groups to filter
          */
         private void filterByCacheNames(Set<CacheGroupContext> cachesToFilter) {
-            if (!F.isEmpty(arg.getCaches())) {
+            if (!F.isEmpty(arg.caches())) {
                 Set<Pattern> cacheNamesPatterns = new HashSet<>();
 
-                for (String cacheNameRegexp : arg.getCaches())
+                for (String cacheNameRegexp : arg.caches())
                     cacheNamesPatterns.add(Pattern.compile(cacheNameRegexp));
 
                 cachesToFilter.removeIf(grp -> !doesGrpMatchOneOfPatterns(grp, cacheNamesPatterns));
@@ -500,38 +500,32 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param desc Cache descriptor.
          */
         private boolean isCacheMatchFilter(DynamicCacheDescriptor desc) {
-            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
-                DataStorageConfiguration dsCfg = ignite.context().config().getDataStorageConfiguration();
+            DataStorageConfiguration dsCfg = ignite.context().config().getDataStorageConfiguration();
 
-                CacheConfiguration cc = desc.cacheConfiguration();
+            CacheConfiguration cc = desc.cacheConfiguration();
 
-                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
+            switch (arg.cacheFilterEnum()) {
+                case DEFAULT:
+                    return desc.cacheType().userCache() || !F.isEmpty(arg.caches());
 
-                switch (vdta.getCacheFilterEnum()) {
-                    case DEFAULT:
-                        return desc.cacheType().userCache() || !F.isEmpty(arg.getCaches());
+                case USER:
+                    return desc.cacheType().userCache();
 
-                    case USER:
-                        return desc.cacheType().userCache();
+                case SYSTEM:
+                    return !desc.cacheType().userCache();
 
-                    case SYSTEM:
-                        return !desc.cacheType().userCache();
+                case NOT_PERSISTENT:
+                    return desc.cacheType().userCache() && !GridCacheUtils.isPersistentCache(cc, dsCfg);
 
-                    case NOT_PERSISTENT:
-                        return desc.cacheType().userCache() && !GridCacheUtils.isPersistentCache(cc, dsCfg);
+                case PERSISTENT:
+                    return desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsCfg);
 
-                    case PERSISTENT:
-                        return desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsCfg);
+                case ALL:
+                    return true;
 
-                    case ALL:
-                        break;
-
-                    default:
-                        assert false : "Illegal cache filter: " + vdta.getCacheFilterEnum();
-                }
+                default:
+                    throw new IgniteException("Illegal cache filter: " + arg.cacheFilterEnum());
             }
-
-            return true;
         }
 
         /**
@@ -582,7 +576,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 partSize = part.dataStore().fullSize();
 
-                if (arg.isCheckCrc())
+                if (arg.checkCrc())
                     checkPartitionCrc(grpCtx, part, cpFlag);
 
                 GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());

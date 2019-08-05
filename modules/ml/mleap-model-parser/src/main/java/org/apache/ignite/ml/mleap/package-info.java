@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Base package for Mleap model parser.
  */
+
 package org.apache.ignite.ml.mleap;

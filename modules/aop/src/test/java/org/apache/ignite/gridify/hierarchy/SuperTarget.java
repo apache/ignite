@@ -49,5 +49,4 @@ public abstract class SuperTarget {
 
         return "SuperTarget.methodC()";
     }
-
 }

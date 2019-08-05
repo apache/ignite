@@ -24,9 +24,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
@@ -35,7 +37,12 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.testframework.junits.SystemPropertiesRule;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -59,7 +66,14 @@ import static org.junit.Assert.fail;
 /**
  * Tests Command Handler parsing arguments.
  */
+@WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class CommandHandlerParsingTest {
+    /** */
+    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
+
+    /** */
+    @Rule public final TestRule methodRule = new SystemPropertiesRule();
+
     /**
      * validate_indexes command arguments parsing and validation
      */
@@ -229,7 +243,6 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 
@@ -257,32 +270,6 @@ public class CommandHandlerParsingTest {
             res0.add(removed);
 
             generateAllCombinations(res0, sourceCopy, stopFunc, acc);
-        }
-    }
-
-    /**
-     * Test that experimental command (i.e. WAL command) is disabled by default.
-     */
-    @Test
-    public void testExperimentalCommandIsDisabled() {
-        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
-
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            assertTrue(e instanceof IllegalArgumentException);
-        }
-
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_DELETE));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            assertTrue(e instanceof IllegalArgumentException);
         }
     }
 
@@ -617,7 +604,22 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        return new CommonArgParser(new CommandLogger()).
+        return new CommonArgParser(setupTestLogger()).
             parseAndValidate(args.iterator());
+    }
+
+    /**
+     * @return logger for tests.
+     */
+    private Logger setupTestLogger() {
+        Logger result;
+
+        result = Logger.getLogger(getClass().getName());
+        result.setLevel(Level.INFO);
+        result.setUseParentHandlers(false);
+
+        result.addHandler(CommandHandler.setupStreamHandler());
+
+        return result;
     }
 }

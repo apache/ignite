@@ -40,6 +40,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -3031,27 +3032,44 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
         }
 
-        connectGate.enter();
+        final long start = System.currentTimeMillis();
 
-        try {
-            final long start = System.currentTimeMillis();
+        GridCommunicationClient client = createTcpClient(node, connIdx);
 
-            GridCommunicationClient client = createTcpClient(node, connIdx);
-
-            final long time = System.currentTimeMillis() - start;
+        final long time = System.currentTimeMillis() - start;
 
             if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
                 if (log.isInfoEnabled())
-                    log.info("TCP client created [client=" + client + ", duration=" + time + "ms]");
+                    log.info("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
             }
             else if (log.isDebugEnabled())
-                log.debug("TCP client created [client=" + client + ", duration=" + time + "ms]");
+                log.debug("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
 
-            return client;
+        return client;
+    }
+
+    /**
+     * Returns the string representation of client with protection from null client value. If the client if null,
+     * string representation is built from cluster node.
+     *
+     * @param client communication client
+     * @param node cluster node to which the client tried to establish a connection
+     * @return string representation of client
+     * @throws IgniteCheckedException if failed
+     */
+    private String clientString(GridCommunicationClient client, ClusterNode node) throws IgniteCheckedException {
+        if (client == null) {
+            assert node != null;
+
+            StringJoiner joiner = new StringJoiner(", ");
+
+            for (InetSocketAddress addr : nodeAddresses(node))
+                joiner.add(addr.toString());
+
+            return "null, node addrs=[" + joiner.toString() + "]";
         }
-        finally {
-            connectGate.leave();
-        }
+        else
+            return client.toString();
     }
 
     /**
@@ -3350,6 +3368,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 long timeout = 0;
 
+                connectGate.enter();
+
                 try {
                     if (getSpiContext().node(node.id()) == null)
                         throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
@@ -3570,6 +3590,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         break;
                     }
                 }
+                finally {
+                    connectGate.leave();
+                }
+
+                CommunicationWorker commWorker0 = commWorker;
+
+                if (commWorker0 != null && commWorker0.runner() == Thread.currentThread())
+                    commWorker0.updateHeartbeat();
             }
 
             if (ses != null)

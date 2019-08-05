@@ -232,6 +232,40 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withReadRepair() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            if (context().mvccEnabled()) // Can (should?) be supported in future.
+                throw new UnsupportedOperationException("Read Repair is not supported at MVCC mode.");
+
+            if (context().isNear()) // Can be supported in future.
+                throw new UnsupportedOperationException("Read Repair is not supported for near caches.");
+
+            if (context().readThrough()) // Can be supported in future.
+                // Read Repair get operation produces different versions for same entries loaded via readThrough feature.
+                throw new UnsupportedOperationException("Read Repair is not supported for caches with readThrough enabled.");
+
+            if (context().isLocal()) // Can't be supported in future.
+                throw new UnsupportedOperationException("Read Repair is not supported for local caches.");
+
+            if (context().config().getBackups() == 0) // Can't be supported in future.
+                throw new UnsupportedOperationException("Read Repair is suitable only in case " +
+                    "at least 1 backup configured for cache.");
+
+            boolean readRepair = opCtx.readRepair();
+
+            if (readRepair)
+                return this;
+
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setReadRepair(true), lock);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K1, V1> GatewayProtectedCacheProxy<K1, V1> withKeepBinary() {
         return keepBinary();
     }

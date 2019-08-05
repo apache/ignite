@@ -72,9 +72,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY_ALL;
+import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -505,7 +508,16 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return {@code true} if this is an internal event.
      */
     private boolean isInternalEvent(int type) {
-        return type == EVT_DISCOVERY_CUSTOM_EVT || F.contains(EVTS_DISCOVERY_ALL, type);
+        switch (type) {
+            case EVT_DISCOVERY_CUSTOM_EVT:
+            case EVT_TASK_FINISHED:
+            case EVT_TASK_FAILED:
+            case EVT_JOB_MAPPED:
+                return true;
+
+            default:
+                return F.contains(EVTS_DISCOVERY_ALL, type);
+        }
     }
 
     /**
@@ -1061,21 +1073,18 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             if (timeout == 0)
                 timeout = Long.MAX_VALUE;
 
-            long now = U.currentTimeMillis();
+            long startNanos = System.nanoTime();
 
-            // Account for overflow of long value.
-            long endTime = now + timeout <= 0 ? Long.MAX_VALUE : now + timeout;
-
-            long delta = timeout;
+            long passedMillis = 0L;
 
             Collection<UUID> uidsCp = null;
 
             synchronized (qryMux) {
                 try {
-                    while (!uids.isEmpty() && err.get() == null && delta > 0) {
-                        qryMux.wait(delta);
+                    while (!uids.isEmpty() && err.get() == null && passedMillis < timeout) {
+                        qryMux.wait(timeout - passedMillis);
 
-                        delta = endTime - U.currentTimeMillis();
+                        passedMillis = U.millisSinceNanos(startNanos);
                     }
                 }
                 catch (InterruptedException e) {

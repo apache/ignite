@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.suite;
 
+import org.apache.ignite.internal.IgniteClientFailuresTest;
 import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
@@ -167,6 +168,8 @@ import org.junit.runners.Suite;
 
     // SSL params.
     ClientSslParametersTest.class,
+
+    IgniteClientFailuresTest.class
 })
 public class IgniteClientTestSuite {
 }

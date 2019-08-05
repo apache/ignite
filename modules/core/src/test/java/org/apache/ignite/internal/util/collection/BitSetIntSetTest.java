@@ -175,7 +175,6 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertEquals(11, (int)list.get(3));
         assertEquals(1025, (int)list.get(4));
 
-
         assertFalse(bitSet.remove(2));
         assertEquals(5, bitSet.size());
 
@@ -201,17 +200,13 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(11);
         intSet.add(1025);
 
-
         assertTrue(intSet.contains(1));
         assertFalse(intSet.contains(2));
         assertFalse(intSet.contains(3));
         assertFalse(intSet.contains(4));
         assertTrue(intSet.contains(10));
-        assertTrue(intSet.contains(Integer.valueOf(10)));
         assertTrue(intSet.contains(11));
         assertFalse(intSet.contains(1024));
-        assertFalse(intSet.contains(Integer.valueOf(1024)));
-        assertTrue(intSet.contains(Integer.valueOf(1025)));
         assertTrue(intSet.contains(1025));
     }
 

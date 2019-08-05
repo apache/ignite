@@ -275,7 +275,6 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
         if (stopped)
             throw new IgniteException("Attempted to stop an already stopped JMS Streamer");
 
-
         try {
             stopped = true;
 
@@ -493,7 +492,9 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private class IgniteJmsMessageListener implements MessageListener {
 
         private Session session;
+
         private AtomicInteger counter = new AtomicInteger(0);
+
         private Executor executor;
 
         public IgniteJmsMessageListener(Session session, boolean createThreadPool) {

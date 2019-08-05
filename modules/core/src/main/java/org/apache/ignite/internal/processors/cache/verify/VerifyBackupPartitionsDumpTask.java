@@ -38,15 +38,14 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
+import static org.apache.ignite.internal.commandline.cache.IdleVerify.logParsedArgs;
 
 /**
  * Task for collection checksums primary and backup partitions of specified caches. <br> Argument: Set of cache names,
@@ -80,7 +79,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         VisorIdleVerifyTaskArg arg
     ) throws IgniteException {
@@ -141,7 +140,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
      * @return {@code true} if this records should be add to result and {@code false} otherwise.
      */
     private boolean needToAdd(List<PartitionHashRecordV2> records) {
-        if (records.isEmpty() || (taskArg != null && !taskArg.isSkipZeros()))
+        if (records.isEmpty() || (taskArg != null && !taskArg.skipZeros()))
             return true;
 
         PartitionHashRecordV2 record = records.get(0);
@@ -228,7 +227,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         if (!partitions.isEmpty())
             writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
 
-        writer.write("idle_verify task was executed with the following args: " + taskArgsAsCmd() + "\n");
+        logParsedArgs(taskArg, writer::write);
 
         if (skippedRecords > 0)
             writer.write(skippedRecords + " partitions was skipped\n");
@@ -246,40 +245,6 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
             conflictRes.print(writer::write);
         }
-    }
-
-    /**
-     * Method that builds command line string from the taskArg field.
-     *
-     * @return command line argument string
-     */
-    private String taskArgsAsCmd() {
-        StringBuilder result = new StringBuilder();
-
-        if (!F.isEmpty(taskArg.getCaches())) {
-            for (String cache : taskArg.getCaches()) {
-                result.append(cache);
-                result.append(" ");
-            }
-        }
-
-        if (taskArg.getCacheFilterEnum() != null && taskArg.getCacheFilterEnum() != CacheFilterEnum.DEFAULT) {
-            result.append(CACHE_FILTER);
-            result.append(" ");
-            result.append(taskArg.getCacheFilterEnum());
-            result.append(" ");
-        }
-
-        if (!F.isEmpty(taskArg.getExcludeCaches())) {
-            result.append(EXCLUDE_CACHES + " ");
-
-            for (String excluded : taskArg.getExcludeCaches()) {
-                result.append(excluded);
-                result.append(" ");
-            }
-        }
-
-        return result.toString();
     }
 
     /**

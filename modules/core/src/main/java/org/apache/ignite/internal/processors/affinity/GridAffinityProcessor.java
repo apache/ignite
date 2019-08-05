@@ -247,7 +247,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             log.debug("Affinity cached values were cleared: " + (oldSize - affMap.size()));
     }
 
-
     /**
      * Maps keys to nodes for given cache.
      *
