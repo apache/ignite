@@ -46,7 +46,6 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     }
 
     /**
-     *
      * @param initCap initial capacity.
      */
     public BitSetIntSet(int initCap) {
@@ -54,7 +53,6 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     }
 
     /**
-     *
      * @param initCap initial capacity.
      * @param coll initial collection.
      */
@@ -71,15 +69,15 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     /** {@inheritDoc} */
     @Override public boolean contains(Object o) {
         if (o == null)
-            throw new UnsupportedOperationException("Null values are not supported!");
+            throw new NullPointerException("Null values are not supported!");
 
         return contains((int)o);
     }
 
     /** {@inheritDoc} */
-    public boolean contains(int element) {
+    @Override public boolean contains(int element) {
         if (element < 0)
-            throw new UnsupportedOperationException("Negative values are not supported!");
+            return false;
 
         return bitSet.get(element);
     }
@@ -90,14 +88,18 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
             /** */
             private int idx = -1;
 
+            /** */
+            private int nextIdx = -1;
+
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                return bitSet.nextSetBit(idx + 1) != -1;
+                return nextIdx == idx ? (nextIdx = bitSet.nextSetBit(idx + 1)) != -1 : nextIdx != -1;
             }
 
             /** {@inheritDoc} */
             @Override public Integer next() {
-                int nextIdx = bitSet.nextSetBit(idx + 1);
+                if (nextIdx == idx)
+                    nextIdx = bitSet.nextSetBit(idx + 1);
 
                 if (nextIdx == -1)
                     throw new NoSuchElementException();
@@ -112,15 +114,15 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     /** {@inheritDoc} */
     @Override public boolean add(Integer integer) {
         if (integer == null)
-            throw new UnsupportedOperationException("Negative or null values are not supported!");
+            throw new IllegalArgumentException("Negative or null values are not supported!");
 
-        return add((int) integer);
+        return add((int)integer);
     }
 
     /** {@inheritDoc} */
     @Override public boolean add(int element) {
         if (element < 0)
-            throw new UnsupportedOperationException("Negative or null values are not supported!");
+            throw new IllegalArgumentException("Negative or null values are not supported!");
 
         boolean alreadySet = bitSet.get(element);
 
@@ -128,15 +130,17 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
             bitSet.set(element);
 
             size++;
-        }
 
-        return !alreadySet;
+            return true;
+        }
+        else
+            return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(Object o) {
         if (o == null)
-            throw new UnsupportedOperationException("Null values are not supported!");
+            return false;
 
         return remove((int)o);
     }
@@ -144,7 +148,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     /** {@inheritDoc} */
     @Override public boolean remove(int element) {
         if (element < 0)
-            throw new UnsupportedOperationException("Negative values are not supported!");
+            return false;
 
         boolean alreadySet = bitSet.get(element);
 

@@ -19,9 +19,12 @@ package org.apache.ignite.internal.util.collection;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.collection.IntHashMap.INITIAL_CAPACITY;
+import static org.apache.ignite.internal.util.collection.IntHashMap.MAXIMUM_CAPACITY;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -89,6 +92,25 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
         assertEquals(4, directPositionMap.distance(2, 1));
         assertEquals(5, directPositionMap.distance(3, 1));
         assertEquals(15, directPositionMap.distance(13, 1));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void shouldAllocateMapWithInitialCapacity() {
+        assertEquals(INITIAL_CAPACITY, realCapacityForInitialSize(1));
+        assertEquals(16, realCapacityForInitialSize(9));
+        assertEquals(128, realCapacityForInitialSize(99));
+        assertEquals(256, realCapacityForInitialSize(155));
+        assertEquals(MAXIMUM_CAPACITY, realCapacityForInitialSize(Integer.MAX_VALUE));
+    }
+
+    /**
+     * @param initSize Initial size.
+     */
+    private int realCapacityForInitialSize(int initSize) {
+        return ((Object[]) U.field(new IntHashMap<String>(initSize), "entries")).length;
     }
 
     /**

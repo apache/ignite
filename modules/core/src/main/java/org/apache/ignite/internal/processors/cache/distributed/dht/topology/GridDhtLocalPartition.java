@@ -59,8 +59,8 @@ import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -197,7 +197,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (grp.sharedGroup()) {
             singleCacheEntryMap = null;
-            cacheMaps = new IntHashMap<>();
+            cacheMaps = new IntRWHashMap<>();
         }
         else {
             singleCacheEntryMap = new CacheMapHolder(grp.singleCacheContext(), createEntriesMap());

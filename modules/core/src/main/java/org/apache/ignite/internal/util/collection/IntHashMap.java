@@ -19,42 +19,46 @@ package org.apache.ignite.internal.util.collection;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
  * The simple map for primitive types base on Robin-hood hashing with backward shift.
  */
 public class IntHashMap<V> implements IntMap<V> {
-    /** Array load percentage before resize. */
-    private static final float SCALE_LOAD_FACTOR = 0.9F;
-
-    /** Array load percentage before decrise size. */
-    private static final float COMPACT_LOAD_FACTOR = 0.5F;
-
     /** Initial capacity. */
-    private static final int INITIAL_CAPACITY = 8;
+    public static final int INITIAL_CAPACITY = 8;
 
     /** Maximum capacity. */
-    private static final int MAXIMUM_CAPACITY = 1 << 30;
+    public static final int MAXIMUM_CAPACITY = 1 << 30;
 
-    /** RW Lock. */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    /** Magic hash mixer. */
+    private static final int MAGIC_HASH_MIXER = 0x9E3779B9;
+
+    /** Array load percentage before resize. */
+    private static final float SCALE_LOAD_FACTOR = 0.7F;
+
+    /** Array load percentage before decrise size. */
+    private static final float COMPACT_LOAD_FACTOR = 0.2F;
+
+    /** Scale threshold. */
+    private int scaleThreshold;
+
+    /** Compact threshold. */
+    private int compactThreshold;
 
     /** Entries. */
     private Entry<V>[] entries;
 
-    /** Count of elements into Map. */
+    /** Count of elements in Map. */
     private int size;
 
     /** Inner entry structure. */
     private static class Entry<V> {
         /** Key. */
-        private final int key;
+        public final int key;
 
         /** Value. */
-        private final V val;
+        public final V val;
 
         /** Default constructor. */
         Entry(int key, V val) {
@@ -73,111 +77,93 @@ public class IntHashMap<V> implements IntMap<V> {
         entries = (Entry<V>[])new Entry[INITIAL_CAPACITY];
     }
 
+    /** Create map with preallocated array. */
+    public IntHashMap(int cap) {
+        int n = cap - 1;
+        n |= n >>> 1;
+        n |= n >>> 2;
+        n |= n >>> 4;
+        n |= n >>> 8;
+        n |= n >>> 16;
+
+        int entriesSize = (n < INITIAL_CAPACITY) ? INITIAL_CAPACITY : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+
+        compactThreshold = (int)(COMPACT_LOAD_FACTOR * (entries.length >> 1));
+
+        scaleThreshold = (int)(entries.length * SCALE_LOAD_FACTOR);
+
+        entries = (Entry<V>[])new Entry[entriesSize];
+    }
+
     /** {@inheritDoc} */
     @Override public V get(int key) {
-        lock.readLock().lock();
-        try {
-            int idx = find(key);
+        int idx = find(key);
 
-            return idx < 0 ? null : entries[idx].val;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return idx < 0 ? null : entries[idx].val;
     }
 
     /** {@inheritDoc} */
     @Override public V put(int key, V val) {
-        lock.writeLock().lock();
-        try {
-            return put0(new Entry<>(key, val));
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
+        return put0(new Entry<>(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public V remove(int key) {
-        lock.writeLock().lock();
-        try {
-            if (entries.length != INITIAL_CAPACITY && (int)(COMPACT_LOAD_FACTOR * (entries.length >> 1)) > size)
-                resize(false);
+        if (entries.length != INITIAL_CAPACITY && compactThreshold > size)
+            resize(false);
 
-            int idx = find(key);
+        int idx = find(key);
 
-            if (idx < 0)
-                return null;
+        if (idx < 0)
+            return null;
 
-            size--;
+        size--;
 
-            V tmp = entries[idx].val;
+        V tmp = entries[idx].val;
 
-            // Backward shift
-            for (int i = 0; i < entries.length; i++) {
-                int curIdx = (idx + i) & (entries.length - 1);
-                int nextIdx = (idx + i + 1) & (entries.length - 1);
+        // Backward shift
+        for (int i = 0; i < entries.length; i++) {
+            int curIdx = (idx + i) & (entries.length - 1);
+            int nextIdx = (idx + i + 1) & (entries.length - 1);
 
-                Entry<V> nextEntry = entries[nextIdx];
+            Entry<V> nextEntry = entries[nextIdx];
 
-                if (nextEntry == null || distance(nextIdx, nextEntry.key) == 0) {
-                    entries[curIdx] = null;
+            if (nextEntry == null || distance(nextIdx, nextEntry.key) == 0) {
+                entries[curIdx] = null;
 
-                    return tmp;
-                }
-
-                entries[curIdx] = entries[nextIdx];
+                return tmp;
             }
 
-            throw new IllegalStateException("Unreachable state exception. Backward shift has a problem. " +
-                "Removing key: " + key + " map state: " + toString());
+            entries[curIdx] = nextEntry;
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+
+        throw new IllegalStateException("Unreachable state exception. Backward shift has a problem. " +
+            "Removing key: " + key + " map state: " + toString());
     }
 
     /** {@inheritDoc} */
     @Override public V putIfAbsent(int key, V val) {
-        lock.writeLock().lock();
-        try {
-            int idx = find(key);
+        int idx = find(key);
 
-            if (idx < 0) {
-                put(key, val);
+        if (idx < 0) {
+            put(key, val);
 
-                return null;
-            }
-            else
-                return entries[idx].val;
+            return null;
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+        else
+            return entries[idx].val;
     }
 
     /** {@inheritDoc} */
     @Override public <E extends Throwable> void forEach(EntryConsumer<V, E> act) throws E {
-        lock.readLock().lock();
-        try {
-            for (Entry<V> entry : entries)
-                if (entry != null)
-                    act.accept(entry.key, entry.val);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        for (Entry<V> entry : entries)
+            if (entry != null)
+                act.accept(entry.key, entry.val);
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        lock.readLock().lock();
-        try {
-            return size;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -187,42 +173,24 @@ public class IntHashMap<V> implements IntMap<V> {
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(int key) {
-        lock.readLock().lock();
-        try {
-            return find(key) >= 0;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return find(key) >= 0;
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsValue(V val) {
-        lock.readLock().lock();
-        try {
-            return Arrays.stream(entries)
-                .filter(Objects::nonNull)
-                .anyMatch(entry -> Objects.equals(val, entry.val));
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return Arrays.stream(entries)
+            .filter(Objects::nonNull)
+            .anyMatch(entry -> Objects.equals(val, entry.val));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        lock.readLock().lock();
-        try {
-            String strEntries = Arrays.stream(entries)
-                .filter(Objects::nonNull)
-                .map(Entry::toString)
-                .collect(Collectors.joining(","));
+        String strEntries = Arrays.stream(entries)
+            .filter(Objects::nonNull)
+            .map(Entry::toString)
+            .collect(Collectors.joining(","));
 
-            return "IntHashMap{size=" + size + ", entries=[" + strEntries + "]}";
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return "IntHashMap{size=" + size + ", entries=[" + strEntries + "]}";
     }
 
     /**
@@ -243,14 +211,14 @@ public class IntHashMap<V> implements IntMap<V> {
      * @param key Targert key.
      */
     protected int index(int key) {
-        return (entries.length - 1) & (key ^ (key >>> 16));
+        return (entries.length - 1) & ((key ^ (key >>> 16)) * MAGIC_HASH_MIXER);
     }
 
     /**
      * Does insert of entry.
      */
     private V put0(Entry<V> entry) {
-        if (size >= (int)(entries.length * SCALE_LOAD_FACTOR))
+        if (size >= scaleThreshold)
             resize(true);
 
         Entry<V> savedEntry = entry;
@@ -327,6 +295,10 @@ public class IntHashMap<V> implements IntMap<V> {
         int newCap = increase ? entries.length << 1 : entries.length >> 1;
 
         entries = (Entry<V>[])new Entry[newCap];
+
+        compactThreshold = (int)(COMPACT_LOAD_FACTOR * (entries.length >> 1));
+
+        scaleThreshold = (int)(entries.length * SCALE_LOAD_FACTOR);
 
         size = 0;
 

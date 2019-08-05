@@ -350,7 +350,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
             intSet.add(null);
             fail("add should fail here");
         }
-        catch (UnsupportedOperationException ignored) {
+        catch (IllegalArgumentException ignored) {
             // Ignored.
         }
 
@@ -358,7 +358,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
             intSet.add(-1);
             fail("add should fail here");
         }
-        catch (UnsupportedOperationException ignored) {
+        catch (IllegalArgumentException ignored) {
             // Ignored.
         }
 
@@ -366,32 +366,12 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
             intSet.contains(null);
             fail("contains should fail here");
         }
-        catch (UnsupportedOperationException ignored) {
+        catch (NullPointerException ignored) {
             // Ignored.
         }
 
-        try {
-            intSet.contains(-1);
-            fail("contains should fail here");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
-
-        try {
-            intSet.remove(null);
-            fail("remove should fail here");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
-
-        try {
-            intSet.remove(-1);
-            fail("remove should fail here");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
+        assertFalse(intSet.contains(-1));
+        assertFalse(intSet.remove(null));
+        assertFalse(intSet.remove(-1));
     }
 }

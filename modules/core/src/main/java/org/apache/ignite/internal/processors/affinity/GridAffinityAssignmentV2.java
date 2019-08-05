@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Cached affinity calculations V2.
@@ -332,25 +333,23 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        throw new RuntimeException("TODO");
-    /*    out.writeObject(topVer);
+        out.writeObject(topVer);
 
         U.writeCollection(out, assignment);
 
-        U.writeMap(out, primary); //todo
+        U.writeMap(out, primary);
 
-        U.writeMap(out, backup); //todo*/
+        U.writeMap(out, backup);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        throw new RuntimeException("TODO");
-      /*  topVer = (AffinityTopologyVersion)in.readObject();
+        topVer = (AffinityTopologyVersion)in.readObject();
 
         assignment = U.readList(in);
 
-        primary = U.readMap(in); //todo
+        primary = U.readMap(in);
 
-        backup = U.readMap(in); //todo*/
+        backup = U.readMap(in);
     }
 }
