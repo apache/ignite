@@ -1214,6 +1214,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return iter;
     }
 
+    /**
+     * @param partCntrs Partition counters map.
+     * @param missing Set of partitions need to populate if partition is missing or failed to reserve.
+     * @return Historical iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected IgniteHistoricalIterator historicalIterator(CachePartitionPartialCountersMap partCntrs, Set<Integer> missing)
+        throws IgniteCheckedException {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void preload(int partId, Iterator<GridCacheEntryInfo> infos,
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
@@ -1241,17 +1252,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             batch.clear();
         }
-    }
-
-    /**
-     * @param partCntrs Partition counters map.
-     * @param missing Set of partitions need to populate if partition is missing or failed to reserve.
-     * @return Historical iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected IgniteHistoricalIterator historicalIterator(CachePartitionPartialCountersMap partCntrs, Set<Integer> missing)
-        throws IgniteCheckedException {
-        return null;
     }
 
     /** {@inheritDoc} */

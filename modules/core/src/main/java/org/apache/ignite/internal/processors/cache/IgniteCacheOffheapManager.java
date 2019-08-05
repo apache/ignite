@@ -465,17 +465,6 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
-     * Preload entries.
-     *
-     * @param partId Partition number.
-     * @param infos Entry infos.
-     * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void preload(int partId, Iterator<GridCacheEntryInfo> infos,
-        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
-
-    /**
      * @param cctx Cache context.
      * @param primary {@code True} if need to return primary entries.
      * @param backup {@code True} if need to return backup entries.
@@ -517,6 +506,17 @@ public interface IgniteCacheOffheapManager {
     // TODO: MVCC>
     public long cacheEntriesCount(int cacheId, boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
+
+    /**
+     * Preload entries.
+     *
+     * @param partId Partition number.
+     * @param infos Entry infos.
+     * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void preload(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
     /**
      * Clears offheap entries.

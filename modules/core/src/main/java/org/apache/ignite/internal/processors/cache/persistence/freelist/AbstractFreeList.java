@@ -618,6 +618,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 }
 
                 written = write(pageId, writeRows, initIo, cur, written, FAIL_I, statHolder);
+
+                assert written != FAIL_I;
             }
         }
         catch (RuntimeException e) {
