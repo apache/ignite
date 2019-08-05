@@ -19,16 +19,17 @@ package org.apache.ignite.internal.processors.metric.list;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class MonitoringList<Id> {
+public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable<R> {
     /** Name of the list. */
     private final String name;
 
     /** Data of the list. */
-    private final ConcurrentHashMap<Id, MonitoringRow<Id>> data = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Id, R> data = new ConcurrentHashMap<>();
 
     /**
      * @param name Name of the list.
@@ -41,7 +42,7 @@ public class MonitoringList<Id> {
      * @param id Id of the row.
      * @param row Row.
      */
-    public void add(Id id, MonitoringRow<Id> row) {
+    public void add(Id id, R row) {
         MonitoringRow<Id> old = data.put(id, row);
 
         assert old == null;
@@ -62,10 +63,7 @@ public class MonitoringList<Id> {
         return name;
     }
 
-    /**
-     * @return Current data for this row.
-     */
-    public Iterator<MonitoringRow<Id>>  data() {
+    @NotNull @Override public Iterator<R> iterator() {
         return data.values().iterator();
     }
 }
