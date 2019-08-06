@@ -168,7 +168,6 @@ public abstract class AbstractBaseIntMapTest {
         for (int i = 1; i < 100_000; i++)
             map.put(i, value(i));
 
-
         final AtomicLong cntr = new AtomicLong(0);
 
         map.forEach((key, value) -> cntr.addAndGet(key));

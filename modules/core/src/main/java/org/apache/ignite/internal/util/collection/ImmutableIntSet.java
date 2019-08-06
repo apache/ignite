@@ -109,21 +109,26 @@ public class ImmutableIntSet implements IntSet {
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<Integer> iterator() {
         return new Iterator<Integer>() {
+            /** */
             private final Iterator<? extends Integer> iter = delegate.iterator();
 
-            public boolean hasNext() {
+            /** {@inheritDoc} */
+            @Override public boolean hasNext() {
                 return iter.hasNext();
             }
 
-            public Integer next() {
+            /** */
+            @Override public Integer next() {
                 return iter.next();
             }
 
-            public void remove() {
+            /** */
+            @Override public void remove() {
                 throw new UnsupportedOperationException();
             }
 
-            public void forEachRemaining(Consumer<? super Integer> act) {
+            /** */
+            @Override public void forEachRemaining(Consumer<? super Integer> act) {
                 iter.forEachRemaining(act);
             }
         };
@@ -143,6 +148,7 @@ public class ImmutableIntSet implements IntSet {
     @Override public boolean add(Integer integer) {
         throw new UnsupportedOperationException();
     }
+
     /** {@inheritDoc} */
     @Override public boolean remove(Object o) {
         throw new UnsupportedOperationException();
@@ -181,21 +187,18 @@ public class ImmutableIntSet implements IntSet {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override
     public Spliterator<Integer> spliterator() {
         return delegate.spliterator();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override
     public Stream<Integer> stream() {
         return delegate.stream();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override
     public Stream<Integer> parallelStream() {
         return delegate.parallelStream();
