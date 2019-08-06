@@ -288,7 +288,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      *
      * @see FileChannel#transferTo(long, long, WritableByteChannel)
      */
-    private FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
+    private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
     /** The maximum number of retry attempts (read or write attempts). */
     private final int retryCnt;
@@ -1880,21 +1880,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public void addTransmissionHandler(Object topic, TransmissionHandler hnd) {
         TransmissionHandler hnd0 = topicTransmissionHnds.putIfAbsent(topic, hnd);
 
-        if (hnd0 != null)
-            U.warn(log, "The topic already have an appropriate session handler [topic=" + topic + ']');
+        assert hnd0 == null : "The topic already have an appropriate session handler [topic=" + topic + ']';
     }
 
     /**
      * @param topic The topic to erase handler from.
      */
     public void removeTransmissionHandler(Object topic) {
+        ReceiverContext rcvCtx0;
+
         synchronized (rcvMux) {
             topicTransmissionHnds.remove(topic);
 
-            interruptRecevier(rcvCtxs.remove(topic),
-                new IgniteCheckedException("Receiver has been closed due to removing corresponding transmission handler " +
-                    "on local node [nodeId=" + ctx.localNodeId() + ']'));
+            rcvCtx0 = rcvCtxs.remove(topic);
         }
+
+        interruptRecevier(rcvCtx0,
+            new IgniteCheckedException("Receiver has been closed due to removing corresponding transmission handler " +
+                "on local node [nodeId=" + ctx.localNodeId() + ']'));
     }
 
     /**
@@ -2682,22 +2685,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param ctx Receiver context to use.
+     * @param rctx Receiver context to use.
      * @param ex Exception to close receiver with.
      */
-    private void interruptRecevier(ReceiverContext ctx, Exception ex) {
-        if (ctx == null)
+    private void interruptRecevier(ReceiverContext rctx, Exception ex) {
+        if (rctx == null)
             return;
 
-        if (ctx.interrupted.compareAndSet(false, true)) {
-            U.closeQuiet(ctx.rcv);
+        if (rctx.interrupted.compareAndSet(false, true)) {
+            if (rctx.timeoutObj != null)
+                ctx.timeout().removeTimeoutObject(rctx.timeoutObj);
 
-            ctx.lastState = ctx.lastState == null ?
-                new TransmissionMeta(ex) : ctx.lastState.error(ex);
+            U.closeQuiet(rctx.rcv);
 
-            ctx.hnd.onException(ctx.nodeId, ex);
+            rctx.lastState = rctx.lastState == null ?
+                new TransmissionMeta(ex) : rctx.lastState.error(ex);
 
-            U.error(log, "Receiver has been interrupted due to an excpetion occurred [ctx=" + ctx + ']', ex);
+            rctx.hnd.onException(rctx.nodeId, ex);
+
+            U.error(log, "Receiver has been interrupted due to an excpetion occurred [ctx=" + rctx + ']', ex);
         }
     }
 
@@ -2730,7 +2736,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             in = new ObjectInputStream(ch.socket().getInputStream());
             out = new ObjectOutputStream(ch.socket().getOutputStream());
 
-            IgniteCheckedException err = null;
             IgniteUuid newSesId = initMsg.sesId();
 
             synchronized (rcvMux) {
@@ -2744,18 +2749,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
 
                 rcvCtx = rcvCtxs.computeIfAbsent(topic, t -> new ReceiverContext(nodeId, hnd, newSesId));
-
-                // Do not allow multiple connection for the same session
-                if (!newSesId.equals(rcvCtx.sesId)) {
-                    err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
-                        "It's not allowed to process different sessions over the same topic simultaneously. " +
-                        "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + nodeId + ']');
-
-                    U.error(log, err);
-                }
             }
 
-            if (err != null) {
+            // Do not allow multiple connection for the same session
+            if (!newSesId.equals(rcvCtx.sesId)) {
+                IgniteCheckedException err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
+                    "It's not allowed to process different sessions over the same topic simultaneously. " +
+                    "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + nodeId + ']');
+
+                U.error(log, err);
+
                 out.writeObject(new TransmissionMeta(err));
 
                 return;
@@ -2947,7 +2950,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     log);
 
             default:
-                throw new IgniteException("The type of transmission policy is unknown. An impelentation " +
+                throw new IllegalStateException("The type of transmission policy is unknown. An impelentation " +
                     "required: " + meta.policy());
         }
     }
