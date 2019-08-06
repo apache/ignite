@@ -47,13 +47,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
  * @see FileChannel#transferTo(long, long, WritableByteChannel)
  */
 class FileSender extends AbstractTransmission {
-    /** Default factory to provide IO oprations over given file. */
-    @GridToStringExclude
-    private final FileIOFactory factory;
-
-    /** File which will be send to remote by chunks. */
-    private final File file;
-
     /** Corresponding file channel to work with given file. */
     @GridToStringExclude
     private FileIO fileIo;
@@ -84,9 +77,6 @@ class FileSender extends AbstractTransmission {
         super(new TransmissionMeta(file.getName(), off, cnt, params, plc, null), stopChecker, log, chunkSize);
 
         assert file != null;
-
-        this.file = file;
-        this.factory = factory;
 
         // Can be not null if reconnection is going to be occurred.
         if (fileIo == null)

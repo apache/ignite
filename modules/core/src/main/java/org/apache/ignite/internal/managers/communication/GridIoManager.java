@@ -111,6 +111,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2792,7 +2793,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param topic Topic handler related to.
      * @param rcvCtx Receiver read context.
-     * @throws IgniteCheckedException If processing fails.
+     * @throws NodeStoppingException If processing fails.
+     * @throws InterruptedException If thread interrupted.
      */
     private void receiveFromChannel(
         Object topic,
@@ -2800,7 +2802,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ObjectInputStream in,
         ObjectOutputStream out,
         ReadableByteChannel ch
-    ) throws IgniteCheckedException, InterruptedException {
+    ) throws NodeStoppingException, InterruptedException {
         // Begin method must be called only once.
         if (!rcvCtx.sesStarted) {
             rcvCtx.hnd.onBegin(rcvCtx.nodeId);
@@ -2850,11 +2852,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     rcvCtx.rcv.close();
 
-                    long downloadTime = U.currentTimeMillis() - startTime;
-
                     U.log(log, "File has been received " +
                         "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
-                        ", time=" + (double)((downloadTime) / 1000) + " sec" +
+                        ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
                         ", retries=" + rcvCtx.retries + ", remoteId=" + rcvCtx.nodeId + ']');
 
                     rcvCtx.rcv = null;
@@ -2877,7 +2877,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             rcvCtx.retries++;
 
             if (rcvCtx.retries == retryCnt) {
-                throw new IgniteCheckedException("Number of retry attempts to download file exceeded the limit. " +
+                throw new IgniteException("Number of retry attempts to download file exceeded the limit. " +
                     "Max attempts: " + retryCnt, e);
             }
 
@@ -2903,19 +2903,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param prev Previous available transmission meta.
      * @param next Next transmission meta.
-     * @throws IgniteCheckedException If fails.
      */
-    private void validate(TransmissionMeta prev, TransmissionMeta next) throws IgniteCheckedException {
-        assertParameter(prev.name().equals(next.name()), "Attempt to load different file " +
+    private void validate(TransmissionMeta prev, TransmissionMeta next) {
+        A.ensure(prev.name().equals(next.name()), "Attempt to load different file " +
             "[prev=" + prev + ", next=" + next + ']');
 
-        assertParameter(prev.offset() == next.offset(),
+        A.ensure(prev.offset() == next.offset(),
             "The next chunk offest is incorrect [prev=" + prev + ", meta=" + next + ']');
 
-        assertParameter(prev.count() == next.count(), " The count of bytes to transfer for " +
+        A.ensure(prev.count() == next.count(), " The count of bytes to transfer for " +
             "the next chunk is incorrect [prev=" + prev + ", next=" + next + ']');
 
-        assertParameter(prev.policy() == next.policy(), "Attemt to continue file upload with" +
+        A.ensure(prev.policy() == next.policy(), "Attemt to continue file upload with" +
             " different transmission policy [prev=" + prev + ", next=" + next + ']');
     }
 
@@ -2935,14 +2934,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param meta Meta information about file pending to receive to create appropriate receiver.
      * @param stopChecker Process interrupt checker.
      * @return Chunk data recevier.
-     * @throws IgniteCheckedException If fails.
      */
     private TransmissionReceiver createReceiver(
         UUID nodeId,
         TransmissionHandler hnd,
         TransmissionMeta meta,
         BooleanSupplier stopChecker
-    ) throws IgniteCheckedException {
+    ) {
         switch (meta.policy()) {
             case FILE:
                 return new FileReceiver(
@@ -2965,7 +2963,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     log);
 
             default:
-                throw new IgniteCheckedException("The type of read plc is unknown. The impelentation " +
+                throw new IgniteException("The type of transmission policy is unknown. An impelentation " +
                     "required: " + meta.policy());
         }
     }
@@ -3272,26 +3270,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     catch (IOException e) {
                         closeChannelQuiet();
 
-                        // Re-establish the new connection to continue upload.
-                        U.warn(log, "Connection lost while writing file to remote node and " +
-                            "will be re-establishing [remoteId=" + remoteId + ", file=" + file.getName() +
-                            ", sesKey=" + sesKey + ", retries=" + retries +
-                            ", transferred=" + snd.transferred() +
-                            ", total=" + snd.state().count() + ']', e);
-
                         retries++;
 
                         if (retries == retryCnt) {
                             throw new IgniteException("The number of retry attempts to upload file exceeded " +
                                 "the limit: " + retryCnt, e);
                         }
+
+                        // Re-establish the new connection to continue upload.
+                        U.warn(log, "Connection lost while writing a file to remote node and " +
+                            "will be reestablished [remoteId=" + remoteId + ", file=" + file.getName() +
+                            ", sesKey=" + sesKey + ", retries=" + retries +
+                            ", transferred=" + snd.transferred() +
+                            ", total=" + snd.state().count() + ']', e);
                     }
                 }
 
-                long uploadTime = U.currentTimeMillis() - startTime;
-
-                U.log(log, "File has been sent [name=" + file.getName() +
-                    ", uploadTime=" + (double)((uploadTime) / 1000) + " sec, retries=" + retries +
+                U.log(log, "File has been sent to remote node [name=" + file.getName() +
+                    ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
                     ", transferred=" + snd.transferred() + ", remoteId=" + remoteId +']');
 
             }
