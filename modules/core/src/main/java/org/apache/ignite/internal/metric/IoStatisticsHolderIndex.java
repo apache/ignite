@@ -137,12 +137,12 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public long logicalReads() {
-        return logicalReadLeafCtr.longValue() + logicalReadInnerCtr.longValue();
+        return logicalReadLeafCtr.value() + logicalReadInnerCtr.value();
     }
 
     /** {@inheritDoc} */
     @Override public long physicalReads() {
-        return physicalReadLeafCtr.longValue() + physicalReadInnerCtr.longValue();
+        return physicalReadLeafCtr.value() + physicalReadInnerCtr.value();
     }
 
     /** {@inheritDoc} */

@@ -212,7 +212,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return totalAllocatedPages.longValue();
+        return totalAllocatedPages.value();
     }
 
     /** {@inheritDoc} */
@@ -248,9 +248,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return totalAllocatedPages.longValue() != 0 ?
-                (float) largeEntriesPages.longValue() / totalAllocatedPages.longValue()
-                : 0;
+        return totalAllocatedPages.value() != 0 ? (float)largeEntriesPages.value() / totalAllocatedPages.value() : 0;
     }
 
     /** {@inheritDoc} */
@@ -260,11 +258,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         long freeSpace = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
 
-        long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
+        long totalAllocated = getPageSize() * totalAllocatedPages.value();
 
-        return totalAllocated != 0 ?
-            (float) (totalAllocated - freeSpace) / totalAllocated
-            : 0f;
+        return totalAllocated != 0 ? (float)(totalAllocated - freeSpace) / totalAllocated : 0f;
     }
 
     /** {@inheritDoc} */
@@ -272,7 +268,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled || !persistenceEnabled)
             return 0;
 
-        return dirtyPages.longValue();
+        return dirtyPages.value();
     }
 
     /** {@inheritDoc} */
@@ -331,7 +327,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled || !persistenceEnabled)
             return 0;
 
-        return checkpointBufferSize.get();
+        return checkpointBufferSize.value();
     }
 
     /** {@inheritDoc} */
@@ -349,7 +345,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return readPages.longValue();
+        return readPages.value();
     }
 
     /** {@inheritDoc} */
@@ -357,7 +353,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return writtenPages.longValue();
+        return writtenPages.value();
     }
 
     /** {@inheritDoc} */
@@ -365,12 +361,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return replacedPages.longValue();
+        return replacedPages.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapSize() {
-        return offHeapSize.get();
+        return offHeapSize.value();
     }
 
     /** {@inheritDoc} */

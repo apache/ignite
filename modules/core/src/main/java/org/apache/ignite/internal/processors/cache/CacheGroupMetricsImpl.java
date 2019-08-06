@@ -151,7 +151,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getIndexBuildCountPartitionsLeft() {
-        return idxBuildCntPartitionsLeft.get();
+        return idxBuildCntPartitionsLeft.value();
     }
 
     /** Set number of partitions need processed for finished indexes create or rebuilding. */
@@ -416,7 +416,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        return groupPageAllocationTracker.longValue();
+        return groupPageAllocationTracker.value();
     }
 
     /** */

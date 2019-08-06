@@ -189,7 +189,7 @@ class TcpCommunicationMetricsListener {
      * @return Sent messages count.
      */
     public int sentMessagesCount() {
-        int res0 = (int)sentMsgsMetric.longValue();
+        int res0 = (int)sentMsgsMetric.value();
 
         return res0 < 0 ? Integer.MAX_VALUE : res0;
     }
@@ -200,7 +200,7 @@ class TcpCommunicationMetricsListener {
      * @return Sent bytes count.
      */
     public long sentBytesCount() {
-        return sentBytesMetric.longValue();
+        return sentBytesMetric.value();
     }
 
     /**
@@ -209,7 +209,7 @@ class TcpCommunicationMetricsListener {
      * @return Received messages count.
      */
     public int receivedMessagesCount() {
-        int res0 = (int)rcvdMsgsMetric.longValue();
+        int res0 = (int)rcvdMsgsMetric.value();
 
         return res0 < 0 ? Integer.MAX_VALUE : res0;
     }
@@ -220,7 +220,7 @@ class TcpCommunicationMetricsListener {
      * @return Received bytes count.
      */
     public long receivedBytesCount() {
-        return rcvdBytesMetric.longValue();
+        return rcvdBytesMetric.value();
     }
 
     /**
@@ -239,7 +239,7 @@ class TcpCommunicationMetricsListener {
                 String typeName = msgTypMap0.get(inputEntry.getKey());
 
                 if (typeName != null)
-                    res.put(typeName, inputEntry.getValue().longValue());
+                    res.put(typeName, inputEntry.getValue().value());
             }
         }
 
@@ -264,7 +264,7 @@ class TcpCommunicationMetricsListener {
         Map<UUID, Long> res = new HashMap<>();
 
         for (Map.Entry<UUID, LongAdderMetric> entry : rcvdMsgsMetricsByNodeId.entrySet())
-            res.put(entry.getKey(), entry.getValue().longValue());
+            res.put(entry.getKey(), entry.getValue().value());
 
         return res;
     }
@@ -287,7 +287,7 @@ class TcpCommunicationMetricsListener {
         Map<UUID, Long> res = new HashMap<>();
 
         for (Map.Entry<UUID, LongAdderMetric> entry : sentMsgsMetricsByNodeId.entrySet())
-            res.put(entry.getKey(), entry.getValue().longValue());
+            res.put(entry.getKey(), entry.getValue().value());
 
         return res;
     }
