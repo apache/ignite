@@ -154,7 +154,7 @@ public class GridAffinityAssignmentV2Test {
 
         Set<Integer> unwrapped = (Set<Integer>)Whitebox.getInternalState(
             gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
-            "c"
+            "delegate"
         );
 
         if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
