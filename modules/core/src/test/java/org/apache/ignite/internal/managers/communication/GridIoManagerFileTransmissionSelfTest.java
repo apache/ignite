@@ -206,15 +206,13 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         }
 
-        log.info("Writing test cacheParts finished. All Ignite instances will be stopped.");
-
         stopAllGrids();
 
         assertEquals(fileSizes.size(), tempStore.listFiles(fileBinFilter).length);
 
         for (File file : cacheParts) {
             // Check received file lenghs
-            assertEquals("Received file lenght is incorrect: " + file.getName(),
+            assertEquals("Received the file length is incorrect: " + file.getName(),
                 fileSizes.get(file.getName()), new Long(file.length()));
 
             // Check received params
@@ -798,12 +796,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (IgniteDataStreamer<Integer, Integer> dataStreamer = ignite.dataStreamer(cacheName)) {
             dataStreamer.allowOverwrite(true);
 
-            for (int i = 0; i < CACHE_SIZE; i++) {
-                if ((i + 1) % (CACHE_SIZE / 10) == 0)
-                    log.info("Prepared " + (i + 1) * 100 / (CACHE_SIZE) + "% entries.");
-
+            for (int i = 0; i < CACHE_SIZE; i++)
                 dataStreamer.addData(i, i + cacheName.hashCode());
-            }
         }
     }
 
