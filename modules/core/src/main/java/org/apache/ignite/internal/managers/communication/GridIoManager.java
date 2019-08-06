@@ -930,18 +930,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                     writeSesEntry.getValue().set(true);
                             }
 
-                            // Clear the context on the uploader node left.
-                            Iterator<Map.Entry<Object, ReceiverContext>> it = rcvCtxs.entrySet().iterator();
+                            synchronized (rcvMux) {
+                                // Clear the context on the uploader node left.
+                                Iterator<Map.Entry<Object, ReceiverContext>> it = rcvCtxs.entrySet().iterator();
 
-                            while(it.hasNext()) {
-                                Map.Entry<Object, ReceiverContext> e = it.next();
+                                while (it.hasNext()) {
+                                    Map.Entry<Object, ReceiverContext> e = it.next();
 
-                                if (nodeId.equals(e.getValue().nodeId)) {
-                                    it.remove();
+                                    if (nodeId.equals(e.getValue().nodeId)) {
+                                        it.remove();
 
-                                    interruptRecevier(e.getValue(),
-                                        new ClusterTopologyCheckedException("Remove node left the grid. " +
-                                            "Receiver has been stopped : " + nodeId));
+                                        interruptRecevier(e.getValue(),
+                                            new ClusterTopologyCheckedException("Remove node left the grid. " +
+                                                "Receiver has been stopped : " + nodeId));
+                                    }
                                 }
                             }
                         }
