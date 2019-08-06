@@ -126,8 +126,6 @@ class FileSender extends AbstractTransmission {
      * @param rcvMeta Conneciton meta info.
      */
     private void updateSenderState(TransmissionMeta rcvMeta) {
-        assert fileIo != null;
-
         // The remote node doesn't have a file meta info.
         if (rcvMeta == null || rcvMeta.offset() < 0) {
             transferred = 0;
@@ -168,8 +166,6 @@ class FileSender extends AbstractTransmission {
     /** {@inheritDoc} */
     @Override public void close() {
         U.closeQuiet(fileIo);
-
-        fileIo = null;
     }
 
     /** {@inheritDoc} */

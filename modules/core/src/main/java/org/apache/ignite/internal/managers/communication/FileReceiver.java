@@ -112,8 +112,6 @@ class FileReceiver extends TransmissionReceiver {
     @Override public void close() {
         U.closeQuiet(fileIo);
 
-        fileIo = null;
-
         try {
             if (transferred != meta.count())
                 Files.delete(file.toPath());

@@ -104,7 +104,7 @@ class ChunkReceiver extends TransmissionReceiver {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        buf = null;
+        // No-op.
     }
 
     /** {@inheritDoc} */
