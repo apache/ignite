@@ -49,7 +49,6 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * Tests for IO statistic manager.
  */
 public class IoStatisticsSelfTest extends GridCommonAbstractTest {
-
     /** */
     private static final int RECORD_COUNT = 5000;
 
@@ -93,20 +92,20 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         if (type == CACHE_GROUP) {
             assertEquals(5, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS).value());
         }
         else {
             assertEquals(7, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).longValue());
+            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
         }
     }
 

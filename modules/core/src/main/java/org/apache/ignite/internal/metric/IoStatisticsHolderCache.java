@@ -95,12 +95,12 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public long logicalReads() {
-        return logicalReadCtr.longValue();
+        return logicalReadCtr.value();
     }
 
     /** {@inheritDoc} */
     @Override public long physicalReads() {
-        return physicalReadCtr.longValue();
+        return physicalReadCtr.value();
     }
 
     /**

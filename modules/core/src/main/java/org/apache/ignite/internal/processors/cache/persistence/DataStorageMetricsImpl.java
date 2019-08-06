@@ -352,7 +352,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return totalCheckpointTime.get();
+        return totalCheckpointTime.value();
     }
 
     /** {@inheritDoc} */

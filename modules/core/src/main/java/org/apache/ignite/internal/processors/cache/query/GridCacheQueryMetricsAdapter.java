@@ -70,31 +70,31 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
 
     /** {@inheritDoc} */
     @Override public long minimumTime() {
-        long min = minTime.get();
+        long min = minTime.value();
 
         return min == Long.MAX_VALUE ? 0 : min;
     }
 
     /** {@inheritDoc} */
     @Override public long maximumTime() {
-        return maxTime.get();
+        return maxTime.value();
     }
 
     /** {@inheritDoc} */
     @Override public double averageTime() {
-        double val = completed.longValue();
+        double val = completed.value();
 
-        return val > 0 ? sumTime.longValue() / val : 0.0;
+        return val > 0 ? sumTime.value() / val : 0.0;
     }
 
     /** {@inheritDoc} */
     @Override public int executions() {
-        return (int)execs.longValue();
+        return (int)execs.value();
     }
 
     /** {@inheritDoc} */
     @Override public int fails() {
-        return (int)fails.longValue();
+        return (int)fails.value();
     }
 
     /**
@@ -121,14 +121,14 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
 
     /** @return Current metrics values. */
     public QueryMetrics snapshot() {
-        long minTimeVal = minTime.longValue();
+        long minTimeVal = minTime.value();
 
         return new QueryMetricsSnapshot(
             minTimeVal == Long.MAX_VALUE ? 0 : minTimeVal,
-            maxTime.longValue(),
+            maxTime.value(),
             averageTime(),
-            (int)execs.longValue(),
-            (int)fails.longValue());
+            (int)execs.value(),
+            (int)fails.value());
     }
 
     /** Resets query metrics. */

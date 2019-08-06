@@ -2887,7 +2887,7 @@ public class GridNioServer<T> {
         return (int) mreg.longAdderMetric(
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        ).longValue();
+        ).value();
     }
 
     /**
