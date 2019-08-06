@@ -785,7 +785,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /** {@inheritDoc} */
         @SuppressWarnings("RedundantIfStatement")
         @Override public boolean apply(ClusterNode n) {
-            GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+            GridDiscoveryManager disco = IgnitionEx.gridx(ignite.name()).context().discovery();
 
             if (affNodes && disco.cacheAffinityNode(n, cacheName))
                 return true;

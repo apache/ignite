@@ -59,6 +59,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     static {
         Permissions perms = new Permissions();
 
+        perms.add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*"));
         perms.setReadOnly();
 
         PROTECTION_DOMAIN = new ProtectionDomain(null, perms);

@@ -41,9 +41,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -1784,7 +1784,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         /** Ignite. */
         @IgniteInstanceResource
-        private IgniteEx ig;
+        private Ignite ig;
 
         /**
          * @param activate New cluster state.
@@ -1798,7 +1798,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                ig.context().state().changeGlobalState(
+                IgnitionEx.gridx(ig.name()).context().state().changeGlobalState(
                     activate,
                     baselineTopology != null ? baselineTopology.currentBaseline() : null,
                     forceChangeBaselineTopology

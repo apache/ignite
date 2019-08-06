@@ -34,13 +34,9 @@ import org.junit.Test;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-/**
- *
- */
+/** */
 public class ConstraintIgnitionTest extends AbstractSandboxTest {
-    /**
-     *
-     */
+    /** */
     private static final IgniteRunnable INJECTION_TEST_RUNNABLE = new IgniteRunnable() {
         /** */
         @IgniteInstanceResource
@@ -53,9 +49,7 @@ public class ConstraintIgnitionTest extends AbstractSandboxTest {
         }
     };
 
-    /**
-     *
-     */
+    /** */
     @Before
     public void setUp() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
@@ -69,17 +63,13 @@ public class ConstraintIgnitionTest extends AbstractSandboxTest {
         srv.cluster().active(true);
     }
 
-    /**
-     *
-     */
+    /** */
     @After
     public void tearDown() {
         G.stopAll(true);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() throws Exception {
         Ignite clntForbidden = grid(CLNT_FORBIDDEN);
@@ -98,14 +88,14 @@ public class ConstraintIgnitionTest extends AbstractSandboxTest {
             assertFalse(ignite instanceof IgniteEx);
         });
 
-        //Lambda that do not have permission, cannot call to IgnitionEx.localIgnite method directly.
+        //Lambda that do not have permission, cannot call IgnitionEx.localIgnite method directly.
         assertThrowsWithCause(() -> compute.broadcast(IgnitionEx::localIgnite), SecurityException.class);
 
 
         Ignite clntAllowed = grid(CLNT_ALLOWED);
-        //Lambda is executed behalf of a client that has the IGNITIONEX_GRID_PERMISSION permission.
+        //Lambda is executed behalf of a client that has the IGNITIONEX_GRID_PERMISSION permission
+        //can get IgniteKernal through IgnitionEx#localIgnite method.
         clntAllowed.compute(clntAllowed.cluster().forRemotes())
             .broadcast(() -> assertNotNull(IgnitionEx.localIgnite()));
     }
-
 }

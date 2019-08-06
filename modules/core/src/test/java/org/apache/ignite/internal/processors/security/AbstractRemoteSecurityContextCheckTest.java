@@ -33,6 +33,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -188,7 +189,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * Registers current security context and increments invoke's counter.
          */
         public synchronized void register() {
-            IgniteEx ignite = (IgniteEx)localIgnite();
+            IgniteEx ignite = IgnitionEx.localIgnite();
 
             registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
 

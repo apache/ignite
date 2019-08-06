@@ -33,6 +33,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -420,7 +421,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache0) {
-            GridCacheAdapter cache = ((IgniteKernal) ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = IgnitionEx.gridx(ignite.name()).context().cache().internalCache(cacheName);
 
             if (cache == null)
                 return true;

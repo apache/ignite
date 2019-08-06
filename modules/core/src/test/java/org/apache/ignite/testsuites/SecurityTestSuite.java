@@ -30,8 +30,10 @@ import org.apache.ignite.internal.processors.security.compute.closure.Distribute
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.sandbox.AccessClassInPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.ConstraintIgnitionTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivelegedOnRemoteNodeTest;
 import org.junit.runner.RunWith;
@@ -60,7 +62,10 @@ import org.junit.runners.Suite;
     CacheSandboxTest.class,
     DataStreamerSandboxTest.class,
     ComputeSandboxTest.class,
-    DoPrivelegedOnRemoteNodeTest.class
+    DoPrivelegedOnRemoteNodeTest.class,
+
+    ConstraintIgnitionTest.class,
+    AccessClassInPackageTest.class
 })
 public class SecurityTestSuite {
 }

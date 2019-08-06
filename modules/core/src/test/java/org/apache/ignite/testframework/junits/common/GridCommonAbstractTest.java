@@ -71,6 +71,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -608,7 +609,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (crd == null)
             return;
 
-        AffinityTopologyVersion waitTopVer = ((IgniteKernal)crd).context().discovery().topologyVersionEx();
+        AffinityTopologyVersion waitTopVer = IgnitionEx.gridx(crd.name()).context().discovery().topologyVersionEx();
 
         if (waitTopVer.topologyVersion() <= 0)
             waitTopVer = new AffinityTopologyVersion(1, 0);
@@ -617,7 +618,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (nodes != null && !nodes.contains(g.cluster().localNode()))
                 continue;
 
-            IgniteKernal g0 = (IgniteKernal)g;
+            IgniteKernal g0 = IgnitionEx.gridx(g.name());
 
             names.add(g0.configuration().getIgniteInstanceName());
 

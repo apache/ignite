@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -141,7 +142,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
         super.ignite(ignite);
 
         if (ignite != null) {
-            IgniteKernal kernal = (IgniteKernal)ignite;
+            IgniteKernal kernal = IgnitionEx.gridx(ignite.name());
 
             proc = (CacheObjectBinaryProcessorImpl)kernal.context().cacheObjects();
         }
