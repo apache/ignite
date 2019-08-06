@@ -16,7 +16,9 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -37,6 +39,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -68,6 +71,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(clientMode);
+        cfg.setFailureDetectionTimeout(5_000);
 
         return cfg;
     }
@@ -292,7 +296,16 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                 }, 15_000));
             }
 
+            // Clean up ignite instance from static map in IgnitionEx.grids
+            if (stopType == StopType.SIMULATE_FAIL){
+                for (int i = 0; i < srvsToKill; i++) {
+                    grid(i).close();
+                }
+            }
+
             awaitPartitionMapExchange();
+
+            List<Object> values = new ArrayList<>(GRID_CNT - srvsToKill);
 
             for (int k = 0; k < 10_000; k++) {
                 String key = String.valueOf(k);
@@ -300,7 +313,32 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                 Object val = cache.get(key);
 
                 for (int i = srvsToKill; i < GRID_CNT; i++)
-                    assertEquals(val, ignite(i).cache(DEFAULT_CACHE_NAME).get(key));
+                    values.add(ignite(i).cache(DEFAULT_CACHE_NAME).get(key));
+
+                for (Object val0 : values) {
+                    if (val == null && val0 == null)
+                        continue;
+
+                    if (!val.equals(val0)) {
+                        SB sb = new SB();
+
+                        sb.a("\nExp:").a(val);
+
+                        sb.a("\nActual:");
+
+                        for (int i = 0; i < values.size(); i++) {
+                            sb.a("[grid=")
+                                .a(grid(srvsToKill + i).name())
+                                .a(" val=")
+                                .a(values.get(i))
+                                .a("]\n");
+                        }
+
+                        fail(sb.toString());
+                    }
+                }
+
+                values.clear();
             }
         }
         finally {
