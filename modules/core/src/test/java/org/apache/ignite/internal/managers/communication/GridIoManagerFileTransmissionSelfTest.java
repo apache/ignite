@@ -585,22 +585,27 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         assertEquals(fileToSend.length(), rcvFile.length());
         assertCrcEquals(fileToSend, rcvFile);
+    }
 
-        // Remove topic handler and fail
+    /**
+     * @throws Exception If fails.
+     */
+    @Test(expected = IgniteException.class)
+    public void testFileHandlerSendToNullTopic() throws Exception {
+        IgniteEx snd = startGrid(0);
+        IgniteEx rcv = startGrid(1);
+
+        snd.cluster().active(true);
+
+        // Ensure topic handler is empty
         rcv.context().io().removeTransmissionHandler(topic);
 
         // Open next writer on removed topic.
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(fileToSend, TransmissionPolicy.FILE);
+            sender.send(createFileRandomData("File_1MB", 1024 * 1024), TransmissionPolicy.FILE);
         }
-        catch (IgniteException e) {
-            // Must catch execption here.
-            expectedErr = e;
-        }
-
-        assertNotNull("Transmission must ends with an exception", expectedErr);
     }
 
     /**

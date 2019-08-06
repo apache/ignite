@@ -2685,7 +2685,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param ctx Receiver context to use.
      * @param ex Exception to close receiver with.
      */
-    private void interruptRecevier(ReceiverContext ctx, IgniteCheckedException ex) {
+    private void interruptRecevier(ReceiverContext ctx, Exception ex) {
         if (ctx == null)
             return;
 
@@ -2732,7 +2732,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             IgniteCheckedException err = null;
             IgniteUuid newSesId = initMsg.sesId();
-            ReceiverContext prevRcvCtx = null;
 
             synchronized (rcvMux) {
                 TransmissionHandler hnd = topicTransmissionHnds.get(topic);
@@ -2748,24 +2747,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 // Do not allow multiple connection for the same session
                 if (!newSesId.equals(rcvCtx.sesId)) {
-                    if (rcvCtx.active) {
-                        err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
-                            "It's not allowed to process different sessions over the same topic simultaneously. " +
-                            "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + nodeId + ']');
+                    err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
+                        "It's not allowed to process different sessions over the same topic simultaneously. " +
+                        "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + nodeId + ']');
 
-                        U.error(log, err);
-                    }
-                    else {
-                        // Attempt to receive file with new session id. Context must be reinited,
-                        // previous session must be closed.
-                        prevRcvCtx = rcvCtxs.put(topic, rcvCtx = new ReceiverContext(nodeId, hnd, newSesId));
-                    }
+                    U.error(log, err);
                 }
             }
-
-            // Stop previous context if exist
-            interruptRecevier(prevRcvCtx, new IgniteCheckedException("Process has been aborted " +
-                "by transfer attempt with a new session [sesId=" + newSesId + ", nodeId=" + nodeId + ']'));
 
             if (err != null) {
                 out.writeObject(new TransmissionMeta(err));
@@ -2782,24 +2770,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 throw new IgniteException("Wait for the previous receiver finished its work timeouted: " + rcvCtx);
 
             try {
-                rcvCtx.active = true;
-
                 if (rcvCtx.timeoutObj != null)
                     ctx.timeout().removeTimeoutObject(rcvCtx.timeoutObj);
 
                 // Send previous context state to sync remote and local node (on manager connected).
                 out.writeObject(rcvCtx.lastState == null ? new TransmissionMeta() : rcvCtx.lastState);
 
-                receiveFromChannel(topic, rcvCtx, in, out, ch);
+                if (rcvCtx.lastState == null || rcvCtx.lastState.error() == null)
+                    receiveFromChannel(topic, rcvCtx, in, out, ch);
+                else
+                    interruptRecevier(rcvCtxs.remove(topic), rcvCtx.lastState.error());
             }
             finally {
-                rcvCtx.active = false;
                 rcvCtx.lock.unlock();
             }
         }
         catch (Throwable t) {
             U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
 
+            // Do not remove receiver context here, since sender will recconect to get this error
             interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + nodeId + ']', t));
         }
         finally {
@@ -2874,7 +2863,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     U.log(log, "File has been received " +
                         "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
                         ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
-                        ", retries=" + rcvCtx.retries + ", remoteId=" + rcvCtx.nodeId + ']');
+                        ", remoteId=" + rcvCtx.nodeId + ']');
 
                     rcvCtx.rcv = null;
                 }
@@ -2905,9 +2894,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
 
                 @Override public void onTimeout() {
-                    ReceiverContext rcvCtx0 = rcvCtxs.remove(topic);
-
-                    interruptRecevier(rcvCtx0, new IgniteCheckedException("Receiver is closed due to " +
+                    interruptRecevier(rcvCtxs.remove(topic), new IgniteCheckedException("Receiver is closed due to " +
                         "waiting for the reconnect has been timeouted"));
                 }
             });
@@ -3025,14 +3012,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** Only one thread can handle receiver context. */
         private final Lock lock = new ReentrantLock();
 
-        /** Handler currently in use flag. */
-        private volatile boolean active;
-
         /** Flag indicates session started. */
         private boolean sesStarted;
-
-        /** The number of retry attempts of current session to wait. */
-        private int retries;
 
         /** Last infinished downloading object. */
         private TransmissionReceiver rcv;
