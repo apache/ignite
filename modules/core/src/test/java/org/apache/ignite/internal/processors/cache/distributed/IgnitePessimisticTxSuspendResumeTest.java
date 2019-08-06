@@ -130,7 +130,6 @@ public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspen
                     for (int i = 0; i < 30; i++)
                         assertEquals(i, (int)cache.get(i));
 
-
                     GridTestUtils.runAsync(() -> {
                         for (int j = 0; j < 40; j++) {
                             Lock lock = cache.lock(j);
