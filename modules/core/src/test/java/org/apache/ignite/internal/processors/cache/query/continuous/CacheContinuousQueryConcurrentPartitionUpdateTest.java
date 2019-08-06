@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionSerializationException;
@@ -183,15 +184,15 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
         assertEquals(KEYS, keys.size());
 
-        final int THREADS = 10;
-        final int UPDATES = 1000;
+        final int THREADS = SF.applyLB(10, 4);
+        final int UPDATES = SF.applyLB(1000, 100);
 
         final List<IgniteCache<Object, Object>> srvCaches = new ArrayList<>();
 
         for (String cacheName : caches)
             srvCaches.add(srv.cache(cacheName));
 
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < SF.applyLB(15, 5); i++) {
             log.info("Iteration: " + i);
 
             GridTestUtils.runMultiThreaded(new Callable<Void>() {
@@ -376,6 +377,10 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
         final int THREADS = 10;
         final int UPDATES = 1000;
+
+        // t0d0 figure out failing tests with such scaling
+//        final int THREADS = SF.applyLB(10, 4);
+//        final int UPDATES = SF.applyLB(1000, 100);
 
         final List<IgniteCache<Object, Object>> srvCaches = new ArrayList<>();
 
