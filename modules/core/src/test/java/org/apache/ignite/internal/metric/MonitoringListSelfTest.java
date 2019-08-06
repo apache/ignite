@@ -36,7 +36,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 
 /** */
-public class MonitoringListCacheTest extends GridCommonAbstractTest {
+public class MonitoringListSelfTest extends GridCommonAbstractTest {
     @Test
     /** */
     public void testCachesList() throws Exception {
@@ -90,6 +90,14 @@ public class MonitoringListCacheTest extends GridCommonAbstractTest {
             g.services().deploy(srvcCfg);
 
             MonitoringList<IgniteUuid, ServiceView> srvs = g.context().metric().list("services");
+
+            assertEquals(1, F.size(srvs.iterator(), alwaysTrue()));
+
+            ServiceView sview = srvs.iterator().next();
+
+            assertEquals(srvcCfg.getName(), sview.name());
+            assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
+            assertEquals(DummyService.class, sview.service());
         }
     }
 }
