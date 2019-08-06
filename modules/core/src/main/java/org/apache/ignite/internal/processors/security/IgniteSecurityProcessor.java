@@ -23,6 +23,7 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
+import java.security.Security;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -53,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
@@ -226,6 +228,15 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             isExistsSecurityMgr = true;
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
+
+        String packAccess = Security.getProperty("package.access");
+
+        if (packAccess != null && !packAccess.contains(IGNITE_INTERNAL_PACKAGE)) {
+            if (packAccess != null && !packAccess.isEmpty())
+                packAccess += ',';
+
+            Security.setProperty("package.access", packAccess + IGNITE_INTERNAL_PACKAGE);
+        }
 
         secPrc.start();
     }

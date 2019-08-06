@@ -129,6 +129,7 @@ public class DoPrivelegedOnRemoteNodeTest extends AbstractSandboxTest {
 
         startGrid(CLNT_ALLOWED, ALLOW_ALL,
             PermissionsBuilder.create()
+                .add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*"))
                 .add(MODIFY_THREAD_PERMISSION)
                 .add(MODIFY_THREADGROUP_PERMISSION).get(), true);
 

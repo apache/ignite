@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessControlException;
+import java.security.Security;
 import java.util.UUID;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -37,6 +38,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -62,8 +64,6 @@ public class AccessClassInPackageTest extends AbstractSandboxTest {
     @Before
     public void prepare() throws IOException {
         srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
-
-        java.security.Security.setProperty("package.access", "org.apache.ignite.internal");
     }
 
     /** */
@@ -71,7 +71,23 @@ public class AccessClassInPackageTest extends AbstractSandboxTest {
     public void cleanup() {
         U.delete(srcTmpDir);
 
-        java.security.Security.setProperty("package.access", "");
+        String packAccess = Security.getProperty("package.access");
+
+        if (packAccess.contains(IGNITE_INTERNAL_PACKAGE)) {
+            String[] strs = packAccess.split(",");
+
+            StringBuilder sb = new StringBuilder();
+
+            for (String s : strs) {
+                if (!s.equals(IGNITE_INTERNAL_PACKAGE)) {
+                    if (!sb.toString().isEmpty())
+                        sb.append(',');
+                    sb.append(s);
+                }
+            }
+
+            Security.setProperty("package.access", sb.toString());
+        }
     }
 
     /** */
@@ -81,7 +97,8 @@ public class AccessClassInPackageTest extends AbstractSandboxTest {
 
         //Node have permission.
         Ignite clntAllowed = startGrid(CLNT_ALLOWED, ALLOW_ALL,
-            PermissionsBuilder.create().add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*")).get(),
+            PermissionsBuilder.create()
+                .add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*")).get(),
             true);
 
         //Node does not have permission.
