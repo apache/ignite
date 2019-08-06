@@ -24,7 +24,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -101,6 +100,9 @@ class FileReceiver extends TransmissionReceiver {
         long batchSize = Math.min(chunkSize, meta.count() - transferred);
 
         long readed = fileIo.transferFrom(ch, meta.offset() + transferred, batchSize);
+
+        if (readed == 0)
+            throw new IOException("Channel is reached the end of stream. Probably, channel is closed on the remote node");
 
         if (readed > 0)
             transferred += readed;

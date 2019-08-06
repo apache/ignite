@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
@@ -35,18 +36,21 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -55,6 +59,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -71,6 +78,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.fileCount;
 public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTest {
     /** Number of cache keys to generate. */
     private static final long CACHE_SIZE = 50_000L;
+
+    /** Network timeout in ms. */
+    private static final long NET_TIMEOUT_MS = 2000L;
 
     /** Temporary directory to store files. */
     private static final String TEMP_FILES_DIR = "ctmp";
@@ -120,7 +130,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     @After
     public void after() {
         stopAllGrids();
-
         U.closeQuiet(fileIo[0]);
     }
 
@@ -131,7 +140,9 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
                     .setMaxSize(500L * 1024 * 1024)))
-            .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME));
+            .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME))
+            .setCommunicationSpi(new BlockingOpenChannelCommunicationSpi())
+            .setNetworkTimeout(NET_TIMEOUT_MS);
     }
 
     /**
@@ -317,6 +328,70 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             .openTransmissionSender(rcv.localNode().id(), topic)) {
             sender.send(fileToSend, TransmissionPolicy.FILE);
         }
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void tesFileHandlerTimeouted() throws Exception {
+        IgniteEx rcv = startGrid(1);
+        IgniteEx snd = startGrid(0);
+
+        final AtomicInteger chunksCnt = new AtomicInteger();
+        final CountDownLatch sndLatch = ((BlockingOpenChannelCommunicationSpi)snd.context()
+            .config()
+            .getCommunicationSpi()).latch;
+        final AtomicReference<Throwable> refErr = new AtomicReference<>();
+
+        snd.cluster().active(true);
+
+        File fileToSend = createFileRandomData("testFile", 5 * 1024 * 1024);
+
+        snd.context().io().transfererFileIoFactory(new FileIOFactory() {
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                FileIO fileIo = IO_FACTORY.create(file, modes);
+
+                return new FileIODecorator(fileIo) {
+                    /** {@inheritDoc} */
+                    @Override public long transferTo(long position, long count, WritableByteChannel target)
+                        throws IOException {
+                        if (chunksCnt.incrementAndGet() == 10) {
+                            target.close();
+
+                            ((BlockingOpenChannelCommunicationSpi)snd.context()
+                                .config()
+                                .getCommunicationSpi()).block = true;
+                        }
+
+                        return super.transferTo(position, count, target);
+                    }
+                };
+            }
+        });
+
+        rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore) {
+            @Override public void onException(UUID nodeId, Throwable err) {
+                refErr.compareAndSet(null, err);
+
+                sndLatch.countDown();
+            }
+        });
+
+        try (GridIoManager.TransmissionSender sender = snd.context()
+            .io()
+            .openTransmissionSender(rcv.localNode().id(), topic)) {
+            sender.send(fileToSend, TransmissionPolicy.FILE);
+        }
+        catch (IgniteCheckedException | IOException | InterruptedException e) {
+            // Ignore err
+            U.warn(log, e);
+        }
+
+        assertNotNull("Timeout exception not occurred", refErr.get());
+        assertEquals("Type of timeout excpetion incorrect: " + refErr.get(),
+            IgniteCheckedException.class,
+            refErr.get().getClass());
     }
 
     /**
@@ -832,6 +907,32 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                     assertCrcEquals(fileToSend, file);
                 }
             };
+        }
+    }
+
+    /** */
+    private static class BlockingOpenChannelCommunicationSpi extends TcpCommunicationSpi {
+        /** Latch to wait at. */
+        private final CountDownLatch latch = new CountDownLatch(1);
+
+        /** {@code true} to start waiting. */
+        private volatile boolean block;
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<Channel> openChannel(ClusterNode remote,
+            Message initMsg) throws IgniteSpiException {
+            try {
+                if (block) {
+                    U.log(log, "Start waiting on trying open a new channel");
+
+                    latch.await(5, TimeUnit.SECONDS);
+                }
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
+
+            return super.openChannel(remote, initMsg);
         }
     }
 

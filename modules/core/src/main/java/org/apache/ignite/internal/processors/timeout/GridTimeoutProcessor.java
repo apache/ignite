@@ -227,8 +227,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             try {
                                 boolean rmvd = timeoutObjs.remove(timeoutObj);
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Timeout has occurred [obj=" + timeoutObj + ", process=" + rmvd + ']');
+                                if (log.isInfoEnabled())
+                                    log.info("Timeout has occurred [obj=" + timeoutObj + ", process=" + rmvd + ']');
 
                                 if (rmvd)
                                     timeoutObj.onTimeout();
