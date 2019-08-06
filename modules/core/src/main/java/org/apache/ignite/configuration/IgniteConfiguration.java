@@ -45,6 +45,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -81,6 +85,7 @@ import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
 /**
@@ -292,17 +297,11 @@ public class IgniteConfiguration {
     /** SQL query history size. */
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
-    /** Ignite installation folder. */
-    private String igniteHome;
-
     /** Ignite work folder. */
     private String igniteWorkDir;
 
     /** MBean server. */
     private MBeanServer mbeanSrv;
-
-    /** Local node ID. */
-    private UUID nodeId;
 
     /** Marshaller. */
     private Marshaller marsh;
@@ -314,7 +313,8 @@ public class IgniteConfiguration {
     private boolean daemon;
 
     /** Whether or not peer class loading is enabled. */
-    private boolean p2pEnabled = DFLT_P2P_ENABLED;
+    private BooleanMetricImpl p2pEnabled = new BooleanMetricImpl("isPeerClassLoadingEnabled",
+        "Whether or not peer class loading (a.k.a. P2P class loading) is enabled."); ;
 
     /** List of package prefixes from the system class path that should be P2P loaded. */
     private String[] p2pLocClsPathExcl;
@@ -562,11 +562,31 @@ public class IgniteConfiguration {
     /** Plugin providers. */
     private PluginProvider[] pluginProvs;
 
+    /** Grid logger formatted metric. */
+    private ObjectMetricImpl<String> gridLogFormatted = new ObjectMetricImpl<>("gridLogFormatted",
+        "Formatted instance of logger that is in grid.", String.class);
+
+    /** Formatted instance of fully configured thread pool that is used in grid. */
+    private ObjectMetricImpl<String> executorSvcFormatted = new ObjectMetricImpl<>("executorSvcFormatted",
+        "Formatted instance of logger that is in grid.", String.class);
+
+    /** Ignite installation home folder. */
+    private ObjectMetricImpl<String> igniteHome = new ObjectMetricImpl<>("igniteHome",
+        "Ignite installation home folder.", String.class);
+
+    /** Formatted instance of MBean server instance. */
+    private ObjectMetricImpl<String> mBeanSrvFormatted = new ObjectMetricImpl<>("mBeanServerFormatted",
+        "Formatted instance of MBean server instance.", String.class);
+
+    /** Unique identifier for this node within grid. */
+    private ObjectMetricImpl<UUID> locNodeId = new ObjectMetricImpl<>("localNodeId",
+        "Unique identifier for this node within grid.", UUID.class);
+
     /**
      * Creates valid grid configuration with all default values.
      */
     public IgniteConfiguration() {
-        // No-op.
+        p2pEnabled.value(DFLT_P2P_ENABLED);
     }
 
     /**
@@ -626,7 +646,7 @@ public class IgniteConfiguration {
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
         failureHnd = cfg.getFailureHandler();
-        igniteHome = cfg.getIgniteHome();
+        igniteHome.value(cfg.getIgniteHome());
         igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
@@ -647,9 +667,9 @@ public class IgniteConfiguration {
         mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
         mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
-        nodeId = cfg.getNodeId();
+        locNodeId.value(cfg.getNodeId());
         odbcCfg = cfg.getOdbcConfiguration();
-        p2pEnabled = cfg.isPeerClassLoadingEnabled();
+        p2pEnabled.value(cfg.isPeerClassLoadingEnabled());
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
@@ -687,6 +707,10 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+
+        gridLogFormatted.value(log != null ? log.toString() : " ");
+        executorSvcFormatted.value(String.valueOf(pubPoolSize));
+        mBeanSrvFormatted.value(mbeanSrv != null ? mbeanSrv.toString() : " ");
     }
 
     /**
@@ -876,6 +900,8 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setGridLogger(IgniteLogger log) {
         this.log = log;
+
+        gridLogFormatted.value(this.log.toString());
 
         return this;
     }
@@ -1080,6 +1106,8 @@ public class IgniteConfiguration {
     public IgniteConfiguration setPublicThreadPoolSize(int poolSize) {
         pubPoolSize = poolSize;
 
+        executorSvcFormatted.value(String.valueOf(poolSize));
+
         return this;
     }
 
@@ -1227,7 +1255,7 @@ public class IgniteConfiguration {
      * @see IgniteSystemProperties#IGNITE_HOME
      */
     public String getIgniteHome() {
-        return igniteHome;
+        return igniteHome.value();
     }
 
     /**
@@ -1239,7 +1267,7 @@ public class IgniteConfiguration {
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setIgniteHome(String igniteHome) {
-        this.igniteHome = igniteHome;
+        this.igniteHome.value(igniteHome);
 
         return this;
     }
@@ -1292,6 +1320,8 @@ public class IgniteConfiguration {
     public IgniteConfiguration setMBeanServer(MBeanServer mbeanSrv) {
         this.mbeanSrv = mbeanSrv;
 
+        mBeanSrvFormatted.value(mbeanSrv.toString());
+
         return this;
     }
 
@@ -1302,7 +1332,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public UUID getNodeId() {
-        return nodeId;
+        return locNodeId.value();
     }
 
     /**
@@ -1315,7 +1345,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public IgniteConfiguration setNodeId(UUID nodeId) {
-        this.nodeId = nodeId;
+        locNodeId.value(nodeId);
 
         return this;
     }
@@ -1365,7 +1395,7 @@ public class IgniteConfiguration {
      *      otherwise.
      */
     public boolean isPeerClassLoadingEnabled() {
-        return p2pEnabled;
+        return p2pEnabled.value();
     }
 
     /**
@@ -1400,7 +1430,7 @@ public class IgniteConfiguration {
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setPeerClassLoadingEnabled(boolean p2pEnabled) {
-        this.p2pEnabled = p2pEnabled;
+        this.p2pEnabled.value(p2pEnabled);
 
         return this;
     }
@@ -3407,6 +3437,21 @@ public class IgniteConfiguration {
         this.pluginProvs = pluginProvs;
 
         return this;
+    }
+
+    /**
+     * Initialize IgniteConfiguration metrics.
+     *
+     * @param metric Metric.
+     */
+    public void initMetrics(GridMetricManager metric) {
+        MetricRegistry mReg = metric.registry(CACHE_METRICS);
+
+        mReg.register(gridLogFormatted);
+        mReg.register(executorSvcFormatted);
+        mReg.register(igniteHome);
+        mReg.register(mBeanSrvFormatted);
+        mReg.register(locNodeId);
     }
 
     /** {@inheritDoc} */

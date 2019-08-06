@@ -22,6 +22,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
@@ -241,10 +242,10 @@ public class LongJVMPauseDetector {
     /**
      * Initialize LongJVMPauseDetector metrics.
      *
-     * @param ctx Context.
+     * @param metric GridMetricManager.
      */
-    void initMetrics(GridKernalContextImpl ctx) {
-        MetricRegistry mReg = ctx.metric().registry(CACHE_METRICS);
+    void initMetrics(GridMetricManager metric) {
+        MetricRegistry mReg = metric.registry(CACHE_METRICS);
 
         longPausesCnt = mReg.longAdderMetric("longPausesCnt", "Long pause count.");
         longPausesTotalDuration = mReg.longAdderMetric("longPausesTotalDuration",

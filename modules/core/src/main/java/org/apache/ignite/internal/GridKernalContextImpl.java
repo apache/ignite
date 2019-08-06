@@ -550,8 +550,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.hnd = hnd;
         this.pauseDetector = pauseDetector;
 
-        pauseDetector.initMetrics(this);
-
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
         try {

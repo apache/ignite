@@ -53,7 +53,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
@@ -374,14 +373,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** The main kernal context which holds all the {@link GridComponent}s. */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
-    
+
+    /** Rebalance enabled metric. */
     private BooleanMetricImpl rebalanceEnabled;
+
+    /** Up-time of the kernal metric. */
     private LongGauge upTime;
+
+    /** String presentation metric of up-time for the kernal. */
     private ObjectMetricImpl<String> upTimeFormatted;
-    private ObjectMetricImpl<String> fullVersion;
-    private ObjectMetricImpl<String> copyRight;
-    private ObjectMetricImpl<String> startTimestampFormatted;
-    private ObjectGauge<List> userAttributesFormatted;
+
+    /** String presentation metric of the version. */
+    private ObjectMetricImpl<String> fullVer;
 
     /** Helper which registers and unregisters MBeans. */
     @GridToStringExclude
@@ -578,7 +581,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return fullVersion.value();
+        return fullVer.value();
     }
 
     /** {@inheritDoc} */
@@ -699,51 +702,83 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String getExecutorServiceFormatted() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return String.valueOf(cfg.getPublicThreadPoolSize());
+        ObjectMetricImpl<String> executorSvcFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("executorSvcFormatted");
+
+        return executorSvcFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getIgniteHome() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return cfg.getIgniteHome();
+        ObjectMetricImpl<String> igniteHome =
+            ctx.metric().registry(CACHE_METRICS).findMetric("igniteHome");
+
+        assert igniteHome != null;
+
+        return igniteHome.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getGridLoggerFormatted() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return cfg.getGridLogger().toString();
+        ObjectMetricImpl<String> gridLogMetric =
+            ctx.metric().registry(CACHE_METRICS).findMetric("gridLogFormatted");
+
+        assert gridLogMetric != null;
+
+        return gridLogMetric.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getMBeanServerFormatted() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return cfg.getMBeanServer().toString();
+        ObjectMetricImpl<String> mBeanSrvFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("mBeanServerFormatted");
+
+        assert mBeanSrvFormatted != null;
+
+        return mBeanSrvFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public UUID getLocalNodeId() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return cfg.getNodeId();
+        ObjectMetricImpl<UUID> locNodeId =
+            ctx.metric().registry(CACHE_METRICS).findMetric("localNodeId");
+
+        assert locNodeId != null;
+
+        return locNodeId.value();
     }
 
     /** {@inheritDoc} */
     @Override public List<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return userAttributesFormatted.value();
+        return (List<String>)F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+            @Override public String apply(Map.Entry<String, ?> e) {
+                return e.getKey() + ", " + e.getValue().toString();
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean isPeerClassLoadingEnabled() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return cfg.isPeerClassLoadingEnabled();
+        BooleanMetricImpl isPeerClsLoadingEnabled =
+            ctx.metric().registry(CACHE_METRICS).findMetric("isPeerClassLoadingEnabled");
+
+        assert isPeerClsLoadingEnabled != null;
+
+        return isPeerClsLoadingEnabled.value();
     }
 
     /** {@inheritDoc} */
@@ -1110,6 +1145,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 longJVMPauseDetector
             );
 
+//            cfg.initMetrics(ctx.metric());
+
             startProcessor(new DiagnosticProcessor(ctx));
 
             mBeansMgr = new IgniteMBeansManager(this);
@@ -1190,6 +1227,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startManager(new GridEncryptionManager(ctx));
 
             ackSecurity();
+
+            ctx.config().initMetrics(ctx.metric());
+            ctx.longJvmPauseDetector().initMetrics(ctx.metric());
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
@@ -1523,33 +1563,32 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             () -> U.currentTimeMillis() - startTime);
         mReg.register(upTime);
 
-        fullVersion = mReg.objectMetric("fullVersion", String.class,
+        fullVer = mReg.objectMetric("fullVersion", String.class,
             "String presentation of the Ignite version.");
-        fullVersion.value(VER_STR + '-' + BUILD_TSTAMP_STR);
+        fullVer.value(VER_STR + '-' + BUILD_TSTAMP_STR);
 
         upTimeFormatted = mReg.objectMetric("upTimeFormatted", String.class,
             "String presentation of up-time for the kernal.");
         upTimeFormatted.value(X.timeSpan2DHMSM(upTime.value()));
 
-        copyRight = mReg.objectMetric("copyRight", String.class,
+        ObjectMetricImpl<String> cpRight = mReg.objectMetric("copyRight", String.class,
             "Copyright statement for Ignite product.");
-        copyRight.value(COPYRIGHT);
+        cpRight.value(COPYRIGHT);
 
-        startTimestampFormatted = mReg.objectMetric("startTimestampFormatted", String.class,
+        ObjectMetricImpl<String> startTsFormatted = mReg.objectMetric("startTimestampFormatted", String.class,
             "String presentation of the kernal start timestamp.");
-        startTimestampFormatted.value(DateFormat.getDateTimeInstance().format(new Date(startTime)));
+        startTsFormatted.value(DateFormat.getDateTimeInstance().format(new Date(startTime)));
 
-        userAttributesFormatted = new ObjectGauge<List>("userAttributesFormatted",
-            "Collection of formatted user-defined attributes added to this node.", new Supplier<List>() {
-            @Override public List<String> get() {
-                return (List<String>)F.transform(cfg.getUserAttributes().entrySet(),
-                    new C1<Map.Entry<String, ?>, String>() {
-                    @Override public String apply(Map.Entry<String, ?> e) {
-                        return e.getKey() + ", " + e.getValue().toString();
-                    }
-                });
-            }
-        }, List.class);
+        ObjectGauge<List> userAttributesFormatted = new ObjectGauge<>("userAttributesFormatted",
+            "Collection of formatted user-defined attributes added to this node.", this::getUserAttributesFormatted,
+            List.class);
+
+        ObjectGauge<List> lifecycleBeansFormatted = new ObjectGauge<>("lifecycleBeansFormatted",
+            "String representation of lifecycle beans.", this::getLifecycleBeansFormatted,
+            List.class);
+
+        mReg.register(userAttributesFormatted);
+        mReg.register(lifecycleBeansFormatted);
     }
 
     /**
