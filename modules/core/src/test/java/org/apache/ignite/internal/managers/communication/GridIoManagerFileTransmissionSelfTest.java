@@ -335,7 +335,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      * @throws Exception If fails.
      */
     @Test
-    public void tesFileHandlerTimeouted() throws Exception {
+    public void tesFileHandlerReconnectTimeouted() throws Exception {
         IgniteEx rcv = startGrid(1);
         IgniteEx snd = startGrid(0);
 

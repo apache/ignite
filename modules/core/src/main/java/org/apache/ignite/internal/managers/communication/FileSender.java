@@ -129,8 +129,11 @@ class FileSender extends AbstractTransmission {
         assert fileIo != null;
 
         // The remote node doesn't have a file meta info.
-        if (rcvMeta == null || rcvMeta.offset() < 0)
+        if (rcvMeta == null || rcvMeta.offset() < 0) {
+            transferred = 0;
+
             return;
+        }
 
         long uploadedBytes = rcvMeta.offset() - meta.offset();
 
