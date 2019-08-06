@@ -23,42 +23,73 @@ import java.util.Set;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.internal.processors.metric.list.view.CacheGroupView;
 import org.apache.ignite.internal.processors.metric.list.view.CacheView;
+import org.apache.ignite.internal.processors.metric.list.view.ServiceView;
+import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 
 /** */
 public class MonitoringListCacheTest extends GridCommonAbstractTest {
     @Test
     /** */
     public void testCachesList() throws Exception {
-        IgniteEx g = startGrid();
+        try (IgniteEx g = startGrid()) {
+            Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
 
-        Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
+            for (String name : cacheNames)
+                g.createCache(name);
 
-        for (String name : cacheNames)
-            g.createCache(name);
+            MonitoringList<String, CacheView> caches = g.context().metric().list("caches");
 
-        MonitoringList<String, CacheView> caches = g.context().metric().list("caches");
+            assertEquals("ignite-sys, cache-1, cache-2", 3, F.size(caches.iterator(), alwaysTrue()));
 
-        for (CacheView row : caches) {
-            cacheNames.remove(row.cacheName());
+            for (CacheView row : caches)
+                cacheNames.remove(row.cacheName());
+
+            assertTrue(cacheNames.toString(), cacheNames.isEmpty());
         }
-
-        assertTrue(cacheNames.isEmpty());
     }
 
     @Test
     /** */
     public void testCacheGroupsList() throws Exception {
-        IgniteEx g = startGrid();
+        try(IgniteEx g = startGrid()) {
+            Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
 
-        g.createCache(new CacheConfiguration<>("cache-1").setGroupName("group-1"));
-        g.createCache(new CacheConfiguration<>("cache-2").setGroupName("group-2"));
+            for (String grpName : grpNames)
+                g.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-        MonitoringList<MonitoringRow<String>> groups = g.context().metric().list("cacheGroups");
+            MonitoringList<String, CacheGroupView> grps = g.context().metric().list("cacheGroups");
 
+            assertEquals("ignite-sys, grp-1, grp-2", 3, F.size(grps.iterator(), alwaysTrue()));
 
+            for (CacheGroupView row : grps)
+                grpNames.remove(row.groupName());
+
+            assertTrue(grpNames.toString(), grpNames.isEmpty());
+        }
+    }
+
+    @Test
+    /** */
+    public void testServices() throws Exception {
+        try(IgniteEx g = startGrid()) {
+            ServiceConfiguration srvcCfg = new ServiceConfiguration();
+
+            srvcCfg.setName("service");
+            srvcCfg.setMaxPerNodeCount(1);
+            srvcCfg.setService(new DummyService());
+
+            g.services().deploy(srvcCfg);
+
+            MonitoringList<IgniteUuid, ServiceView> srvs = g.context().metric().list("services");
+        }
     }
 }

@@ -37,5 +37,5 @@ public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
      *
      * @param lsnr Listener.
      */
-    public void addListCreationListener(Consumer<MonitoringList<?>> lsnr);
+    public void addListCreationListener(Consumer<MonitoringList> lsnr);
 }

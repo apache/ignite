@@ -42,6 +42,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -173,13 +174,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
     /** Lists registry. */
-    private ConcurrentHashMap<String, MonitoringList<?>> lists = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, MonitoringList> lists = new ConcurrentHashMap<>();
 
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** List creation listeners. */
-    private final List<Consumer<MonitoringList<?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<MonitoringList>> listCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -278,9 +279,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Name of the list.
      * @return Monitoring list.
      */
-    public <Id> MonitoringList<Id> list(String name) {
-        return (MonitoringList<Id>)lists.computeIfAbsent(name, n -> {
-            MonitoringList<Id> list = new MonitoringList<>(name);
+    public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name) {
+        return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
+            MonitoringList<Id, R> list = new MonitoringList<>(name);
 
             notifyListeners(list, listCreationLsnrs);
 
@@ -299,7 +300,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Override public void addListCreationListener(Consumer<MonitoringList<?>> lsnr) {
+    @Override public void addListCreationListener(Consumer<MonitoringList> lsnr) {
         listCreationLsnrs.add(lsnr);
     }
 

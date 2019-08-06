@@ -52,6 +52,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.CacheGroupView;
+import org.apache.ignite.internal.processors.metric.list.view.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -106,7 +109,13 @@ class ClusterCachesInfo {
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
     /** */
+    private final MonitoringList<String, CacheView> cachesMonitoring;
+
+    /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
+
+    /** */
+    private final MonitoringList<String, CacheGroupView> cachesGrpMonitoring;
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
@@ -143,6 +152,9 @@ class ClusterCachesInfo {
      */
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
+
+        cachesMonitoring = ctx.metric().list("caches");
+        cachesGrpMonitoring = ctx.metric().list("cacheGroups");
 
         log = ctx.log(getClass());
     }
@@ -192,6 +204,7 @@ class ClusterCachesInfo {
 
             if (!locCaches.containsKey(e.getKey())) {
                 cachesIter.remove();
+                cachesMonitoring.remove(e.getKey());
 
                 ctx.discovery().removeCacheFilter(e.getKey());
             }
@@ -215,6 +228,7 @@ class ClusterCachesInfo {
 
             if (removeGrp) {
                 grpsIter.remove();
+                cachesGrpMonitoring.remove(e.getValue().cacheOrGroupName());
 
                 ctx.discovery().removeCacheGroup(e.getValue());
             }
@@ -762,6 +776,7 @@ class ClusterCachesInfo {
         markedForDeletionCaches.put(cacheName, old);
 
         registeredCaches.remove(cacheName);
+        cachesMonitoring.remove(cacheName);
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
@@ -783,6 +798,7 @@ class ClusterCachesInfo {
             markedForDeletionCacheGrps.put(grpDesc.groupId(), grpDesc);
 
             registeredCacheGrps.remove(grpDesc.groupId());
+            cachesGrpMonitoring.remove(grpDesc.cacheOrGroupName());
 
             ctx.discovery().removeCacheGroup(grpDesc);
 
@@ -966,6 +982,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
+        cachesMonitoring.add(ccfg.getName(), new CacheView("???", startDesc));
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1398,7 +1415,10 @@ class ClusterCachesInfo {
 
             desc.receivedOnDiscovery(true);
 
-            registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
+            String cacheName = cacheData.cacheConfiguration().getName();
+
+            registeredCaches.put(cacheName, desc);
+            cachesMonitoring.add(cacheName, new CacheView("???", desc));
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1497,6 +1517,7 @@ class ClusterCachesInfo {
             }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
+            cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView("???", grpDesc));
 
             assert old == null : old;
 
@@ -1511,7 +1532,11 @@ class ClusterCachesInfo {
      */
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
+        cachesMonitoring.clear();
+
         registeredCacheGrps.clear();
+        cachesGrpMonitoring.clear();
+
         ctx.discovery().cleanCachesAndGroups();
     }
 
@@ -1832,9 +1857,10 @@ class ClusterCachesInfo {
         }
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-            if (desc.cacheId() == cacheId)
+            if (desc.cacheId() == cacheId) {
                 return "Cache ID conflict (change cache name) [cacheName=" + cfg.getName() +
                     ", conflictingCacheName=" + desc.cacheName() + ']';
+            }
         }
 
         int grpId = CU.cacheGroupId(cfg.getName(), cfg.getGroupName());
@@ -1843,18 +1869,20 @@ class ClusterCachesInfo {
             if (cacheGroupByName(cfg.getGroupName()) == null) {
                 CacheGroupDescriptor desc = registeredCacheGrps.get(grpId);
 
-                if (desc != null)
+                if (desc != null) {
                     return "Cache group ID conflict (change cache group name) [cacheName=" + cfg.getName() +
                         ", groupName=" + cfg.getGroupName() +
                         (desc.sharedGroup() ? ", conflictingGroupName=" : ", conflictingCacheName=") + desc.cacheOrGroupName() + ']';
+                }
             }
         }
         else {
             CacheGroupDescriptor desc = registeredCacheGrps.get(grpId);
 
-            if (desc != null)
+            if (desc != null) {
                 return "Cache group ID conflict (change cache name) [cacheName=" + cfg.getName() +
                     (desc.sharedGroup() ? ", conflictingGroupName=" : ", conflictingCacheName=") + desc.cacheOrGroupName() + ']';
+            }
         }
 
         return null;
@@ -1976,6 +2004,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
+        cachesMonitoring.add(cfg.getName(), new CacheView("???", desc));
 
         assert old == null : old;
     }
@@ -2122,6 +2151,7 @@ class ClusterCachesInfo {
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
+        cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView(grpDesc.cacheOrGroupName(), grpDesc));
 
         assert old == null : old;
 
@@ -2309,7 +2339,11 @@ class ClusterCachesInfo {
             new HashMap<>(registeredCaches));
 
         registeredCacheGrps.clear();
+        cachesGrpMonitoring.clear();
+
         registeredCaches.clear();
+        cachesMonitoring.clear();
+
         registeredTemplates.clear();
 
         clientReconnectReqs = null;

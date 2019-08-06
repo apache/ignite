@@ -17,17 +17,24 @@
 
 package org.apache.ignite.internal.processors.metric.list.view;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.lang.IgnitePredicate;
 
-/**
- *
- */
+/** */
 public class CacheGroupView implements MonitoringRow<String> {
     /** Cache group. */
     private CacheGroupDescriptor grp;
 
+    /** Cache configuration. */
     private CacheConfiguration<?, ?> ccfg;
 
     /** Idenity of the user activity causes cache creation. */
@@ -53,20 +60,78 @@ public class CacheGroupView implements MonitoringRow<String> {
         return grp.groupId();
     }
 
-/*
-                        grp.cacheOrGroupName(),
-                        grp.sharedGroup(),
-                        grp.caches() == null ? 0 : grp.caches().size(),
-                    ccfg.getCacheMode(),
-                        ccfg.getAtomicityMode(),
-    toStringSafe(ccfg.getAffinity()),
-        ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null,
-    nodeFilter(ccfg),
-                    ccfg.getDataRegionName(),
-    toStringSafe(ccfg.getTopologyValidator()),
-        ccfg.getPartitionLossPolicy(),
-        ccfg.getRebalanceMode(),
-        ccfg.getRebalanceDelay(),
-        ccfg.getRebalanceOrder(),
-        ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups()*/
+    /** */
+    public String groupName() {
+        return grp.cacheOrGroupName();
+    }
+
+    /** */
+    public boolean sharedGroup() {
+        return grp.sharedGroup();
+    }
+
+    /** */
+    public int cacheCount() {
+        return grp.caches() == null ? 0 : grp.caches().size();
+    }
+
+    /** */
+    public CacheMode cacheMode() {
+        return ccfg.getCacheMode();
+    }
+
+    /** */
+    public CacheAtomicityMode atomicityMode() {
+        return ccfg.getAtomicityMode();
+    }
+
+    /** */
+    public AffinityFunction affinity() {
+        return ccfg.getAffinity();
+    }
+
+    /** */
+    public int partitions() {
+        return ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : -1;
+    }
+
+    /** */
+    public IgnitePredicate<ClusterNode> nodeFilter() {
+        return ccfg.getNodeFilter();
+    }
+
+    /** */
+    public String dataRegionName() {
+        return ccfg.getDataRegionName();
+    }
+
+    /** */
+    public TopologyValidator topologyValidator() {
+        return ccfg.getTopologyValidator();
+    }
+
+    /** */
+    public PartitionLossPolicy partitionLossPolicy() {
+        return ccfg.getPartitionLossPolicy();
+    }
+
+    /** */
+    public CacheRebalanceMode rebalanceMode() {
+        return ccfg.getRebalanceMode();
+    }
+
+    /** */
+    public long rebalanceDelay() {
+        return ccfg.getRebalanceDelay();
+    }
+
+    /** */
+    public int rebalanceOrder() {
+        return ccfg.getRebalanceOrder();
+    }
+
+    /** */
+    public int backups() {
+        return ccfg.getBackups();
+    }
 }

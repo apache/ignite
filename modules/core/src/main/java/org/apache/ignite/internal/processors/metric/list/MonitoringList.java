@@ -63,7 +63,13 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
         return name;
     }
 
+    /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator() {
         return data.values().iterator();
+    }
+
+    /** */
+    public void clear() {
+        data.clear();
     }
 }
