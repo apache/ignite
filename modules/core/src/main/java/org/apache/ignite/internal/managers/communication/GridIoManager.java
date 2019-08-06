@@ -2811,13 +2811,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ObjectOutputStream out,
         ReadableByteChannel ch
     ) throws NodeStoppingException, InterruptedException {
-        // Begin method must be called only once.
-        if (!rcvCtx.sesStarted) {
-            rcvCtx.hnd.onBegin(rcvCtx.nodeId);
-
-            rcvCtx.sesStarted = true;
-        }
-
         try {
             while (true) {
                 if (Thread.currentThread().isInterrupted())
@@ -2829,8 +2822,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 boolean exit = in.readBoolean();
 
                 if (exit) {
-                    rcvCtx.hnd.onEnd(rcvCtx.nodeId);
-
                     rcvCtxs.remove(topic);
 
                     break;
@@ -3011,9 +3002,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         /** Only one thread can handle receiver context. */
         private final Lock lock = new ReentrantLock();
-
-        /** Flag indicates session started. */
-        private boolean sesStarted;
 
         /** Last infinished downloading object. */
         private TransmissionReceiver rcv;

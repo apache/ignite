@@ -41,16 +41,6 @@ import java.util.function.Consumer;
  */
 public interface TransmissionHandler {
     /**
-     * @param nodeId The remote node id receive request for transmission from.
-     */
-    public void onBegin(UUID nodeId);
-
-    /**
-     * The end of session transmission process.
-     */
-    public void onEnd(UUID nodeId);
-
-    /**
      * @param err The err of fail handling process.
      */
     public void onException(UUID nodeId, Throwable err);
