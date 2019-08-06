@@ -2934,16 +2934,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * Set factory to produce an FileIO abstraction over sended\received files.
-     * @see #fileIoFactory
-     *
-     * @param factory A new factory instance for creating {@link FileIO}
-     */
-    void transfererFileIoFactory(FileIOFactory factory) {
-        fileIoFactory = factory;
-    }
-
-    /**
      * @param nodeId Remote node id.
      * @param hnd Currnet handler instance which produces file handlers.
      * @param meta Meta information about file pending to receive to create appropriate receiver.

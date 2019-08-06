@@ -71,6 +71,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.util.IgniteUtils.fileCount;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /**
  * Test file transmission mamanger operations.
@@ -302,7 +303,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         File fileToSend = createFileRandomData("testFile", fileSizeBytes);
 
-        snd.context().io().transfererFileIoFactory(new FileIOFactory() {
+        transmissionFileIoFactory(snd, new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = IO_FACTORY.create(file, modes);
 
@@ -348,7 +349,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         File fileToSend = createFileRandomData("testFile", 5 * 1024 * 1024);
 
-        snd.context().io().transfererFileIoFactory(new FileIOFactory() {
+        transmissionFileIoFactory(snd, new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = IO_FACTORY.create(file, modes);
 
@@ -407,7 +408,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         File fileToSend = createFileRandomData("tempFile15Mb", 15 * 1024 * 1024);
         File downloadTo = U.resolveWorkDirectory(tempStore.getAbsolutePath(), "download", true);
 
-        snd.context().io().transfererFileIoFactory(new FileIOFactory() {
+        transmissionFileIoFactory(snd, new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = IO_FACTORY.create(file, modes);
 
@@ -466,7 +467,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         File fileToSend = createFileRandomData("testFile", 5 * 1024 * 1024);
         final AtomicInteger readedChunks = new AtomicInteger();
 
-        rcv.context().io().transfererFileIoFactory(new FileIOFactory() {
+        transmissionFileIoFactory(rcv, new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 fileIo[0] = IO_FACTORY.create(file, modes);
 
@@ -693,7 +694,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         File fileToSend = createFileRandomData(filePrefix, 10 * 1024 * 1024);
 
-        snd.context().io().transfererFileIoFactory(new FileIOFactory() {
+        transmissionFileIoFactory(snd, new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = IO_FACTORY.create(file, modes);
 
@@ -855,6 +856,14 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
 
         return out;
+    }
+
+    /**
+     * @param ignite Ignite instance to set factory.
+     * @param factory New factory to use.
+     */
+    private static void transmissionFileIoFactory(IgniteEx ignite, FileIOFactory factory) {
+        setFieldValue(ignite.context().io(), "fileIoFactory", factory);
     }
 
     /**
