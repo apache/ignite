@@ -309,7 +309,6 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             return dir;
         }
 
-
         /**
          * Sort WAL files according their indices.
          *

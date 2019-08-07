@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -83,7 +82,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -139,6 +137,7 @@ import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -180,7 +179,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** Sustains {@link #beforeTestsStarted()} and {@link #afterTestsStopped()} methods execution.*/
-    @ClassRule public static final TestRule firstLastTestRule = new BeforeFirstAndAfterLastTestRule();
+    @ClassRule public static final TestRule firstLastTestRule = RuleChain
+        .outerRule(new SystemPropertiesRule())
+        .around(new BeforeFirstAndAfterLastTestRule());
 
     /** Manages test execution and reporting. */
     private transient TestRule runRule = (base, desc) -> new Statement() {
@@ -190,6 +191,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             runTest(base);
         }
     };
+
+    /** Allows easy repeating for test. */
+    @Rule public transient RepeatRule repeatRule = new RepeatRule();
 
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for methods invoked
@@ -211,7 +215,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * first.
      */
     @Rule public transient RuleChain nameAndRunRulesChain = RuleChain
-        .outerRule(nameRule)
+        .outerRule(new SystemPropertiesRule())
+        .around(nameRule)
         .around(runRule);
 
     /** */
@@ -232,12 +237,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
-    /** List of system properties to set when all tests in class are finished. */
-    private final List<T2<String, String>> clsSysProps = new LinkedList<>();
-
-    /** List of system properties to set when test is finished. */
-    private final List<T2<String, String>> testSysProps = new LinkedList<>();
-
     /** */
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
@@ -245,6 +244,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
         System.setProperty(IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, "1000");
+        System.setProperty(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, "false");
 
         if (GridTestClockTimer.startTestTimer()) {
             Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
@@ -670,7 +670,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             afterTest();
         }
         finally {
-            serializedObj.clear();
+            if (!keepSerializedObjects())
+                serializedObj.clear();
 
             Thread.currentThread().setContextClassLoader(clsLdr);
 
@@ -678,82 +679,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             cleanReferences();
         }
-    }
-
-    /** */
-    private void setSystemPropertiesBeforeClass() {
-        List<WithSystemProperty[]> allProps = new LinkedList<>();
-
-        for (Class<?> clazz = getClass(); clazz != GridAbstractTest.class; clazz = clazz.getSuperclass()) {
-            SystemPropertiesList clsProps = clazz.getAnnotation(SystemPropertiesList.class);
-
-            if (clsProps != null)
-                allProps.add(0, clsProps.value());
-            else {
-                WithSystemProperty clsProp = clazz.getAnnotation(WithSystemProperty.class);
-
-                if (clsProp != null)
-                    allProps.add(0, new WithSystemProperty[] {clsProp});
-            }
-        }
-
-        for (WithSystemProperty[] props : allProps) {
-            for (WithSystemProperty prop : props) {
-                String oldVal = System.setProperty(prop.key(), prop.value());
-
-                clsSysProps.add(0, new T2<>(prop.key(), oldVal));
-            }
-        }
-    }
-
-    /** */
-    private void clearSystemPropertiesAfterClass() {
-        for (T2<String, String> t2 : clsSysProps) {
-            if (t2.getValue() == null)
-                System.clearProperty(t2.getKey());
-            else
-                System.setProperty(t2.getKey(), t2.getValue());
-        }
-
-        clsSysProps.clear();
-    }
-
-    /** */
-    @Before
-    public void setSystemPropertiesBeforeTest() {
-        WithSystemProperty[] allProps = null;
-
-        SystemPropertiesList testProps = currentTestAnnotation(SystemPropertiesList.class);
-
-        if (testProps != null)
-            allProps = testProps.value();
-        else {
-            WithSystemProperty testProp = currentTestAnnotation(WithSystemProperty.class);
-
-            if (testProp != null)
-                allProps = new WithSystemProperty[] {testProp};
-        }
-
-        if (allProps != null) {
-            for (WithSystemProperty prop : allProps) {
-                String oldVal = System.setProperty(prop.key(), prop.value());
-
-                testSysProps.add(0, new T2<>(prop.key(), oldVal));
-            }
-        }
-    }
-
-    /** */
-    @After
-    public void clearSystemPropertiesAfterTest() {
-        for (T2<String, String> t2 : testSysProps) {
-            if (t2.getValue() == null)
-                System.clearProperty(t2.getKey());
-            else
-                System.setProperty(t2.getKey(), t2.getValue());
-        }
-
-        testSysProps.clear();
     }
 
     /**
@@ -1393,7 +1318,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param idx Index.
      * @return Ignite instance.
      */
-    protected Ignite ignite(int idx) {
+    protected IgniteEx ignite(int idx) {
         return grid(idx);
     }
 
@@ -2134,7 +2059,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** Runs test with the provided scenario. */
     private void runTest(Statement testRoutine) throws Throwable {
         prepareTestEnviroment();
-        
+
         try {
             final AtomicReference<Throwable> ex = new AtomicReference<>();
 
@@ -2668,21 +2593,30 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param stmt Statement to execute.
      * @throws Throwable In case of failure.
      */
+    @SuppressWarnings("ThrowFromFinallyBlock")
     private void evaluateInsideFixture(Statement stmt) throws Throwable {
+        Throwable suppressed = null;
+
         try {
-            setSystemPropertiesBeforeClass();
+            beforeFirstTest();
 
-            try {
-                beforeFirstTest();
+            stmt.evaluate();
+        }
+        catch (Throwable t) {
+            suppressed = t;
 
-                stmt.evaluate();
-            }
-            finally {
-                afterLastTest();
-            }
+            throw t;
         }
         finally {
-            clearSystemPropertiesAfterClass();
+            try {
+                afterLastTest();
+            }
+            catch (Throwable t) {
+                if (suppressed != null)
+                    t.addSuppressed(suppressed);
+
+                throw t;
+            }
         }
     }
 }

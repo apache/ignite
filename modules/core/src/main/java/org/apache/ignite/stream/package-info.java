@@ -18,4 +18,5 @@
 /**
  * Contains Ignite Streamer classes.
  */
+
 package org.apache.ignite.stream;

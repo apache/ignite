@@ -82,8 +82,7 @@ public class GridCachePartitionedSupplyEventsSelfTest extends GridCommonAbstract
 
         lsnrs.put(new IgnitePredicate<CacheRebalancingEvent>() {
                 @Override public boolean apply(CacheRebalancingEvent evt) {
-                    //fail("Should not miss any partitions!");
-                    log.warning("Missed partition " + evt.partition() + " from node " + evt.node().consistentId());
+                    fail("Should not miss any partitions!");
 
                     assertEquals(DEFAULT_CACHE_NAME, evt.cacheName());
 
@@ -127,6 +126,8 @@ public class GridCachePartitionedSupplyEventsSelfTest extends GridCommonAbstract
             assertTrue(nodesToPartsSupplied.isEmpty());
 
             startGrid("g" + n);
+
+            awaitPartitionMapExchange();
 
             int max = 0;
             int min = PARTS;
