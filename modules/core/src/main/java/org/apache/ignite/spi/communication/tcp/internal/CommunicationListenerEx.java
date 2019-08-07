@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp.internal.channel;
+package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.io.Serializable;
 import java.nio.channels.Channel;
