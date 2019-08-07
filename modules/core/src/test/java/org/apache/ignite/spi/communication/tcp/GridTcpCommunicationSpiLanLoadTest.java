@@ -33,8 +33,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.communication.tcp.internal.channel.CommunicationListenerEx;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -86,7 +86,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
     /**
      * Accumulating listener.
      */
-    private class MessageListener implements CommunicationListener<Message> {
+    private class MessageListener implements CommunicationListenerEx<Message> {
         /** Node id of local node. */
         private final UUID locNodeId;
 

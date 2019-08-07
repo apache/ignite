@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.communication.tcp.internal.channel.CommunicationListenerEx;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -89,7 +90,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     }
 
     /** */
-    private class MessageListener implements CommunicationListener<Message> {
+    private class MessageListener implements CommunicationListenerEx<Message> {
         /** */
         private final UUID locNodeId;
 

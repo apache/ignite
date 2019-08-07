@@ -31,5 +31,7 @@ public interface CommunicationListenerEx<T extends Serializable> extends Communi
      * @param initMsg Init channel message.
      * @param channel Locally created channel endpoint.
      */
-    public void onChannelOpened(UUID nodeId, T initMsg, Channel channel);
+    public default void onChannelOpened(UUID nodeId, T initMsg, Channel channel) {
+        // No-op.
+    }
 }
