@@ -438,29 +438,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final Transaction tx = ignite.transactions().txStart(transactionConcurrency(),
-                        isolation, TX_TIMEOUT, 0);
-
-                    cache.put(1, 1);
-
-                    tx.suspend();
-
-                    GridTestUtils.runAsync(() -> {
-                            tx.resume();
-
-                            cache.put(1, 1);
-                            cache.put(2, 2);
-
-                            tx.suspend();
-                    }).get(FUT_TIMEOUT);
-
-                    tx.resume();
-
-                    cache.put(1, 1);
-                    cache.put(2, 2);
-                    cache.put(3, 3);
-
-                    tx.suspend();
+                    final Transaction tx = initTxWithTimeout(ignite, cache, isolation, true);
 
                     U.sleep(TX_TIMEOUT + 100L);
 
@@ -494,27 +472,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final Transaction tx = ignite.transactions().txStart(transactionConcurrency(), isolation,
-                        TX_TIMEOUT, 0);
-
-                    cache.put(1, 1);
-
-                    tx.suspend();
-
-                    GridTestUtils.runAsync(() -> {
-                        tx.resume();
-
-                        cache.put(1, 1);
-                        cache.put(2, 2);
-
-                        tx.suspend();
-                    }).get(FUT_TIMEOUT);
-
-                    tx.resume();
-
-                    cache.put(1, 1);
-                    cache.put(2, 2);
-                    cache.put(3, 3);
+                    final Transaction tx = initTxWithTimeout(ignite, cache, isolation, false);
 
                     U.sleep(TX_TIMEOUT + 100L);
 
@@ -532,6 +490,62 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
                 }
             }
         });
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param cache Cache.
+     * @param isolation Isolation.
+     * @param suspended Left transaction in suspended state.
+     */
+    private Transaction initTxWithTimeout(Ignite ignite, IgniteCache cache, TransactionIsolation isolation,
+        boolean suspended) throws Exception {
+        final int RETRIES = 5;
+
+        // Make several attempts to init transaction, sometimes it takes more time then given timeout.
+        for (int i = 0; i < RETRIES; i++) {
+            try {
+                final Transaction tx = ignite.transactions().txStart(transactionConcurrency(), isolation,
+                    TX_TIMEOUT, 0);
+
+                cache.put(1, 1);
+
+                tx.suspend();
+
+                GridTestUtils.runAsync(() -> {
+                    tx.resume();
+
+                    cache.put(1, 1);
+                    cache.put(2, 2);
+
+                    tx.suspend();
+                }).get(FUT_TIMEOUT);
+
+                tx.resume();
+
+                cache.put(1, 1);
+                cache.put(2, 2);
+                cache.put(3, 3);
+
+                if (suspended)
+                    tx.suspend();
+
+                return tx;
+            }
+            catch (TransactionTimeoutException e) {
+                if (i == RETRIES - 1) {
+                    throw new Exception("Can't init transaction within given timeout [isolation=" +
+                        isolation + ", cache=" + cache.getName() + ", ignite=" +
+                        ignite.configuration().getIgniteInstanceName() + ']', e);
+                }
+                else {
+                    log.info("Got timeout on transaction init [attempt=" + i + ", isolation=" + isolation +
+                        ", cache=" + cache.getName() + ", ignite=" + ignite.configuration().getIgniteInstanceName() + ']');
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
