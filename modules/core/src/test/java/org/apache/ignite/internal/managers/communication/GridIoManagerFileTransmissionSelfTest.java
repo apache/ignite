@@ -51,6 +51,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -273,7 +274,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteException.class)
+    @Test(expected = IgniteCheckedException.class)
     public void testFileHandlerOnReceiverLeft() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicInteger chunksCnt = new AtomicInteger();
@@ -428,7 +429,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             err = e;
         }
 
-        assertEquals(IgniteException.class, err.getClass());
+        assertEquals(NodeStoppingException.class, err.getClass());
         assertEquals("Uncomplete resources must be cleaned up on sender left",
             0,
             fileCount(downloadTo.toPath()));

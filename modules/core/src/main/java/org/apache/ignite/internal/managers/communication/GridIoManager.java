@@ -2859,7 +2859,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     U.log(log, "File has been received " +
                         "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
                         ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
-                        ", remoteId=" + rcvCtx.nodeId + ']');
+                        ", rmtId=" + rcvCtx.nodeId + ']');
 
                     rcvCtx.rcv = null;
                 }
@@ -3099,7 +3099,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public class TransmissionSender implements Closeable {
         /** Remote node id to connect to. */
-        private final UUID remoteId;
+        private final UUID rmtId;
 
         /** Remote topic to connect to. */
         private final Object topic;
@@ -3117,16 +3117,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private ObjectInput in;
 
         /**
-         * @param remoteId The remote note to connect to.
+         * @param rmtId The remote note to connect to.
          * @param topic The remote topic to connect to.
          */
         public TransmissionSender(
-            UUID remoteId,
+            UUID rmtId,
             Object topic
         ) {
-            this.remoteId = remoteId;
+            this.rmtId = rmtId;
             this.topic = topic;
-            sesKey = new T2<>(remoteId, IgniteUuid.randomUuid());
+            sesKey = new T2<>(rmtId, IgniteUuid.randomUuid());
         }
 
         /**
@@ -3135,9 +3135,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @throws IOException If fails.
          */
         private TransmissionMeta connect() throws IgniteCheckedException, IOException {
-            senderStopFlags.putIfAbsent(sesKey, new AtomicBoolean());
-
-            SocketChannel channel = (SocketChannel)openChannel(remoteId,
+            SocketChannel channel = (SocketChannel)openChannel(rmtId,
                 topic,
                 new SessionChannelMessage(sesKey.get2()))
                 .get();
@@ -3202,6 +3200,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             Map<String, Serializable> params,
             TransmissionPolicy plc
         ) throws IgniteCheckedException, InterruptedException, IOException {
+            long startTime = U.currentTimeMillis();
+            int retries = 0;
+
+            senderStopFlags.putIfAbsent(sesKey, new AtomicBoolean());
+
             try (FileSender snd = new FileSender(file,
                 offset,
                 cnt,
@@ -3214,11 +3217,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             ) {
                 if (log.isDebugEnabled()) {
                     log.debug("Start writing file to remote node [file=" + file.getName() +
-                        ", rmtNodeId=" + remoteId + ", topic=" + topic + ']');
+                        ", rmtNodeId=" + rmtId + ", topic=" + topic + ']');
                 }
-
-                long startTime = U.currentTimeMillis();
-                int retries = 0;
 
                 while (true) {
                     if (Thread.currentThread().isInterrupted())
@@ -3262,7 +3262,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                         // Re-establish the new connection to continue upload.
                         U.warn(log, "Connection lost while writing a file to remote node and " +
-                            "will be reestablished [remoteId=" + remoteId + ", file=" + file.getName() +
+                            "will be reestablished [rmtId=" + rmtId + ", file=" + file.getName() +
                             ", sesKey=" + sesKey + ", retries=" + retries +
                             ", transferred=" + snd.transferred() +
                             ", total=" + snd.state().count() + ']', e);
@@ -3271,19 +3271,36 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 U.log(log, "File has been sent to remote node [name=" + file.getName() +
                     ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
-                    ", transferred=" + snd.transferred() + ", remoteId=" + remoteId +']');
+                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +']');
 
             }
-            catch (IgniteCheckedException | InterruptedException e) {
+            catch (IgniteException e) {
+                closeChannelQuiet();
+
+                if (stopping)
+                    throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
+                if (senderStopFlags.get(sesKey).get())
+                    throw new ClusterTopologyCheckedException("Remote node left the cluster: " + rmtId, e);
+
+                throw e;
+            }
+            catch (InterruptedException e) {
                 closeChannelQuiet();
 
                 throw e;
             }
-            catch (Throwable t) {
+            catch (IgniteCheckedException e) {
                 closeChannelQuiet();
 
-                throw new IgniteException("Exception while sending file to the remote node. The process stopped " +
-                    "[remoteId=" + remoteId + ", file=" + file.getName() + ", sesKey=" + sesKey + ']', t);
+                throw new IgniteCheckedException("Excpetion while sending file [rmtId=" + rmtId +
+                    ", file=" + file.getName() + ", sesKey=" + sesKey + ", retries=" + retries + ']', e);
+            }
+            catch (Throwable e) {
+                closeChannelQuiet();
+
+                throw new IgniteException("Unexpected exception while sending file to the remote node. The process stopped " +
+                    "[rmtId=" + rmtId + ", file=" + file.getName() + ", sesKey=" + sesKey + ']', e);
             }
         }
 

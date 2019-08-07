@@ -43,7 +43,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -359,6 +358,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Session future of channel creation request. */
+    private static final int CHANNEL_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /**
      * Default local port range (value is <tt>100</tt>).
@@ -753,18 +755,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
-            private void handleChannelCreateResponse(GridSelectorNioSessionImpl ses, ConnectionKey connKey) {
-                GridFutureAdapter<Channel> reqFut = channelReqs.remove(connKey);
-
-                if (reqFut == null) {
-                    U.error(log, "There is not corresponding channel request to the received channel create " +
-                        "response message. Message will be ignored [remoteId=" + connKey.nodeId() +
-                        ", idx=" + connKey.connectionIndex() + ']');
-
-                    ses.close();
-
-                    return;
-                }
+            private void handleChannelCreateResponse(
+                GridSelectorNioSessionImpl ses,
+                GridFutureAdapter<Channel> reqFut
+            ) {
+                assert reqFut != null;
 
                 ses.closeSocketOnSessionClose(false);
 
@@ -898,6 +893,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     metricsLsnr.onMessageReceived(msg, connKey.nodeId());
 
+                    if (ses.meta(CHANNEL_FUT_META) != null) {
+                        //Response message received and will be ignored
+                        assert msg instanceof ChannelCreateResponse;
+
+                        handleChannelCreateResponse((GridSelectorNioSessionImpl)ses, ses.meta(CHANNEL_FUT_META));
+
+                        return;
+                    }
+
+                    if (msg instanceof ChannelCreateRequest) {
+                        handleChannelCreateRequest((GridSelectorNioSessionImpl)ses, connKey,
+                            (ChannelCreateRequest)msg);
+
+                        return;
+                    }
+
                     IgniteRunnable c;
 
                     if (msgQueueLimit > 0) {
@@ -917,22 +928,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     else
                         c = NOOP;
 
-                    if (msg instanceof ChannelCreateRequest) {
-                        handleChannelCreateRequest((GridSelectorNioSessionImpl)ses, connKey,
-                            (ChannelCreateRequest)msg);
-
-                        if (c != null)
-                            c.run();
-                    }
-                    else if (msg instanceof ChannelCreateResponse) {
-                        // msg will be ignored.
-                        handleChannelCreateResponse((GridSelectorNioSessionImpl)ses, connKey);
-
-                        if (c != null)
-                            c.run();
-                    }
-                    else
-                        notifyListener(connKey.nodeId(), msg, c);
+                    notifyListener(connKey.nodeId(), msg, c);
                 }
             }
 
@@ -1271,9 +1267,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Clients. */
     private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
-
-    /** Channel creation local requests (registered on #openChannel()) */
-    private final ConcurrentMap<ConnectionKey, GridFutureAdapter<Channel>> channelReqs = new ConcurrentHashMap<>();
 
     /** SPI listener. */
     private volatile CommunicationListenerEx<Message> lsnr;
@@ -4383,13 +4376,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 "[nodeId=" + remote.id() + ']';
 
         ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
-
-        if (channelReqs.get(key) != null) {
-            throw new IgniteSpiException("The channel connection cannot be established to remote node. " +
-                "Connection key already in use [key=" + key + ']');
-        }
-
-        GridFutureAdapter<Channel> result = new GridFutureAdapter<>();
+        GridFutureAdapter<Channel> chFut = new GridFutureAdapter<>();
 
         connectGate.enter();
 
@@ -4400,13 +4387,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             cleanupLocalNodeRecoveryDescriptor(key);
 
-            channelReqs.put(key, result);
-
+            ses.addMeta(CHANNEL_FUT_META, chFut);
             // Send configuration message over the created session.
             ses.send(new ChannelCreateRequest(initMsg))
                 .listen(f -> {
                     if (f.error() != null) {
-                        GridFutureAdapter<Channel> rq = channelReqs.remove(key);
+                        GridFutureAdapter<Channel> rq = ses.meta(CHANNEL_FUT_META);
 
                         assert rq != null;
 
@@ -4428,10 +4414,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         @Override public void onTimeout() {
                             // Close session if request not complete yet.
-                            GridFutureAdapter<Channel> rq = channelReqs.remove(key);
+                            GridFutureAdapter<Channel> rq = ses.meta(CHANNEL_FUT_META);
 
-                            if (rq == null)
-                                return;
+                            assert rq != null;
 
                             if (rq.onDone(handshakeTimeoutException()))
                                 ses.close();
@@ -4439,7 +4424,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     });
                 });
 
-            return result;
+            return chFut;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Unable to create new channel connection to the remote node: " + remote, e);
