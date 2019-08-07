@@ -25,7 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Data row implementation that can optionally hide the cache identifier and can set {@code null} as value.
+ * Data row implementation that can optionally hide the cache identifier and can set {@code null} as value.<br> It is
+ * used to simplify storing a data row into page memory, because in some cases the cache identifier is not stored on the
+ * data pages, but is required to link this data row in {@code BPlusTree}.
  */
 public class DataRowStoreAware extends DataRow {
     /** Flag indicates that cacheId should be stored in data page. */

@@ -619,7 +619,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 written = write(pageId, writeRows, initIo, cur, written, FAIL_I, statHolder);
 
-                assert written != FAIL_I;
+                assert written != FAIL_I; // We can't fail here.
             }
         }
         catch (RuntimeException e) {
@@ -628,11 +628,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Write fragments of the row, which occupy the whole memory page.
+     * Write fragments of the row, which occupy the whole memory page. A data row is ignored if it is less than the max
+     * payload of an empty data page.
      *
      * @param row Row to process.
      * @param statHolder Statistics holder to track IO operations.
-     * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
+     * @return Number of bytes written, {@link #COMPLETE} if the row was fully written, {@code 0} if data row was
+     * ignored because it is less than the max payload of an empty data page.
      * @throws IgniteCheckedException If failed.
      */
     private int writeWholePages(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
