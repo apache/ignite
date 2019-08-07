@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -361,7 +362,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public final boolean onDone(@Nullable Object res, @Nullable Throwable err) {
         assert err != null : "onDone should be called only to finish future with error on cache/node stop";
 
@@ -400,10 +400,46 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         Collection<Object> keys = new ArrayList<>(keys0.size());
 
-        for (KeyCacheObject key : keys0)
-            keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
+        Collection<Object> failedToUnwrapKeys = null;
 
-        err.add(keys, res.error(), req.topologyVersion());
+        Exception suppressedErr = null;
+
+        for (KeyCacheObject key : keys0) {
+            try {
+                keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
+            }
+            catch (BinaryInvalidTypeException e) {
+                keys.add(cctx.toCacheKeyObject(key));
+
+                if (log.isDebugEnabled()) {
+                    if (failedToUnwrapKeys == null)
+                        failedToUnwrapKeys = new ArrayList<>();
+
+                    // To limit keys count in log message.
+                    if (failedToUnwrapKeys.size() < 5)
+                        failedToUnwrapKeys.add(key);
+                }
+
+                suppressedErr = e;
+            }
+            catch (Exception e) {
+                keys.add(cctx.toCacheKeyObject(key));
+
+                suppressedErr = e;
+            }
+        }
+
+        if (failedToUnwrapKeys != null) {
+            log.warning("Failed to unwrap keys: " + failedToUnwrapKeys +
+                " (the binary objects will be used instead).");
+        }
+
+        IgniteCheckedException error = res.error();
+
+        if (suppressedErr != null)
+            error.addSuppressed(suppressedErr);
+
+        err.add(keys, error, req.topologyVersion());
     }
 
     /**
@@ -773,6 +809,12 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
          * @param cctx Context.
          */
         private void initMapping(List<UUID> nodeIds, GridCacheContext cctx) {
+            if (nodeIds.isEmpty() && req.initMappingLocally()) {
+                mappedNodes = U.newHashMap(nodeIds.size());
+
+                rcvdCnt = 0;
+            }
+
             assert rcvdCnt <= nodeIds.size();
 
             expCnt = nodeIds.size();

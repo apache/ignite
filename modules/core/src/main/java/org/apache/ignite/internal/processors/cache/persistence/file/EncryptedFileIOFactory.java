@@ -76,13 +76,6 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        FileIO io = plainIOFactory.create(file);
-
-        return new EncryptedFileIO(io, groupId, pageSize, headerSize, encMgr, encSpi);
-    }
-
-    /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         FileIO io = plainIOFactory.create(file, modes);
 

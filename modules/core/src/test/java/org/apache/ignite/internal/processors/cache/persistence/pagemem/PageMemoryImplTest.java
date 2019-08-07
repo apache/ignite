@@ -44,18 +44,22 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.CHECKPOINT_POOL_OVERFLOW_ERROR_MSG;
+import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
 
 /**
  *
@@ -73,6 +77,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThatAllocationTooMuchPagesCauseToOOMException() throws Exception {
         PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
 
@@ -90,6 +95,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferOverusageDontCauseWriteLockLeak() throws Exception {
         PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
 
@@ -143,6 +149,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled CHECKPOINT_BUFFER_ONLY throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoad() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY);
     }
@@ -151,6 +158,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled SPEED_BASED throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoadSpeedBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.SPEED_BASED);
     }
@@ -159,6 +167,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled TARGET_RATIO_BASED throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoadRatioBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED);
     }
@@ -275,12 +284,14 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration());
         igniteCfg.setFailureHandler(new NoOpFailureHandler());
         igniteCfg.setEncryptionSpi(new NoopEncryptionSpi());
+        igniteCfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
         GridTestKernalContext kernalCtx = new GridTestKernalContext(new GridTestLog4jLogger(), igniteCfg);
 
         kernalCtx.add(new IgnitePluginProcessor(kernalCtx, igniteCfg, Collections.<PluginProvider>emptyList()));
         kernalCtx.add(new GridInternalSubscriptionProcessor(kernalCtx));
         kernalCtx.add(new GridEncryptionManager(kernalCtx));
+        kernalCtx.add(new GridMetricManager(kernalCtx));
 
         FailureProcessor failureProc = new FailureProcessor(kernalCtx);
 
@@ -297,6 +308,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             new NoOpWALManager(),
             null,
             new IgniteCacheDatabaseSharedManager(),
+            null,
+            null,
+            null,
             null,
             null,
             null,
@@ -331,7 +345,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                     return true;
                 }
             },
-            new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()),
+            new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
+                kernalCtx.metric(),
+                NO_OP_METRICS),
             throttlingPlc,
             noThrottle
         );

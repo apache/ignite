@@ -35,6 +35,7 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -43,10 +44,10 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  */
 public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
-    private InnerLogger innerLog;
+    private static InnerLogger innerLog;
 
     /** */
-    private GridTestKernalContext ctx;
+    private static GridTestKernalContext ctx;
 
     /** */
     private static final int THREADS = 4;
@@ -73,6 +74,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /**
      * Multithreaded test, used custom class loader
      */
+    @Test
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

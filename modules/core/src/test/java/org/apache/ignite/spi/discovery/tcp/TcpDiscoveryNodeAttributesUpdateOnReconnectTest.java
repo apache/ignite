@@ -30,8 +30,10 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
 
@@ -67,24 +69,20 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
 
         cfg.setDiscoverySpi(spi);
 
+        cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        TestReconnectPluginProvider.enabled = false;
-
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        TestReconnectPluginProvider.enabled = true;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         Ignite srv = startGrid("server");
 

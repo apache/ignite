@@ -33,8 +33,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -108,9 +108,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final boolean incMeta;
 
     /** */
-    private volatile GridCacheQueryMetricsAdapter metrics;
-
-    /** */
     private volatile int pageSize = Query.DFLT_PAGE_SIZE;
 
     /** */
@@ -140,6 +137,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private MvccSnapshot mvccSnapshot;
 
+    /** */
+    private Boolean dataPageScanEnabled;
+
     /**
      * @param cctx Context.
      * @param type Query type.
@@ -147,14 +147,18 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local query.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable IgniteClosure<Map.Entry, Object> transform,
         @Nullable Integer part,
         boolean keepBinary,
-        boolean forceLocal) {
+        boolean forceLocal,
+        Boolean dataPageScanEnabled
+    ) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
@@ -166,10 +170,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.keepBinary = keepBinary;
         this.forceLocal = forceLocal;
+        this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
-
-        metrics = new GridCacheQueryMetricsAdapter();
 
         this.incMeta = false;
         this.clsName = null;
@@ -185,15 +188,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param part Partition.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable Integer part,
         boolean incMeta,
-        boolean keepBinary) {
+        boolean keepBinary,
+        Boolean dataPageScanEnabled
+    ) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
@@ -206,10 +213,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
+        this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
-
-        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**
@@ -230,8 +236,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param subjId Security subject ID.
      * @param taskHash Task hash.
      * @param mvccSnapshot Mvcc version.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         IgniteLogger log,
         int pageSize,
@@ -247,7 +255,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean keepBinary,
         UUID subjId,
         int taskHash,
-        MvccSnapshot mvccSnapshot) {
+        MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) {
         this.cctx = cctx;
         this.type = type;
         this.log = log;
@@ -265,6 +275,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.mvccSnapshot = mvccSnapshot;
+        this.dataPageScanEnabled = dataPageScanEnabled;
+    }
+
+    /**
+     * @return Flag to enable data page scan.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /**
@@ -423,7 +441,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Key-value filter.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <K, V> IgniteBiPredicate<K, V> scanFilter() {
         return (IgniteBiPredicate<K, V>)filter;
     }
@@ -431,7 +448,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Transformer.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
         return (IgniteClosure<Map.Entry<K, V>, Object>)transform;
     }
@@ -461,22 +477,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return execute0(rmtReducer, args);
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryMetrics metrics() {
-        return metrics.copy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        metrics = new GridCacheQueryMetricsAdapter();
-    }
-
     /**
      * @param rmtReducer Optional reducer.
      * @param args Arguments.
      * @return Future.
      */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @SuppressWarnings({"IfMayBeConditional"})
     private <R> CacheQueryFuture<R> execute0(@Nullable IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         assert type != SCAN : this;
 
@@ -527,7 +533,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
@@ -537,9 +542,17 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty()) {
-            if (part != null && forceLocal)
-                throw new IgniteCheckedException("No queryable nodes for partition " + part
-                    + " [forced local query=" + this + "]");
+            if (part != null) {
+                if (forceLocal) {
+                    throw new IgniteCheckedException("No queryable nodes for partition " + part
+                        + " [forced local query=" + this + "]");
+                }
+
+                if (isSafeLossPolicy()) {
+                    throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
+                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+                }
+            }
 
             return new GridEmptyCloseableIterator();
         }
@@ -563,7 +576,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             GridNearTxLocal tx = cctx.tm().userTx();
 
             if (tx != null)
-                mvccSnapshot = MvccUtils.requestSnapshot(cctx, tx);
+                mvccSnapshot = MvccUtils.requestSnapshot(tx);
             else {
                 mvccTracker = MvccUtils.mvccTracker(cctx, null);
 
@@ -585,6 +598,16 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             it = qryMgr.scanQueryDistributed(this, nodes);
 
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
+    }
+
+    /**
+     * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
+     */
+    private boolean isSafeLossPolicy() {
+        PartitionLossPolicy lossPlc = cctx.cache().configuration().getPartitionLossPolicy();
+
+        return lossPlc == PartitionLossPolicy.READ_ONLY_SAFE ||
+            lossPlc == PartitionLossPolicy.READ_WRITE_SAFE;
     }
 
     /**
@@ -921,6 +944,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private static class MvccTrackingIterator implements GridCloseableIterator {
         /** Serial version uid. */
         private static final long serialVersionUID = -1905248502802333832L;
+
         /** Underlying iterator. */
         private final GridCloseableIterator it;
 

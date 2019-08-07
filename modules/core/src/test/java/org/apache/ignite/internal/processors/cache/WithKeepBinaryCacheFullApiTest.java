@@ -36,6 +36,8 @@ import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstrac
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.PLANE_OBJECT;
@@ -110,7 +112,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     };
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = super.cacheConfiguration();
 
@@ -123,6 +124,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testRemovePutGet() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -178,6 +180,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testRemovePutGetAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -204,7 +207,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                         }
                     }
                 });
-
 
                 for (final Object key : keys) {
                     runInAllTxModes(new TestRunnable() {
@@ -234,6 +236,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testPutAllGetAll() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -301,6 +304,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testPutAllGetAllAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -374,6 +378,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testInvoke() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -439,6 +444,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -558,6 +564,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testInvokeAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -623,6 +630,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAsyncTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -744,6 +752,8 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11884")
+    @Test
     public void testInvokeAll() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -794,7 +804,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
+    @Test
     public void testInvokeAllTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -927,6 +937,8 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11884")
+    @Test
     public void testInvokeAllAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -984,7 +996,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
+    @Test
     public void testInvokeAllAsyncTx() throws Exception {
         if (!txShouldBeUsed())
             return;

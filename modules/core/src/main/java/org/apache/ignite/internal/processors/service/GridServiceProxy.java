@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 
@@ -63,9 +62,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 public class GridServiceProxy<T> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final IgniteProductVersion SVC_POOL_SINCE_VER = IgniteProductVersion.fromString("1.8.5");
 
     /** Grid logger. */
     @GridToStringExclude
@@ -104,7 +100,6 @@ public class GridServiceProxy<T> implements Serializable {
      * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
      */
-    @SuppressWarnings("unchecked")
     public GridServiceProxy(ClusterGroup prj,
         String name,
         Class<? super T> svc,
@@ -185,8 +180,7 @@ public class GridServiceProxy<T> implements Serializable {
                         }
                     }
                     else {
-                        if (node.version().compareTo(SVC_POOL_SINCE_VER) >= 0)
-                            ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
+                        ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
 
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
@@ -198,19 +192,15 @@ public class GridServiceProxy<T> implements Serializable {
                             true).get();
                     }
                 }
-                catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
-                }
                 catch (RuntimeException | Error e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
                     // Check if ignorable exceptions are in the cause chain.
-                    Throwable ignorableCause = X.cause(e, GridServiceNotFoundException.class);
+                    Throwable ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
 
-                    if (ignorableCause == null)
-                        ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
+                    if (ignorableCause == null && ctx.service() instanceof GridServiceProcessor)
+                        ignorableCause = X.cause(e, GridServiceNotFoundException.class);
 
                     if (ignorableCause != null) {
                         if (log.isDebugEnabled())
@@ -370,7 +360,6 @@ public class GridServiceProxy<T> implements Serializable {
     private class ProxyInvocationHandler implements InvocationHandler {
 
         /** {@inheritDoc} */
-        @SuppressWarnings("BusyWait")
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
             return invokeMethod(mtd, args);
         }

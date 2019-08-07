@@ -35,6 +35,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Responsible for performing truncate selection.
@@ -107,12 +108,8 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
         return list;
     }
 
-    /**
-     * @param nodes List of ClusterNode.
-     * @param chromosomeKeys Primary keys for respective chromosomes.
-     * @return Map of nodes to jobs.
-     */
-    public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
+    /** {@inheritDoc} */
+    @NotNull @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
         Affinity affinity = ignite.affinity(GAGridConstants.POPULATION_CACHE);
 
@@ -129,22 +126,13 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
         return map;
     }
 
-    /**
-     * We return TRUE if success, else Exception is thrown.
-     *
-     * @param list List of ComputeJobResult.
-     * @return Boolean value.
-     */
-    public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         return Boolean.TRUE;
     }
 
-    /**
-     * @param res ComputeJobResult.
-     * @param rcvd List of ComputeJobResult.
-     * @return ComputeJobResultPolicy.
-     */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         IgniteException err = res.getException();
 
         if (err != null)

@@ -194,7 +194,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param sndId Sender node id.
      * @param req Query request.
      */
-    @SuppressWarnings("unchecked")
     @Override void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
@@ -282,7 +281,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.keepBinary(),
                 req.subjectId(),
                 req.taskHash(),
-                req.mvccSnapshot()
+                req.mvccSnapshot(),
+                req.isDataPageScanEnabled()
             );
 
         return new GridCacheQueryInfo(
@@ -535,7 +535,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             qry.query().validate();
 
             String clsName = qry.query().queryClassName();
-
+            Boolean dataPageScanEnabled = qry.query().isDataPageScanEnabled();
             MvccSnapshot mvccSnapshot = qry.query().mvccSnapshot();
 
             final GridCacheQueryRequest req = new GridCacheQueryRequest(
@@ -560,7 +560,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 queryTopologyVersion(),
                 mvccSnapshot,
                 // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
+                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()),
+                dataPageScanEnabled);
 
             addQueryFuture(req.id(), fut);
 
@@ -691,7 +692,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.taskHash(),
                 queryTopologyVersion(),
                 // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()));
+                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
+                qry.isDataPageScanEnabled());
 
             sendRequest(fut, req, nodes);
         }
@@ -722,7 +724,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
         Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
@@ -759,7 +760,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().taskHash(),
                 queryTopologyVersion(),
                 null,
-                cctx.deploymentEnabled());
+                cctx.deploymentEnabled(),
+                qry.query().isDataPageScanEnabled());
 
             addQueryFuture(req.id(), fut);
 
@@ -790,7 +792,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param nodes Nodes.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings("unchecked")
     private void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
         final GridCacheQueryRequest req,
@@ -892,7 +893,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"unchecked"})
         @Override public boolean equals(Object obj) {
             if (obj == this)
                 return true;

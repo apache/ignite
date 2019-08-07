@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -123,6 +124,7 @@ public class JdbcNoCacheStreamingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsert() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
@@ -152,6 +154,7 @@ public class JdbcNoCacheStreamingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsertWithOverwritesAllowed() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);

@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -57,6 +58,7 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLock() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -74,6 +76,7 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
     /**
      * @throws Exception In case of error.
      */
+    @Test
     @Override public void testGetAll() throws Exception {
         jcache().put("key1", 1);
         jcache().put("key2", 2);

@@ -29,18 +29,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Base class for  {@link IgnitePdsDestroyCacheTest} and {@link IgnitePdsDestroyCacheWithoutCheckpointsTest}
  */
 public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     protected static final int CACHES = 3;
 
@@ -54,9 +48,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        return cfg.setDiscoverySpi(new TcpDiscoverySpi()
-                        .setIpFinder(IP_FINDER))
-                        .setDataStorageConfiguration(new DataStorageConfiguration()
+        return cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                                 .setMaxSize(200 * 1024 * 1024)
                                 .setPersistenceEnabled(true)));
@@ -130,7 +122,6 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
                 assertNotNull("Check that cache2 contains key: " + j + " node: " + ignite.name(), cache.get(j));
         }
     }
-
 
     /**
      * @param ignite Ignite instance.

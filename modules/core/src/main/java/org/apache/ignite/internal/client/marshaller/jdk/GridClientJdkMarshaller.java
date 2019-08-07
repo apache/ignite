@@ -76,7 +76,6 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         ByteArrayInputStream tmp = new ByteArrayInputStream(bytes);
 
@@ -96,7 +95,6 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
     private static class ClientJdkInputStream extends ObjectInputStream {
         /** Class name filter. */
         private final IgnitePredicate<String> clsFilter;
-
 
         /**
          * @param in Input stream.

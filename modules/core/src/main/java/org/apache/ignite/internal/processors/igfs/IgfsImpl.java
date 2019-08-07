@@ -276,6 +276,9 @@ public final class IgfsImpl implements IgfsEx {
         // Restore interrupted flag.
         if (interrupted)
             Thread.currentThread().interrupt();
+
+        if (dualPool != null)
+            dualPool.shutdownNow();
     }
 
     /**
@@ -411,7 +414,6 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public IgfsStatus globalSpace() {
         return safeOp(new Callable<IgfsStatus>() {
             @Override public IgfsStatus call() throws Exception {
@@ -452,6 +454,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         });
     }
+
     /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         return data.groupBlockSize();
@@ -762,7 +765,6 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         A.notNull(path, "path");
 
@@ -1551,7 +1553,6 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    @SuppressWarnings("unchecked")
     <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
@@ -1787,7 +1788,6 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * IGFS thread factory.
      */
-    @SuppressWarnings("NullableProblems")
     private static class IgfsThreadFactory implements ThreadFactory {
         /** IGFS name. */
         private final String name;

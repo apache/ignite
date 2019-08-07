@@ -28,7 +28,7 @@ if "%OS%" == "Windows_NT"  setlocal
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.8 or JDK 9.
+    echo Please point JAVA_HOME variable to location of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -37,7 +37,7 @@ goto error_finish
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR:
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -52,13 +52,13 @@ for /f "tokens=* USEBACKQ" %%f in (`%cmd% -version 2^>^&1`) do (
 for /f "tokens=1-3  delims= " %%a in ("%var%") do set JAVA_VER_STR=%%c
 set JAVA_VER_STR=%JAVA_VER_STR:"=%
 
-for /f "tokens=1,2 delims=." %%a in ("%JAVA_VER_STR%.x") do set MAJOR_JAVA_VER=%%a & set MINOR_JAVA_VER=%%b
+for /f "tokens=1,2 delims=." %%a in ("%JAVA_VER_STR%.x") do set MAJOR_JAVA_VER=%%a& set MINOR_JAVA_VER=%%b
 if %MAJOR_JAVA_VER% == 1 set MAJOR_JAVA_VER=%MINOR_JAVA_VER%
 
 if %MAJOR_JAVA_VER% LSS 8 (
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 	goto error_finish
 )
@@ -228,7 +228,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.startup.cmdline.Command
 ::
 :: Final JVM_OPTS for Java 9+ compatibility
 ::
-if "%MAJOR_JAVA_VER%" == "8" (
+if %MAJOR_JAVA_VER% == 8 (
     set JVM_OPTS= ^
     -XX:+AggressiveOpts ^
     %JVM_OPTS%
@@ -243,12 +243,11 @@ if %MAJOR_JAVA_VER% GEQ 9 if %MAJOR_JAVA_VER% LSS 11 (
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
     --illegal-access=permit ^
-    --add-modules=java.transaction ^
     --add-modules=java.xml.bind ^
     %JVM_OPTS%
 )
 
-if "%MAJOR_JAVA_VER%" == "11" (
+if %MAJOR_JAVA_VER% GEQ 11 (
     set JVM_OPTS= ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^

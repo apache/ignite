@@ -17,10 +17,14 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * Data storage metrics are used to obtain statistics on persistent store and whole data storage.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public interface DataStorageMetrics {
     /**
      * Gets the average number of WAL records per second written during the last time interval.
@@ -212,4 +216,22 @@ public interface DataStorageMetrics {
      * @return Checkpoint buffer size in bytes.
      */
     public long getCheckpointBufferSize();
+
+    /**
+     * Storage space allocated in bytes.
+     *
+     * @return Storage space allocated in bytes.
+     */
+    public long getStorageSize();
+
+    /**
+     * Storage space allocated adjusted for possible sparsity in bytes.
+     *
+     * May produce unstable or even incorrect result on some file systems (e.g. XFS).
+     * Known to work correctly on Ext4 and Btrfs.
+     *
+     * @return Storage space allocated adjusted for possible sparsity in bytes
+     *         or negative value is not supported.
+     */
+    public long getSparseStorageSize();
 }

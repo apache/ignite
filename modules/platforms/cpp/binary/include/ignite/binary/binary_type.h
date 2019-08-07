@@ -18,7 +18,7 @@
 /**
  * @file
  * Declares ignite::binary::BinaryType class template and helping macros
- * to declare binary type specialisation for user types.
+ * to declare binary type specialization for user types.
  */
 
 #ifndef _IGNITE_BINARY_BINARY_TYPE
@@ -91,7 +91,7 @@ static int32_t GetFieldId(const char* name) \
  * Implementation of IsNull() function which always returns false.
  */
 #define IGNITE_BINARY_IS_NULL_FALSE(T) \
-static bool IsNull(const T& obj) \
+static bool IsNull(const T&) \
 { \
     return false; \
 }
@@ -108,7 +108,7 @@ static bool IsNull(const T& obj) \
 
 /**
  * @def IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T)
- * Implementation of GetNull() function which returns an instance created with defult constructor.
+ * Implementation of GetNull() function which returns an instance created with default constructor.
  */
 #define IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T) \
 static void GetNull(T& dst) \
@@ -149,7 +149,73 @@ namespace ignite
         struct IGNITE_IMPORT_EXPORT BinaryType { };
 
         /**
-         * Templated binary type specification for pointers.
+         * Default implementations of BinaryType hashing functions.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeDefaultHashing
+        {
+            /**
+             * Get binary object type ID.
+             *
+             * @return Type ID.
+             */
+            static int32_t GetTypeId()
+            {
+                std::string typeName;
+                BinaryType<T>::GetTypeName(typeName);
+
+                return GetBinaryStringHashCode(typeName.c_str());
+            }
+
+            /**
+             * Get binary object field ID.
+             *
+             * @param name Field name.
+             * @return Field ID.
+             */
+            static int32_t GetFieldId(const char* name)
+            {
+                return GetBinaryStringHashCode(name);
+            }
+        };
+
+        /**
+         * Default implementations of BinaryType methods for non-null type.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeNonNullableType
+        {
+            /**
+             * Check whether passed binary object should be interpreted as NULL.
+             *
+             * @return True if binary object should be interpreted as NULL.
+             */
+            static bool IsNull(const T&)
+            {
+                return false;
+            }
+
+            /**
+             * Get NULL value for the given binary type.
+             *
+             * @param dst Null value for the type.
+             */
+            static void GetNull(T& dst)
+            {
+                dst = T();
+            }
+        };
+
+        /**
+         * Default implementations of BinaryType hashing functions and non-null type behaviour.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeDefaultAll :
+            BinaryTypeDefaultHashing<T>,
+            BinaryTypeNonNullableType<T> { };
+
+        /**
+         * BinaryType template specialization for pointers.
          */
         template <typename T>
         struct IGNITE_IMPORT_EXPORT BinaryType<T*>
@@ -226,7 +292,7 @@ namespace ignite
             /**
              * Get NULL value for the given binary type.
              *
-             * @param dst Null value for the type.
+             * @param dst NULL value for the type.
              */
             static void GetNull(T*& dst)
             {

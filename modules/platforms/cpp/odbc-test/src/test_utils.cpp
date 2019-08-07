@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <boost/test/unit_test.hpp>
+
 #include <cassert>
 
 #include <ignite/common/platform_utils.h>
@@ -23,6 +25,21 @@
 
 namespace ignite_test
 {
+    OdbcClientError GetOdbcError(SQLSMALLINT handleType, SQLHANDLE handle)
+    {
+        SQLCHAR sqlstate[7] = {};
+        SQLINTEGER nativeCode;
+
+        SQLCHAR message[ODBC_BUFFER_SIZE];
+        SQLSMALLINT reallen = 0;
+
+        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
+
+        return OdbcClientError(
+            std::string(reinterpret_cast<char*>(sqlstate)),
+            std::string(reinterpret_cast<char*>(message), reallen));
+    }
+
     std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle)
     {
         SQLCHAR sqlstate[7] = {};
@@ -76,6 +93,7 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_QUIET=false");
         cfg.jvmOpts.push_back("-DIGNITE_CONSOLE_APPENDER=false");
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
+        cfg.jvmOpts.push_back("-DIGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP=false");
         cfg.jvmOpts.push_back("-Duser.language=en");
         // Un-comment to debug SSL
         //cfg.jvmOpts.push_back("-Djavax.net.debug=ssl");

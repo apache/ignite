@@ -30,10 +30,8 @@ const injector = require('./injector');
 injector.log.info = () => {};
 injector.log.debug = () => {};
 
-Promise.all([injector('settings'), injector('mongo')])
-    .then(([{mongoUrl}]) => {
-        return migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations'));
-    })
+injector('mongo')
+    .then((mongo) => migrate(mongo.connection, 'Ignite', path.join(__dirname, 'migrations')))
     .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
     .then(init)
     .catch((err) => {

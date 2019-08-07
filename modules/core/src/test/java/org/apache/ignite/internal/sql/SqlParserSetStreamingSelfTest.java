@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.junit.Test;
 
 /**
  * Tests for SQL parser: SET STREAMING.
@@ -27,6 +28,7 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testParseSetStreaming() {
         parseValidate("set streaming on", true, false, 2048, 0, 0, 0, false);
         parseValidate("set streaming 1", true, false, 2048, 0, 0, 0, false);
@@ -46,7 +48,6 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
         parseValidate("set streaming on batch_size 100 ordered", true, false, 100, 0, 0, 0, true);
         parseValidate("set streaming on per_node_buffer_size 50 flush_frequency 500 " +
             "per_node_parallel_operations 4 allow_overwrite on batch_size 100 ordered", true, true, 100, 4, 50, 500, true);
-
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set",
             "Failed to parse SQL statement \"set[*]\": Unexpected end of command (expected: \"STREAMING\")");

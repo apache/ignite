@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CachingProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
 
 /**
  *
@@ -90,6 +91,7 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     /**
      *
      */
+    @Test
     public void testStartIgnite() {
         javax.cache.spi.CachingProvider cachingProvider = Caching.getCachingProvider();
 
@@ -118,6 +120,7 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCloseManager() throws Exception {
         startGridsMultiThreaded(1);
 

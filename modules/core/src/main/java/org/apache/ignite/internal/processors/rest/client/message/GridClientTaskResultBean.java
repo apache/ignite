@@ -73,7 +73,6 @@ public class GridClientTaskResultBean implements Externalizable {
     /**
      * @return Task result.
      */
-    @SuppressWarnings("unchecked")
     public <R> R getResult() {
         return (R)res;
     }

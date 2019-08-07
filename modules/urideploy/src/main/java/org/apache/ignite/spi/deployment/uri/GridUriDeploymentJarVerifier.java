@@ -159,7 +159,7 @@ final class GridUriDeploymentJarVerifier {
 
             Manifest manifest = jin.getManifest();
 
-            // Manifest must be included in signed GAR file.
+            // Manifest must be included into a signed package.
             if (manifest == null)
                 return pubKey == null;
 
@@ -218,7 +218,7 @@ final class GridUriDeploymentJarVerifier {
 
             Manifest manifest = jarFile.getManifest();
 
-            // Manifest must be included in signed GAR file.
+            // Manifest must be included into a signed package.
             if (manifest == null)
                 return pubKey == null;
 
@@ -387,9 +387,8 @@ final class GridUriDeploymentJarVerifier {
         if (signers != null) {
             List<Certificate> certChains = new ArrayList<>();
 
-            for (CodeSigner signer : signers) {
+            for (CodeSigner signer : signers)
                 certChains.addAll(signer.getSignerCertPath().getCertificates());
-            }
 
             // Convert into a Certificate[]
             return certChains.toArray(new Certificate[certChains.size()]);

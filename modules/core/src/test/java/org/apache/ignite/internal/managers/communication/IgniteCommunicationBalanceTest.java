@@ -36,19 +36,14 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -67,8 +62,6 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         if (selectors > 0)
             commSpi.setSelectorsCount(selectors);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setClientMode(client);
 
@@ -109,6 +102,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBalance1() throws Exception {
         if (sslEnabled())
             return;
@@ -210,6 +204,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBalance2() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "1000");
 
@@ -317,6 +312,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomBalance() throws Exception {
         System.setProperty(GridNioServer.IGNITE_IO_BALANCE_RANDOM_BALANCE, "true");
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "500");

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -27,11 +28,13 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -52,14 +55,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Thin client handshake code. */
     public static final byte THIN_CLIENT = 2;
 
-    /** Connection handshake passed. */
-    public static final int CONN_CTX_HANDSHAKE_PASSED = GridNioSessionMetaKey.nextUniqueKey();
-
-    /** Maximum size of the handshake message. */
-    public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
+    /** Connection handshake timeout task. */
+    public static final int CONN_CTX_HANDSHAKE_TIMEOUT_TASK = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Connection-related metadata key. */
-    static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Next connection id. */
     private static AtomicInteger nextConnId = new AtomicInteger(1);
@@ -92,9 +92,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         this.ctx = ctx;
         this.busyLock = busyLock;
-        this.maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         this.cliConnCfg = cliConnCfg;
 
+        maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         log = ctx.log(getClass());
     }
 
@@ -102,6 +102,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
             log.debug("Client connected: " + ses.remoteAddress());
+
+        long handshakeTimeout = cliConnCfg.getHandshakeTimeout();
+
+        if (handshakeTimeout > 0)
+            scheduleHandshakeTimeout(ses, handshakeTimeout);
     }
 
     /** {@inheritDoc} */
@@ -126,7 +131,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
         if (connCtx == null) {
-            onHandshake(ses, msg);
+            try {
+                onHandshake(ses, msg);
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to handle handshake request " +
+                    "(probably, connection has already been closed).", e);
+            }
 
             return;
         }
@@ -140,6 +151,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             req = parser.decode(msg);
         }
         catch (Exception e) {
+            try {
+                handler.unregisterRequest(parser.decodeRequestId(msg));
+            }
+            catch (Exception e1) {
+                U.error(log, "Failed to unregister request.", e1);
+            }
+
             U.error(log, "Failed to parse client request.", e);
 
             ses.close();
@@ -159,7 +177,20 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
-            ClientListenerResponse resp = handler.handle(req);
+            ClientListenerResponse resp;
+
+            AuthorizationContext authCtx = connCtx.authorizationContext();
+
+            if (authCtx != null)
+                AuthorizationContext.context(authCtx);
+
+            try(OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
+                resp = handler.handle(req);
+            }
+            finally {
+                if (authCtx != null)
+                    AuthorizationContext.clear();
+            }
 
             if (resp != null) {
                 if (log.isDebugEnabled()) {
@@ -175,6 +206,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             }
         }
         catch (Exception e) {
+            handler.unregisterRequest(req.requestId());
+
             U.error(log, "Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
@@ -184,6 +217,42 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** {@inheritDoc} */
     @Override public void onSessionIdleTimeout(GridNioSession ses) {
         ses.close();
+    }
+
+    /**
+     * Schedule handshake timeout.
+     * @param ses Connection session.
+     * @param handshakeTimeout Handshake timeout.
+     */
+    private void scheduleHandshakeTimeout(GridNioSession ses, long handshakeTimeout) {
+        assert handshakeTimeout > 0;
+
+        Closeable timeoutTask = ctx.timeout().schedule(new Runnable() {
+            @Override public void run() {
+                ses.close();
+
+                U.warn(log, "Unable to perform handshake within timeout " +
+                    "[timeout=" + handshakeTimeout + ", remoteAddr=" + ses.remoteAddress() + ']');
+            }
+        }, handshakeTimeout, -1);
+
+        ses.addMeta(CONN_CTX_HANDSHAKE_TIMEOUT_TASK, timeoutTask);
+    }
+
+    /**
+     * Cancel handshake timeout task execution.
+     * @param ses Connection session.
+     */
+    private void cancelHandshakeTimeout(GridNioSession ses) {
+        Closeable timeoutTask = ses.removeMeta(CONN_CTX_HANDSHAKE_TIMEOUT_TASK);
+
+        try {
+            if (timeoutTask != null)
+                timeoutTask.close();
+        } catch (Exception e) {
+            U.warn(log, "Failed to cancel handshake timeout task " +
+                "[remoteAddr=" + ses.remoteAddress() + ", err=" + e + ']');
+        }
     }
 
     /**
@@ -232,9 +301,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             else
                 throw new IgniteCheckedException("Unsupported version.");
 
-            connCtx.handler().writeHandshake(writer);
+            cancelHandshakeTimeout(ses);
 
-            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
+            connCtx.handler().writeHandshake(writer);
         }
         catch (IgniteAccessControlException authEx) {
             writer.writeBoolean(false);
@@ -256,7 +325,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             if (connCtx == null)
                 currVer = ClientListenerProtocolVersion.create(0, 0, 0);
             else
-                currVer = connCtx.currentVersion();
+                currVer = connCtx.defaultVersion();
 
             writer.writeBoolean(false);
 

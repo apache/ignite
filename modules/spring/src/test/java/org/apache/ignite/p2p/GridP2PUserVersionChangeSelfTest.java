@@ -34,14 +34,12 @@ import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -58,7 +56,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  * 3. The test should execute a task in SHARED_UNDEPLOY mode, restart a node with same version and
  *      make sure that a new class loader is created on remote node.
  */
-@SuppressWarnings({"ProhibitedExceptionDeclared", "ObjectEquality", "unchecked"})
+@SuppressWarnings({"ProhibitedExceptionDeclared", "unchecked"})
 public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. */
     private DeploymentMode depMode;
@@ -68,9 +66,6 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
     /** Test resource class name. */
     private static final String TEST_RCRS_NAME = "org.apache.ignite.tests.p2p.TestUserResource";
-
-    /** IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     public GridP2PUserVersionChangeSelfTest() {
@@ -96,12 +91,6 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         cfg.setDeploymentMode(depMode);
         cfg.setNetworkTimeout(10000);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         if (igniteInstanceName.contains("testCacheRedeployVersionChangeContinuousMode")) {
             CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -118,6 +107,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRedeployVersionChangeContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -127,6 +117,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRedeployVersionChangeSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -183,6 +174,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRedeployOnNodeRestartContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -228,6 +220,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRedeployOnNodeRestartSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -286,7 +279,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-604", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-604")
+    @Test
     public void testCacheRedeployVersionChangeContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 

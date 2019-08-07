@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.concurrent.LinkedBlockingQueue;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -50,7 +49,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
     private final GridKernalContext ctx;
 
     /** Response */
-    private final static ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+    private static final ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
         "Connection closed.");
 
     /**
@@ -87,7 +86,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
                 GridFutureAdapter<ClientListenerResponse> fut = req.get2();
 
                 try {
-                    ClientListenerResponse res = hnd.doHandle(req.get1());
+                    JdbcResponse res = hnd.doHandle(req.get1());
 
                     fut.onDone(res);
                 }
@@ -101,7 +100,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
             try {
                 ctx.query().getIndexing().onClientDisconnect();
             }
-            catch (Exception e) {
+            catch (Exception ignored) {
                 // No-op.
             }
 

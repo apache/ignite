@@ -17,8 +17,18 @@
 
 package org.apache.ignite.testframework.configvariations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import junit.framework.TestSuite;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import javassist.ClassClassPath;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtNewConstructor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
@@ -31,15 +41,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ConfigVariationsTestSuiteBuilder {
     /** */
-    private final TestSuite suite;
+    private static final AtomicInteger cntr = new AtomicInteger(0);
 
     /** */
-    @SuppressWarnings("unchecked")
+    private static final Map<String, VariationsTestsConfig> cfgs = new ConcurrentHashMap<>();
+
+    /** */
     private ConfigParameter<IgniteConfiguration>[][] igniteParams =
         ConfigVariations.igniteBasicSet();
 
     /** */
-    @SuppressWarnings("unchecked")
     private ConfigParameter<CacheConfiguration>[][] cacheParams;
 
     /** */
@@ -76,27 +87,31 @@ public class ConfigVariationsTestSuiteBuilder {
     private boolean skipWaitPartMapExchange;
 
     /**
-     * @param name Name.
      * @param cls Test class.
      */
-    public ConfigVariationsTestSuiteBuilder(String name, Class<? extends IgniteConfigVariationsAbstractTest> cls) {
-        suite = new TestSuite(name);
+    public ConfigVariationsTestSuiteBuilder(Class<? extends IgniteConfigVariationsAbstractTest> cls) {
         this.cls = cls;
     }
 
+    /** Invoked by reflection in {@link #makeTestClass(String, VariationsTestsConfig)}. */
+    @SuppressWarnings("unused")
+    public static VariationsTestsConfig getCfg(String key) {
+        return cfgs.get(key);
+    }
+
     /**
-     * @return Test suite.
+     * Returns lists of test classes to execute with config variations.
+     *
+     * @return List of classes.
      */
-    public TestSuite build() {
+    public List<Class<?>> classes() {
         assert testedNodeCnt > 0;
         assert gridsCnt > 0;
 
-        VariationsIterator igniteCfgIter;
+        VariationsIterator igniteCfgIter = specificIgniteParam == null ? new VariationsIterator(igniteParams)
+            : new OneElementVariationsIterator(specificIgniteParam, igniteParams);
 
-        if (specificIgniteParam == null)
-            igniteCfgIter = new VariationsIterator(igniteParams);
-        else
-            igniteCfgIter = new OneElementVariationsIterator(specificIgniteParam, igniteParams);
+        final List<VariationsTestsConfig> cfgsToTest = new ArrayList<>();
 
         for (; igniteCfgIter.hasNext(); ) {
             final int[] igniteCfgVariation = igniteCfgIter.next();
@@ -105,35 +120,29 @@ public class ConfigVariationsTestSuiteBuilder {
                 continue;
 
             if (cacheParams == null) {
-                TestSuite addedSuite = build(igniteCfgVariation, null, true);
-
-                suite.addTest(addedSuite);
+                cfgsToTest.addAll(build(igniteCfgVariation, null, true));
+                continue;
             }
-            else {
-                VariationsIterator cacheCfgIter;
 
-                if (specificCacheParam == null)
-                    cacheCfgIter = new VariationsIterator(cacheParams);
-                else
-                    cacheCfgIter = new OneElementVariationsIterator(specificCacheParam, cacheParams);
+            VariationsIterator cacheCfgIter = specificCacheParam == null ? new VariationsIterator(cacheParams)
+                : new OneElementVariationsIterator(specificCacheParam, cacheParams);
 
-                for (; cacheCfgIter.hasNext(); ) {
-                    int[] cacheCfgVariation = cacheCfgIter.next();
+            for (; cacheCfgIter.hasNext(); ) {
+                int[] cacheCfgVariation = cacheCfgIter.next();
 
-                    if (!passCacheConfigFilter(cacheCfgVariation))
-                        continue;
+                if (!passCacheConfigFilter(cacheCfgVariation))
+                    continue;
 
-                    // Stop all grids before starting new ignite configuration.
-                    boolean stopNodes = !cacheCfgIter.hasNext();
+                // Stop all grids before starting new ignite configuration.
+                boolean stopNodes = !cacheCfgIter.hasNext();
 
-                    TestSuite addedSuite = build(igniteCfgVariation, cacheCfgVariation, stopNodes);
-
-                    suite.addTest(addedSuite);
-                }
+                cfgsToTest.addAll(build(igniteCfgVariation, cacheCfgVariation, stopNodes));
             }
         }
 
-        return suite;
+        String pkg = "org.apache.ignite.testframework.configvariations.generated";
+
+        return cfgsToTest.stream().map(cfg -> makeTestClass(pkg, cfg)).collect(Collectors.toList());
     }
 
     /**
@@ -178,9 +187,10 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param igniteCfgVariation Ignite Variation.
      * @param cacheCfgVariation Cache Variation.
      * @param stopNodes Stop nodes.
-     * @return Test suite.
+     * @return List of config variations.
      */
-    private TestSuite build(int[] igniteCfgVariation, @Nullable int[] cacheCfgVariation, boolean stopNodes) {
+    private List<VariationsTestsConfig> build(int[] igniteCfgVariation, @Nullable int[] cacheCfgVariation,
+        boolean stopNodes) {
         ConfigVariationsFactory factory = new ConfigVariationsFactory(igniteParams,
             igniteCfgVariation, cacheParams, cacheCfgVariation);
 
@@ -194,25 +204,17 @@ public class ConfigVariationsTestSuiteBuilder {
         VariationsTestsConfig testCfg = new VariationsTestsConfig(factory, clsNameSuffix, stopNodes, cacheStartMode,
             gridsCnt, !skipWaitPartMapExchange);
 
-        TestSuite addedSuite;
-
-        if (testedNodeCnt > 1)
-            addedSuite = createMultiNodeTestSuite((Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls,
-                testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange);
-       else
-            addedSuite = new IgniteConfigVariationsTestSuite(cls, testCfg);
-
-        return addedSuite;
+        return testedNodeCnt > 1 ? createMultiNodeTestSuite(
+            testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange) : Collections.singletonList(testCfg);
     }
 
     /**
-     * @param cls Test class.
      * @param cfg Configuration.
      * @param testedNodeCnt Count of tested nodes.
      */
-    private static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigVariationsAbstractTest> cls,
+    private static List<VariationsTestsConfig> createMultiNodeTestSuite(
         VariationsTestsConfig cfg, int testedNodeCnt, boolean withClients, boolean skipWaitParMapExchange) {
-        TestSuite suite = new TestSuite();
+        List<VariationsTestsConfig> suite = new ArrayList<>();
 
         if (cfg.gridCount() < testedNodeCnt)
             throw new IllegalArgumentException("Failed to initialize test suite [nodeCnt=" + testedNodeCnt
@@ -227,7 +229,7 @@ public class ConfigVariationsTestSuiteBuilder {
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients,
                 !skipWaitParMapExchange);
 
-            suite.addTest(new IgniteConfigVariationsTestSuite(cls, cfg0));
+            suite.add(cfg0);
         }
 
         return suite;
@@ -282,7 +284,7 @@ public class ConfigVariationsTestSuiteBuilder {
      */
     public ConfigVariationsTestSuiteBuilder igniteParams(
         ConfigParameter<IgniteConfiguration>[][] igniteParams) {
-        this.igniteParams = igniteParams;
+        this.igniteParams = igniteParams.clone();
 
         return this;
     }
@@ -291,8 +293,9 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param cacheParams New cache params.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unused")
     public ConfigVariationsTestSuiteBuilder cacheParams(ConfigParameter<CacheConfiguration>[][] cacheParams) {
-        this.cacheParams = cacheParams;
+        this.cacheParams = cacheParams.clone();
 
         return this;
     }
@@ -325,8 +328,9 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param singleIgniteParam Param.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unused")
     public ConfigVariationsTestSuiteBuilder specifyIgniteParam(int... singleIgniteParam) {
-        specificIgniteParam = singleIgniteParam;
+        specificIgniteParam = singleIgniteParam.clone();
 
         return this;
     }
@@ -335,8 +339,9 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param singleParam Param.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unused")
     public ConfigVariationsTestSuiteBuilder specifyCacheParam(int... singleParam) {
-        specificCacheParam = singleParam;
+        specificCacheParam = singleParam.clone();
 
         return this;
     }
@@ -346,11 +351,12 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigVariationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
-        igniteCfgFilters = filters;
+        igniteCfgFilters = filters.clone();
 
         return this;
     }
 
+    /** */
     public ConfigVariationsTestSuiteBuilder skipWaitPartitionMapExchange() {
         skipWaitPartMapExchange = true;
 
@@ -362,14 +368,12 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigVariationsTestSuiteBuilder withCacheConfigFilters(IgnitePredicate<CacheConfiguration>... filters) {
-        cacheCfgFilters = filters;
+        cacheCfgFilters = filters.clone();
 
         return this;
     }
 
-    /**
-     *
-     */
+    /** */
     private static class OneElementVariationsIterator extends VariationsIterator {
         /** */
         private int[] elem;
@@ -392,10 +396,47 @@ public class ConfigVariationsTestSuiteBuilder {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
         @Override public int[] next() {
             hasNext = false;
 
-            return elem;
+            return elem.clone();
+        }
+    }
+
+    /**
+     * Creates test class for given config variation.
+     *
+     * @param pkg Package to put class in.
+     * @param cfg Config variation.
+     * @return Test class.
+     */
+    private Class<?> makeTestClass(String pkg, VariationsTestsConfig cfg) {
+        int idx = cntr.getAndIncrement();
+
+        String clsName = cls.getSimpleName() + "_" + idx;
+
+        cfgs.put(clsName, cfg);
+
+        ClassPool cp = ClassPool.getDefault();
+        cp.insertClassPath(new ClassClassPath(ConfigVariationsTestSuiteBuilder.class));
+
+        CtClass cl = cp.makeClass(pkg + "." + clsName);
+
+        try {
+            cl.setSuperclass(cp.get(cls.getName()));
+
+            cl.addConstructor(CtNewConstructor.make("public " + clsName + "() { "
+                    + "this.testsCfg = "
+                    + ConfigVariationsTestSuiteBuilder.class.getName()
+                    + ".getCfg(\"" + clsName + "\"); "
+                    + "}"
+                , cl));
+
+            return cl.toClass();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

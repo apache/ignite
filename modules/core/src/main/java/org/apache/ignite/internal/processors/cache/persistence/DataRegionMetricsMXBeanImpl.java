@@ -18,11 +18,15 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
  * MBean to expose {@link DataRegionMetrics} through JMX interface.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** */
     private final DataRegionMetricsImpl memMetrics;
@@ -64,6 +68,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return memMetrics.getTotalAllocatedPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalUsedPages() {
+        return memMetrics.getTotalUsedPages();
     }
 
     /** {@inheritDoc} */

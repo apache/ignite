@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     {
         /** */
         private IIgnite _ignite;
-        
+
         /** */
         private StringBuilder _outSb;
 
@@ -99,7 +99,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             };
 
             // Test SQL.
+#pragma warning disable 618
             var res = cache.Query(new SqlQuery(typeof(SimpleSerializable), "where Int = 2")).GetAll().Single();
+#pragma warning restore 618
 
             Assert.AreEqual(2, res.Key);
             Assert.AreEqual(2, res.Value.Int);
@@ -109,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             var guid = Guid.NewGuid();
             var insertRes = cache.Query(new SqlFieldsQuery(
                 "insert into SimpleSerializable(_key, Byte, Bool, Short, Int, Long, Float, Double, " +
-                "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 3, 45, true, 43, 33, 99, 4.5f, 6.7, 9.04m, guid, "bar33")).GetAll();
 
             Assert.AreEqual(1, insertRes.Count);
@@ -163,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
         }
 
-#if !NETCOREAPP2_0  // Console redirect issues on .NET Core
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1  // Console redirect issues on .NET Core
         /// <summary>
         /// Tests the log warning.
         /// </summary>
@@ -196,25 +198,25 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             [QuerySqlField]
             public short Short { get; set; }
-            
+
             [QuerySqlField]
             public int Int { get; set; }
-            
+
             [QuerySqlField]
             public long Long { get; set; }
-            
+
             [QuerySqlField]
             public float Float { get; set; }
-            
+
             [QuerySqlField]
             public double Double { get; set; }
-            
+
             [QuerySqlField]
             public decimal Decimal { get; set; }
-            
+
             [QuerySqlField]
             public Guid Guid { get; set; }
-            
+
             [QuerySqlField]
             public string String { get; set; }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import org.junit.Assert;
+import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -27,6 +28,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPing() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals("PONG", jedis.ping());
@@ -36,6 +38,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEcho() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals("Hello, grid!", jedis.echo("Hello, grid!"));
@@ -45,6 +48,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelect() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             // connected to cache with index 0

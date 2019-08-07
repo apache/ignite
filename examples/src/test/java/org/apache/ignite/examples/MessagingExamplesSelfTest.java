@@ -19,7 +19,9 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.messaging.MessagingExample;
 import org.apache.ignite.examples.messaging.MessagingPingPongExample;
+import org.apache.ignite.examples.messaging.MessagingPingPongListenActorExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Messaging examples self test.
@@ -33,6 +35,7 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessagingExample() throws Exception {
         MessagingExample.main(EMPTY_ARGS);
     }
@@ -40,16 +43,16 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessagingPingPongExample() throws Exception {
         MessagingPingPongExample.main(EMPTY_ARGS);
     }
 
-//    TODO: IGNITE-711 next example(s) should be implemented for java 8
-//    or testing method(s) should be removed if example(s) does not applicable for java 8.
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testMessagingPingPongListenActorExample() throws Exception {
-//        MessagingPingPongListenActorExample.main(EMPTY_ARGS);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMessagingPingPongListenActorExample() throws Exception {
+        MessagingPingPongListenActorExample.main(EMPTY_ARGS);
+    }
 }

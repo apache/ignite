@@ -114,7 +114,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
         workerId = cp.workerId();
         topVer = cp.topologyVersion();
 
-        if(!cp.partitions().isEmpty()) {
+        if (!cp.partitions().isEmpty()) {
             parts = new HashSet<>(cp.partitions().size());
 
             parts.addAll(cp.partitions().fullSet());
@@ -248,8 +248,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
         return topVer;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -285,49 +284,49 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeCollection("historicalParts", historicalParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeCollection("parts", parts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeMap("partsCntrs", partsCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
-                if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
             case 8:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeLong("updateSeq", updateSeq))
+                if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 10:
+                if (!writer.writeLong("updateSeq", updateSeq))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
                 if (!writer.writeInt("workerId", workerId))
                     return false;
 
@@ -349,7 +348,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 historicalParts = reader.readCollection("historicalParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -357,7 +356,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 parts = reader.readCollection("parts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -365,7 +364,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 partsCntrs = reader.readMap("partsCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
@@ -373,7 +372,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -381,16 +380,8 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
 
                 reader.incrementState();
 
-            case 7:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 8:
-                topicBytes = reader.readByteArray("topicBytes");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -398,7 +389,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
                 reader.incrementState();
 
             case 9:
-                updateSeq = reader.readLong("updateSeq");
+                topicBytes = reader.readByteArray("topicBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -406,6 +397,14 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
                 reader.incrementState();
 
             case 10:
+                updateSeq = reader.readLong("updateSeq");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
                 workerId = reader.readInt("workerId");
 
                 if (!reader.isLastRead())
@@ -415,7 +414,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionDemandMessage.class);
+        return reader.afterMessageRead(GridDhtPartitionDemandLegacyMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -425,7 +424,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

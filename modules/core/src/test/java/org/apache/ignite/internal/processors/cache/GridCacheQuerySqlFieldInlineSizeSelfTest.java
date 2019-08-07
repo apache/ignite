@@ -26,15 +26,17 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests cache configuration with inlineSize property of the QuerySqlField annotation.
  */
-@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked", "unused"})
+@SuppressWarnings({"unchecked", "unused"})
 public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFieldIndexes() throws Exception {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -57,6 +59,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupIndex() throws Exception {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -76,6 +79,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupIndexInvalidAnnotaion() throws Exception {
         final CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -91,6 +95,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeInlineSize() throws Exception {
         final CacheConfiguration ccfg = defaultCacheConfiguration();
 

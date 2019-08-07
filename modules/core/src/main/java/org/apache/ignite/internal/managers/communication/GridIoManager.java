@@ -68,8 +68,10 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -97,6 +99,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -118,6 +121,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SER
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
@@ -125,6 +129,24 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** Io communication metrics registry name. */
+    public static final String COMM_METRICS = metricName("io", "communication");
+
+    /** Outbound message queue size metric name. */
+    public static final String OUTBOUND_MSG_QUEUE_CNT = "OutboundMessagesQueueSize";
+
+    /** Sent messages count metric name. */
+    public static final String SENT_MSG_CNT = "SentMessagesCount";
+
+    /** Sent bytes count metric name. */
+    public static final String SENT_BYTES_CNT = "SentBytesCount";
+
+    /** Received messages count metric name. */
+    public static final String RCVD_MSGS_CNT = "ReceivedMessagesCount";
+
+    /** Received bytes count metric name. */
+    public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -135,7 +157,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
 
     /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 2;
+    public static final byte DIRECT_PROTO_VER = 3;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
@@ -205,11 +227,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final AtomicLong ioTestId = new AtomicLong();
 
     /** No-op runnable. */
-    private static final IgniteRunnable NOOP = new IgniteRunnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    private static final IgniteRunnable NOOP = () -> {};
 
     /**
      * @param ctx Grid kernal context.
@@ -229,6 +247,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
+
+        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
+
+        CommunicationSpi spi = ctx.config().getCommunicationSpi();
+
+        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
+            "Outbound messages queue size.");
+
+        ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");
+
+        ioMetric.register(SENT_BYTES_CNT, spi::getSentBytesCount, "Sent bytes count.");
+
+        ioMetric.register(RCVD_MSGS_CNT, spi::getReceivedMessagesCount,
+            "Received messages count.");
+
+        ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
     }
 
     /**
@@ -257,7 +291,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void start() throws IgniteCheckedException {
         startSpi();
 
@@ -302,7 +335,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     throws IgniteCheckedException {
 
                     return new DirectMessageReader(msgFactory,
-                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : GridIoManager.DIRECT_PROTO_VER);
+                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : DIRECT_PROTO_VER);
                 }
             };
         }
@@ -722,10 +755,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
-            @SuppressWarnings({"TooBroadScope", "fallthrough"})
             @Override public void onEvent(Event evt) {
                 assert evt instanceof DiscoveryEvent : "Invalid event: " + evt;
 
@@ -920,7 +952,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message bytes.
      * @param msgC Closure to call when message processing finished.
      */
-    @SuppressWarnings("fallthrough")
     private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
         assert nodeId != null;
         assert msg != null;
@@ -1050,7 +1081,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     assert obj != null;
 
-                    invokeListener(msg.policy(), lsnr, nodeId, obj);
+                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1183,7 +1214,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message.
      * @param nodeId Node ID.
      */
-    @SuppressWarnings("deprecation")
     private void processRegularMessage0(GridIoMessage msg, UUID nodeId) {
         GridMessageListener lsnr = listenerGet0(msg.topic());
 
@@ -1194,7 +1224,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj);
+        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
     }
 
     /**
@@ -1556,8 +1586,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener.
      * @param nodeId Node ID.
      * @param msg Message.
+     * @param secSubjId Security subject that will be used to open a security session.
      */
-    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
+    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
         Byte oldPlc = CUR_PLC.get();
 
         boolean change = !F.eq(oldPlc, plc);
@@ -1565,7 +1596,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        try {
+        UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
+
+        try(OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -1627,7 +1660,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
         assert topicOrd >= 0 || !(topic instanceof GridTopic) : msg;
 
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        GridIoMessage ioMsg = createGridIoMessage(topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
 
         if (locNodeId.equals(node.id())) {
             assert plc != P2P_POOL;
@@ -1672,6 +1705,29 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    /** */
+    private @NotNull GridIoMessage createGridIoMessage(
+        Object topic,
+        int topicOrd,
+        Message msg,
+        byte plc,
+        boolean ordered,
+        long timeout,
+        boolean skipOnTimeout) {
+        if (ctx.security().enabled()) {
+            UUID secSubjId = null;
+
+            UUID curSecSubjId = ctx.security().securityContext().subject().id();
+
+            if (!locNodeId.equals(curSecSubjId))
+                secSubjId = curSecSubjId;
+
+            return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        }
+
+        return new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+    }
+
     /**
      * @param nodeId Id of destination node.
      * @param topic Topic to send the message to.
@@ -1696,7 +1752,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public void sendToGridTopic(UUID nodeId, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
@@ -1979,12 +2034,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
+        addUserMessageListener(topic, p, null);
+    }
+
     /**
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    @SuppressWarnings("unchecked")
-    public void addUserMessageListener(@Nullable final Object topic, @Nullable final IgniteBiPredicate<UUID, ?> p) {
+    public void addUserMessageListener(final @Nullable Object topic,
+        final @Nullable IgniteBiPredicate<UUID, ?> p, final @Nullable UUID nodeId) {
         if (p != null) {
             try {
                 if (p instanceof PlatformMessageFilter)
@@ -1993,7 +2052,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ctx.resource().injectGeneric(p);
 
                 addMessageListener(TOPIC_COMM_USER,
-                    new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
+                    new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p, nodeId));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2005,22 +2064,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to unsubscribe from.
      * @param p Message predicate.
      */
-    @SuppressWarnings("unchecked")
     public void removeUserMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
-        try {
-            removeMessageListener(TOPIC_COMM_USER,
-                new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        removeMessageListener(TOPIC_COMM_USER,
+            new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
     }
 
     /**
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
     public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
         addMessageListener((Object)topic, lsnr);
     }
@@ -2043,7 +2095,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
     public void addMessageListener(Object topic, final GridMessageListener lsnr) {
         assert lsnr != null;
         assert topic != null;
@@ -2134,7 +2185,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings("deprecation")
     public boolean removeMessageListener(GridTopic topic, @Nullable GridMessageListener lsnr) {
         return removeMessageListener((Object)topic, lsnr);
     }
@@ -2144,7 +2194,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
     public boolean removeMessageListener(Object topic, @Nullable GridMessageListener lsnr) {
         assert topic != null;
 
@@ -2432,20 +2481,32 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** User message topic. */
         private final Object topic;
 
+        /** Initial node id. */
+        private final UUID initNodeId;
+
         /**
          * @param topic User topic.
          * @param predLsnr Predicate listener.
-         * @throws IgniteCheckedException If failed to inject resources to predicates.
+         * @param initNodeId Node id that registered given listener.
          */
-        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
-            throws IgniteCheckedException {
+        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr,
+            @Nullable UUID initNodeId) {
             this.topic = topic;
             this.predLsnr = predLsnr;
+            this.initNodeId = initNodeId;
+        }
+
+        /**
+         * @param topic User topic.
+         * @param predLsnr Predicate listener.
+         */
+        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr) {
+            this(topic, predLsnr, null);
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
-            "OverlyStrongTypeCast"})
+        @SuppressWarnings({"ConstantConditions"
+        })
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridIoUserMessage)) {
                 U.error(log, "Received unknown message (potentially fatal problem): " + msg);
@@ -2537,8 +2598,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        if (!predLsnr.apply(nodeId, msgBody))
-                            removeMessageListener(TOPIC_COMM_USER, this);
+                        try(OperationSecurityContext s = ctx.security().withContext(initNodeId)) {
+                            if (!predLsnr.apply(nodeId, msgBody))
+                                removeMessageListener(TOPIC_COMM_USER, this);
+                        }
                     }
                 }
             }
@@ -2765,7 +2828,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             for (GridTuple3<GridIoMessage, Long, IgniteRunnable> t = msgs.poll(); t != null; t = msgs.poll()) {
                 try {
-                    invokeListener(plc, lsnr, nodeId, t.get1().message());
+                    invokeListener(plc, lsnr, nodeId, t.get1().message(), secSubjId(t.get1()));
                 }
                 finally {
                     if (t.get3() != null)
@@ -3160,5 +3223,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             return latencyLimit / (1000 * (resLatency.length - 1));
         }
+    }
+
+    /**
+     * @return Security subject id.
+     */
+    private UUID secSubjId(GridIoMessage msg){
+        if(ctx.security().enabled()) {
+            assert msg instanceof GridIoSecurityAwareMessage;
+
+            return ((GridIoSecurityAwareMessage) msg).secSubjId();
+        }
+
+        return null;
     }
 }

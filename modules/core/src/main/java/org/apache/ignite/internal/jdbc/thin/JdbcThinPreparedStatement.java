@@ -368,7 +368,8 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         if (metaData != null)
             return metaData;
 
-        JdbcMetaParamsResult res = conn.sendRequest(new JdbcMetaParamsRequest(conn.getSchema(), sql));
+        JdbcMetaParamsResult res = conn.sendRequest(new JdbcMetaParamsRequest(conn.getSchema(), sql)).
+            response();
 
         metaData = new JdbcThinParameterMetadata(res.meta());
 
@@ -507,7 +508,6 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Prepared statement is not a wrapper for " + iface.getName());

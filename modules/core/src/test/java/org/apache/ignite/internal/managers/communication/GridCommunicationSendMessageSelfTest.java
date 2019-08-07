@@ -26,10 +26,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -39,9 +37,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Send message test.
  */
 public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Sample count. */
     private static final int SAMPLE_CNT = 1;
 
@@ -71,12 +66,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(discoSpi);
-
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         c.setCommunicationSpi(commSpi);
@@ -87,6 +76,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessage() throws Exception {
         try {
             startGridsMultiThreaded(2);
@@ -101,6 +91,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessageOverByteId() throws Exception {
         try {
             startGridsMultiThreaded(2);
@@ -115,6 +106,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessageWithBuffer() throws Exception {
         bufSize = 8192;
 

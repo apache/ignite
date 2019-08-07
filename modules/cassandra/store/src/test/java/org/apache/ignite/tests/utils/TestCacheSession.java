@@ -52,7 +52,6 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void newSession(@Nullable Transaction tx) {
         this.tx = tx;
         props = null;

@@ -24,26 +24,19 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
+
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
-
 /**
  * Query run.
  */
-class ReduceQueryRun {
+public class ReduceQueryRun {
     /** */
-    private final GridRunningQueryInfo qry;
-
-    /** */
-    private final List<GridMergeIndex> idxs;
+    private final List<ReduceIndex> idxs;
 
     /** */
     private CountDownLatch latch;
@@ -55,35 +48,37 @@ class ReduceQueryRun {
     private final int pageSize;
 
     /** */
-    private final AtomicReference<State> state = new AtomicReference<>();
+    private final Boolean dataPageScanEnabled;
 
-    /** Future controlling {@code SELECT FOR UPDATE} query execution. */
-    private final GridNearTxSelectForUpdateFuture selectForUpdateFut;
+    /** */
+    private final AtomicReference<State> state = new AtomicReference<>();
 
     /**
      * Constructor.
-     * @param id Query ID.
-     * @param qry Query text.
-     * @param schemaName Schema name.
      * @param conn Connection.
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
-     * @param startTime Start time.
-     * @param selectForUpdateFut Future controlling {@code SELECT FOR UPDATE} query execution.
-     * @param cancel Query cancel handler.
+     * @param dataPageScanEnabled If data page scan is enabled.
      */
-    ReduceQueryRun(Long id, String qry, String schemaName, Connection conn, int idxsCnt, int pageSize, long startTime,
-        GridNearTxSelectForUpdateFuture selectForUpdateFut, GridQueryCancel cancel) {
-        this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, schemaName, startTime, cancel,
-            false);
-
+    ReduceQueryRun(
+        Connection conn,
+        int idxsCnt,
+        int pageSize,
+        Boolean dataPageScanEnabled
+    ) {
         this.conn = (JdbcConnection)conn;
 
-        this.idxs = new ArrayList<>(idxsCnt);
+        idxs = new ArrayList<>(idxsCnt);
 
-        this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
+        this.pageSize = pageSize > 0 ? pageSize : Query.DFLT_PAGE_SIZE;
+        this.dataPageScanEnabled  = dataPageScanEnabled;
+    }
 
-        this.selectForUpdateFut = selectForUpdateFut;
+    /**
+     * @return {@code true} If data page scan is enabled.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /**
@@ -131,7 +126,7 @@ class ReduceQueryRun {
         while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
             latch.countDown();
 
-        for (GridMergeIndex idx : idxs) // Fail all merge indexes.
+        for (ReduceIndex idx : idxs) // Fail all merge indexes.
             idx.fail(state.nodeId, state.ex);
     }
 
@@ -140,13 +135,6 @@ class ReduceQueryRun {
      */
     void disconnected(CacheException e) {
         setStateOnException(null, e);
-    }
-
-    /**
-     * @return Query info.
-     */
-    GridRunningQueryInfo queryInfo() {
-        return qry;
     }
 
     /**
@@ -207,7 +195,7 @@ class ReduceQueryRun {
     /**
      * @return Indexes.
      */
-    List<GridMergeIndex> indexes() {
+    List<ReduceIndex> indexes() {
         return idxs;
     }
 
@@ -223,13 +211,6 @@ class ReduceQueryRun {
      */
     void latch(CountDownLatch latch) {
         this.latch = latch;
-    }
-
-    /**
-     * @return {@code SELECT FOR UPDATE} future, if any.
-     */
-    @Nullable public GridNearTxSelectForUpdateFuture selectForUpdateFuture() {
-        return selectForUpdateFut;
     }
 
     /**

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test generates low load to grid in having some shared groups. Test checks if pages marked dirty after some time will
@@ -44,8 +45,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstractTest {
     /** Caches in group. */
     private static final int CACHES_IN_GRP = 1;
+
     /** Groups. */
     private static final int GROUPS = 1;
+
     /** Parts. */
     private static final int PARTS = 1024;
 
@@ -68,7 +71,6 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        dsCfg.setPageSize(1024); //smaller page to reduce overhead to short values
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
@@ -99,6 +101,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyCachesAndNotManyPuts() throws Exception {
         try {
             IgniteEx ignite = startGrid(0);
@@ -145,7 +148,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
                     db.wakeupForCheckpoint("").get(cpTimeout, TimeUnit.MILLISECONDS);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                    long msPassed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+                    long msPassed = U.millisSinceNanos(start);
 
                     log.error("Timeout during waiting for checkpoint to start:" +
                         " [" + msPassed + "] but checkpoint is not running");
@@ -196,7 +199,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
         long start = System.currentTimeMillis();
 
         while (currCpPages == 0) {
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+            LockSupport.parkNanos(U.millisToNanos(1));
             currCpPages = db.currentCheckpointPagesCount();
 
             if (currCpPages == 0 && ((System.currentTimeMillis() - start) > timeout))

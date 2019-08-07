@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Test;
 
 /**
  * Test for basic user name mapper.
@@ -33,6 +34,7 @@ public class BasicUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNullMappings() throws Exception {
         checkNullOrEmptyMappings(null);
     }
@@ -42,6 +44,7 @@ public class BasicUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyMappings() throws Exception {
         checkNullOrEmptyMappings(new HashMap<String, String>());
     }
@@ -83,6 +86,7 @@ public class BasicUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMappings() throws Exception {
         Map<String, String> map = new HashMap<>();
 

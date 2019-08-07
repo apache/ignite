@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -37,9 +36,6 @@ public class GridCacheUpdateTxResult {
     private long updateCntr;
 
     /** */
-    private GridLongList mvccWaitTxs;
-
-    /** */
     private GridFutureAdapter<GridCacheUpdateTxResult> fut;
 
     /** */
@@ -53,6 +49,15 @@ public class GridCacheUpdateTxResult {
 
     /** Invoke result. */
     private CacheInvokeResult invokeRes;
+
+    /** New value. */
+    private CacheObject newVal;
+
+    /** Value before the current tx. */
+    private CacheObject oldVal;
+
+    /** Filtered flag. */
+    private boolean filtered;
 
     /**
      * Constructor.
@@ -99,21 +104,6 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     * Constructor.
-     *
-     * @param success Success flag.
-     * @param updateCntr Update counter.
-     * @param logPtr Logger WAL pointer for the update.
-     * @param mvccWaitTxs List of transactions to wait for completion.
-     */
-    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr, GridLongList mvccWaitTxs) {
-        this.success = success;
-        this.updateCntr = updateCntr;
-        this.logPtr = logPtr;
-        this.mvccWaitTxs = mvccWaitTxs;
-    }
-
-    /**
      * @return Partition update counter.
      */
     public long updateCounter() {
@@ -139,13 +129,6 @@ public class GridCacheUpdateTxResult {
      */
     @Nullable public IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
         return fut;
-    }
-
-    /**
-     * @return List of transactions to wait for completion.
-     */
-    @Nullable public GridLongList mvccWaitTransactions() {
-        return mvccWaitTxs;
     }
 
     /**
@@ -188,6 +171,48 @@ public class GridCacheUpdateTxResult {
      */
     public CacheInvokeResult invokeResult() {
         return invokeRes;
+    }
+
+    /**
+     * @return New value.
+     */
+    public CacheObject newValue() {
+        return newVal;
+    }
+
+    /**
+     * @return Old value.
+     */
+    public CacheObject oldValue() {
+        return oldVal;
+    }
+
+    /**
+     * @param newVal New value.
+     */
+    public void newValue(CacheObject newVal) {
+        this.newVal = newVal;
+    }
+
+    /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(CacheObject oldVal) {
+        this.oldVal = oldVal;
+    }
+
+    /**
+     * @return Filtered flag.
+     */
+    public boolean filtered() {
+        return filtered;
+    }
+
+    /**
+     * @param filtered Filtered flag.
+     */
+    public void filtered(boolean filtered) {
+        this.filtered = filtered;
     }
 
     /** {@inheritDoc} */

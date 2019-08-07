@@ -40,6 +40,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -93,7 +94,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
+    @Test
     public void testInjectPrimaryByField() throws Exception {
         secondary = new TestBaseSecondaryFsMock() {
             @FileSystemResource
@@ -120,7 +121,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
+    @Test
     public void testInjectPrimaryByMethods() throws Exception {
         secondary = new TestBaseSecondaryFsMock() {
             /** Ignite instance. */
@@ -171,7 +172,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
     /**
      *
      */
-    private static abstract class TestBaseSecondaryFsMock implements IgfsSecondaryFileSystem {
+    private abstract static class TestBaseSecondaryFsMock implements IgfsSecondaryFileSystem {
 
         /** {@inheritDoc} */
         @Override public boolean exists(IgfsPath path) {

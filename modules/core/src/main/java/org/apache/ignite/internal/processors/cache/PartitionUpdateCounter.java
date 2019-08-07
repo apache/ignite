@@ -17,193 +17,120 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteLogger;
-import org.jetbrains.annotations.NotNull;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition update counter with MVCC delta updates capabilities.
+ * Partition update counter maintains three entities for tracking partition update state.
+   <ol>
+ *     <li><b>Low water mark (LWM)</b> or update counter - lowest applied sequential update number.</li>
+ *     <li><b>High water mark (HWM)</b> or reservation counter - highest seen but unapplied yet update number.</li>
+ *     <li>Out-of-order applied updates in range between LWM and HWM.</li>
+ * </ol>
  */
-public class PartitionUpdateCounter {
+public interface PartitionUpdateCounter extends Iterable<long[]> {
+    /**
+     * Restores update counter state.
+     *
+     * @param initUpdCntr LWM.
+     * @param cntrUpdData Counter updates raw data.
+     */
+    public void init(long initUpdCntr, @Nullable byte[] cntrUpdData);
+
+    /**
+     * @deprecated TODO LWM should be used as initial counter https://ggsystems.atlassian.net/browse/GG-17396
+     */
+    public long initial();
+
+    /**
+     * Get LWM.
+     *
+     * @return Current LWM.
+     */
+    public long get();
+
+    /**
+     * Increment LWM by 1.
+     *
+     * @return New LWM.
+     */
+    public long next();
+
+    /**
+     * Increment LWM by delta.
+     *
+     * @param delta Delta.
+     * @return New LWM.
+     */
+    public long next(long delta);
+
+    /**
+     * Increment HWM by delta.
+     *
+     * @param delta Delta.
+     * @return New HWM.
+     */
+    public long reserve(long delta);
+
+    /**
+     * Returns HWM.
+     * @return Current HWM.
+     */
+    public long reserved();
+
+    /**
+     * Sets update counter to absolute value. All missed updates will be discarded.
+     *
+     * @param val Absolute value.
+     * @throws IgniteCheckedException if counter cannot be set to passed value due to incompatibility with current state.
+     */
+    public void update(long val) throws IgniteCheckedException;
+
+    /**
+     * Applies counter update out of range. Update ranges must not intersect.
+     *
+     * @param start Start (<= lwm).
+     * @param delta Delta.
+     * @return {@code True} if update was actually applied.
+     */
+    public boolean update(long start, long delta);
+
+    /**
+     * Reset counter internal state to zero.
+     */
+    public void reset();
+
+    /**
+     * @param start Counter.
+     * @param delta Delta.
+     * @deprecated TODO https://ggsystems.atlassian.net/browse/GG-17396
+     */
+    public void updateInitial(long start, long delta);
+
+    /**
+     * Flushes pending update counters closing all possible gaps.
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
+     */
+    public GridLongList finalizeUpdateCounters();
+
     /** */
-    private IgniteLogger log;
-
-    /** Queue of counter update tasks*/
-    private final Queue<Item> queue = new PriorityQueue<>();
-
-    /** Counter. */
-    private final AtomicLong cntr = new AtomicLong();
-
-    /** Initial counter. */
-    private long initCntr;
+    public @Nullable byte[] getBytes();
 
     /**
-     * @param log Logger.
+     * @return {@code True} if counter has no missed updates.
      */
-    PartitionUpdateCounter(IgniteLogger log) {
-        this.log = log;
-    }
+    public boolean sequential();
 
     /**
-     * Sets init counter.
-     *
-     * @param updateCntr Init counter valus.
+     * @return {@code True} if counter has not seen any update.
      */
-    public void init(long updateCntr) {
-        initCntr = updateCntr;
-
-        cntr.set(updateCntr);
-    }
+    public boolean empty();
 
     /**
-     * @return Initial counter value.
+     * @return Iterator for pairs [start, range] for each out-of-order update in the update counter sequence.
      */
-    public long initial() {
-        return initCntr;
-    }
-
-    /**
-     * @return Current update counter value.
-     */
-    public long get() {
-        return cntr.get();
-    }
-
-    /**
-     * Adds delta to current counter value.
-     *
-     * @param delta Delta.
-     * @return Value before add.
-     */
-    public long getAndAdd(long delta) {
-        return cntr.getAndAdd(delta);
-    }
-
-    /**
-     * @return Next update counter.
-     */
-    public long next() {
-        return cntr.incrementAndGet();
-    }
-
-    /**
-     * Sets value to update counter,
-     *
-     * @param val Values.
-     */
-    public void update(long val) {
-        while (true) {
-            long val0 = cntr.get();
-
-            if (val0 >= val)
-                break;
-
-            if (cntr.compareAndSet(val0, val))
-                break;
-        }
-    }
-
-    /**
-     * Updates counter by delta from start position.
-     *
-     * @param start Start.
-     * @param delta Delta.
-     */
-    public synchronized void update(long start, long delta) {
-        long cur = cntr.get(), next;
-
-        if (cur > start) {
-            log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
-
-            return;
-        }
-
-        if (cur < start) {
-            // backup node with gaps
-            offer(new Item(start, delta));
-
-            return;
-        }
-
-        while (true) {
-            boolean res = cntr.compareAndSet(cur, next = start + delta);
-
-            assert res;
-
-            Item peek = peek();
-
-            if (peek == null || peek.start != next)
-                return;
-
-            Item item = poll();
-
-            assert peek == item;
-
-            start = item.start;
-            delta = item.delta;
-            cur = next;
-        }
-    }
-
-    /**
-     * @param cntr Sets initial counter.
-     */
-    public void updateInitial(long cntr) {
-        if (get() < cntr)
-            update(cntr);
-
-        initCntr = cntr;
-    }
-
-    /**
-     * @return Retrieves the minimum update counter task from queue.
-     */
-    private Item poll() {
-        return queue.poll();
-    }
-
-    /**
-     * @return Checks the minimum update counter task from queue.
-     */
-    private Item peek() {
-        return queue.peek();
-    }
-
-    /**
-     * @param item Adds update task to priority queue.
-     */
-    private void offer(Item item) {
-        queue.offer(item);
-    }
-
-    /**
-     * Update counter task. Update from start value by delta value.
-     */
-    private static class Item implements Comparable<Item> {
-        /** */
-        private final long start;
-
-        /** */
-        private final long delta;
-
-        /**
-         * @param start Start value.
-         * @param delta Delta value.
-         */
-        private Item(long start, long delta) {
-            this.start = start;
-            this.delta = delta;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull Item o) {
-            int cmp = Long.compare(this.start, o.start);
-
-            assert cmp != 0;
-
-            return cmp;
-        }
-    }
+    @Override public Iterator<long[]> iterator();
 }

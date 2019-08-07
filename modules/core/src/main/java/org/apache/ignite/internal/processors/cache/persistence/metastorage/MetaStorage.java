@@ -17,66 +17,85 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.OLD_METASTORE_PARTITION;
 
 /**
  * General purpose key-value local-only storage.
  */
-public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, ReadWriteMetastorage {
+public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     /** */
     public static final String METASTORAGE_CACHE_NAME = "MetaStorage";
 
     /** */
     public static final int METASTORAGE_CACHE_ID = CU.cacheId(METASTORAGE_CACHE_NAME);
 
+    /** This flag is used ONLY FOR TESTING the migration of a metastorage from Part 0 to Part 1. */
+    public static boolean PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
+
     /** Marker for removed entry. */
     private static final byte[] TOMBSTONE = new byte[0];
+
+    /** Temporary metastorage memory size. */
+    private static final int TEMPORARY_METASTORAGE_IN_MEMORY_SIZE = 128 * 1024 * 1024;
+
+    /** Temporary metastorage buffer size (file). */
+    private static final int TEMPORARY_METASTORAGE_BUFFER_SIZE = 1024 * 1024;
 
     /** */
     private final IgniteWriteAheadLogManager wal;
@@ -97,7 +116,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private DataRegionMetricsImpl regionMetrics;
 
     /** */
-    private boolean readOnly;
+    private final boolean readOnly;
 
     /** */
     private boolean empty;
@@ -109,24 +128,31 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private RootPage reuseListRoot;
 
     /** */
-    private FreeListImpl freeList;
+    private PartitionMetaStorageImpl<MetastorageDataRow> partStorage;
 
     /** */
-    private Map<String, byte[]> lastUpdates;
+    private SortedMap<String, byte[]> lastUpdates;
 
     /** */
-    private final Marshaller marshaller = new JdkMarshaller();
+    private final Marshaller marshaller = JdkMarshaller.DEFAULT;
 
     /** */
     private final FailureProcessor failureProcessor;
 
+    /** Partition id. */
+    private int partId;
+
+    /** Cctx. */
+    private final GridCacheSharedContext cctx;
+
     /** */
     public MetaStorage(
-        GridCacheSharedContext cctx,
+        GridCacheSharedContext<?, ?> cctx,
         DataRegion dataRegion,
         DataRegionMetricsImpl regionMetrics,
         boolean readOnly
     ) {
+        this.cctx = cctx;
         wal = cctx.wal();
         this.dataRegion = dataRegion;
         this.regionMetrics = regionMetrics;
@@ -136,23 +162,118 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** */
-    public MetaStorage(GridCacheSharedContext cctx, DataRegion memPlc, DataRegionMetricsImpl memMetrics) {
-        this(cctx, memPlc, memMetrics, false);
+    public void init(GridCacheDatabaseSharedManager db) throws IgniteCheckedException {
+        regionMetrics.clear();
+        initInternal(db);
+
+        if (!PRESERVE_LEGACY_METASTORAGE_PARTITION_ID) {
+            GridCacheProcessor gcProcessor = cctx.kernalContext().cache();
+
+            if (partId == OLD_METASTORE_PARTITION)
+                gcProcessor.setTmpStorage(copyDataToTmpStorage());
+            else if (gcProcessor.getTmpStorage() != null) {
+                restoreDataFromTmpStorage(gcProcessor.getTmpStorage());
+
+                gcProcessor.setTmpStorage(null);
+
+                // remove old partitions
+                CacheGroupContext cgc = cctx.cache().cacheGroup(METASTORAGE_CACHE_ID);
+
+                if (cgc != null) {
+                    db.schedulePartitionDestroy(METASTORAGE_CACHE_ID, OLD_METASTORE_PARTITION);
+
+                    db.schedulePartitionDestroy(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
+                }
+            }
+        }
     }
 
-    /** */
-    public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
-        getOrAllocateMetas();
+    /**
+     * Copying all data from the 'meta' to temporary storage.
+     *
+     * @return Target temporary storage
+     */
+    private TmpStorage copyDataToTmpStorage() throws IgniteCheckedException {
+        TmpStorage tmpStorage = new TmpStorage(TEMPORARY_METASTORAGE_IN_MEMORY_SIZE, log);
+
+        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
+
+        while (cur.next()) {
+            MetastorageDataRow row = cur.get();
+
+            tmpStorage.add(row.key(), row.value());
+        }
+
+        return tmpStorage;
+    }
+
+    /**
+     * Data recovery from temporary storage
+     *
+     * @param tmpStorage temporary storage.
+     */
+    private void restoreDataFromTmpStorage(TmpStorage tmpStorage) throws IgniteCheckedException {
+        for (Iterator<IgniteBiTuple<String, byte[]>> it = tmpStorage.stream().iterator(); it.hasNext(); ) {
+            IgniteBiTuple<String, byte[]> t = it.next();
+
+            writeRaw(t.get1(), t.get2());
+        }
+
+        try {
+            tmpStorage.close();
+        }
+        catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * @param db Database.
+     */
+    private void initInternal(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
+        if (PRESERVE_LEGACY_METASTORAGE_PARTITION_ID)
+            getOrAllocateMetas(partId = PageIdAllocator.OLD_METASTORE_PARTITION);
+        else if (!readOnly || getOrAllocateMetas(partId = PageIdAllocator.OLD_METASTORE_PARTITION))
+            getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
-            freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
-                regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-                reuseListRoot.isAllocated());
+            CacheDiagnosticManager diagnosticMgr = cctx.diagnostic();
 
-            MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
+            String freeListName = METASTORAGE_CACHE_NAME + "##FreeList";
+            String treeName = METASTORAGE_CACHE_NAME + "##Tree";
 
-            tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), failureProcessor);
+            partStorage = new PartitionMetaStorageImpl<MetastorageDataRow>(
+                METASTORAGE_CACHE_ID,
+                freeListName,
+                regionMetrics,
+                dataRegion,
+                null,
+                wal,
+                reuseListRoot.pageId().pageId(),
+                reuseListRoot.isAllocated(),
+                diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName)
+            ) {
+                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                    return pageMem.allocatePage(grpId, partId, FLAG_DATA);
+                }
+            };
+
+            MetastorageRowStore rowStore = new MetastorageRowStore(partStorage, db);
+
+            tree = new MetastorageTree(
+                METASTORAGE_CACHE_ID,
+                treeName,
+                dataRegion.pageMemory(),
+                wal,
+                rmvId,
+                partStorage,
+                rowStore,
+                treeRoot.pageId().pageId(),
+                treeRoot.isAllocated(),
+                failureProcessor,
+                partId,
+                diagnosticMgr.pageLockTracker().createPageLockTracker(treeName)
+            );
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
@@ -161,45 +282,50 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public Serializable read(String key) throws IgniteCheckedException {
-        byte[] data = getData(key);
+        byte[] data = readRaw(key);
 
-        Object result = null;
+        Serializable res = null;
 
         if (data != null)
-            result = marshaller.unmarshal(data, getClass().getClassLoader());
+            res = marshaller.unmarshal(data, U.gridClassLoader());
 
-        return (Serializable)result;
+        return res;
     }
 
+
     /** {@inheritDoc} */
-    @Override public Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred)
-        throws IgniteCheckedException {
-        Map<String, Serializable> res = null;
+    @Override public void iterate(
+        String keyPrefix,
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal
+    ) throws IgniteCheckedException {
+        if (empty)
+            return;
+
+        Iterator<Map.Entry<String, byte[]>> updatesIter = null;
 
         if (readOnly) {
-            if (empty)
-                return Collections.emptyMap();
-
             if (lastUpdates != null) {
-                for (Map.Entry<String, byte[]> lastUpdate : lastUpdates.entrySet()) {
-                    if (keyPred.apply(lastUpdate.getKey())) {
-                        byte[] valBytes = lastUpdate.getValue();
+                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\uFFFF");
 
-                        if (valBytes == TOMBSTONE)
-                            continue;
-
-                        if (res == null)
-                            res = new HashMap<>();
-
-                        Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
-
-                        res.put(lastUpdate.getKey(), val);
-                    }
-                }
+                if (!prefixedSubmap.isEmpty())
+                    updatesIter = prefixedSubmap.entrySet().iterator();
             }
         }
 
-        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
+        Map.Entry<String, byte[]> curUpdatesEntry = null;
+
+        if (updatesIter != null) {
+            assert updatesIter.hasNext();
+
+            curUpdatesEntry = updatesIter.next();
+        }
+
+        MetastorageDataRow lower = new MetastorageDataRow(keyPrefix, null);
+
+        MetastorageDataRow upper = new MetastorageDataRow(keyPrefix + "\uFFFF", null);
+
+        GridCursor<MetastorageDataRow> cur = tree.find(lower, upper);
 
         while (cur.next()) {
             MetastorageDataRow row = cur.get();
@@ -207,22 +333,64 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             String key = row.key();
             byte[] valBytes = row.value();
 
-            if (keyPred.apply(key)) {
-                // Either already added it, or this is a tombstone -> ignore.
-                if (lastUpdates != null && lastUpdates.containsKey(key))
-                    continue;
+            int c = 0;
 
-                if (res == null)
-                    res = new HashMap<>();
+            while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0)
+                curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
 
-                Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
-
-                res.put(key, val);
-            }
+            if (curUpdatesEntry != null && c == 0)
+                curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+            else
+                applyCallback(cb, unmarshal, key, valBytes);
         }
 
-        if (res == null)
-            res = Collections.emptyMap();
+        while (curUpdatesEntry != null)
+            curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+    }
+
+    /** */
+    private Map.Entry<String, byte[]> advanceCurrentUpdatesEntry(
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal,
+        Iterator<Map.Entry<String, byte[]>> updatesIter,
+        Map.Entry<String, byte[]> curUpdatesEntry
+    ) throws IgniteCheckedException {
+        applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
+
+        return updatesIter.hasNext() ? updatesIter.next() : null;
+    }
+
+    /** */
+    private void applyCallback(
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal,
+        String key,
+        byte[] valBytes
+    ) throws IgniteCheckedException {
+        if (valBytes != TOMBSTONE) {
+            if (unmarshal) {
+                Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
+
+                cb.accept(key, val);
+            }
+            else
+                cb.accept(key, valBytes);
+        }
+    }
+
+    /**
+     * Read all items from metastore.
+     */
+    public Collection<IgniteBiTuple<String, byte[]>> readAll() throws IgniteCheckedException {
+        ArrayList<IgniteBiTuple<String, byte[]>> res = new ArrayList<>();
+
+        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
+
+        while (cur.next()) {
+            MetastorageDataRow row = cur.get();
+
+            res.add(new IgniteBiTuple<>(row.key(), row.value()));
+        }
 
         return res;
     }
@@ -233,7 +401,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
         byte[] data = marshaller.marshal(val);
 
-        putData(key, data);
+        writeRaw(key, data);
     }
 
     /** {@inheritDoc} */
@@ -241,8 +409,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         removeData(key);
     }
 
-    /** */
-    public void putData(String key, byte[] data) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void writeRaw(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
 
@@ -263,8 +431,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         }
     }
 
-    /** */
-    public byte[] getData(String key) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public byte[] readRaw(String key) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates != null) {
                 byte[] res = lastUpdates.get(key);
@@ -315,11 +483,16 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
 
-    /** */
-    private void getOrAllocateMetas() throws IgniteCheckedException {
-        PageMemoryEx pageMem = (PageMemoryEx)dataRegion.pageMemory();
+    /**
+     * Initializing the selected partition for use as MetaStorage
+     *
+     * @param partId Partition id.
+     * @return true if the partion is empty
+     */
+    private boolean getOrAllocateMetas(int partId) throws IgniteCheckedException {
+        empty = false;
 
-        int partId = 0;
+        PageMemoryEx pageMem = (PageMemoryEx)dataRegion.pageMemory();
 
         long partMetaId = pageMem.partitionMetaPageId(METASTORAGE_CACHE_ID, partId);
         long partMetaPage = pageMem.acquirePage(METASTORAGE_CACHE_ID, partMetaId);
@@ -331,7 +504,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
                         empty = true;
 
-                        return;
+                        return true;
                     }
 
                     PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
@@ -373,7 +546,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         io.setTreeRoot(pageAddr, treeRoot);
                         io.setReuseListRoot(pageAddr, reuseListRoot);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
+                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null)) {
+                            assert io.getType() == PageIO.T_PART_META;
+
                             wal.log(new MetaPageInitRecord(
                                 METASTORAGE_CACHE_ID,
                                 partMetaId,
@@ -382,6 +557,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                                 treeRoot,
                                 reuseListRoot
                             ));
+                        }
 
                         allocated = true;
                     }
@@ -407,6 +583,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         finally {
             pageMem.releasePage(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
         }
+
+        return false;
     }
 
     /**
@@ -417,18 +595,18 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** {@inheritDoc} */
-    @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+    @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         Executor executor = ctx.executor();
 
         if (executor == null) {
-            freeList.saveMetadata();
+            partStorage.saveMetadata();
 
             saveStoreMetadata();
         }
         else {
             executor.execute(() -> {
                 try {
-                    freeList.saveMetadata();
+                    partStorage.saveMetadata();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -446,13 +624,21 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        partStorage.saveMetadata();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        /* No-op. */
+    }
+
     /**
      * @throws IgniteCheckedException If failed.
      */
     private void saveStoreMetadata() throws IgniteCheckedException {
         PageMemoryEx pageMem = (PageMemoryEx) pageMemory();
-
-        int partId = 0;
 
         long partMetaId = pageMem.partitionMetaPageId(METASTORAGE_CACHE_ID, partId);
         long partMetaPage = pageMem.acquirePage(METASTORAGE_CACHE_ID, partMetaId);
@@ -486,112 +672,270 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     public void applyUpdate(String key, byte[] value) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates == null)
-                lastUpdates = new HashMap<>();
+                lastUpdates = new TreeMap<>();
 
             lastUpdates.put(key, value != null ? value : TOMBSTONE);
         }
         else {
             if (value != null)
-                putData(key, value);
+                writeRaw(key, value);
             else
                 removeData(key);
         }
     }
 
-    /** */
-    public static class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
-        /** {@inheritDoc} */
-        FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
-            ReuseList reuseList,
-            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+    /**
+     * Temporary storage internal
+     */
+    private interface TmpStorageInternal extends Closeable {
+        /**
+         * Put data
+         *
+         * @param key Key.
+         * @param val Value.
+         */
+        boolean add(String key, byte[] val) throws IOException;
+
+        /**
+         * Read data from storage
+         */
+        Stream<IgniteBiTuple<String, byte[]>> stream() throws IOException;
+    }
+
+    /**
+     * Temporary storage (memory)
+     */
+    private static class MemoryTmpStorage implements TmpStorageInternal {
+        /** Buffer. */
+        final ByteBuffer buf;
+
+        /** Size. */
+        int size;
+
+        /**
+         * @param size Size.
+         */
+        MemoryTmpStorage(int size) {
+            buf = ByteBuffer.allocateDirect(size);
         }
 
         /** {@inheritDoc} */
-        @Override public IOVersions<? extends AbstractDataPageIO<MetastorageDataRow>> ioVersions() {
-            return SimpleDataPageIO.VERSIONS;
+        @Override public boolean add(String key, byte[] val) {
+            byte[] keyData = key.getBytes(StandardCharsets.UTF_8);
+
+            if (val.length + keyData.length + 8 > buf.remaining())
+                return false;
+
+            buf.putInt(keyData.length).putInt(val.length).put(keyData).put(val);
+
+            size++;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Stream<IgniteBiTuple<String, byte[]>> stream() {
+            buf.flip();
+
+            return Stream.generate(() -> {
+                int keyLen = buf.getInt();
+                int dataLen = buf.getInt();
+
+                byte[] tmpBuf = new byte[Math.max(keyLen, dataLen)];
+
+                buf.get(tmpBuf, 0, keyLen);
+
+                String key = new String(tmpBuf, 0, keyLen, StandardCharsets.UTF_8);
+
+                buf.get(tmpBuf, 0, dataLen);
+
+                return new IgniteBiTuple<>(key, tmpBuf.length > dataLen ? Arrays.copyOf(tmpBuf, dataLen) : tmpBuf);
+            }).limit(size);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+        }
+    }
+
+    /**
+     * Temporary storage (file)
+     */
+    private static class FileTmpStorage implements TmpStorageInternal {
+        /** Cache. */
+        final ByteBuffer cache = ByteBuffer.allocateDirect(TEMPORARY_METASTORAGE_BUFFER_SIZE);
+
+        /** File. */
+        RandomAccessFile file;
+
+        /** Size. */
+        long size;
+
+        /** {@inheritDoc} */
+        @Override public boolean add(String key, byte[] val) throws IOException {
+            if (file == null)
+                file = new RandomAccessFile(File.createTempFile("m_storage", "bin"), "rw");
+
+            byte[] keyData = key.getBytes(StandardCharsets.UTF_8);
+
+            if (val.length + keyData.length + 8 > cache.remaining())
+                flushCache(false);
+
+            cache.putInt(keyData.length).putInt(val.length).put(keyData).put(val);
+
+            size++;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Stream<IgniteBiTuple<String, byte[]>> stream() throws IOException {
+            if (file == null)
+                return Stream.empty();
+
+            flushCache(true);
+
+            file.getChannel().position(0);
+
+            readToCache();
+
+            return Stream.generate(() -> {
+                if (cache.remaining() <= 8) {
+                    cache.compact();
+
+                    try {
+                        readToCache();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                int keyLen = cache.getInt();
+                int dataLen = cache.getInt();
+
+                if (cache.remaining() < keyLen + dataLen) {
+                    cache.compact();
+
+                    try {
+                        readToCache();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                byte[] tmpBuf = new byte[Math.max(keyLen, dataLen)];
+
+                cache.get(tmpBuf, 0, keyLen);
+
+                String key = new String(tmpBuf, 0, keyLen, StandardCharsets.UTF_8);
+
+                cache.get(tmpBuf, 0, dataLen);
+
+                return new IgniteBiTuple<>(key, tmpBuf.length > dataLen ? Arrays.copyOf(tmpBuf, dataLen) : tmpBuf);
+            }).limit(size);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            file.close();
         }
 
         /**
-         * Read row from data pages.
+         * Read data to cache
          */
-        final MetastorageDataRow readRow(String key, long link)
-            throws IgniteCheckedException {
-            assert link != 0 : "link";
+        private void readToCache() throws IOException {
+            int len = (int)Math.min(file.length() - file.getChannel().position(), cache.remaining());
 
-            long nextLink = link;
-            IncompleteObject incomplete = null;
-            int size = 0;
+            while (len > 0)
+                len -= file.getChannel().read(cache);
 
-            boolean first = true;
+            cache.flip();
+        }
 
-            do {
-                final long pageId = pageId(nextLink);
+        /**
+         * Write cache to file.
+         *
+         * @param force force metadata.
+         */
+        private void flushCache(boolean force) throws IOException {
+            if (cache.position() > 0) {
+                cache.flip();
 
-                final long page = pageMem.acquirePage(grpId, pageId);
+                while (cache.remaining() > 0)
+                    file.getChannel().write(cache);
 
+                cache.clear();
+            }
+
+            file.getChannel().force(force);
+        }
+    }
+
+    /**
+     * Temporary storage
+     */
+    public static class TmpStorage implements Closeable {
+        /** Chain of internal storages. */
+        final List<TmpStorageInternal> chain = new ArrayList<>(2);
+
+        /** Current internal storage. */
+        TmpStorageInternal current;
+
+        /** Logger. */
+        final IgniteLogger log;
+
+        /**
+         * @param memBufSize Memory buffer size.
+         * @param log Logger.
+         */
+        TmpStorage(int memBufSize, IgniteLogger log) {
+            this.log = log;
+
+            chain.add(current = new MemoryTmpStorage(memBufSize));
+        }
+
+        /**
+         * Put data
+         *
+         * @param key Key.
+         * @param val Value.
+         */
+        public void add(String key, byte[] val) throws IgniteCheckedException {
+            try {
+                while (!current.add(key, val))
+                    chain.add(current = new FileTmpStorage());
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        /**
+         * Read data from storage
+         */
+        public Stream<IgniteBiTuple<String, byte[]>> stream() {
+            return chain.stream().flatMap(storage -> {
                 try {
-                    long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
-
-                    assert pageAddr != 0L : nextLink;
-
-                    try {
-                        SimpleDataPageIO io = (SimpleDataPageIO)ioVersions().forPage(pageAddr);
-
-                        //MetaStorage never encrypted so realPageSize == pageSize.
-                        DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
-
-                        nextLink = data.nextLink();
-
-                        if (first) {
-                            if (nextLink == 0) {
-                                // Fast path for a single page row.
-                                return new MetastorageDataRow(link, key, SimpleDataPageIO.readPayload(pageAddr + data.offset()));
-                            }
-
-                            first = false;
-                        }
-
-                        ByteBuffer buf = pageMem.pageBuffer(pageAddr);
-
-                        buf.position(data.offset());
-                        buf.limit(data.offset() + data.payloadSize());
-
-                        if (size == 0) {
-                            if (buf.remaining() >= 4 && incomplete == null) {
-                                // Just read size.
-                                size = buf.getInt();
-                                incomplete = new IncompleteObject(new byte[size]);
-                            }
-                            else {
-                                if (incomplete == null)
-                                    incomplete = new IncompleteObject(new byte[4]);
-
-                                incomplete.readData(buf);
-
-                                if (incomplete.isReady()) {
-                                    size = ByteBuffer.wrap(incomplete.data()).order(buf.order()).getInt();
-                                    incomplete = new IncompleteObject(new byte[size]);
-                                }
-                            }
-                        }
-
-                        if (size != 0 && buf.remaining() > 0)
-                            incomplete.readData(buf);
-                    }
-                    finally {
-                        pageMem.readUnlock(grpId, pageId, page);
-                    }
+                    return storage.stream();
                 }
-                finally {
-                    pageMem.releasePage(grpId, pageId, page);
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            for (TmpStorageInternal storage : chain) {
+                try {
+                    storage.close();
+                }
+                catch (IOException ex) {
+                    log.error(ex.getMessage(), ex);
                 }
             }
-            while (nextLink != 0);
-
-            assert incomplete.isReady();
-
-            return new MetastorageDataRow(link, key, incomplete.data());
         }
     }
 }

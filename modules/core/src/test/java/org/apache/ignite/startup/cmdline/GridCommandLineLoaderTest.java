@@ -17,9 +17,11 @@
 
 package org.apache.ignite.startup.cmdline;
 
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -30,6 +32,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 
@@ -44,6 +47,7 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoader() throws Exception {
         String path = U.getIgniteHome() + GRID_CFG_PATH;
 
@@ -79,32 +83,43 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
      * Kills node after it is started.
      */
     public static class KillerLifecycleBean implements LifecycleBean {
+        /**
+         * Latch for wainting start both nodes from sping xml config.
+         */
+        private static final CountDownLatch INIT_TWO_NODES_LATCH = new CountDownLatch(2);
+
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
-        /** */
+        /**
+         *
+         */
         @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
             if (evt == LifecycleEventType.AFTER_NODE_START) {
                 System.setProperty(IGNITE_RESTART_CODE, Integer.toString(
                     1 + IgniteSystemProperties.getInteger(IGNITE_RESTART_CODE, 0)));
 
-                System.out.println("Ignite instance seen, will shut it down.");
+                String name = ignite.name();
+
+                System.out.println("Ignite instance seen, will shut it down. Name=" + name);
 
                 new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            Thread.sleep(3000);
+                            INIT_TWO_NODES_LATCH.await();
                         }
                         catch (InterruptedException e) {
                             e.printStackTrace();
                         }
 
-                        System.out.println("Shutdown imminent.");
+                        System.out.println("Shutdown imminent. Name=" + name);
 
-                        ignite.close();
+                        Ignition.stop(name, true);
                     }
                 }).start();
+
+                INIT_TWO_NODES_LATCH.countDown();
             }
         }
     }

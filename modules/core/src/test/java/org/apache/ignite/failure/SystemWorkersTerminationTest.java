@@ -28,6 +28,7 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
 
 /**
  * Tests system critical workers termination.
@@ -75,6 +76,7 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSyntheticWorkerTermination() throws Exception {
         IgniteEx ignite = grid(0);
 

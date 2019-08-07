@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -30,6 +29,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
@@ -38,29 +39,28 @@ import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
  * Checks that node can be started without operations with undefined IGNITE_HOME.
  * <p>
  * Notes:
- * 1. The test intentionally extends JUnit {@link TestCase} class to make the test
- * independent from {@link GridCommonAbstractTest} stuff.
+ * 1. The test is intentionally made  independent from {@link GridCommonAbstractTest} stuff.
  * 2. Do not replace native Java asserts with JUnit ones - test won't fall on TeamCity.
  */
-public class GridStartupWithUndefinedIgniteHomeSelfTest extends TestCase {
+public class GridStartupWithUndefinedIgniteHomeSelfTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int GRID_COUNT = 2;
 
-    /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    /** */
+    @After
+    public void tearDown() {
         // Next grid in the same VM shouldn't use cached values produced by these tests.
         nullifyHomeDirectory();
 
         U.getIgniteHome();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testStartStopWithUndefinedIgniteHome() throws Exception {
+    /** */
+    @Test
+    public void testStartStopWithUndefinedIgniteHome() {
         IgniteUtils.nullifyHomeDirectory();
 
         // We can't use U.getIgniteHome() here because
@@ -77,7 +77,7 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest extends TestCase {
 
         IgniteLogger log = new JavaLogger();
 
-        log.info(">>> Test started: " + getName());
+        log.info(">>> Test started: start-stop");
         log.info("Grid start-stop test count: " + GRID_COUNT);
 
         for (int i = 0; i < GRID_COUNT; i++) {

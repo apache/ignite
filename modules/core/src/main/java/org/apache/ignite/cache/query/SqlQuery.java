@@ -30,7 +30,10 @@ import org.jetbrains.annotations.Nullable;
  * SQL Query.
  *
  * @see IgniteCache#query(Query)
+ *
+ * @deprecated Since 2.8, please use {@link SqlFieldsQuery} instead.
  */
+@Deprecated
 public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -238,7 +241,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param replicatedOnly The query contains only replicated tables.
      * @return {@code this} For chaining.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public SqlQuery<K, V> setReplicatedOnly(boolean replicatedOnly) {
         this.replicatedOnly = replicatedOnly;
 
@@ -249,7 +254,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * Check is the query contains only replicated tables.
      *
      * @return {@code true} If the query contains only replicated tables.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public boolean isReplicatedOnly() {
         return replicatedOnly;
     }

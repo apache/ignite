@@ -465,7 +465,6 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
-
     /**
      * Registers write future in igfs data manager.
      *
@@ -1080,7 +1079,6 @@ public class IgfsDataManager extends IgfsManager {
      * @param blocks Blocks to write.
      * @return Future that will be completed after put is done.
      */
-    @SuppressWarnings("unchecked")
     private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
         return dataCachePrj.putAllAsync(blocks);
@@ -1118,7 +1116,6 @@ public class IgfsDataManager extends IgfsManager {
      * @param nodeId Node ID.
      * @param ackMsg Write acknowledgement message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
         try {
             ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
@@ -1499,7 +1496,6 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ConstantConditions")
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {

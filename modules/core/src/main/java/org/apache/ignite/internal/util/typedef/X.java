@@ -291,7 +291,6 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T> T cloneObject(@Nullable T obj, boolean deep, boolean honorCloneable) {
         if (obj == null)
             return null;
@@ -310,7 +309,6 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable private static <T> T shallowClone(@Nullable T obj) {
         if (obj == null)
             return null;
@@ -462,12 +460,13 @@ public final class X {
      * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param msg Message text that should be in cause.
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
     @SafeVarargs
-    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<?>... cls) {
+    public static boolean hasCause(@Nullable Throwable t,  @Nullable String msg, @Nullable Class<?>... cls) {
         if (t == null || F.isEmpty(cls))
             return false;
 
@@ -475,12 +474,20 @@ public final class X {
 
         for (Throwable th = t; th != null; th = th.getCause()) {
             for (Class<?> c : cls) {
-                if (c.isAssignableFrom(th.getClass()))
+                if (c.isAssignableFrom(th.getClass())) {
+                    if (msg != null) {
+                        if (th.getMessage() != null && th.getMessage().contains(msg))
+                            return true;
+                        else
+                            continue;
+                    }
+
                     return true;
+                }
             }
 
             for (Throwable n : th.getSuppressed()) {
-                if (hasCause(n, cls))
+                if (hasCause(n, msg, cls))
                     return true;
             }
 
@@ -489,6 +496,19 @@ public final class X {
         }
 
         return false;
+    }
+
+    /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy <b>including</b> that
+     * throwable itself. <p> Note that this method follows includes {@link Throwable#getSuppressed()} into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @return {@code True} if one of the causing exception is an instance of passed in classes, {@code false}
+     * otherwise.
+     */
+    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<?>... cls) {
+        return hasCause(t, null, cls);
     }
 
     /**
@@ -524,7 +544,6 @@ public final class X {
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
      * @return First causing exception of passed in class, {@code null} otherwise.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T extends Throwable> T cause(@Nullable Throwable t, @Nullable Class<T> cls) {
         if (t == null || cls == null)
             return null;

@@ -21,13 +21,15 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -54,26 +56,22 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Defines first preprocessor that extracts features from an upstream data.
-                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                    = (k, v) -> new Object[]{v[0], v[3], v[5], v[6], v[10]
-                }; // "pclass", "sibsp", "parch", "sex", "embarked"
+                // "pclass", "sibsp", "parch", "sex", "embarked"
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 3, 5, 6, 10).labeled(1);
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
-
-                IgniteBiFunction<Integer, Object[], Vector> oneHotEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> oneHotEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.ONE_HOT_ENCODER)
                     .withEncodedFeature(0)
                     .withEncodedFeature(1)
                     .withEncodedFeature(4)
                     .fit(ignite,
                         dataCache,
-                        featureExtractor
-                );
+                        vectorizer
+                    );
 
-                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         oneHotEncoderPreprocessor
@@ -85,8 +83,7 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    imputingPreprocessor,
-                    lbExtractor
+                    imputingPreprocessor
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);
@@ -95,7 +92,6 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
                     dataCache,
                     mdl,
                     imputingPreprocessor,
-                    lbExtractor,
                     new Accuracy<>()
                 );
 
@@ -104,10 +100,11 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
 
                 System.out.println(">>> Tutorial step 3 (categorial with One-hot encoder) example started.");
 
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

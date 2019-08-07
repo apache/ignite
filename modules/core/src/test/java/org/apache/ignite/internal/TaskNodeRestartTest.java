@@ -37,20 +37,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
  */
 public class TaskNodeRestartTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES = 3;
 
@@ -59,8 +55,6 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         return cfg;
     }
@@ -75,6 +69,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskNodeRestart() throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
@@ -159,7 +154,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
      */
     private static class TestTask1 extends ComputeTaskAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
             throws IgniteException {
             Map<TestJob, ClusterNode> jobs = new HashMap<>();
 
@@ -180,7 +175,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
      */
     private static class TestTask2 implements ComputeTask<Void, Void> {
         /** {@inheritDoc} */
-        @Override @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
             throws IgniteException {
             Map<TestJob, ClusterNode> jobs = new HashMap<>();
 

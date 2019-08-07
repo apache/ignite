@@ -35,5 +35,5 @@ public @interface ComputeTaskName {
     /**
      * Optional task name.
      */
-    @SuppressWarnings({"JavaDoc"}) String value();
+    String value();
 }

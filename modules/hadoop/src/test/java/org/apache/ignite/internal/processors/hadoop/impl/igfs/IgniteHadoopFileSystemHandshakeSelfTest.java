@@ -40,6 +40,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -83,6 +84,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHandshake() throws Exception {
         startUp(false, false);
 
@@ -95,7 +97,6 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
-
 
         tcp = false; // Embedded mode:
 
@@ -111,6 +112,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHandshakeDefaultGrid() throws Exception {
         startUp(true, false);
 
@@ -123,7 +125,6 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
-
 
         tcp = false; // Embedded mode:
 
@@ -231,7 +232,6 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
      * @param authority Authority.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkInvalid(final String authority) throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

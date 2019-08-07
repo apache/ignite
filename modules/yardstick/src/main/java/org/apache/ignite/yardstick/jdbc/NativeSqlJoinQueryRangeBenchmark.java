@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.jdbc;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
@@ -50,7 +51,7 @@ public class NativeSqlJoinQueryRangeBenchmark extends IgniteAbstractBenchmark {
             qry = new SqlFieldsQuery("SELECT * FROM person p join organization o on p.orgId=o.id WHERE p.id = ? " +
                 "order by p.id");
 
-            qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);
+            qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()));
 
             expRsSize = 1;
         }
@@ -63,7 +64,7 @@ public class NativeSqlJoinQueryRangeBenchmark extends IgniteAbstractBenchmark {
             qry = new SqlFieldsQuery("SELECT * FROM person p join organization o on p.orgId=o.id WHERE p.id BETWEEN ? AND ?" +
                 "order by p.id");
 
-            long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
+            long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange());
             long maxId = id + args.sqlRange() - 1;
 
             qry.setArgs(id, maxId);
@@ -74,14 +75,16 @@ public class NativeSqlJoinQueryRangeBenchmark extends IgniteAbstractBenchmark {
         long rsSize = 0;
 
         try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
-                .querySqlFields(qry, false)) {
+            .querySqlFields(qry, false)) {
 
             for (List<?> r : cursor)
                 rsSize++;
         }
 
-        if (rsSize != expRsSize)
-            throw new Exception("Invalid result set size [actual=" + rsSize + ", expected=" + expRsSize + ']');
+        if (rsSize != expRsSize) {
+            throw new Exception("Invalid result set size [actual=" + rsSize + ", expected=" + expRsSize
+                + ", qry=" + qry + ']');
+        }
 
         return true;
     }
@@ -90,46 +93,61 @@ public class NativeSqlJoinQueryRangeBenchmark extends IgniteAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        qry = ((IgniteEx)ignite()).context().query();
+        IgniteSemaphore sem = ignite().semaphore("sql-setup", 1, true, true);
 
-        StringBuilder withExpr = new StringBuilder(" WITH \"AFFINITY_KEY=orgId,");
+        try {
+            if (sem.tryAcquire()) {
+                qry = ((IgniteEx)ignite()).context().query();
 
-        if (args.atomicMode() != null)
-            withExpr.append("atomicity=").append(args.atomicMode().name()).append(",");
+                StringBuilder withExpr = new StringBuilder(" WITH \"AFFINITY_KEY=orgId,");
 
-        if (args.partitionedCachesNumber() == 1)
-            withExpr.append("template=replicated");
-        else
-            withExpr.append("template=partitioned");
+                if (args.atomicMode() != null)
+                    withExpr.append("atomicity=").append(args.atomicMode().name()).append(",");
 
-        withExpr.append("\"");
+                if (args.partitionedCachesNumber() == 1)
+                    withExpr.append("template=replicated");
+                else
+                    withExpr.append("template=partitioned");
 
-        qry.querySqlFields(
-            new SqlFieldsQuery("CREATE TABLE person (id long, orgId long, name varchar, PRIMARY KEY (id, orgId))" + withExpr), true);
+                withExpr.append("\"");
 
-        withExpr = new StringBuilder(" WITH \"");
+                qry.querySqlFields(
+                    new SqlFieldsQuery("CREATE TABLE person (id long, orgId long, name varchar, PRIMARY KEY (id, orgId))" + withExpr), true);
 
-        if (args.atomicMode() != null)
-            withExpr.append("atomicity=").append(args.atomicMode().name()).append(",");
+                withExpr = new StringBuilder(" WITH \"");
 
-        withExpr.append("template=partitioned");
+                if (args.atomicMode() != null)
+                    withExpr.append("atomicity=").append(args.atomicMode().name()).append(",");
 
-        withExpr.append("\"");
+                withExpr.append("template=partitioned");
 
-        qry.querySqlFields(
-            new SqlFieldsQuery("CREATE TABLE organization (id long primary key, name varchar)" + withExpr), true);
+                withExpr.append("\"");
 
-        for (long k = 1; k <= args.range(); ++k) {
-            qry.querySqlFields(new SqlFieldsQuery("insert into person (id, orgId, name) values (?, ?, ?)")
-                .setArgs(k, k / 10, "person " + k), true).getAll();
+                qry.querySqlFields(
+                    new SqlFieldsQuery("CREATE TABLE organization (id long primary key, name varchar)" + withExpr), true);
 
-            if (k % 10 == 0) {
-                qry.querySqlFields(new SqlFieldsQuery("insert into organization (id, name) values (?, ?)")
-                    .setArgs(k / 10, "organization " + k / 10), true).getAll();
+                for (long k = 0; k <= args.range(); ++k) {
+                    qry.querySqlFields(new SqlFieldsQuery("insert into person (id, orgId, name) values (?, ?, ?)")
+                        .setArgs(k, k / 10, "person " + k), true).getAll();
+
+                    if (k % 10 == 0) {
+                        qry.querySqlFields(new SqlFieldsQuery("insert into organization (id, name) values (?, ?)")
+                            .setArgs(k / 10, "organization " + k / 10), true).getAll();
+                    }
+
+                    if (k % 10000 == 0)
+                        println(cfg, "Populate " + k);
+                }
             }
+            else {
+                // Acquire (wait setup by other client) and immediately release/
+                println(cfg, "Waits for setup...");
 
-            if (k % 10000 == 0)
-                println(cfg, "Populate " + k);
+                sem.acquire();
+            }
+        }
+        finally {
+            sem.release();
         }
     }
 }

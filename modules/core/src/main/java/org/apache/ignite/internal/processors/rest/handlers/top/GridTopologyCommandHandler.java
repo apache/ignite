@@ -52,12 +52,12 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
@@ -97,6 +97,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         boolean mtr = req0.includeMetrics();
         boolean attr = req0.includeAttributes();
+        boolean caches = req0.includeCaches();
 
         switch (req.command()) {
             case TOPOLOGY: {
@@ -107,7 +108,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     new ArrayList<>(allNodes.size());
 
                 for (ClusterNode node : allNodes)
-                    top.add(createNodeBean(node, mtr, attr));
+                    top.add(createNodeBean(node, mtr, attr, caches));
 
                 res.setResponse(top);
 
@@ -143,7 +144,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     });
 
                 if (node != null)
-                    res.setResponse(createNodeBean(node, mtr, attr));
+                    res.setResponse(createNodeBean(node, mtr, attr, caches));
                 else
                     res.setResponse(null);
 
@@ -196,14 +197,15 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Creates node bean out of grid node. Notice that cache attribute is handled separately.
+     * Creates node bean out of cluster node. Notice that cache attribute is handled separately.
      *
-     * @param node Grid node.
-     * @param mtr {@code true} to add metrics.
-     * @param attr {@code true} to add attributes.
+     * @param node Cluster node.
+     * @param mtr Whether to include node metrics.
+     * @param attr Whether to include node attributes.
+     * @param caches Whether to include node caches.
      * @return Grid Node bean.
      */
-    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr) {
+    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr, boolean caches) {
         assert node != null;
 
         GridClientNodeBean nodeBean = new GridClientNodeBean();
@@ -216,14 +218,16 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
-        Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
+        if (caches) {
+            Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
 
-        Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
+            Collection<GridClientCacheBean> cacheBeans = new ArrayList<>(nodeCaches.size());
 
-        for (CacheConfiguration ccfg : nodeCaches.values())
-            caches.add(createCacheBean(ccfg));
+            for (CacheConfiguration ccfg : nodeCaches.values())
+                cacheBeans.add(createCacheBean(ccfg));
 
-        nodeBean.setCaches(caches);
+            nodeBean.setCaches(cacheBeans);
+        }
 
         if (mtr) {
             ClusterMetrics metrics = node.metrics();
@@ -289,7 +293,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
             attrs.remove(ATTR_CACHE);
             attrs.remove(ATTR_TX_CONFIG);
-            attrs.remove(ATTR_SECURITY_SUBJECT);
             attrs.remove(ATTR_SECURITY_SUBJECT_V2);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
             attrs.remove(ATTR_BINARY_CONFIGURATION);
@@ -308,7 +311,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 if (e.getValue() != null) {
                   if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
                       e.setValue(e.getValue().toString());
-                  else if (e.getValue().getClass().isArray())
+                  else if (e.getValue().getClass().isArray() && !ATTR_IGNITE_FEATURES.equals(e.getKey()))
                       i.remove();
                 }
             }

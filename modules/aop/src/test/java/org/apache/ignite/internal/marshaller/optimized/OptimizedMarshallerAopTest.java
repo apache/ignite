@@ -21,11 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.compute.gridify.Gridify;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 
@@ -71,6 +71,7 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUp() throws Exception {
         G.ignite().events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

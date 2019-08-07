@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -142,6 +141,22 @@ public interface PluginProvider<C extends PluginConfiguration> {
      *
      * @param node Joining node.
      * @throws PluginValidationException If cluster-wide plugin validation failed.
+     *
+     * @deprecated Use {@link #validateNewNode(ClusterNode, Serializable)} instead.
      */
+    @Deprecated
     public void validateNewNode(ClusterNode node) throws PluginValidationException;
+
+    /**
+     * Validates that new node can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
+     *
+     * @param node Joining node.
+     * @param data Discovery data object or {@code null} if nothing was
+     * sent for this component.
+     * @throws PluginValidationException If cluster-wide plugin validation failed.
+     */
+    public default void validateNewNode(ClusterNode node, Serializable data)  {
+        validateNewNode(node);
+    }
 }

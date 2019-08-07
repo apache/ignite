@@ -156,10 +156,10 @@ public abstract class BinaryFieldAccessor {
         try {
             write0(obj, writer);
         }
+        catch (UnregisteredClassException | UnregisteredBinaryTypeException ex) {
+            throw ex;
+        }
         catch (Exception ex) {
-            if (ex instanceof UnregisteredClassException || ex instanceof UnregisteredBinaryTypeException)
-                throw ex;
-
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(name))
                 throw new BinaryObjectException("Failed to write field [name=" + name + ']', ex);
             else
@@ -207,7 +207,7 @@ public abstract class BinaryFieldAccessor {
     /**
      * Base primitive field accessor.
      */
-    private static abstract class AbstractPrimitiveAccessor extends BinaryFieldAccessor {
+    private abstract static class AbstractPrimitiveAccessor extends BinaryFieldAccessor {
         /** Offset. */
         protected final long offset;
 

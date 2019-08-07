@@ -19,12 +19,12 @@ package org.apache.ignite.spi.checkpoint;
 
 import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
 
 /**
  * Grid checkpoint SPI abstract test.
  * @param <T> Concrete SPI class.
  */
-@SuppressWarnings({"CatchGenericClass"})
 public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
     extends GridSpiAbstractTest<T> {
     /** */
@@ -36,6 +36,7 @@ public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testSaveLoadRemoveWithoutExpire() throws Exception {
         String dataPrefix = "Test check point data ";
 
@@ -86,6 +87,7 @@ public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testSaveWithExpire() throws Exception {
         // Save states.
         for (int i = 0; i < CHECK_POINT_COUNT; i++) {
@@ -112,6 +114,7 @@ public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testDuplicates() throws Exception {
         int idx1 = 1;
         int idx2 = 2;

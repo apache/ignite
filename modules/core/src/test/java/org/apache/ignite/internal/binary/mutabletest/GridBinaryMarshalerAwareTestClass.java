@@ -55,7 +55,6 @@ public class GridBinaryMarshalerAwareTestClass implements Binarylizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("FloatingPointEquality")
     @Override public boolean equals(Object other) {
         return this == other || GridTestUtils.deepEquals(this, other);
     }

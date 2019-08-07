@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Job stealing failover SPI test for one node.
@@ -69,6 +70,7 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailover() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -86,6 +88,7 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNoFailover() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 

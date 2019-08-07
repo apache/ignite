@@ -23,14 +23,6 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.events.CacheQueryReadEvent;
-import org.apache.ignite.events.CacheRebalancingEvent;
-import org.apache.ignite.events.CheckpointEvent;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.JobEvent;
-import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -41,6 +33,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.events.*;
 
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -51,10 +44,9 @@ import java.util.UUID;
 /**
  * Test task writing all events to a stream.
  */
-@SuppressWarnings("UnusedDeclaration")
 public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         Long ptr) {
         return Collections.singletonMap(new Job(ptr, F.first(subgrid)), F.first(subgrid));
     }
@@ -67,7 +59,6 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
     /**
      * Job.
      */
-    @SuppressWarnings("deprecation")
     private static class Job extends ComputeJobAdapter {
         /** Grid. */
         @IgniteInstanceResource
@@ -102,7 +93,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);
 
                 ctx.writeEvent(writer, new CacheEvent("cacheName", node, node, "msg", evtType, 1, true, 2,
-                    igniteUuid, 3, 4, true, 5, true, uuid, "cloClsName", "taskName"));
+                    igniteUuid, "txLabel",3, 4, true, 5, true, uuid, "cloClsName", "taskName"));
 
                 //noinspection unchecked
                 ctx.writeEvent(writer, new CacheQueryExecutedEvent(node, msg, evtType, "qryType", "cacheName",

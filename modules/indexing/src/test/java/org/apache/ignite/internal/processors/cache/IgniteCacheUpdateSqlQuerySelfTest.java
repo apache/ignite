@@ -24,7 +24,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
@@ -32,6 +31,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+
+import static java.util.Arrays.asList;
 
 /**
  *
@@ -65,6 +69,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
+    @Test
     public void testUpdateSimple() {
         IgniteCache p = cache();
 
@@ -79,190 +84,317 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(4, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+        assertEqualsCollections(asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(1));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(2));
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(6, "Sy", "Green"), 6, "Sy", "Green"),
+        assertEqualsCollections(asList("k3", createPerson(6, "Sy", "Green"), 6, "Sy", "Green"),
             leftovers.get(3));
     }
 
     /**
      *
      */
+    @Test
     public void testUpdateSingle() {
-        IgniteCache p = cache();
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
-            .setArgs(createPerson(2, "Jo", "White"), "FirstKey"));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        c.iterator();
+        try {
+            IgniteCache p = cache();
 
-        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
+            QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
+                .setArgs(createPerson(2, "Jo", "White"), "FirstKey"));
 
-        List<List<?>> leftovers = c.getAll();
+            c.iterator();
 
-        assertEquals(4, leftovers.size());
+            c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
-            leftovers.get(0));
+            List<List<?>> leftovers = c.getAll();
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
-            leftovers.get(1));
+            assertEquals(4, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
-            leftovers.get(2));
+            assertEqualsCollections(asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+                leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
-            leftovers.get(3));
+            assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+                leftovers.get(1));
+
+            assertEqualsCollections(asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+                leftovers.get(2));
+
+            assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+                leftovers.get(3));
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
     /**
-     *
+     * Test that nested fields could be updated using sql UPDATE just by nested field name.
      */
-    public void testUpdateValueAndFields() {
-        IgniteCache p = cache();
+    @Test
+    public void testNestedFieldsUpdate() {
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set id = ?, _val = ? where _key = ?")
-            .setArgs(44, createPerson(2, "Jo", "Woo"), "FirstKey"));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        c.iterator();
+        try {
+            IgniteCache<Long, AllTypes> p = ignite(0).cache("L2AT");
 
-        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by _key, id"));
+            final long ROOT_KEY = 1;
 
-        List<List<?>> leftovers = c.getAll();
+            // Create 1st level value
+            AllTypes rootVal = new AllTypes(1L);
 
-        assertEquals(4, leftovers.size());
+            // With random inner field
+            rootVal.innerTypeCol = new AllTypes.InnerType(42L);
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(44, "Jo", "Woo"), 44, "Jo", "Woo"),
-            leftovers.get(0));
+            p.query(new SqlFieldsQuery(
+                "INSERT INTO \"AllTypes\"(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
+            ).getAll();
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
-            leftovers.get(1));
+            // Update inner fields just by their names
+            p.query(new SqlFieldsQuery("UPDATE \"AllTypes\" " +
+                "SET \"innerLongCol\" = ?, \"innerStrCol\" = ?, \"arrListCol\" = ?;"
+            ).setArgs(50L, "sss", new ArrayList<>(asList(3L, 2L, 1L)))).getAll();
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
-            leftovers.get(2));
+            AllTypes res = p.get(ROOT_KEY);
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
-            leftovers.get(3));
-    }
+            AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
 
-    /**
-     *
-     */
-    public void testDefault() {
-        IgniteCache p = cache();
+            resInner.innerStrCol = "sss";
+            resInner.arrListCol = new ArrayList<>(asList(3L, 2L, 1L));
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set id = DEFAULT, _val = ? where _key = ?")
-            .setArgs(createPerson(2, "Jo", "Woo"), "FirstKey"));
-
-        c.iterator();
-
-        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by _key, id"));
-
-        List<List<?>> leftovers = c.getAll();
-
-        assertEquals(4, leftovers.size());
-
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(0, "Jo", "Woo"), 0, "Jo", "Woo"),
-            leftovers.get(0));
-
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
-            leftovers.get(1));
-
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
-            leftovers.get(2));
-
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
-            leftovers.get(3));
+            assertEquals(resInner, res.innerTypeCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
     /** */
+    @Test
     public void testTypeConversions() throws ParseException {
-        IgniteCache cache = ignite(0).cache("L2AT");
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\"," +
-            "\"tsCol\") values(2, ?, '2016-11-30 12:00:00', false, DATE '2016-12-01')").setArgs(new AllTypes(2L)));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        // Look ma, no hands: first we set value of inner object column (innerTypeCol), then update only one of its
-        // fields (innerLongCol), while leaving another inner property (innerStrCol) as specified by innerTypeCol.
-        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = ?, \"doubleCol\" = CAST('50' as INT)," +
-            " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
-            "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
-            "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', \"tsCol\"=TIMESTAMPADD('MI', 2, " +
-            "DATEADD('DAY', 2, \"tsCol\")), \"primitiveIntsCol\" = ?, \"bytesCol\" = ?")
-            .setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6}));
+        try {
+            IgniteCache cache = ignite(0).cache("L2AT");
 
-        AllTypes res = (AllTypes) cache.get(2L);
+            cache.query(new SqlFieldsQuery("INSERT INTO \"AllTypes\" (_key, _val) VALUES(2, ?)")
+                .setArgs(new AllTypes(2L))).getAll();
 
-        assertNotNull(res);
+            cache.query (new SqlFieldsQuery(
+                "UPDATE \"AllTypes\" " +
+                    "SET " +
+                    "\"dateCol\" = '2016-11-30 12:00:00', " +
+                    "\"booleanCol\" = false, " +
+                    "\"tsCol\" = DATE '2016-12-01' " +
+                    "WHERE _key = 2")
+            );
 
-        assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
-        assertEquals(50.0, res.doubleCol);
-        assertEquals(2L, (long) res.longCol);
-        assertTrue(res.booleanCol);
-        assertEquals("3.141592653589793", res.strCol);
-        assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
-        assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
-        assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
-        assertTrue(Arrays.equals(new int[] {2, 3}, res.primitiveIntsCol));
+            // Look ma, no hands: first we set value of inner object column (innerTypeCol), then update only one of its
+            // fields (innerLongCol), while leaving another inner property (innerStrCol) as specified by innerTypeCol.
+            cache.query(new SqlFieldsQuery(
+                    "UPDATE \"AllTypes\" " +
+                        "SET " +
+                        "\"innerLongCol\" = ?, " +  // (1)
+                        "\"doubleCol\" = CAST('50' as INT), " +
+                        "\"booleanCol\" = 80, " +
+                        "\"innerTypeCol\" = ?, " + // (2)
+                        "\"strCol\" = PI(), " +
+                        "\"shortCol\" = CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
+                        "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', " +
+                        "\"tsCol\"=TIMESTAMPADD('MI', 2, DATEADD('DAY', 2, \"tsCol\")), " +
+                        "\"primitiveIntsCol\" = ?, " +  //(3)
+                        "\"bytesCol\" = ?" // (4)
+                ).setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6})
+            ).getAll();
 
-        AllTypes.InnerType expInnerType = new AllTypes.InnerType(80L);
-        expInnerType.innerLongCol = 5L;
+            AllTypes res = (AllTypes) cache.get(2L);
 
-        assertEquals(expInnerType, res.innerTypeCol);
-        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
-        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-12-03 00:02:00"), res.tsCol);
-        assertEquals(2, res.intCol);
-        assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
-        assertEquals(new java.sql.Date(new SimpleDateFormat("yyyy-MM-dd").parse("2016-12-02").getTime()), res.sqlDateCol);
+            assertNotNull(res);
 
-        // 49th week, right?
-        assertEquals(49, res.shortCol);
+            assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
+            assertEquals(50.0, res.doubleCol);
+            assertEquals(2L, (long) res.longCol);
+            assertTrue(res.booleanCol);
+            assertEquals("3.141592653589793", res.strCol);
+            assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
+            assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
+            assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
+            assertTrue(Arrays.equals(new int[] {2, 3}, res.primitiveIntsCol));
+
+            AllTypes.InnerType expInnerType = new AllTypes.InnerType(80L);
+            expInnerType.innerLongCol = 5L;
+
+            assertEquals(expInnerType, res.innerTypeCol);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-12-03 00:02:00"), res.tsCol);
+            assertEquals(2, res.intCol);
+            assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
+            assertEquals(new java.sql.Date(new SimpleDateFormat("yyyy-MM-dd").parse("2016-12-02").getTime()), res.sqlDateCol);
+
+            // 49th week, right?
+            assertEquals(49, res.shortCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
     /** */
+    @Test
     public void testSingleInnerFieldUpdate() throws ParseException {
-        IgniteCache cache = ignite(0).cache("L2AT");
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\") values(2, ?," +
-            "'2016-11-30 12:00:00', false)").setArgs(new AllTypes(2L)));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        assertFalse(cache.query(new SqlFieldsQuery("select * from \"AllTypes\"")).getAll().isEmpty());
+        try {
+            IgniteCache cache = ignite(0).cache("L2AT");
 
-        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = 5"));
+            cache.query(new SqlFieldsQuery("insert into \"AllTypes\" (_key, _val) values(2, ?)")
+                .setArgs(new AllTypes(2L))).getAll();
 
-        AllTypes res = (AllTypes) cache.get(2L);
+            cache.query(new SqlFieldsQuery(
+                "UPDATE \"AllTypes\" " +
+                    "SET " +
+                    "\"dateCol\" = '2016-11-30 12:00:00', " +
+                    "\"booleanCol\" = false " +
+                    "WHERE _key = 2")
+            ).getAll();
 
-        assertNotNull(res);
+            assertFalse(cache.query(new SqlFieldsQuery("select * from \"AllTypes\"")).getAll().isEmpty());
 
-        assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
-        assertEquals(3.01, res.doubleCol);
-        assertEquals(2L, (long) res.longCol);
-        assertFalse(res.booleanCol);
+            cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = 5"));
 
-        assertEquals("2", res.strCol);
-        assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
-        assertTrue(Arrays.deepEquals(new Byte[] {0, 1}, res.bytesCol));
-        assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
-        assertTrue(Arrays.equals(new int[] {0, 1}, res.primitiveIntsCol));
+            AllTypes res = (AllTypes) cache.get(2L);
 
-        AllTypes.InnerType expInnerType = new AllTypes.InnerType(2L);
-        expInnerType.innerLongCol = 5L;
+            assertNotNull(res);
 
-        assertEquals(expInnerType, res.innerTypeCol);
-        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
-        assertNull(res.tsCol);
-        assertEquals(2, res.intCol);
-        assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
-        assertNull(res.sqlDateCol);
+            assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
+            assertEquals(3.01, res.doubleCol);
+            assertEquals(2L, (long) res.longCol);
+            assertFalse(res.booleanCol);
 
-        assertEquals(-23000, res.shortCol);
+            assertEquals("2", res.strCol);
+            assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
+            assertTrue(Arrays.deepEquals(new Byte[] {0, 1}, res.bytesCol));
+            assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
+            assertTrue(Arrays.equals(new int[] {0, 1}, res.primitiveIntsCol));
+
+            AllTypes.InnerType expInnerType = new AllTypes.InnerType(2L);
+            expInnerType.innerLongCol = 5L;
+
+            assertEquals(expInnerType, res.innerTypeCol);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
+            assertNull(res.tsCol);
+            assertEquals(2, res.intCol);
+            assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
+            assertNull(res.sqlDateCol);
+
+            assertEquals(-23000, res.shortCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
+    }
+
+    /**
+     * Drop and create tables for the update parameters tests.
+     */
+    private void dropAndCreateParamsTables() {
+        execute(new SqlFieldsQuery("DROP TABLE IF EXISTS PARAMS"));
+        execute(new SqlFieldsQuery("DROP TABLE IF EXISTS CONST_TAB"));
+
+        execute(new SqlFieldsQuery("CREATE TABLE PARAMS(ID INT PRIMARY KEY, VAL1 INT, VAL2 INT) WITH \"template=replicated\""));
+        execute(new SqlFieldsQuery("INSERT INTO PARAMS VALUES (1, 2, 3), (2, 3, 4), (3, 2, 1), (4, 2, 1)"));
+
+        execute(new SqlFieldsQuery("CREATE TABLE CONST_TAB(ID INT PRIMARY KEY, VAL INT) WITH \"template=replicated\""));
+        execute(new SqlFieldsQuery("INSERT INTO CONST_TAB VALUES (42, 2)"));
+    }
+
+    /**
+     * Check parameters from update are passed to implicit select correctly.
+     */
+    @Test
+    public void testUpdateParameters() {
+        asList(true, false).forEach(loc -> {
+            dropAndCreateParamsTables();
+
+            execute(new SqlFieldsQuery(
+                "UPDATE PARAMS SET VAL1 = ?, VAL2 = ? WHERE ID = ?")
+                .setArgs(1, 2, 3).setLocal(loc));
+
+            List<List<?>> tab = execute(new SqlFieldsQuery("SELECT * FROM PARAMS ORDER BY ID"));
+
+            List<List<?>> exp = asList(asList(1, 2, 3), asList(2, 3, 4), asList(3, 1, 2), asList(4, 2, 1));
+
+            assertEqualsCollections(exp, tab);
+        });
+    }
+
+    /**
+     * Check query positional parameters using update statement. Parameters have explicit indexes.
+     */
+    @Test
+    public void testUpdateParametersWithIndexes() {
+        asList(true, false).forEach(loc -> {
+            dropAndCreateParamsTables();
+
+            execute(new SqlFieldsQuery(
+                "UPDATE PARAMS SET VAL1 = ?3, VAL2 = ?2 WHERE ID = ?1")
+                .setArgs(1, 2, 3).setLocal(loc));
+
+            List<List<?>> tab = execute(new SqlFieldsQuery("SELECT * FROM PARAMS ORDER BY ID"));
+
+            List<List<?>> exp = asList(asList(1, 3, 2), asList(2, 3, 4), asList(3, 2, 1), asList(4, 2, 1));
+
+            assertEqualsCollections(exp, tab);
+        });
+    }
+
+    /**
+     * Check query positional parameters using update statement with the subquery.
+     */
+    @Test
+    public void testUpdateParametersWithSubQuery() {
+        asList(true, false).forEach(loc -> {
+            dropAndCreateParamsTables();
+
+            execute(new SqlFieldsQuery(
+                "UPDATE PARAMS SET VAL1 = ?, VAL2 = ( SELECT ID FROM CONST_TAB WHERE VAL = ? ) WHERE ID = ?")
+                .setArgs(1, 2, 3).setLocal(loc));
+
+            List<List<?>> tab = execute(new SqlFieldsQuery("SELECT * FROM PARAMS ORDER BY ID"));
+
+            List<List<?>> exp = asList(asList(1, 2, 3), asList(2, 3, 4), asList(3, 1, 42), asList(4, 2, 1));
+
+            assertEqualsCollections(exp, tab);
+        });
+    }
+
+    /**
+     * Execute sql query with the public schema.
+     *
+     * @param qry to execute.
+     * @return fetched result.
+     */
+    private List<List<?>> execute(SqlFieldsQuery qry) {
+        return ignite(0).cache("L2AT").query(qry.setSchema("PUBLIC")).getAll();
     }
 
     /**

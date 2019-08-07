@@ -1,0 +1,252 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'memory'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Memory
+    panel-description
+        | Cache memory settings.
+        a.link-success(
+            href="https://apacheignite.readme.io/v1.9/docs/off-heap-memory"
+            target="_blank"
+            ng-show='$ctrl.available(["1.0.0", "2.0.0"])'
+        ) More info
+        a.link-success(
+            href="https://apacheignite.readme.io/docs/evictions"
+            target="_blank"
+            ng-show='$ctrl.available("2.0.0")'
+        ) More info
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            //- Since ignite 2.0
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
+                +form-field__checkbox({
+                    label: 'Onheap cache enabled',
+                    model: model + '.onheapCacheEnabled',
+                    name: '"OnheapCacheEnabled"',
+                    tip: 'Checks if the on-heap cache is enabled for the off-heap based page memory'
+                })
+            //- Since ignite 2.0 deprecated in ignite 2.3
+            .pc-form-grid-col-60(ng-if='$ctrl.available(["2.0.0", "2.3.0"])')
+                +form-field__text({
+                    label: 'Memory policy name:',
+                    model: `${model}.memoryPolicyName`,
+                    name: '"MemoryPolicyName"',
+                    placeholder: 'default',
+                    tip: 'Name of memory policy configuration for this cache'
+                })
+
+            //- Since ignite 2.3
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
+                +form-field__text({
+                    label: 'Data region name:',
+                    model: `${model}.dataRegionName`,
+                    name: '"DataRegionName"',
+                    placeholder: 'default',
+                    tip: 'Name of data region configuration for this cache'
+                })
+
+            //- Since ignite 2.8
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+                +form-field__dropdown({
+                    label: 'Disk page compression:',
+                    model: `${model}.diskPageCompression`,
+                    name: '"diskPageCompression"',
+                    placeholder: 'IGNITE_DEFAULT_DISK_PAGE_COMPRESSION',
+                    options: '::$ctrl.Caches.diskPageCompression',
+                    tip: `Memory modes control whether value is stored in on-heap memory, off-heap memory, or swap space
+                        <ul>
+                            <li>SKIP_GARBAGE - retain only useful data from half-filled pages, but do not apply any compression</li>
+                            <li>ZSTD - Zstd compression<br/></li>
+                            <li>LZ4 - LZ4 compression<br/></li>
+                            <li>SNAPPY - Snappy compression<br/></li>
+                        </ul>`
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.8.0") && ${model}.diskPageCompression === "ZSTD"`)
+                +form-field__number({
+                    label: 'Disk page compression level:',
+                    model: `${model}.diskPageCompressionLevel`,
+                    name: '"diskPageCompressionLevel"',
+                    placeholder: '3',
+                    min: -131072,
+                    max: 22,
+                    tip: 'Disk page compression level from -131072 to 22 or empty to use default 3.<br/>'
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.8.0") && ${model}.diskPageCompression === "LZ4"`)
+                +form-field__number({
+                    label: 'Disk page compression level:',
+                    model: `${model}.diskPageCompressionLevel`,
+                    name: '"diskPageCompressionLevel"',
+                    placeholder: '0',
+                    min: 0,
+                    max: 17,
+                    tip: 'Disk page compression level from 0 to 17 or empty to use default 0.<br/>'
+                })
+
+            //- Removed in ignite 2.0
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
+                +form-field__dropdown({
+                    label: 'Mode:',
+                    model: `${model}.memoryMode`,
+                    name: '"memoryMode"',
+                    placeholder: '{{ ::$ctrl.Caches.memoryMode.default }}',
+                    options: '::$ctrl.Caches.memoryModes',
+                    tip: `Memory modes control whether value is stored in on-heap memory, off-heap memory, or swap space
+                    <ul>
+                        <li>
+                            ONHEAP_TIERED - entries are cached on heap memory first<br/>
+                            <ul>
+                                <li>
+                                    If offheap memory is enabled and eviction policy evicts an entry from heap memory, entry will be moved to offheap memory<br/>
+                                    If offheap memory is disabled, then entry is simply discarded
+                                </li>
+                                <li>
+                                    If swap space is enabled and offheap memory fills up, then entry will be evicted into swap space<br/>
+                                    If swap space is disabled, then entry will be discarded. If swap is enabled and offheap memory is disabled, then entry will be evicted directly from heap memory into swap
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            OFFHEAP_TIERED - works the same as ONHEAP_TIERED, except that entries never end up in heap memory and get stored in offheap memory right away<br/>
+                            Entries get cached in offheap memory first and then get evicted to swap, if one is configured
+                        </li>
+                        <li>
+                            OFFHEAP_VALUES - entry keys will be stored on heap memory, and values will be stored in offheap memory<br/>
+                            Note that in this mode entries can be evicted only to swap
+                        </li>
+                    </ul>`
+                })(
+                    ui-validate=`{
+                        offheapAndDomains: '$ctrl.Caches.memoryMode.offheapAndDomains(${model})'
+                    }`
+                    ui-validate-watch=`"${model}.domains.length"`
+                    ng-model-options='{allowInvalid: true}'
+                )
+                    +form-field__error({ error: 'offheapAndDomains', message: 'Query indexing could not be enabled while values are stored off-heap' })
+            .pc-form-grid-col-60(ng-if=`${model}.memoryMode !== 'OFFHEAP_VALUES'`)
+                +form-field__dropdown({
+                    label: 'Off-heap memory:',
+                    model: `${model}.offHeapMode`,
+                    name: '"offHeapMode"',
+                    required: `$ctrl.Caches.offHeapMode.required(${model})`,
+                    placeholder: '{{::$ctrl.Caches.offHeapMode.default}}',
+                    options: '{{::$ctrl.Caches.offHeapModes}}',
+                    tip: `Off-heap storage mode
+                    <ul>
+                        <li>Disabled - Off-heap storage is disabled</li>
+                        <li>Limited - Off-heap storage has limited size</li>
+                        <li>Unlimited - Off-heap storage grow infinitely (it is up to user to properly add and remove entries from cache to ensure that off-heap storage does not grow infinitely)</li>
+                    </ul>`
+                })(
+                    ng-change=`$ctrl.Caches.offHeapMode.onChange(${model})`
+                    ui-validate=`{
+                        offheapDisabled: '$ctrl.Caches.offHeapMode.offheapDisabled(${model})'
+                    }`
+                    ui-validate-watch=`'${model}.memoryMode'`
+                    ng-model-options='{allowInvalid: true}'
+                )
+                    +form-field__error({ error: 'offheapDisabled', message: 'Off-heap storage can\'t be disabled when memory mode is OFFHEAP_TIERED' })
+            .pc-form-grid-col-60(
+                ng-if=`${model}.offHeapMode === 1 && ${model}.memoryMode !== 'OFFHEAP_VALUES'`
+                ng-if-end
+            )
+                form-field-size(
+                    label='Off-heap memory max size:'
+                    ng-model=`${model}.offHeapMaxMemory`
+                    name='offHeapMaxMemory'
+                    placeholder='Enter off-heap memory size'
+                    min='{{ ::$ctrl.Caches.offHeapMaxMemory.min }}'
+                    tip='Maximum amount of memory available to off-heap storage'
+                    size-scale-label='mb'
+                    size-type='bytes'
+                    required='true'
+                )
+
+            +form-field__eviction-policy({
+                model: `${model}.evictionPolicy`,
+                name: '"evictionPolicy"',
+                enabled: 'true',
+                required: `$ctrl.Caches.evictionPolicy.required(${model})`,
+                tip: 'Optional cache eviction policy<br/>\
+                      Must be set for entries to be evicted from on-heap to off-heap or swap\
+                      <ul>\
+                          <li>Least Recently Used(LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
+                          <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
+                          <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
+                      </ul>'
+            })
+
+            //- Since ignite 2.0
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
+                +form-field__java-class({
+                    label: 'Eviction filter:',
+                    model: `${model}.evictionFilter`,
+                    name: '"EvictionFilter"',
+                    tip: 'Eviction filter to specify which entries should not be evicted'
+                })
+
+            //- Removed in ignite 2.0
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
+                +form-field__number({
+                    label: 'Start size:',
+                    model: `${model}.startSize`,
+                    name: '"startSize"',
+                    placeholder: '1500000',
+                    min: '0',
+                    tip: 'In terms of size and capacity, Ignite internal cache map acts exactly like a normal Java HashMap: it has some initial capacity\
+                          (which is pretty small by default), which doubles as data arrives. The process of internal cache map resizing is CPU-intensive\
+                          and time-consuming, and if you load a huge dataset into cache (which is a normal use case), the map will have to resize a lot of times.\
+                          To avoid that, you can specify the initial cache map capacity, comparable to the expected size of your dataset.\
+                          This will save a lot of CPU resources during the load time, because the map would not have to resize.\
+                          For example, if you expect to load 10 million entries into cache, you can set this property to 10 000 000.\
+                          This will save you from cache internal map resizes.'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__checkbox({
+                    label: 'Swap enabled',
+                    model: `${model}.swapEnabled`,
+                    name: '"swapEnabled"',
+                    tip: 'Flag indicating whether swap storage is enabled or not for this cache'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Cache writer factory:',
+                    model: `${model}.cacheWriterFactory`,
+                    name: `"CacheWriterFactory"`,
+                    tip: 'Factory for writer that is used for write-through to an external resource'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Cache loader factory:',
+                    model: `${model}.cacheLoaderFactory`,
+                    name: `"CacheLoaderFactory"`,
+                    tip: 'Factory for loader that is used for a cache is read-through or when loading data into a cache via the Cache.loadAll(java.util.Set, boolean, CompletionListener) method'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Expiry policy factory:',
+                    model: `${model}.expiryPolicyFactory`,
+                    name: `"ExpiryPolicyFactory"`,
+                    tip: 'Factory for functions that determine when cache entries will expire based on creation, access and modification operations'
+                })
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheMemory')

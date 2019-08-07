@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMultiNodeLockAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,26 +48,31 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testBasicLock() throws Exception {
         super.testBasicLock();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLockMultithreaded() throws Exception {
         super.testLockMultithreaded();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLockReentry() throws IgniteCheckedException {
         super.testLockReentry();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testMultiNodeLock() throws Exception {
         super.testMultiNodeLock();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testMultiNodeLockWithKeyLists() throws Exception {
         super.testMultiNodeLockWithKeyLists();
     }

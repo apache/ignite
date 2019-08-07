@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.junit.Test;
 
 /**
  * Atomic cache metrics test.
@@ -39,6 +40,7 @@ public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelf
     /**
      * Checks that enabled near cache does not affect metrics.
      */
+    @Test
     public void testNearCachePutRemoveGetMetrics() {
         IgniteEx initiator = grid(0);
 

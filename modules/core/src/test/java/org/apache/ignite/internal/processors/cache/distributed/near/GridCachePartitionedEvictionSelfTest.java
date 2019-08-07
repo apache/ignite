@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Arrays;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.IgniteCache;
@@ -30,12 +31,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,10 +49,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for partitioned cache automatic eviction.
  */
+@WithSystemProperty(key="IGNITE_UNWIND_THROTTLING_TIMEOUT", value="5")
 public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfTest {
-    /** */
-    private static final boolean TEST_INFO = true;
-
     /** */
     private static final int GRID_CNT = 2;
 
@@ -61,9 +59,6 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
     /** */
     private static final int KEY_CNT = 100;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -75,12 +70,6 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -117,6 +106,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticReadCommitted() throws Exception {
         doTestEviction(PESSIMISTIC, READ_COMMITTED);
     }
@@ -126,6 +116,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticRepeatableRead() throws Exception {
         doTestEviction(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -135,6 +126,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticSerializable() throws Exception {
         doTestEviction(PESSIMISTIC, SERIALIZABLE);
     }
@@ -144,6 +136,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticReadCommitted() throws Exception {
         doTestEviction(OPTIMISTIC, READ_COMMITTED);
     }
@@ -153,6 +146,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticRepeatableRead() throws Exception {
         doTestEviction(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -162,6 +156,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticSerializable() throws Exception {
         doTestEviction(OPTIMISTIC, SERIALIZABLE);
     }
@@ -184,9 +179,11 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         Affinity<String> aff = dht0.affinity();
 
-        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 10));
+        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 37));
 
         for (int kv = 0; kv < KEY_CNT; kv++) {
+            Thread.sleep(40);
+
             String key = String.valueOf(kv);
 
             ClusterNode node = aff.mapKeyToNode(key);
@@ -198,7 +195,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
             try (Transaction tx = txs.txStart(concurrency, isolation)) {
                 assert c.get(key) == null;
 
-                c.withExpiryPolicy(plc).put(key, 1);
+                c.withExpiryPolicy(plc).put(key, kv);
 
                 assertEquals(Integer.valueOf(kv), c.get(key));
 
@@ -206,22 +203,36 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
             }
         }
 
-        if (TEST_INFO) {
+        boolean[] seen = {false, false, false, false};
+
+        long started = System.currentTimeMillis();
+
+        for (int i = 0; i < 1000; i++) {
+            long dht0Keys = 0, dht1Keys = 0;
+
+            seen[2] |= dht0.size() == EVICT_CACHE_SIZE;
+            seen[3] |= dht1.size() == EVICT_CACHE_SIZE;
+
             info("Printing keys in dht0...");
 
             for (String key : dht0.keySet())
                 info("[key=" + key + ", primary=" +
-                    F.eqNodes(grid(0).localNode(), aff.mapKeyToNode(key)) + ']');
+                    F.eqNodes(grid(0).localNode(), aff.mapKeyToNode(key)) + ", " + dht0Keys++ + ']');
 
             info("Printing keys in dht1...");
 
             for (String key : dht1.keySet())
                 info("[key=" + key + ", primary=" +
-                    F.eqNodes(grid(1).localNode(), aff.mapKeyToNode(key)) + ']');
+                    F.eqNodes(grid(1).localNode(), aff.mapKeyToNode(key)) + ", " + dht1Keys++ + ']');
+
+            seen[0] |= dht0Keys == EVICT_CACHE_SIZE;
+            seen[1] |= dht1Keys == EVICT_CACHE_SIZE;
+
+            if (seen[0] && seen[1] && seen[2] && seen[3] || System.currentTimeMillis() - started > 100)
+                break;
         }
 
-        assertEquals(EVICT_CACHE_SIZE, dht0.size());
-        assertEquals(EVICT_CACHE_SIZE, dht1.size());
+        assertTrue(Arrays.toString(seen), seen[0] && seen[1] && seen[2] && seen[3]);
 
         assertEquals(0, near(jcache(0)).nearSize());
         assertEquals(0, near(jcache(1)).nearSize());

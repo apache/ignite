@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -24,17 +25,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.List;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Test;
 
 /** Test for SQL min() and max() optimization */
-public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
     /** Name of the cache for test */
     private static final String CACHE_NAME = "intCache";
 
@@ -52,16 +47,14 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        awaitPartitionMapExchange(true, false, null);
+
         stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
@@ -80,6 +73,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     }
 
     /** Check min() and max() functions in queries */
+    @Test
     public void testQueryMinMax() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
@@ -118,6 +112,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     }
 
     /** Check min() and max() on empty cache */
+    @Test
     public void testQueryMinMaxEmptyCache() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
@@ -135,6 +130,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over _key use correct index
      * Test uses value object cache
      */
+    @Test
     public void testMinMaxQueryPlanOnKey() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
@@ -151,6 +147,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over value fields use correct index.
      * Test uses value object cache
      */
+    @Test
     public void testMinMaxQueryPlanOnFields() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
@@ -167,6 +164,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over _key uses correct index
      * Test uses primitive cache
      */
+    @Test
     public void testSimpleMinMaxQueryPlanOnKey() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
@@ -183,6 +181,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over _val uses correct index.
      * Test uses primitive cache
      */
+    @Test
     public void testSimpleMinMaxQueryPlanOnValue() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
@@ -196,6 +195,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     }
 
     /** Check min() and max() over group */
+    @Test
     public void testGroupMinMax() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
@@ -225,6 +225,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     }
 
     /** Check min() and max() over group with having clause */
+    @Test
     public void testGroupHavingMinMax() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
@@ -261,6 +262,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     }
 
     /** Check min() and max() over group with joins */
+    @Test
     public void testJoinGroupMinMax() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);

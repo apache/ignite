@@ -1,0 +1,151 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'binary'
+-var model = '$ctrl.clonedCluster.binaryConfiguration'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Binary configuration
+    panel-description
+        | Configuration of specific binary types.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/binary-marshaller" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'ID mapper:',
+                    model: model + '.idMapper',
+                    name: '"idMapper"',
+                    tip: 'Maps given from BinaryNameMapper type and filed name to ID that will be used by Ignite in internals<br/>\
+                          Ignite never writes full strings for field or type names. Instead, for performance reasons, Ignite writes integer hash codes for type/class and field names. It has been tested that hash code conflicts for the type/class names or the field names within the same type are virtually non - existent and, to gain performance, it is safe to work with hash codes. For the cases when hash codes for different types or fields actually do collide <b>BinaryIdMapper</b> allows to override the automatically generated hash code IDs for the type and field names'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Name mapper:',
+                    model: model + '.nameMapper',
+                    name: '"nameMapper"',
+                    tip: 'Maps type/class and field names to different names'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Serializer:',
+                    model: model + '.serializer',
+                    name: '"serializer"',
+                    tip: 'Class with custom serialization logic for binary objects'
+                })
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    +form-field__label({ label: 'Type configurations:', name: '"typeConfigurations"' })
+                        +form-field__tooltip({ title: `Configuration properties for binary types`})
+
+                    -var items = model + '.typeConfigurations'
+                    list-editable.pc-list-editable-with-form-grid(ng-model=items name='typeConfigurations')
+                        list-editable-item-edit.pc-form-grid-row
+                            - form = '$parent.form'
+                            .pc-form-grid-col-60
+                                +form-field__java-class({
+                                    label: 'Type name:',
+                                    model: '$item.typeName',
+                                    name: '"typeName"',
+                                    required: 'true',
+                                    tip: 'Type name'
+                                })(
+                                    ignite-form-field-input-autofocus='true'
+                                    ignite-unique=items
+                                    ignite-unique-property='typeName'
+                                )
+                                    +form-field__error({ error: 'igniteUnique', message: 'Type name should be unique.' })
+                            .pc-form-grid-col-60
+                                +form-field__java-class({
+                                    label: 'ID mapper:',
+                                    model: '$item.idMapper',
+                                    name: '"idMapper"',
+                                    tip: 'Maps given from BinaryNameMapper type and filed name to ID that will be used by Ignite in internals<br/>\
+                                          Ignite never writes full strings for field or type/class names.\
+                                          Instead, for performance reasons, Ignite writes integer hash codes for type/class and field names.\
+                                          It has been tested that hash code conflicts for the type/class names or the field names within the same type are virtually non - existent and,\
+                                          to gain performance, it is safe to work with hash codes.\
+                                          For the cases when hash codes for different types or fields actually do collide <b>BinaryIdMapper</b> allows to override the automatically generated hash code IDs for the type and field names'
+                                })
+                            .pc-form-grid-col-60
+                                +form-field__java-class({
+                                    label: 'Name mapper:',
+                                    model: '$item.nameMapper',
+                                    name: '"nameMapper"',
+                                    tip: 'Maps type/class and field names to different names'
+                                })
+
+                            .pc-form-grid-col-60
+                                +form-field__java-class({
+                                    label: 'Serializer:',
+                                    model: '$item.serializer',
+                                    name: '"serializer"',
+                                    tip: 'Class with custom serialization logic for binary object'
+                                })
+                            .pc-form-grid-col-60
+                                +form-field__checkbox({
+                                    label: 'Enum',
+                                    model: '$item.enum',
+                                    name: 'enum',
+                                    tip: 'Flag indicating that this type is the enum'
+                                })
+                            .pc-form-grid-col-60(ng-if='$item.enum')
+                                mixin enum-values
+                                    .ignite-form-field
+                                        -let items = '$item.enumValues'
+
+                                        list-editable(
+                                            ng-model=items
+                                            name='enumValues'
+                                            list-editable-cols=`::[{name: "Enum values:"}]`
+                                        )
+                                            list-editable-item-view {{ $item }}
+
+                                            list-editable-item-edit
+                                                +list-java-identifier-field('Value', '$item', '"value"', 'Enter Enum value', '$item.$item.enumValues')
+                                                    +form-field__error({error: 'igniteUnique', message: 'Value already configured!'})
+
+                                            list-editable-no-items
+                                                list-editable-add-item-button(
+                                                    add-item=`$editLast((${items} = ${items} || []).push(''))`
+                                                    label-single='enum value'
+                                                    label-multiple='enum values'
+                                                )
+
+                                - var form = '$parent.$parent.form'
+                                +enum-values
+                                - var form = '$parent.form'
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addBinaryTypeConfiguration($ctrl.clonedCluster)`
+                                label-single='configuration'
+                                label-multiple='configurations'
+                            )
+
+            - form = 'binary'
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Compact footer',
+                    model: model + '.compactFooter',
+                    name: '"compactFooter"',
+                    tip: 'When enabled, Ignite will not write fields metadata when serializing objects (this will increase serialization performance), because internally <b>BinaryMarshaller</b> already distribute metadata inside cluster'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterBinary')

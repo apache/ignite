@@ -27,13 +27,18 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 class SegmentArchivedStorage extends SegmentObservable {
     /** Segment lock storage: Protects WAL work segments from moving. */
     private final SegmentLockStorage segmentLockStorage;
+
     /** Flag of interrupt waiting on this object. */
     private volatile boolean interrupted;
+
     /**
      * Last archived file absolute index, 0-based. Write is quarded by {@code this}. Negative value indicates there are
      * no segments archived.
      */
     private volatile long lastAbsArchivedIdx = -1;
+
+    /** Latest truncated segment. */
+    private volatile long lastTruncatedArchiveIdx = -1;
 
     /**
      * @param segmentLockStorage Protects WAL work segments from moving.
@@ -123,6 +128,13 @@ class SegmentArchivedStorage extends SegmentObservable {
     }
 
     /**
+     * Resets interrupted flag.
+     */
+    void reset() {
+        interrupted = false;
+    }
+
+    /**
      * Check for interrupt flag was set.
      */
     private void checkInterrupted() throws IgniteInterruptedCheckedException {
@@ -135,5 +147,19 @@ class SegmentArchivedStorage extends SegmentObservable {
      */
     private synchronized void onSegmentUnlocked(long segmentId) {
         notifyAll();
+    }
+
+    /**
+     * @param lastTruncatedArchiveIdx Last truncated segment.
+     */
+    void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
+        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
+    }
+
+    /**
+     * @return Last truncated segment.
+     */
+    long lastTruncatedArchiveIdx() {
+        return lastTruncatedArchiveIdx;
     }
 }

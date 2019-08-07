@@ -1,0 +1,419 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/primitives/btn-group/index
+include /app/primitives/datepicker/index
+include /app/primitives/timepicker/index
+include /app/primitives/dropdown/index
+include /app/primitives/switcher/index
+include /app/primitives/form-field/index
+
+//- Function that convert enabled state to corresponding disabled state.
+-var enabledToDisabled = function (enabled) {
+-    return (enabled === false || enabled === true) ? !enabled : '!(' + enabled + ')';
+-}
+
+//- Mixin for XML and Java preview.
+mixin preview-xml-java(master, generator, detail)
+    ignite-ui-ace-tabs
+        .preview-panel(ng-init='mode = "spring"')
+            .preview-legend
+                a(ng-class='{active: mode === "spring"}' ng-click='mode = "spring"') Spring
+                a(ng-class='{active: mode === "java"}' ng-click='mode = "java"') Java
+                //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
+            .preview-content(ng-switch='mode')
+                ignite-ui-ace-spring(ng-switch-when='spring' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when='java' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+            .preview-content-empty(ng-if='!data')
+                label All Defaults
+
+mixin form-field__java-class({ label, model, name, disabled, required, tip, placeholder, validationActive })
+    -var errLbl = label.substring(0, label.length - 1)
+
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled,
+        required,
+        placeholder: placeholder || 'Enter fully qualified class name',
+        tip
+    })(
+        data-java-identifier='true'
+        data-java-package-specified='true'
+        data-java-keywords='true'
+        data-java-built-in-class='true'
+        data-validation-active=validationActive ? `{{ ${validationActive} }}` : `'always'`
+    )&attributes(attributes)
+        if  block
+            block
+
+        +form-field__error({ error: 'javaBuiltInClass', message: `${ errLbl } should not be the Java built-in class!` })
+        +form-field__error({ error: 'javaKeywords', message: `${ errLbl } could not contains reserved Java keyword!` })
+        +form-field__error({ error: 'javaPackageSpecified', message: `${ errLbl } does not have package specified!` })
+        +form-field__error({ error: 'javaIdentifier', message: `${ errLbl } is invalid Java identifier!` })
+
+//- Mixin for text field with enabled condition with options.
+mixin form-field__java-class--typeahead({ label, model, name, options, disabled, required, placeholder, tip, validationActive })
+    -var errLbl = label.substring(0, label.length - 1)
+
+    +form-field__typeahead({
+        label,
+        model,
+        name,
+        disabled,
+        required,
+        placeholder,
+        options,
+        tip
+    })&attributes(attributes)(
+        data-java-identifier='true'
+        data-java-package-specified='allow-built-in'
+        data-java-keywords='true'
+        data-validation-active=validationActive ? `{{ ${validationActive} }}` : `'always'`
+    )
+        +form-field__error({ error: 'javaKeywords', message: `${ errLbl } could not contains reserved Java keyword!` })
+        +form-field__error({ error: 'javaPackageSpecified', message: `${ errLbl } does not have package specified!` })
+        +form-field__error({ error: 'javaIdentifier', message: `${ errLbl } is invalid Java identifier!` })
+
+mixin form-field__java-package({ label, model, name, disabled, required, tip, tipOpts, placeholder })
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled,
+        required,
+        tip,
+        tipOpts,
+        placeholder
+    })(
+        data-java-keywords='true'
+        data-java-package-name='package-only'
+    )&attributes(attributes)
+        if  block
+            block
+
+        +form-field__error({ error: 'javaPackageName', message: 'Package name is invalid!' })
+        +form-field__error({ error: 'javaKeywords', message: 'Package name could not contains reserved java keyword!' })
+
+//- Mixin for text field with IP address check.
+mixin form-field__ip-address({ label, model, name, enabled, placeholder, tip })
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        tip
+    })(data-ipaddress='true')
+        +form-field__error({ error: 'ipaddress', message: 'Invalid address!' })
+
+//- Mixin for text field with IP address and port range check.
+mixin form-field__ip-address-with-port-range({ label, model, name, enabled, placeholder, tip })
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        tip
+    })(
+        data-ipaddress='true'
+        data-ipaddress-with-port='true'
+        data-ipaddress-with-port-range='true'
+    )
+        +form-field__error({ error: 'ipaddress', message: 'Invalid address!' })
+        +form-field__error({ error: 'ipaddressPort', message: 'Invalid port!' })
+        +form-field__error({ error: 'ipaddressPortRange', message: 'Invalid port range!' })
+
+//- Mixin for url field.
+mixin form-field__url({ label, model, name, enabled, required, placeholder, tip })
+    -var errLbl = label.substring(0, label.length - 1)
+
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        tip
+    })(
+        type='url'
+    )
+        if  block
+            block
+
+        +form-field__error({ error: 'url', message: `${ errLbl } should be a valid URL!` })
+
+mixin list-text-field({ items, lbl, name, itemName, itemsName })
+    list-editable(ng-model=items)&attributes(attributes)
+        list-editable-item-view
+            | {{ $item }}
+
+        list-editable-item-edit
+            +form-field__text({
+                label: lbl,
+                model: '$item',
+                name: `"${name}"`,
+                required: true,
+                placeholder: `Enter ${lbl.toLowerCase()}`
+            })(
+                ignite-unique=items
+                ignite-form-field-input-autofocus='true'
+            )
+                if  block
+                    block
+
+        list-editable-no-items
+            list-editable-add-item-button(
+                add-item=`$editLast((${items} = ${items} || []).push(''))`
+                label-single=itemName
+                label-multiple=itemsName
+            )
+
+mixin list-java-class-field(label, model, name, items)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required: true,
+        placeholder: 'Enter fully qualified class name'
+    })(
+        java-identifier='true'
+        java-package-specified='true'
+        java-keywords='true'
+        java-built-in-class='true'
+
+        ignite-unique=items
+        ignite-form-field-input-autofocus='true'
+    )
+        +form-field__error({ error: 'javaBuiltInClass', message: `${ label } should not be the Java built-in class!` })
+        +form-field__error({ error: 'javaKeywords', message: `${ label } could not contains reserved Java keyword!` })
+        +form-field__error({ error: 'javaPackageSpecified', message: `${ label } does not have package specified!` })
+        +form-field__error({ error: 'javaIdentifier', message: `${ label } is invalid Java identifier!` })
+
+        if block
+            block
+
+mixin list-java-identifier-field(label, model, name, placeholder, items)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required: true,
+        placeholder
+    })(
+        java-identifier='true'
+
+        ignite-unique=items
+        ignite-form-field-input-autofocus='true'
+    )
+        +form-field__error({ error: 'javaIdentifier', message: `${ label } is invalid Java identifier!` })
+
+        if block
+            block
+
+mixin list-url-field(label, model, name, items)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required: true,
+        placeholder: 'Enter URL'
+    })(
+        type='url'
+
+        ignite-unique=items
+        ignite-form-field-input-autofocus='true'
+    )
+        +form-field__error({ error: 'url', message: 'URL should be valid!' })
+
+        if block
+            block
+
+mixin list-addresses({ items, name, tip, withPortRange = true })
+    list-editable(
+        ng-model=items
+        name=name
+        list-editable-cols=`::[{name: "Addresses:", tip: "${tip}"}]`
+    )&attributes(attributes)
+        list-editable-item-view {{ $item }}
+        list-editable-item-edit(item-name='address')
+            +form-field__text({
+                label: 'Address',
+                model: 'address',
+                name: '"address"',
+                required: true,
+                placeholder: 'IP address:port'
+            })(
+                ipaddress='true'
+                ipaddress-with-port='true'
+                ipaddress-with-port-range=withPortRange
+                ignite-unique=items
+                ignite-form-field-input-autofocus='true'
+            )
+                +form-field__error({ error: 'igniteUnique', message: 'Such IP address already exists!' })
+                +form-field__error({ error: 'ipaddress', message: 'Invalid address!' })
+                +form-field__error({ error: 'ipaddressPort', message: 'Invalid port!' })
+                +form-field__error({ error: 'ipaddressPortRange', message: 'Invalid port range!' })
+                +form-field__error({ error: 'required', message: 'IP address:port could not be empty!' })
+
+        list-editable-no-items
+            list-editable-add-item-button(
+                add-item=`$editLast((${items} = ${items} || []).push(""))`
+                label-multiple='addresses'
+                label-single='address'
+            )
+
+mixin form-field__cache-modes({ label, model, name, placeholder })
+    +form-field__dropdown({
+        label, model, name, placeholder,
+        options: '[\
+            {value: "LOCAL", label: "LOCAL"},\
+            {value: "REPLICATED", label: "REPLICATED"},\
+            {value: "PARTITIONED", label: "PARTITIONED"}\
+        ]',
+        tip: 'Cache modes:\
+        <ul>\
+            <li>PARTITIONED - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
+            <li>REPLICATED - in this mode all the keys are distributed to all participating nodes</li>\
+            <li>LOCAL - in this mode caches residing on different grid nodes will not know about each other</li>\
+        </ul>'
+    })&attributes(attributes)
+        if  block
+            block
+
+//- Mixin for eviction policy.
+mixin form-field__eviction-policy({ model, name, enabled, required, tip })
+    -var kind = model + '.kind'
+    -var policy = model + '[' + kind + ']'
+
+    .pc-form-grid-col-60
+        +form-field__dropdown({
+            label: 'Eviction policy:',
+            model: kind,
+            name: `${name}+"Kind"`,
+            disabled: enabledToDisabled(enabled),
+            required: required,
+            placeholder: '{{ ::$ctrl.Caches.evictionPolicy.kind.default }}',
+            options: '::$ctrl.Caches.evictionPolicy.values',
+            tip: tip
+        })
+    .pc-form-group.pc-form-grid-row(ng-if=kind)
+        .pc-form-grid-col-30
+            +form-field__number({
+                label: 'Batch size',
+                model: policy + '.batchSize',
+                name: name + '+ "batchSize"',
+                disabled: enabledToDisabled(enabled),
+                placeholder: '1',
+                min: '1',
+                tip: 'Number of entries to remove on shrink'
+            })
+        .pc-form-grid-col-30
+            form-field-size(
+                label='Max memory size:'
+                ng-model=`${policy}.maxMemorySize`
+                ng-model-options='{allowInvalid: true}'
+                name=`${name}.maxMemorySize`
+                ng-disabled=enabledToDisabled(enabled)
+                tip='Maximum allowed cache size'
+                placeholder='{{ ::$ctrl.Caches.evictionPolicy.maxMemorySize.default }}'
+                min=`{{ $ctrl.Caches.evictionPolicy.maxMemorySize.min(${model}) }}`
+                size-scale-label='mb'
+                size-type='bytes'
+            )
+                +form-field__error({ error: 'min', message: 'Either maximum memory size or maximum size should be greater than 0' })
+        .pc-form-grid-col-60
+            +form-field__number({
+                label: 'Max size:',
+                model: policy + '.maxSize',
+                name: name + '+ "maxSize"',
+                disabled: enabledToDisabled(enabled),
+                placeholder: '{{ ::$ctrl.Caches.evictionPolicy.maxSize.default }}',
+                min: `{{ $ctrl.Caches.evictionPolicy.maxSize.min(${model}) }}`,
+                tip: 'Maximum allowed size of cache before entry will start getting evicted'
+            })(
+                ng-model-options='{allowInvalid: true}'
+            )
+                +form-field__error({ error: 'min', message: 'Either maximum memory size or maximum size should be greater than 0' })
+
+mixin list-pair-edit({ items, keyLbl, valLbl, itemName, itemsName })
+    list-editable(ng-model=items)
+        list-editable-item-view
+            | {{ $item.name }} = {{ $item.value }}
+
+        list-editable-item-edit
+            - form = '$parent.form'
+            .pc-form-grid-row
+                .pc-form-grid-col-30(divider='=')
+                    +form-field__text({
+                        label: keyLbl,
+                        model: '$item.name',
+                        name: '"name"',
+                        required: true,
+                        placeholder: keyLbl
+                    })(
+                        ignite-unique=items
+                        ignite-unique-property='name'
+                        ignite-auto-focus
+                    )
+                        +form-field__error({ error: 'igniteUnique', message: 'Property with such name already exists!' })
+                .pc-form-grid-col-30
+                    +form-field__text({
+                        label: valLbl,
+                        model: '$item.value',
+                        name: '"value"',
+                        required: true,
+                        placeholder: valLbl
+                    })
+
+        list-editable-no-items
+            list-editable-add-item-button(
+                add-item=`$editLast((${items} = ${items} || []).push({}))`
+                label-single=itemName
+                label-multiple=itemsName
+            )
+
+mixin form-field__dialect({ label, model, name, required, tip, genericDialectName, placeholder, change })
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        required,
+        placeholder,
+        change,
+        options: '[\
+                {value: "Generic", label: "' + genericDialectName + '"},\
+                {value: "Oracle", label: "Oracle"},\
+                {value: "DB2", label: "IBM DB2"},\
+                {value: "SQLServer", label: "Microsoft SQL Server"},\
+                {value: "MySQL", label: "MySQL"},\
+                {value: "PostgreSQL", label: "PostgreSQL"},\
+                {value: "H2", label: "H2 database"}\
+        ]',
+        tip: `${ tip }
+            <ul>
+                <li>${ genericDialectName }</li>
+                <li>Oracle database</li>
+                <li>IBM DB2</li>
+                <li>Microsoft SQL Server</li>
+                <li>MySQL</li>
+                <li>PostgreSQL</li>
+                <li>H2 database</li>
+            </ul>`
+    })

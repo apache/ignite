@@ -52,7 +52,6 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      */
     public abstract StepFunction<T>[] calculate(DecisionTreeData data, TreeFilter filter, int depth);
 
-
     /**
      * Returns columns count in current dataset.
      *
@@ -101,6 +100,15 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
         return useIdx ? idx.featureInSortedOrder(k, featureId) : data.getFeatures()[k][featureId];
     }
 
+    /**
+     * Returns feature value in according to kth order statistic.
+     *
+     * @param data Data.
+     * @param idx Index.
+     * @param featureId Feature id.
+     * @param k K-th statistic.
+     * @return feature value in according to kth order statistic.
+     */
     protected Vector getFeatureValues(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
         return VectorUtils.of(useIdx ? idx.featuresInSortedOrder(k, featureId) : data.getFeatures()[k]);
     }

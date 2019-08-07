@@ -110,7 +110,6 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void write(byte[] b, int off, int len) throws IOException {
         A.notNull(b, "b");
 

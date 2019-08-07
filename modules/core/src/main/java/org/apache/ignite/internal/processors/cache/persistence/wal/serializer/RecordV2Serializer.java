@@ -28,10 +28,10 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Record V2 serializer.
  * Stores records in following format:
  * <ul>
- * <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
+ * <li>Record type from {@link RecordType#index()} incremented by 1</li>
  * <li>WAL pointer to double check consistency</li>
  * <li>Record length</li>
  * <li>Data</li>
@@ -122,10 +122,11 @@ public class RecordV2Serializer implements RecordSerializer {
                     ", expected pointer [idx=" + exp.index() + ", offset=" + exp.fileOffset() + "]");
             }
 
-            if (recordFilter != null && !recordFilter.apply(recType, ptr)) {
+            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
+                && recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
-                assert toSkip >= 0 : "Too small saved record length: " + ptr;
+                assert toSkip >= 0 : "Too small saved record length: ptr=" + ptr + ", type=" + recType;
 
                 if (in.skipBytes(toSkip) < toSkip)
                     throw new EOFException("Reached end of file while reading record: " + ptr);
@@ -159,7 +160,8 @@ public class RecordV2Serializer implements RecordSerializer {
                 return new MarshalledRecord(recType, ptr, buf);
             }
             else {
-                WALRecord rec = dataSerializer.readRecord(recType, in);
+                WALRecord rec = dataSerializer.readRecord(recType, in, ptr.length() - REC_TYPE_SIZE -
+                    FILE_WAL_POINTER_SIZE - CRC_SIZE);
 
                 rec.position(ptr);
 

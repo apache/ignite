@@ -60,7 +60,6 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.REDUCE
 /**
  * Hadoop process base.
  */
-@SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public class HadoopChildProcessRunner {
     /** Node process descriptor. */
     private HadoopProcessDescriptor nodeDesc;

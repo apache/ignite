@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -336,7 +338,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @return Annotation value.
      * @param <T> Annotation class.
      */
-    @SuppressWarnings("unchecked")
     public <T extends Annotation> T annotation(Class<?> cls, Class<T> annCls) {
         ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> clsAnns = anns.get(cls);
 
@@ -366,7 +367,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param taskCls Task class.
      * @return {@code True} if task is internal.
      */
-    @SuppressWarnings("unchecked")
     public boolean internalTask(@Nullable ComputeTask task, Class<?> taskCls) {
         assert taskCls != null;
 
@@ -381,6 +381,19 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
         }
 
         return res;
+    }
+
+    /**
+     * Checks whether task class is annotated with {@link GridVisorManagementTask}.
+     *
+     * @param task Task.
+     * @param taskCls Task class.
+     * @return {@code True} if task is internal.
+     */
+    public boolean visorManagementTask(@Nullable ComputeTask task, @NotNull Class<?> taskCls) {
+        return annotation(task instanceof GridPeerDeployAware ?
+                ((GridPeerDeployAware)task).deployClass() : taskCls,
+            GridVisorManagementTask.class) != null;
     }
 
     /**
@@ -435,7 +448,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param alias Optional array of aliases.
      * @return Class for given name.
      */
-    @SuppressWarnings({"StringEquality", "UnusedCatchParameter"})
+    @SuppressWarnings({"StringEquality"})
     @Nullable public Class<?> deployedClass(String clsName, String... alias) {
         Class<?> cls = clss.get(clsName);
 

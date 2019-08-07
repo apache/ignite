@@ -35,6 +35,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@code GridProjection.withXXX(..)} methods.
@@ -56,6 +57,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithName() throws Exception {
         IgniteCallable<String> f = new IgniteCallable<String>() {
             @TaskSessionResource
@@ -80,6 +82,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithNoFailoverClosure() throws Exception {
         final IgniteRunnable r = new GridAbsClosureX() {
             @Override public void applyx() {
@@ -110,6 +113,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithNoFailoverTask() throws Exception {
         final Ignite g = grid(0);
 

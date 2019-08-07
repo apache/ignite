@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -61,6 +62,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockTimeoutsForPartitionedCache() throws Exception {
         checkLockTimeouts(partitionedCacheConfig());
     }
@@ -68,6 +70,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockTimeoutsForReplicatedCache() throws Exception {
         checkLockTimeouts(replicatedCacheConfig());
     }
@@ -75,6 +78,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockTimeoutsAfterDefaultTxTimeoutForPartitionedCache() throws Exception {
         checkLockTimeoutsAfterDefaultTxTimeout(partitionedCacheConfig());
     }
@@ -82,6 +86,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockTimeoutsAfterDefaultTxTimeoutForReplicatedCache() throws Exception {
         checkLockTimeoutsAfterDefaultTxTimeout(replicatedCacheConfig());
     }
@@ -89,6 +94,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testConcurrentForPartitionedCache() throws Exception {
         checkTimeoutsConcurrent(partitionedCacheConfig());
     }
@@ -96,6 +102,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testConcurrentForReplicatedCache() throws Exception {
         checkTimeoutsConcurrent(replicatedCacheConfig());
     }
@@ -180,6 +187,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     private static class TimeoutChecker {
         /** */
         final IgniteEx ignite;
+
         /** */
         final String cacheName;
 
@@ -343,7 +351,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
             }
             catch (Exception e) {
                 assertTrue(msgContains(e, "Failed to acquire lock within provided timeout for transaction")
-                    || msgContains(e, "Mvcc version mismatch"));
+                    || msgContains(e, "Cannot serialize transaction due to write conflict"));
             }
             finally {
                 ignite.context().cache().context().tm().resetContext();

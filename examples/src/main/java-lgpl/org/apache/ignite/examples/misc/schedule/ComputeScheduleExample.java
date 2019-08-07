@@ -68,7 +68,7 @@ public class ComputeScheduleExample {
                         return invocations;
                     }
                 },
-                "{5, 3} * * * * *" // Cron expression.
+                "{9, 5, 3} * * * * *" // Cron expression.
             );
 
             while (!fut.isDone())

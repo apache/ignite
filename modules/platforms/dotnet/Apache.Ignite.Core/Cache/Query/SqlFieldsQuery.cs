@@ -36,23 +36,22 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <param name="args">Arguments.</param>
         public SqlFieldsQuery(string sql, params object[] args) : this(sql, false, args)
         {
-	        Lazy = true;
+            // No-op.
         }
 
-		/// <summary>
-		/// Constructor,
-		/// </summary>
-		/// <param name="sql">SQL.</param>
-		/// <param name="loc">Whether query should be executed locally.</param>
-		/// <param name="args">Arguments.</param>
-		public SqlFieldsQuery(string sql, bool loc, params object[] args)
+        /// <summary>
+        /// Constructor,
+        /// </summary>
+        /// <param name="sql">SQL.</param>
+        /// <param name="loc">Whether query should be executed locally.</param>
+        /// <param name="args">Arguments.</param>
+        public SqlFieldsQuery(string sql, bool loc, params object[] args)
         {
             Sql = sql;
             Local = loc;
             Arguments = args;
 
             PageSize = DefaultPageSize;
-	        Lazy = true;
         }
 
         /// <summary>
@@ -116,6 +115,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// Gets or sets a value indicating whether this query contains only replicated tables.
         /// This is a hint for potentially more effective execution.
         /// </summary>
+        [Obsolete("No longer used as of Apache Ignite 2.8.")]
         public bool ReplicatedOnly { get; set; }
 
         /// <summary>
@@ -136,20 +136,18 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </summary>
         public string Schema { get; set; }
 
-		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="SqlFieldsQuery"/> is lazy.
-		/// <para />
-		/// When lazy mode is turned off Ignite attempts to fetch the whole query result set to memory and send it to the client.
-		/// For small and medium result sets this provides optimal performance and minimize duration of internal
-		/// database locks, thus increasing concurrency.
-		/// <para />
-		/// If result set is too big to fit in available memory this could lead to excessive GC pauses and even
-		/// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
-		/// consumption at the cost of moderate performance hit.
-		/// <para />
-		/// Default mode is lazy since version 2.7. The default value of the flag is changed to 'true'.
-		/// </summary>
-		public bool Lazy { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="SqlFieldsQuery"/> is lazy.
+        /// <para />
+        /// By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+        /// For small and medium result sets this provides optimal performance and minimize duration of internal
+        /// database locks, thus increasing concurrency.
+        /// <para />
+        /// If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+        /// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+        /// consumption at the cost of moderate performance hit.
+        /// </summary>
+        public bool Lazy { get; set; }
 
         /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
@@ -164,7 +162,9 @@ namespace Apache.Ignite.Core.Cache.Query
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
                                  "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
                                  ", Colocated={8}, Schema={9}, Lazy={10}]", Sql, args, Local,
+#pragma warning disable 618
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
+#pragma warning restore 618
                                  Colocated, Schema, Lazy);
         }
     }

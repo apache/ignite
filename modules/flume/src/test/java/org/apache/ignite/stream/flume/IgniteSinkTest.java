@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -49,6 +50,7 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
     /**
      * @throws Exception {@link Exception}.
      */
+    @Test
     public void testSink() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/flume/src/test/resources/example-ignite.xml");
 
@@ -79,7 +81,7 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
 
         IgniteSink sink = new IgniteSink() {
             // Setting the listener on cache before sink processing starts.
-            @Override synchronized public void start() {
+            @Override public synchronized void start() {
                 super.start();
 
                 grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).localListen(putLsnr, EVT_CACHE_OBJECT_PUT);

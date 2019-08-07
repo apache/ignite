@@ -31,23 +31,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
-@SuppressWarnings("unchecked")
 public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Iteration. */
     private static final int ITERATIONS = 3;
 
@@ -87,7 +82,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
             }
         };
 
-        testSpi.setIpFinder(ipFinder);
+        testSpi.setIpFinder(sharedStaticIpFinder);
         testSpi.setJoinTimeout(60_000);
 
         cfg.setDiscoverySpi(testSpi);
@@ -120,6 +115,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoin() throws Exception {
         for (int iter = 0; iter < ITERATIONS; iter++) {
             log.info("Iteration: " + iter);
@@ -170,6 +166,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoinCacheWithGroup() throws Exception {
         withCacheGrp = true;
 
@@ -205,6 +202,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
 
         return ccfg;
     }
+
     /**
      * @param node Node.
      * @param cacheName Cache name.

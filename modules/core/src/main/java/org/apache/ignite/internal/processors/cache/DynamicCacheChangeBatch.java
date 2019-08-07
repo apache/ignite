@@ -23,6 +23,8 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentActions;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -51,6 +53,10 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
 
     /** Restarting caches. */
     private Set<String> restartingCaches;
+
+    /** Affinity (cache related) services updates to be processed on services deployment process. */
+    @GridToStringExclude
+    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
     /**
      * @param reqs Requests.
@@ -115,6 +121,20 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
         assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
 
         this.exchangeActions = exchangeActions;
+    }
+
+    /**
+     * @return Services deployment actions to be processed on services deployment process.
+     */
+    @Nullable public ServiceDeploymentActions servicesDeploymentActions() {
+        return serviceDeploymentActions;
+    }
+
+    /**
+     * @param serviceDeploymentActions Services deployment actions to be processed on services deployment process.
+     */
+    public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
+        this.serviceDeploymentActions = serviceDeploymentActions;
     }
 
     /**

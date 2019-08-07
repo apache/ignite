@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasure;
@@ -95,6 +96,24 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         return this;
     }
 
+    /**
+     * Returns a hyper-parameter value.
+     *
+     * @return The max deep of tree.
+     */
+    public double getMaxDeep() {
+        return maxDeep;
+    }
+
+    /**
+     * Returns a hyper-parameter value.
+     *
+     * @return The min impurity decrease.
+     */
+    public double getMinImpurityDecrease() {
+        return minImpurityDecrease;
+    }
+
     /** {@inheritDoc} */
     @Override protected ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {
@@ -128,5 +147,10 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
             encoder.put(lb, idx++);
 
         return new GiniImpurityMeasureCalculator(encoder, usingIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DecisionTreeClassificationTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (DecisionTreeClassificationTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }

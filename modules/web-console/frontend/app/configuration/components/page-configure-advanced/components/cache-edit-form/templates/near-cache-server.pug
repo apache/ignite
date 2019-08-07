@@ -1,0 +1,68 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'serverNearCache'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(
+    ng-form=form
+    on-open=`ui.loadPanel('${form}')`
+    ng-show=`${model}.cacheMode === 'PARTITIONED'`
+)
+    panel-title Near cache on server node
+    panel-description
+        | Near cache settings.
+        | Near cache is a small local cache that stores most recently or most frequently accessed data.
+        | Should be used in case when it is impossible to send computations to remote nodes.
+        a.link-success(href="https://apacheignite.readme.io/docs/near-caches" target="_blank") More info
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            -var nearCfg = `${model}.nearConfiguration`
+            -var enabled = `${nearCfg}.enabled`
+
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: enabled,
+                    name: '"nearCacheEnabled"',
+                    tip: 'Flag indicating whether to configure near cache'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Start size:',
+                    model: `${nearCfg}.nearStartSize`,
+                    name: '"nearStartSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '375000',
+                    min: '0',
+                    tip: 'Initial cache size for near cache which will be used to pre-create internal hash table after start'
+                })
+            +form-field__eviction-policy({
+                model: `${model}.nearConfiguration.nearEvictionPolicy`,
+                name: '"nearCacheEvictionPolicy"',
+                enabled: enabled,
+                tip: 'Near cache eviction policy\
+                     <ul>\
+                         <li>Least Recently Used (LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
+                         <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
+                         <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
+                     </ul>'
+            })
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheNearServer')

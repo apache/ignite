@@ -21,19 +21,21 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Security utilities.
  */
 public class SecurityUtils {
-    /** Version since service security supported. */
-    public static final IgniteProductVersion SERVICE_PERMISSIONS_SINCE = IgniteProductVersion.fromString("1.7.11");
-
     /** Default serialization version. */
-    private final static int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
+    private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
     /** Current serialization version. */
     private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>(){
@@ -88,5 +90,27 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_INVOKE));
 
         return srvcPerms;
+    }
+
+    /**
+     * Gets the node's security context.
+     *
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     * @param node Node.
+     * @return Node's security context.
+     */
+    public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
+        byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+        if (subjBytes == null)
+            throw new SecurityException("Security context isn't certain.");
+
+        try {
+            return U.unmarshal(marsh, subjBytes, ldr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SecurityException("Failed to get security context.", e);
+        }
     }
 }

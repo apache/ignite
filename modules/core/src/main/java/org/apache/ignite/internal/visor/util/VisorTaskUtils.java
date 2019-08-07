@@ -58,6 +58,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -108,6 +112,18 @@ public class VisorTaskUtils {
 
     /** Log files count limit */
     public static final int LOG_FILES_COUNT_LIMIT = 5000;
+
+    /** */
+    public static final int NOTHING_TO_REBALANCE = -1;
+
+    /** */
+    public static final int REBALANCE_NOT_AVAILABLE = -2;
+
+    /** */
+    public static final double MINIMAL_REBALANCE = 0.01;
+
+    /** */
+    public static final int REBALANCE_COMPLETE = 1;
 
     /** */
     private static final int DFLT_BUFFER_SIZE = 4096;
@@ -1247,5 +1263,31 @@ public class VisorTaskUtils {
             addrs[i] = addrs[i].trim();
 
         return Arrays.asList(addrs);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name to check.
+     * @return {@code true} if cache on local node is not a data cache or near cache disabled.
+     */
+    public static boolean isProxyCache(IgniteEx ignite, String cacheName) {
+        GridDiscoveryManager discovery = ignite.context().discovery();
+
+        ClusterNode locNode = ignite.localNode();
+
+        return !(discovery.cacheAffinityNode(locNode, cacheName) || discovery.cacheNearNode(locNode, cacheName));
+    }
+
+    /**
+     * Check whether cache restarting in progress.
+     *
+     * @param ignite Grid.
+     * @param cacheName Cache name to check.
+     * @return {@code true} when cache restarting in progress.
+     */
+    public static boolean isRestartingCache(IgniteEx ignite, String cacheName)  {
+        IgniteCacheProxy<Object, Object> proxy = ignite.context().cache().jcache(cacheName);
+
+        return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl) proxy).isRestarting();
     }
 }

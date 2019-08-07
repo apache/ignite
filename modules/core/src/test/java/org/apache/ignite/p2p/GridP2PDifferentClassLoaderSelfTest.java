@@ -27,6 +27,7 @@ import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test P2P deployment tasks which loaded from different class loaders.
@@ -81,7 +82,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @param expectEquals whether expected
      * @throws Exception if error occur
      */
-    @SuppressWarnings({"ObjectEquality", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void processTest(boolean isSameTask, boolean expectEquals) throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
@@ -125,6 +126,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -136,6 +138,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
@@ -147,6 +150,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -158,6 +162,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -169,6 +174,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeployPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -180,6 +186,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeployIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
@@ -191,6 +198,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeployContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -202,6 +210,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeploySharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 

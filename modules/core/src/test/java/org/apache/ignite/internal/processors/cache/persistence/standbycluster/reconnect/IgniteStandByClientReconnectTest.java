@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster.r
 
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
 
 /**
  *
@@ -27,6 +28,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveClientReconnectToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -108,6 +110,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveClientReconnectToInActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -188,6 +191,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInActiveClientReconnectToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -245,6 +249,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInActiveClientReconnectToInActiveCluster() throws Exception {
         startNodes(null);
 

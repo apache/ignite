@@ -27,6 +27,7 @@ import org.apache.ignite.spi.checkpoint.GridCheckpointTestState;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Tests multiple shared directories.
@@ -59,6 +60,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleSharedDirectories() throws Exception {
         String data = "Test check point data.";
 

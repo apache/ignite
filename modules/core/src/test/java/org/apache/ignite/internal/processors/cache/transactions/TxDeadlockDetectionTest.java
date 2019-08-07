@@ -48,6 +48,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -102,6 +103,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangs() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -182,6 +184,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlockSimple() throws Exception {
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -236,6 +239,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlock() throws Exception {
         for (int i = 2; i <= 10; i++) {
             final int threads = i;
@@ -310,6 +314,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedTxLocksRequest() throws Exception {
         doTestFailedMessage(TxLocksRequest.class);
     }
@@ -317,6 +322,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedTxLocksResponse() throws Exception {
         doTestFailedMessage(TxLocksResponse.class);
     }

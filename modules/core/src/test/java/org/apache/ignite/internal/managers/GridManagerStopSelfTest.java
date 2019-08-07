@@ -27,9 +27,9 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
@@ -45,8 +45,10 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Managers stop test.
@@ -88,6 +90,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopCheckpointManager() throws Exception {
         SharedFsCheckpointSpi spi = new SharedFsCheckpointSpi();
 
@@ -103,6 +106,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopCollisionManager() throws Exception {
         CollisionSpi spi = new FifoQueueCollisionSpi();
 
@@ -118,6 +122,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopCommunicationManager() throws Exception {
         CommunicationSpi spi = new TcpCommunicationSpi();
 
@@ -125,6 +130,8 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
         ctx.config().setCommunicationSpi(spi);
         ctx.config().setMarshaller(new BinaryMarshaller());
+        ctx.config().setMetricExporterSpi(new NoopMetricExporterSpi());
+        ctx.add(new GridMetricManager(ctx));
 
         GridIoManager mgr = new GridIoManager(ctx);
 
@@ -136,6 +143,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDeploymentManager() throws Exception {
         DeploymentSpi spi = new LocalDeploymentSpi();
 
@@ -151,6 +159,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDiscoveryManager() throws Exception {
         DiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -166,6 +175,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopEventStorageManager() throws Exception {
         EventStorageSpi spi = new MemoryEventStorageSpi();
 
@@ -181,6 +191,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopFailoverManager() throws Exception {
         AlwaysFailoverSpi spi = new AlwaysFailoverSpi();
 
@@ -196,6 +207,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopLoadBalancingManager() throws Exception {
         RoundRobinLoadBalancingSpi spi = new RoundRobinLoadBalancingSpi();
 

@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -34,37 +36,47 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
+import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
+import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 
 /**
  *
@@ -77,13 +89,13 @@ public class CacheGroupContext {
     private final int grpId;
 
     /** Node ID cache group was received from. */
-    private final UUID rcvdFrom;
+    private volatile UUID rcvdFrom;
 
     /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
     private boolean needsRecovery;
 
     /** */
-    private final AffinityTopologyVersion locStartVer;
+    private volatile AffinityTopologyVersion locStartVer;
 
     /** */
     private final CacheConfiguration<?, ?> ccfg;
@@ -92,7 +104,7 @@ public class CacheGroupContext {
     private final GridCacheSharedContext ctx;
 
     /** */
-    private final boolean affNode;
+    private volatile boolean affNode;
 
     /** */
     private final CacheType cacheType;
@@ -106,26 +118,31 @@ public class CacheGroupContext {
     /** */
     private final boolean storeCacheId;
 
-    /** */
-    private volatile List<GridCacheContext> caches;
+    /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
+    private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
-    /** */
-    private volatile List<GridCacheContext> contQryCaches;
+    /** List of caches with registered CQ listeners. */
+    private List<GridCacheContext> contQryCaches;
+
+    /** ReadWriteLock to control the continuous query setup - this is to prevent the race between cache update and listener setup */
+    private final StripedCompositeReadWriteLock listenerLock =
+        new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors());
 
     /** */
     private final IgniteLogger log;
 
     /** */
-    private GridAffinityAssignmentCache aff;
+    private volatile GridAffinityAssignmentCache aff;
 
     /** */
-    private GridDhtPartitionTopologyImpl top;
+    private volatile GridDhtPartitionTopologyImpl top;
 
     /** */
-    private IgniteCacheOffheapManager offheapMgr;
+    private volatile IgniteCacheOffheapManager offheapMgr;
 
     /** */
-    private GridCachePreloader preldr;
+    private volatile GridCachePreloader preldr;
+
     /** */
     private final DataRegion dataRegion;
 
@@ -142,22 +159,34 @@ public class CacheGroupContext {
     private final ReuseList reuseList;
 
     /** */
-    private boolean drEnabled;
+    private volatile boolean drEnabled;
 
     /** */
-    private boolean qryEnabled;
+    private volatile boolean qryEnabled;
 
     /** */
-    private boolean mvccEnabled;
-
-    /** MXBean. */
-    private CacheGroupMetricsMXBean mxBean;
+    private final boolean mvccEnabled;
 
     /** */
     private volatile boolean localWalEnabled;
 
     /** */
     private volatile boolean globalWalEnabled;
+
+    /** Flag indicates that cache group is under recovering and not attached to topology. */
+    private final AtomicBoolean recoveryMode;
+
+    /** Statistics holder to track IO operations for PK index pages. */
+    private final IoStatisticsHolder statHolderIdx;
+
+    /** Statistics holder to track IO operations for data pages. */
+    private final IoStatisticsHolder statHolderData;
+
+    /** */
+    private volatile boolean hasAtomicCaches;
+
+    /** Cache group metrics. */
+    private final CacheGroupMetricsImpl metrics;
 
     /**
      * @param ctx Context.
@@ -187,7 +216,8 @@ public class CacheGroupContext {
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
-        boolean walEnabled
+        boolean walEnabled,
+        boolean recoveryMode
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -207,8 +237,7 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
-
-        persistGlobalWalState(walEnabled);
+        this.recoveryMode = new AtomicBoolean(recoveryMode);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -220,9 +249,18 @@ public class CacheGroupContext {
 
         log = ctx.kernalContext().log(getClass());
 
-        caches = new ArrayList<>();
+        metrics = new CacheGroupMetricsImpl(this);
 
-        mxBean = new CacheGroupMetricsMXBeanImpl(this);
+        if (systemCache()) {
+            statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
+            statHolderData = IoStatisticsHolderNoOp.INSTANCE;
+        }
+        else {
+            GridMetricManager mmgr = ctx.kernalContext().metric();
+
+            statHolderIdx = new IoStatisticsHolderIndex(HASH_INDEX, cacheOrGroupName(), HASH_PK_IDX_NAME, mmgr);
+            statHolderData = new IoStatisticsHolderCache(cacheOrGroupName(), grpId, mmgr);
+        }
     }
 
     /**
@@ -291,10 +329,9 @@ public class CacheGroupContext {
     public boolean hasCache(String cacheName) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            if (caches.get(i).name().equals(cacheName))
+        for (GridCacheContext cacheContext : caches)
+            if (cacheContext.name().equals(cacheName))
                 return true;
-        }
 
         return false;
     }
@@ -306,11 +343,17 @@ public class CacheGroupContext {
         assert cacheType.userCache() == cctx.userCache() : cctx.name();
         assert grpId == cctx.groupId() : cctx.name();
 
-        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
+        final boolean add;
 
-        assert sharedGroup() || caches.isEmpty();
+        synchronized (this) {
+            List<GridCacheContext> copy = new ArrayList<>(caches);
 
-        boolean add = caches.add(cctx);
+            assert sharedGroup() || copy.isEmpty();
+
+            add = copy.add(cctx);
+
+            caches = Collections.unmodifiableList(copy);
+        }
 
         assert add : cctx.name();
 
@@ -320,38 +363,41 @@ public class CacheGroupContext {
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
 
-        this.caches = caches;
+        if (!hasAtomicCaches)
+            hasAtomicCaches = cctx.config().getAtomicityMode() == ATOMIC;
     }
 
     /**
      * @param cctx Cache context.
      */
     private void removeCacheContext(GridCacheContext cctx) {
-        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
+        final List<GridCacheContext> copy;
 
-        // It is possible cache was not added in case of errors on cache start.
-        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext();) {
-            GridCacheContext next = it.next();
+        synchronized (this) {
+            copy = new ArrayList<>(caches);
 
-            if (next == cctx) {
-                assert sharedGroup() || caches.size() == 1 : caches.size();
+            for (GridCacheContext next : copy) {
+                if (next == cctx) {
+                    assert sharedGroup() || copy.size() == 1 : copy.size();
 
-                it.remove();
+                    copy.remove(next);
 
-                break;
+                    break;
+                }
             }
+
+            caches = Collections.unmodifiableList(copy);
         }
 
         if (QueryUtils.isEnabled(cctx.config())) {
             boolean qryEnabled = false;
 
-            for (int i = 0; i < caches.size(); i++) {
-                if (QueryUtils.isEnabled(caches.get(i).config())) {
+            for (GridCacheContext cacheContext : copy)
+                if (QueryUtils.isEnabled(cacheContext.config())) {
                     qryEnabled = true;
 
                     break;
                 }
-            }
 
             this.qryEnabled = qryEnabled;
         }
@@ -359,18 +405,15 @@ public class CacheGroupContext {
         if (cctx.isDrEnabled()) {
             boolean drEnabled = false;
 
-            for (int i = 0; i < caches.size(); i++) {
-                if (caches.get(i).isDrEnabled()) {
+            for (GridCacheContext cacheContext : copy)
+                if (QueryUtils.isEnabled(cacheContext.config())) {
                     drEnabled = true;
 
                     break;
                 }
-            }
 
             this.drEnabled = drEnabled;
         }
-
-        this.caches = caches;
     }
 
     /**
@@ -392,11 +435,8 @@ public class CacheGroupContext {
     public void unwindUndeploys() {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             cctx.deploy().unwind(cctx);
-        }
     }
 
     /**
@@ -434,9 +474,7 @@ public class CacheGroupContext {
 
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled() && cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
@@ -447,7 +485,6 @@ public class CacheGroupContext {
                     discoType,
                     discoTs));
             }
-        }
     }
 
     /**
@@ -462,9 +499,7 @@ public class CacheGroupContext {
 
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled())
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
@@ -474,7 +509,54 @@ public class CacheGroupContext {
                     null,
                     0,
                     0));
-        }
+    }
+
+    /**
+     * Adds partition supply event.
+     *
+     * @param part Partition.
+     */
+    public void addRebalanceSupplyEvent(int part) {
+        if (!eventRecordable(EVT_CACHE_REBALANCE_PART_SUPPLIED))
+            LT.warn(log, "Added event without checking if event is recordable: " +
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_SUPPLIED));
+
+        List<GridCacheContext> caches = this.caches;
+
+        for (GridCacheContext cctx : caches)
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache partition supplied event.",
+                    EVT_CACHE_REBALANCE_PART_SUPPLIED,
+                    part,
+                    null,
+                    0,
+                    0));
+    }
+
+    /**
+     * Adds partition supply event.
+     *
+     * @param part Partition.
+     */
+    public void addRebalanceMissEvent(int part) {
+        if (!eventRecordable(EVT_CACHE_REBALANCE_PART_MISSED))
+            LT.warn(log, "Added event without checking if event is recordable: " +
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_MISSED));
+
+        List<GridCacheContext> caches = this.caches;
+
+        for (GridCacheContext cctx : caches)
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache partition missed event.",
+                    EVT_CACHE_REBALANCE_PART_MISSED,
+                    part,
+                    null,
+                    0,
+                    0));
     }
 
     /**
@@ -501,14 +583,13 @@ public class CacheGroupContext {
     ) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled())
                 cctx.events().addEvent(part,
                     key,
                     evtNodeId,
-                    (IgniteUuid)null,
+                    null,
+                    null,
                     null,
                     type,
                     newVal,
@@ -519,7 +600,6 @@ public class CacheGroupContext {
                     null,
                     null,
                     keepBinary);
-        }
     }
 
     /**
@@ -714,9 +794,15 @@ public class CacheGroupContext {
      *
      */
     public void onKernalStop() {
-        aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
+        if (!isRecoveryMode()) {
+            aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
 
-        preldr.onKernalStop();
+            // This may happen if an exception is occurred on node start and we stop a node in the middle of the start
+            // procedure. It is safe to do a null-check here because preldr may be created only in exchange-worker
+            // thread which is stopped by the time this method is invoked.
+            if (preldr != null)
+                preldr.onKernalStop();
+        }
 
         offheapMgr.onKernalStop();
     }
@@ -738,6 +824,11 @@ public class CacheGroupContext {
      *
      */
     void stopGroup() {
+        offheapMgr.stop();
+
+        if (isRecoveryMode())
+            return;
+
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
@@ -747,9 +838,65 @@ public class CacheGroupContext {
 
         preldr.onKernalStop();
 
-        offheapMgr.stop();
-
         ctx.io().removeCacheGroupHandlers(grpId);
+    }
+
+    /**
+     * Finishes recovery for current cache group.
+     * Attaches topology version and initializes I/O.
+     *
+     * @param startVer Cache group start version.
+     * @param originalReceivedFrom UUID of node that was first who initiated cache group creating.
+     *                             This is needed to decide should node calculate affinity locally or fetch from other nodes.
+     * @param affinityNode Flag indicates, is local node affinity node or not. This may be calculated only after node joined to topology.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void finishRecovery(
+        AffinityTopologyVersion startVer,
+        UUID originalReceivedFrom,
+        boolean affinityNode
+    ) throws IgniteCheckedException {
+        if (!recoveryMode.compareAndSet(true, false))
+            return;
+
+        affNode = affinityNode;
+
+        rcvdFrom = originalReceivedFrom;
+
+        locStartVer = startVer;
+
+        persistGlobalWalState(globalWalEnabled);
+
+        initializeIO();
+
+        ctx.affinity().onCacheGroupCreated(this);
+    }
+
+    /**
+     * @return {@code True} if current cache group is in recovery mode.
+     */
+    public boolean isRecoveryMode() {
+        return recoveryMode.get();
+    }
+
+    /**
+     * Initializes affinity and rebalance I/O handlers.
+     */
+    private void initializeIO() throws IgniteCheckedException {
+        assert !recoveryMode.get() : "Couldn't initialize I/O handlers, recovery mode is on for group " + this;
+
+        if (ccfg.getCacheMode() != LOCAL) {
+            if (!ctx.kernalContext().clientNode()) {
+                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
+                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>) this::processAffinityAssignmentRequest);
+            }
+
+            preldr = new GridDhtPreloader(this);
+
+            preldr.start();
+        }
+        else
+            preldr = new GridCachePreloaderAdapter(this);
     }
 
     /**
@@ -760,23 +907,25 @@ public class CacheGroupContext {
 
         Set<Integer> ids = U.newHashSet(caches.size());
 
-        for (int i = 0; i < caches.size(); i++)
-            ids.add(caches.get(i).cacheId());
+        for (GridCacheContext cctx : caches)
+            ids.add(cctx.cacheId());
 
         return ids;
     }
 
     /**
      * @return Caches in this group.
+     *
+     * caches is already Unmodifiable list, so we don't need to explicitly wrap it here.
      */
     public List<GridCacheContext> caches() {
-        return this.caches;
+        return caches;
     }
 
     /**
      * @return {@code True} if group contains caches.
      */
-    boolean hasCaches() {
+    public boolean hasCaches() {
         List<GridCacheContext> caches = this.caches;
 
         return !caches.isEmpty();
@@ -788,9 +937,7 @@ public class CacheGroupContext {
     public void onPartitionEvicted(int part) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches) {
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(part);
 
@@ -806,16 +953,14 @@ public class CacheGroupContext {
         assert cctx.group() == this : cctx.name();
         assert !cctx.isLocal() : cctx.name();
 
-        synchronized (this) {
-            List<GridCacheContext> contQryCaches = this.contQryCaches;
+        List<GridCacheContext> contQryCaches = this.contQryCaches;
 
-            if (contQryCaches == null)
-                contQryCaches = new ArrayList<>();
+        if (contQryCaches == null)
+            contQryCaches = new ArrayList<>();
 
-            contQryCaches.add(cctx);
+        contQryCaches.add(cctx);
 
-            this.contQryCaches = contQryCaches;
-        }
+        this.contQryCaches = contQryCaches;
     }
 
     /**
@@ -825,20 +970,29 @@ public class CacheGroupContext {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
         assert !cctx.isLocal() : cctx.name();
+        assert listenerLock.isWriteLockedByCurrentThread();
 
-        synchronized (this) {
-            List<GridCacheContext> contQryCaches = this.contQryCaches;
+        List<GridCacheContext> contQryCaches = this.contQryCaches;
 
-            if (contQryCaches == null)
-                return;
+        if (contQryCaches == null)
+            return;
 
-            contQryCaches.remove(cctx);
+        contQryCaches.remove(cctx);
 
-            if (contQryCaches.isEmpty())
-                contQryCaches = null;
+        if (contQryCaches.isEmpty())
+            contQryCaches = null;
 
-            this.contQryCaches = contQryCaches;
-        }
+        this.contQryCaches = contQryCaches;
+    }
+
+    /**
+     * Obtain the group listeners lock. Write lock should be held to register/unregister listeners. Read lock should be
+     * hel for CQ listeners notification.
+     *
+     * @return Lock for the CQ listeners.
+     */
+    public ReadWriteLock listenerLock() {
+        return listenerLock;
     }
 
     /**
@@ -857,7 +1011,16 @@ public class CacheGroupContext {
         if (isLocal())
             return;
 
-        List<GridCacheContext> contQryCaches = this.contQryCaches;
+        List<GridCacheContext> contQryCaches;
+
+        listenerLock.readLock().lock();
+
+        try {
+            contQryCaches = this.contQryCaches;
+        }
+        finally {
+            listenerLock.readLock().unlock();
+        }
 
         if (contQryCaches == null)
             return;
@@ -884,51 +1047,60 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return {@code True} if there is at least one cache with registered CQ exists in this group.
+     */
+    public boolean hasContinuousQueryCaches() {
+        List<GridCacheContext> contQryCaches;
+
+        listenerLock.readLock().lock();
+
+        try {
+            contQryCaches = this.contQryCaches;
+
+            return !F.isEmpty(contQryCaches);
+        }
+        finally {
+            listenerLock.readLock().unlock();
+        }
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
-        aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-            cacheOrGroupName(),
-            grpId,
-            ccfg.getAffinity(),
-            ccfg.getNodeFilter(),
-            ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL,
-            persistenceEnabled());
+        GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
 
-        if (ccfg.getCacheMode() != LOCAL) {
+        if (affCache != null)
+            aff = affCache;
+        else
+            aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
+                cacheOrGroupName(),
+                grpId,
+                ccfg.getAffinity(),
+                ccfg.getNodeFilter(),
+                ccfg.getBackups(),
+                ccfg.getCacheMode() == LOCAL
+            );
+
+        if (ccfg.getCacheMode() != LOCAL)
             top = new GridDhtPartitionTopologyImpl(ctx, this);
 
-            if (!ctx.kernalContext().clientNode()) {
-                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
-                    new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>() {
-                        @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentRequest msg) {
-                            processAffinityAssignmentRequest(nodeId, msg);
-                        }
-                    });
-            }
-
-            preldr = new GridDhtPreloader(this);
-
-            preldr.start();
+        try {
+            offheapMgr = persistenceEnabled
+                ? new GridCacheOffheapManager()
+                : new IgniteCacheOffheapManagerImpl();
         }
-        else
-            preldr = new GridCachePreloaderAdapter(this);
-
-        if (persistenceEnabled()) {
-            try {
-                offheapMgr = new GridCacheOffheapManager();
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to initialize offheap manager", e);
-            }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to initialize offheap manager", e);
         }
-        else
-            offheapMgr = new IgniteCacheOffheapManagerImpl();
 
         offheapMgr.start(ctx, this);
 
-        ctx.affinity().onCacheGroupCreated(this);
+        if (!isRecoveryMode()) {
+            initializeIO();
+
+            ctx.affinity().onCacheGroupCreated(this);
+        }
     }
 
     /**
@@ -942,8 +1114,7 @@ public class CacheGroupContext {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processAffinityAssignmentRequest(final UUID nodeId,
-        final GridDhtAffinityAssignmentRequest req) {
+    private void processAffinityAssignmentRequest(UUID nodeId, GridDhtAffinityAssignmentRequest req) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + nodeId + ", req=" + req + ']');
 
@@ -1026,13 +1197,6 @@ public class CacheGroupContext {
         preldr.onReconnected();
     }
 
-    /**
-     * @return MXBean.
-     */
-    public CacheGroupMetricsMXBean mxBean() {
-        return mxBean;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CacheGroupContext [grp=" + cacheOrGroupName() + ']';
@@ -1075,13 +1239,15 @@ public class CacheGroupContext {
 
     /**
      * @param enabled Local WAL enabled flag.
+     * @param persist If {@code true} then flag state will be persisted into metastorage.
      */
-    public void localWalEnabled(boolean enabled) {
+    public void localWalEnabled(boolean enabled, boolean persist) {
         if (localWalEnabled != enabled){
             log.info("Local WAL state for group=" + cacheOrGroupName() +
                 " changed from " + localWalEnabled + " to " + enabled);
 
-            persistLocalWalState(enabled);
+            if (persist)
+                persistLocalWalState(enabled);
 
             localWalEnabled = enabled;
         }
@@ -1099,5 +1265,33 @@ public class CacheGroupContext {
      */
     private void persistLocalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, true);
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderIdx() {
+        return statHolderIdx;
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderData() {
+        return statHolderData;
+    }
+
+    /**
+     * @return {@code True} if group has atomic caches.
+     */
+    public boolean hasAtomicCaches() {
+        return hasAtomicCaches;
+    }
+
+    /**
+     * @return Metrics.
+     */
+    public CacheGroupMetricsImpl metrics() {
+        return metrics;
     }
 }

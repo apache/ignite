@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Check logging local node metrics
@@ -46,7 +47,6 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     private GridStringLogger strLog = new GridStringLogger(false, this.log);
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -77,6 +77,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeMetricsLog() throws Exception {
         IgniteCache<Integer, String> cache1 = grid(0).createCache("TestCache1");
         IgniteCache<Integer, String> cache2 = grid(1).createCache("TestCache2");

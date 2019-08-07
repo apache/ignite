@@ -208,7 +208,6 @@ public final class GridifyUtils {
      * @param cls Method parameter to check.
      * @return {@code true} if method parameter type is valid.
      */
-    @SuppressWarnings({"UnusedCatchParameter"})
     public static boolean isMethodParameterTypeAllowed(Class<?> cls) {
         for (Class<?> mtdReturnType : ALLOWED_MTD_PARAM_TYPES) {
             if (mtdReturnType.equals(cls))
@@ -233,7 +232,6 @@ public final class GridifyUtils {
                 }
             }
         }
-
 
         return false;
     }

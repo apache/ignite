@@ -51,7 +51,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class JdbcThinSSLUtil {
     /** Trust all certificates manager. */
-    private final static X509TrustManager TRUST_ALL_MANAGER = new X509TrustManager() {
+    private static final X509TrustManager TRUST_ALL_MANAGER = new X509TrustManager() {
         @Override public X509Certificate[] getAcceptedIssuers() {
             return null;
         }
@@ -90,8 +90,8 @@ public class JdbcThinSSLUtil {
             return sock;
         }
         catch (IOException e) {
-            throw new SQLException("Failed to SSL connect to server [url=" + connProps.getUrl() +']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to SSL connect to server [url=" + connProps.getUrl() +
+                " address=" + addr + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 

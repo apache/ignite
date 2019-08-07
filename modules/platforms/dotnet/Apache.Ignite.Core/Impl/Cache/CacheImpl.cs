@@ -63,6 +63,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: partition recover.*/
         private readonly bool _flagPartitionRecover;
 
+        /** Flag: consistency.*/
+        private readonly bool _flagReadRepair;
+
         /** Transaction manager. */
         private readonly CacheTransactionManager _txManager;
 
@@ -77,16 +80,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
+        /// <param name="flagReadRepair">Read Repair mode flag.</param>
         /// <param name="flagAllowAtomicOpsInTx">Allow atomic operations in transactions flag.</param>
         public CacheImpl(IPlatformTargetInternal target,
             bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover,
-            bool flagAllowAtomicOpsInTx) : base(target)
+            bool flagReadRepair, bool flagAllowAtomicOpsInTx) : base(target)
         {
             _ignite = target.Marshaller.Ignite;
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
             _flagPartitionRecover = flagPartitionRecover;
+            _flagReadRepair = flagReadRepair;
             _flagAllowAtomicOpsInTx = flagAllowAtomicOpsInTx;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
@@ -178,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithSkipStore),
-                true, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                true, _flagKeepBinary, true, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /// <summary>
@@ -202,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new CacheImpl<TK1, TV1>(DoOutOpObject((int) CacheOp.WithKeepBinary),
-                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -212,7 +217,17 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int)CacheOp.WithSkipStore),
-                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, true);
+                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, _flagReadRepair, true);
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithReadRepair()
+        {
+            if (_flagReadRepair)
+                return this;
+
+            return new CacheImpl<TK, TV>(DoOutOpObject((int)CacheOp.WithReadRepair),
+                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, true, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -223,13 +238,18 @@ namespace Apache.Ignite.Core.Impl.Cache
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
             return new CacheImpl<TK, TV>(cache0, _flagSkipStore, _flagKeepBinary, 
-                _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                _flagNoRetries, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
         public bool IsKeepBinary
         {
             get { return _flagKeepBinary; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsReadRepair {
+            get { return _flagReadRepair; }
         }
 
         /** <inheritDoc /> */
@@ -829,13 +849,47 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
-
-            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
+            return SizeAsync0(modes);
         }
 
+        /** <inheritDoc /> */
+        public long GetSizeLong(params CachePeekMode[] modes)
+        {   
+            return Size0(false, null, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return Size0(false, partition, modes);
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+        {
+            return SizeAsync0(null, modes);
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+        {
+            return SizeAsync0(partition, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(params CachePeekMode[] modes)
+        {
+            return Size0(true, null, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return Size0(true, partition, modes);
+        }
+        
         /// <summary>
-        /// Internal size routine.
+        /// Internal integer size routine.
         /// </summary>
         /// <param name="loc">Local flag.</param>
         /// <param name="modes">peek modes</param>
@@ -846,7 +900,74 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
-            return (int) DoOutInOp((int) op, modes0);
+            return (int) DoOutInOp((int) op, modes0); 
+        }
+        
+        /// <summary>
+        /// Internal long size routine.
+        /// </summary>
+        /// <param name="loc">Local flag.</param>
+        /// <param name="part">Partition number</param>
+        /// <param name="modes">peek modes</param>
+        /// <returns>Size.</returns>
+        private long Size0(bool loc, int? part, params CachePeekMode[] modes)
+        {
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
+
+            var op = loc ? CacheOp.SizeLongLoc : CacheOp.SizeLong; 
+           
+            return DoOutOp((int) op, writer =>
+            {
+                writer.WriteInt(modes0);
+
+                if (part != null)
+                {
+                    writer.WriteBoolean(true);
+                    writer.WriteInt((int) part);
+                }
+                else
+                {
+                    writer.WriteBoolean(false);   
+                }                     
+            });  
+        }
+        
+        /// <summary>
+        /// Internal async integer size routine.
+        /// </summary>
+        /// <param name="modes">peek modes</param>
+        /// <returns>Size.</returns>
+        private Task<int> SizeAsync0(params CachePeekMode[] modes)
+        {
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
+
+            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
+        }
+        
+        /// <summary>
+        /// Internal async long size routine.
+        /// </summary>
+        /// <param name="part">Partition number</param>
+        /// <param name="modes">peek modes</param>
+        /// <returns>Size.</returns>
+        private Task<long> SizeAsync0(int? part, params CachePeekMode[] modes)
+        {
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
+
+            return DoOutOpAsync<long>(CacheOp.SizeLongAsync, writer =>
+            {
+                writer.WriteInt(modes0);
+                     
+                if (part != null)
+                {
+                    writer.WriteBoolean(true);
+                    writer.WriteInt((int) part);
+                }
+                else
+                {
+                    writer.WriteBoolean(false);   
+                }             
+            });
         }
 
         /** <inheritdoc /> */
@@ -1038,7 +1159,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithNoRetries),
-                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -1048,7 +1169,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithPartitionRecover),
-                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true, _flagAllowAtomicOpsInTx);
+                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true, _flagReadRepair, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -1129,7 +1250,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer.WriteBoolean(qry.EnforceJoinOrder);
                 writer.WriteBoolean(qry.Lazy); // Lazy flag.
                 writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
+#pragma warning disable 618
                 writer.WriteBoolean(qry.ReplicatedOnly);
+#pragma warning restore 618
                 writer.WriteBoolean(qry.Colocated);
                 writer.WriteString(qry.Schema); // Schema
             });
@@ -1445,6 +1568,24 @@ namespace Apache.Ignite.Core.Impl.Cache
         public void ResetQueryMetrics()
         {
             DoOutInOp((int)CacheOp.ResetQueryMetrics);
+        }
+
+        /** <inheritdoc /> */
+        public void PreloadPartition(int partition)
+        {
+            DoOutInOp((int)CacheOp.PreloadPartition, partition);
+        }
+
+        /** <inheritdoc /> */
+        public Task PreloadPartitionAsync(int partition)
+        {
+            return DoOutOpAsync(CacheOp.PreloadPartitionAsync, w => w.WriteInt(partition));
+        }
+
+        /** <inheritdoc /> */
+        public bool LocalPreloadPartition(int partition)
+        {
+            return DoOutOp(CacheOp.LocalPreloadPartition, w => w.WriteInt(partition));
         }
     }
 }

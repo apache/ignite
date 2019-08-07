@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
@@ -26,12 +24,16 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertTrue;
 
 /** */
 public class MSEHistogramTest extends ImpurityHistogramTest {
     /** Feature 1 meta. */
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta("", 0, true));
+
     /** Feature 2 meta. */
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta("", 1, false));
 
@@ -97,14 +99,14 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         List<MSEHistogram> partitions1 = new ArrayList<>();
         List<MSEHistogram> partitions2 = new ArrayList<>();
 
-        int cntOfPartitions = rnd.nextInt(100);
+        int cntOfPartitions = rnd.nextInt(100) + 1;
 
         for (int i = 0; i < cntOfPartitions; i++) {
             partitions1.add(new MSEHistogram(sampleId, bucketMeta1));
             partitions2.add(new MSEHistogram(sampleId, bucketMeta2));
         }
 
-        int datasetSize = rnd.nextInt(1000);
+        int datasetSize = rnd.nextInt(1000) + 1;
         for(int i = 0; i < datasetSize; i++) {
             BootstrappedVector vec = randomVector(false);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);

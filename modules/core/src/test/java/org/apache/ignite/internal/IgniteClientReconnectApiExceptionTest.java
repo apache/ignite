@@ -54,6 +54,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -65,7 +66,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
 
     /** Cache key for test put and invoke operation after reconnect */
-    private final static int CACHE_PUT_INVOKE_KEY = 10010;
+    private static final int CACHE_PUT_INVOKE_KEY = 10010;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -84,6 +85,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testErrorOnDisconnect() throws Exception {
         // Check cache operations.
         cacheOperationsTest();
@@ -220,7 +222,6 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void cacheOperationsTest() throws Exception {
         clientMode = true;
 
@@ -538,7 +539,6 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void igniteOperationsTest() throws Exception {
         clientMode = true;
 

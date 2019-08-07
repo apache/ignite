@@ -253,7 +253,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private volatile int activeJobsThreshold = DFLT_ACTIVE_JOBS_THRESHOLD;
 
     /** Configuration parameter defining waiting job count threshold for stealing to start. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private volatile int waitJobsThreshold = DFLT_WAIT_JOBS_THRESHOLD;
 
     /** Message expire time configuration parameter. */
@@ -571,7 +570,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
-                @SuppressWarnings("fallthrough")
                 @Override public void onEvent(Event evt) {
                     assert evt instanceof DiscoveryEvent;
 
@@ -1118,7 +1116,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         private int jobsToSteal;
 
         /** */
-        private long ts = U.currentTimeMillis();
+        private long ts = System.nanoTime();
 
         /**
          * @return Job to steal.
@@ -1135,7 +1133,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         boolean expired() {
             assert Thread.holdsLock(this);
 
-            return jobsToSteal > 0 && U.currentTimeMillis() - ts >= msgExpireTime;
+            return jobsToSteal > 0 && U.millisSinceNanos(ts) >= msgExpireTime;
         }
 
         /**
@@ -1146,7 +1144,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
             this.jobsToSteal = jobsToSteal;
 
-            ts = U.currentTimeMillis();
+            ts = System.nanoTime();
         }
 
         /** {@inheritDoc} */

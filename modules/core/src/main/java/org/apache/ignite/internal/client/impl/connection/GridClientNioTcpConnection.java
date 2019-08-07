@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -515,7 +514,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *
      * @param res Incoming response data.
      */
-    @SuppressWarnings({"unchecked", "TooBroadScope"})
+    @SuppressWarnings({"unchecked"})
     void handleResponse(GridClientMessage res) throws IOException {
         lastMsgRcvTime = System.currentTimeMillis();
 
@@ -611,6 +610,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         if (resp.successStatus() == GridClientResponse.STATUS_AUTH_FAILURE)
             fut.onDone(new GridClientAuthenticationException("Client authentication failed [clientId=" + clientId +
                 ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+        else if (resp.successStatus() == GridClientResponse.STATUS_ILLEGAL_ARGUMENT)
+            fut.onDone(new IllegalArgumentException(resp.errorMessage()));
         else if (resp.errorMessage() != null)
             fut.onDone(new GridClientException(resp.errorMessage()));
         else

@@ -83,11 +83,6 @@ using (var ignite = Ignition.Start())
 	cache[1] = person.ToBuilder().SetField("Name", name + " Jr.").Build();
 	cache[1].ToString().Dump("Modified person with id 1:");
 	
-	// Run SQL query.
-	cache.Query(new SqlQuery("Person", "age < 40"))
-		.Select(x => x.Value.ToString())
-		.Dump("Persons with age less than 40:");
-		
 	// Run SQL fields query.
 	cache.Query(new SqlFieldsQuery("select name from Person order by name"))
 		.Dump("All person names:");

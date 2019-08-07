@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 #include "ignite/test_utils.h"
+#include "ignite/binary_test_defs.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -99,6 +96,29 @@ struct CacheTestSuiteFixture
         grid0 = ignite_test::StartNode("cache-test.xml", "grid-0");
         grid1 = ignite_test::StartNode("cache-test.xml", "grid-1");
 #endif
+    }
+
+    void PutGetStructWithEnumField(int32_t i32Field, ignite_test::core::binary::TestEnum::Type enumField,
+        const std::string& strField)
+    {
+        typedef ignite_test::core::binary::TypeWithEnumField TypeWithEnumField;
+
+        TypeWithEnumField val;
+        val.i32Field = i32Field;
+        val.enumField = enumField;
+        val.strField = strField;
+
+        cache::Cache<int, TypeWithEnumField> cache = grid0.GetOrCreateCache<int, TypeWithEnumField>("PutGetStructWithEnumField");
+
+        BOOST_TEST_CHECKPOINT("Putting value into the cache");
+        cache.Put(i32Field, val);
+
+        BOOST_TEST_CHECKPOINT("Getting value from the cache");
+        TypeWithEnumField res = cache.Get(i32Field);
+
+        BOOST_CHECK_EQUAL(val.i32Field, res.i32Field);
+        BOOST_CHECK_EQUAL(val.enumField, res.enumField);
+        BOOST_CHECK_EQUAL(val.strField, res.strField);
     }
 
     /*
@@ -207,7 +227,7 @@ BOOST_AUTO_TEST_CASE(TestPutAll)
 
     for (int i = 0; i < 100; i++)
         map[i] = i + 1;
-    
+
     cache::Cache<int, int> cache = Cache();
 
     cache.PutAll(map);
@@ -263,7 +283,7 @@ BOOST_AUTO_TEST_CASE(TestGet)
 
     BOOST_REQUIRE(1 == cache.Get(1));
     BOOST_REQUIRE(2 == cache.Get(2));
-    
+
     BOOST_REQUIRE(0 == cache.Get(3));
 }
 
@@ -272,7 +292,7 @@ BOOST_AUTO_TEST_CASE(TestGetAll)
     cache::Cache<int, int> cache = Cache();
 
     int keys[] = { 1, 2, 3, 4, 5 };
-    
+
     std::set<int> keySet (keys, keys + 5);
 
     for (int i = 0; i < static_cast<int>(keySet.size()); i++)
@@ -370,14 +390,14 @@ BOOST_AUTO_TEST_CASE(TestContainsKey)
     BOOST_REQUIRE(true == cache.ContainsKey(1));
 
     BOOST_REQUIRE(true == cache.Remove(1));
-    
+
     BOOST_REQUIRE(false == cache.ContainsKey(1));
 }
 
 BOOST_AUTO_TEST_CASE(TestContainsKeys)
 {
     cache::Cache<int, int> cache = Cache();
-    
+
     int keys[] = { 1, 2 };
 
     std::set<int> keySet(keys, keys + 2);
@@ -386,7 +406,7 @@ BOOST_AUTO_TEST_CASE(TestContainsKeys)
 
     cache.Put(1, 1);
     cache.Put(2, 2);
-    
+
     BOOST_REQUIRE(true == cache.ContainsKeys(keySet));
 
     cache.Remove(1);
@@ -693,6 +713,20 @@ BOOST_AUTO_TEST_CASE(TestGetBigString)
     cache.Put(5, longStr);
 
     BOOST_REQUIRE(longStr == cache.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetStructWithEnumField)
+{
+    typedef ignite_test::core::binary::TestEnum TestEnum;
+
+    PutGetStructWithEnumField(0, TestEnum::TEST_ZERO, "");
+    PutGetStructWithEnumField(1, TestEnum::TEST_ZERO, "");
+    PutGetStructWithEnumField(0, TestEnum::TEST_NON_ZERO, "");
+    PutGetStructWithEnumField(0, TestEnum::TEST_ZERO, "Lorem ipsum");
+    PutGetStructWithEnumField(1, TestEnum::TEST_NON_ZERO, "Lorem ipsum");
+
+    PutGetStructWithEnumField(13, TestEnum::TEST_NEGATIVE_42, "hishib");
+    PutGetStructWithEnumField(1337, TestEnum::TEST_SOME_BIG, "Some test value");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

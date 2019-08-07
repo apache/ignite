@@ -212,7 +212,6 @@ public class PersistenceController {
      *
      * @return key object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public Object buildKeyObject(Row row) {
         return buildObject(row, persistenceSettings.getKeyPersistenceSettings());
     }
@@ -290,7 +289,6 @@ public class PersistenceController {
         boolean pojoStrategy = PersistenceStrategy.POJO == settings.getStrategy();
         Collection<String> keyCols = settings.getTableColumns();
         StringBuilder hdrWithKeyFields = new StringBuilder();
-
 
         for (String column : keyCols) {
             // omit calculated fields in load statement

@@ -130,7 +130,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @Override @SuppressWarnings("unchecked")
+    @Override
     public <T> T attribute(String name) {
         assert name != null;
 
@@ -155,7 +155,6 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Map<String, Object> attributes() {
         return attrs;
     }

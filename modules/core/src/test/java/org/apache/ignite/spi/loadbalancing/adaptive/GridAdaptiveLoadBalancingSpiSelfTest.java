@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Tests adaptive load balancing SPI.
@@ -65,6 +66,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testSingleNodeZeroWeight() throws Exception {
         GridTestNode node = (GridTestNode)getSpiContext().nodes().iterator().next();
 
@@ -90,6 +92,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testSingleNodeSameSession() throws Exception {
         GridTestNode node = (GridTestNode)getSpiContext().nodes().iterator().next();
 
@@ -115,6 +118,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testSingleNodeDifferentSession() throws Exception {
         GridTestNode node = (GridTestNode)getSpiContext().nodes().iterator().next();
 

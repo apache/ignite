@@ -67,7 +67,7 @@ public class TcpDiscoveryNodesRing {
     };
 
     /** Local node. */
-    private TcpDiscoveryNode locNode;
+    private volatile TcpDiscoveryNode locNode;
 
     /** All nodes in topology. */
     @GridToStringInclude
@@ -162,7 +162,7 @@ public class TcpDiscoveryNodesRing {
      * @return Collection of visible remote nodes.
      */
     public Collection<TcpDiscoveryNode> visibleRemoteNodes() {
-        return nodes(VISIBLE_NODES, F.remoteNodes(locNode.id()));
+        return nodes(F.remoteNodes(locNode.id()), VISIBLE_NODES);
     }
 
     /**
@@ -237,7 +237,7 @@ public class TcpDiscoveryNodesRing {
 
             nodes = new TreeSet<>(nodes);
 
-            node.lastUpdateTime(U.currentTimeMillis());
+            node.lastUpdateTimeNanos(System.nanoTime());
 
             nodes.add(node);
 
@@ -310,7 +310,7 @@ public class TcpDiscoveryNodesRing {
                     firstAdd = false;
                 }
 
-                node.lastUpdateTime(U.currentTimeMillis());
+                node.lastUpdateTimeNanos(System.nanoTime());
 
                 this.nodes.add(node);
             }
@@ -536,6 +536,37 @@ public class TcpDiscoveryNodesRing {
             }
 
             return previous;
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param ringNode Node for which to find a predecessor.
+     * @return Previous node of the given node in the ring.
+     * @throws IllegalArgumentException If the given node was not found in the ring.
+     */
+    public TcpDiscoveryNode previousNodeOf(TcpDiscoveryNode ringNode) {
+        rwLock.readLock().lock();
+
+        try {
+            TcpDiscoveryNode prev = null;
+
+            for (TcpDiscoveryNode node : nodes) {
+                if (node.equals(ringNode)) {
+                    if (prev == null)
+                        // ringNode is the first node, return last node in the ring.
+                        return nodes.last();
+
+                    return prev;
+                }
+
+                prev = node;
+            }
+
+            throw new IllegalArgumentException("Failed to find previous node (ringNode is not in the ring) " +
+                "[ring=" + this + ", ringNode=" + ringNode + ']');
         }
         finally {
             rwLock.readLock().unlock();

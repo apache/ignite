@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -48,18 +50,22 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,15 +85,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements Comparable<GridDhtLocalPartition>, GridReservable {
     /** */
-    private static final GridCacheMapEntryFactory ENTRY_FACTORY = new GridCacheMapEntryFactory() {
-        @Override public GridCacheMapEntry create(
-            GridCacheContext ctx,
-            AffinityTopologyVersion topVer,
-            KeyCacheObject key
-        ) {
-            return new GridDhtCacheEntry(ctx, topVer, key);
-        }
-    };
+    private static final GridCacheMapEntryFactory ENTRY_FACTORY = GridDhtCacheEntry::new;
 
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 200_000);
@@ -179,11 +177,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param ctx Context.
      * @param grp Cache group.
      * @param id Partition ID.
+     * @param recovery Flag indicates that partition is created during recovery phase.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public GridDhtLocalPartition(GridCacheSharedContext ctx,
-        CacheGroupContext grp,
-        int id) {
+    public GridDhtLocalPartition(
+            GridCacheSharedContext ctx,
+            CacheGroupContext grp,
+            int id,
+            boolean recovery
+    ) {
         super(ENTRY_FACTORY);
 
         this.id = id;
@@ -220,8 +221,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             store = grp.offheap().createCacheDataStore(id);
 
             // Log partition creation for further crash recovery purposes.
-            if (grp.walEnabled())
-                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), updateCounter()));
+            if (grp.walEnabled() && !recovery)
+                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
 
             // Inject row cache cleaner on store creation
             // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
@@ -359,7 +360,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return store.fullSize() == 0 && internalSize() == 0;
+        return store.isEmpty() && internalSize() == 0;
     }
 
     /**
@@ -379,9 +380,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         // Make sure to remove exactly this entry.
         removeEntry(entry);
-
-        // Attempt to evict.
-        tryContinueClearing();
     }
 
     /**
@@ -399,9 +397,21 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     *
+     * TODO FIXME Get rid of deferred delete queue https://issues.apache.org/jira/browse/IGNITE-11704
      */
     public void cleanupRemoveQueue() {
+        if (state() == MOVING) {
+            if (rmvQueue.sizex() >= rmvQueueMaxSize) {
+                LT.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
+                    "[grpId=" + this.grp.groupId() +
+                    ", partId=" + id() +
+                    ", grpParts=" + this.grp.affinity().partitions() +
+                    ", maxRmvQueueSize=" + rmvQueueMaxSize + ']');
+            }
+
+            return;
+        }
+
         while (rmvQueue.sizex() >= rmvQueueMaxSize) {
             RemovedEntryHolder item = rmvQueue.pollFirst();
 
@@ -506,14 +516,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
-                // If no more reservations try to continue delayed renting or clearing process.
-                if (reservations == 0) {
-                    if (delayedRenting)
-                        rent(true);
-                    else
-                        tryContinueClearing();
-                }
+                // If no more reservations try to continue delayed renting.
+                if (reservations == 0 && delayedRenting)
+                    rent(true);
 
+                // Partition could be only reserved in OWNING state so no further actions
+                // are required.
                 break;
             }
         }
@@ -538,7 +546,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 this.state.compareAndSet(state0, setPartState(state0, toState));
 
                 try {
-                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Error while writing to log", e);
@@ -563,10 +571,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 if (update) {
                     try {
-                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);
+
+                        ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                     }
 
                     if (log.isDebugEnabled())
@@ -683,6 +693,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param updateSeq Update sequence.
      */
     private void clearAsync0(boolean updateSeq) {
+        // Method expected to be called  from exchange worker or rebalancing thread when rebalancing is done.
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -718,7 +729,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         }
 
-        ctx.evict().evictPartitionAsync(grp,this);
+        ctx.evict().evictPartitionAsync(grp, this);
     }
 
     /**
@@ -733,7 +744,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         clear = true;
 
-        clearAsync0(false);
+        GridDhtPartitionDemander.RebalanceFuture rebFut =
+            (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
+
+        // Make sure current rebalance future finishes before clearing
+        // to avoid clearing currently rebalancing partition.
+        // NOTE: this invariant is not true for initial rebalance future.
+        if (rebFut.topologyVersion() != null && state0 == MOVING && !rebFut.isDone())
+            rebFut.listen(fut -> clearAsync0(false));
+        else
+            clearAsync0(false);
     }
 
     /**
@@ -893,6 +913,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Only one thread is allowed to do such process concurrently.
      * At the end of clearing method completes {@code clearFuture}.
      *
+     * @param evictionCtx Eviction context.
+     *
      * @return {@code false} if clearing is not started due to existing reservations.
      * @throws NodeStoppingException If node is stopping.
      */
@@ -947,7 +969,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Tries to continue delayed partition clearing.
      */
     public void onUnlock() {
-        tryContinueClearing();
+        // No-op.
     }
 
     /**
@@ -971,24 +993,79 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Returns new update counter for primary node or passed counter for backup node.
+     * <p>
+     * Used for non-tx cases.
+     * <p>
+     * Counter generation/update logic is delegated to counter implementation.
+     *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
+     * @param init {@code True} if initial update.
      * @return Next update index.
      */
-    public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
-        long nextCntr = store.nextUpdateCounter();
+    public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, boolean init,
+        @Nullable Long primaryCntr) {
+        long nextCntr;
+
+        if (primaryCntr == null) // Primary node.
+            nextCntr = store.nextUpdateCounter();
+        else {
+            assert !init : "Initial update must generate a counter for partition " + this;
+
+            // Backup.
+            assert primaryCntr != 0;
+
+            store.updateCounter(nextCntr = primaryCntr);
+        }
 
         if (grp.sharedGroup())
-            grp.onPartitionCounterUpdate(cacheId, id, primaryCntr != null ? primaryCntr : nextCntr, topVer, primary);
+            grp.onPartitionCounterUpdate(cacheId, id, nextCntr, topVer, primary);
 
         return nextCntr;
     }
 
     /**
-     * @return Current update counter.
+     * Used for transactions.
+     *
+     * @param cacheId Cache id.
+     * @param tx Tx.
+     * @param primaryCntr Primary counter.
+     */
+    public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
+        Long nextCntr;
+
+        if (primaryCntr != null)
+            nextCntr = primaryCntr;
+        else {
+            TxCounters txCounters = tx.txCounters(false);
+
+            assert txCounters != null : "Must have counters for tx [nearXidVer=" + tx.nearXidVersion() + ']';
+
+            // Null must never be returned on primary node.
+            nextCntr = txCounters.generateNextCounter(cacheId, id());
+
+            assert nextCntr != null : this;
+        }
+
+        if (grp.sharedGroup())
+            grp.onPartitionCounterUpdate(cacheId, id, nextCntr, tx.topologyVersion(), tx.local());
+
+        return nextCntr;
+    }
+
+    /**
+     * @return Current update counter (LWM).
      */
     public long updateCounter() {
         return store.updateCounter();
+    }
+
+    /**
+     * @return Current reserved counter (HWM).
+     */
+    public long reservedCounter() {
+        return store.reservedCounter();
     }
 
     /**
@@ -1006,14 +1083,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Initial update counter value.
-     */
-    public void initialUpdateCounter(long val) {
-        store.updateInitialCounter(val);
-    }
-
-    /**
-     * Updates MVCC cache update counter on primary node.
+     * Increments cache update counter on primary node.
      *
      * @param delta Value to be added to update counter.
      * @return Update counter value before update.
@@ -1028,8 +1098,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param start Start position
      * @param delta Delta.
      */
-    public void updateCounter(long start, long delta) {
-         store.updateCounter(start, delta);
+    public boolean updateCounter(long start, long delta) {
+        return store.updateCounter(start, delta);
+    }
+
+    /**
+     * Reset partition counters.
+     */
+    public void resetCounters() {
+        store.resetUpdateCounter();
     }
 
     /**
@@ -1074,7 +1151,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 try {
                     CacheDataRow row = it0.next();
 
-                    // Do not clear fresh rows in case of single partition clearing.
+                    // Do not clear fresh rows in case of partition reloading.
+                    // This is required because normal updates are possible to moving partition which is currently cleared.
                     if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
                         continue;
 
@@ -1098,7 +1176,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             hld.cctx.events().addEvent(cached.partition(),
                                 cached.key(),
                                 ctx.localNodeId(),
-                                (IgniteUuid)null,
+                                null,
+                                null,
                                 null,
                                 EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
                                 null,
@@ -1224,7 +1303,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverlyStrongTypeCast"})
     @Override public boolean equals(Object obj) {
         return obj instanceof GridDhtLocalPartition && (obj == this || ((GridDhtLocalPartition)obj).id() == id);
     }
@@ -1244,7 +1322,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             "state", state(),
             "reservations", reservations(),
             "empty", isEmpty(),
-            "createTime", U.format(createTime));
+            "createTime", U.format(createTime),
+            "cntr", dataStore().partUpdateCounter());
     }
 
     /** {@inheritDoc} */
@@ -1368,6 +1447,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     private static long setSize(long state, int size) {
         return (state & (~0xFFFFFFFF00000000L)) | ((long)size << 32);
+    }
+
+    /**
+     * Flushes pending update counters closing all possible gaps.
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
+     */
+    public GridLongList finalizeUpdateCounters() {
+        return store.finalizeUpdateCounters();
+    }
+
+    /**
+     * Called before next batch is about to be applied during rebalance. Currently used for tests.
+     *
+     * @param last {@code True} if last batch for partition.
+     */
+    public void beforeApplyBatch(boolean last) {
+        // No-op.
     }
 
     /**
@@ -1518,7 +1615,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         public void finish() {
             synchronized (this) {
                 onDone();
-                finished = true;
+                finished = true; // Marks state when all future listeners are finished.
             }
         }
 

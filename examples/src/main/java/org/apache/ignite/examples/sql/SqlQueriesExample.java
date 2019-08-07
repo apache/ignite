@@ -18,23 +18,17 @@
 package org.apache.ignite.examples.sql;
 
 import java.util.List;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.Person;
-import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * SQL queries example with the usage of Java SQL API.
@@ -49,7 +43,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  *         collocated mode. Refer to {@link AffinityKey} javadoc for more details.
  *         <p>
  *         To use distributed joins it is necessary to set query 'distributedJoin' flag using
- *         {@link SqlFieldsQuery#setDistributedJoins(boolean)} or {@link SqlQuery#setDistributedJoins(boolean)}.
+ *         {@link SqlFieldsQuery#setDistributedJoins(boolean)}.
  *     </li>
  *     <li>
  *         Note that if you created query on to replicated cache, all data will
@@ -149,16 +143,15 @@ public class SqlQueriesExample {
         IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         // SQL clause which selects salaries based on range.
-        String sql = "salary > ? and salary <= ?";
+        // Extract fields of the entry.
+        String sql = "select * from Person where salary > ? and salary <= ?";
 
         // Execute queries for salary ranges.
         print("People with salaries between 0 and 1000 (queried with SQL query): ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, sql).
-                setArgs(0, 1000)).getAll());
+            cache.query(new SqlFieldsQuery(sql).setArgs(0, 1000)).getAll());
 
         print("People with salaries between 1000 and 2000 (queried with SQL query): ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, sql).
-                setArgs(1000, 2000)).getAll());
+            cache.query(new SqlFieldsQuery(sql).setArgs(1000, 2000)).getAll());
     }
 
     /**
@@ -169,18 +162,16 @@ public class SqlQueriesExample {
 
         // SQL clause query which joins on 2 types to select people for a specific organization.
         String joinSql =
-            "from Person, \"" + ORG_CACHE + "\".Organization as org " +
-            "where Person.orgId = org.id " +
+            "select pers.* from Person as pers, \"" + ORG_CACHE + "\".Organization as org " +
+            "where pers.orgId = org.id " +
             "and lower(org.name) = lower(?)";
 
         // Execute queries for find employees for different organizations.
         print("Following people are 'ApacheIgnite' employees: ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, joinSql).
-                setArgs("ApacheIgnite")).getAll());
+            cache.query(new SqlFieldsQuery(joinSql).setArgs("ApacheIgnite")).getAll());
 
         print("Following people are 'Other' employees: ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, joinSql).
-                setArgs("Other")).getAll());
+            cache.query(new SqlFieldsQuery(joinSql).setArgs("Other")).getAll());
     }
 
     /**
@@ -192,12 +183,11 @@ public class SqlQueriesExample {
 
         // SQL clause query which joins on 2 types to select people for a specific organization.
         String joinSql =
-            "from Person, \"" + ORG_CACHE + "\".Organization as org " +
-            "where Person.orgId = org.id " +
+            "select pers.* from Person as pers, \"" + ORG_CACHE + "\".Organization as org " +
+            "where pers.orgId = org.id " +
             "and lower(org.name) = lower(?)";
 
-        SqlQuery qry = new SqlQuery<Long, Person>(Person.class, joinSql).
-            setArgs("ApacheIgnite");
+        SqlFieldsQuery qry = new SqlFieldsQuery(joinSql).setArgs("ApacheIgnite");
 
         // Enable distributed joins for query.
         qry.setDistributedJoins(true);

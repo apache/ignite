@@ -179,13 +179,12 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param lex Lexer.
      * @return Index name.
      */
-    private static @Nullable String parseIndexName(SqlLexer lex) {
+    @Nullable private static String parseIndexName(SqlLexer lex) {
         if (matchesKeyword(lex.lookAhead(), ON))
             return null;
 
         return parseIdentifier(lex, IF);
     }
-
 
     /**
      * @param lex Lexer.

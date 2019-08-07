@@ -22,10 +22,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.Transaction;
-
-import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * Responsible for applying mutation on respective Chromosome based on mutation Rate
@@ -55,12 +54,8 @@ public class MutateJob extends ComputeJobAdapter {
         this.mutatedGeneKeys = mutatedGeneKeys;
     }
 
-    /**
-     * Perform mutation
-     *
-     * @return Boolean value
-     */
-    public Boolean execute() throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Boolean execute() throws IgniteException {
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.junit.Test;
 
 /**
  * Index rebuild after node restart test.
@@ -44,7 +45,8 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
     }
 
     /** {@inheritDoc} */
-    public void testIndexRebuild() throws Exception {
+    @Test
+    @Override public void testIndexRebuild() throws Exception {
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
@@ -84,11 +86,11 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
      * @throws IgniteCheckedException if failed.
      */
     private static void lockVersion(IgniteEx node) throws IgniteCheckedException {
-        node.context().coordinators().requestSnapshotAsync().get();
+        node.context().coordinators().requestReadSnapshotAsync().get();
     }
 
     /** {@inheritDoc} */
-    protected void checkDataState(IgniteEx srv, boolean afterRebuild) throws IgniteCheckedException {
+    @Override protected void checkDataState(IgniteEx srv, boolean afterRebuild) throws IgniteCheckedException {
         IgniteInternalCache icache = srv.cachex(CACHE_NAME);
 
         assertNotNull(icache);

@@ -18,11 +18,10 @@
 -->
 
 <xs:schema id="IgniteConfigurationSection"
-    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    elementFormDefault="qualified"
-    xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+           targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           elementFormDefault="qualified"
+           xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:simpleType name="cacheMode" final="restriction">
         <xs:restriction base="xs:string">
@@ -116,6 +115,16 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Random" />
             <xs:enumeration value="Sequential" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="diskPageCompression" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="SkipGarbage" />
+            <xs:enumeration value="Zstd" />
+            <xs:enumeration value="Lz4" />
+            <xs:enumeration value="Snappy" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -942,6 +951,11 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="metricExporterSpi" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Metrics exporter spi. Null for NoOp implementation.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
                 <xs:element name="discoverySpi" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Discovery service provider. Null for default discovery.</xs:documentation>
@@ -1278,6 +1292,13 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="deadlockTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Timeout before starting deadlock detection. TimeSpan.Zero for disabling deadlock detection.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="logger" minOccurs="0">
@@ -1410,7 +1431,7 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
-                </xs:element>                
+                </xs:element>
                 <xs:element name="sqlConnectorConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
@@ -1506,6 +1527,11 @@
                         <xs:attribute name="idleTimeout" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="handshakeTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Handshake timeout for client connections on the server side. If no successful handshake is performed within this timeout upon successful establishment of TCP connection, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="thinClientEnabled" type="xs:boolean">
@@ -1708,6 +1734,13 @@
                                             <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Enable lazy memory allocation.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                             <xs:element name="dataRegionConfigurations">
@@ -1781,7 +1814,14 @@
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                            </xs:complexType>                                            
+                                                <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Enable lazy memory allocation.
+                                                        </xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>
@@ -1920,6 +1960,23 @@
                         <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointReadLockTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Timeout for checkpoint read lock acquisition.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompression" type="diskPageCompression">
+                            <xs:annotation>
+                                <xs:documentation>Compression algorithm for WAL page snapshot records.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompressionLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Compression level for WAL page snapshot records.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -2228,6 +2285,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="systemWorkerBlockedTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Timeout for blocked system workers detection.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="clientFailureDetectionTimeout" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>
@@ -2307,10 +2371,14 @@
                     <xs:documentation>Time interval between MVCC vacuum runs in milliseconds.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="mvccVacuumThreadCount" type="xs:int">
                 <xs:annotation>
                     <xs:documentation>Number of MVCC vacuum threads.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="sqlQueryHistorySize" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Number of SQL query history elements to keep in memory.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">

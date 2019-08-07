@@ -62,7 +62,7 @@ const decimalValueModificator = (data) => { return data.add(12345); };
 const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getTime() + 12345), data.getNanos() + 123); };
 
 const primitiveValues = {
-    [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
+    [ObjectType.PRIMITIVE_TYPE.BYTE] : {
         values : [-128, 0, 127],
         isMapKey : true,
         modificator : numericValueModificator
@@ -232,6 +232,13 @@ class TestingHelper {
         TestingHelper.checkError(error, Errors.IgniteClientError, done)
     }
 
+    static checkEnumItemSerializationError(error, done) {
+        if (!(error instanceof Errors.IgniteClientError) ||
+            error.message.indexOf('Enum item can not be serialized') < 0) {
+            done.fail('unexpected error: ' + error);
+        }
+    }
+
     static checkError(error, errorType, done) {
         if (!(error instanceof errorType)) {
             done.fail('unexpected error: ' + error);
@@ -378,7 +385,7 @@ class TestingHelper {
             }
             return true;
         }
-    }    
+    }
 }
 
 module.exports = TestingHelper;

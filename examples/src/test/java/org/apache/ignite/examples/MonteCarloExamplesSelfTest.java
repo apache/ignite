@@ -17,9 +17,9 @@
 
 package org.apache.ignite.examples;
 
-//import org.apache.ignite.examples.computegrid.montecarlo.*;
-
+import org.apache.ignite.examples.computegrid.montecarlo.CreditRiskExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Ignite examples self test. Excludes Ignite Spring tests.
@@ -67,12 +67,10 @@ import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
  */
 public class MonteCarloExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8
-     * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *
      * @throws Exception If failed.
      */
-//    public void testCreditRiskExample() throws Exception {
-//        CreditRiskExample.main(EMPTY_ARGS);
-//    }
+    @Test
+    public void testCreditRiskExample() throws Exception {
+        CreditRiskExample.main(EMPTY_ARGS);
+    }
 }

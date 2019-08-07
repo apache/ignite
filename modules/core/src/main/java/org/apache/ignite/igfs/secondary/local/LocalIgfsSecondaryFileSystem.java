@@ -137,7 +137,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public boolean delete(IgfsPath path, boolean recursive) {
         File f = fileForPath(path);
 

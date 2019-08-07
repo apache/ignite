@@ -17,6 +17,7 @@
 
 'use strict';
 
+const mongoose = require('mongoose');
 const passportMongo = require('passport-local-mongoose');
 
 // Fire me up!
@@ -26,10 +27,10 @@ const passportMongo = require('passport-local-mongoose');
  */
 module.exports = {
     implements: 'schemas',
-    inject: ['mongoose']
+    inject: []
 };
 
-module.exports.factory = function(mongoose) {
+module.exports.factory = function() {
     const Schema = mongoose.Schema;
     const ObjectId = mongoose.Schema.Types.ObjectId;
 
@@ -37,7 +38,7 @@ module.exports.factory = function(mongoose) {
     const Account = new Schema({
         firstName: String,
         lastName: String,
-        email: String,
+        email: {type: String, unique: true},
         phone: String,
         company: String,
         country: String,
@@ -46,13 +47,19 @@ module.exports.factory = function(mongoose) {
         lastActivity: Date,
         admin: Boolean,
         token: String,
-        resetPasswordToken: String
+        resetPasswordToken: String,
+        activated: {type: Boolean, default: false},
+        activationSentAt: Date,
+        activationToken: String
     });
 
     // Install passport plugin.
     Account.plugin(passportMongo, {
         usernameField: 'email', limitAttempts: true, lastLoginField: 'lastLogin',
-        usernameLowerCase: true
+        usernameLowerCase: true,
+        errorMessages: {
+            UserExistsError: 'A user with the given email is already registered'
+        }
     });
 
     const transform = (doc, ret) => {
@@ -116,12 +123,21 @@ module.exports.factory = function(mongoose) {
             javaFieldType: String
         }],
         queryKeyFields: [String],
-        fields: [{name: String, className: String}],
+        fields: [{
+            name: String,
+            className: String,
+            notNull: Boolean,
+            defaultValue: String,
+            precision: Number,
+            scale: Number
+        }],
         aliases: [{field: String, alias: String}],
         indexes: [{
             name: String,
             indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']},
-            fields: [{name: String, direction: Boolean}]
+            fields: [{name: String, direction: Boolean}],
+            inlineSizeType: Number,
+            inlineSize: Number
         }],
         generatePojo: Boolean
     });
@@ -136,7 +152,7 @@ module.exports.factory = function(mongoose) {
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
-        atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
+        atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL', 'TRANSACTIONAL_SNAPSHOT']},
         partitionLossPolicy: {
             type: String,
             enum: ['READ_ONLY_SAFE', 'READ_ONLY_ALL', 'READ_WRITE_SAFE', 'READ_WRITE_ALL', 'IGNORE']
@@ -176,9 +192,25 @@ module.exports.factory = function(mongoose) {
 
         backups: Number,
         memoryMode: {type: String, enum: ['ONHEAP_TIERED', 'OFFHEAP_TIERED', 'OFFHEAP_VALUES']},
+        offHeapMode: Number,
         offHeapMaxMemory: Number,
         startSize: Number,
         swapEnabled: Boolean,
+        cacheWriterFactory: String,
+        cacheLoaderFactory: String,
+        expiryPolicyFactory: String,
+        interceptor: String,
+        storeByValue: Boolean,
+        eagerTtl: {type: Boolean, default: true},
+        encryptionEnabled: Boolean,
+        eventsDisabled: Boolean,
+
+        keyConfiguration: [{
+            typeName: String,
+            affinityKeyFieldName: String
+        }],
+
+        cacheStoreSessionListenerFactories: [String],
 
         onheapCacheEnabled: Boolean,
 
@@ -220,6 +252,7 @@ module.exports.factory = function(mongoose) {
                     type: String,
                     enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
                 },
+                implementationVersion: String,
                 batchSize: Number,
                 maximumPoolSize: Number,
                 maximumWriteAttempts: Number,
@@ -248,6 +281,8 @@ module.exports.factory = function(mongoose) {
                 hibernateProperties: [{name: String, value: String}]
             }
         },
+        storeConcurrentLoadAllThreshold: Number,
+        maxQueryIteratorsCount: Number,
         storeKeepBinary: Boolean,
         loadPreviousValue: Boolean,
         readThrough: Boolean,
@@ -326,7 +361,9 @@ module.exports.factory = function(mongoose) {
         memoryPolicyName: String,
         dataRegionName: String,
         sqlIndexMaxInlineSize: Number,
-        topologyValidator: String
+        topologyValidator: String,
+        diskPageCompression: {type: String, enum: ['SKIP_GARBAGE', 'ZSTD', 'LZ4', 'SNAPPY']},
+        diskPageCompressionLevel: Number
     });
 
     Cache.index({name: 1, space: 1, clusters: 1}, {unique: true});
@@ -368,9 +405,57 @@ module.exports.factory = function(mongoose) {
         trashPurgeTimeout: Number,
         secondaryFileSystemEnabled: Boolean,
         secondaryFileSystem: {
+            userName: String,
+            kind: {type: String, enum: ['Caching', 'Kerberos', 'Custom'], default: 'Caching'},
             uri: String,
             cfgPath: String,
-            userName: String
+            cfgPaths: [String],
+            userNameMapper: {
+                kind: {type: String, enum: ['Chained', 'Basic', 'Kerberos', 'Custom']},
+                Chained: {
+                    mappers: [{
+                        kind: {type: String, enum: ['Basic', 'Kerberos', 'Custom']},
+                        Basic: {
+                            defaultUserName: String,
+                            useDefaultUserName: Boolean,
+                            mappings: [{
+                                name: String,
+                                value: String
+                            }]
+                        },
+                        Kerberos: {
+                            instance: String,
+                            realm: String
+                        },
+                        Custom: {
+                            className: String,
+                        }
+                    }]
+                },
+                Basic: {
+                    defaultUserName: String,
+                    useDefaultUserName: Boolean,
+                    mappings: [{
+                        name: String,
+                        value: String
+                    }]
+                },
+                Kerberos: {
+                    instance: String,
+                    realm: String
+                },
+                Custom: {
+                    className: String,
+                }
+            },
+            Kerberos: {
+                keyTab: String,
+                keyTabPrincipal: String,
+                reloginInterval: Number
+            },
+            Custom: {
+                className: String
+            }
         },
         colocateMetadata: Boolean,
         relaxedConsistency: Boolean,
@@ -410,6 +495,9 @@ module.exports.factory = function(mongoose) {
             authenticator: String,
             forceServerMode: Boolean,
             clientReconnectDisabled: Boolean,
+            connectionRecoveryTimeout: Number,
+            reconnectDelay: Number,
+            soLinger: Number,
             kind: {
                 type: String,
                 enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper', 'Kubernetes']
@@ -571,7 +659,8 @@ module.exports.factory = function(mongoose) {
                 Custom: {
                     className: String
                 }
-            }
+            },
+            groupName: String
         },
         binaryConfiguration: {
             idMapper: String,
@@ -582,7 +671,8 @@ module.exports.factory = function(mongoose) {
                 idMapper: String,
                 nameMapper: String,
                 serializer: String,
-                enum: Boolean
+                enum: Boolean,
+                enumValues: [String]
             }],
             compactFooter: Boolean
         },
@@ -645,7 +735,11 @@ module.exports.factory = function(mongoose) {
             unacknowledgedMessagesBufferSize: Number,
             socketWriteTimeout: Number,
             selectorsCount: Number,
-            addressResolver: String
+            addressResolver: String,
+            selectorSpins: Number,
+            connectionsPerNode: Number,
+            usePairedConnections: Boolean,
+            filterReachableAddresses: Boolean
         },
         connector: {
             enabled: Boolean,
@@ -694,7 +788,10 @@ module.exports.factory = function(mongoose) {
             pessimisticTxLogLinger: Number,
             pessimisticTxLogSize: Number,
             txSerializableEnabled: Boolean,
-            txManagerFactory: String
+            txManagerFactory: String,
+            useJtaSynchronization: Boolean,
+            txTimeoutOnPartitionMapExchange: Number, // 2.5
+            deadlockTimeout: Number // 2.8
         },
         sslEnabled: Boolean,
         sslContextFactory: {
@@ -704,7 +801,9 @@ module.exports.factory = function(mongoose) {
             protocol: String,
             trustStoreFilePath: String,
             trustStoreType: String,
-            trustManagers: [String]
+            trustManagers: [String],
+            cipherSuites: [String],
+            protocols: [String]
         },
         rebalanceThreadPoolSize: Number,
         odbc: {
@@ -985,7 +1084,9 @@ module.exports.factory = function(mongoose) {
         consistentId: String,
         failureDetectionTimeout: Number,
         clientFailureDetectionTimeout: Number,
+        systemWorkerBlockedTimeout: Number,
         workDirectory: String,
+        igniteHome: String,
         lateAffinityAssignment: Boolean,
         utilityCacheKeepAliveTime: Number,
         asyncCallbackPoolSize: Number,
@@ -1054,7 +1155,10 @@ module.exports.factory = function(mongoose) {
             fileIOFactory: {type: String, enum: ['RANDOM', 'ASYNC']},
             walAutoArchiveAfterInactivity: Number,
             writeThrottlingEnabled: Boolean,
-            walCompactionEnabled: Boolean
+            walCompactionEnabled: Boolean,
+            checkpointReadLockTimeout: Number,
+            maxWalArchiveSize: Number,
+            walCompactionLevel: Number
         },
         memoryConfiguration: {
             systemCacheInitialSize: Number,
@@ -1108,8 +1212,49 @@ module.exports.factory = function(mongoose) {
             lockWaitTime: Number,
             rateTimeInterval: Number,
             tlbSize: Number,
-            subIntervals: Number
-        }
+            subIntervals: Number,
+            walAutoArchiveAfterInactivity: Number
+        },
+        encryptionSpi: {
+            kind: {type: String, enum: ['Noop', 'Keystore', 'Custom']},
+            Keystore: {
+                keySize: Number,
+                masterKeyName: String,
+                keyStorePath: String
+            },
+            Custom: {
+                className: String
+            }
+        },
+        failureHandler: {
+            kind: {type: String, enum: ['RestartProcess', 'StopNodeOnHalt', 'StopNode', 'Noop', 'Custom']},
+            ignoredFailureTypes: [{type: String, enum: ['SEGMENTATION', 'SYSTEM_WORKER_TERMINATION',
+                    'SYSTEM_WORKER_BLOCKED', 'CRITICAL_ERROR', 'SYSTEM_CRITICAL_OPERATION_TIMEOUT']}],
+            StopNodeOnHalt: {
+                tryStop: Boolean,
+                timeout: Number
+            },
+            Custom: {
+                className: String
+            }
+        },
+        localEventListeners: [{
+            className: String,
+            eventTypes: [String]
+        }],
+        mvccVacuumThreadCount: Number,
+        mvccVacuumFrequency: Number,
+        authenticationEnabled: Boolean,
+        sqlQueryHistorySize: Number,
+        lifecycleBeans: [String],
+        addressResolver: String,
+        mBeanServer: String,
+        networkCompressionLevel: Number,
+        includeProperties: [String],
+        cacheStoreSessionListenerFactories: [String],
+        autoActivationEnabled: {type: Boolean, default: true},
+        sqlSchemas: [String],
+        communicationFailureResolver: String
     });
 
     Cluster.index({name: 1, space: 1}, {unique: true});

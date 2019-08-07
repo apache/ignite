@@ -40,6 +40,7 @@ import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -88,6 +89,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnePhaseCommitFromNearNode() throws Exception {
         backups = 1;
 

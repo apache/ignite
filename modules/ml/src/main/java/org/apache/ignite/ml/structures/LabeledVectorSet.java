@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 /**
  * The set of labeled vectors used in local partition calculations.
  */
-public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
+public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */
@@ -94,7 +94,6 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
     public LabeledVectorSet(Row[] data, int colSize) {
         super(data, colSize);
     }
-
 
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.
@@ -189,7 +188,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
      * @param lb The given label.
      */
     public void setLabel(int idx, double lb) {
-        LabeledVector<Vector, Double> labeledVector = data[idx];
+        LabeledVector<Double> labeledVector = data[idx];
 
         if(labeledVector != null)
             labeledVector.setLabel(lb);

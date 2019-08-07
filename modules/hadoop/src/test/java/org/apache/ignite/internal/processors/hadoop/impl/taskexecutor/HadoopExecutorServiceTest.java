@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.LongAdder;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopExecutorService;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.LongAdder;
+import org.junit.Test;
 
 /**
  *
@@ -32,6 +32,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecutesAll() throws Exception {
         final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
 
@@ -69,50 +70,5 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
         }
 
         assertTrue(exec.shutdown(0));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testShutdown() throws Exception {
-        for (int i = 0; i < 5; i++) {
-            final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
-
-            final LongAdder sum = new LongAdder();
-
-            final AtomicBoolean finish = new AtomicBoolean();
-
-            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    while (!finish.get()) {
-                        exec.submit(new Callable<Void>() {
-                            @Override public Void call() throws Exception {
-                                sum.increment();
-
-                                return null;
-                            }
-                        });
-                    }
-
-                    return null;
-                }
-            }, 19);
-
-            Thread.sleep(200);
-
-            assertTrue(exec.shutdown(50));
-
-            long res = sum.sum();
-
-            assertTrue(res > 0);
-
-            finish.set(true);
-
-            fut.get();
-
-            assertEquals(res, sum.sum()); // Nothing was executed after shutdown.
-
-            X.println("_ ok");
-        }
     }
 }

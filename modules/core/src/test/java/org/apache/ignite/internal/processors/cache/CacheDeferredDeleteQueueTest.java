@@ -28,10 +28,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -65,14 +68,26 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeferredDeleteQueue() throws Exception {
         testQueue(ATOMIC, false);
 
         testQueue(TRANSACTIONAL, false);
 
+        testQueue(TRANSACTIONAL_SNAPSHOT, false);
+
         testQueue(ATOMIC, true);
 
         testQueue(TRANSACTIONAL, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
+    public void testDeferredDeleteQueueMvcc() throws Exception {
+        testQueue(TRANSACTIONAL_SNAPSHOT, true);
     }
 
     /**

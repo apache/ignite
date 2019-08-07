@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Util classes used in other {@link org.apache.ignite.tensorflow.core} classes.
  */
+
 package org.apache.ignite.tensorflow.core.util;

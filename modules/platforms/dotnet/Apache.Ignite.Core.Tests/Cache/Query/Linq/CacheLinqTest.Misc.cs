@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -342,7 +343,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             });
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<CacheException>(() =>
+            var ex = Assert.Throws<IgniteException>(() =>
                 persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));

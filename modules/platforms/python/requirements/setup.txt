@@ -1,0 +1,3 @@
+# additional package for integrating pytest in setuptools
+
+pytest-runner==4.2

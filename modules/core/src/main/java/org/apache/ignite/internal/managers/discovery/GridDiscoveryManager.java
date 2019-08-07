@@ -18,13 +18,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
-import java.lang.management.ThreadMXBean;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
@@ -85,15 +79,12 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -109,7 +100,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteClosure;
@@ -134,6 +124,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
@@ -144,9 +135,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -159,19 +150,17 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.SERVICE_PERMISSIONS_SINCE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -179,24 +168,6 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
  * Discovery SPI manager.
  */
 public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
-    /** Metrics update frequency. */
-    private static final long METRICS_UPDATE_FREQ = 3000;
-
-    /** JVM interface to memory consumption info */
-    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
-
-    /** */
-    private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-
-    /** */
-    private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
-
-    /** */
-    private static final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
-
-    /** */
-    private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
-
     /** */
     private static final String PREFIX = "Topology snapshot";
 
@@ -273,18 +244,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node join to topology event. */
     private GridFutureAdapter<DiscoveryLocalJoinData> locJoin = new GridFutureAdapter<>();
 
-    /** GC CPU load. */
-    private volatile double gcCpuLoad;
-
-    /** CPU load. */
-    private volatile double cpuLoad;
-
-    /** Metrics. */
-    private final GridLocalMetrics metrics = createMetrics();
-
-    /** Metrics update worker. */
-    private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
-
     /** Custom event listener. */
     private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
         new ConcurrentHashMap<>();
@@ -316,43 +275,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
-    }
-
-    /**
-     * @return Memory usage of non-heap memory.
-     */
-    private MemoryUsage nonHeapMemoryUsage() {
-        // Workaround of exception in WebSphere.
-        // We received the following exception:
-        // java.lang.IllegalArgumentException: used value cannot be larger than the committed value
-        // at java.lang.management.MemoryUsage.<init>(MemoryUsage.java:105)
-        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsageImpl(Native Method)
-        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsage(MemoryMXBeanImpl.java:143)
-        // at org.apache.ignite.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
-        //
-        // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
-        try {
-            return mem.getNonHeapMemoryUsage();
-        }
-        catch (IllegalArgumentException ignored) {
-            return new MemoryUsage(0, 0, 0, 0);
-        }
-    }
-
-    /**
-     * Returns the current memory usage of the heap
-     * @return memory usage or fake value with zero in case there was exception during take of metrics
-     */
-    private MemoryUsage getHeapMemoryUsage() {
-        // Catch exception here to allow discovery proceed even if metrics are not available
-        // java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616
-        // at java.lang.management.MemoryUsage.<init>(Unknown Source)
-        try {
-            return mem.getHeapMemoryUsage();
-        }
-        catch (IllegalArgumentException ignored) {
-            return new MemoryUsage(0, 0, 0, 0);
-        }
     }
 
     /** {@inheritDoc} */
@@ -503,16 +425,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        long totSysMemory = -1;
-
-        try {
-            totSysMemory = U.<Long>property(os, "totalPhysicalMemorySize");
-        }
-        catch (RuntimeException ignored) {
-            // No-op.
-        }
-
-        ctx.addNodeAttribute(ATTR_PHY_RAM, totSysMemory);
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
 
@@ -545,8 +457,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             checkSegmentOnStart();
         }
 
-        metricsUpdateTask = ctx.timeout().schedule(new MetricsUpdater(), METRICS_UPDATE_FREQ, METRICS_UPDATE_FREQ);
-
         spi.setMetricsProvider(createMetricsProvider());
 
         if (ctx.security().enabled()) {
@@ -571,6 +481,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (ctx.config().getCommunicationFailureResolver() != null)
             ctx.resource().injectGeneric(ctx.config().getCommunicationFailureResolver());
+
+        // Shared reference between DiscoverySpiListener and DiscoverySpiDataExchange.
+        AtomicReference<IgniteFuture<?>> lastStateChangeEvtLsnrFutRef = new AtomicReference<>();
 
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
@@ -604,7 +517,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 });
 
-                return new IgniteFutureImpl<>(notificationFut);
+                IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
+
+                //TODO could be optimized with more specific conditions.
+                switch (type) {
+                    case EVT_NODE_JOINED:
+                    case EVT_NODE_LEFT:
+                    case EVT_NODE_FAILED:
+                        if (!CU.isPersistenceEnabled(ctx.config()))
+                            lastStateChangeEvtLsnrFutRef.set(fut);
+
+                        break;
+
+                    case EVT_DISCOVERY_CUSTOM_EVT:
+                        lastStateChangeEvtLsnrFutRef.set(fut);
+                }
+
+                return fut;
             }
 
             /**
@@ -657,8 +586,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     updateClientNodes(node.id());
                 }
-
-                ctx.coordinators().onDiscoveryEvent(type, topSnapshot, topVer, customMsg);
 
                 boolean locJoinEvt = type == EVT_NODE_JOINED && node.id().equals(locNode.id());
 
@@ -770,7 +697,30 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Current version.
                     discoCache = discoCache();
 
-                final DiscoCache discoCache0 = discoCache;
+                if (locJoinEvt || !node.isClient() && !node.isDaemon()) {
+                    if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
+                        boolean discoCacheRecalculationRequired = ctx.state().autoAdjustInMemoryClusterState(
+                            node.id(),
+                            topSnapshot,
+                            discoCache,
+                            topVer,
+                            minorTopVer
+                        );
+
+                        if (discoCacheRecalculationRequired) {
+                            discoCache = createDiscoCache(
+                                nextTopVer,
+                                ctx.state().clusterState(),
+                                locNode,
+                                topSnapshot
+                            );
+
+                            discoCacheHist.put(nextTopVer, discoCache);
+
+                            topSnap.set(new Snapshot(nextTopVer, discoCache));
+                        }
+                    }
+                }
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
@@ -792,7 +742,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.discoCache = discoCache;
 
                     if (!isLocDaemon && !ctx.clientDisconnected()) {
+                        ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
+
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
+
+                        ctx.service().onLocalJoin(discoEvt, discoCache);
 
                         ctx.authentication().onLocalJoin();
 
@@ -850,14 +804,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
 
+                    ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);
+
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
+
+                    ctx.service().onLocalJoin(localJoinEvent(), discoCache);
+
+                    DiscoCache discoCache0 = discoCache;
 
                     ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
                         @Override public void apply(IgniteFuture<?> fut) {
                             try {
                                 fut.get();
 
-                                discoWrk.addEvent(type, nextTopVer, node, discoCache0, topSnapshot, null);
+                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache0, topSnapshot, null);
                             }
                             catch (IgniteException ignore) {
                                 // No-op.
@@ -886,6 +846,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         c.collectJoiningNodeData(dataBag);
                 }
                 else {
+                    waitForLastStateChangeEventFuture();
+
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
                 }
@@ -931,9 +893,37 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
             }
+
+            /** */
+            private void waitForLastStateChangeEventFuture() {
+                IgniteFuture<?> lastStateChangeEvtLsnrFut = lastStateChangeEvtLsnrFutRef.get();
+
+                if (lastStateChangeEvtLsnrFut != null) {
+                    Thread currThread = Thread.currentThread();
+
+                    GridWorker worker = currThread instanceof IgniteDiscoveryThread
+                        ? ((IgniteDiscoveryThread)currThread).worker()
+                        : null;
+
+                    if (worker != null)
+                        worker.blockingSectionBegin();
+
+                    try {
+                        lastStateChangeEvtLsnrFut.get();
+                    }
+                    finally {
+                        // Guaranteed to be invoked in the same thread as DiscoverySpiListener#onDiscovery.
+                        // No additional synchronization for reference is required.
+                        lastStateChangeEvtLsnrFutRef.set(null);
+
+                        if (worker != null)
+                            worker.blockingSectionEnd();
+                    }
+                }
+            }
         });
 
-        new IgniteThread(discoNtfWrk).start();
+        new DiscoveryMessageNotifierThread(discoNtfWrk).start();
 
         startSpi();
 
@@ -1018,96 +1008,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @return Metrics.
-     */
-    private GridLocalMetrics createMetrics() {
-        return new GridLocalMetrics() {
-            @Override public int getAvailableProcessors() {
-                return os.getAvailableProcessors();
-            }
-
-            @Override public double getCurrentCpuLoad() {
-                return cpuLoad;
-            }
-
-            @Override public double getCurrentGcCpuLoad() {
-                return gcCpuLoad;
-            }
-
-            @Override public long getHeapMemoryInitialized() {
-                return getHeapMemoryUsage().getInit();
-            }
-
-            @Override public long getHeapMemoryUsed() {
-                return getHeapMemoryUsage().getUsed();
-            }
-
-            @Override public long getHeapMemoryCommitted() {
-                return getHeapMemoryUsage().getCommitted();
-            }
-
-            @Override public long getHeapMemoryMaximum() {
-                return getHeapMemoryUsage().getMax();
-            }
-
-            @Override public long getNonHeapMemoryInitialized() {
-                return nonHeapMemoryUsage().getInit();
-            }
-
-            @Override public long getNonHeapMemoryUsed() {
-                return nonHeapMemoryUsage().getUsed();
-            }
-
-            @Override public long getNonHeapMemoryCommitted() {
-                return nonHeapMemoryUsage().getCommitted();
-            }
-
-            @Override public long getNonHeapMemoryMaximum() {
-                return nonHeapMemoryUsage().getMax();
-            }
-
-            @Override public long getUptime() {
-                return rt.getUptime();
-            }
-
-            @Override public long getStartTime() {
-                return rt.getStartTime();
-            }
-
-            @Override public int getThreadCount() {
-                return threads.getThreadCount();
-            }
-
-            @Override public int getPeakThreadCount() {
-                return threads.getPeakThreadCount();
-            }
-
-            @Override public long getTotalStartedThreadCount() {
-                return threads.getTotalStartedThreadCount();
-            }
-
-            @Override public int getDaemonThreadCount() {
-                return threads.getDaemonThreadCount();
-            }
-        };
-    }
-
-    /**
      * @return Metrics provider.
      */
     public DiscoveryMetricsProvider createMetricsProvider() {
         return new DiscoveryMetricsProvider() {
+            /** Disable cache metrics update. */
+            private final boolean disableCacheMetricsUpdate = IgniteSystemProperties.getBoolean(
+                IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, false);
+
             /** */
             private final long startTime = U.currentTimeMillis();
 
             /** {@inheritDoc} */
             @Override public ClusterMetrics metrics() {
-                return new ClusterMetricsImpl(ctx, metrics, startTime);
+                return new ClusterMetricsImpl(ctx, startTime);
             }
 
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {
                 try {
+                    if (disableCacheMetricsUpdate)
+                        return Collections.emptyMap();
+
                     /** Caches should not be accessed while state transition is in progress. */
                     if (ctx.state().clusterState().transition())
                         return Collections.emptyMap();
@@ -1133,13 +1055,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return Collections.emptyMap();
             }
         };
-    }
-
-    /**
-     * @return Local metrics.
-     */
-    public GridLocalMetrics metrics() {
-        return metrics;
     }
 
     /** @return {@code True} if ordering is supported. */
@@ -1221,7 +1136,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
-        Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+        Boolean locSrvcProcMode = locNode.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
         for (ClusterNode n : nodes) {
@@ -1307,23 +1222,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
-            Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+            Boolean rmtSrvcProcModeAttr = n.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
 
-            if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
-                throw new IgniteCheckedException("Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+            final boolean rmtSrvcProcMode = rmtSrvcProcModeAttr != null ? rmtSrvcProcModeAttr : false;
+
+            if (!F.eq(locSrvcProcMode, rmtSrvcProcMode)) {
+                throw new IgniteCheckedException("Local node's " + IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED +
                     " property value differs from remote node's value " +
-                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode enabled, " +
+                    "(to make sure all nodes in topology have identical service processor mode, " +
                     "configure system property explicitly) " +
-                    "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                    ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                    "[locSrvcProcMode=" + locSrvcProcMode +
+                    ", rmtSrvcProcMode=" + rmtSrvcProcMode +
                     ", locNodeAddrs=" + U.addressesAsString(locNode) +
                     ", rmtNodeAddrs=" + U.addressesAsString(n) +
                     ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
-            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) >= 0
-                && ctx.security().enabled() // Matters only if security enabled.
-               ) {
+            if (ctx.security().enabled()) {
                 Boolean rmtSecurityCompatibilityEnabled = n.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
                 if (!F.eq(locSecurityCompatibilityEnabled, rmtSecurityCompatibilityEnabled)) {
@@ -1337,19 +1252,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
                 }
-            }
-
-            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) < 0
-                && ctx.security().enabled() // Matters only if security enabled.
-                && (locSecurityCompatibilityEnabled == null || !locSecurityCompatibilityEnabled)) {
-                throw new IgniteCheckedException("Remote node does not support service security permissions. " +
-                    "To be able to join to it, local node must be started with " + IGNITE_SECURITY_COMPATIBILITY_MODE +
-                    " system property set to \"true\". " +
-                    "[locSecurityCompatibilityEnabled=" + locSecurityCompatibilityEnabled +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ", " +
-                    ", rmtNodeVer" + n.version() + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
@@ -1536,13 +1438,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             for (DataRegionConfiguration dataReg : dataRegions) {
                 res += dataReg.getMaxSize();
 
-                res += GridCacheDatabaseSharedManager.checkpointBufferSize(dataReg);
+                res += U.checkpointBufferSize(dataReg);
             }
         }
 
         res += memCfg.getDefaultDataRegionConfiguration().getMaxSize();
 
-        res += GridCacheDatabaseSharedManager.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
+        res += U.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
 
         return res;
     }
@@ -1655,9 +1557,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         // Stop receiving notifications.
         getSpi().setListener(null);
-
-        // Stop discovery worker and metrics updater.
-        U.closeQuiet(metricsUpdateTask);
 
         U.cancel(discoWrk);
 
@@ -1934,7 +1833,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<ClusterNode> cacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
+    public List<ClusterNode> cacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(cacheName), topVer).cacheNodes(cacheName);
     }
 
@@ -2060,6 +1959,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             snap.discoCache : discoCacheHist.get(topVer);
 
         if (cache == null) {
+            AffinityTopologyVersion lastAffChangedTopVer =
+                ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(topVer);
+
+            if (!lastAffChangedTopVer.equals(topVer)) {
+                assert lastAffChangedTopVer.compareTo(topVer) < 0;
+
+                for (Map.Entry<AffinityTopologyVersion, DiscoCache> e : discoCacheHist.descendingEntrySet()) {
+                    if (e.getKey().isBetween(lastAffChangedTopVer, topVer))
+                        return e.getValue();
+
+                    if (e.getKey().compareTo(lastAffChangedTopVer) < 0)
+                        break;
+                }
+            }
+
             CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
 
             throw new IgniteException("Failed to resolve nodes topology [" +
@@ -2154,7 +2068,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public void consistentId(final Serializable consistentId) {
         this.consistentId = consistentId;
     }
-
 
     /** @return Topology version. */
     public long topologyVersion() {
@@ -2339,8 +2252,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Collection<ClusterNode> topSnapshot) {
         assert topSnapshot.contains(loc);
 
-        MvccCoordinator mvccCrd = ctx.coordinators().assignedCoordinator();
-
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
         HashMap<UUID, ClusterNode> nodeMap = U.newHashMap(topSnapshot.size());
 
@@ -2442,7 +2353,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             topVer,
             state,
             loc,
-            mvccCrd,
             Collections.unmodifiableList(rmtNodes),
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
@@ -2464,9 +2374,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheMap Map to add to.
      * @param cacheName Cache name.
-     * @param rich Node to add
+     * @param node Node to add
      */
-    private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode rich) {
+    private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode node) {
         List<ClusterNode> cacheNodes = cacheMap.get(CU.cacheId(cacheName));
 
         if (cacheNodes == null) {
@@ -2475,7 +2385,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             cacheMap.put(CU.cacheId(cacheName), cacheNodes);
         }
 
-        cacheNodes.add(rich);
+        cacheNodes.add(node);
     }
 
     /**
@@ -2571,17 +2481,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("StatementWithEmptyBody")
         @Override protected void body() throws InterruptedException {
-            long lastChk = 0;
+            long lastChkNanos = 0;
 
             while (!isCancelled()) {
                 Object req = queue.poll(2000, MILLISECONDS);
 
-                long now = U.currentTimeMillis();
+                long nowNanos = System.nanoTime();
 
                 // Check frequency if segment check has not been requested.
-                if (req == null && (segChkFreq == 0 || lastChk + segChkFreq >= now)) {
+                if (req == null && (segChkFreq == 0 || U.nanosToMillis(nowNanos - lastChkNanos) <= segChkFreq)) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping segment check as it has not been requested and it is not time to check.");
 
@@ -2590,7 +2499,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 // We should always check segment if it has been explicitly
                 // requested (on any node failure or leave).
-                assert req != null || lastChk + segChkFreq < now;
+                assert req != null || U.nanosToMillis(nowNanos - lastChkNanos) > segChkFreq;
 
                 // Drain queue.
                 while (queue.poll() != null) {
@@ -2600,7 +2509,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (lastSegChkRes.get()) {
                     boolean segValid = ctx.segmentation().isValidSegment();
 
-                    lastChk = now;
+                    lastChkNanos = nowNanos;
 
                     if (!segValid) {
                         ClusterNode node = getSpi().getLocalNode();
@@ -2614,8 +2523,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                 AffinityTopologyVersion.NONE,
                                 ctx.state().clusterState(),
                                 node,
-                                locNodeOnlyTop
-                            ), locNodeOnlyTop,
+                                locNodeOnlyTop),
+                            locNodeOnlyTop,
                             null);
 
                         lastSegChkRes.set(false);
@@ -2630,6 +2539,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SegmentCheckWorker.class, this);
+        }
+    }
+
+    /** */
+    private class DiscoveryMessageNotifierThread extends IgniteThread implements IgniteDiscoveryThread {
+        /** */
+        private final GridWorker worker;
+
+        /** {@inheritDoc} */
+        public DiscoveryMessageNotifierThread(GridWorker worker) {
+            super(worker);
+
+            this.worker = worker;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 
@@ -2844,7 +2771,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** @throws InterruptedException If interrupted. */
-        @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
                 DiscoveryCustomMessage> evt;
@@ -3057,86 +2983,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DiscoveryWorker.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private class MetricsUpdater implements Runnable {
-        /** */
-        private long prevGcTime = -1;
-
-        /** */
-        private long prevCpuTime = -1;
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            gcCpuLoad = getGcCpuLoad();
-            cpuLoad = getCpuLoad();
-        }
-
-        /**
-         * @return GC CPU load.
-         */
-        private double getGcCpuLoad() {
-            long gcTime = 0;
-
-            for (GarbageCollectorMXBean bean : gc) {
-                long colTime = bean.getCollectionTime();
-
-                if (colTime > 0)
-                    gcTime += colTime;
-            }
-
-            gcTime /= metrics.getAvailableProcessors();
-
-            double gc = 0;
-
-            if (prevGcTime > 0) {
-                long gcTimeDiff = gcTime - prevGcTime;
-
-                gc = (double)gcTimeDiff / METRICS_UPDATE_FREQ;
-            }
-
-            prevGcTime = gcTime;
-
-            return gc;
-        }
-
-        /**
-         * @return CPU load.
-         */
-        private double getCpuLoad() {
-            long cpuTime;
-
-            try {
-                cpuTime = U.<Long>property(os, "processCpuTime");
-            }
-            catch (IgniteException ignored) {
-                return -1;
-            }
-
-            // Method reports time in nanoseconds across all processors.
-            cpuTime /= 1000000 * metrics.getAvailableProcessors();
-
-            double cpu = 0;
-
-            if (prevCpuTime > 0) {
-                long cpuTimeDiff = cpuTime - prevCpuTime;
-
-                // CPU load could go higher than 100% because calculating of cpuTimeDiff also takes some time.
-                cpu = Math.min(1.0, (double)cpuTimeDiff / METRICS_UPDATE_FREQ);
-            }
-
-            prevCpuTime = cpuTime;
-
-            return cpu;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(MetricsUpdater.class, this, super.toString());
         }
     }
 
@@ -3449,7 +3295,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             topVer,
             discoCache.state(),
             discoCache.localNode(),
-            discoCache.mvccCoordinator(),
             discoCache.remoteNodes(),
             allNodes,
             discoCache.serverNodes(),

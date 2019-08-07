@@ -137,46 +137,19 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestAuthentication()
         {
-            using (var srv = Ignition.Start(SecureServerConfig()))
-            {
-                srv.GetCluster().SetActive(true);
+            CreateNewUserAndAuthenticate("my_User", "my_Password");
+        }
 
-                using (var cli = Ignition.StartClient(GetSecureClientConfig()))
-                {
-                    CacheClientConfiguration ccfg = new CacheClientConfiguration
-                    {
-                        Name = "TestCache",
-                        QueryEntities = new[]
-                        {
-                            new QueryEntity
-                            {
-                                KeyType = typeof(string),
-                                ValueType = typeof(string),
-                            },
-                        },
-                    };
+        /// <summary>
+        /// Test authentication.
+        /// </summary>
+        [Test]
+        public void TestAuthenticationLongToken()
+        {
+            string user = new string('G', 59);
+            string pass = new string('q', 16 * 1024);
 
-                    ICacheClient<string, string> cache = cli.GetOrCreateCache<string, string>(ccfg);
-
-                    cache.Put("key1", "val1");
-
-                    cache.Query(new SqlFieldsQuery("CREATE USER \"my_User\" WITH PASSWORD 'my_Password'")).GetAll();
-                }
-
-                var cliCfg = GetSecureClientConfig();
-
-                cliCfg.UserName = "my_User";
-                cliCfg.Password = "my_Password";
-
-                using (var cli = Ignition.StartClient(cliCfg))
-                {
-                    ICacheClient<string, string> cache = cli.GetCache<string, string>("TestCache");
-
-                    string val = cache.Get("key1");
-
-                    Assert.True(val == "val1");
-                }
-            }
+            CreateNewUserAndAuthenticate(user, pass);
         }
 
         /// <summary>
@@ -291,7 +264,6 @@ namespace Apache.Ignite.Core.Tests.Client
                             "localhost",
                             ClientConnectorConfiguration.DefaultPort,
                             AddressFamily.InterNetwork),
-                        null,
                         null,
                         new ClientProtocolVersion(-1, -1, -1)));
 
@@ -532,9 +504,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.IsNotNull(GetSocketException(ex));
 
             // Second request causes reconnect attempt which fails (server is stopped).
-            var aex = Assert.Throws<AggregateException>(() => client.GetCacheNames());
-            Assert.AreEqual("Failed to establish Ignite thin client connection, " +
-                            "examine inner exceptions for details.", aex.Message.Substring(0, 88));
+            Assert.Catch(() => client.GetCacheNames());
 
             // Start server, next operation succeeds.
             Ignition.Start(TestUtils.GetTestConfiguration());
@@ -696,6 +666,55 @@ namespace Apache.Ignite.Core.Tests.Client
                 UserName = "ignite",
                 Password = "ignite"
             };
+        }
+
+        /// <summary>
+        /// Start new node, create new user with given credentials and try to authenticate.
+        /// </summary>
+        /// <param name="user">Username</param>
+        /// <param name="pass">Password</param>
+        private void CreateNewUserAndAuthenticate(string user, string pass)
+        {
+            using (var srv = Ignition.Start(SecureServerConfig()))
+            {
+                srv.GetCluster().SetActive(true);
+
+                using (var cli = Ignition.StartClient(GetSecureClientConfig()))
+                {
+                    CacheClientConfiguration ccfg = new CacheClientConfiguration
+                    {
+                        Name = "TestCache",
+                        QueryEntities = new[]
+                        {
+                            new QueryEntity
+                            {
+                                KeyType = typeof(string),
+                                ValueType = typeof(string),
+                            },
+                        },
+                    };
+
+                    ICacheClient<string, string> cache = cli.GetOrCreateCache<string, string>(ccfg);
+
+                    cache.Put("key1", "val1");
+
+                    cache.Query(new SqlFieldsQuery("CREATE USER \"" + user + "\" WITH PASSWORD '" + pass + "'")).GetAll();
+                }
+
+                var cliCfg = GetSecureClientConfig();
+
+                cliCfg.UserName = user;
+                cliCfg.Password = pass;
+
+                using (var cli = Ignition.StartClient(cliCfg))
+                {
+                    ICacheClient<string, string> cache = cli.GetCache<string, string>("TestCache");
+
+                    string val = cache.Get("key1");
+
+                    Assert.True(val == "val1");
+                }
+            }
         }
     }
 }

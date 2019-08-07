@@ -50,12 +50,18 @@ public abstract class VisorDataTransferObject implements Externalizable {
     /** Version 3. */
     protected static final byte V3 = 3;
 
+    /** Version 4. */
+    protected static final byte V4 = 4;
+
     /**
      * @param col Source collection.
      * @param <T> Collection type.
      * @return List based on passed collection.
      */
     @Nullable protected static <T> List<T> toList(Collection<T> col) {
+        if(col instanceof List)
+            return (List<T>)col;
+
         if (col != null)
             return new ArrayList<>(col);
 

@@ -161,6 +161,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         grid(0).destroyCache(Organization.class.getSimpleName());
         grid(0).destroyCache(Person.class.getSimpleName());
         grid(0).destroyCache(OTHER_CACHE_NAME);
+
         super.afterTestsStopped();
     }
 
@@ -317,7 +318,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
             return assign;
         }
     }
-
 
     /**
      * Test class Organization.

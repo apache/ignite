@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Machine learning examples.
  */
+
 package org.apache.ignite.examples.ml;

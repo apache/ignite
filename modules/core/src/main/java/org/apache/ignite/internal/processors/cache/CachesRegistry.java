@@ -280,7 +280,7 @@ public class CachesRegistry {
      */
     private IgniteInternalFuture<?> persistCacheConfigurations(List<DynamicCacheDescriptor> cacheDescriptors) {
         List<StoredCacheData> cacheConfigsToPersist = cacheDescriptors.stream()
-            .map(cacheDesc -> new StoredCacheData(cacheDesc.cacheConfiguration()).sql(cacheDesc.sql()))
+            .map(desc -> desc.toStoredData(cctx.cache().splitter()))
             .collect(Collectors.toList());
 
         // Pre-create cache work directories if they don't exist.

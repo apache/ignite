@@ -37,6 +37,14 @@
         <lgpl.folder>src/main/java</lgpl.folder>
     </properties>
 
+    <repositories>
+        <!-- Following repository is required only for Nightly releases -->
+        <repository>
+            <id>MyGet Nightly</id>
+            <url>https://www.myget.org/F/apache-ignite-nightly/maven</url>
+        </repository>
+    </repositories>
+
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-examples</artifactId>
     <version>to_be_replaced_by_ignite_version</version>
@@ -74,13 +82,25 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data</artifactId>
+            <artifactId>ignite-spring-data_2.0</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml</artifactId>
+            <version>to_be_replaced_by_ignite_version</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-ml-xgboost-model-parser</artifactId>
+            <version>to_be_replaced_by_ignite_version</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-ml-spark-model-parser</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
@@ -94,6 +114,12 @@
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.8.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jpmml</groupId>
+            <artifactId>pmml-model</artifactId>
+            <version>1.4.7</version>
         </dependency>
     </dependencies>
 

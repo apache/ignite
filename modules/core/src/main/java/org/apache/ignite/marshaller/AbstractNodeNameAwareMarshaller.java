@@ -41,7 +41,6 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      *
      * @param nodeName Node name.
      */
-    @SuppressWarnings("unchecked")
     public void nodeName(@Nullable String nodeName) {
         if (!nodeNameSet) {
             this.nodeName = nodeName;

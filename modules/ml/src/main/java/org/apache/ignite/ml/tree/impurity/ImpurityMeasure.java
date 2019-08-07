@@ -49,7 +49,7 @@ public interface ImpurityMeasure<T extends ImpurityMeasure<T>> extends Comparabl
     public T subtract(T measure);
 
     /** {@inheritDoc} */
-    default public int compareTo(T o) {
+    @Override public default int compareTo(T o) {
         return Double.compare(impurity(), o.impurity());
     }
 }

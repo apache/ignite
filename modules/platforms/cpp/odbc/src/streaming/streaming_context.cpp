@@ -57,6 +57,8 @@ namespace ignite
 
                 enabled = true;
 
+                order = 0;
+
                 return SqlResult::AI_SUCCESS;
             }
 

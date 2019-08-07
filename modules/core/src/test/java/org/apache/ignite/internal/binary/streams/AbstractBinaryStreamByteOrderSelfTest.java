@@ -20,6 +20,7 @@ package org.apache.ignite.internal.binary.streams;
 import java.util.Random;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getDoubleByByteLE;
@@ -64,6 +65,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         short val = (short)RND.nextLong();
 
@@ -109,6 +111,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShortArray() throws Exception {
         short[] arr = new short[ARR_LEN];
 
@@ -128,6 +131,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChar() throws Exception {
         char val = (char)RND.nextLong();
 
@@ -157,6 +161,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCharArray() throws Exception {
         char[] arr = new char[ARR_LEN];
 
@@ -176,6 +181,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInt() throws Exception {
         int val = RND.nextInt();
 
@@ -228,6 +234,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntArray() throws Exception {
         int[] arr = new int[ARR_LEN];
 
@@ -247,6 +254,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         long val = RND.nextLong();
 
@@ -283,6 +291,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongArray() throws Exception {
         long[] arr = new long[ARR_LEN];
 
@@ -302,6 +311,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         float val = RND.nextFloat();
 
@@ -330,6 +340,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloatArray() throws Exception {
         float[] arr = new float[ARR_LEN];
 
@@ -349,6 +360,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         double val = RND.nextDouble();
 
@@ -377,6 +389,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDoubleArray() throws Exception {
         double[] arr = new double[ARR_LEN];
 

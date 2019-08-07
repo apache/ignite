@@ -26,6 +26,7 @@ import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
+import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * This example demonstrates how to use the {@link GAGrid} framework. In this example, we want to evolve a string
@@ -37,6 +38,14 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
  * <p>
  * You can change the test data and parameters of GA grid used in this example and re-run it to explore
  * this functionality further.</p>
+ * 
+ * For example, you may change the some basic genetic parameters on the GAConfiguration object:
+ * 
+ *  Mutation Rate
+ *  Crossover Rate
+ *  Population Size
+ *  Selection Method
+ *  
  * <p>
  * How to run from command line:</p>
  * <p>
@@ -72,7 +81,19 @@ public class HelloWorldGAExample {
 
             // Initialize gene pool.
             gaCfg.setGenePool(genes);
-
+             
+            // Set CrossOver Rate.
+            gaCfg.setCrossOverRate(.05);
+            
+            // Set Mutation Rate.
+            gaCfg.setMutationRate(.05);
+           
+            // Set Selection Method.
+            gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_ROULETTE_WHEEL);
+            
+            // Set Population Size.
+            gaCfg.setPopulationSize(2000);
+            
             // Create and set Fitness function.
             HelloWorldFitnessFunction function = new HelloWorldFitnessFunction();
             gaCfg.setFitnessFunction(function);

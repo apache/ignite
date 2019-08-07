@@ -186,9 +186,11 @@ namespace Apache.Ignite.Core.Tests
                 var com = (TcpCommunicationSpi) cfg.CommunicationSpi;
                 var resCom = (TcpCommunicationSpi) resCfg.CommunicationSpi;
                 Assert.AreEqual(com.AckSendThreshold, resCom.AckSendThreshold);
+                Assert.AreEqual(com.ConnectionsPerNode, resCom.ConnectionsPerNode);
                 Assert.AreEqual(com.ConnectTimeout, resCom.ConnectTimeout);
                 Assert.AreEqual(com.DirectBuffer, resCom.DirectBuffer);
                 Assert.AreEqual(com.DirectSendBuffer, resCom.DirectSendBuffer);
+                Assert.AreEqual(com.FilterReachableAddresses, resCom.FilterReachableAddresses);
                 Assert.AreEqual(com.IdleConnectionTimeout, resCom.IdleConnectionTimeout);
                 Assert.AreEqual(com.LocalAddress, resCom.LocalAddress);
                 Assert.AreEqual(com.LocalPort, resCom.LocalPort);
@@ -197,13 +199,18 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.MessageQueueLimit, resCom.MessageQueueLimit);
                 Assert.AreEqual(com.ReconnectCount, resCom.ReconnectCount);
                 Assert.AreEqual(com.SelectorsCount, resCom.SelectorsCount);
+                Assert.AreEqual(com.SelectorSpins, resCom.SelectorSpins);
+                Assert.AreEqual(com.SharedMemoryPort, resCom.SharedMemoryPort);
                 Assert.AreEqual(com.SlowClientQueueLimit, resCom.SlowClientQueueLimit);
                 Assert.AreEqual(com.SocketReceiveBufferSize, resCom.SocketReceiveBufferSize);
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
+                Assert.AreEqual(com.SocketWriteTimeout, resCom.SocketWriteTimeout);
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
-
+                Assert.AreEqual(com.UsePairedConnections, resCom.UsePairedConnections);
+                
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
+                Assert.AreEqual(cfg.SystemWorkerBlockedTimeout, resCfg.SystemWorkerBlockedTimeout);
                 Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
                 Assert.AreEqual(cfg.LongQueryWarningTimeout, resCfg.LongQueryWarningTimeout);
 
@@ -254,6 +261,7 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(cfg.MvccVacuumFrequency, resCfg.MvccVacuumFrequency);
                 Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
+                Assert.AreEqual(cfg.SqlQueryHistorySize, resCfg.SqlQueryHistorySize);
 
                 Assert.IsNotNull(resCfg.SqlSchemas);
                 Assert.AreEqual(2, resCfg.SqlSchemas.Count);
@@ -649,8 +657,8 @@ namespace Apache.Ignite.Core.Tests
             var props = obj.GetType().GetProperties();
 
             foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
-                                                  !p.Name.Contains("ThreadPoolSize") &&
-                                                  p.Name != "MaxSize"))
+                                                  !p.Name.Contains("ThreadPoolSize") && p.Name != "MaxSize" &&
+                                                  p.Name != "HandshakeTimeout" && p.Name != "ConcurrencyLevel"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -749,9 +757,16 @@ namespace Apache.Ignite.Core.Tests
                     TcpNoDelay = false,
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
-                    UnacknowledgedMessagesBufferSize = 3450
+                    UnacknowledgedMessagesBufferSize = 3450,
+                    ConnectionsPerNode = 12, 
+                    UsePairedConnections = true,
+                    SharedMemoryPort = 1234,
+                    SocketWriteTimeout = 2222,
+                    SelectorSpins = 12,
+                    FilterReachableAddresses = true
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
+                SystemWorkerBlockedTimeout = TimeSpan.FromSeconds(8.5),
                 ClientFailureDetectionTimeout = TimeSpan.FromMinutes(12.3),
                 LongQueryWarningTimeout = TimeSpan.FromMinutes(1.23),
                 IsActiveOnStart = true,
@@ -824,6 +839,7 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 1,
                     PageSize = 8 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromMinutes(5),
+                    CheckpointReadLockTimeout = TimeSpan.FromSeconds(9.5),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",
@@ -860,6 +876,7 @@ namespace Apache.Ignite.Core.Tests
                 AuthenticationEnabled = false,
                 MvccVacuumFrequency = 20000,
                 MvccVacuumThreadCount = 8,
+                SqlQueryHistorySize = 99,
 
                 SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" }
             };

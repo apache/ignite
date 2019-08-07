@@ -54,7 +54,8 @@ public class ClientBinaryTypeNamePutRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            boolean res = ctx.kernalContext().marshallerContext().registerClassName(platformId, typeId, typeName);
+            boolean res = ctx.kernalContext().marshallerContext()
+                .registerClassName(platformId, typeId, typeName, false);
 
             return new ClientBooleanResponse(requestId(), res);
         }

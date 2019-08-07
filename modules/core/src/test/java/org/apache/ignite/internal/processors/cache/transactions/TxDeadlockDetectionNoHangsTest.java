@@ -35,6 +35,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
@@ -105,6 +106,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangsPessimistic() throws Exception {
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
@@ -126,6 +128,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangsOptimistic() throws Exception {
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 

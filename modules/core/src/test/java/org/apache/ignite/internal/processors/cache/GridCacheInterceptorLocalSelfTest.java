@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -27,8 +30,20 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
 public class GridCacheInterceptorLocalSelfTest extends GridCacheInterceptorAbstractSelfTest {
+    /** */
+    @Before
+    public void beforeGridCacheInterceptorLocalSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    }
+
     /** {@inheritDoc} */
-    @SuppressWarnings("RedundantMethodOverride")
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        return super.cacheConfiguration(igniteInstanceName);
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }

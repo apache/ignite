@@ -22,15 +22,19 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -66,6 +70,9 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     /** */
     private boolean depEnabled;
 
+    /** P2P unmarshalling future. */
+    private IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -82,22 +89,6 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
         this.topic = topic;
         this.pred = pred;
-    }
-
-    /**
-     *
-     * @param orig Handler to be copied.
-     */
-    public GridMessageListenHandler(GridMessageListenHandler orig) {
-        assert orig != null;
-
-        this.clsName = orig.clsName;
-        this.depInfo = orig.depInfo;
-        this.pred = orig.pred;
-        this.predBytes = orig.predBytes;
-        this.topic = orig.topic;
-        this.topicBytes = orig.topicBytes;
-        this.depEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -132,9 +123,16 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx)
-        throws IgniteCheckedException {
-        ctx.io().addUserMessageListener(topic, pred);
+    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
+        return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx) {
+        p2pUnmarshalFut.listen((fut) -> {
+            if (fut.error() == null)
+                ctx.io().addUserMessageListener(topic, pred, nodeId);
+        });
 
         return RegisterStatus.REGISTERED;
     }
@@ -180,18 +178,27 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
-            depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
+        try {
+            GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
+                depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
-        if (dep == null)
-            throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+            if (dep == null)
+                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-        ClassLoader ldr = dep.classLoader();
+            ClassLoader ldr = dep.classLoader();
 
-        if (topicBytes != null)
-            topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));
+            if (topicBytes != null)
+                topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));
 
-        pred = U.unmarshal(ctx, predBytes, U.resolveClassLoader(ldr, ctx.config()));
+            pred = U.unmarshal(ctx, predBytes, U.resolveClassLoader(ldr, ctx.config()));
+        }
+        catch (IgniteCheckedException | IgniteException e) {
+            ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+            throw e;
+        }
+
+        ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
     /** {@inheritDoc} */
@@ -250,6 +257,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         depEnabled = in.readBoolean();
 
         if (depEnabled) {
+            p2pUnmarshalFut = new GridFutureAdapter<>();
             topicBytes = U.readByteArray(in);
             predBytes = U.readByteArray(in);
             clsName = U.readString(in);

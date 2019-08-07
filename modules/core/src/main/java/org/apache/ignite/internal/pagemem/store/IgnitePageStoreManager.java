@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.store;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -26,8 +27,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 
 /**
  *
@@ -52,7 +53,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param tracker Allocation tracker.
      * @throws IgniteCheckedException If failed.
      */
-    void initialize(int cacheId, int partitions, String workingDir, AllocatedPageTracker tracker)
+    void initialize(int cacheId, int partitions, String workingDir, LongAdderMetric tracker)
         throws IgniteCheckedException;
 
     /**
@@ -243,9 +244,18 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException;
 
     /**
-     * Cleanup persistent space for all caches.
+     * Cleanup persistent space for all caches except metastore.
      */
     public void cleanupPersistentSpace() throws IgniteCheckedException;
+
+    /**
+     * Cleanup cache store whether it matches the provided predicate and if matched
+     * store was previously initizlized.
+     *
+     * @param cacheGrpPred Predicate to match by id cache group stores to clean.
+     * @param cleanFiles {@code True} to delete all persisted files related to particular store.
+     */
+    public void cleanupPageStoreIfMatch(Predicate<Integer> cacheGrpPred, boolean cleanFiles);
 
     /**
      * Creates and initializes cache work directory retrieved from {@code cacheCfg}.
