@@ -30,6 +30,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.jdbc.JdbcSQLException;
@@ -95,6 +98,9 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2V
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridMapQueryExecutor {
+    /** */
+    public static final boolean USE_POOL_FOR_LAZY_STUB = IgniteSystemProperties.getBoolean("USE_POOL_FOR_LAZY");
+
     /** */
     public static final boolean FORCE_LAZY = IgniteSystemProperties.getBoolean(IGNITE_SQL_FORCE_LAZY_RESULT_SET);
 
@@ -128,6 +134,10 @@ public class GridMapQueryExecutor {
     public GridMapQueryExecutor(GridSpinBusyLock busyLock) {
         this.busyLock = busyLock;
     }
+
+    private static final int POOL_SIZE = 150;
+
+    private IgniteThreadPoolExecutor lazyExecSvc;
 
     /**
      * @param ctx Context.
@@ -174,6 +184,11 @@ public class GridMapQueryExecutor {
                 }
             }
         });
+
+        if (USE_POOL_FOR_LAZY_STUB) {
+            lazyExecSvc = new IgniteThreadPoolExecutor("lazyStub", ctx.igniteInstanceName(), POOL_SIZE, POOL_SIZE,
+                30_000, new SynchronousQueue<>());
+        }
     }
 
     /**
@@ -185,10 +200,17 @@ public class GridMapQueryExecutor {
 
         lazyWorkerBusyLock.block();
 
-        for (MapQueryLazyWorker worker : lazyWorkers.values())
+        for (MapQueryLazyWorker worker : lazyWorkers.values()) {
             worker.stop(false);
 
+            if (USE_POOL_FOR_LAZY_STUB)
+                lazyExecSvc.remove(worker);
+        }
+
         lazyWorkers.clear();
+
+        if (USE_POOL_FOR_LAZY_STUB)
+            lazyExecSvc.shutdownNow();
     }
 
     /**
@@ -421,9 +443,16 @@ public class GridMapQueryExecutor {
                     if (oldWorker != null)
                         oldWorker.stop(false);
 
-                    IgniteThread thread = new IgniteThread(worker);
-
-                    thread.start();
+                    if (USE_POOL_FOR_LAZY_STUB) {
+                        try {
+                            lazyExecSvc.execute(worker);
+                        }
+                        catch (RejectedExecutionException e) {
+                            new IgniteThread(worker).start();
+                        }
+                    }
+                    else
+                        new IgniteThread(worker).start();
                 }
                 finally {
                     lazyWorkerBusyLock.leaveBusy();
@@ -957,6 +986,9 @@ public class GridMapQueryExecutor {
      */
     public void unregisterLazyWorker(MapQueryLazyWorker worker) {
         lazyWorkers.remove(worker.key(), worker);
+
+        if (USE_POOL_FOR_LAZY_STUB)
+            lazyExecSvc.remove(worker);
     }
 
     /**
