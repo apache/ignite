@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message sent by node to its next to ensure that next node and
@@ -87,7 +88,7 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      *
      * @return Creator node.
      */
-    public TcpDiscoveryNode creatorNode() {
+    public @Nullable TcpDiscoveryNode creatorNode() {
         return creatorNode;
     }
 

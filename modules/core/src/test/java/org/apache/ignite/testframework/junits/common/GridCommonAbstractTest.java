@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -613,26 +614,34 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     StringBuilder exp = new StringBuilder();
 
                     nodes0.stream()
-                        .map(n -> new T2<>(n.id().toString(), n.consistentId().toString()))
-                        .forEach(t -> {
+                        .sorted(Comparator.comparing(n -> n.consistentId().toString()))
+                        .forEach(n -> {
                             exp.append("(")
-                                .append(t.get1()).append(", ").append(t.get2())
-                                .append(")");
+                                .append(n.id().toString())
+                                .append(", ")
+                                .append(n.consistentId().toString())
+                                .append(", client=")
+                                .append(n.isClient())
+                                .append(")\n");
                         });
 
                     StringBuilder actl = new StringBuilder();
 
                     nodes.stream()
-                        .map(n -> new T2<>(n.id().toString(), n.consistentId().toString()))
-                        .forEach(t -> {
+                        .sorted(Comparator.comparing(n -> n.consistentId().toString()))
+                        .forEach(n -> {
                             actl.append("(")
-                                .append(t.get1()).append(", ").append(t.get2())
-                                .append(")");
+                                .append(n.id().toString())
+                                .append(", ")
+                                .append(n.consistentId().toString())
+                                .append(", client=")
+                                .append(n.isClient())
+                                .append(")\n");
                         });
 
                     throw new IgniteException("Timeout of waiting topology localNode=("
                         + ig.cluster().localNode().id() + "," + ig.cluster().localNode().consistentId() + ") "
-                        + " topVer=" + topVer + " [" + "expected:" + exp + " | " + "actual:" + actl + "]"
+                        + " topVer=" + topVer + "\n" + "expected:\n" + exp + "actual:\n" + actl
                     );
                 }
 
@@ -669,7 +678,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     ) throws InterruptedException {
         long timeout = getPartitionMapExchangeTimeout();
 
-        awaitTopologyChanged(timeout);
+        awaitTopologyChanged(timeout * 2);
 
         long startTime = -1;
 
