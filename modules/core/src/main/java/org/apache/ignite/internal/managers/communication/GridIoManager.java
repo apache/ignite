@@ -3274,17 +3274,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +']');
 
             }
-            catch (IgniteException e) {
-                closeChannelQuiet();
-
-                if (stopping)
-                    throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
-
-                if (senderStopFlags.get(sesKey).get())
-                    throw new ClusterTopologyCheckedException("Remote node left the cluster: " + rmtId, e);
-
-                throw e;
-            }
             catch (InterruptedException e) {
                 closeChannelQuiet();
 
@@ -3298,6 +3287,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
             catch (Throwable e) {
                 closeChannelQuiet();
+
+                if (stopping)
+                    throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
+                if (senderStopFlags.get(sesKey).get())
+                    throw new ClusterTopologyCheckedException("Remote node left the cluster: " + rmtId, e);
 
                 throw new IgniteException("Unexpected exception while sending file to the remote node. The process stopped " +
                     "[rmtId=" + rmtId + ", file=" + file.getName() + ", sesKey=" + sesKey + ']', e);
