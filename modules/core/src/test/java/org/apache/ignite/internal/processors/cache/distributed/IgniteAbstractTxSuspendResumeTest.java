@@ -440,7 +440,8 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     final Transaction tx = initTxWithTimeout(ignite, cache, isolation, true);
 
-                    U.sleep(TX_TIMEOUT + 100L);
+                    while (tx.startTime() + TX_TIMEOUT >= U.currentTimeMillis())
+                        U.sleep(100L);
 
                     GridTestUtils.assertThrowsWithCause(tx::resume, TransactionTimeoutException.class);
 
@@ -474,7 +475,8 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     final Transaction tx = initTxWithTimeout(ignite, cache, isolation, false);
 
-                    U.sleep(TX_TIMEOUT + 100L);
+                    while (tx.startTime() + TX_TIMEOUT >= U.currentTimeMillis())
+                        U.sleep(100L);
 
                     GridTestUtils.assertThrowsWithCause(tx::suspend, TransactionTimeoutException.class);
 
