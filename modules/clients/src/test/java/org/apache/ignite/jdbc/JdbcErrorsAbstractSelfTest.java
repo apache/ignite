@@ -38,7 +38,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -757,7 +756,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             }
         }
 
-        G.allGrids().get(0).cluster().readOnly(true);
+        grid(0).cluster().readOnly(true);
 
         try {
             checkErrorState((conn) -> {
@@ -767,7 +766,35 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             }, "90097", "Failed to execute DML statement. Cluster in read-only mode");
         }
         finally {
-            G.allGrids().get(0).cluster().readOnly(false);
+            grid(0).cluster().readOnly(false);
+        }
+    }
+
+    /**
+     * Checks execution batch DML request on read-only cluster error code and message.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBatchUpdatesRejectedInReadOnlyMode() throws Exception {
+        try (Connection conn = getConnection()) {
+            try (Statement statement = conn.createStatement()) {
+                statement.executeUpdate("CREATE TABLE TEST_READ_ONLY_BATCH (ID LONG PRIMARY KEY, VAL LONG)");
+            }
+        }
+
+        grid(0).cluster().readOnly(true);
+
+        try {
+            checkErrorState((conn) -> {
+                try (Statement statement = conn.createStatement()) {
+                    statement.addBatch("INSERT INTO TEST_READ_ONLY_BATCH VALUES (1, 2)");
+                    statement.executeBatch();
+                }
+            }, "90097", "Failed to execute DML statement. Cluster in read-only mode");
+        }
+        finally {
+            grid(0).cluster().readOnly(false);
         }
     }
 
