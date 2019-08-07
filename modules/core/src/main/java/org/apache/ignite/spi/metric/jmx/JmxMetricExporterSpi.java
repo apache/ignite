@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.pars
 /**
  * This SPI implementation exports metrics as JMX beans.
  */
-public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
+public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Monitoring registry. */
     private ReadOnlyMetricRegistry mreg;
 
