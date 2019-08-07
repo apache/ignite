@@ -242,6 +242,7 @@ class Connection:
         :param host: GridGain server node's host name or IP,
         :param port: GridGain server node's port number.
         """
+        detecting_protocol = False
 
         # go non-blocking for faster reconnect
         if not self._in_use.acquire(blocking=False):
@@ -249,6 +250,7 @@ class Connection:
 
         # choose highest version first
         if self.client.protocol_version is None:
+            detecting_protocol = True
             self.client.protocol_version = max(PROTOCOLS)
 
         try:
@@ -259,6 +261,11 @@ class Connection:
                 result = self._connect_version(host, port)
             else:
                 raise e
+        except connection_errors:
+            # restore undefined protocol version
+            if detecting_protocol:
+                self.client.protocol_version = None
+            raise
 
         # connection is ready for end user
         self.uuid = result.get('node_uuid', None)  # version-specific (1.4+)

@@ -189,6 +189,9 @@ class Client:
 
             self._nodes.append(conn)
 
+        if self.protocol_version is None:
+            raise ReconnectError('Can not connect.')
+
     def close(self):
         for conn in self._nodes:
             conn.close()
