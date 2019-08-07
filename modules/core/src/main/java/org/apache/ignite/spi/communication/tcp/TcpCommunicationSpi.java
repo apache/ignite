@@ -753,7 +753,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
-            private void handleChannelCreateRequest(
+            private void onChannelCreate(
                 GridSelectorNioSessionImpl ses,
                 ConnectionKey connKey,
                 Message msg
@@ -820,7 +820,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 else {
                     if (isChannelConnIdx(connKey.connectionIndex())) {
                         if (ses.meta(CHANNEL_FUT_META) == null)
-                            handleChannelCreateRequest((GridSelectorNioSessionImpl)ses, connKey, msg);
+                            onChannelCreate((GridSelectorNioSessionImpl)ses, connKey, msg);
                         else {
                             GridFutureAdapter<Channel> fut = ses.meta(CHANNEL_FUT_META);
                             GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
