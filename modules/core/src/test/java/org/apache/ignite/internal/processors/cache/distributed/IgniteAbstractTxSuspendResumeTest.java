@@ -532,16 +532,20 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
                 return tx;
             }
-            catch (TransactionTimeoutException e) {
-                if (i == RETRIES - 1) {
-                    throw new Exception("Can't init transaction within given timeout [isolation=" +
-                        isolation + ", cache=" + cache.getName() + ", ignite=" +
-                        ignite.configuration().getIgniteInstanceName() + ']', e);
+            catch (Exception e) {
+                if (X.hasCause(e, TransactionTimeoutException.class)) {
+                    if (i == RETRIES - 1) {
+                        throw new Exception("Can't init transaction within given timeout [isolation=" +
+                            isolation + ", cache=" + cache.getName() + ", ignite=" +
+                            ignite.configuration().getIgniteInstanceName() + ']', e);
+                    }
+                    else {
+                        log.info("Got timeout on transaction init [attempt=" + i + ", isolation=" + isolation +
+                            ", cache=" + cache.getName() + ", ignite=" + ignite.configuration().getIgniteInstanceName() + ']');
+                    }
                 }
-                else {
-                    log.info("Got timeout on transaction init [attempt=" + i + ", isolation=" + isolation +
-                        ", cache=" + cache.getName() + ", ignite=" + ignite.configuration().getIgniteInstanceName() + ']');
-                }
+                else
+                    throw e;
             }
         }
 
