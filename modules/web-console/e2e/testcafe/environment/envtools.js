@@ -109,4 +109,6 @@ const enableDemoMode = ClientFunction(() => {
     window.location.reload();
 });
 
-module.exports = { insertTestUser, dropTestDB, resolveUrl, enableDemoMode };
+const getLocation = ClientFunction(() => document.location.href);
+
+module.exports = { insertTestUser, dropTestDB, resolveUrl, enableDemoMode, getLocation };
