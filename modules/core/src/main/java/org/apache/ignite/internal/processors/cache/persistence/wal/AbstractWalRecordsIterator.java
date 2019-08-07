@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -61,6 +62,11 @@ public abstract class AbstractWalRecordsIterator
     protected IgniteBiTuple<WALPointer, WALRecord> curRec;
 
     /**
+     * The exception which can be thrown during reading next record. It holds until the next calling of next record.
+     */
+    private IgniteCheckedException curException;
+
+    /**
      * Current WAL segment absolute index. <br> Determined as lowest number of file at start, is changed during advance
      * segment
      */
@@ -92,6 +98,9 @@ public abstract class AbstractWalRecordsIterator
     /** Factory to provide I/O interfaces for read primitives with files. */
     private final SegmentFileInputFactory segmentFileInputFactory;
 
+    /** Position of last read valid record. */
+    private WALPointer lastRead;
+
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
@@ -118,9 +127,17 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected IgniteBiTuple<WALPointer, WALRecord> onNext() throws IgniteCheckedException {
+        if (curException != null)
+            throw curException;
+
         IgniteBiTuple<WALPointer, WALRecord> ret = curRec;
 
-        advance();
+        try {
+            advance();
+        }
+        catch (IgniteCheckedException e) {
+            curException = e;
+        }
 
         return ret;
     }
@@ -154,6 +171,8 @@ public abstract class AbstractWalRecordsIterator
                 curRec = advanceRecord(currWalSegment);
 
                 if (curRec != null) {
+                    lastRead = curRec.get1();
+
                     if (curRec.get2().type() == null)
                         continue; // Record was skipped by filter of current serializer, should read next record.
 
@@ -181,6 +200,11 @@ public abstract class AbstractWalRecordsIterator
                 return;
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Optional<WALPointer> lastRead() {
+        return Optional.ofNullable(lastRead);
     }
 
     /**

@@ -132,7 +132,7 @@ describe('cache put get test suite >', () => {
                             map);
                         await putGetMaps(
                             new MapObjectType(
-                                MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2), 
+                                MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2),
                             map);
                         if (typeInfo1.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
@@ -177,7 +177,7 @@ describe('cache put get test suite >', () => {
                             new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
                             map);
                         await putGetMaps(
-                            new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2), 
+                            new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2),
                             map);
                         if (typeInfo1.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
@@ -284,14 +284,14 @@ describe('cache put get test suite >', () => {
                             map = new Map([...map.entries()].map(([key, value]) => [typeInfo1.modificator(key), typeInfo2.modificator(value)]));
                             array.push(map);
                         }
-                        await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2)), 
+                        await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2)),
                             array);
                         if (typeInfo1.typeOptional) {
-                            await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, null, type2)), 
+                            await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, null, type2)),
                                 array);
                         }
                         if (typeInfo2.typeOptional) {
-                            await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1)), 
+                            await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1)),
                                 array);
                         }
                         if (typeInfo1.typeOptional && typeInfo2.typeOptional) {
@@ -318,7 +318,7 @@ describe('cache put get test suite >', () => {
                         array.push(value);
                     }
                     await putGetObjectArrays(
-                        new ObjectArrayType(type), 
+                        new ObjectArrayType(type),
                         array);
                     if (typeInfo.typeOptional) {
                         await putGetObjectArrays(new ObjectArrayType(), array);
@@ -338,14 +338,14 @@ describe('cache put get test suite >', () => {
                     const primitiveType = typeInfo.elemType;
                     const primitiveTypeInfo = TestingHelper.primitiveValues[primitiveType];
                     let values = primitiveTypeInfo.values;
-                    
+
                     const array = new Array();
                     for (let i = 0; i < 10; i++) {
                         values = values.map((value) => primitiveTypeInfo.modificator(value));
                         array.push(values);
                     }
                     await putGetObjectArrays(
-                        new ObjectArrayType(type), 
+                        new ObjectArrayType(type),
                         array);
                     if (typeInfo.typeOptional) {
                         await putGetObjectArrays(new ObjectArrayType(), array);
@@ -372,13 +372,13 @@ describe('cache put get test suite >', () => {
                         array.push(set);
                     }
                     await putGetObjectArrays(
-                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_SET, type)), 
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_SET, type)),
                         array);
                     await putGetObjectArrays(
-                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET, type)), 
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET, type)),
                         array);
                     await putGetObjectArrays(
-                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET, type)), 
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET, type)),
                         array);
                     if (typeInfo.typeOptional) {
                         await putGetObjectArrays(new ObjectArrayType(), array);
@@ -406,17 +406,17 @@ describe('cache put get test suite >', () => {
                         array.push(list);
                     }
                     await putGetObjectArrays(
-                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_COL, type)), 
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_COL, type)),
                         array);
                     await putGetObjectArrays(
-                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST, type)), 
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST, type)),
                         array);
                     await putGetObjectArrays(
-                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_LIST, type)), 
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_LIST, type)),
                         array);
                     if (typeInfo.typeOptional) {
                         await putGetObjectArrays(
-                            new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST)), 
+                            new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST)),
                             array);
                     }
                 }
@@ -543,6 +543,45 @@ describe('cache put get test suite >', () => {
             catch(error => done.fail(error));
     });
 
+    it('put enum items', (done) => {
+        Promise.resolve().
+            then(async () => {
+                const fakeTypeId = 12345;
+                const enumItem1 = new EnumItem(fakeTypeId);
+                enumItem1.setOrdinal(1);
+                await putEnumItem(enumItem1, null, done);
+                await putEnumItem(enumItem1, ObjectType.PRIMITIVE_TYPE.ENUM, done);
+                const enumItem2 = new EnumItem(fakeTypeId);
+                enumItem2.setName('name');
+                await putEnumItem(enumItem2, null, done);
+                await putEnumItem(enumItem2, ObjectType.PRIMITIVE_TYPE.ENUM, done);
+                const enumItem3 = new EnumItem(fakeTypeId);
+                enumItem3.setValue(2);
+                await putEnumItem(enumItem3, null, done);
+                await putEnumItem(enumItem3, ObjectType.PRIMITIVE_TYPE.ENUM, done);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    async function putEnumItem(value, valueType, done) {
+        const cache = igniteClient.getCache(CACHE_NAME).
+            setKeyType(null).
+            setValueType(valueType);
+        const key = new Date();
+        // Enums registration is not supported by the client, therefore put EnumItem must throw IgniteClientError
+        try {
+            await cache.put(key, value);
+            done.fail('put EnumItem must throw IgniteClientError');
+        }
+        catch (err) {
+            TestingHelper.checkEnumItemSerializationError(err, done);
+        }
+        finally {
+            await cache.removeAll();
+        }
+    }
+
     async function putGetPrimitiveValues(keyType, valueType, key, value, modificator) {
         const cache = await igniteClient.getCache(CACHE_NAME).
             setKeyType(keyType).
@@ -574,7 +613,7 @@ describe('cache put get test suite >', () => {
             await cache.clearKey(key);
             expect(result instanceof Array).toBe(true,
                 `result is not Array: arrayType=${valueType}, result=${result}`);
-            expect(await TestingHelper.compare(value, result)).toBe(true, 
+            expect(await TestingHelper.compare(value, result)).toBe(true,
                 `Arrays are not equal: arrayType=${valueType}, put array=${TestingHelper.printValue(value)
                 }, get array=${TestingHelper.printValue(result)}`);
         }
@@ -591,7 +630,7 @@ describe('cache put get test suite >', () => {
         let result = await cache.get(key);
         expect(result instanceof Map).toBe(true,
             `result is not Map: mapType=${mapType}, result=${result}`);
-        expect(await TestingHelper.compare(value, result)).toBe(true, 
+        expect(await TestingHelper.compare(value, result)).toBe(true,
             `Maps are not equal: valueType=${mapType._valueType}, put value=${TestingHelper.printValue(value)
             }, get value=${TestingHelper.printValue(result)}`);
     }
@@ -608,11 +647,11 @@ describe('cache put get test suite >', () => {
         if (!setType || setType._subType !== CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET) {
             const valueArr = [...value].sort();
             const resultArr = [...result].sort();
-            expect(await TestingHelper.compare(valueArr, resultArr)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType : 
+            expect(await TestingHelper.compare(valueArr, resultArr)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType :
                             null}, put value=${TestingHelper.printValue(valueArr)}, get value=${TestingHelper.printValue(resultArr)}`);
         }
         else {
-            expect(await TestingHelper.compare(value, result)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType : 
+            expect(await TestingHelper.compare(value, result)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType :
                             null}, put value=${TestingHelper.printValue(value)}, get value=${TestingHelper.printValue(result)}`);
         }
     }
@@ -625,7 +664,7 @@ describe('cache put get test suite >', () => {
         let result = await cache.get(key);
         expect(result instanceof Array).toBe(true,
             `result is not Array: listType=${listType}, result=${result}`);
-        expect(await TestingHelper.compare(value, result)).toBe(true, `Lists are not equal: valueType=${listType ? listType._elementType : 
+        expect(await TestingHelper.compare(value, result)).toBe(true, `Lists are not equal: valueType=${listType ? listType._elementType :
                         null}, put value=${TestingHelper.printValue(value)}, get value=${TestingHelper.printValue(result)}`);
     }
 
@@ -637,7 +676,7 @@ describe('cache put get test suite >', () => {
         let result = await cache.get(key);
         expect(result instanceof Array).toBe(true,
             `result is not Array: arrayType=${arrayType}, result=${result}`);
-        expect(await TestingHelper.compare(value, result)).toBe(true, `Arrays are not equal: valueType=${arrayType ? arrayType._elementType : 
+        expect(await TestingHelper.compare(value, result)).toBe(true, `Arrays are not equal: valueType=${arrayType ? arrayType._elementType :
                         null}, put value=${TestingHelper.printValue(value)}, get value=${TestingHelper.printValue(result)}`);
     }
 

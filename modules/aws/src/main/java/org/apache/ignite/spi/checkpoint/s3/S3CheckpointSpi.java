@@ -158,10 +158,10 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     private String bucketName;
 
     /** Bucket endpoint (set by user). */
-    private @Nullable String bucketEndpoint;
+    @Nullable private String bucketEndpoint;
 
     /** Server side encryption algorithm */
-    private @Nullable String sseAlg;
+    @Nullable private String sseAlg;
 
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
@@ -187,7 +187,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      *
      * @return S3 bucket endpoint to use.
      */
-    public @Nullable String getBucketEndpoint() {
+    @Nullable public String getBucketEndpoint() {
         return bucketEndpoint;
     }
 
@@ -196,7 +196,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      *
      * @return S3 server-side encryption algorithm to use.
      */
-    public @Nullable String getSSEAlgorithm() {
+    @Nullable public String getSSEAlgorithm() {
         return sseAlg;
     }
 
@@ -329,7 +329,6 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"BusyWait"})
     @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
@@ -595,7 +594,6 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
         s3.putObject(bucketName, data.getKey(), new ByteArrayInputStream(buf), meta);
     }
-
 
     /**
      * Deletes checkpoint data.

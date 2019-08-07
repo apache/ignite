@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestSqlQuery()
         {
+#pragma warning disable 618
             var cache = GetClientCache<Person>();
 
             // All items.
@@ -63,6 +64,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             qry.Sql = "abc";
             qry.QueryType = null;
             Assert.Throws<ArgumentNullException>(() => cache.Query(qry));
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -71,6 +73,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestSqlQueryDistributedJoins()
         {
+#pragma warning disable 618
             var cache = GetClientCache<Person>();
 
             // Non-distributed join returns incomplete results.
@@ -83,6 +86,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Distributed join fixes the problem.
             qry.EnableDistributedJoins = true;
             Assert.AreEqual(Count, cache.Query(qry).Count());
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -152,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             cache.PutAll(Enumerable.Range(1, 1000).ToDictionary(x => x, x => new Person(x)));
 
-            var qry = new SqlFieldsQuery("select * from Person p0, Person p1, Person p2'")
+            var qry = new SqlFieldsQuery("select * from Person p0, Person p1, Person p2")
             {
                 Timeout = TimeSpan.FromMilliseconds(1)
             };

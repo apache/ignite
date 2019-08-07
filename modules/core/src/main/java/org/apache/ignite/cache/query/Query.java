@@ -25,9 +25,21 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Base class for all Ignite cache queries.
- * Use {@link SqlQuery} and {@link TextQuery} for SQL and
- * text queries accordingly.
+ * Main API for configuring and executing cache queries.
+ *
+ * Supported queries are:
+ * <ul>
+ * <li><b>SQL Fields query.</b>Provides SQL way with full syntax to access cache data.
+ * See {@link SqlFieldsQuery} for details.</li>
+ * <li><b>Full-text query.</b> Uses full-text search engine based on Apache Lucene engine.
+ * See {@link TextQuery} for details.</li>
+ * <li><b>Scan query.</b> Provides effective and flexible way to full cache\partition scan.
+ * See {@link ScanQuery} for details.</li>
+ * <li><b>Continuous query.</b> Provides flexible way to process all existed cache data and all future cache updates as well.
+ * See {@link ContinuousQuery} for details.</li>
+ * <li><b>Spi query.</b> Allow run queries for pluggable user query engine implementation.
+ * See {@link SpiQuery} for details.</li>
+ * </ul>
  *
  * @see IgniteCache#query(Query)
  */

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,7 +41,7 @@ public interface ClientListenerConnectionContext {
     /**
      * @return Current context version.
      */
-    ClientListenerProtocolVersion currentVersion();
+    ClientListenerProtocolVersion defaultVersion();
 
     /**
      * Initialize from handshake message.
@@ -76,4 +77,9 @@ public interface ClientListenerConnectionContext {
      * @return authorization context.
      */
     @Nullable AuthorizationContext authorizationContext();
+
+    /**
+     * @return Security context.
+     */
+    @Nullable SecurityContext securityContext();
 }

@@ -17,28 +17,28 @@
 
 package org.apache.ignite.examples;
 
-//import org.apache.ignite.examples.misc.client.memcache.*;
-
+import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExample;
+import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExampleNodeStartup;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * MemcacheRestExample self test.
  */
 public class MemcacheRestExamplesSelfTest extends GridAbstractExamplesTest {
-//    TODO: IGNITE-711 next example(s) should be implemented for java 8
-//    or testing method(s) should be removed if example(s) does not applicable for java 8.
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Override protected void beforeTest() throws Exception {
-//        // Start up a cluster node.
-//        startGrid("memcache-rest-examples", MemcacheRestExampleNodeStartup.configuration());
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testMemcacheRestExample() throws Exception {
-//        MemcacheRestExample.main(EMPTY_ARGS);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    @Override protected void beforeTest() throws Exception {
+        // Start up a cluster node.
+        startGrid("memcache-rest-examples", MemcacheRestExampleNodeStartup.configuration());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMemcacheRestExample() throws Exception {
+        MemcacheRestExample.main(EMPTY_ARGS);
+    }
 }

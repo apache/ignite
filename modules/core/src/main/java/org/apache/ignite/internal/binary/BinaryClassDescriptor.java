@@ -40,8 +40,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -533,7 +533,6 @@ public class BinaryClassDescriptor {
     /**
      * @return binaryReadResolve() method
      */
-    @SuppressWarnings("UnusedDeclaration")
     @Nullable Method getReadResolveMethod() {
         return readResolveMtd;
     }
@@ -824,10 +823,10 @@ public class BinaryClassDescriptor {
                     assert false : "Invalid mode: " + mode;
             }
         }
+        catch (UnregisteredBinaryTypeException | UnregisteredClassException e) {
+            throw e;
+        }
         catch (Exception e) {
-            if (e instanceof UnregisteredBinaryTypeException || e instanceof UnregisteredClassException)
-                throw e;
-
             String msg;
 
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))

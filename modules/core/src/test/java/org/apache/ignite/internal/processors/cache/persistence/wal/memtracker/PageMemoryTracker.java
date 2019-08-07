@@ -28,11 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -41,34 +42,39 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.mockito.Mockito;
+
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_REF_MVCC_LEAF;
 
 /**
  * Page memory tracker.
@@ -119,6 +125,9 @@ public class PageMemoryTracker implements IgnitePlugin {
     /** Memory region. */
     private volatile DirectMemoryRegion memoryRegion;
 
+    /** Memory region lock, to prevent race between memory region deallocation and delta records applying. */
+    private final ReadWriteLock memoryRegionLock = new ReentrantReadWriteLock();
+
     /** Max pages. */
     private volatile int maxPages;
 
@@ -133,6 +142,12 @@ public class PageMemoryTracker implements IgnitePlugin {
 
     /** Checkpoint listener. */
     private DbCheckpointListener checkpointLsnr;
+
+    /** Temporary byte buffer, used to compact local pages. */
+    private volatile ByteBuffer tmpBuf1;
+
+    /** Temporary byte buffer, used to compact remote pages. */
+    private volatile ByteBuffer tmpBuf2;
 
     /**
      * @param ctx Plugin context.
@@ -150,40 +165,22 @@ public class PageMemoryTracker implements IgnitePlugin {
      */
     IgniteWriteAheadLogManager createWalManager() {
         if (isEnabled()) {
-            if (ctx.igniteConfiguration().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC) {
-                return new FsyncModeFileWriteAheadLogManager(gridCtx) {
-                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                        WALPointer res = super.log(record);
+            return new FileWriteAheadLogManager(gridCtx) {
+                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+                    WALPointer res = super.log(record);
 
-                        applyWalRecord(record);
+                    applyWalRecord(record);
 
-                        return res;
-                    }
+                    return res;
+                }
 
-                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-                        super.resumeLogging(lastPtr);
+                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                    super.resumeLogging(lastPtr);
 
-                        emptyPds = (lastPtr == null);
-                    }
-                };
-            }
-            else {
-                return new FileWriteAheadLogManager(gridCtx) {
-                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                        WALPointer res = super.log(record);
-
-                        applyWalRecord(record);
-
-                        return res;
-                    }
-
-                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-                        super.resumeLogging(lastPtr);
-
-                        emptyPds = (lastPtr == null);
-                    }
-                };
-            }
+                    if (lastPtr == null)
+                        emptyPds = true;
+                }
+            };
         }
 
         return null;
@@ -229,7 +226,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
         Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
-            int grpId = (Integer) mock.getArguments()[0];
+            int grpId = (Integer)mock.getArguments()[0];
 
             if (gridCtx.encryption().groupKey(grpId) == null)
                 return pageSize;
@@ -237,6 +234,12 @@ public class PageMemoryTracker implements IgnitePlugin {
             return pageSize
                 - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
                 - encSpi.blockSize() /* For CRC. */;
+        });
+
+        Mockito.when(pageMemoryMock.pageBuffer(Mockito.anyLong())).then(mock -> {
+            long pageAddr = (Long)mock.getArguments()[0];
+
+            return GridUnsafe.wrapPointer(pageAddr, pageSize);
         });
 
         GridCacheSharedContext sharedCtx = gridCtx.cache().context();
@@ -263,10 +266,23 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         freeSlotsCnt = maxPages;
 
+        tmpBuf1 = ByteBuffer.allocateDirect(pageSize);
+        tmpBuf2 = ByteBuffer.allocateDirect(pageSize);
+
         if (cfg.isCheckPagesOnCheckpoint()) {
-            checkpointLsnr = ctx -> {
-                if (!checkPages(false))
-                    throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
+            checkpointLsnr = new DbCheckpointListener() {
+                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    if (!checkPages(false, true))
+                        throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
+                }
+
+                @Override public void beforeCheckpointBegin(Context ctx) {
+                    /* No-op. */
+                }
+
+                @Override public void onCheckpointBegin(Context ctx) {
+                    /* No-op. */
+                }
             };
 
             ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database()).addCheckpointListener(checkpointLsnr);
@@ -296,7 +312,14 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         stats.clear();
 
-        memoryProvider.shutdown(true);
+        memoryRegionLock.writeLock().lock();
+
+        try {
+            memoryProvider.shutdown(true);
+        }
+        finally {
+            memoryRegionLock.writeLock().unlock();
+        }
 
         if (checkpointLsnr != null) {
             ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database())
@@ -314,7 +337,6 @@ public class PageMemoryTracker implements IgnitePlugin {
     private boolean isEnabled() {
         return (cfg != null && cfg.isEnabled() && CU.isPersistenceEnabled(ctx.igniteConfiguration()));
     }
-
 
     /**
      * Cleanup pages by predicate.
@@ -374,17 +396,13 @@ public class PageMemoryTracker implements IgnitePlugin {
             pageSlot.lock();
 
             try {
-                page = new DirectMemoryPage(pageSlot);
-
-                page.fullPageId(fullPageId);
+                page = new DirectMemoryPage(pageSlot, fullPageId);
 
                 pages.put(fullPageId, page);
 
                 if (pageSlot.owningPage() != null) {
                     // Clear memory if slot was already used.
-                    ByteBuffer pageBuf = GridUnsafe.wrapPointer(pageAddr, pageSize);
-
-                    pageBuf.put(new byte[pageSize]);
+                    GridUnsafe.setMemory(pageAddr, pageSize, (byte)0);
                 }
 
                 pageSlot.owningPage(page);
@@ -416,77 +434,78 @@ public class PageMemoryTracker implements IgnitePlugin {
      * Apply WAL record to local memory region.
      */
     private void applyWalRecord(WALRecord record) throws IgniteCheckedException {
-        if (!started)
-            return;
+        memoryRegionLock.readLock().lock();
 
-        if (record instanceof PageSnapshot) {
-            PageSnapshot snapshot = (PageSnapshot)record;
+        try {
+            if (!started)
+                return;
 
-            int grpId = snapshot.fullPageId().groupId();
-            long pageId = snapshot.fullPageId().pageId();
+            if (record instanceof MemoryRecoveryRecord && !emptyPds) {
+                synchronized (pageAllocatorMux) {
+                    pages.clear();
 
-            FullPageId fullPageId = new FullPageId(pageId, grpId);
+                    lastPageIdx = 0;
 
-            DirectMemoryPage page = page(fullPageId);
+                    freeSlotsCnt = maxPages;
 
-            page.lock();
+                    freeSlots.clear();
+
+                    stats.clear();
+                }
+            }
+            else if (record instanceof PageSnapshot) {
+                PageSnapshot snapshot = (PageSnapshot)record;
+
+                int grpId = snapshot.fullPageId().groupId();
+                long pageId = snapshot.fullPageId().pageId();
+
+                FullPageId fullPageId = new FullPageId(pageId, grpId);
+
+                DirectMemoryPage page = page(fullPageId);
+
+                page.lock();
 
             try {
-                PageUtils.putBytes(page.address(), 0, snapshot.pageData());
+                GridUnsafe.copyHeapOffheap(snapshot.pageData(), GridUnsafe.BYTE_ARR_OFF, page.address(), pageSize);
 
-                page.fullPageId(fullPageId);
+                    page.changeHistory().clear();
 
-                page.changeHistory().clear();
-
-                page.changeHistory().add(record);
+                    page.changeHistory().add(record);
+                }
+                finally {
+                    page.unlock();
+                }
             }
-            finally {
-                page.unlock();
+            else if (record instanceof PageDeltaRecord) {
+                PageDeltaRecord deltaRecord = (PageDeltaRecord)record;
+
+                int grpId = deltaRecord.groupId();
+                long pageId = deltaRecord.pageId();
+
+                FullPageId fullPageId = new FullPageId(pageId, grpId);
+
+                DirectMemoryPage page = page(fullPageId);
+
+                page.lock();
+
+                try {
+                    deltaRecord.applyDelta(pageMemoryMock, page.address());
+
+                    page.changeHistory().add(record);
+                }
+                finally {
+                    page.unlock();
+                }
             }
+            else
+                return;
+
+            // Increment statistics.
+            stats.computeIfAbsent(record.type(), r -> new AtomicInteger()).incrementAndGet();
         }
-        else if (record instanceof PageDeltaRecord) {
-            PageDeltaRecord deltaRecord = (PageDeltaRecord)record;
-
-            int grpId = deltaRecord.groupId();
-            long pageId = deltaRecord.pageId();
-
-            FullPageId fullPageId = new FullPageId(pageId, grpId);
-
-            DirectMemoryPage page = page(fullPageId);
-
-            page.lock();
-
-            try {
-                deltaRecord.applyDelta(pageMemoryMock, page.address());
-
-                // Set new fullPageId after recycle or after new page init, because pageId tag is changed.
-                if (record instanceof RecycleRecord)
-                    page.fullPageId(new FullPageId(((RecycleRecord)record).newPageId(), grpId));
-                else if (record instanceof InitNewPageRecord)
-                    page.fullPageId(new FullPageId(((InitNewPageRecord)record).newPageId(), grpId));
-
-                page.changeHistory().add(record);
-            }
-            finally {
-                page.unlock();
-            }
+        finally {
+            memoryRegionLock.readLock().unlock();
         }
-        else
-            return;
-
-        // Increment statistics.
-        AtomicInteger statCnt = stats.get(record.type());
-
-        if (statCnt == null) {
-            statCnt = new AtomicInteger();
-
-            AtomicInteger oldCnt = stats.putIfAbsent(record.type(), statCnt);
-
-            if (oldCnt != null)
-                statCnt = oldCnt;
-        }
-
-        statCnt.incrementAndGet();
     }
 
     /**
@@ -498,6 +517,9 @@ public class PageMemoryTracker implements IgnitePlugin {
         assert pageStoreMgr != null;
 
         long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
+
+        if (MvccUtils.mvccEnabled(gridCtx))
+            totalAllocated += pageStoreMgr.pagesAllocated(TxLog.TX_LOG_CACHE_ID);
 
         for (CacheGroupContext ctx : gridCtx.cache().cacheGroups())
             totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
@@ -512,6 +534,19 @@ public class PageMemoryTracker implements IgnitePlugin {
      * @return {@code true} if content of all tracked pages equals to content of these pages in the ignite instance.
      */
     public boolean checkPages(boolean checkAll) throws IgniteCheckedException {
+        return checkPages(checkAll, false);
+    }
+
+    /**
+     * Checks if there are any differences between the Ignite's data regions content and pages inside the tracker.
+     *
+     * @param checkAll Check all tracked pages, otherwise check until first error.
+     * @param checkPageCnt Check tracked and allocated pages count. This check can be done only if there is no
+     * concurrent modification of pages in the system (for example when checkpointWriteLock is held). Some threads
+     * (for example MVCC vacuum cleaner) can modify pages even if there is no activity from a users point of view.
+     * @return {@code true} if content of all tracked pages equals to content of these pages in the ignite instance.
+     */
+    private boolean checkPages(boolean checkAll, boolean checkPageCnt) throws IgniteCheckedException {
         if (!started)
             throw new IgniteCheckedException("Page memory checking only possible when tracker is started.");
 
@@ -522,24 +557,17 @@ public class PageMemoryTracker implements IgnitePlugin {
         synchronized (pageAllocatorMux) {
             long totalAllocated = pageStoreAllocatedPages();
 
-            long metaId = ((PageMemoryEx)cacheProc.context().database().metaStorage().pageMemory()).metaPageId(
-                MetaStorage.METASTORAGE_CACHE_ID);
-
-            // Meta storage meta page is counted as allocated, but never used in current implementation.
-            // This behavior will be fixed by https://issues.apache.org/jira/browse/IGNITE-8735
-            if (!pages.containsKey(new FullPageId(metaId, MetaStorage.METASTORAGE_CACHE_ID))
-                && pages.containsKey(new FullPageId(metaId + 1, MetaStorage.METASTORAGE_CACHE_ID)))
-                totalAllocated--;
-
             log.info(">>> Total tracked pages: " + pages.size());
             log.info(">>> Total allocated pages: " + totalAllocated);
 
             dumpStats();
 
-            if (emptyPds && pages.size() != totalAllocated) {
+            if (emptyPds && checkPageCnt && pages.size() != totalAllocated) {
                 res = false;
 
                 log.error("Started from empty PDS, but tracked pages count not equals to allocated pages count");
+
+                dumpPagesCountDiff();
 
                 if (!checkAll)
                     return false;
@@ -555,6 +583,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             if (fullPageId.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
                 pageMem = cacheProc.context().database().metaStorage().pageMemory();
+            else if (fullPageId.groupId() == TxLog.TX_LOG_CACHE_ID)
+                pageMem = cacheProc.context().database().dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
             else {
                 CacheGroupContext ctx = cacheProc.cacheGroup(fullPageId.groupId());
 
@@ -576,7 +606,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             long rmtPage = pageMem.acquirePage(fullPageId.groupId(), fullPageId.pageId());
 
             try {
-                long rmtPageAddr = pageMem.readLock(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
+                long rmtPageAddr = pageMem.readLockForce(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
 
                 try {
                     page.lock();
@@ -589,20 +619,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                             dumpHistory(page);
                         }
-                        else {
-                            ByteBuffer locBuf = GridUnsafe.wrapPointer(page.address(), pageSize);
-                            ByteBuffer rmtBuf = GridUnsafe.wrapPointer(rmtPageAddr, pageSize);
-
-                            if (!locBuf.equals(rmtBuf)) {
-                                res = false;
-
-                                log.error("Page buffers are not equals: " + fullPageId);
-
-                                dumpDiff(locBuf, rmtBuf);
-
-                                dumpHistory(page);
-                            }
-                        }
+                        else if (!comparePages(fullPageId, page, rmtPageAddr))
+                            res = false;
 
                         if (!res && !checkAll)
                             return false;
@@ -622,6 +640,64 @@ public class PageMemoryTracker implements IgnitePlugin {
         }
 
         return res;
+    }
+
+    /**
+     * Compare pages content.
+     *
+     * @param fullPageId Full page ID.
+     * @param expPage Expected page.
+     * @param actualPageAddr Actual page address.
+     * @return {@code True} if pages are equals, {@code False} otherwise.
+     * @throws IgniteCheckedException If fails.
+     */
+    private boolean comparePages(FullPageId fullPageId, DirectMemoryPage expPage, long actualPageAddr) throws IgniteCheckedException {
+        long expPageAddr = expPage.address();
+
+        GridCacheProcessor cacheProc = gridCtx.cache();
+
+        ByteBuffer locBuf = GridUnsafe.wrapPointer(expPageAddr, pageSize);
+        ByteBuffer rmtBuf = GridUnsafe.wrapPointer(actualPageAddr, pageSize);
+
+        PageIO pageIo = PageIO.getPageIO(actualPageAddr);
+
+        if (pageIo.getType() == T_DATA_REF_MVCC_LEAF || pageIo.getType() == T_CACHE_ID_DATA_REF_MVCC_LEAF) {
+            assert cacheProc.cacheGroup(fullPageId.groupId()).mvccEnabled();
+
+            AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
+
+            int cnt = io.getMaxCount(actualPageAddr, pageSize);
+
+            // Reset lock info as there is no sense to log it into WAL.
+            for (int i = 0; i < cnt; i++) {
+                io.setMvccLockCoordinatorVersion(expPageAddr, i, io.getMvccLockCoordinatorVersion(actualPageAddr, i));
+                io.setMvccLockCounter(expPageAddr, i, io.getMvccLockCounter(actualPageAddr, i));
+            }
+        }
+
+        // Compare only meaningful data.
+        if (pageIo instanceof CompactablePageIO) {
+            tmpBuf1.clear();
+            tmpBuf2.clear();
+
+            ((CompactablePageIO)pageIo).compactPage(locBuf, tmpBuf1, pageSize);
+            ((CompactablePageIO)pageIo).compactPage(rmtBuf, tmpBuf2, pageSize);
+
+            locBuf = tmpBuf1;
+            rmtBuf = tmpBuf2;
+        }
+
+        if (!locBuf.equals(rmtBuf)) {
+            log.error("Page buffers are not equals: " + fullPageId);
+
+            dumpDiff(locBuf, rmtBuf);
+
+            dumpHistory(expPage);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -674,6 +750,47 @@ public class PageMemoryTracker implements IgnitePlugin {
     }
 
     /**
+     * Dump diff between allocated and tracked page counts.
+     */
+    private void dumpPagesCountDiff() throws IgniteCheckedException {
+        Map<Integer, Long> pagesByGroups = pages.keySet().stream().collect(
+            Collectors.groupingBy(FullPageId::groupId, Collectors.counting()));
+
+        IgnitePageStoreManager pageStoreMgr = gridCtx.cache().context().pageStore();
+
+        for (Map.Entry<Integer, Long> groupPages : pagesByGroups.entrySet()) {
+            int grpId = groupPages.getKey();
+            long grpPagesAllocated = pageStoreMgr.pagesAllocated(grpId);
+
+            if (grpPagesAllocated != groupPages.getValue()) {
+                log.error(">>> Page count for groupId " + grpId + ": allocated=" + grpPagesAllocated +
+                    ", tracked=" + groupPages.getValue());
+
+                Map<Integer, Long> pagesByParts = pages.keySet().stream().filter(id -> id.groupId() == grpId)
+                    .collect(Collectors.groupingBy(id -> PageIdUtils.partId(id.pageId()), Collectors.counting()));
+
+                for (Map.Entry<Integer, Long> partPages : pagesByParts.entrySet()) {
+                    long partPagesAllocated = pageStoreMgr.pages(grpId, partPages.getKey());
+
+                    if (partPagesAllocated != partPages.getValue()) {
+                        log.error(">>>> Page count for partId " + partPages.getKey() + ": allocated=" +
+                            partPagesAllocated + ", tracked=" + partPages.getValue());
+                    }
+                }
+
+                int partCnt = gridCtx.cache().cacheGroup(grpId).config().getAffinity().partitions();
+
+                for (int partId = 0; partId < partCnt; partId++) {
+                    if (pageStoreMgr.exists(grpId, partId) && !pagesByParts.keySet().contains(partId)) {
+                        log.error(">>>> Page count for partId " + partId + ": allocated=" +
+                            pageStoreMgr.pages(grpId, partId) + ", tracked=0");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      *
      */
     private static class DirectMemoryPage {
@@ -684,13 +801,14 @@ public class PageMemoryTracker implements IgnitePlugin {
         private final List<WALRecord> changeHist = new LinkedList<>();
 
         /** Full page id. */
-        private volatile FullPageId fullPageId;
+        private final FullPageId fullPageId;
 
         /**
          * @param slot Memory page slot.
          */
-        private DirectMemoryPage(DirectMemoryPageSlot slot) {
+        private DirectMemoryPage(DirectMemoryPageSlot slot, FullPageId fullPageId) {
             this.slot = slot;
+            this.fullPageId = fullPageId;
         }
 
         /**
@@ -723,6 +841,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         /**
          * Change history.
          */
+        @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
         public List<WALRecord> changeHistory() {
             return changeHist;
         }
@@ -732,13 +851,6 @@ public class PageMemoryTracker implements IgnitePlugin {
          */
         public FullPageId fullPageId() {
             return fullPageId;
-        }
-
-        /**
-         * @param fullPageId Full page id.
-         */
-        public void fullPageId(FullPageId fullPageId) {
-            this.fullPageId = fullPageId;
         }
 
         /**
@@ -777,6 +889,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         /**
          * Lock page slot.
          */
+        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
         public void lock() {
             lock.lock();
         }

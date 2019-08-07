@@ -20,7 +20,7 @@
 const _ = require('lodash');
 const http = require('http');
 const https = require('https');
-const MigrateMongoose = require('migrate-mongoose');
+const MigrateMongoose = require('migrate-mongoose-typescript');
 
 /**
  * Event listener for HTTP server "error" event.
@@ -54,7 +54,11 @@ const _onError = (addr, error) => {
  */
 const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
     // Start rest server.
-    const srv = settings.server.SSLOptions ? https.createServer(settings.server.SSLOptions) : http.createServer();
+    const sslOptions = settings.server.SSLOptions;
+
+    console.log(`Starting ${sslOptions ? 'HTTPS' : 'HTTP'} server`);
+
+    const srv = sslOptions ? https.createServer(sslOptions) : http.createServer();
 
     srv.listen(settings.server.port, settings.server.host);
 
@@ -76,15 +80,15 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
 /**
  * Run mongo model migration.
  *
- * @param dbConnectionUri Mongo connection url.
+ * @param connection Mongo connection.
  * @param group Migrations group.
  * @param migrationsPath Migrations path.
  * @param collectionName Name of collection where migrations write info about applied scripts.
  */
-const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
+const migrate = (connection, group, migrationsPath, collectionName) => {
     const migrator = new MigrateMongoose({
         migrationsPath,
-        dbConnectionUri,
+        connection,
         collectionName,
         autosync: true
     });

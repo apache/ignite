@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  *
@@ -41,9 +42,8 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
         return false;
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
     public void testFailoverWithDiscoWorkerTermination() throws Exception {
         doTestTransferAmount(new FailoverScenario() {
             static final int failedNodeIdx = 1;
@@ -83,7 +83,7 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
 
                 awaitPartitionMapExchange();
             }
-        });
+        }, true);
     }
 
     /**

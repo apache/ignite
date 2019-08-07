@@ -32,6 +32,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -39,6 +40,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -60,38 +62,30 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-    /** KMeans initializer. */
-    private long seed;
-
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
+    /** {@inheritDoc} */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        Preprocessor<K, V> preprocessor) {
+        return updateModel(null, datasetBuilder, preprocessor);
+    }
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    /** {@inheritDoc} */
+    @Override public KMeansTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (KMeansTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
+        Preprocessor<K, V> preprocessor) {
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder =
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor);
 
         Vector[] centers;
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
+        try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = datasetBuilder.build(
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             final Integer cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
@@ -142,7 +136,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(KMeansModel mdl) {
+    @Override public boolean isUpdateable(KMeansModel mdl) {
         return mdl.getCenters().length == k && mdl.distanceMeasure().equals(distance);
     }
 
@@ -155,7 +149,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @return Helper data to calculate the new centroids.
      */
     private TotalCostAndCounts calcDataForNewCentroids(Vector[] centers,
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, int cols) {
+        Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset, int cols) {
         final Vector[] finalCenters = centers;
 
         return dataset.compute(data -> {
@@ -218,7 +212,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @param k Amount of clusters.
      * @return K cluster centers.
      */
-    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
+    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset,
         int k) {
         Vector[] initCenters = new DenseVector[k];
 
@@ -228,7 +222,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
             if (data.rowSize() != 0) {
                 if (data.rowSize() > k) { // If it's enough rows in partition to pick k vectors.
-                    final Random random = new Random(seed);
+                    final Random random = environment.randomNumbersGenerator();
 
                     for (int i = 0; i < k; i++) {
                         Set<Integer> uniqueIndices = new HashSet<>();
@@ -265,7 +259,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         // Pick k vectors randomly.
         if (rndPnts.size() >= k) {
             for (int i = 0; i < k; i++) {
-                final LabeledVector rndPnt = rndPnts.get(new Random(seed).nextInt(rndPnts.size()));
+                final LabeledVector rndPnt = rndPnts.get(environment.randomNumbersGenerator().nextInt(rndPnts.size()));
                 rndPnts.remove(rndPnt);
                 initCenters[i] = rndPnt.features();
             }
@@ -385,26 +379,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     public KMeansTrainer withDistance(DistanceMeasure distance) {
         this.distance = distance;
-        return this;
-    }
-
-    /**
-     * Gets the seed number.
-     *
-     * @return The parameter value.
-     */
-    public long getSeed() {
-        return seed;
-    }
-
-    /**
-     * Set up the seed.
-     *
-     * @param seed The parameter value.
-     * @return Model with new seed parameter value.
-     */
-    public KMeansTrainer withSeed(long seed) {
-        this.seed = seed;
         return this;
     }
 }

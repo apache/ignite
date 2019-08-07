@@ -17,10 +17,10 @@
 
 package org.apache.ignite.examples;
 
-//import org.apache.ignite.examples.igfs.*;
-//import org.apache.ignite.internal.util.typedef.internal.*;
-
+import org.apache.ignite.examples.igfs.IgfsExample;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * IGFS examples self test.
@@ -33,23 +33,21 @@ public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
     private static final String IGFS_LOOPBACK_CFG = "modules/core/src/test/config/igfs-loopback.xml";
 
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8
-     * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *
      * @throws Exception If failed.
      */
-//    public void testIgniteFsApiExample() throws Exception {
-//        String configPath = U.isWindows() ? IGFS_LOOPBACK_CFG : IGFS_SHMEM_CFG;
-//
-//        try {
-//            startGrid("test1", configPath);
-//            startGrid("test2", configPath);
-//            startGrid("test3", configPath);
-//
-//            IgfsExample.main(EMPTY_ARGS);
-//        }
-//        finally {
-//            stopAllGrids();
-//        }
-//    }
+    @Test
+    public void testIgniteFsApiExample() throws Exception {
+        String cfgPath = U.isWindows() ? IGFS_LOOPBACK_CFG : IGFS_SHMEM_CFG;
+
+        try {
+            startGrid("test1", cfgPath);
+            startGrid("test2", cfgPath);
+            startGrid("test3", cfgPath);
+
+            IgfsExample.main(EMPTY_ARGS);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.yardstick;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -57,7 +56,7 @@ public class IgniteThinClient {
         this.client = client;
     }
 
-    /** {@inheritDoc} */
+    /** */
     public IgniteClient start(BenchmarkConfiguration cfg, String host) throws Exception {
         IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 

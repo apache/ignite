@@ -17,6 +17,9 @@
 
 /**
  * <!-- Package description. -->
- * Contains main implementation.
+ * Contains main implementation. All classes and interfaces are not public API.
+ * API Compatibility is not maintained.
+ * See also <a href='https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal'>GitHub Readme</a>
  */
+
 package org.apache.ignite.internal;

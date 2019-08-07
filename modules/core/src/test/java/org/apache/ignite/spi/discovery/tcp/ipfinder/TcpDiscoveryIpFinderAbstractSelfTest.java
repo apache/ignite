@@ -28,6 +28,7 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Abstract test for ip finder.
@@ -42,7 +43,6 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
      *
      * @throws Exception If any error occurs.
      */
-    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
     protected TcpDiscoveryIpFinderAbstractSelfTest() throws Exception {
         super(false);
     }
@@ -64,6 +64,7 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testIpFinder() throws Exception {
         finder.initializeLocalAddresses(Arrays.asList(new InetSocketAddress(InetAddress.getLocalHost(), 1000)));
 

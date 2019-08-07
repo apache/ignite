@@ -17,21 +17,19 @@
 
 package org.apache.ignite.examples;
 
-//import org.apache.ignite.examples.misc.lifecycle.*;
-
+import org.apache.ignite.examples.misc.lifecycle.LifecycleExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * LifecycleExample self test.
  */
 public class LifecycleExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8
-     * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *
      * @throws Exception If failed.
      */
-//    public void testLifecycleExample() throws Exception {
-//        LifecycleExample.main(EMPTY_ARGS);
-//    }
+    @Test
+    public void testLifecycleExample() throws Exception {
+        LifecycleExample.main(EMPTY_ARGS);
+    }
 }

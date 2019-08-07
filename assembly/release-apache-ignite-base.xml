@@ -69,6 +69,22 @@
             <outputDirectory>/platforms/php</outputDirectory>
         </file>
 
+        <!-- Copy Python files. -->
+        <file>
+            <source>modules/platforms/python/LICENSE</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/python/README.md</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/python/setup.py</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_IGNITE</source>
@@ -142,6 +158,12 @@
             <outputDirectory>/platforms/cpp/common</outputDirectory>
         </fileSet>
 
+        <!-- Move CPP "network" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/network</directory>
+            <outputDirectory>/platforms/cpp/network</outputDirectory>
+        </fileSet>
+
         <!-- Move CPP "jni" module. -->
         <fileSet>
             <directory>modules/platforms/cpp/jni</directory>
@@ -202,18 +224,6 @@
             <outputDirectory>/platforms/cpp/bin</outputDirectory>
         </fileSet>
 
-        <!-- Move CPP binaries. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/bin</directory>
-            <outputDirectory>/platforms/cpp/bin</outputDirectory>
-        </fileSet>
-
-        <!-- Move CPP binaries. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/bin</directory>
-            <outputDirectory>/platforms/cpp/bin</outputDirectory>
-        </fileSet>
-
         <!-- Copy Node.js binaries. -->
         <fileSet>
             <directory>modules/platforms/nodejs/lib</directory>
@@ -225,7 +235,7 @@
             <outputDirectory>/platforms/nodejs/examples</outputDirectory>
         </fileSet>
 
-        <!-- Copy PHP sources.. -->
+        <!-- Copy PHP sources. -->
         <fileSet>
             <directory>modules/platforms/php/src</directory>
             <outputDirectory>/platforms/php/src</outputDirectory>
@@ -234,6 +244,22 @@
         <fileSet>
             <directory>modules/platforms/php/examples</directory>
             <outputDirectory>/platforms/php/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Copy Python sources. -->
+        <fileSet>
+            <directory>modules/platforms/python/pyignite</directory>
+            <outputDirectory>/platforms/python/pyignite</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/python/requirements</directory>
+            <outputDirectory>/platforms/python/requirements</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/python/examples</directory>
+            <outputDirectory>/platforms/python/examples</outputDirectory>
         </fileSet>
 
         <!-- Other files. -->

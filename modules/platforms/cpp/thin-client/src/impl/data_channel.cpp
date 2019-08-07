@@ -15,19 +15,13 @@
  * limitations under the License.
  */
 
-#include <cstring>
 #include <cstddef>
 
-#include <sstream>
-
 #include <ignite/common/fixed_size_array.h>
+#include <ignite/network/network.h>
 
 #include "impl/message.h"
-#include "impl/ssl/ssl_gateway.h"
-#include "impl/ssl/secure_socket_client.h"
-#include "impl/net/tcp_socket_client.h"
-#include "impl/net/remote_type_updater.h"
-
+#include "impl/remote_type_updater.h"
 #include "impl/data_channel.h"
 
 namespace ignite
@@ -36,13 +30,12 @@ namespace ignite
     {
         namespace thin
         {
-            /** Version 1.2.0. */
             const ProtocolVersion DataChannel::VERSION_1_2_0(1, 2, 0);
-
-            /** Current version. */
-            const ProtocolVersion DataChannel::VERSION_CURRENT(VERSION_1_2_0);
+            const ProtocolVersion DataChannel::VERSION_1_4_0(1, 4, 0);
+            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_4_0);
 
             DataChannel::VersionSet::value_type supportedArray[] = {
+                DataChannel::VERSION_1_4_0,
                 DataChannel::VERSION_1_2_0,
             };
 
@@ -52,10 +45,10 @@ namespace ignite
             DataChannel::DataChannel(const ignite::thin::IgniteClientConfiguration& cfg,
                 binary::BinaryTypeManager& typeMgr) :
                 ioMutex(),
-                address(),
+                node(),
                 config(cfg),
                 typeMgr(typeMgr),
-                currentVersion(VERSION_CURRENT),
+                currentVersion(VERSION_DEFAULT),
                 reqIdCounter(0),
                 socket()
             {
@@ -64,7 +57,7 @@ namespace ignite
 
             DataChannel::~DataChannel()
             {
-                // No-op.
+                Close();
             }
 
             bool DataChannel::Connect(const std::string& host, uint16_t port, int32_t timeout)
@@ -81,16 +74,13 @@ namespace ignite
 
                 if (sslMode != SslMode::DISABLE)
                 {
-                    ssl::SslGateway::GetInstance().LoadAll();
-
-                    socket.reset(new ssl::SecureSocketClient(config.GetSslCertFile(),
-                        config.GetSslKeyFile(), config.GetSslCaFile()));
+                    socket.reset(network::ssl::MakeSecureSocketClient(
+                        config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
                 }
                 else
-                    socket.reset(new net::TcpSocketClient());
+                    socket.reset(network::ssl::MakeTcpSocketClient());
 
-                address.host = host;
-                address.port = port;
+                node = IgniteNode(host, port);
 
                 return TryRestoreConnection(timeout);
             }
@@ -112,14 +102,25 @@ namespace ignite
                 bool success = Send(mem.Data(), mem.Length(), timeout);
 
                 if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not send message to remote host: timeout");
+                {
+                    success = TryRestoreConnection(timeout);
+
+                    if (!success)
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Can not send message to remote host: timeout");
+
+                    success = Send(mem.Data(), mem.Length(), timeout);
+
+                    if (!success)
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Can not send message to remote host: timeout");
+                }
 
                 success = Receive(mem, timeout);
 
                 if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not send message to remote host: timeout");
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                        "Can not receive message response from the remote host: timeout");
             }
 
             bool DataChannel::Send(const int8_t* data, size_t len, int32_t timeout)
@@ -133,7 +134,7 @@ namespace ignite
                     return false;
 
                 if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
                         "Can not send message due to connection failure");
 
                 return true;
@@ -147,7 +148,7 @@ namespace ignite
                 {
                     int res = socket->Send(data + sent, len - sent, timeout);
 
-                    if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
+                    if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                     {
                         Close();
 
@@ -178,7 +179,7 @@ namespace ignite
                     return false;
 
                 if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Can not receive message header");
 
                 interop::InteropInputStream inStream(&msg);
 
@@ -188,7 +189,8 @@ namespace ignite
                 {
                     Close();
 
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol error: Message length is negative");
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                        "Protocol error: Message length is negative");
                 }
 
                 if (msgLen == 0)
@@ -205,7 +207,7 @@ namespace ignite
                     return false;
 
                 if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
                         "Connection failure: Can not receive message body");
 
                 return true;
@@ -222,7 +224,7 @@ namespace ignite
 
                     int res = socket->Receive(buffer + received, remain, timeout);
 
-                    if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
+                    if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                     {
                         Close();
 
@@ -321,13 +323,20 @@ namespace ignite
                     return false;
                 }
 
+                if (propVer >= VERSION_1_4_0)
+                {
+                    Guid nodeGuid = reader.ReadGuid();
+
+                    node.SetGuid(nodeGuid);
+                }
+
                 return true;
             }
 
             bool DataChannel::EnsureConnected(int32_t timeout)
             {
                 if (socket.get() != 0)
-                    return false;
+                    return true;
 
                 return TryRestoreConnection(timeout);
             }
@@ -335,7 +344,7 @@ namespace ignite
             bool DataChannel::NegotiateProtocolVersion(int32_t timeout)
             {
                 ProtocolVersion resVer;
-                ProtocolVersion propVer = VERSION_CURRENT;
+                ProtocolVersion propVer = VERSION_DEFAULT;
 
                 bool success = MakeRequestHandshake(propVer, resVer, timeout);
 
@@ -356,7 +365,9 @@ namespace ignite
             {
                 bool connected = false;
 
-                connected = socket->Connect(address.host.c_str(), address.port, timeout);
+                const network::EndPoint& endPoint = node.GetEndPoint();
+
+                connected = socket->Connect(endPoint.host.c_str(), endPoint.port, timeout);
 
                 if (!connected)
                 {

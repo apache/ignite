@@ -32,6 +32,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  *
@@ -85,6 +87,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTest(DeploymentMode.PRIVATE);
     }
@@ -94,6 +97,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTest(DeploymentMode.ISOLATED);
     }
@@ -103,6 +107,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTest(DeploymentMode.CONTINUOUS);
     }
@@ -112,6 +117,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTest(DeploymentMode.SHARED);
     }
@@ -136,7 +142,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      */
     public static class FactorialTask extends ComputeTaskAdapter<Long, Long> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) {
             assert arg > 1;
 
             Map<FactorialJob, ClusterNode> map = new HashMap<>();

@@ -31,10 +31,9 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -42,9 +41,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  * Sanity test to check that node starts to reject connections when stop procedure started.
  */
 public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -62,7 +58,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
         discoSpi.setReconnectCount(2);
         discoSpi.setAckTimeout(30_000);
         discoSpi.setSocketTimeout(30_000);
-        discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setIpFinder(sharedStaticIpFinder);
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 
@@ -89,6 +85,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStop() throws Exception {
         Ignite srv = startGrid(0);
 
@@ -160,7 +157,6 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
 
         assertTrue("Failed to get excpected error", err);
     }
-
 
     /**
      *

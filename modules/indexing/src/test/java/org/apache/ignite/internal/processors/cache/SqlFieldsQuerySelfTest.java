@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -26,15 +25,15 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** INSERT statement. */
-    private final static String INSERT = "insert into Person(_key, name) values (5, 'x')";
+    private static final String INSERT = "insert into Person(_key, name) values (5, 'x')";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -44,6 +43,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If error.
      */
+    @Test
     public void testSqlFieldsQuery() throws Exception {
         startGrids(2);
 
@@ -55,6 +55,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If error.
      */
+    @Test
     public void testSqlFieldsQueryWithTopologyChanges() throws Exception {
         startGrid(0);
 
@@ -63,50 +64,6 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         startGrid(1);
 
         executeQuery();
-    }
-
-    /**
-     * @throws Exception If error.
-     */
-    public void testQueryCaching() throws Exception {
-        startGrid(0);
-
-        PreparedStatement stmt = null;
-
-        for (int i = 0; i < 2; i++) {
-            createAndFillCache();
-
-            PreparedStatement stmt0 = grid(0).context().query().prepareNativeStatement("person", INSERT);
-
-            // Statement should either be parsed initially or in response to schema change...
-            assertTrue(stmt != stmt0);
-
-            stmt = stmt0;
-
-            // ...and be properly compiled considering schema changes to be properly parsed
-            new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
-
-            destroyCache();
-        }
-
-        stmt = null;
-
-        createAndFillCache();
-
-        // Now let's do the same without restarting the cache.
-        for (int i = 0; i < 2; i++) {
-            PreparedStatement stmt0 = grid(0).context().query().prepareNativeStatement("person", INSERT);
-
-            // Statement should either be parsed or taken from cache as no schema changes occurred...
-            assertTrue(stmt == null || stmt == stmt0);
-
-            stmt = stmt0;
-
-            // ...and be properly compiled considering schema changes to be properly parsed
-            new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
-        }
-
-        destroyCache();
     }
 
     /**
@@ -127,7 +84,6 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
 
         assertEquals("AGE", qryCursor.getFieldName(1));
     }
-
 
     /**
      *

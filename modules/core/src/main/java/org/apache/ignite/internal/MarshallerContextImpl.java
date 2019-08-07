@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -196,6 +197,11 @@ public class MarshallerContextImpl implements MarshallerContext {
             int typeId = e.getKey();
             String clsName = e.getValue().className();
 
+            MappedName mappedName = platformCache.get(typeId);
+
+            if (mappedName != null && !F.isEmpty(clsName) && clsName.equals(mappedName.className()))
+                continue;
+
             platformCache.put(typeId, new MappedName(clsName, true));
 
             fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
@@ -252,9 +258,10 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public boolean registerClassName(
-            byte platformId,
-            int typeId,
-            String clsName
+        byte platformId,
+        int typeId,
+        String clsName,
+        boolean failIfUnregistered
     ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
@@ -270,7 +277,13 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (transport.stopping())
                     return false;
 
-                IgniteInternalFuture<MappingExchangeResult> fut = transport.awaitMappingAcceptance(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+                MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+                GridFutureAdapter<MappingExchangeResult> fut = transport.awaitMappingAcceptance(item, cache);
+
+                if (failIfUnregistered && !fut.isDone())
+                    throw new UnregisteredBinaryTypeException(typeId, fut);
+
                 MappingExchangeResult res = fut.get();
 
                 return convertXchRes(res);
@@ -280,11 +293,23 @@ public class MarshallerContextImpl implements MarshallerContext {
             if (transport.stopping())
                 return false;
 
-            IgniteInternalFuture<MappingExchangeResult> fut = transport.proposeMapping(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+            MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+            GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(item, cache);
+
+            if (failIfUnregistered && !fut.isDone())
+                throw new UnregisteredBinaryTypeException(typeId, fut);
+
             MappingExchangeResult res = fut.get();
 
             return convertXchRes(res);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+        return registerClassName(platformId, typeId, clsName, false);
     }
 
     /** {@inheritDoc} */
@@ -576,10 +601,10 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
-     * @return custom marshaller mapping files directory. Used for standalone WAL iteration
+     * @return {@code True} if marshaller context is initialized.
      */
-    @Nullable public File getMarshallerMappingFileStoreDir() {
-        return marshallerMappingFileStoreDir;
+    public boolean initialized() {
+        return fileStore != null;
     }
 
     /**
@@ -613,7 +638,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         /** {@inheritDoc} */
         @Override public Set<Entry<Integer, MappedName>> entrySet() {
-            return null;
+            return Collections.emptySet();
         }
 
         /** {@inheritDoc} */

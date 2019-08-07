@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,10 +53,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.junit.Test;
 
 /**
  * Test handle of task canceling with PDS enabled.
@@ -91,6 +89,9 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(getDataStorageConfiguration());
 
+        // Set the thread pool size according to the NUM_TASKS.
+        cfg.setPublicThreadPoolSize(16);
+
         return cfg;
     }
 
@@ -114,6 +115,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /**
      * Checks that tasks canceling does not lead to node failure.
      */
+    @Test
     public void testFailNodesOnCanceledTask() throws Exception {
         cleanPersistenceDir();
 
@@ -185,6 +187,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /**
      * Test FilePageStore with multiple interrupted threads.
      */
+    @Test
     public void testFilePageStoreInterruptThreads() throws Exception {
         failure.set(false);
 
@@ -196,8 +199,8 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = getDataStorageConfiguration();
 
-        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file, factory, dbCfg,
-            AllocatedPageTracker.NO_OP);
+        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, () -> file.toPath(), factory, dbCfg,
+            new LongAdderMetric("NO_OP", null));
 
         int pageSize = dbCfg.getPageSize();
 
@@ -286,11 +289,6 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         /** */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {

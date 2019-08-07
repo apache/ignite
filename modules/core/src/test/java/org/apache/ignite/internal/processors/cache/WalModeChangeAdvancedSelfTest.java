@@ -29,6 +29,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -64,6 +67,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheCleanup() throws Exception {
         Ignite srv = startGrid(config(SRV_1, false, false));
 
@@ -132,6 +136,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin() throws Exception {
         checkJoin(false);
     }
@@ -141,6 +146,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinCoordinator() throws Exception {
         checkJoin(true);
     }
@@ -209,6 +215,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testServerRestartNonCoordinator() throws Exception {
         checkNodeRestart(false);
     }
@@ -218,9 +225,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
+    @Test
     public void testServerRestartCoordinator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
-
         checkNodeRestart(true);
     }
 
@@ -242,7 +249,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
-        final int restarts = 10;
+        final int restarts = SF.applyLB(10, 3);
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
@@ -289,7 +296,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
                 state = !state;
             }
-            catch (IgniteException e) {
+            catch (IgniteException ignore) {
                 // Possible disconnect, re-try.
             }
         }
@@ -300,6 +307,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
@@ -358,6 +366,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheDestroy() throws Exception {
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
@@ -418,6 +427,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentOperations() throws Exception {
         final Ignite srv1 = startGrid(config(SRV_1, false, false));
         final Ignite srv2 = startGrid(config(SRV_2, false, false));
@@ -431,7 +441,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
 
-        for (int i = 1; i <= 3; i++) {
+        for (int i = 1; i <= SF.applyLB(3, 2); i++) {
             // Start pushing requests.
             Collection<Ignite> walNodes = new ArrayList<>();
 
@@ -442,7 +452,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
             final AtomicBoolean done = new AtomicBoolean();
 
-            final CountDownLatch latch = new CountDownLatch(5);
+            final CountDownLatch latch = new CountDownLatch(walNodes.size() + 1);
 
             for (Ignite node : walNodes) {
                 final Ignite node0 = node;
@@ -476,7 +486,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
             t.start();
 
-            Thread.sleep(20_000);
+            Thread.sleep(SF.applyLB(20_000, 2_000));
 
             done.set(true);
 

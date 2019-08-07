@@ -44,7 +44,7 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
      * @param key Key.
      * @param part Partition.
      */
-    UserKeyCacheObjectImpl(Object key, int part) {
+    public UserKeyCacheObjectImpl(Object key, int part) {
         super(key, null, part);
     }
 

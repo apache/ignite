@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -68,6 +67,9 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
+    /** Default instance. */
+    public static final JdkMarshaller DEFAULT = new JdkMarshaller();
+
     /** Class name filter. */
     private final IgnitePredicate<String> clsFilter;
 
@@ -89,11 +91,8 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
-        ObjectOutputStream objOut = null;
-
-        try {
-            objOut = new JdkMarshallerObjectOutputStream(new JdkMarshallerOutputStreamWrapper(out));
-
+        try (ObjectOutputStream objOut = new JdkMarshallerObjectOutputStream(
+            new JdkMarshallerOutputStreamWrapper(out))) {
             // Make sure that we serialize only task, without class loader.
             objOut.writeObject(obj);
 
@@ -102,40 +101,26 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
-        finally{
-            U.closeQuiet(objOut);
-        }
     }
 
     /** {@inheritDoc} */
     @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
-        GridByteArrayOutputStream out = null;
-
-        try {
-            out = new GridByteArrayOutputStream(DFLT_BUFFER_SIZE);
-
-            marshal(obj, out);
+        try (GridByteArrayOutputStream out = new GridByteArrayOutputStream(DFLT_BUFFER_SIZE)) {
+            marshal0(obj, out);
 
             return out.toByteArray();
-        }
-        finally {
-            U.close(out, null);
         }
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         if (clsLdr == null)
             clsLdr = getClass().getClassLoader();
 
-        ObjectInputStream objIn = null;
-
-        try {
-            objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr, clsFilter);
-
+        try (ObjectInputStream objIn = new JdkMarshallerObjectInputStream(
+            new JdkMarshallerInputStreamWrapper(in), clsLdr, clsFilter)) {
             return (T)objIn.readObject();
         }
         catch (ClassNotFoundException e) {
@@ -146,22 +131,12 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
-        finally{
-            U.closeQuiet(objIn);
-        }
     }
 
     /** {@inheritDoc} */
     @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        GridByteArrayInputStream in = null;
-
-        try {
-            in = new GridByteArrayInputStream(arr, 0, arr.length);
-
-            return unmarshal(in, clsLdr);
-        }
-        finally {
-            U.close(in, null);
+        try (GridByteArrayInputStream in = new GridByteArrayInputStream(arr, 0, arr.length)) {
+            return unmarshal0(in, clsLdr);
         }
     }
 

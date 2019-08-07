@@ -26,6 +26,7 @@ import org.junit.Assert;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import org.junit.Test;
 
 /**
  * Simple test for arbitrary CacheObject reading/writing.
@@ -36,6 +37,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncompleteObject() throws Exception {
         final byte[] data = new byte[1024];
 

@@ -33,6 +33,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -42,13 +43,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -61,11 +60,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests for colocated cache.
  */
 public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Test thread count. */
     private static final int THREAD_CNT = 10;
+
+    /** Number of iterations (adjust for prolonged debugging). */
+    public static final int MAX_ITER_CNT = 10_000;
 
     /** Store enable flag. */
     private boolean storeEnabled;
@@ -74,12 +73,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -106,6 +99,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimplestPessimistic() throws Exception {
         checkSinglePut(false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -113,6 +107,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleOptimistic() throws Exception {
         checkSinglePut(true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -120,6 +115,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentry() throws Exception {
         checkReentry(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -127,6 +123,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxSeparatePessimistic() throws Exception {
         checkDistributedPut(true, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -134,6 +131,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxPessimistic() throws Exception {
         checkDistributedPut(true, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -141,6 +139,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedSeparatePessimistic() throws Exception {
         checkDistributedPut(false, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -148,6 +147,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedPessimistic() throws Exception {
         checkDistributedPut(false, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -155,6 +155,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxSeparatePessimistic() throws Exception {
         checkNonLocalPuts(true, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -162,6 +163,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxPessimistic() throws Exception {
         checkNonLocalPuts(true, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -169,6 +171,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalSeparatePessimistic() throws Exception {
         checkNonLocalPuts(false, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -176,6 +179,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalPessimistic() throws Exception {
         checkNonLocalPuts(false, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -183,6 +187,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackSeparatePessimistic() throws Exception {
         checkRollback(true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -190,6 +195,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxSeparateOptimistic() throws Exception {
         checkDistributedPut(true, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -197,6 +203,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxOptimistic() throws Exception {
         checkDistributedPut(true, false, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -204,6 +211,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxSeparateOptimistic() throws Exception {
         checkNonLocalPuts(true, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -211,6 +219,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxOptimistic() throws Exception {
         checkNonLocalPuts(true, false, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -218,6 +227,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackSeparateOptimistic() throws Exception {
         checkRollback(true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -225,6 +235,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollback() throws Exception {
         checkRollback(false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -232,22 +243,25 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsMultithreadedColocated() throws Exception {
-        checkPutsMultithreaded(true, false, 100000);
+        checkPutsMultithreaded(true, false, MAX_ITER_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsMultithreadedRemote() throws Exception {
-       checkPutsMultithreaded(false, true, 100000);
+       checkPutsMultithreaded(false, true, MAX_ITER_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsMultithreadedMixed() throws Exception {
-        checkPutsMultithreaded(true, true, 100000);
+        checkPutsMultithreaded(true, true, MAX_ITER_CNT);
     }
 
     /**
@@ -352,6 +366,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockLockedLocal() throws Exception {
         checkLockLocked(true);
     }
@@ -359,6 +374,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockLockedRemote() throws Exception {
         checkLockLocked(false);
     }
@@ -430,6 +446,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticGet() throws Exception {
         storeEnabled = false;
 
@@ -540,7 +557,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     private void checkDistributedPut(boolean explicitTx, boolean separate, TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
         storeEnabled = false;
@@ -630,7 +646,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     private void checkNonLocalPuts(boolean explicitTx, boolean separate, TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
         storeEnabled = false;
@@ -711,6 +726,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteThrough() throws Exception {
         storeEnabled = true;
 
@@ -779,9 +795,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
-        String cacheName = ignite.configuration().getCacheConfiguration()[0].getName();
+        String cacheName = ignite.configuration().getCacheConfiguration()[1].getName();
 
-        GridCacheContext ctx = ((IgniteKernal)grid()).context().cache().internalCache(cacheName).context();
+        GridCacheContext ctx = ((IgniteKernal)ignite).context().cache().internalCache(cacheName).context();
 
         CacheStore store = ctx.store().configuredStore();
 
@@ -795,9 +811,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private void clearStores(int cnt) {
         for (int i = 0; i < cnt; i++) {
-            String cacheName = grid(i).configuration().getCacheConfiguration()[0].getName();
+            IgniteEx grid = grid(i);
 
-            GridCacheContext ctx = ((IgniteKernal)grid()).context().cache().internalCache(cacheName).context();
+            String cacheName = grid.configuration().getCacheConfiguration()[1].getName();
+
+            GridCacheContext ctx = grid.context().cache().internalCache(cacheName).context();
 
             CacheStore store = ctx.store().configuredStore();
 
@@ -811,7 +829,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     private void checkRollback(boolean separate, TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
         storeEnabled = false;
@@ -897,6 +914,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLocks() throws Exception {
         storeEnabled = false;
 
@@ -923,6 +941,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLocksDistributed() throws Exception {
         storeEnabled = false;
 

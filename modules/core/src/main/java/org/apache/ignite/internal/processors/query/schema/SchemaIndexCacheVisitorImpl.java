@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -37,20 +38,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
-import java.util.List;
-
+import static org.apache.ignite.IgniteSystemProperties.INDEX_REBUILDING_PARALLELISM;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * Traversor operating all primary and backup partitions of given cache.
  */
-@SuppressWarnings("ForLoopReplaceableByForEach")
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
-    /** Default degree of parallelism. */
-    private static final int DFLT_PARALLELISM =
-        Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+    /** Default degree of parallelism for rebuilding indexes. */
+    private static final int DFLT_INDEX_REBUILDING_PARALLELISM;
 
     /** Count of rows, being processed within a single checkpoint lock. */
     private static final int BATCH_SIZE = 1000;
@@ -69,6 +68,16 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
     /** Whether to stop the process. */
     private volatile boolean stop;
+
+    static {
+        int parallelism = IgniteSystemProperties.getInteger(INDEX_REBUILDING_PARALLELISM, 0);
+
+        // Parallelism lvl is bounded to range of [1, CPUs count]
+        if (parallelism > 0)
+            DFLT_INDEX_REBUILDING_PARALLELISM = Math.min(parallelism, Runtime.getRuntime().availableProcessors());
+        else
+            DFLT_INDEX_REBUILDING_PARALLELISM = Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+    }
 
     /**
      * Constructor.
@@ -91,10 +100,11 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         this.rowFilter = rowFilter;
         this.cancel = cancel;
 
+        // Parallelism lvl is bounded to range of [1, CPUs count]
         if (parallelism > 0)
             this.parallelism = Math.min(Runtime.getRuntime().availableProcessors(), parallelism);
         else
-            this.parallelism =  DFLT_PARALLELISM;
+            this.parallelism = DFLT_INDEX_REBUILDING_PARALLELISM;
 
         if (cctx.isNear())
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
@@ -181,7 +191,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         boolean reserved = false;
 
         if (part != null && part.state() != EVICTED)
-            reserved = (part.state() == OWNING || part.state() == RENTING) && part.reserve();
+            reserved = (part.state() == OWNING || part.state() == RENTING || part.state() == MOVING) && part.reserve();
 
         if (!reserved)
             return;
@@ -223,6 +233,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
         finally {
             part.release();
+
+            cctx.group().metrics().decrementIndexBuildCountPartitionsLeft();
         }
     }
 
@@ -244,7 +256,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     entry.updateIndex(rowFilter, clo);
                 }
                 finally {
-                    entry.touch(AffinityTopologyVersion.NONE);
+                    entry.touch();
                 }
 
                 break;
@@ -322,6 +334,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 U.error(log, "Error during parallel index create/rebuild.", e);
 
                 stop = true;
+
+                cctx.group().metrics().setIndexBuildCountPartitionsLeft(0);
             }
             finally {
                 fut.onDone(err);

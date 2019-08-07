@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/ignition.h>
@@ -34,9 +30,19 @@ using namespace boost::unit_test;
 class SslTestSuiteFixture
 {
 public:
+    ignite::Ignite StartSslNode()
+    {
+        return ignite_test::StartCrossPlatformServerNode("ssl.xml", "ServerNode");
+    }
+    
+    ignite::Ignite StartNonSslNode()
+    {
+        return ignite_test::StartCrossPlatformServerNode("non-ssl.xml", "ServerNode");
+    }
+
     SslTestSuiteFixture()
     {
-        serverNode = ignite_test::StartCrossPlatformServerNode("ssl.xml", "ServerNode");
+        // No-op.
     }
 
     ~SslTestSuiteFixture()
@@ -53,16 +59,14 @@ public:
 
         return pathBuilder.str();
     }
-
-private:
-    /** Server node. */
-    ignite::Ignite serverNode;
 };
 
 BOOST_FIXTURE_TEST_SUITE(SslTestSuite, SslTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(SslConnectionSuccess)
 {
+    StartSslNode();
+
     IgniteClientConfiguration cfg;
 
     cfg.SetEndPoints("127.0.0.1:11110");
@@ -77,6 +81,8 @@ BOOST_AUTO_TEST_CASE(SslConnectionSuccess)
 
 BOOST_AUTO_TEST_CASE(SslConnectionReject)
 {
+    StartSslNode();
+
     IgniteClientConfiguration cfg;
 
     cfg.SetEndPoints("127.0.0.1:11110");
@@ -91,12 +97,30 @@ BOOST_AUTO_TEST_CASE(SslConnectionReject)
 
 BOOST_AUTO_TEST_CASE(SslConnectionReject2)
 {
+    StartSslNode();
+
     IgniteClientConfiguration cfg;
 
     cfg.SetEndPoints("127.0.0.1:11110");
 
     cfg.SetSslMode(SslMode::DISABLE);
+
+    BOOST_CHECK_THROW(IgniteClient::Start(cfg), ignite::IgniteError);
+}
+
+BOOST_AUTO_TEST_CASE(SslConnectionTimeout)
+{
+    StartNonSslNode();
+
+    IgniteClientConfiguration cfg;
+ 
+    cfg.SetEndPoints("127.0.0.1:11110");
     
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslCertFile(GetConfigFile("client_full.pem"));
+    cfg.SetSslKeyFile(GetConfigFile("client_full.pem"));
+    cfg.SetSslCaFile(GetConfigFile("ca.pem"));
+
     BOOST_CHECK_THROW(IgniteClient::Start(cfg), ignite::IgniteError);
 }
 

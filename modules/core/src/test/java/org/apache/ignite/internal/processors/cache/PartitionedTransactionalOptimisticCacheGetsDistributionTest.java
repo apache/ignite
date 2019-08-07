@@ -18,29 +18,36 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  * Tests of optimistic transactional partitioned cache's 'get' requests distribution.
  */
-public class PartitionedTransactionalOptimisticCacheGetsDistributionTest extends PartitionedAtomicCacheGetsDistributionTest {
+public class PartitionedTransactionalOptimisticCacheGetsDistributionTest extends CacheGetsDistributionAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionIsolation transactionIsolation() {
-        return READ_COMMITTED;
+    @Override protected TransactionConcurrency transactionConcurrency() {
+        return OPTIMISTIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionConcurrency transactionConcurrency() {
-        return OPTIMISTIC;
+    @Override protected TransactionIsolation transactionIsolation() {
+        return READ_COMMITTED;
     }
 }

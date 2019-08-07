@@ -103,7 +103,7 @@ class IgniteRelationProvider extends RelationProvider
 
         val tblName = tableName(params)
 
-        val tblInfoOption = sqlTableInfo[Any, Any](ctx.ignite(), tblName, params.get(OPTION_SCHEMA))
+        val tblInfoOption = sqlTableInfo(ctx.ignite(), tblName, params.get(OPTION_SCHEMA))
 
         if (tblInfoOption.isDefined) {
             mode match {

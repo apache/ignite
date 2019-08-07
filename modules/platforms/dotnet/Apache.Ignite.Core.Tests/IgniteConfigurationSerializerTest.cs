@@ -102,6 +102,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(10000, cfg.MvccVacuumFrequency);
             Assert.AreEqual(4, cfg.MvccVacuumThreadCount);
+            Assert.AreEqual(123, cfg.SqlQueryHistorySize);
 
             Assert.IsNotNull(cfg.SqlSchemas);
             Assert.AreEqual(2, cfg.SqlSchemas.Count);
@@ -323,6 +324,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("wal-store", ds.WalPath);
             Assert.AreEqual(TimeSpan.FromSeconds(18), ds.WalAutoArchiveAfterInactivity);
             Assert.IsTrue(ds.WriteThrottlingEnabled);
+            Assert.AreEqual(DiskPageCompression.Zstd, ds.WalPageCompression);
 
             var dr = ds.DataRegionConfigurations.Single();
             Assert.AreEqual(1, dr.EmptyPagesPoolSize);
@@ -986,6 +988,8 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 1,
                     PageSize = 5 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
+                    WalPageCompression = DiskPageCompression.Lz4,
+                    WalPageCompressionLevel = 10,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",
@@ -1020,11 +1024,12 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 SslContextFactory = new SslContextFactory(),
-                FailureHandler = new StopNodeOrHaltFailureHandler()
+                FailureHandler = new StopNodeOrHaltFailureHandler
                 {
                     TryStop = false,
                     Timeout = TimeSpan.FromSeconds(10)
-                }
+                },
+                SqlQueryHistorySize = 345
             };
         }
 

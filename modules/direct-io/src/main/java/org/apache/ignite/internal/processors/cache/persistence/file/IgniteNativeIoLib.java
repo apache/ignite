@@ -158,7 +158,6 @@ public class IgniteNativeIoLib {
         return false;
     }
 
-
     /**
      * Calculate Lowest Common Multiplier.
      * @param a first value.
@@ -190,7 +189,7 @@ public class IgniteNativeIoLib {
      * <li>and <tt>-1</tt> if failed to determine block size.</li>
      * <li>and <tt>-1</tt> if JNA is not available or init failed.</li> </ul>
      */
-    public static int getFsBlockSize(final String storageDir, final IgniteLogger log) {
+    public static int getDirectIOBlockSize(final String storageDir, final IgniteLogger log) {
         if (ex != null) {
             U.warn(log, "Failed to initialize O_DIRECT support at current OS: " + ex.getMessage(), ex);
 

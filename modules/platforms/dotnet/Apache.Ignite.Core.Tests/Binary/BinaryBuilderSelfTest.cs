@@ -1835,6 +1835,42 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(new[] {1, 2, 1, 1, 1, 3}, bytes1);
         }
+
+        [Test]
+        public void TestTypeWithDuplicatePropertyName()
+        {
+            var marsh = new Marshaller(null);
+            TestDelegate action = () => marsh.GetDescriptor(typeof(DerivedSamePropertyClass));
+
+            var ex = Assert.Throws<BinaryObjectException>(action);
+            var expectedMessage = "DerivedSamePropertyClass derives from BaseSamePropertyClass and hides field Property " +
+                                  "from the base class. Ignite can not serialize two fields with the same name.";
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
+
+        [Test]
+        public void TestIncorrectBinaryFieldMapperException()
+        {
+            var cfg = new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration
+                    {
+                        TypeName = typeof(BaseSamePropertyClass).FullName,
+                        IdMapper = new IncorrectIdMapper()
+                    }
+                }
+            };
+
+            // ReSharper disable once ObjectCreationAsStatement
+            TestDelegate action = () => new Marshaller(cfg);
+
+            var ex = Assert.Throws<BinaryObjectException>(action);
+            var expectedMessage = "Conflicting field IDs [type=BaseSamePropertyClass, field1=Property, field2=BaseName, fieldId=-1])";
+
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
     }
 
     /// <summary>
@@ -2179,6 +2215,22 @@ namespace Apache.Ignite.Core.Tests.Binary
     }
 
     /// <summary>
+    /// Test incorrect id mapper.
+    /// </summary>
+    public class IncorrectIdMapper : IBinaryIdMapper
+    {
+        public int GetTypeId(string typeName)
+        {
+            return -1;
+        }
+
+        public int GetFieldId(int typeId, string fieldName)
+        {
+            return -1;
+        }
+    }
+
+    /// <summary>
     /// Test name mapper.
     /// </summary>
     public class NameMapper : IBinaryNameMapper
@@ -2227,5 +2279,22 @@ namespace Apache.Ignite.Core.Tests.Binary
     {
         /** */
         public int NameMapperTestField { get; set; }
+    }
+
+    /// <summary>
+    /// Base class for testing.
+    /// </summary>
+    public class BaseSamePropertyClass
+    {
+        public int Property { get; private set; }
+        public string BaseName { get; private set; }
+    }
+
+    /// <summary>
+    /// Derived class that hides base class' property name.
+    /// </summary>
+    public class DerivedSamePropertyClass : BaseSamePropertyClass
+    {
+        public new int Property { get; private set; }
     }
 }

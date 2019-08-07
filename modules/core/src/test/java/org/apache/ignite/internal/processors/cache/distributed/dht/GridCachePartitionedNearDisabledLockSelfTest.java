@@ -39,9 +39,4 @@ public class GridCachePartitionedNearDisabledLockSelfTest extends GridCacheParti
     @Override protected boolean isPartitioned() {
         return false;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testLockReentrancy() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-835");
-    }
 }

@@ -21,10 +21,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -41,31 +42,25 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
-    /** Feature extractor. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Label extractor. */
-    private final IgniteBiFunction<K, V, L> lbExtractor;
+    /** Preprocessor. */
+    private final Preprocessor<K, V> preprocessor;
 
     /** Model for inference. */
-    private final Model<Vector, L> mdl;
+    private final IgniteModel<Vector, L> mdl;
 
     /**
      * Constructs a new instance of local truth with prediction cursor.
      *
      * @param upstreamMap Map with {@code upstream} data.
      * @param filter Filter for {@code upstream} data.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param preprocessor Preprocessor.
      * @param mdl Model for inference.
      */
-    public LocalLabelPairCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
-                                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-                                Model<Vector, L> mdl) {
+    public LocalLabelPairCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter, Preprocessor<K, V> preprocessor,
+                                IgniteModel<Vector, L> mdl) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+        this.preprocessor = preprocessor;
         this.mdl = mdl;
     }
 
@@ -100,7 +95,14 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            findNext();
+            if (filter == null) {
+                Map.Entry<K, V> entry = iter.next();
+                nextEntry = entry;
+                return iter.hasNext();
+            }
+
+            else
+                findNext();
 
             return nextEntry != null;
         }
@@ -113,12 +115,11 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
             K key = nextEntry.getKey();
             V val = nextEntry.getValue();
 
-            Vector features = featureExtractor.apply(key, val);
-            L lb = lbExtractor.apply(key, val);
+            LabeledVector<L> labeledVector = preprocessor.apply(nextEntry.getKey(), nextEntry.getValue());
 
             nextEntry = null;
 
-            return new LabelPair<>(lb, mdl.apply(features));
+            return new LabelPair<>(labeledVector.label(), mdl.predict(labeledVector.features()));
         }
 
         /**
@@ -129,7 +130,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
                 Map.Entry<K, V> entry = iter.next();
 
                 if (filter.apply(entry.getKey(), entry.getValue())) {
-                    this.nextEntry = entry;
+                    nextEntry = entry;
                     break;
                 }
             }

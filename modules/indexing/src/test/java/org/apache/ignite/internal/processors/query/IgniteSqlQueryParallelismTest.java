@@ -24,24 +24,18 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * A test against setting different values of query parallelism in cache configurations of the same cache.
  */
 @SuppressWarnings("unchecked")
-public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
     /** */
     private boolean isClient = false;
 
@@ -61,23 +55,12 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -97,6 +80,7 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexSegmentationOnClient() throws Exception {
         IgniteCache<Object, Object> c1 = ignite(0).cache("org");
         IgniteCache<Object, Object> c2 = ignite(0).cache("pers");
@@ -124,6 +108,7 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexSegmentation() throws Exception {
         IgniteCache<Object, Object> c1 = ignite(0).cache("org");
         IgniteCache<Object, Object> c2 = ignite(0).cache("pers");

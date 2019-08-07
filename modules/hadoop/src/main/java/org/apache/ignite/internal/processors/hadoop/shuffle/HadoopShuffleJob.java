@@ -429,7 +429,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param ack Shuffle ack.
      */
-    @SuppressWarnings("ConstantConditions")
     public void onShuffleAck(HadoopShuffleAck ack) {
         IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup = sentMsgs.get(ack.id());
 
@@ -473,7 +472,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param dest Destination.
      * @param jobId Job ID.
      */
-    @SuppressWarnings("unchecked")
     private void sendFinishResponse(T dest, HadoopJobId jobId) {
         if (log.isDebugEnabled())
             log.debug("Sent shuffle finish response [jobId=" + jobId + ", dest=" + dest + ']');
@@ -913,7 +911,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @return Input.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public HadoopTaskInput input(HadoopTaskContext taskCtx) throws IgniteCheckedException {
         switch (taskCtx.taskInfo().type()) {
             case REDUCE:

@@ -44,11 +44,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -59,9 +56,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String GROUP1 = "grp1";
 
@@ -99,8 +93,6 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);
 
@@ -127,6 +119,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterRestartStaticCaches1() throws Exception {
         clusterRestart(1, true);
     }
@@ -134,6 +127,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterRestartStaticCaches2() throws Exception {
         clusterRestart(3, true);
     }
@@ -141,6 +135,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterRestartDynamicCaches1() throws Exception {
         clusterRestart(1, false);
     }
@@ -148,6 +143,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterRestartDynamicCaches2() throws Exception {
         clusterRestart(3, false);
     }
@@ -156,6 +152,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testClusterRestartCachesWithH2Indexes() throws Exception {
         CacheConfiguration[] ccfgs1 = new CacheConfiguration[5];
 
@@ -219,6 +216,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExpiryPolicy() throws Exception {
         long ttl = 10 * 60000;
 
@@ -292,6 +290,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDropCache() throws Exception {
         ccfgs = new CacheConfiguration[]{cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1)
             .setIndexedTypes(Integer.class, Person.class)};
@@ -308,6 +307,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDropCache1() throws Exception {
         CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1);
 
@@ -332,6 +332,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDropCache2() throws Exception {
         CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1)
             .setIndexedTypes(Integer.class, Person.class);

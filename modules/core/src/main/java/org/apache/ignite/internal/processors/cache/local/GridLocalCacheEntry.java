@@ -199,8 +199,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
     /**
      * Rechecks if lock should be reassigned.
+     * @return owner
      */
-    public void recheck() {
+    public CacheLockCandidates recheck(GridCacheMvccCandidate checkingCandidate) {
         CacheObject val;
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
@@ -225,7 +226,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             unlockEntry();
         }
 
-        checkOwnerChanged(prev, owner, val);
+        checkOwnerChanged(prev, owner, val, checkingCandidate);
+
+        return owner;
     }
 
     /** {@inheritDoc} */
@@ -248,22 +251,17 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
                     // At this point candidate may have been removed and entry destroyed,
                     // so we check for null.
-                    if (e != null)
-                        e.recheck();
-
-                    break;
+                    if (e != null) {
+                        CacheLockCandidates newOwner = e.recheck(owner);
+                        if(newOwner == null || !newOwner.hasCandidate(cand.version()))
+                            // the lock from the chain hasn't been acquired, no sense to check the rest of the chain
+                            break;
+                    }
+                    else
+                        break;
                 }
             }
         }
-    }
-
-    /**
-     * Unlocks lock if it is currently owned.
-     *
-     * @param tx Transaction to unlock.
-     */
-    @Override public void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
-        removeLock(tx.xidVersion());
     }
 
     /**
@@ -327,6 +325,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
         GridCacheMvccCandidate doomed;
 
+        GridCacheVersion deferredDelVer;
+
         lockEntry();
 
         try {
@@ -351,9 +351,20 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+
+            deferredDelVer = this.ver;
         }
         finally {
             unlockEntry();
+        }
+
+        if (val == null) {
+            boolean deferred = cctx.deferredDelete() && !detached() && !isInternal();
+
+            if (deferred) {
+                if (deferredDelVer != null)
+                    cctx.onDeferredDelete(this, deferredDelVer);
+            }
         }
 
         if (doomed != null)

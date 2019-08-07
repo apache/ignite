@@ -40,9 +40,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -94,7 +100,9 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -351,7 +359,6 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Random value from the input collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
@@ -525,7 +532,6 @@ public class GridFunc {
      * @param iters Iterator over iterators.
      * @return Single iterator.
      */
-    @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat(final Iterator<Iterator<T>> iters) {
         if (!iters.hasNext())
             return Collections.<T>emptySet().iterator();
@@ -1008,7 +1014,6 @@ public class GridFunc {
      * @param <T1> Type of the collection.
      * @return Light-weight view on given collection with provided predicate.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @SafeVarargs
     public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
@@ -1130,7 +1135,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Light-weight view on given map with provided predicates and mapping.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
         final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
@@ -1293,7 +1297,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Set} instance every time
      *      its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<Set<T>> newSet() {
         return (IgniteCallable<Set<T>>)SET_FACTORY;
     }
@@ -1307,7 +1310,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <K, V> IgniteCallable<Map<K, V>> newMap() {
         return (IgniteCallable<Map<K, V>>)MAP_FACTORY;
@@ -1322,7 +1324,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<ConcurrentMap<K, V>> newCMap() {
         return (IgniteCallable<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
     }
@@ -1334,7 +1335,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link GridConcurrentHashSet} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <E> IgniteCallable<Set<E>> newCSet() {
         return (IgniteCallable<Set<E>>)CONCURRENT_SET_FACTORY;
     }
@@ -1415,7 +1415,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code true}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysTrue() {
         return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
@@ -1427,7 +1426,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code false}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysFalse() {
         return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
@@ -1649,7 +1647,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
+    @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
@@ -1722,7 +1720,6 @@ public class GridFunc {
      * @param it Iterable to fetch.
      * @return Modified target collection.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
         if (it == null)
@@ -1911,7 +1908,6 @@ public class GridFunc {
      * @param <X> Type of the free variable for the closure and type of the array
      *      elements.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @Deprecated
     public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable IgnitePredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
@@ -2172,6 +2168,7 @@ public class GridFunc {
      * @param t2 Second object in pair.
      * @param <T> Type of objects in pair.
      * @return Pair of objects.
+     * @deprecated Use {@link T2} instead.
      */
     @Deprecated
     public static <T> IgnitePair<T> pair(@Nullable T t1, @Nullable T t2) {
@@ -2799,6 +2796,46 @@ public class GridFunc {
     }
 
     /**
+     * Check's that {@code val} contains ignore case in collection {@code col}.
+     *
+     * @param col Collection of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code col} and {@code @val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable Collection<String> col, String val) {
+        if (F.isEmpty(col))
+            return false;
+
+        for (String v : col) {
+            if (v.equalsIgnoreCase(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check's that {@code val} contains ignore case in array {@code arr}.
+     *
+     * @param arr Array of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code arr} and {@code val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable String[] arr, String val) {
+        if (F.isEmpty(arr))
+            return false;
+
+        for (String v : arr) {
+            if (v.equalsIgnoreCase(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param arr Array.
      * @param val Value to find.
      * @return {@code True} if array contains given value.
@@ -3031,7 +3068,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Closure that returns value for an entry.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgniteClosure<Cache.Entry<K, V>, V> cacheEntry2Get() {
         return (IgniteClosure<Cache.Entry<K, V>, V>)CACHE_ENTRY_VAL_GET;
     }
@@ -3043,7 +3079,6 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if entry has peek value.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
         return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }
@@ -3130,5 +3165,191 @@ public class GridFunc {
         }
 
         return rdc == null ? null : rdc.reduce();
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code True} if array sorted, {@code false} otherwise.
+     */
+    public static boolean isSorted(long[] arr) {
+        if (isEmpty(arr) || arr.length == 1)
+            return true;
+
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static BooleanSupplier nonThrowableSupplier(BooleanSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, false, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code .0d} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static DoubleSupplier nonThrowableSupplier(DoubleSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, .0d, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static IntSupplier nonThrowableSupplier(IntSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, 0, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static LongSupplier nonThrowableSupplier(LongSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, 0, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code null} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static <T> Supplier<T> nonThrowableSupplier(Supplier<T> s, IgniteLogger log) {
+        return nonThrowableSupplier(s, null, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static BooleanSupplier nonThrowableSupplier(BooleanSupplier s, boolean dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsBoolean();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static DoubleSupplier nonThrowableSupplier(DoubleSupplier s, double dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsDouble();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static IntSupplier nonThrowableSupplier(IntSupplier s, int dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsInt();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static LongSupplier nonThrowableSupplier(LongSupplier s, long dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsLong();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static <T> Supplier<T> nonThrowableSupplier(Supplier<T> s, T dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.get();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
     }
 }

@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests hashmap load.
@@ -37,6 +38,7 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testHashMapLoad() {
         Map<Integer, Integer> map = new HashMap<>(5 * 1024 * 1024);
 
@@ -53,6 +55,7 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testConcurrentHashMapLoad() {
         Map<Integer, Integer> map = new ConcurrentHashMap<>(5 * 1024 * 1024);
 
@@ -69,6 +72,7 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapEntry() throws Exception {
         Map<Integer, GridCacheMapEntry> map = new HashMap<>(5 * 1024 * 1024);
 

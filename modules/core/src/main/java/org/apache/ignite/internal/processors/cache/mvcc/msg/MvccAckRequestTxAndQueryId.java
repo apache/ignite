@@ -76,6 +76,7 @@ public class MvccAckRequestTxAndQueryId extends MvccAckRequestTx {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;

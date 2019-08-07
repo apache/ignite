@@ -36,11 +36,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,9 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Test that entries are indexed on load/reload methods.
  */
 public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Puts count. */
     private static final int PUT_CNT = 10;
 
@@ -82,12 +77,6 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -117,6 +106,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
@@ -135,6 +125,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsync() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
@@ -153,6 +144,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheFiltered() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
@@ -176,6 +168,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsyncFiltered() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
@@ -199,6 +192,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReloadAsync() throws Exception {
         STORE_MAP.put(1, new ValueObject(1));
 
@@ -219,6 +213,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReloadAll() throws Exception {
         for (int i = 0; i < PUT_CNT; i++)
             STORE_MAP.put(i, new ValueObject(i));

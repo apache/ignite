@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -275,7 +274,7 @@ public class CheckpointEntry {
             if (stateRec == null)
                 return Collections.emptyMap();
 
-            Map<Integer, GroupState> grpStates = new HashMap<>(stateRec.size());
+            Map<Integer, GroupState> grpStates = U.newHashMap(stateRec.size());
 
             for (Integer grpId : stateRec.keySet()) {
                 CacheState recState = stateRec.get(grpId);

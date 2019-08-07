@@ -26,7 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Arguments for task {@link VisorIdleVerifyTask}
+ * Arguments for task {@link VisorIdleVerifyTask}.
+ * <br/>
  */
 public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** */
@@ -34,6 +35,18 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /** Caches. */
     private Set<String> caches;
+
+    /** Exclude caches or groups. */
+    private Set<String> excludeCaches;
+
+    /** Check CRC */
+    private boolean checkCrc;
+
+    /** */
+    private boolean skipZeros;
+
+    /** Cache kind. */
+    private CacheFilterEnum cacheFilterEnum;
 
     /**
      * Default constructor.
@@ -44,31 +57,160 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /**
      * @param caches Caches.
+     * @param excludeCaches Exclude caches or group.
+     * @param skipZeros Skip zeros partitions.
+     * @param cacheFilterEnum Cache kind.
+     * @param checkCrc Check CRC sum on stored pages on disk.
+     */
+    public VisorIdleVerifyTaskArg(
+        Set<String> caches,
+        Set<String> excludeCaches,
+        boolean skipZeros,
+        CacheFilterEnum cacheFilterEnum,
+        boolean checkCrc
+    ) {
+        this.caches = caches;
+        this.excludeCaches = excludeCaches;
+        this.skipZeros = skipZeros;
+        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
+        this.checkCrc = checkCrc;
+    }
+
+    /**
+     * @param caches Caches.
+     * @param checkCrc Check CRC sum on stored pages on disk.
+     */
+    public VisorIdleVerifyTaskArg(Set<String> caches, boolean checkCrc) {
+        this.caches = caches;
+        this.checkCrc = checkCrc;
+    }
+
+    /**
+     * @param caches Caches.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches) {
         this.caches = caches;
     }
 
+    /** */
+    public boolean checkCrc() {
+        return checkCrc;
+    }
 
     /**
      * @return Caches.
      */
-    public Set<String> getCaches() {
+    public Set<String> caches() {
         return caches;
+    }
+
+    /**
+     * @return Exclude caches or groups.
+     */
+    public Set<String> excludeCaches() {
+        return excludeCaches;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V4;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
+
+        /**
+         * Instance fields since protocol version 2 must be serialized if, and only if class instance isn't child of
+         * current class. Otherwise, these fields must be serialized in child class.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
+         */
+        if (instanceOfCurrentClass()) {
+            U.writeCollection(out, excludeCaches);
+
+            out.writeBoolean(checkCrc);
+
+            out.writeBoolean(skipZeros);
+
+            U.writeEnum(out, cacheFilterEnum);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
+
+        /**
+         * Instance fields since protocol version 2 must be deserialized if, and only if class instance isn't child of
+         * current class. Otherwise, these fields must be deserialized in child class.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
+         */
+        if (instanceOfCurrentClass()) {
+            if (protoVer >= V2)
+                excludeCaches = U.readSet(in);
+
+            if (protoVer >= V3)
+                checkCrc = in.readBoolean();
+
+            if (protoVer >= V4) {
+                skipZeros = in.readBoolean();
+
+                CacheFilterEnum cfe = CacheFilterEnum.fromOrdinal(in.readByte());
+
+                cacheFilterEnum = (cfe == null ? CacheFilterEnum.DEFAULT : cfe);
+            }
+        }
+    }
+
+    /** */
+    protected void excludeCaches(Set<String> excludeCaches) {
+        this.excludeCaches = excludeCaches;
+    }
+
+    /** */
+    protected void checkCrc(boolean checkCrc) {
+        this.checkCrc = checkCrc;
+    }
+
+    /**
+     * @return Skip zeros partitions.
+     */
+    public boolean skipZeros() {
+        return skipZeros;
+    }
+
+    /** */
+    protected void skipZeros(boolean skipZeros) {
+        this.skipZeros = skipZeros;
+    }
+
+    /** */
+    protected void cacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
+    }
+
+    /**
+     * @return Kind fo cache.
+     */
+    public CacheFilterEnum cacheFilterEnum() {
+        return cacheFilterEnum;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorIdleVerifyTaskArg.class, this);
+    }
+
+    /**
+     * @return {@code True} if current instance is a instance of current class (not a child class) and {@code False} if
+     * current instance is a instance of extented class (i.e child class).
+     */
+    private boolean instanceOfCurrentClass() {
+        return VisorIdleVerifyTaskArg.class == getClass();
     }
 }

@@ -20,17 +20,18 @@ package org.apache.ignite.internal;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.TestCase;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.
  */
-public class IgniteReflectionFactorySelfTest extends TestCase {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testByteMethod() throws Exception {
+public class IgniteReflectionFactorySelfTest {
+    /** */
+    @Test
+    public void testByteMethod() {
         byte    expByteVal    = 42;
         short   expShortVal   = 42;
         int     expIntVal     = 42;
@@ -61,8 +62,8 @@ public class IgniteReflectionFactorySelfTest extends TestCase {
         assertEquals(expShortVal, instance.getShortField());
         assertEquals(expIntVal, instance.getIntField());
         assertEquals(expLongVal, instance.getLongField());
-        assertEquals(expFloatVal, instance.getFloatField());
-        assertEquals(expDoubleVal, instance.getDoubleField());
+        assertEquals(expFloatVal, instance.getFloatField(), 0);
+        assertEquals(expDoubleVal, instance.getDoubleField(), 0);
         assertEquals(expCharVal, instance.getCharField());
         assertEquals(expBooleanVal, instance.getBooleanField());
     }
@@ -73,18 +74,25 @@ public class IgniteReflectionFactorySelfTest extends TestCase {
     public static class TestClass {
         /** */
         private byte byteField;
+
         /** */
         private short shortField;
+
         /** */
         private int iField;
+
         /** */
         private long longField;
+
         /** */
         private float floatField;
+
         /** */
         private double doubleField;
+
         /** */
         private char cField;
+
         /** */
         private boolean booleanField;
 

@@ -22,10 +22,6 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 /**
  * File I/O factory which uses {@link AsynchronousFileChannel} based implementation of FileIO.
  */
@@ -35,11 +31,6 @@ public class AsyncFileIOFactory implements FileIOFactory {
 
     /** Thread local channel future holder. */
     private transient volatile ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = initHolder();
-
-    /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
-    }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {

@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.THIEF_NODE_ATTR;
@@ -76,6 +77,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailover() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -96,6 +98,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMaxHopsExceeded() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -115,6 +118,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMaxHopsExceededThiefNotSet() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -132,6 +136,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonZeroFailoverCount() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -154,6 +159,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefNotInTopology() throws Exception {
         ClusterNode rmt = new GridTestNode(UUID.randomUUID());
 
@@ -175,6 +181,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefEqualsVictim() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -196,6 +203,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefIdNotSet() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -217,7 +225,6 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
      * @param failed Failed node.
      * @param failCnt Failover count.
      */
-    @SuppressWarnings("unchecked")
     private void checkAttributes(ComputeJobContext ctx, ClusterNode failed, int failCnt) {
         assert (Integer)ctx.getAttribute(FAILOVER_ATTEMPT_COUNT_ATTR) == failCnt;
 

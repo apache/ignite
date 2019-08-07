@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -86,4 +85,10 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
         boolean read,
         @Nullable Object key,
         @Nullable Collection<?> keys);
+
+    /**
+     *
+     * @return {@code True} if this exchange changed affinity.
+     */
+    public boolean changedAffinity();
 }

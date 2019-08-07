@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.jetbrains.annotations.Nullable;
@@ -49,11 +48,28 @@ public interface DbCheckpointListener {
         /**
          * @return Context executor.
          */
-        public @Nullable Executor executor();
+        @Nullable public Executor executor();
+
+        /**
+         * @return {@code True} if at least one page is dirty.
+         */
+        public boolean hasPages();
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
+    public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException;
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void onCheckpointBegin(Context ctx) throws IgniteCheckedException;
+
+    /**
+     * Do some actions before checkpoint write lock.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException;
 }

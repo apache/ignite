@@ -77,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -883,16 +884,22 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static class FlaggedCacheOperationCallable implements Callable<GridRestResponse>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
+
         /** */
         private final Set<GridClientCacheFlag> cacheFlags;
+
         /** */
         private final CacheProjectionCommand op;
+
         /** */
         private final Object key;
+
         /** Client ID. */
         private UUID clientId;
+
         /** */
         @IgniteInstanceResource
         private Ignite g;
@@ -941,14 +948,19 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static class CacheOperationCallable implements Callable<GridRestResponse>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
+
         /** */
         private final CacheCommand op;
+
         /** */
         private final Object key;
+
         /** Client ID. */
         private UUID clientId;
+
         /** */
         @IgniteInstanceResource
         private Ignite g;
@@ -1009,7 +1021,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private IgniteEx ignite;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             String cacheName) throws IgniteException {
 
             GridDiscoveryManager discovery = ignite.context().discovery();
@@ -1058,7 +1070,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         @Nullable @Override public GridRestResponse reduce(List<ComputeJobResult> results) throws IgniteException {
             Map<String, GridCacheSqlMetadata> map = new HashMap<>();
 

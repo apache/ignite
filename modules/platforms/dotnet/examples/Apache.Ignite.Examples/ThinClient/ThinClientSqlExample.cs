@@ -72,12 +72,9 @@ namespace Apache.Ignite.Examples.ThinClient
                 // Populate cache with sample data entries.
                 PopulateCache(cache);
 
-                // Run SQL example.
-                SqlQueryExample(cache);
+                // Run examples.
+                SqlExample(cache);
                 LinqExample(cache);
-
-                // Run SQL fields query example.
-                SqlFieldsQueryExample(cache);
                 LinqFieldsExample(cache);
             }
 
@@ -87,20 +84,18 @@ namespace Apache.Ignite.Examples.ThinClient
         }
 
         /// <summary>
-        /// Queries employees that have provided ZIP code in address.
+        /// Queries names and salaries for all employees.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void SqlQueryExample(ICacheClient<int, Employee> cache)
+        private static void SqlExample(ICacheClient<int, Employee> cache)
         {
-            const int zip = 94109;
-
-            var qry = cache.Query(new SqlQuery(typeof(Employee), "zip = ?", zip));
+            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employees with zipcode {0} (SQL):", zip);
+            Console.WriteLine(">>> Employee names and their salaries (SQL):");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry.Value);
+            foreach (var row in qry)
+                Console.WriteLine(">>>     [Name=" + row[0] + ", salary=" + row[1] + ']');
         }
 
         /// <summary>
@@ -123,22 +118,6 @@ namespace Apache.Ignite.Examples.ThinClient
             Console.WriteLine();
             Console.WriteLine(">>> Generated SQL:");
             Console.WriteLine(">>> " + qry.ToCacheQueryable().GetFieldsQuery().Sql);
-        }
-
-
-        /// <summary>
-        /// Queries names and salaries for all employees.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void SqlFieldsQueryExample(ICacheClient<int, Employee> cache)
-        {
-            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Employee names and their salaries (SQL):");
-
-            foreach (var row in qry)
-                Console.WriteLine(">>>     [Name=" + row[0] + ", salary=" + row[1] + ']');
         }
 
         /// <summary>

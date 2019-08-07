@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -28,11 +29,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@SuppressWarnings( {"BusyWait"})
 public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticReadCommittedCommit() throws Exception {
         checkCommit(PESSIMISTIC, READ_COMMITTED);
 
@@ -42,6 +43,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadCommit() throws Exception {
         checkCommit(PESSIMISTIC, REPEATABLE_READ);
 
@@ -51,6 +53,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializableCommit() throws Exception {
         checkCommit(PESSIMISTIC, SERIALIZABLE);
 
@@ -60,6 +63,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticReadCommittedCommit() throws Exception {
         checkCommit(OPTIMISTIC, READ_COMMITTED);
 
@@ -69,6 +73,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticRepeatableReadCommit() throws Exception {
         checkCommit(OPTIMISTIC, REPEATABLE_READ);
 
@@ -78,6 +83,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticSerializableCommit() throws Exception {
         checkCommit(OPTIMISTIC, SERIALIZABLE);
 
@@ -87,6 +93,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticReadCommittedRollback() throws Exception {
         checkRollback(PESSIMISTIC, READ_COMMITTED);
 
@@ -96,6 +103,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadRollback() throws Exception {
         checkRollback(PESSIMISTIC, REPEATABLE_READ);
 
@@ -105,6 +113,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializableRollback() throws Exception {
         checkRollback(PESSIMISTIC, SERIALIZABLE);
 
@@ -114,6 +123,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticReadCommittedRollback() throws Exception {
         checkRollback(OPTIMISTIC, READ_COMMITTED);
 
@@ -123,6 +133,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticRepeatableReadRollback() throws Exception {
         checkRollback(OPTIMISTIC, REPEATABLE_READ);
 
@@ -132,6 +143,7 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticSerializableRollback() throws Exception {
         checkRollback(OPTIMISTIC, SERIALIZABLE);
 

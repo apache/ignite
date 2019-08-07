@@ -41,26 +41,17 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.junit.Test;
 
 /**
  *
  */
 public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Slow checkpoint enabled. */
     private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
 
@@ -70,9 +61,6 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -127,6 +115,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThrottle() throws Exception {
         startGrids(2).active(true);
 
@@ -139,9 +128,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
             final AtomicBoolean zeroDropdown = new AtomicBoolean(false);
 
-            final HitRateMetrics putRate10secs = new HitRateMetrics(10_000, 20);
+            final HitRateMetric putRate10secs = new HitRateMetric("putRate10secs", "", 10_000, 20);
 
-            final HitRateMetrics putRate1sec = new HitRateMetrics(1_000, 20);
+            final HitRateMetric putRate1sec = new HitRateMetric("putRate1sec", "", 1_000, 20);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -150,10 +139,10 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
                         while (run.get()) {
                             System.out.println(
-                                "Put rate over last 10 seconds: " + (putRate10secs.getRate() / 10) +
-                                    " puts/sec, over last 1 second: " + putRate1sec.getRate());
+                                "Put rate over last 10 seconds: " + (putRate10secs.value() / 10) +
+                                    " puts/sec, over last 1 second: " + putRate1sec.value());
 
-                            if (putRate10secs.getRate() == 0) {
+                            if (putRate10secs.value() == 0) {
                                 zeroDropdown.set(true);
 
                                 run.set(false);
@@ -184,9 +173,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                         cache.put(ThreadLocalRandom.current().nextInt(keyCnt), new TestValue(ThreadLocalRandom.current().nextInt(),
                             ThreadLocalRandom.current().nextInt()));
 
-                        putRate10secs.onHit();
+                        putRate10secs.increment();
 
-                        putRate1sec.onHit();
+                        putRate1sec.increment();
                     }
 
                     run.set(false);
@@ -286,11 +275,6 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {

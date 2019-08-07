@@ -20,21 +20,26 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for schemas.
  */
-public class SqlSchemaSelfTest extends GridCommonAbstractTest {
+public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
 
@@ -54,6 +59,8 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        node = null;
     }
 
     /**
@@ -61,6 +68,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryWithoutCacheOnPublicSchema() throws Exception {
         GridQueryProcessor qryProc = node.context().query();
 
@@ -89,6 +97,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryWithoutCacheOnCacheSchema() throws Exception {
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
@@ -121,6 +130,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaChange() throws Exception {
         IgniteCache<PersonKey, Person> cache = node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
@@ -161,6 +171,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaChangeOnCacheWithPublicSchema() throws Exception {
         IgniteCache<PersonKey, Person> cache = node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
@@ -197,6 +208,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomSchemaName() throws Exception {
         IgniteCache<Long, Person> cache = registerQueryEntity("Person", CACHE_PERSON);
 
@@ -208,6 +220,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomSchemaMultipleCaches() throws Exception {
         for (int i = 1; i <= 3; i++) {
             String tbl = "Person" + i;
@@ -229,6 +242,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomSchemaConcurrentUse() throws Exception {
         final AtomicInteger maxIdx = new AtomicInteger();
 
@@ -292,19 +306,37 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testTypeConflictInPublicSchema() throws Exception {
-        // TODO: IGNITE-5380: uncomment work after fix.
-        fail("Hang for now, need to fix");
-
+    @Test
+    public void testTypeConflictInPublicSchema() throws Exception {
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
             .setIndexedTypes(PersonKey.class, Person.class)
             .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
-        node.createCache(new CacheConfiguration<PersonKey, Person>()
-            .setName(CACHE_PERSON_2)
-            .setIndexedTypes(PersonKey.class, Person.class)
-            .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+        Throwable th = GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
+            node.createCache(new CacheConfiguration<PersonKey, Person>()
+                .setName(CACHE_PERSON_2)
+                .setIndexedTypes(PersonKey.class, Person.class)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+
+            return null;
+        }, CacheException.class, null);
+
+        SchemaOperationException e = X.cause(th, SchemaOperationException.class);
+
+        assertEquals(SchemaOperationException.CODE_TABLE_EXISTS, e.code());
+    }
+
+    /**
+     * Test table creation and data retrieval with implicit schema.
+     */
+    @Test
+    public void testImplicitSchema() {
+        IgniteCache<?, ?> c = node.getOrCreateCache("testCache1");
+
+        c.query(new SqlFieldsQuery("CREATE TABLE TEST1 (ID LONG PRIMARY KEY, VAL LONG)" +
+            " WITH \"template=replicated\";")).getAll();
+        c.query(new SqlFieldsQuery("SELECT * FROM TEST1")).getAll();
     }
 
     /**

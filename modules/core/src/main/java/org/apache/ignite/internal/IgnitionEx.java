@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
@@ -121,11 +122,13 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
@@ -133,11 +136,12 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -150,6 +154,8 @@ import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
 /**
+ * This class is part of an internal API and can be modified at any time without backward compatibility.
+ *
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
@@ -198,55 +204,6 @@ public class IgnitionEx {
 
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
-
-    /*
-     * Checks runtime version to be 1.7.x or 1.8.x.
-     * This will load pretty much first so we must do these checks here.
-     */
-    static {
-        // Check 1.8 just in case for forward compatibility.
-        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
-
-        if (majorJavaVer < 7) {
-            throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
-                "is not supported: " + U.jdkVersion());
-        }
-
-        String jreVer = U.jreVersion();
-
-        if (jreVer.startsWith("1.7")) {
-            int upd = jreVer.indexOf('_');
-            int beta = jreVer.indexOf('-');
-
-            if (beta < 0)
-                beta = jreVer.length();
-
-            if (upd > 0 && beta > 0) {
-                try {
-                    int update = Integer.parseInt(jreVer.substring(upd + 1, beta));
-
-                    boolean forceJ7 = IgniteSystemProperties.getBoolean(IGNITE_FORCE_START_JAVA7, false);
-
-                    if (update < 71 && !forceJ7) {
-                        throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
-                            "is not supported: " + jreVer);
-                    }
-                    else if (forceJ7)
-                        System.err.println("Ignite requires Java 1.7.0_71 or above. Start on your own risk.");
-                }
-                catch (NumberFormatException ignore) {
-                    // No-op
-                }
-            }
-        }
-
-        // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
-        // For details please see:
-        // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7071826
-        // http://www.oracle.com/technetwork/java/javase/2col/6u34-bugfixes-1733379.html
-        // http://hg.openjdk.java.net/jdk6/jdk6/jdk/rev/563d392b3e5c
-        UUID.randomUUID();
-    }
 
     /**
      * Enforces singleton.
@@ -634,7 +591,6 @@ public class IgnitionEx {
             throw U.convertException(e);
         }
     }
-
 
     /**
      * Starts grid with given configuration. Note that this method will throw and exception if grid with the name
@@ -1156,9 +1112,11 @@ public class IgnitionEx {
             try {
                 grid.start(startCtx);
             }
-            catch (IgniteInterruptedCheckedException e) {
-                if (grid.starterThreadInterrupted)
-                    Thread.interrupted();
+            catch (Exception e) {
+                if (X.hasCause(e, IgniteInterruptedCheckedException.class, InterruptedException.class)) {
+                    if (grid.starterThreadInterrupted)
+                        Thread.interrupted();
+                }
 
                 throw e;
             }
@@ -1726,7 +1684,16 @@ public class IgnitionEx {
                 try {
                     starterThread = Thread.currentThread();
 
-                    start0(startCtx);
+                    IgniteConfiguration myCfg = initializeConfiguration(
+                        startCtx.config() != null ? startCtx.config() : new IgniteConfiguration()
+                    );
+
+                    TimeBag startNodeTimer = new TimeBag(TimeUnit.MILLISECONDS);
+
+                    start0(startCtx, myCfg, startNodeTimer);
+
+                    log.info("Node started : "
+                        + startNodeTimer.stagesTimings().stream().collect(joining(",", "[", "]")));
                 }
                 catch (Exception e) {
                     if (log != null)
@@ -1746,13 +1713,9 @@ public class IgnitionEx {
          * @param startCtx Starting context.
          * @throws IgniteCheckedException If start failed.
          */
-        @SuppressWarnings({"unchecked", "TooBroadScope"})
-        private void start0(GridStartContext startCtx) throws IgniteCheckedException {
+        private void start0(GridStartContext startCtx, IgniteConfiguration cfg, TimeBag startTimer)
+            throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
-
-            IgniteConfiguration cfg = startCtx.config() != null ? startCtx.config() : new IgniteConfiguration();
-
-            IgniteConfiguration myCfg = initializeConfiguration(cfg);
 
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
@@ -1760,14 +1723,14 @@ public class IgnitionEx {
 
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
-                ensureMultiInstanceSupport(myCfg.getDeploymentSpi());
-                ensureMultiInstanceSupport(myCfg.getCommunicationSpi());
-                ensureMultiInstanceSupport(myCfg.getDiscoverySpi());
-                ensureMultiInstanceSupport(myCfg.getCheckpointSpi());
-                ensureMultiInstanceSupport(myCfg.getEventStorageSpi());
-                ensureMultiInstanceSupport(myCfg.getCollisionSpi());
-                ensureMultiInstanceSupport(myCfg.getFailoverSpi());
-                ensureMultiInstanceSupport(myCfg.getLoadBalancingSpi());
+                ensureMultiInstanceSupport(cfg.getDeploymentSpi());
+                ensureMultiInstanceSupport(cfg.getCommunicationSpi());
+                ensureMultiInstanceSupport(cfg.getDiscoverySpi());
+                ensureMultiInstanceSupport(cfg.getCheckpointSpi());
+                ensureMultiInstanceSupport(cfg.getEventStorageSpi());
+                ensureMultiInstanceSupport(cfg.getCollisionSpi());
+                ensureMultiInstanceSupport(cfg.getFailoverSpi());
+                ensureMultiInstanceSupport(cfg.getLoadBalancingSpi());
             }
 
             validateThreadPoolSize(cfg.getPublicThreadPoolSize(), "public");
@@ -1830,7 +1793,10 @@ public class IgnitionEx {
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
                     }
                 },
-                cfg.getFailureDetectionTimeout(),
+                IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
+                    cfg.getSystemWorkerBlockedTimeout() != null
+                    ? cfg.getSystemWorkerBlockedTimeout()
+                    : cfg.getFailureDetectionTimeout()),
                 log);
 
             stripedExecSvc = new StripedExecutor(
@@ -1844,7 +1810,8 @@ public class IgnitionEx {
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
                 },
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1893,7 +1860,8 @@ public class IgnitionEx {
                     }
                 },
                 true,
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
@@ -1916,14 +1884,14 @@ public class IgnitionEx {
                 "callback",
                 oomeHnd);
 
-            if (myCfg.getConnectorConfiguration() != null) {
-                validateThreadPoolSize(myCfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
+            if (cfg.getConnectorConfiguration() != null) {
+                validateThreadPoolSize(cfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
 
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest",
-                    myCfg.getIgniteInstanceName(),
-                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    myCfg.getConnectorConfiguration().getThreadPoolSize(),
+                    cfg.getIgniteInstanceName(),
+                    cfg.getConnectorConfiguration().getThreadPoolSize(),
+                    cfg.getConnectorConfiguration().getThreadPoolSize(),
                     DFLT_THREAD_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<>(),
                     GridIoPolicy.UNDEFINED,
@@ -1933,14 +1901,14 @@ public class IgnitionEx {
                 restExecSvc.allowCoreThreadTimeOut(true);
             }
 
-            validateThreadPoolSize(myCfg.getUtilityCacheThreadPoolSize(), "utility cache");
+            validateThreadPoolSize(cfg.getUtilityCacheThreadPoolSize(), "utility cache");
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility",
                 cfg.getIgniteInstanceName(),
-                myCfg.getUtilityCacheThreadPoolSize(),
-                myCfg.getUtilityCacheThreadPoolSize(),
-                myCfg.getUtilityCacheKeepAliveTime(),
+                cfg.getUtilityCacheThreadPoolSize(),
+                cfg.getUtilityCacheThreadPoolSize(),
+                cfg.getUtilityCacheKeepAliveTime(),
                 new LinkedBlockingQueue<>(),
                 GridIoPolicy.UTILITY_CACHE_POOL,
                 oomeHnd);
@@ -2021,7 +1989,7 @@ public class IgnitionEx {
             }
 
             // Register Ignite MBean for current grid instance.
-            registerFactoryMbean(myCfg.getMBeanServer());
+            registerFactoryMbean(cfg.getMBeanServer());
 
             boolean started = false;
 
@@ -2031,8 +1999,10 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
+                startTimer.finishGlobalStage("Configure system pool");
+
                 grid0.start(
-                    myCfg,
+                    cfg,
                     utilityCacheExecSvc,
                     execSvc,
                     svcExecSvc,
@@ -2055,7 +2025,8 @@ public class IgnitionEx {
                         }
                     },
                     workerRegistry,
-                    oomeHnd
+                    oomeHnd,
+                    startTimer
                 );
 
                 state = STARTED;
@@ -2182,6 +2153,11 @@ public class IgnitionEx {
 
             myCfg.setNodeId(nodeId);
 
+            String predefineConsistentId = IgniteSystemProperties.getString(IGNITE_OVERRIDE_CONSISTENT_ID);
+
+            if (!F.isEmpty(predefineConsistentId))
+                myCfg.setConsistentId(predefineConsistentId);
+
             IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
 
             assert cfgLog != null;
@@ -2212,6 +2188,10 @@ public class IgnitionEx {
                 U.warn(log, "Found potential configuration problem (forgot to enable waiting for segment" +
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
+
+            if (CU.isPersistenceEnabled(cfg) && myCfg.getConsistentId() == null)
+                U.warn(log, "Consistent ID is not set, it is recommended to set consistent ID for production " +
+                    "clusters (use IgniteConfiguration.setConsistentId property)");
 
             myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
                 new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
@@ -2346,7 +2326,6 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
@@ -2448,6 +2427,9 @@ public class IgnitionEx {
 
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+            if (F.isEmpty(cfg.getMetricExporterSpi()))
+                cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         }
 
         /**

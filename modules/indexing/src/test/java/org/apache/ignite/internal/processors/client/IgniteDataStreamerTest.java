@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CachePeekMode.ALL;
 
@@ -83,6 +84,7 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerIgniteUuid() throws Exception {
         Ignite client = grid("client");
 

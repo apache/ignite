@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 
 /**
  * Thin client cache.
@@ -338,7 +337,7 @@ public interface ClientCache<K, V> {
     public <K1, V1> ClientCache<K1, V1> withKeepBinary();
 
     /**
-     * Queries cache. Supports {@link ScanQuery}, {@link SqlQuery} and {@link SqlFieldsQuery}.
+     * Queries cache. Supports {@link ScanQuery} and {@link SqlFieldsQuery}.
      *
      * @param qry Query.
      * @return Cursor.

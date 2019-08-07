@@ -44,6 +44,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -100,7 +102,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsLocalDeploy() throws Exception {
         try {
             Ignite ignite = startGrid(1);
@@ -159,7 +161,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsP2PDeploy() throws Exception {
         try {
             Ignite g1 = startGrid(1);
@@ -252,7 +254,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;

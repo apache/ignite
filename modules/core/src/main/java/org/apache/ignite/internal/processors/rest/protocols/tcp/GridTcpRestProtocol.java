@@ -74,7 +74,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override public void start(final GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert hnd != null;
 

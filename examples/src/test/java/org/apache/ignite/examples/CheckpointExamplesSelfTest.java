@@ -17,31 +17,32 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.computegrid.failover.ComputeFailoverExample;
+import org.apache.ignite.examples.computegrid.failover.ComputeFailoverNodeStartup;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Checkpoint examples self test.
  */
 public class CheckpointExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8
-     * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *
      * Starts remote nodes before each test.
      *
      * Note: using beforeTestsStarted() to start nodes only once won't work.
      *
      * @throws Exception If remote nodes start failed.
      */
-//    @Override protected void beforeTest() throws Exception {
-//        for (int i = 0; i < RMT_NODES_CNT; i++)
-//            startGrid("node-" + i, ComputeFailoverNodeStartup.configuration());
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testCheckpointExample() throws Exception {
-//        ComputeFailoverExample.main(EMPTY_ARGS);
-//    }
+    @Override protected void beforeTest() throws Exception {
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("node-" + i, ComputeFailoverNodeStartup.configuration());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCheckpointExample() throws Exception {
+        ComputeFailoverExample.main(EMPTY_ARGS);
+    }
 }

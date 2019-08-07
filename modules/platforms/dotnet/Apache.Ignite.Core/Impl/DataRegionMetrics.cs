@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Impl
 
             Name = reader.ReadString();
             TotalAllocatedPages = reader.ReadLong();
+            TotalUsedPages = reader.ReadLong();
             TotalAllocatedSize = reader.ReadLong();
             AllocationRate = reader.ReadFloat();
             EvictionRate = reader.ReadFloat();
@@ -44,9 +45,15 @@ namespace Apache.Ignite.Core.Impl
             PageReplaceAge = reader.ReadFloat();
             PhysicalMemoryPages = reader.ReadLong();
             PhysicalMemorySize = reader.ReadLong();
-            CheckpointBufferPages = reader.ReadLong();
-            CheckpointBufferSize = reader.ReadLong();
+            UsedCheckpointBufferPages = reader.ReadLong();
+            UsedCheckpointBufferSize = reader.ReadLong();
             PageSize = reader.ReadInt();
+            CheckpointBufferSize = reader.ReadLong();
+            PagesRead = reader.ReadLong();
+            PagesWritten = reader.ReadLong();
+            PagesReplaced = reader.ReadLong();
+            OffHeapSize = reader.ReadLong();
+            OffheapUsedSize = reader.ReadLong();
         }
 
         /** <inheritdoc /> */
@@ -56,11 +63,14 @@ namespace Apache.Ignite.Core.Impl
         public long TotalAllocatedPages { get; private set; }
 
         /** <inheritdoc /> */
+        public long TotalUsedPages { get; private set; }
+
+        /** <inheritdoc /> */
         public long TotalAllocatedSize { get; private set; }
 
         /** <inheritdoc /> */
         public float AllocationRate { get; private set; }
-        
+
         /** <inheritdoc /> */
         public float EvictionRate { get; private set; }
 
@@ -86,12 +96,39 @@ namespace Apache.Ignite.Core.Impl
         public long PhysicalMemorySize { get; private set; }
 
         /** <inheritdoc /> */
-        public long CheckpointBufferPages { get; private set; }
+        public long CheckpointBufferPages
+        {
+            get
+            {
+                return 0L;
+            }
+        }
 
         /** <inheritdoc /> */
         public long CheckpointBufferSize { get; private set; }
 
         /** <inheritdoc /> */
+        public long UsedCheckpointBufferPages { get; private set; }
+
+        /** <inheritdoc /> */
+        public long UsedCheckpointBufferSize { get; private set; }
+
+        /** <inheritdoc /> */
         public int PageSize { get; private set; }
+
+        /** <inheritdoc /> */
+        public long PagesRead { get; private set; }
+
+        /** <inheritdoc /> */
+        public long PagesWritten { get; private set; }
+
+        /** <inheritdoc /> */
+        public long PagesReplaced { get; private set; }
+
+        /** <inheritdoc /> */
+        public long OffHeapSize { get; private set; }
+
+        /** <inheritdoc /> */
+        public long OffheapUsedSize { get; private set; }
     }
 }

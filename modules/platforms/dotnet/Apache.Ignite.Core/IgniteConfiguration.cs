@@ -50,6 +50,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Metric;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Ssl;
@@ -166,6 +167,9 @@ namespace Apache.Ignite.Core
         private TimeSpan? _clientFailureDetectionTimeout;
 
         /** */
+        private TimeSpan? _sysWorkerBlockedTimeout;
+
+        /** */
         private int? _publicThreadPoolSize;
 
         /** */
@@ -213,6 +217,9 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
+        /** SQL query history size. */
+        private int? _sqlQueryHistorySize;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -247,6 +254,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="MvccVacuumThreadCount"/> property.
         /// </summary>
         public const int DefaultMvccVacuumThreadCount = 2;
+
+        /// <summary>
+        /// Default value for <see cref="SqlQueryHistorySize"/> property.
+        /// </summary>
+        public const int DefaultSqlQueryHistorySize = 1000;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -329,6 +341,8 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
+            writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
+            writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -382,7 +396,7 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(true);
 
                 var keystoreEnc = enc as KeystoreEncryptionSpi;
-                
+
                 if (keystoreEnc == null)
                     throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
 
@@ -474,7 +488,8 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
-                writer.WriteLong((long) TransactionConfiguration.DefaultDefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DeadlockTimeout.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -534,7 +549,7 @@ namespace Apache.Ignite.Core
             if (ClientConnectorConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                ClientConnectorConfiguration.Write(writer);
+                ClientConnectorConfiguration.Write(srvVer, writer);
             }
             else
             {
@@ -560,7 +575,7 @@ namespace Apache.Ignite.Core
             if (DataStorageConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DataStorageConfiguration.Write(writer);
+                DataStorageConfiguration.Write(writer, srvVer);
             }
             else
             {
@@ -717,6 +732,8 @@ namespace Apache.Ignite.Core
             _authenticationEnabled = r.ReadBooleanNullable();
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
+            _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _sqlQueryHistorySize = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -749,7 +766,7 @@ namespace Apache.Ignite.Core
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
 
-            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ? 
+            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ?
                 new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
@@ -796,7 +813,8 @@ namespace Apache.Ignite.Core
                     DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
-                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong())
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong()),
+                    DeadlockTimeout = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
@@ -830,7 +848,7 @@ namespace Apache.Ignite.Core
             // Client.
             if (r.ReadBoolean())
             {
-                ClientConnectorConfiguration = new ClientConnectorConfiguration(r);
+                ClientConnectorConfiguration = new ClientConnectorConfiguration(srvVer, r);
             }
 
             ClientConnectorConfigurationEnabled = r.ReadBoolean();
@@ -846,7 +864,7 @@ namespace Apache.Ignite.Core
             // Data storage.
             if (r.ReadBoolean())
             {
-                DataStorageConfiguration = new DataStorageConfiguration(r);
+                DataStorageConfiguration = new DataStorageConfiguration(r, srvVer);
             }
 
             // SSL context factory.
@@ -1080,12 +1098,17 @@ namespace Apache.Ignite.Core
         /// Null for default communication.
         /// </summary>
         public ICommunicationSpi CommunicationSpi { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the encryption service provider.
         /// Null for disabled encryption.
         /// </summary>
         public IEncryptionSpi EncryptionSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the MetricExporterSpi.
+        /// </summary>
+        public IMetricExporterSpi MetricExporterSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
@@ -1375,6 +1398,15 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Gets or sets the timeout for blocked system workers detection.
+        /// </summary>
+        public TimeSpan? SystemWorkerBlockedTimeout
+        {
+            get { return _sysWorkerBlockedTimeout; }
+            set { _sysWorkerBlockedTimeout = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/>
         /// and <see cref="TcpCommunicationSpi"/> for client nodes.
         /// </summary>
@@ -1618,6 +1650,17 @@ namespace Apache.Ignite.Core
         {
             get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
             set { _mvccVacuumThreadCnt = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the value indicating the number of SQL query history elements to keep in memory.
+        /// Zero or negative value disables the history.
+        /// </summary>
+        [DefaultValue(DefaultSqlQueryHistorySize)]
+        public int SqlQueryHistorySize
+        {
+            get { return _sqlQueryHistorySize ?? DefaultSqlQueryHistorySize; }
+            set { _sqlQueryHistorySize = value; }
         }
 
         /// <summary>

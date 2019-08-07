@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Checks if Direct IO can be set up if no persistent store is configured
@@ -52,6 +53,7 @@ public class IgniteNativeIoWithNoPersistenceTest extends GridCommonAbstractTest 
      * Checks simple launch with native IO.
      * @throws Exception if failed
      */
+    @Test
     public void testDirectIoHandlesNoPersistentGrid() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -61,7 +63,6 @@ public class IgniteNativeIoWithNoPersistenceTest extends GridCommonAbstractTest 
 
         for (int i = 0; i < 100; i++)
             cache.put(i, valueForKey(i));
-
 
         stopAllGrids();
     }

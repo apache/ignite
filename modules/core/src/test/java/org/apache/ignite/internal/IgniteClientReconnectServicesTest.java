@@ -30,6 +30,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assume;
+import org.junit.Test;
 
 /**
  *
@@ -48,6 +50,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -83,6 +86,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceRemove() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -125,7 +129,10 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectInDeploying() throws Exception {
+        Assume.assumeTrue(!isEventDrivenServiceProcessorEnabled());
+
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
@@ -172,6 +179,53 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
+    public void testReconnectInDeployingNew() throws Exception {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+
+        IgniteEx client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        final IgniteServices services = client.services();
+
+        Ignite srv = ignite(0);
+
+        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try {
+                    services.deployClusterSingleton("testReconnectInDeploying", new TestServiceImpl());
+                }
+                catch (IgniteClientDisconnectedException e) {
+                    checkAndWait(e);
+
+                    return true;
+                }
+
+                return false;
+            }
+        });
+
+        reconnectClientNode(client, srv, () -> {
+            // Check that client waiting operation.
+            GridTestUtils.assertThrows(log, () -> fut.get(200), IgniteFutureTimeoutCheckedException.class, null);
+
+            try {
+                assertNotDone(fut);
+            }
+            catch (Exception e) {
+                fail("Unexpected exception has been thrown, err=" + e.getMessage());
+            }
+        });
+
+        assertTrue((Boolean)fut.get(2, TimeUnit.SECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
 
 /**
  * Checkpoint triggered WAL delta records consistency test.
@@ -29,15 +30,23 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
-     *
+     * @throws Exception If failed.
      */
+    @Test
     public final void testPutRemoveCacheDestroy() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache0 = ignite.getOrCreateCache("cache0");
+        IgniteCache<Integer, Object> cache0 = ignite.createCache(cacheConfiguration("cache0"));
 
         for (int i = 0; i < 3_000; i++)
             cache0.put(i, "Cache value " + i);
@@ -49,7 +58,7 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
             cache0.remove(i);
 
         for (int i = 5; i >= 0; i--) {
-            IgniteCache<Integer, Object> cache1 = ignite.getOrCreateCache("cache1");
+            IgniteCache<Integer, Object> cache1 = ignite.getOrCreateCache(cacheConfiguration("cache1"));
 
             for (int j = 0; j < 300; j++)
                 cache1.put(j + i * 100, "Cache value " + j);
@@ -59,7 +68,5 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
         }
 
         forceCheckpoint();
-
-        stopAllGrids();
     }
 }

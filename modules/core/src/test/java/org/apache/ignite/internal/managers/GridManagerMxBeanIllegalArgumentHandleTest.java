@@ -21,17 +21,20 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 /**
@@ -39,19 +42,19 @@ import static org.mockito.Mockito.when;
  *
  * Test modifies static final field, used only for development
  */
-public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
-    /** Original value of {@link GridDiscoveryManager#mem} to be restored after test */
+public class GridManagerMxBeanIllegalArgumentHandleTest {
+    /** Original value of {@link GridMetricManager#mem} to be restored after test */
     private Object mxBeanToRestore;
 
-    /** Mem mx bean field in {@link GridDiscoveryManager#mem}, already set accessible */
+    /** Mem mx bean field in {@link GridMetricManager#mem}, already set accessible */
     private Field memMxBeanField;
 
     /** If we succeeded to set final field this flag is true, otherwise test assertions will not be performed */
     private boolean correctSetupOfTestPerformed;
 
-    /** {@inheritDoc} Changes field to always failing mock */
-    @Override public void setUp() throws Exception {
-        super.setUp();
+    /** Changes field to always failing mock. */
+    @Before
+    public void setUp() throws Exception {
         try {
             final MemoryMXBean memoryMXBean = createAlwaysFailingMxBean();
             memMxBeanField = createAccessibleMemField();
@@ -79,9 +82,9 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     }
 
 
-    /** Reflections {@link GridDiscoveryManager#mem} field which was made accessible and mutable */
+    /** Reflections {@link GridMetricManager#mem} field which was made accessible and mutable */
     @NotNull private Field createAccessibleMemField() throws NoSuchFieldException, IllegalAccessException {
-        final Field memField = GridDiscoveryManager.class.getDeclaredField("mem");
+        final Field memField = GridMetricManager.class.getDeclaredField("mem");
         memField.setAccessible(true);
 
         final Field modifiersField = Field.class.getDeclaredField("modifiers");
@@ -91,20 +94,21 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     }
 
     /**
-     * Restores static field in {@link GridDiscoveryManager#mem}
+     * Restores static field in {@link GridMetricManager#mem}
      *
      * @throws Exception if field set failed
      */
-    @Override public void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         if (correctSetupOfTestPerformed)
             memMxBeanField.set(null, mxBeanToRestore);
     }
 
     /** Creates minimal disco manager mock, checks illegal state is not propagated */
+    @Test
     public void testIllegalStateIsCatch() {
         final IgniteConfiguration cfg = new IgniteConfiguration();
-        cfg.setDiscoverySpi(new TcpDiscoverySpi());
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
         final IgniteLogger log = Mockito.mock(IgniteLogger.class);
 
@@ -113,12 +117,12 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
         when(ctx.log(Mockito.anyString())).thenReturn(log);
         when(ctx.log(Mockito.any(Class.class))).thenReturn(log);
 
-        final GridDiscoveryManager mgr = new GridDiscoveryManager(ctx);
-        final long nHeapMax = mgr.metrics().getNonHeapMemoryMaximum();
+        final GridMetricManager mgr = new GridMetricManager(ctx);
+        final long nHeapMax = mgr.nonHeapMemoryUsage().getMax();
         if (correctSetupOfTestPerformed)
             assertEquals(0, nHeapMax);
 
-        final long heapMax = mgr.metrics().getHeapMemoryMaximum();
+        final long heapMax = mgr.heapMemoryUsage().getMax();
         if (correctSetupOfTestPerformed)
             assertEquals(0, heapMax);
     }

@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -33,9 +36,6 @@ public class H2ConnectionWrapper implements AutoCloseable {
     private final Connection conn;
 
     /** */
-    private final Thread intiThread;
-
-    /** */
     private volatile String schema;
 
     /** */
@@ -46,7 +46,6 @@ public class H2ConnectionWrapper implements AutoCloseable {
      */
     H2ConnectionWrapper(Connection conn) {
         this.conn = conn;
-        intiThread = Thread.currentThread();
 
         initStatementCache();
     }
@@ -63,6 +62,28 @@ public class H2ConnectionWrapper implements AutoCloseable {
      */
     public void schema(@Nullable String schema) {
         this.schema = schema;
+    }
+
+    /**
+     * Connection for schema.
+     *
+     * @param schema Schema name.
+     * @return Connection.
+     */
+    public Connection connection(@Nullable String schema) {
+        if (schema != null && !F.eq(this.schema, schema)) {
+            try {
+                conn.setSchema(schema);
+
+                this.schema = schema;
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
+                    schema + "]", e);
+            }
+        }
+
+        return conn;
     }
 
     /**
@@ -100,21 +121,13 @@ public class H2ConnectionWrapper implements AutoCloseable {
         statementCache = new H2StatementCache(STATEMENT_CACHE_SIZE);
     }
 
-    /**
-     * @return Thread where the connection was created.
-     */
-    public Thread initialThread() {
-        return intiThread;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2ConnectionWrapper.class, this);
     }
 
-    /** Closes wrapped connection */
-    @Override
-    public void close() {
+    /** Closes wrapped connection. */
+    @Override public void close() {
         U.closeQuiet(conn);
     }
 }

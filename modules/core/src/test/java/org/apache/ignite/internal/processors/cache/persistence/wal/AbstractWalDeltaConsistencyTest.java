@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,6 +45,15 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
             .setCheckPagesOnCheckpoint(checkPagesOnCheckpoint()));
 
         return cfg;
+    }
+
+    /**
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    @SuppressWarnings("unchecked")
+    protected  <K,V> CacheConfiguration<K, V> cacheConfiguration(String name) {
+        return defaultCacheConfiguration().setName(name);
     }
 
     /**
@@ -76,6 +86,8 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
     protected DataStorageConfiguration getDataStorageConfiguration() {
         return new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setInitialSize(256 * 1024 * 1024)
+                .setMaxSize(256 * 1024 * 1024)
                 .setPersistenceEnabled(true)
                 .setName("dflt-plc"));
     }

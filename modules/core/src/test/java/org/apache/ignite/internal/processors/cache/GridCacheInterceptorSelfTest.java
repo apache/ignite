@@ -28,7 +28,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public class GridCacheInterceptorSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */
-    @SuppressWarnings("RedundantMethodOverride")
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }

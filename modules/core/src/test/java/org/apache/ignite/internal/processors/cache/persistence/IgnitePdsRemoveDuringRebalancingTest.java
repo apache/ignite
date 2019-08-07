@@ -33,11 +33,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -45,15 +43,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  *
  */
 public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration()
+            new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setBackups(1)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
@@ -70,11 +65,6 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setDiscoverySpi(
-            new TcpDiscoverySpi()
-            .setIpFinder(IP_FINDER)
-        );
 
         return cfg;
     }
@@ -100,19 +90,20 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRemovesDuringRebalancing() throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.active(true);
 
-        try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(null)) {
+        try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
 
             for (int i = 0; i < 100_000; i++)
                 streamer.addData(i, i);
         }
 
-        final IgniteCache<Object, Object> cache = ig.cache(null);
+        final IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -127,7 +118,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         IgniteEx another = grid(1);
 
-        IgniteCache<Object, Object> cache1 = another.cache(null);
+        IgniteCache<Object, Object> cache1 = another.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100_000; i++)
             assertNull(cache1.localPeek(i));

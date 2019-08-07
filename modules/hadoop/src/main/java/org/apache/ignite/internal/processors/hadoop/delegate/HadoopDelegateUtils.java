@@ -80,7 +80,6 @@ public class HadoopDelegateUtils {
      * @param proxy Proxy.
      * @return Delegate.
      */
-    @SuppressWarnings("unchecked")
     public static HadoopFileSystemFactoryDelegate fileSystemFactoryDelegate(ClassLoader ldr, Object proxy) {
         String clsName = FACTORY_CLS_MAP.get(proxy.getClass().getName());
 

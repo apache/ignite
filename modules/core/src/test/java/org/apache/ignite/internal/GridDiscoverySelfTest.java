@@ -19,11 +19,9 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,11 +40,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -58,9 +54,6 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
  *  GridDiscovery self test.
  */
 public class GridDiscoverySelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static Ignite ignite;
 
@@ -79,12 +72,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         //cacheCfg.setName(null);
@@ -100,9 +87,17 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         ignite = G.ignite(getTestIgniteInstanceName());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRemoteNodes() throws Exception {
         Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
@@ -112,6 +107,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllNodes() throws Exception {
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
@@ -124,7 +120,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls"})
+    @Test
     public void testGetLocalNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -139,6 +135,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -152,6 +149,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryListener() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -221,6 +219,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
         GridDiscoveryManager discoMgr = ((IgniteKernal) ignite).context().discovery();
@@ -353,7 +352,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Nullable @Override public <T> T attribute(String name) {
             return null;
         }

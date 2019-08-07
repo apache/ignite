@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -34,17 +33,18 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
 
 /**
  * Tests H2RowCacheRegistry.
  */
 @SuppressWarnings({"unchecked", "ConstantConditions"})
-public class H2RowCacheSelfTest extends GridCommonAbstractTest {
+public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
 
@@ -79,6 +79,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDestroyCacheCreation() {
         final String cacheName0 = "cache0";
         final String cacheName1 = "cache1";
@@ -99,6 +100,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDestroyCacheSingleCacheInGroup() throws IgniteCheckedException {
         checkDestroyCache();
     }
@@ -106,6 +108,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDestroyCacheWithOtherCacheInGroup() throws IgniteCheckedException {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -115,6 +118,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteEntryCacheSingleCacheInGroup() throws Exception {
         checkDeleteEntry();
     }
@@ -122,6 +126,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteEntryWithOtherCacheInGroup() throws Exception {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -131,6 +136,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateEntryCacheSingleCacheInGroup() throws Exception {
         checkDeleteEntry();
     }
@@ -138,6 +144,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateEntryWithOtherCacheInGroup() throws Exception {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -147,6 +154,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFixedSize() throws Exception {
         int maxSize = 100;
         String cacheName = "cacheWithLimitedSize";
@@ -352,12 +360,14 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         grid().cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll().size();
 
-        ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
+        ConcurrentLinkedHashMap<Long, H2CacheRow> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
 
-        for (Map.Entry<Long, GridH2KeyValueRowOnheap> e : rowsMap.entrySet()) {
-            GridH2KeyValueRowOnheap val = e.getValue();
+        for (Map.Entry<Long, H2CacheRow> e : rowsMap.entrySet()) {
+            H2CacheRow val = e.getValue();
 
-            if ((Integer)val.key().value(null, false) == key)
+            KeyCacheObject rowKey = val.key();
+
+            if ((Integer)rowKey.value(null, false) == key)
                 return e.getKey();
         }
 

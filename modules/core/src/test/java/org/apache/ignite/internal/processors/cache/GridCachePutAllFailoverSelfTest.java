@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -57,12 +56,10 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -73,9 +70,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests putAll() method along with failover and different configurations.
  */
 public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Size of the test map. */
     private static final int TEST_MAP_SIZE = 30_000;
 
@@ -105,7 +99,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
-        @SuppressWarnings("unchecked")
         @Override public boolean apply(ClusterNode n) {
              return "worker".equals(n.attribute("segment"));
         }
@@ -120,21 +113,10 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /** Test failover SPI. */
     private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearEnabledThreeBackups() throws Exception {
         checkPutAllFailoverColocated(true, 7, 3);
     }
@@ -142,6 +124,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearDisabledThreeBackups() throws Exception {
         checkPutAllFailoverColocated(false, 7, 3);
     }
@@ -149,6 +132,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearEnabledOneBackup() throws Exception {
         checkPutAllFailover(true, 3, 1);
     }
@@ -156,6 +140,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearDisabledOneBackup() throws Exception {
         checkPutAllFailover(false, 3, 1);
     }
@@ -163,6 +148,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearEnabledTwoBackups() throws Exception {
         checkPutAllFailover(true, 5, 2);
     }
@@ -170,6 +156,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearDisabledTwoBackups() throws Exception {
         checkPutAllFailover(false, 5, 2);
     }
@@ -177,6 +164,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearEnabledThreeBackups() throws Exception {
         checkPutAllFailover(true, 7, 3);
     }
@@ -184,6 +172,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearDisabledThreeBackups() throws Exception {
         checkPutAllFailover(false, 7, 3);
     }
@@ -191,6 +180,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearEnabledOneBackup() throws Exception {
         checkPutAllFailoverColocated(true, 3, 1);
     }
@@ -198,6 +188,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearDisabledOneBackup() throws Exception {
         checkPutAllFailoverColocated(false, 3, 1);
     }
@@ -205,6 +196,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearEnabledTwoBackups() throws Exception {
         checkPutAllFailoverColocated(true, 5, 2);
     }
@@ -212,6 +204,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearDisabledTwoBackups() throws Exception {
         checkPutAllFailoverColocated(false, 5, 2);
     }
@@ -671,10 +664,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoverySpi.setAckTimeout(60000);
-        discoverySpi.setIpFinder(ipFinder);
         discoverySpi.setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoverySpi);
@@ -702,7 +694,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-
 
             cfg.setCacheConfiguration(cacheCfg);
         }

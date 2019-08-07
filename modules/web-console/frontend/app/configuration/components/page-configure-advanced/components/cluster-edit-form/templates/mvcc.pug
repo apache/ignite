@@ -1,0 +1,47 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'mvcc'
+-var model = '$ctrl.clonedCluster'
+
+panel-collapsible(ng-show='$ctrl.available("2.7.0")' ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Multiversion concurrency control (MVCC)
+    panel-description Multiversion concurrency control (MVCC) configuration.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Vacuum thread pool size:',
+                    model: `${model}.mvccVacuumThreadCount`,
+                    name: '"MvccVacuumThreadCount"',
+                    placeholder: '2',
+                    min: '0',
+                    tip: 'Number of MVCC vacuum cleanup threads'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Vacuum intervals:',
+                    model: `${model}.mvccVacuumFrequency`,
+                    name: '"MvccVacuumFrequency"',
+                    placeholder: '5000',
+                    min: '0',
+                    tip: 'Time interval between vacuum runs in ms'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterMvcc')

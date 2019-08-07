@@ -17,63 +17,58 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * Test hidden _key, _val, _ver columns
  */
-public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
-
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     /** */
     private static String NODE_BAD_CONF_MISS_KEY_FIELD = "badConf1";
+
     /** */
     private static String NODE_BAD_CONF_MISS_VAL_FIELD = "badConf2";
+
     /** */
     private static String NODE_CLIENT = "client";
 
     /** */
     private static String CACHE_PERSON_NO_KV = "PersonNoKV";
+
     /** */
     private static String CACHE_INT_NO_KV_TYPE = "IntNoKVType";
+
     /** */
     private static String CACHE_PERSON = "Person";
+
     /** */
     private static String CACHE_JOB = "Job";
 
+    /** */
+    private boolean oldAllowKeyValCol;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         c.setMarshaller(new BinaryMarshaller());
 
@@ -98,15 +93,22 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        oldAllowKeyValCol = GridTestUtils.getFieldValue(UpdatePlanBuilder.class,
+            UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES");
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
+
         startGrid(0);
         startGrid(NODE_CLIENT);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowKeyValCol);
+
+        super.afterTest();
     }
 
     private CacheConfiguration buildCacheConfiguration(String name) {
@@ -194,6 +196,7 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
     }
 
     /** Test for setIndexedTypes() primitive types */
+    @Test
     public void testSetIndexTypesPrimitive() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(NODE_CLIENT).cache(CACHE_JOB);
 
@@ -204,11 +207,13 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
     }
 
     /** Test configuration error : keyFieldName is missing from fields */
+    @Test
     public void testErrorKeyFieldMissingFromFields() throws Exception {
         checkCacheStartupError(NODE_BAD_CONF_MISS_KEY_FIELD);
     }
 
     /** Test configuration error : valueFieldName is missing from fields */
+    @Test
     public void testErrorValueFieldMissingFromFields() throws Exception {
         checkCacheStartupError(NODE_BAD_CONF_MISS_VAL_FIELD);
     }
@@ -228,6 +233,7 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
      * Check that it is allowed to leave QE.keyType and QE.valueType unset
      * in case keyFieldName and valueFieldName are set and present in fields
      */
+    @Test
     public void testQueryEntityAutoKeyValTypes() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(NODE_CLIENT).cache(CACHE_INT_NO_KV_TYPE);
 
@@ -241,6 +247,7 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
     }
 
     /** Check that it is possible to not have keyFieldName and valueFieldName */
+    @Test
     public void testNoKeyValueAliases() throws Exception {
         IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON_NO_KV);
 
@@ -252,6 +259,7 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
     }
 
     /** Check keyFieldName and valueFieldName columns access */
+    @Test
     public void testKeyValueAlias() throws Exception {
         //_key, _val, _ver | name, age, id, v
         Person alice = new Person("Alice", 1);
@@ -275,29 +283,8 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
         checkSelect(cache, "select _key, _val from Person where id=1", 1, alice);
     }
 
-    /** Check _ver version field is accessible */
-    public void testVersionField() throws Exception {
-        Person alice = new Person("Alice", 1);
-        Person bob = new Person("Bob", 2);
-
-        IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
-
-        checkInsert(cache, "insert into Person (id, v) values (?,?)", 1, alice);
-        assertNotNull(getVersion(cache, 1));
-
-        checkInsert(cache, "insert into Person (id, v) values (?,?)", 2, bob);
-        assertNotNull(getVersion(cache, 2));
-
-        GridCacheVersion v1 = getVersion(cache, 1);
-
-        checkInsert(cache, "update Person set age = ? where id = ?", 3, 1);
-
-        GridCacheVersion v2 = getVersion(cache, 1);
-
-        assertFalse( v1.equals(v2) );
-    }
-
     /** Check that joins are working on keyFieldName, valueFieldName columns */
+    @Test
     public void testJoinKeyValFields() throws Exception {
         IgniteEx client = grid(NODE_CLIENT);
         IgniteCache<Integer, Person> cache = client.cache(CACHE_PERSON);
@@ -318,18 +305,19 @@ public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
     }
 
     /** Check automatic addition of index for keyFieldName column */
+    @Test
     public void testAutoKeyFieldIndex() throws Exception {
         IgniteEx client = grid(NODE_CLIENT);
         IgniteCache<Integer, Person> cache = client.cache(CACHE_PERSON);
 
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select * from Person where id = 1"));
         List<List<?>> results = cursor.getAll();
-        assertEquals(2, results.size());
+        assertEquals(1, results.size());
         assertTrue(((String)results.get(0).get(0)).contains("\"_key_PK_proxy\""));
 
         cursor = cache.query(new SqlFieldsQuery("explain select * from Person where _key = 1"));
         results = cursor.getAll();
-        assertEquals(2, results.size());
+        assertEquals(1, results.size());
         assertTrue(((String)results.get(0).get(0)).contains("\"_key_PK\""));
     }
 

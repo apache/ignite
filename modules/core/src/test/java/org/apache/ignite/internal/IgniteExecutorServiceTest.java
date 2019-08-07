@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid distributed executor test.
@@ -46,6 +47,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testExecute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -70,6 +72,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testSubmit() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -107,6 +110,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testSubmitWithFutureTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -134,6 +138,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInvokeAll() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -164,7 +169,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
-    @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInvokeAllWithTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -211,6 +216,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInvokeAny() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -236,7 +242,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
-    @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInvokeAnyWithTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

@@ -74,11 +74,9 @@ public class GridBasicPerformanceTest {
     private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /** Test variable. */
-    @SuppressWarnings({"UnusedDeclaration", "FieldAccessedSynchronizedAndUnsynchronized"})
     private static int n;
 
     /** Volatile variable. */
-    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private static volatile int v;
 
     /** Atomic integer. */
@@ -803,7 +801,6 @@ public class GridBasicPerformanceTest {
     /**
      * @param q Queue.
      */
-    @SuppressWarnings("StatementWithEmptyBody")
     private static void testQueue(Queue<Integer> q) {
         System.gc();
 
@@ -873,7 +870,6 @@ public class GridBasicPerformanceTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @SuppressWarnings("StatementWithEmptyBody")
                 @Nullable @Override public Object call() throws Exception {
                     latch2.await();
 
@@ -935,7 +931,6 @@ public class GridBasicPerformanceTest {
     /**
      * Test unsafe vs. new.
      */
-    @SuppressWarnings("JavaDoc")
     private static void testUnsafe() throws InterruptedException {
         X.println("Testing unsafe...");
 
@@ -964,7 +959,6 @@ public class GridBasicPerformanceTest {
         for (long l : addrs)
             GridUnsafe.freeMemory(l);
     }
-
 
     /**
      * Test unsafe vs. new.

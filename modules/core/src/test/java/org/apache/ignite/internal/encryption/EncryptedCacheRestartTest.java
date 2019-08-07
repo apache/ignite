@@ -21,6 +21,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
+import org.junit.Test;
 
 /** */
 public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
@@ -37,6 +38,7 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCache() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 

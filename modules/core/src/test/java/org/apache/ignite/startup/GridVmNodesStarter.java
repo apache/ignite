@@ -192,7 +192,6 @@ public final class GridVmNodesStarter {
      * @return List of configurations.
      * @throws IgniteCheckedException If an error occurs.
      */
-    @SuppressWarnings("unchecked")
     private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath)
         throws IgniteCheckedException {
         File path = GridTestUtils.resolveIgnitePath(springCfgPath);

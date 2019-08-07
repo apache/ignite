@@ -28,10 +28,13 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -97,6 +100,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     public static class ServiceWithSpringResourceImpl implements ServiceWithSpringResource, Service {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         @SpringResource(resourceClass = Integer.class)
         private transient Integer injectedSpringFld;
@@ -184,13 +188,14 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     }
 
     /** */
+    @Test
     public void testSpringResourceInjectedInCacheStore() throws Exception {
         doTestSpringResourceInjected(
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
-                    IgniteCacheStoreWithSpringResource cacheStore =
-                        appCtx.getBean(IgniteCacheStoreWithSpringResource.class);
+                    IgniteCacheStoreWithSpringResource cacheStore = (IgniteCacheStoreWithSpringResource)
+                        ((IgniteEx) G.allGrids().get(0)).cachex("cache1").context().store().store();
 
                     return cacheStore.getInjectedSpringField();
                 }
@@ -199,6 +204,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     }
 
     /** */
+    @Test
     public void testSpringResourceInjectedInService() throws Exception {
         doTestSpringResourceInjected(
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {

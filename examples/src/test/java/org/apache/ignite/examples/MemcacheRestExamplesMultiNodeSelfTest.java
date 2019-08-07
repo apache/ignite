@@ -17,17 +17,15 @@
 
 package org.apache.ignite.examples;
 
-//import org.apache.ignite.examples.misc.client.memcache.*;
+import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExampleNodeStartup;
 
 /**
  * MemcacheRestExample multi-node self test.
  */
 public class MemcacheRestExamplesMultiNodeSelfTest extends MemcacheRestExamplesSelfTest {
-    // TODO: IGNITE-711 next example(s) should be implemented for java 8 
-    // or testing method(s) should be removed if example(s) does not applicable for java 8.
     /** {@inheritDoc} */
-//    @Override protected void beforeTest() throws Exception {
-//        for (int i = 0; i < RMT_NODES_CNT; i++)
-//            startGrid("memcache-rest-examples-" + i, MemcacheRestExampleNodeStartup.configuration());
-//    }
+    @Override protected void beforeTest() throws Exception {
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("memcache-rest-examples-" + i, MemcacheRestExampleNodeStartup.configuration());
+    }
 }

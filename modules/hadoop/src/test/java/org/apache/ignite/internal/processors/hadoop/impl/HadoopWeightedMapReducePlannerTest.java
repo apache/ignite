@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.junit.Test;
 
 /**
  * Tests for weighted map-reduce planned.
@@ -111,6 +112,7 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOneIgfsSplitAffinity() throws Exception {
         IgfsMock igfs = LocationsBuilder.create().add(0, NODE_1).add(50, NODE_2).add(100, NODE_3).buildIgfs();
 
@@ -139,6 +141,7 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHdfsSplitsAffinity() throws Exception {
         IgfsMock igfs = LocationsBuilder.create().add(0, NODE_1).add(50, NODE_2).add(100, NODE_3).buildIgfs();
 
@@ -171,6 +174,7 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHdfsSplitsReplication() throws Exception {
         IgfsMock igfs = LocationsBuilder.create().add(0, NODE_1).add(50, NODE_2).add(100, NODE_3).buildIgfs();
 
@@ -228,7 +232,6 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
         if (expectUniformity) {
             // mappers are assigned to all available nodes:
             assertEquals(nodes.size(), plan.mapperNodeIds().size());
-
 
             assertEquals(allIds(nodes), plan.mapperNodeIds());
         }

@@ -30,6 +30,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logFinish;
@@ -64,7 +65,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     protected abstract VisorJob<A, J> job(A arg);
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
         assert arg != null;
 
         start = U.currentTimeMillis();
@@ -105,7 +106,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
                     map.put(job(taskArg), node);
 
             if (map.isEmpty())
-                ignite.log().error("No mapped jobs: [task=" + getClass().getName() +
+                ignite.log().warning("No mapped jobs: [task=" + getClass().getName() +
                     ", topVer=" + ignite.cluster().topologyVersion() +
                     ", jobNids=" + nodeIds +
                     ", subGrid=" + U.toShortString(subgrid) + "]");

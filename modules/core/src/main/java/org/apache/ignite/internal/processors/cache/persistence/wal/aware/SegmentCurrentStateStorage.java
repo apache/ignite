@@ -25,12 +25,16 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 class SegmentCurrentStateStorage {
     /** Flag of interrupt of waiting on this object. */
     private volatile boolean interrupted;
+
     /** Flag of force interrupt of waiting on this object. Needed for uninterrupted waiters. */
     private volatile boolean forceInterrupted;
+
     /** Total WAL segments count. */
     private final int walSegmentsCnt;
+
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage;
+
     /**
      * Absolute current segment index WAL Manager writes to. Guarded by <code>this</code>. Incremented during rollover.
      * Also may be directly set if WAL is resuming logging after start.
@@ -167,5 +171,14 @@ class SegmentCurrentStateStorage {
     private void checkInterrupted() throws IgniteInterruptedCheckedException {
         if (interrupted)
             throw new IgniteInterruptedCheckedException("Interrupt waiting of change current idx");
+    }
+
+    /**
+     * Reset interrupted flag.
+     */
+    public void reset() {
+        interrupted = false;
+
+        forceInterrupted = false;
     }
 }

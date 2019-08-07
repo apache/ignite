@@ -50,7 +50,7 @@ class OdbcRequestHandlerWorker extends GridWorker {
     private final GridKernalContext ctx;
 
     /** Response */
-    private final static ClientListenerResponse ERR_RESPONSE = new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+    private static final ClientListenerResponse ERR_RESPONSE = new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
         "Connection closed.");
 
     /**

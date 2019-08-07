@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
@@ -41,14 +42,19 @@ import org.apache.ignite.testframework.GridTestUtils;
 public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
     /** Atomic cache. */
     private static final String ATOMIC_CACHE = "atomic";
+
     /** Transact cache. */
     private static final String TRANSACT_CACHE = "transact";
+
     /** Transact cache. */
     private static final long TEST_TIMEOUT = 10 * 60_000;
+
     /** Keys count. */
     private static int KEYS_CNT = 100;
+
     /** Keys count. */
     private static int PARTS_CNT = 16;
+
     /** Key. */
     private static AtomicInteger key = new AtomicInteger(0);
 
@@ -137,6 +143,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReservedAtomicCacheOp() throws Exception {
         notReservedCacheOp(ATOMIC_CACHE);
     }
@@ -144,6 +151,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReservedTxCacheOp() throws Exception {
         notReservedCacheOp(TRANSACT_CACHE);
     }
@@ -202,6 +210,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReservedPartitionCacheOp() throws Exception {
         // Workaround for initial update job metadata.
         grid(0).cache(Person.class.getSimpleName()).clear();
@@ -250,7 +259,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             cache.clear();
         }
     }
-
 
     /**
      *

@@ -357,7 +357,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param key Thread-local context key.
      * @return Thread-local context value, if any.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable private <V> V getThreadContext(GridTaskThreadContextKey key) {
         return thCtx == null ? null : (V)thCtx.get(key);
     }
@@ -469,7 +468,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * Maps this task's jobs to nodes and sends them out.
      */
-    @SuppressWarnings({"unchecked"})
     @Override protected void body() {
         evtLsnr.onTaskStarted(this);
 
@@ -929,9 +927,21 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                     mapTopVer = ctx.cache().context().exchange().readyAffinityVersion();
 
                                     affFut = ctx.cache().context().exchange().lastTopologyFuture();
+
+                                    if (affFut == null || affFut.isDone()) {
+                                        affFut = null;
+
+                                        // Need asynchronosly fetch affinity if cache is not started on node .
+                                        if (affCacheName != null && ctx.cache().internalCache(affCacheName) == null) {
+                                            affFut = ctx.affinity().affinityCacheFuture(affCacheName, mapTopVer);
+
+                                            if (affFut.isDone())
+                                                affFut = null;
+                                        }
+                                    }
                                 }
 
-                                if (affFut != null && !affFut.isDone()) {
+                                if (affFut != null) {
                                     waitForAffTop = true;
 
                                     jobRes.resetResponse();
@@ -1039,7 +1049,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param results Existing job results.
      * @return Job result policy.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     @Nullable private ComputeJobResultPolicy result(final ComputeJobResult jobRes, final List<ComputeJobResult> results) {
         assert !Thread.holdsLock(mux);
 
@@ -1648,7 +1657,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;

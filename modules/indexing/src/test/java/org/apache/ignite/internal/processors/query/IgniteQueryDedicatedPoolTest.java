@@ -36,24 +36,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Ensures that SQL queries are executed in a dedicated thread pool.
  */
 public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Name of the cache for test */
     private static final String CACHE_NAME = "query_pool_test";
 
@@ -67,10 +62,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -99,8 +90,8 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     /**
      * Tests that SQL queries involving actual network IO are executed in dedicated pool.
      * @throws Exception If failed.
-     * @see GridCacheTwoStepQuery#isLocal()
      */
+    @Test
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
@@ -129,6 +120,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * Tests that Scan queries are executed in dedicated pool
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
@@ -152,6 +144,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * Tests that SPI queries are executed in dedicated pool
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Byte, Byte> cache = client.cache(CACHE_NAME);

@@ -26,23 +26,16 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Service proxy test with client reconnect.
  */
 public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setClientMode(igniteInstanceName.contains("client"));
 
@@ -57,6 +50,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         startGrid("server");
 
@@ -82,7 +76,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
 
         startGrid("server");
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(12, TimeUnit.SECONDS));
 
         client.services().deployClusterSingleton("my-service", new MyServiceImpl());
 
@@ -93,6 +87,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectLongServiceInit() throws Exception {
         startGrid("server");
 
@@ -118,7 +113,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
 
         startGrid("server");
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(12, TimeUnit.SECONDS));
 
         client.services().deployClusterSingleton("my-service", new MyLongInitServiceImpl());
 

@@ -19,6 +19,7 @@ package org.apache.ignite.spi.loadbalancing.weightedrandom;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  *
@@ -29,6 +30,7 @@ public class GridWeightedRandomLoadBalancingSpiConfigSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new WeightedRandomLoadBalancingSpi(), "nodeWeight", 0);
     }

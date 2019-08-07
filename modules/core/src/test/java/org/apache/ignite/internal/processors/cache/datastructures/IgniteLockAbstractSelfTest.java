@@ -58,6 +58,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -93,6 +94,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLock() throws Exception {
         checkReentrantLock(false);
 
@@ -102,6 +104,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailover() throws Exception {
         if (atomicsCacheMode() == LOCAL)
             return;
@@ -121,6 +124,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -414,6 +418,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockSerialization() throws Exception {
         final IgniteLock lock = grid(0).reentrantLock("lock", true, true, true);
 
@@ -443,6 +448,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInitialization() throws Exception {
         // Test #name() method.
         {
@@ -682,6 +688,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockMultinode1() throws Exception {
         testReentrantLockMultinode1(false);
 
@@ -759,6 +766,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockInterruptibly() throws Exception {
         testLockInterruptibly(false);
 
@@ -836,6 +844,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockInterruptiblyMultinode() throws Exception {
         testLockInterruptiblyMultinode(false);
 
@@ -959,6 +968,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLock() throws Exception {
         testLock(false);
 
@@ -1042,6 +1052,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryLock() throws Exception {
         testTryLock(false);
 
@@ -1125,6 +1136,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryLockTimed() throws Exception {
         testTryLockTimed(false);
 
@@ -1201,6 +1213,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConditionAwaitUninterruptibly() throws Exception {
         testConditionAwaitUninterruptibly(false);
 
@@ -1290,6 +1303,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConditionInterruptAwait() throws Exception {
         testConditionInterruptAwait(false);
 
@@ -1369,6 +1383,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHasQueuedThreads() throws Exception {
         testHasQueuedThreads(false);
 
@@ -1446,6 +1461,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHasConditionQueuedThreads() throws Exception {
         testHasConditionQueuedThreads(false);
 
@@ -1557,6 +1573,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
      * on the OS thread scheduling, certain deviation from uniform distribution is tolerated.
      * @throws Exception If failed.
      */
+    @Test
     public void testFairness() throws Exception {
         if (gridCount() == 1)
             return;

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.Arrays;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,12 +26,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests client to be able restore connection to cluster on subsequent attempts after communication problems.
  */
 public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -39,21 +39,16 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setNetworkTimeout(500);
-        cfg.setCommunicationSpi(new TcpCommunicationSpi(gridName.contains("block")));
-
-        if (gridName.contains("client")) {
-            cfg.setClientMode(true);
-        }
-
-        return cfg;
+        return super.getConfiguration(gridName)
+            .setNetworkTimeout(500)
+            .setCommunicationSpi(new TcpCommunicationSpi(gridName.contains("block")))
+            .setClientMode(gridName.contains("client"));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnects() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
@@ -66,6 +61,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientThreadsSuspended() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
@@ -119,38 +115,28 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
         /**
          * Whether this instance should actually block.
          */
-        private final boolean isBlocking;
-
-        /**
-         * Local node ID that is prevented from creating connections.
-         */
-        private volatile UUID blockedNodeId = null;
+        private final AtomicBoolean isBlocking;
 
         /**
          *
          * @param isBlocking Whether this instance should actually block.
          */
         public TcpCommunicationSpi(boolean isBlocking) {
-            this.isBlocking = isBlocking;
+            this.isBlocking = new AtomicBoolean(isBlocking);
         }
 
         /** {@inheritDoc} */
         @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx)
             throws IgniteCheckedException {
-            if (blockHandshakeOnce(getLocalNode().id())) {
+            if (blockHandshakeOnce())
                 throw new IgniteCheckedException("Node is blocked");
-            }
 
             return super.createTcpClient(node, connIdx);
         }
 
         /** Check if this connection is blocked. */
-        private boolean blockHandshakeOnce(UUID nodeId) {
-            if (isBlocking && (blockedNodeId == null || blockedNodeId.equals(nodeId))) {
-                blockedNodeId = nodeId;
-                return true;
-            }
-            return false;
+        private boolean blockHandshakeOnce() {
+            return isBlocking.compareAndSet(true, false);
         }
     }
 }

@@ -29,11 +29,11 @@ public class NativeStreamerBenchmark extends AbstractNativeBenchmark {
     /**
      * Uploads randomly generated entries to specified cache.
      *
-     * @param cacheName - name of the cache.
      * @param insertsCnt - how many entries should be uploaded.
      */
-    @Override protected void upload(String cacheName, long insertsCnt) {
-        try (IgniteDataStreamer<Long, Values10> streamer = ignite().dataStreamer(cacheName)) {
+    @SuppressWarnings("ConstantConditions")
+    @Override protected void upload(long insertsCnt) {
+        try (IgniteDataStreamer<Long, Values10> streamer = ignite().dataStreamer(CACHE_NAME)) {
             if (args.upload.streamerPerNodeBufferSize() != null)
                 streamer.perNodeBufferSize(args.upload.streamerPerNodeBufferSize());
 

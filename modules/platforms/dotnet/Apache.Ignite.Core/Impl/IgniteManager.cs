@@ -40,6 +40,9 @@ namespace Apache.Ignite.Core.Impl
         /** Java Command line argument: Xmx. Case sensitive. */
         private const string CmdJvmMaxMemJava = "-Xmx";
 
+        /** Java Command line argument: file.encoding. Case sensitive. */
+        private const string CmdJvmFileEncoding = "-Dfile.encoding=";
+
         /** Monitor for DLL load synchronization. */
         private static readonly object SyncRoot = new object();
 
@@ -93,7 +96,7 @@ namespace Apache.Ignite.Core.Impl
                 return cbs;
             }
         }
-        
+
         /// <summary>
         /// Memory manager attached to currently running JVM.
         /// </summary>
@@ -140,6 +143,9 @@ namespace Apache.Ignite.Core.Impl
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)) &&
                 cfg.JvmMaxMemoryMb != IgniteConfiguration.DefaultJvmMaxMem)
                 jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmFileEncoding, StringComparison.Ordinal)))
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}UTF-8", CmdJvmFileEncoding));
 
             return jvmOpts;
         }

@@ -27,16 +27,18 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.
  * Holder of actual information of latest manipulation on WAL segments.
  */
 public class SegmentAware {
-    /** Latest truncated segment. */
-    private volatile long lastTruncatedArchiveIdx = -1L;
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
     private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
+
     /** Lock on segment protects from archiving segment. */
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
+
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
+
     /** Storage of actual information about current index of compressed segments. */
     private final SegmentCompressStorage segmentCompressStorage;
+
     /** Storage of absolute current segment index. */
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
@@ -106,7 +108,12 @@ public class SegmentAware {
      * there's no segment to archive right now.
      */
     public long waitNextSegmentToCompress() throws IgniteInterruptedCheckedException {
-        return Math.max(segmentCompressStorage.nextSegmentToCompressOrWait(), lastTruncatedArchiveIdx + 1);
+        long idx;
+
+        while ((idx = segmentCompressStorage.nextSegmentToCompressOrWait()) <= lastTruncatedArchiveIdx())
+            onSegmentCompressed(idx);
+
+        return idx;
     }
 
     /**
@@ -152,14 +159,14 @@ public class SegmentAware {
      * @param lastTruncatedArchiveIdx Last truncated segment;
      */
     public void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
-        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
+        segmentArchivedStorage.lastTruncatedArchiveIdx(lastTruncatedArchiveIdx);
     }
 
     /**
      * @return Last truncated segment.
      */
     public long lastTruncatedArchiveIdx() {
-        return lastTruncatedArchiveIdx;
+        return segmentArchivedStorage.lastTruncatedArchiveIdx();
     }
 
     /**
@@ -233,6 +240,17 @@ public class SegmentAware {
      */
     public void releaseWorkSegment(long absIdx) {
         segmentLockStorage.releaseWorkSegment(absIdx);
+    }
+
+    /**
+     * Reset interrupted flag.
+     */
+    public void reset() {
+        segmentArchivedStorage.reset();
+
+        segmentCompressStorage.reset();
+
+        segmentCurrStateStorage.reset();
     }
 
     /**

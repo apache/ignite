@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ import java.util.Map;
  */
 public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String serviceName) throws IgniteException {
         return Collections.singletonMap(new PlatformDeployServiceJob(serviceName), F.first(subgrid));
     }
@@ -60,7 +61,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         private final String serviceName;
 
         /** Ignite. */
-        @SuppressWarnings("UnusedDeclaration")
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -85,7 +85,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class PlatformTestService implements Service {
         /** */
         private boolean isCancelled;

@@ -51,6 +51,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -113,7 +114,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
     protected static IgfsImpl igfsSecondary;
 
     /** IGFS mode. */
-    protected final IgfsMode mode;
+    protected static IgfsMode mode;
 
     static {
         PRIMARY_REST_CFG = new IgfsIpcEndpointConfiguration();
@@ -133,7 +134,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
      * @param mode IGFS mode.
      */
     protected HadoopIgfsDualAbstractSelfTest(IgfsMode mode) {
-        this.mode = mode;
+        HadoopIgfsDualAbstractSelfTest.mode = mode;
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
     }
 
@@ -198,7 +199,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         chunk = new byte[128];
 
         for (int i = 0; i < chunk.length; i++)
@@ -240,6 +241,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
      *
      * @throws Exception IF failed.
      */
+    @Test
     public void testOpenPrefetchOverride() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 

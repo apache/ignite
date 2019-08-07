@@ -30,6 +30,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,11 +39,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -52,9 +51,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Keys count. */
     private static final int KEYS_COUNT = 1024;
 
@@ -88,14 +84,19 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
 
         cfg.setClientMode(client);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(16 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */
@@ -122,6 +123,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueue() throws Exception {
         final CacheEventListener lsnr = new CacheEventListener();
 
@@ -145,6 +147,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyQueryBackupQueue() throws Exception {
         List<QueryCursor> qryCursors = new ArrayList<>();
 
@@ -166,8 +169,11 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
 
         int size = backupQueueSize();
 
-        assertTrue(size > 0);
-        assertTrue(size <= BACKUP_ACK_THRESHOLD * QUERY_COUNT * /* partition count */1024);
+        // Backup queues total size should not exceed one entry per query per partition. This is because
+        // {@link CacheContinuousQueryEventBuffer} is optimized to store filtered events and
+        // used in this test {@link AlwaysFalseFilterFactory} always declines updates.
+        // Zero total size is possible when backup queue is cleaned by timeout.
+        assertTrue(size <= QUERY_COUNT * /* partition count */1024);
 
         for (QueryCursor qry : qryCursors)
             qry.close();
@@ -177,6 +183,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueAutoUnsubscribeFalse() throws Exception {
         try {
             client = true;

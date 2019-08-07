@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests grid future adapter use cases.
@@ -43,6 +44,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnDone() throws Exception {
         GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
@@ -92,6 +94,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnCancelled() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -119,6 +122,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListenSyncNotify() throws Exception {
         GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
@@ -170,6 +174,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListenNotify() throws Exception {
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
@@ -228,6 +233,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testChaining() throws Exception {
         checkChaining(null);
 
@@ -326,6 +332,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         GridFutureAdapter<Object> unfinished = new GridFutureAdapter<>();
         GridFutureAdapter<Object> finished = new GridFutureAdapter<>();

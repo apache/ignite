@@ -22,6 +22,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for package-private service implementation.
@@ -30,6 +31,7 @@ public class GridServicePackagePrivateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPackagePrivateService() throws Exception {
         try {
             Ignite server = startGrid("server");

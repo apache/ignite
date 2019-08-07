@@ -272,7 +272,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadDateArray(const char* fieldName, Date* res, const int32_t len);
+            int32_t ReadDateArray(const char* fieldName, Date* res, int32_t len);
 
             /**
              * Read Timestamp. Maps to "Timestamp" type in Java.
@@ -293,7 +293,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, const int32_t len);
+            int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, int32_t len);
 
             /**
              * Read Time. Maps to "Time" type in Java.
@@ -314,7 +314,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadTimeArray(const char* fieldName, Time* res, const int32_t len);
+            int32_t ReadTimeArray(const char* fieldName, Time* res, int32_t len);
 
             /**
              * Read string.
@@ -355,13 +355,31 @@ namespace ignite
             /**
              * Start string array read.
              *
+             * Every time you get a BinaryStringArrayReader from BinaryReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
+             *
              * @param fieldName Field name.
              * @return String array reader.
              */
             BinaryStringArrayReader ReadStringArray(const char* fieldName);
 
             /**
+             * Read enum entry.
+             *
+             * @param fieldName Field name.
+             * @return Enum entry.
+             */
+            BinaryEnumEntry ReadBinaryEnum(const char* fieldName);
+
+            /**
              * Start array read.
+             *
+             * Every time you get a BinaryArrayReader from BinaryReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @param fieldName Field name.
              * @return Array reader.
@@ -378,6 +396,11 @@ namespace ignite
 
             /**
              * Start collection read.
+             *
+             * Every time you get a BinaryCollectionReader from BinaryReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @param fieldName Field name.
              * @return Collection reader.
@@ -408,6 +431,11 @@ namespace ignite
 
             /**
              * Start map read.
+             *
+             * Every time you get a BinaryMapReader from BinaryReader you start
+             * reading session. Only one single reading session can be open at
+             * a time. So it is not allowed to start new reading session until
+             * all elements of the collection have been read.
              *
              * @param fieldName Field name.
              * @return Map reader.
@@ -444,11 +472,26 @@ namespace ignite
              *
              * @param fieldName Field name.
              * @return Object.
+             *
+             * @trapam T Object type. BinaryType class template should be specialized for the type.
              */
             template<typename T>
             T ReadObject(const char* fieldName)
             {
                 return impl->ReadObject<T>(fieldName);
+            }
+
+            /**
+             * Read enum value.
+             *
+             * @return Enum value.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            T ReadEnum(const char* fieldName)
+            {
+                return impl->ReadEnum<T>(fieldName);
             }
 
             /**

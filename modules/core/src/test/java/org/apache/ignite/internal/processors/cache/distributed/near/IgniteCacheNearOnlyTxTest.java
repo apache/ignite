@@ -29,7 +29,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -40,6 +43,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
+    /** */
+    @Before
+    public void beforeIgniteCacheNearOnlyTxTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
@@ -76,6 +85,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyPutMultithreaded() throws Exception {
         final Ignite ignite1 = ignite(1);
 
@@ -113,6 +123,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTx() throws Exception {
         txMultithreaded(true);
     }
@@ -120,6 +131,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx() throws Exception {
         txMultithreaded(false);
     }
@@ -174,6 +186,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentTx() throws Exception {
         final Ignite ignite1 = ignite(1);
 

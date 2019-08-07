@@ -135,25 +135,23 @@ public class CacheGroupAffinityMessage implements Message {
     }
 
     /**
+     * Fill Map of CacheGroupAffinityMessages.
+     *
      * @param cctx Context.
      * @param topVer Topology version.
      * @param affReq Cache group IDs.
      * @param cachesAff Optional already prepared affinity.
-     * @return Affinity.
      */
-    static Map<Integer, CacheGroupAffinityMessage> createAffinityMessages(
+    static void createAffinityMessages(
         GridCacheSharedContext cctx,
         AffinityTopologyVersion topVer,
         Collection<Integer> affReq,
-        @Nullable Map<Integer, CacheGroupAffinityMessage> cachesAff
+        Map<Integer, CacheGroupAffinityMessage> cachesAff
     ) {
         assert !F.isEmpty(affReq) : affReq;
 
-        if (cachesAff == null)
-            cachesAff = U.newHashMap(affReq.size());
-
         for (Integer grpId : affReq) {
-            if (!cachesAff.containsKey(grpId)) {
+            cachesAff.computeIfAbsent(grpId, (integer) -> {
                 GridAffinityAssignmentCache aff = cctx.affinity().groupAffinity(grpId);
 
                 // If no coordinator group holder on the node, try fetch affinity from existing cache group.
@@ -169,15 +167,13 @@ public class CacheGroupAffinityMessage implements Message {
 
                 List<List<ClusterNode>> assign = aff.readyAssignments(topVer);
 
-                CacheGroupAffinityMessage msg = new CacheGroupAffinityMessage(assign,
-                    aff.centralizedAffinityFunction() ? aff.idealAssignment() : null,
-                    null);
-
-                cachesAff.put(grpId, msg);
-            }
+                return new CacheGroupAffinityMessage(
+                    assign,
+                    aff.centralizedAffinityFunction() ? aff.idealAssignmentRaw() : null,
+                    null
+                );
+            });
         }
-
-        return cachesAff;
     }
 
     /**
@@ -186,7 +182,8 @@ public class CacheGroupAffinityMessage implements Message {
      * @param discoCache Discovery data cache.
      * @return Nodes list.
      */
-    public static List<ClusterNode> toNodes(GridLongList assign, Map<Long, ClusterNode> nodesByOrder, DiscoCache discoCache) {
+    public static List<ClusterNode> toNodes(GridLongList assign, Map<Long, ClusterNode> nodesByOrder,
+        DiscoCache discoCache) {
         List<ClusterNode> assign0 = new ArrayList<>(assign.size());
 
         for (int n = 0; n < assign.size(); n++) {

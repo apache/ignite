@@ -943,7 +943,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext();) {
                     SharedDeployment dep = i2.next();
 
-
                     if (dep.hasName(rsrcName)) {
                         if (!dep.undeployed()) {
                             dep.undeploy();
@@ -1085,7 +1084,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param userVer User version.
          * @param sampleClsName Sample class name.
          */
-        @SuppressWarnings({"TypeMayBeWeakened"})
         SharedDeployment(DeploymentMode depMode,
             GridDeploymentClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, String sampleClsName) {

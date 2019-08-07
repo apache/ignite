@@ -142,14 +142,14 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
     };
 
     /** Decreasing policy factory. */
-    private final static Factory<ExpiryPolicy> DECREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
+    private static final Factory<ExpiryPolicy> DECREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
         @Override public ExpiryPolicy create() {
             return DECREASING_EXPIRY_POLICY;
         }
     };
 
     /** Increasing policy factory. */
-    private final static Factory<ExpiryPolicy> INCREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
+    private static final Factory<ExpiryPolicy> INCREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
         @Override public ExpiryPolicy create() {
             return INCREASING_EXPIRY_POLICY;
         }
@@ -199,7 +199,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @TearDown
-    public void tearDown() throws Exception {
+    @Override public void tearDown() throws Exception {
         Ignition.stopAll(true);
     }
 

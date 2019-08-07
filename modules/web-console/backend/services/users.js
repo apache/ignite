@@ -42,16 +42,27 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
         /**
          * Save profile information.
          *
-         * @param {String} host - The host
-         * @param {Object} user - The user
+         * @param {String} host - The host.
+         * @param {Object} user - The user.
+         * @param {Object} createdByAdmin - Whether user created by admin.
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
-        static create(host, user) {
+        static create(host, user, createdByAdmin) {
             return mongo.Account.count().exec()
                 .then((cnt) => {
                     user.admin = cnt === 0;
                     user.registered = new Date();
                     user.token = utilsService.randomString(settings.tokenLength);
+                    user.resetPasswordToken = utilsService.randomString(settings.tokenLength);
+                    user.activated = false;
+
+                    if (settings.activation.enabled) {
+                        user.activationToken = utilsService.randomString(settings.tokenLength);
+                        user.activationSentAt = new Date();
+                    }
+
+                    if (settings.server.disableSignup && !user.admin && !createdByAdmin)
+                        throw new errors.ServerErrorException('Sign-up is not allowed. Ask your Web Console administrator to create account for you.');
 
                     return new mongo.Account(user);
                 })
@@ -69,28 +80,39 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     });
                 })
                 .then((registered) => {
-                    registered.resetPasswordToken = utilsService.randomString(settings.tokenLength);
+                    return mongo.Space.create({name: 'Personal space', owner: registered._id})
+                        .then(() => registered);
+                })
+                .then((registered) => {
+                    if (settings.activation.enabled) {
+                        mailsService.sendActivationLink(host, registered);
 
-                    return registered.save()
-                        .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
-                        .then(() => {
-                            mailsService.emailUserSignUp(host, registered);
-
+                        if (createdByAdmin)
                             return registered;
-                        });
+
+                        throw new errors.MissingConfirmRegistrationException(registered.email);
+                    }
+
+                    mailsService.sendWelcomeLetter(host, registered, createdByAdmin);
+
+                    return registered;
                 });
         }
 
         /**
          * Save user.
          *
-         * @param {Object} changed - The user
+         * @param userId User ID.
+         * @param {Object} changed Changed user.
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
-        static save(changed) {
+        static save(userId, changed) {
             delete changed.admin;
+            delete changed.activated;
+            delete changed.activationSentAt;
+            delete changed.activationToken;
 
-            return mongo.Account.findById(changed._id).exec()
+            return mongo.Account.findById(userId).exec()
                 .then((user) => {
                     if (!changed.password)
                         return Promise.resolve(user);
@@ -153,6 +175,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                             country: 1,
                             lastLogin: 1,
                             lastActivity: 1,
+                            activated: 1,
                             spaces: {
                                 $filter: {
                                     input: '$spaces',
@@ -211,17 +234,17 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                 .then((user) => {
                     return spacesService.spaceIds(userId)
                         .then((spaceIds) => Promise.all([
-                            mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Igfs.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Notebook.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Space.remove({owner: userId}).exec()
+                            mongo.Cluster.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Notebook.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Space.deleteOne({owner: userId}).exec()
                         ]))
                         .catch((err) => console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`))
                         .then(() => user);
                 })
-                .then((user) => mailsService.emailUserDeletion(host, user));
+                .then((user) => mailsService.sendAccountDeleted(host, user));
         }
 
         /**

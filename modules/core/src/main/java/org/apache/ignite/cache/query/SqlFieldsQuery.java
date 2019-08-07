@@ -28,8 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
- * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
- * the whole key and value objects back.
+ * on SQL {@code 'select'} clause.
  * <h1 class="header">Collocated Flag</h1>
  * Collocation flag is used for optimization purposes. Whenever Ignite executes
  * a distributed query, it sends sub-queries to individual cluster members.
@@ -48,6 +47,13 @@ import org.jetbrains.annotations.Nullable;
 public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Default value of the update internal batch size. */
+    private static final int DFLT_UPDATE_BATCH_SIZE = 1;
+
+    /** Do not remove. For tests only. */
+    @SuppressWarnings("NonConstantFieldWithUpperCaseName")
+    private static boolean DFLT_LAZY;
 
     /** SQL Query. */
     private String sql;
@@ -71,14 +77,20 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
-    /** Lazy mode is default since Ignite v.2.7. */
-    private boolean lazy = true;
+    /** Lazy mode is default since Ignite v.2.8. */
+    private boolean lazy = DFLT_LAZY;
 
     /** Partitions for query */
     private int[] parts;
 
     /** Schema. */
     private String schema;
+
+    /**
+     * Update internal batch size. Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     */
+    private int updateBatchSize = DFLT_UPDATE_BATCH_SIZE;
 
     /**
      * Copy constructs SQL fields query.
@@ -96,6 +108,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
         lazy = qry.lazy;
         parts = qry.parts;
         schema = qry.schema;
+        updateBatchSize = qry.updateBatchSize;
     }
 
     /**
@@ -273,7 +286,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @param replicatedOnly The query contains only replicated tables.
      * @return {@code this} For chaining.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public SqlFieldsQuery setReplicatedOnly(boolean replicatedOnly) {
         this.replicatedOnly = replicatedOnly;
 
@@ -284,7 +299,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * Check is the query contains only replicated tables.
      *
      * @return {@code true} If the query contains only replicated tables.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public boolean isReplicatedOnly() {
         return replicatedOnly;
     }
@@ -292,24 +309,19 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Sets lazy query execution flag.
      * <p>
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
+     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * increasing concurrency.
+     * <p>
      * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
      * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
      * consumption at the cost of moderate performance hit.
-     * Now lazy mode is optimized for small and medium result set. Small result set means results rows count
-     * less then page size (see {@link #setPageSize}).
      * <p>
-     * To compatibility with previous version behavior lazy mode may be switched off. In this case Ignite attempts
-     * to fetch the whole query result set to memory and send it to the client.
-     * <p>
-     * Since version 2.7 lazy mode is used by default.
-     * Defaults to {@code true}, meaning that the result set is fetched lazily if it is possible.
+     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
      *
      * @param lazy Lazy query execution flag.
      * @return {@code this} For chaining.
-     *
-     * @deprecated Since Ignite 2.7.
      */
-    @Deprecated
     public SqlFieldsQuery setLazy(boolean lazy) {
         this.lazy = lazy;
 
@@ -323,7 +335,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @return Lazy flag.
      */
-    @Deprecated
     public boolean isLazy() {
         return lazy;
     }
@@ -371,6 +382,31 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setSchema(@Nullable String schema) {
         this.schema = schema;
+
+        return this;
+    }
+
+    /**
+     * Gets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @return Update internal batch size
+     */
+    public int getUpdateBatchSize() {
+        return updateBatchSize;
+    }
+
+    /**
+     * Sets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @param updateBatchSize Update internal batch size.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setUpdateBatchSize(int updateBatchSize) {
+        this.updateBatchSize = updateBatchSize;
 
         return this;
     }

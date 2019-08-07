@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -32,6 +33,7 @@ import org.apache.ignite.resources.JobContextResource;
  * Task that clears specified caches on specified node.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCacheClearTask extends VisorOneNodeTask<VisorCacheClearTaskArg, VisorCacheClearTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

@@ -89,9 +89,9 @@ class GridUriDeploymentUnitDescriptor {
     private final String md5;
 
     /**
-     * Constructs descriptor for GAR file.
+     * Constructs descriptor for a deployment unit.
      *
-     * @param uri GAR file URI.
+     * @param uri URI of the deployment unit.
      * @param file File itself.
      * @param tstamp Tasks deployment timestamp.
      * @param clsLdr Class loader.
@@ -112,7 +112,8 @@ class GridUriDeploymentUnitDescriptor {
     }
 
     /**
-     * Constructs deployment unit descriptor based on timestamp and {@link org.apache.ignite.compute.ComputeTask} instances.
+     * Constructs a deployment unit descriptor based on timestamp and {@link org.apache.ignite.compute.ComputeTask}
+     * instances.
      *
      * @param tstamp Tasks deployment timestamp.
      * @param clsLdr Class loader.
@@ -142,17 +143,17 @@ class GridUriDeploymentUnitDescriptor {
     /**
      * Gets file URL.
      *
-     * @return {@code null} if tasks were deployed directly and reference to the GAR file URI if tasks were deployed
-     *         from the file.
+     * @return {@code null} if tasks were deployed directly and reference to the package file URI if tasks
+     * were deployed from the file.
      */
     public String getUri() {
         return uri;
     }
 
     /**
-     * Tasks GAR file.
+     * Tasks' package file.
      *
-     * @return {@code null} if tasks were deployed directly and GAR file if tasks were deployed from it.
+     * @return {@code null} if tasks were deployed directly and package file if tasks were deployed from it.
      */
     public File getFile() {
         return file;

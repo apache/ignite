@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
@@ -66,6 +67,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Client listener port. */
     public static final String CLIENT_LISTENER_PORT = "clientListenerPort";
+
+    /** Cancel counter. For testing purposes only. */
+    public static final AtomicLong CANCEL_COUNTER = new AtomicLong(0);
 
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
@@ -160,8 +164,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
                             .build();
 
-                        srv0.start();
-
                         srv = srv0;
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -194,6 +196,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        if (srv != null)
+            srv.start();
     }
 
     /**
@@ -252,6 +262,46 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             @Override public void onSessionOpened(GridNioSession ses)
                 throws IgniteCheckedException {
                 proceedSessionOpened(ses);
+            }
+
+            @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
+                ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
+
+                if (connCtx != null && connCtx.parser() != null) {
+                    byte[] inMsg;
+
+                    int cmdType;
+
+                    long reqId;
+
+                    try {
+                        inMsg = (byte[])msg;
+
+                        cmdType = connCtx.parser().decodeCommandType(inMsg);
+
+                        reqId = connCtx.parser().decodeRequestId(inMsg);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to parse client request.", e);
+
+                        ses.close();
+
+                        return;
+                    }
+
+                    if (connCtx.handler().isCancellationCommand(cmdType)) {
+                        CANCEL_COUNTER.incrementAndGet();
+
+                        proceedMessageReceived(ses, msg);
+                    }
+                    else {
+                        connCtx.handler().registerRequest(reqId, cmdType);
+
+                        super.onMessageReceived(ses, msg);
+                    }
+                }
+                else
+                    super.onMessageReceived(ses, msg);
             }
         };
 

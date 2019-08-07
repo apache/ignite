@@ -58,7 +58,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      * @param qry Query.
      * @param nodes Nodes.
      */
-    @SuppressWarnings("unchecked")
     protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId, GridCacheQueryBean qry,
         Iterable<ClusterNode> nodes) {
         super(ctx, qry, false);
@@ -195,7 +194,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     @Override protected void loadPage() {
         assert !Thread.holdsLock(this);
 
@@ -214,7 +212,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     @Override protected void loadAllPages() throws IgniteInterruptedCheckedException {
         assert !Thread.holdsLock(this);
 

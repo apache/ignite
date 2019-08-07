@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import org.junit.Test;
 
 /**
  * Tests of binary type mismatch logging.
@@ -49,6 +49,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testValueReadCreateTable() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -74,6 +75,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testValueReadQueryEntities() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -102,6 +104,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testEntryReadCreateTable() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -127,6 +130,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testEntryReadQueryEntities() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -156,6 +160,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testValueWriteCreateTable() throws Exception {
         Ignite ignite = startGridWithLogCapture();
 
@@ -185,6 +190,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testValueWriteQueryEntities() throws Exception {
         Ignite ignite = startGridWithLogCapture();
 
@@ -209,6 +215,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testEntryWriteCreateTable() throws Exception {
         Ignite ignite = startGridWithLogCapture();
 
@@ -242,6 +249,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testEntryWriteQueryEntities() throws Exception {
         Ignite ignite = startGridWithLogCapture();
 
@@ -277,6 +285,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testEntryWriteCacheIsolation() throws Exception {
         Ignite ignite = startGridWithLogCapture();
 
@@ -309,6 +318,7 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testValueWriteMultipleQueryEntities() throws Exception {
         Ignite ignite = startGridWithLogCapture();
 

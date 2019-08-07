@@ -58,7 +58,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     private static final String CACHE_NAME = "Person";
 
     /** */
-    private Ignite node;
+    private static Ignite node;
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -78,9 +78,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        node = null;
     }
 
     /** {@inheritDoc} */
@@ -276,7 +274,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     }
 
     /** */
-    final static Comparator<Cache.Entry<Integer, Person>> ENTRY_CMP =
+    static final Comparator<Cache.Entry<Integer, Person>> ENTRY_CMP =
         new Comparator<Cache.Entry<Integer, Person>>() {
         @Override public int compare(Cache.Entry<Integer, Person> o1, Cache.Entry<Integer, Person> o2) {
             return o1.getKey().compareTo(o2.getKey());

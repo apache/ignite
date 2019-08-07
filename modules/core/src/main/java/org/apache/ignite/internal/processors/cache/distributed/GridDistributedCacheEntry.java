@@ -368,6 +368,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
         GridCacheMvccCandidate doomed;
 
+        GridCacheVersion deferredDelVer;
+
         CacheObject val;
 
         lockEntry();
@@ -406,9 +408,20 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+
+            deferredDelVer = this.ver;
         }
         finally {
             unlockEntry();
+        }
+
+        if (val == null) {
+            boolean deferred = cctx.deferredDelete() && !detached() && !isInternal();
+
+            if (deferred) {
+                if (deferredDelVer != null)
+                    cctx.onDeferredDelete(this, deferredDelVer);
+            }
         }
 
         if (log.isDebugEnabled())
@@ -601,7 +614,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 }
 
                 if (sysInvalidate && baseVer != null)
-                    mvcc.salvageRemote(baseVer);
+                    mvcc.salvageRemote(baseVer, isNear());
 
                 owner = mvcc.doneRemote(lockVer,
                     maskNull(pendingVers),
@@ -629,7 +642,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     /**
      * Rechecks if lock should be reassigned.
      */
-    public void recheck() {
+    public CacheLockCandidates recheck(GridCacheMvccCandidate checkingCandidate) {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
@@ -662,7 +675,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         }
 
         // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val);
+        checkOwnerChanged(prev, owner, val, checkingCandidate);
+
+        return owner;
     }
 
     /** {@inheritDoc} */
@@ -705,11 +720,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public final void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
-        removeLock(tx.xidVersion());
-    }
-
     /**
      * @param emptyBefore Empty flag before operation.
      * @param emptyAfter Empty flag after operation.
@@ -727,7 +737,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override final protected void checkThreadChain(GridCacheMvccCandidate owner) {
+    @Override protected final void checkThreadChain(GridCacheMvccCandidate owner) {
         assert !lockedByCurrentThread();
 
         assert owner != null;
@@ -745,10 +755,14 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                     GridDistributedCacheEntry e =
                         (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.parent().key());
 
-                    if (e != null)
-                        e.recheck();
-
-                    break;
+                    if (e != null) {
+                        CacheLockCandidates newOnwer = e.recheck(owner);
+                        if(newOnwer == null || !newOnwer.hasCandidate(cand.version()))
+                            // the lock from the chain hasn't been acquired, no sense to check the rest of the chain
+                            break;
+                    }
+                    else
+                        break;
                 }
             }
         }

@@ -365,7 +365,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
             if (delegate.separated()) {
                 IgniteInternalFuture<Boolean> fut = cctx.kernalContext().cache().dynamicDestroyCache(
-                    cctx.cache().name(), false, true, false);
+                    cctx.cache().name(), false, true, false, null);
 
                 ((GridFutureAdapter)fut).ignoreInterrupts();
 

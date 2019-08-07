@@ -79,6 +79,9 @@ public class DiscoveryDataClusterState implements Serializable {
     /** Transition result error. */
     private transient volatile Exception transitionError;
 
+    /** Local baseline autoadjustment flag. */
+    private transient volatile boolean locBaselineAutoAdjustment;
+
     /**
      * @param active Current status.
      * @return State instance.
@@ -243,6 +246,24 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     public void transitionError(Exception ex) {
         transitionError = ex;
+    }
+
+    /**
+     * @return {@code true} if current state was created as a result of local baseline autoadjustment with zero timeout
+     *      on in-memory cluster.
+     */
+    public boolean localBaselineAutoAdjustment() {
+        return locBaselineAutoAdjustment;
+    }
+
+    /**
+     * Set local baseline autoadjustment flag.
+     *
+     * @param adjusted Flag value.
+     * @see #localBaselineAutoAdjustment()
+     */
+    public void localBaselineAutoAdjustment(boolean adjusted) {
+        locBaselineAutoAdjustment = adjusted;
     }
 
     /**

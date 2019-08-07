@@ -85,7 +85,7 @@ class MapNodeResults {
     public void cancelRequest(long reqId) {
         for (MapRequestKey key : res.keySet()) {
             if (key.requestId() == reqId) {
-                final MapQueryResults removed = res.remove(key);
+                MapQueryResults removed = res.remove(key);
 
                 if (removed != null)
                     removed.cancel();
@@ -149,5 +149,4 @@ class MapNodeResults {
         for (GridQueryCancel upd: updCancels.values())
             upd.cancel();
     }
-
 }

@@ -19,14 +19,28 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Exception thrown during serialization if binary metadata isn't registered and it's registration isn't allowed.
+ * Used for both binary types and marshalling mappings.
+ * Confusing old class name is preserved for backwards compatibility.
  */
 public class UnregisteredBinaryTypeException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final String MESSAGE =
+        "Attempted to update binary metadata inside a critical synchronization block (will be " +
+        "automatically retried). This exception must not be wrapped to any other exception class. " +
+        "If you encounter this exception outside of EntryProcessor, please report to Apache Ignite " +
+        "dev-list. Debug info [typeId=%d, binaryMetadata=%s, fut=%s]";
+
+    /** */
+    private static String createMessage(int typeId, BinaryMetadata binaryMetadata, GridFutureAdapter<?> fut) {
+        return String.format(MESSAGE, typeId, binaryMetadata, fut);
+    }
 
     /** */
     private final int typeId;
@@ -34,50 +48,36 @@ public class UnregisteredBinaryTypeException extends IgniteException {
     /** */
     private final BinaryMetadata binaryMetadata;
 
+    /** */
+    private final GridFutureAdapter<?> fut;
+
     /**
      * @param typeId Type ID.
      * @param binaryMetadata Binary metadata.
      */
     public UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata) {
-        this.typeId = typeId;
-        this.binaryMetadata = binaryMetadata;
+        this(typeId, binaryMetadata, null);
     }
 
     /**
-     * @param msg Error message.
      * @param typeId Type ID.
-     * @param binaryMetadata Binary metadata.
+     * @param fut Future to wait in handler.
      */
-    public UnregisteredBinaryTypeException(String msg, int typeId,
-        BinaryMetadata binaryMetadata) {
-        super(msg);
-        this.typeId = typeId;
-        this.binaryMetadata = binaryMetadata;
+    public UnregisteredBinaryTypeException(int typeId, GridFutureAdapter<?> fut) {
+        this(typeId, null, fut);
     }
 
     /**
-     * @param cause Non-null throwable cause.
      * @param typeId Type ID.
      * @param binaryMetadata Binary metadata.
+     * @param fut Future to wait in handler.
      */
-    public UnregisteredBinaryTypeException(Throwable cause, int typeId,
-        BinaryMetadata binaryMetadata) {
-        super(cause);
-        this.typeId = typeId;
-        this.binaryMetadata = binaryMetadata;
-    }
+    private UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata, GridFutureAdapter<?> fut) {
+        super(createMessage(typeId, binaryMetadata, fut));
 
-    /**
-     * @param msg Error message.
-     * @param cause Non-null throwable cause.
-     * @param typeId Type ID.
-     * @param binaryMetadata Binary metadata.
-     */
-    public UnregisteredBinaryTypeException(String msg, @Nullable Throwable cause, int typeId,
-        BinaryMetadata binaryMetadata) {
-        super(msg, cause);
         this.typeId = typeId;
         this.binaryMetadata = binaryMetadata;
+        this.fut = fut;
     }
 
     /**
@@ -92,5 +92,12 @@ public class UnregisteredBinaryTypeException extends IgniteException {
      */
     public BinaryMetadata binaryMetadata() {
         return binaryMetadata;
+    }
+
+    /**
+     * @return Future to wait in handler.
+     */
+    public GridFutureAdapter<?> future() {
+        return fut;
     }
 }

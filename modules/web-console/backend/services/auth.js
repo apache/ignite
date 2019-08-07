@@ -19,9 +19,11 @@
 
 // Fire me up!
 
+const _ = require('lodash');
+
 module.exports = {
     implements: 'services/auth',
-    inject: ['mongo', 'settings', 'errors', 'services/utils']
+    inject: ['mongo', 'settings', 'errors', 'services/utils', 'services/mails']
 };
 
 /**
@@ -29,41 +31,52 @@ module.exports = {
  * @param settings
  * @param errors
  * @param {UtilsService} utilsService
+ * @param {MailsService} mailsService
  * @returns {AuthService}
  */
 
-module.exports.factory = (mongo, settings, errors, utilsService) => {
+module.exports.factory = (mongo, settings, errors, utilsService, mailsService) => {
     class AuthService {
         /**
          * Reset password reset token for user.
          *
+         * @param host Web Console host.
          * @param email - user email
          * @returns {Promise.<mongo.Account>} - that resolves account found by email with new reset password token.
          */
-        static resetPasswordToken(email) {
+        static resetPasswordToken(host, email) {
             return mongo.Account.findOne({email}).exec()
                 .then((user) => {
                     if (!user)
                         throw new errors.MissingResourceException('Account with that email address does not exists!');
 
+                    if (settings.activation.enabled && !user.activated)
+                        throw new errors.MissingConfirmRegistrationException(user.email);
+
                     user.resetPasswordToken = utilsService.randomString(settings.tokenLength);
 
                     return user.save();
-                });
+                })
+                .then((user) => mailsService.sendResetLink(host, user)
+                    .then(() => user));
         }
 
         /**
          * Reset password by reset token.
          *
+         * @param host Web Console host.
          * @param {string} token - reset token
          * @param {string} newPassword - new password
          * @returns {Promise.<mongo.Account>} - that resolves account with new password
          */
-        static resetPasswordByToken(token, newPassword) {
+        static resetPasswordByToken(host, token, newPassword) {
             return mongo.Account.findOne({resetPasswordToken: token}).exec()
                 .then((user) => {
                     if (!user)
                         throw new errors.MissingResourceException('Failed to find account with this token! Please check link from email.');
+
+                    if (settings.activation.enabled && !user.activated)
+                        throw new errors.MissingConfirmRegistrationException(user.email);
 
                     return new Promise((resolve, reject) => {
                         user.setPassword(newPassword, (err, _user) => {
@@ -75,7 +88,9 @@ module.exports.factory = (mongo, settings, errors, utilsService) => {
                             resolve(_user.save());
                         });
                     });
-                });
+                })
+                .then((user) => mailsService.sendPasswordChanged(host, user)
+                    .then(() => user));
         }
 
         /**
@@ -90,8 +105,72 @@ module.exports.factory = (mongo, settings, errors, utilsService) => {
                     if (!user)
                         throw new errors.IllegalAccessError('Invalid token for password reset!');
 
+                    if (settings.activation.enabled && !user.activated)
+                        throw new errors.MissingConfirmRegistrationException(user.email);
+
                     return {token, email: user.email};
                 });
+        }
+
+        /**
+         * Validate activationToken token.
+         *
+         * @param {mongo.Account} user - User object.
+         * @param {string} activationToken - activate account token
+         * @return {Error} If token is invalid.
+         */
+        static validateActivationToken(user, activationToken) {
+            if (user.activated) {
+                if (!_.isEmpty(activationToken) && user.activationToken !== activationToken)
+                    return new errors.AuthFailedException('Invalid email or password!');
+            }
+            else {
+                if (_.isEmpty(activationToken))
+                    return new errors.MissingConfirmRegistrationException(user.email);
+
+                if (user.activationToken !== activationToken)
+                    return new errors.AuthFailedException('This activation token isn\'t valid.');
+            }
+        }
+
+        /**
+         * Check if activation token expired.
+         *
+         * @param {mongo.Account} user - User object.
+         * @param {string} activationToken - activate account token
+         * @return {boolean} If token was already expired.
+         */
+        static isActivationTokenExpired(user, activationToken) {
+            return !user.activated &&
+                new Date().getTime() - user.activationSentAt.getTime() >= settings.activation.timeout;
+        }
+
+        /**
+         * Reset password reset token for user.
+         *
+         * @param host Web Console host.
+         * @param email - user email.
+         * @returns {Promise}.
+         */
+        static resetActivationToken(host, email) {
+            return mongo.Account.findOne({email}).exec()
+                .then((user) => {
+                    if (!user)
+                        throw new errors.MissingResourceException('Account with that email address does not exists!');
+
+                    if (!settings.activation.enabled)
+                        throw new errors.IllegalAccessError('Activation was not enabled!');
+
+                    if (user.activationSentAt &&
+                        new Date().getTime() - user.activationSentAt.getTime() < settings.activation.sendTimeout)
+                        throw new errors.IllegalAccessError('Too Many Activation Attempts!');
+
+                    user.activationToken = utilsService.randomString(settings.tokenLength);
+                    user.activationSentAt = new Date();
+
+                    return user.save();
+                })
+                .then((user) => mailsService.sendActivationLink(host, user));
         }
     }
 

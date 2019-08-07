@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.util;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 /**
  * Grid cleaner tests.
  */
-public class GridCleanerTest extends TestCase {
+public class GridCleanerTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreate() throws Exception {
         Object cleaner = GridCleaner.create(this, new Runnable() {
             @Override public void run() {

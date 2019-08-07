@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DmlArguments {
     /** Operand that always evaluates as {@code null}. */
-    private final static DmlArgument NULL_ARG = new ConstantArgument(null);
+    private static final DmlArgument NULL_ARG = new ConstantArgument(null);
 
     /**
      * Create argument from AST element.
@@ -71,7 +71,7 @@ public class DmlArguments {
         }
 
         /** {@inheritDoc} */
-        public Object get(Object[] params) {
+        @Override public Object get(Object[] params) {
             return val;
         }
     }
