@@ -69,7 +69,7 @@ public class CacheMvccReplicatedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAb
     /**
      * @throws Exception If failed.
      */
-    public void checkReplicatedJoinPartitioned(boolean client) throws Exception {
+    private void checkReplicatedJoinPartitioned(boolean client) throws Exception {
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(REPLICATED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
                 .setName("int")
