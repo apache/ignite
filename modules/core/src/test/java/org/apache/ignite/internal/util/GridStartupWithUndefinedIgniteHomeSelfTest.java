@@ -16,12 +16,11 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -33,6 +32,8 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Checks that node can be started without operations with undefined IGNITE_HOME.
@@ -91,14 +92,13 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest {
             cfg.setDiscoverySpi(disc);
             cfg.setConnectorConfiguration(null);
 
-            try (Ignite ignite = G.start(cfg)) {
-                assert ignite != null;
+            try {
+                G.start(cfg);
 
-                igniteHome0 = U.getIgniteHome();
-
-                assert igniteHome0 == null;
-
-                X.println("Stopping grid " + ignite.cluster().localNode().id());
+                fail("Starting should fail due to working directory is not defined");
+            }
+            catch (IgniteException e) {
+                assertTrue(e.getMessage().contains("Failed to resolve Ignite work directory"));
             }
         }
     }
