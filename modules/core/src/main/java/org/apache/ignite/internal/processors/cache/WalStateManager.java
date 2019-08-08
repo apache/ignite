@@ -511,7 +511,13 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         return;
 
                     for (Integer grpId0 : session0.disabledGrps) {
-                        cctx.database().walEnabled(grpId0, true, true);
+                        try {
+                            cctx.database().walEnabled(grpId0, true, true);
+                        }
+                        catch (Exception e) {
+                            if (!X.hasCause(e, NodeStoppingException.class))
+                                throw e;
+                        }
 
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
