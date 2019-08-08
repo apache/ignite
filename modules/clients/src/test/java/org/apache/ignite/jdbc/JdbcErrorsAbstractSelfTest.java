@@ -791,7 +791,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     statement.addBatch("INSERT INTO TEST_READ_ONLY_BATCH VALUES (1, 2)");
                     statement.executeBatch();
                 }
-            }, "90097", "Failed to execute DML statement. Cluster in read-only mode");
+            }, "90097", null);
         }
         finally {
             grid(0).cluster().readOnly(false);
