@@ -42,7 +42,7 @@ import static org.apache.ignite.configuration.DataPageEvictionMode.DISABLED;
  */
 public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest {
     /** */
-    private static final long DATA_REGION_SIZE = 20L * 1024 * 1024;
+    private static final long DATA_REGION_SIZE = 10L * 1024 * 1024;
 
     /** */
     private static final int ATTEMPTS_NUM = 3;

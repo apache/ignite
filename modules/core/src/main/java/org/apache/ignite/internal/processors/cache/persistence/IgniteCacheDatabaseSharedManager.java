@@ -1002,10 +1002,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Therefore, inserting a new entry should be prevented in case of some threshold is exceeded.
      *
      * @param region Data region to be checked.
+     * @param dataRowSize Size of data row to be inserted.
      * @throws IgniteOutOfMemoryException In case of the given data region does not have enough free space
      * for putting a new entry.
      */
-    public void ensureFreeSpaceForInsert(DataRegion region) throws IgniteOutOfMemoryException {
+    public void ensureFreeSpaceForInsert(DataRegion region, int dataRowSize) throws IgniteOutOfMemoryException {
         if (region == null)
             return;
 
@@ -1023,14 +1024,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         long nonEmptyPages = (pageMem.loadedPages() - freeList.emptyDataPages());
 
         // The maximum number of pages that can be allocated (memorySize / systemPageSize)
-        // should be greater or equal to the current number of non-empty pages plus
-        // the number of pages that may be required in order to move all pages to a reuse bucket,
-        // that is equal to nonEmptyPages * 8 / pageSize, where 8 is the size of a link.
+        // should be greater or equal to pages required for inserting a new entry plus
+        // the current number of non-empty pages plus the number of pages that may be required in order to move
+        // all pages to a reuse bucket, that is equal to nonEmptyPages * 8 / pageSize, where 8 is the size of a link.
         // Note that not the whole page can be used to storing links,
         // see PagesListNodeIO and PagesListMetaIO#getCapacity(), so we pessimistically multiply the result on 1.5,
         // in any way, the number of required pages is less than 1 percent.
         boolean oomThreshold = (memorySize / pageMem.systemPageSize()) <
-            (nonEmptyPages * (8.0 / pageMem.pageSize() + 1) * 1.5 + 256 /*one page per bucket*/);
+            ((double)dataRowSize / pageMem.pageSize() + nonEmptyPages * (8.0 * 1.5 / pageMem.pageSize() + 1) + 256 /*one page per bucket*/);
 
         if (oomThreshold) {
             IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
