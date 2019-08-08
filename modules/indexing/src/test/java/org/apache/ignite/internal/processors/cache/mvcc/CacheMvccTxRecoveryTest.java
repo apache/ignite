@@ -42,10 +42,12 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -56,6 +58,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest.NodeMode.CLIENT;
@@ -501,6 +504,81 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         assertTrue(liveNodes.stream()
             .map(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll())
             .allMatch(Collection::isEmpty));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testTxRecoveryWithLostFullMassageOnJoiningBackupNode() throws Exception {
+        CountDownLatch success = new CountDownLatch(1);
+
+        int joiningBackupNodeId = 2;
+
+        IgniteEx crd = startGrid(0);
+
+        IgniteEx partOwner = startGrid(1);
+
+        IgniteCache<Object, Object> cache = partOwner.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setCacheMode(PARTITIONED)
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setBackups(2));
+
+        // prevent FullMassage on joining backup node
+        ((TestRecordingCommunicationSpi)crd.configuration().getCommunicationSpi())
+            .blockMessages(GridDhtPartitionsFullMessage.class, getTestIgniteInstanceName(joiningBackupNodeId));
+
+        new Thread(() -> {
+            try {
+                startGrid(joiningBackupNodeId);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            success.countDown();
+        }).start();
+
+        assertTrue(GridTestUtils.waitForCondition(() -> crd.cluster().nodes().size() == 3, 10_000));
+
+        ArrayList<Integer> keys = new ArrayList<>();
+
+        Affinity<Object> aff = crd.affinity(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++) {
+            if (aff.isPrimary(partOwner.localNode(), i)) {
+                keys.add(i);
+                break;
+            }
+        }
+
+        ((TestRecordingCommunicationSpi)partOwner.configuration().getCommunicationSpi())
+            .blockMessages(GridDhtTxPrepareRequest.class, getTestIgniteInstanceName(joiningBackupNodeId));
+
+        GridNearTxLocal nearTx = ((TransactionProxyImpl)partOwner.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
+
+        for (Integer k : keys)
+            cache.put(k, k);
+
+        nearTx.commitAsync();
+
+        // Checks that PartitionCountersNeighborcastRequest will be sent after primary node left.
+        IgniteTxManager tm = crd.context().cache().context().tm();
+        assertTrue(GridTestUtils.waitForCondition(() -> !tm.activeTransactions().isEmpty(), 10_000));
+        assertTrue(GridTestUtils.waitForCondition(() -> tm.activeTransactions().iterator().next().state().equals(PREPARED), 10_000));
+
+        // Primary node left.
+        partOwner.close();
+
+        // Node with backup fetch lost FullMessage and starts.
+        ((TestRecordingCommunicationSpi)crd.configuration().getCommunicationSpi()).stopBlock();
+
+        success.await();
+
+        awaitPartitionMapExchange();
+
+        assertEquals(2, crd.cluster().nodes().size());
     }
 
     /**

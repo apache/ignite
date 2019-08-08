@@ -2244,7 +2244,7 @@ public class IgniteTxHandler {
         }
 
         try {
-            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
+            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId(), req.topologyVersion()), SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignored) {
             if (txRecoveryMsgLog.isDebugEnabled())
