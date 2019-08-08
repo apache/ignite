@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -268,14 +267,10 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
 
             qry = cache.query(q);
 
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < GridTestUtils.SF.applyLB(10000, 1000); i++)
                 cache.put(i, i);
 
-            assert !GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    return fail.get();
-                }
-            }, 1300L);
+            assertFalse(GridTestUtils.waitForCondition(fail::get, 1300L));
         }
         finally {
             if (qry != null)
