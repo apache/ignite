@@ -20,11 +20,18 @@ package org.apache.ignite.internal.metric;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+import javax.cache.event.CacheEntryEventFilter;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.CacheGroupView;
 import org.apache.ignite.internal.processors.metric.list.view.CacheView;
+import org.apache.ignite.internal.processors.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.internal.processors.metric.list.view.ServiceView;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.F;
@@ -98,6 +105,60 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals(srvcCfg.getName(), sview.name());
             assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
             assertEquals(DummyService.class, sview.service());
+        }
+    }
+
+    @Test
+    /** */
+    public void testContinuousQuery() throws Exception {
+        try(IgniteEx g0 = startGrid(0); IgniteEx g1 = startGrid(1)) {
+            IgniteCache cache = g0.createCache("cache-1");
+
+            QueryCursor qry = cache.query(new ContinuousQuery()
+                .setInitialQuery(new ScanQuery<>())
+                .setPageSize(100)
+                .setTimeInterval(1000)
+                .setLocalListener(evts -> {
+                    // No-op.
+                })
+                .setRemoteFilterFactory(() -> {
+                    return (CacheEntryEventFilter)evt -> true;
+                })
+            );
+
+            for (int i=0; i<100; i++)
+                cache.put(i, i);
+
+            MonitoringList<UUID, ContinuousQueryView> qrys = g0.context().metric().list("continuousQuery");
+
+            assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
+
+            ContinuousQueryView cq = qrys.iterator().next(); //Info on originating node.
+
+            assertEquals("cache-1", cq.cacheName());
+            assertEquals(100, cq.bufferSize());
+            assertEquals(1000, cq.interval());
+            assertEquals(g0.localNode().id().toString(), cq.sessionId());
+            assertTrue(cq.localListener().startsWith(this.getClass().getName()));
+            assertTrue(cq.remoteFilter().startsWith(this.getClass().getName()));
+            assertNull(cq.localTransformedListener());
+            assertNull(cq.remoteTransformer());
+
+            qrys = g1.context().metric().list("continuousQuery");
+
+            assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
+
+            cq = qrys.iterator().next(); //Info on remote node.
+
+            assertEquals("cache-1", cq.cacheName());
+            assertEquals(100, cq.bufferSize());
+            assertEquals(1000, cq.interval());
+            assertEquals(g0.localNode().id().toString(), cq.sessionId());
+            assertNull(cq.localListener());
+            assertTrue(cq.remoteFilter().startsWith(this.getClass().getName()));
+            assertNull(cq.localTransformedListener());
+            assertNull(cq.remoteTransformer());
+
         }
     }
 }

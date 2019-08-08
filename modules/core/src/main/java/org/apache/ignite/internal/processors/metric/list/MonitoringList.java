@@ -21,9 +21,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.NotNull;
 
-/**
- *
- */
+/** */
 public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable<R> {
     /** Name of the list. */
     private final String name;
@@ -46,6 +44,14 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
         MonitoringRow<Id> old = data.put(id, row);
 
         assert old == null;
+    }
+
+    /**
+     * @param id Id of the row.
+     * @param row Row.
+     */
+    public void addIfAbsent(Id id, R row) {
+        data.putIfAbsent(id, row);
     }
 
     /**

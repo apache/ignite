@@ -260,11 +260,24 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.notifyExisting = notifyExisting;
     }
 
+    /** */
+    public boolean notifyExisting() { return notifyExisting; }
+
+    /** */
+    public boolean oldValueRequired() { return oldValRequired; }
+
+    /** */
+    public CacheEntryUpdatedListener<K, V> localListener() { return locLsnr; }
+
     /**
      * @param locOnly Local only.
      */
     public void localOnly(boolean locOnly) {
         this.locOnly = locOnly;
+    }
+
+    public boolean localOnly() {
+        return locOnly;
     }
 
     /**
@@ -354,15 +367,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             throw new IgniteCheckedException("Failed to initialize a continuous query.", initFut.error());
 
         entryBufs = new ConcurrentHashMap<>();
-
         ackBuf = new CacheContinuousQueryAcknowledgeBuffer();
-
         rcvs = new ConcurrentHashMap<>();
 
         this.nodeId = nodeId;
-
         this.routineId = routineId;
-
         this.ctx = ctx;
 
         final boolean loc = nodeId.equals(ctx.localNodeId());
@@ -737,14 +746,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * @return Cache entry event transformer.
      */
-    @Nullable protected IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
+    @Nullable public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
         return null;
     }
 
     /**
      * @return Local listener of transformed events.
      */
-    @Nullable protected EventListener<?> localTransformedEventListener() {
+    @Nullable public EventListener<?> localTransformedEventListener() {
         return null;
     }
 

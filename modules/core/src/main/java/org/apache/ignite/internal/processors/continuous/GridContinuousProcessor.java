@@ -70,6 +70,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -120,6 +122,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Remote infos. */
     private final ConcurrentMap<UUID, RemoteRoutineInfo> rmtInfos = new ConcurrentHashMap<>();
 
+    /** */
+    private final MonitoringList<UUID, ContinuousQueryView> cqMonList;
+
     /** Start futures. */
     private final ConcurrentMap<UUID, StartFuture> startFuts = new ConcurrentHashMap<>();
 
@@ -167,6 +172,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     public GridContinuousProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        cqMonList = ctx.metric().list("continuousQuery");
     }
 
     /** {@inheritDoc} */
@@ -565,8 +572,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
 
                 if (!item.autoUnsubscribe) {
-                    locInfos.putIfAbsent(item.routineId, new LocalRoutineInfo(
-                        item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe));
+                    LocalRoutineInfo info = new LocalRoutineInfo(data.nodeId,
+                        item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe);
+
+                    LocalRoutineInfo old = locInfos.putIfAbsent(item.routineId, info);
+
+                    if (old == null)
+                        cqMonList.add(item.routineId, new ContinuousQueryView(info));
                 }
             }
 
@@ -776,7 +788,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         final UUID routineId = UUID.randomUUID();
 
-        LocalRoutineInfo routineInfo = new LocalRoutineInfo(prjPred, hnd, 1, 0, true);
+        LocalRoutineInfo routineInfo = new LocalRoutineInfo(ctx.localNodeId(), prjPred, hnd, 1, 0, true);
 
         if (discoProtoVer == 2) {
             routinesInfo.addRoutineInfo(createRoutineInfo(
@@ -790,6 +802,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         locInfos.put(routineId, routineInfo);
+        cqMonList.add(routineId, new ContinuousQueryView(routineInfo));
 
         registerMessageListener(hnd);
 
@@ -858,8 +871,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             assert !(hnd instanceof CacheContinuousQueryHandler) || ((CacheContinuousQueryHandler)hnd).isMarshalled();
         }
 
+        LocalRoutineInfo info =
+            new LocalRoutineInfo(ctx.localNodeId(), prjPred, hnd, bufSize, interval, autoUnsubscribe);
+
         // Register routine locally.
-        locInfos.put(routineId, new LocalRoutineInfo(prjPred, hnd, bufSize, interval, autoUnsubscribe));
+        locInfos.put(routineId, info);
+        cqMonList.add(routineId, new ContinuousQueryView(info));
 
         if (locOnly) {
             try {
@@ -912,7 +929,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
             catch (IgniteCheckedException e) {
                 startFuts.remove(routineId);
+
                 locInfos.remove(routineId);
+                cqMonList.remove(routineId);
 
                 unregisterHandler(routineId, hnd, true);
 
@@ -1076,6 +1095,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 // Unregister routine locally.
                 LocalRoutineInfo routine = locInfos.remove(routineId);
+                cqMonList.remove(routineId);
 
                 if (routine != null) {
                     stop = true;
@@ -1268,8 +1288,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         for (LocalRoutineInfo routine : locInfos.values())
             routine.hnd.onClientDisconnected();
 
-        rmtInfos.clear();
+        for (UUID uuid : rmtInfos.keySet()) {
+            if (!locInfos.containsKey(uuid))
+                cqMonList.remove(uuid);
+        }
 
+        rmtInfos.clear();
         clientInfos.clear();
 
         if (discoProtoVer == 2)
@@ -1423,7 +1447,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 assert old == null;
             }
 
-            clientRoutineMap.put(routineId, new LocalRoutineInfo(data.projectionPredicate(),
+            clientRoutineMap.put(routineId, new LocalRoutineInfo(
+                node.id(),
+                data.projectionPredicate(),
                 hnd,
                 data.bufferSize(),
                 data.interval(),
@@ -1442,10 +1468,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
 
-                if (!data.autoUnsubscribe())
+                if (!data.autoUnsubscribe()) {
+                    LocalRoutineInfo info = new LocalRoutineInfo(node.id(),
+                        prjPred, hnd, data.bufferSize(), data.interval(), data.autoUnsubscribe());
+
                     // Register routine locally.
-                    locInfos.putIfAbsent(routineId, new LocalRoutineInfo(
-                        prjPred, hnd, data.bufferSize(), data.interval(), data.autoUnsubscribe()));
+                    locInfos.putIfAbsent(routineId, info);
+                    cqMonList.add(routineId, new ContinuousQueryView(info));
+                }
             }
             catch (IgniteCheckedException e) {
                 err = e;
@@ -1744,6 +1774,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             try {
                 doRegister = !stopped.remove(routineId) && rmtInfos.putIfAbsent(routineId, info) == null;
+
+                if (doRegister)
+                    cqMonList.addIfAbsent(routineId, new ContinuousQueryView(info));
             }
             finally {
                 stopLock.unlock();
@@ -1861,6 +1894,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             remote = rmtInfos.remove(routineId);
 
             loc = locInfos.remove(routineId);
+
+            cqMonList.remove(routineId);
 
             if (remote == null)
                 stopped.add(routineId);
@@ -2036,9 +2071,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Local routine info.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class LocalRoutineInfo implements Serializable {
+    public static class LocalRoutineInfo implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Source node id. */
+        private final UUID nodeId;
 
         /** Projection predicate. */
         private final IgnitePredicate<ClusterNode> prjPred;
@@ -2056,13 +2094,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private boolean autoUnsubscribe;
 
         /**
+         * @param nodeId Source node id.
          * @param prjPred Projection predicate.
          * @param hnd Continuous routine handler.
          * @param bufSize Buffer size.
          * @param interval Interval.
          * @param autoUnsubscribe Automatic unsubscribe flag.
          */
-        LocalRoutineInfo(@Nullable IgnitePredicate<ClusterNode> prjPred,
+        LocalRoutineInfo(
+            UUID nodeId,
+            @Nullable IgnitePredicate<ClusterNode> prjPred,
             GridContinuousHandler hnd,
             int bufSize,
             long interval,
@@ -2072,6 +2113,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             assert bufSize > 0;
             assert interval >= 0;
 
+            this.nodeId = nodeId;
             this.prjPred = prjPred;
             this.hnd = hnd;
             this.bufSize = bufSize;
@@ -2082,9 +2124,21 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /**
          * @return Handler.
          */
-        GridContinuousHandler handler() {
+        public GridContinuousHandler handler() {
             return hnd;
         }
+
+        /** */
+        public int bufferSize() { return bufSize; }
+
+        /** */
+        public long interval() { return interval; }
+
+        /** */
+        public boolean autoUnsubscribe() { return autoUnsubscribe; }
+
+        /** */
+        public UUID nodeId() { return nodeId; }
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -2095,7 +2149,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * Remote routine info.
      */
-    private static class RemoteRoutineInfo {
+    public static class RemoteRoutineInfo {
         /** Master node ID. */
         private UUID nodeId;
 
@@ -2145,6 +2199,27 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             batch = hnd.createBatch();
         }
+
+        /** */
+        public UUID nodeId() { return nodeId; }
+
+        /** */
+        public GridContinuousHandler handler() { return hnd; }
+
+        /** */
+        public int bufferSize() { return bufSize; }
+
+        /** */
+        public long interval() { return interval; }
+
+        /** */
+        public boolean autoUnsubscribe() { return autoUnsubscribe; }
+
+        /** */
+        public long lastSendTime() { return lastSndTime; }
+
+        /** */
+        public boolean delayedRegister() { return delayedRegister; }
 
         /**
          * Marks info to be registered when cache is started.
