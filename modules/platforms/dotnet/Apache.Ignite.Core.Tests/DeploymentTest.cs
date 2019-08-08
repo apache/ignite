@@ -63,7 +63,8 @@ namespace Apache.Ignite.Core.Tests
                 "-assembly=" + Path.GetFileName(GetType().Assembly.Location),
                 "-J-ea",
                 "-J-Xms512m",
-                "-J-Xmx512m"
+                "-J-Xmx512m",
+                "-J-DIGNITE_HOME=" + folder
             });
 
             Assert.IsNotNull(proc);
