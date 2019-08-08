@@ -20,6 +20,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverMvccTxSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverMvccTxReplicatedSelfTest;
@@ -36,6 +37,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     // Continuous queries failover tests.
     CacheContinuousQueryFailoverAtomicSelfTest.class,
+    CacheContinuousQueryFailoverAtomicNearEnabledSelfTest.class,
     CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class,
     CacheContinuousQueryFailoverTxSelfTest.class,
     CacheContinuousQueryFailoverTxReplicatedSelfTest.class,

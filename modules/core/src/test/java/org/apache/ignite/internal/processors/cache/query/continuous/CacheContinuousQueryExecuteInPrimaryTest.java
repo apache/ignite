@@ -58,9 +58,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Continuous queries execute in primary node tests.
  */
-public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstractTest
-    implements Serializable {
-
+public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstractTest implements Serializable {
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
 
