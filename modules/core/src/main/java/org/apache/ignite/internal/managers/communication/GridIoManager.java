@@ -1141,10 +1141,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param nodeId The remote node id.
+     * @param rmtNodeId The remote node id.
+     * @param initMsg Message with additional channel params.
      * @param channel The channel to notify listeners with.
      */
-    private void onChannelOpened0(UUID nodeId, GridIoMessage initMsg, Channel channel) {
+    private void onChannelOpened0(UUID rmtNodeId, GridIoMessage initMsg, Channel channel) {
         Lock busyLock0 = busyLock.readLock();
 
         busyLock0.lock();
@@ -1153,7 +1154,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (stopping) {
                 if (log.isDebugEnabled()) {
                     log.debug("Received communication channel create event while node stopping (will ignore) " +
-                        "[nodeId=" + nodeId + ", msg=" + initMsg + ']');
+                        "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']');
                 }
 
                 return;
@@ -1170,14 +1171,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
-                    processOpenedChannel(initMsg.topic(), nodeId, (SessionChannelMessage)initMsg.message(),
+                    processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
                         (SocketChannel)channel);
                 }
             });
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process channel creation event due to exception " +
-                "[nodeId=" + nodeId + ", initMsg=" + initMsg + ']' , e);
+                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']' , e);
         }
         finally {
             busyLock0.unlock();
