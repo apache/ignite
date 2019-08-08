@@ -2753,7 +2753,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 rcvCtx = rcvCtxs.computeIfAbsent(topic, t -> new ReceiverContext(nodeId, hnd, newSesId));
             }
 
-            // Do not allow multiple connection for the same session
+            // Do not allow multiple connection for the same session.
             if (!newSesId.equals(rcvCtx.sesId)) {
                 IgniteCheckedException err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
                     "It's not allowed to process different sessions over the same topic simultaneously. " +
@@ -2793,7 +2793,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         catch (Throwable t) {
             U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
 
-            // Do not remove receiver context here, since sender will recconect to get this error
+            // Do not remove receiver context here, since sender will recconect to get this error.
             interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + nodeId + ']', t));
         }
         finally {

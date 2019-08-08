@@ -64,38 +64,38 @@ class ChunkReceiver extends TransmissionReceiver {
 
     /** {@inheritDoc} */
     @Override protected void readChunk(ReadableByteChannel ch) throws IOException {
-        assert buf != null : "Buffer is used to deilver readed data to the used and cannot be null: " + this;
+        assert buf != null : "Buffer cannot be null since it is used to receive the data from channel: " + this;
 
         buf.rewind();
 
-        int readed = 0;
+        int read = 0;
         int res;
 
-        // Read data from input channel utill the buffer will be completely filled
+        // Read data from input channel until the buffer will be completely filled
         // (buf.remaining() returns 0) or partitially filled buffer if it was the last chunk.
         while (true) {
             res = ch.read(buf);
 
             // Read will return -1 if remote node close connection.
             if (res < 0) {
-                if (transferred + readed != meta.count()) {
+                if (transferred + read != meta.count()) {
                     throw new IOException("Input data channel reached its end, but file has not fully loaded " +
-                        "[transferred=" + transferred + ", readed=" + readed + ", total=" + meta.count() + ']');
+                        "[transferred=" + transferred + ", read=" + read + ", total=" + meta.count() + ']');
                 }
 
                 break;
             }
 
-            readed += res;
+            read += res;
 
-            if (readed == buf.capacity() || buf.position() == buf.capacity())
+            if (read == buf.capacity() || buf.position() == buf.capacity())
                 break;
         }
 
-        if (readed == 0)
+        if (read == 0)
             return;
 
-        transferred += readed;
+        transferred += read;
 
         buf.flip();
 

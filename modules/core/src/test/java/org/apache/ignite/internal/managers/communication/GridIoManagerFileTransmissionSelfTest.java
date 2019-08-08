@@ -448,7 +448,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd.cluster().active(true);
 
         File fileToSend = createFileRandomData("testFile", 5 * 1024 * 1024);
-        final AtomicInteger readedChunks = new AtomicInteger();
+        final AtomicInteger readChunks = new AtomicInteger();
 
         transmissionFileIoFactory(rcv, new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
@@ -459,7 +459,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                     @Override public long transferFrom(ReadableByteChannel src, long position, long count)
                         throws IOException {
                         // Read 4 chunks than throw an exception to emulate error processing.
-                        if (readedChunks.incrementAndGet() == 4)
+                        if (readChunks.incrementAndGet() == 4)
                             throw new IgniteException(chunkDownloadExMsg);
 
                         return super.transferFrom(src, position, count);
@@ -559,7 +559,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         assertNotNull("Transmission must ends with an exception", expectedErr);
 
-        //Open next session and complete successfull.
+        // Open next session and complete successfull.
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
@@ -580,7 +580,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         snd.cluster().active(true);
 
-        // Ensure topic handler is empty
+        // Ensure topic handler is empty.
         rcv.context().io().removeTransmissionHandler(topic);
 
         // Open next writer on removed topic.

@@ -34,8 +34,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Class represents a chunk data receiver which is pulling data from channel vi
- * {@link FileChannel#transferFrom(ReadableByteChannel, long, long)}.
+ * Class represents the data receiver which is pulling data from channel using
+ * {@link FileChannel#transferFrom(ReadableByteChannel, long, long)} until the
+ * whole file will be completely received.
  */
 class FileReceiver extends TransmissionReceiver {
     /** Handler to notify when a file has been processed. */
@@ -99,13 +100,13 @@ class FileReceiver extends TransmissionReceiver {
 
         long batchSize = Math.min(chunkSize, meta.count() - transferred);
 
-        long readed = fileIo.transferFrom(ch, meta.offset() + transferred, batchSize);
+        long read = fileIo.transferFrom(ch, meta.offset() + transferred, batchSize);
 
-        if (readed == 0)
+        if (read == 0)
             throw new IOException("Channel is reached the end of stream. Probably, channel is closed on the remote node");
 
-        if (readed > 0)
-            transferred += readed;
+        if (read > 0)
+            transferred += read;
     }
 
     /** {@inheritDoc} */
