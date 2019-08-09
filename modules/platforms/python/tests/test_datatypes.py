@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import ctypes
 from datetime import datetime, timedelta
 import decimal
 import pytest
@@ -20,6 +21,7 @@ import uuid
 
 from pygridgain.api.key_value import cache_get, cache_put
 from pygridgain.datatypes import *
+from pygridgain.utils import unsigned
 
 
 @pytest.mark.parametrize(
@@ -143,6 +145,7 @@ def test_put_get_data(client, cache, value, value_hint):
     [
         [1, 2, 3, 5],
         (7, 8, 13, 18),
+        (-128, -1, 0, 1, 127, 255),
     ]
 )
 def test_bytearray_from_list_or_tuple(client, cache, value):
@@ -160,7 +163,9 @@ def test_bytearray_from_list_or_tuple(client, cache, value):
 
     result = cache_get(conn, cache, 'my_key')
     assert result.status == 0
-    assert result.value == bytearray(value)
+    assert result.value == bytearray([
+        unsigned(ch, ctypes.c_ubyte) for ch in value
+    ])
 
 
 @pytest.mark.parametrize(
