@@ -800,7 +800,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
-        authCtx.nodeAttributes(Collections.<String, Object>emptyMap());
+        authCtx.nodeAttributes(req.sslCerts() != null ? Collections.singletonMap("sslCerts", req.sslCerts()) :
+            Collections.emptyMap());
         authCtx.address(req.address());
 
         SecurityCredentials creds = credentials(req);

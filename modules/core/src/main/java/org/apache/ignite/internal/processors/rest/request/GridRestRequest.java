@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.request;
 
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -50,6 +51,9 @@ public class GridRestRequest {
 
     /** */
     private AuthorizationContext authCtx;
+
+    /** */
+    private Certificate[] sslCerts;
 
     /**
      * @return Destination ID.
@@ -159,6 +163,20 @@ public class GridRestRequest {
      */
     public void authorizationContext(AuthorizationContext authCtx) {
         this.authCtx = authCtx;
+    }
+
+    /**
+     * @return SSL certificates.
+     */
+    public Certificate[] sslCerts() {
+        return sslCerts;
+    }
+
+    /**
+     * @param sslCerts SSL certificates.
+     */
+    public void sslCerts(Certificate[] sslCerts) {
+        this.sslCerts = sslCerts;
     }
 
     /** {@inheritDoc} */

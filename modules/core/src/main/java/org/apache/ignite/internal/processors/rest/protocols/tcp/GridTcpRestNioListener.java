@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTopologyReques
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -88,6 +90,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV_ALL;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
@@ -384,6 +387,19 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq.clientId(msg.clientId());
             restReq.sessionToken(msg.sessionToken());
             restReq.address(ses.remoteAddress());
+
+            GridSslMeta meta = ses.meta(SSL_META.ordinal());
+
+            if (meta != null && meta.sslEngine() != null && meta.sslEngine().getSession() != null) {
+                try {
+                    restReq.sslCerts(meta.sslEngine().getSession().getPeerCertificates());
+                } catch (SSLPeerUnverifiedException e) {
+                    U.error(log, "Failed to process client request (failed to get peer certificates) [ses=" +
+                        ses + ", msg=" + msg + ']', e);
+
+                    return null;
+                }
+            }
         }
 
         return restReq;
