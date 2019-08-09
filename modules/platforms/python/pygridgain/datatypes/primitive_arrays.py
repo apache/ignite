@@ -220,7 +220,22 @@ class ByteArrayObject(PrimitiveArrayObject):
         # no need to iterate on bytes or bytearray
         # to create ByteArrayObject data buffer
         header.length = len(value)
-        return bytes(bytearray(header) + bytearray(value))
+        try:
+            # `value` is a `bytearray` or a sequence of integer values
+            # in range 0 to 255
+            value_buffer = bytearray(value)
+        except ValueError:
+            # `value` is a sequence of integers in range -128 to 127
+            value_buffer = bytearray()
+            for ch in value:
+                if -128 <= ch <= 255:
+                    value_buffer.append(ctypes.c_ubyte(ch).value)
+                else:
+                    raise ValueError(
+                        'byte must be in range(-128, 256)!'
+                    ) from None
+
+        return bytes(bytearray(header) + value_buffer)
 
 
 class ShortArrayObject(PrimitiveArrayObject):
