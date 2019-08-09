@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.Deflater;
@@ -574,13 +575,42 @@ public class IgniteConfiguration {
     private ObjectMetricImpl<String> igniteHome = new ObjectMetricImpl<>("igniteHome",
         "Ignite installation home folder.", String.class);
 
-    /** Formatted instance of MBean server instance. */
-    private ObjectMetricImpl<String> mBeanSrvFormatted = new ObjectMetricImpl<>("mBeanServerFormatted",
-        "Formatted instance of MBean server instance.", String.class);
-
     /** Unique identifier for this node within grid. */
     private ObjectMetricImpl<UUID> locNodeId = new ObjectMetricImpl<>("localNodeId",
         "Unique identifier for this node within grid.", UUID.class);
+
+    /** Formatted instance of configured discovery SPI implementation. */
+    private ObjectMetricImpl<String> discoverySpiFormatted = new ObjectMetricImpl<>("discoverySpiFormatted",
+        "Formatted instance of configured discovery SPI implementation.", String.class);
+
+    /** Formatted instance of fully configured SPI communication implementation. */
+    private ObjectMetricImpl<String> commSpiFormatted = new ObjectMetricImpl<>("communicationSpiFormatted",
+        "Formatted instance of fully configured SPI communication implementation.", String.class);
+
+    /** Formatted instance of fully configured deployment SPI implementation. */
+    private ObjectMetricImpl<String> deploymentSpiFormatted = new ObjectMetricImpl<>("deploymentSpiFormatted",
+        "Formatted instance of fully configured deployment SPI implementation.", String.class);
+
+    /** Formatted instance of configured checkpoint SPI implementation. */
+    private ObjectMetricImpl<String> checkpointSpiFormatted = new ObjectMetricImpl<>("checkpointSpiFormatted",
+        "Formatted instance of configured checkpoint SPI implementation.", String.class);
+
+    /** Formatted instance of configured collision SPI implementations. */
+    private ObjectMetricImpl<String> collisionSpiFormatted = new ObjectMetricImpl<>("collisionSpiFormatted",
+        "Formatted instance of configured collision SPI implementations.", String.class);
+
+    /** Formatted instance of fully configured event SPI implementation. */
+    private ObjectMetricImpl<String> evtStorageSpiFormatted = new ObjectMetricImpl<>("eventStorageSpiFormatted",
+        "Formatted instance of fully configured event SPI implementation.", String.class);
+
+    /** Formatted instance of fully configured failover SPI implementations. */
+    private ObjectMetricImpl<String> failoverSpiFormatted = new ObjectMetricImpl<>("failoverSpiFormatted",
+        "Formatted instance of fully configured failover SPI implementations.", String.class);
+
+    /** Formatted instance of fully configured load balancing SPI implementations. */
+    private ObjectMetricImpl<String> loadBalancingSpiFormatted =
+        new ObjectMetricImpl<>("loadBalancingSpiFormatted",
+            "Formatted instance of fully configured load balancing SPI implementations.", String.class);
 
     /**
      * Creates valid grid configuration with all default values.
@@ -710,7 +740,14 @@ public class IgniteConfiguration {
 
         gridLogFormatted.value(log != null ? log.toString() : " ");
         executorSvcFormatted.value(String.valueOf(pubPoolSize));
-        mBeanSrvFormatted.value(mbeanSrv != null ? mbeanSrv.toString() : " ");
+        discoverySpiFormatted.value(discoSpi != null ? discoSpi.toString() : " ");
+        commSpiFormatted.value(commSpi != null ? commSpi.toString() : " ");
+        deploymentSpiFormatted.value(deploySpi != null ? deploySpi.toString() : " ");
+        checkpointSpiFormatted.value(cpSpi != null ? Arrays.toString(cpSpi) : " ");
+        evtStorageSpiFormatted.value(evtSpi != null ? evtSpi.toString() : " ");
+        failoverSpiFormatted.value(failSpi != null ? Arrays.toString(failSpi) : " ");
+        loadBalancingSpiFormatted.value(loadBalancingSpi != null ? Arrays.toString(loadBalancingSpi) : " ");
+        collisionSpiFormatted.value(colSpi != null ? colSpi.toString() : " ");
     }
 
     /**
@@ -1320,8 +1357,6 @@ public class IgniteConfiguration {
     public IgniteConfiguration setMBeanServer(MBeanServer mbeanSrv) {
         this.mbeanSrv = mbeanSrv;
 
-        mBeanSrvFormatted.value(mbeanSrv.toString());
-
         return this;
     }
 
@@ -1878,6 +1913,8 @@ public class IgniteConfiguration {
     public IgniteConfiguration setEventStorageSpi(EventStorageSpi evtSpi) {
         this.evtSpi = evtSpi;
 
+        evtStorageSpiFormatted.value(evtSpi != null ? evtSpi.toString() : " ");
+
         return this;
     }
 
@@ -1900,6 +1937,8 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setDiscoverySpi(DiscoverySpi discoSpi) {
         this.discoSpi = discoSpi;
+
+        discoverySpiFormatted.value(discoSpi != null ? discoSpi.toString() : " ");
 
         return this;
     }
@@ -2076,6 +2115,8 @@ public class IgniteConfiguration {
     public IgniteConfiguration setCommunicationSpi(CommunicationSpi commSpi) {
         this.commSpi = commSpi;
 
+        commSpiFormatted.value(commSpi != null ? commSpi.toString() : " ");
+
         return this;
     }
 
@@ -2104,6 +2145,8 @@ public class IgniteConfiguration {
     public IgniteConfiguration setCollisionSpi(CollisionSpi colSpi) {
         this.colSpi = colSpi;
 
+        collisionSpiFormatted.value(colSpi != null ? colSpi.toString() : " ");
+
         return this;
     }
 
@@ -2126,6 +2169,8 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setDeploymentSpi(DeploymentSpi deploySpi) {
         this.deploySpi = deploySpi;
+
+        deploymentSpiFormatted.value(deploySpi != null ? deploySpi.toString() : " ");
 
         return this;
     }
@@ -2150,6 +2195,8 @@ public class IgniteConfiguration {
     public IgniteConfiguration setCheckpointSpi(CheckpointSpi... cpSpi) {
         this.cpSpi = cpSpi;
 
+        checkpointSpiFormatted.value(cpSpi != null ? Arrays.toString(cpSpi) : " ");
+
         return this;
     }
 
@@ -2173,6 +2220,8 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setFailoverSpi(FailoverSpi... failSpi) {
         this.failSpi = failSpi;
+
+        failoverSpiFormatted.value(failSpi != null ? Arrays.toString(failSpi) : " ");
 
         return this;
     }
@@ -2315,6 +2364,8 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setLoadBalancingSpi(LoadBalancingSpi... loadBalancingSpi) {
         this.loadBalancingSpi = loadBalancingSpi;
+
+        loadBalancingSpiFormatted.value(loadBalancingSpi != null ? Arrays.toString(loadBalancingSpi) : " ");
 
         return this;
     }
@@ -3450,7 +3501,6 @@ public class IgniteConfiguration {
         mReg.register(gridLogFormatted);
         mReg.register(executorSvcFormatted);
         mReg.register(igniteHome);
-        mReg.register(mBeanSrvFormatted);
         mReg.register(locNodeId);
     }
 

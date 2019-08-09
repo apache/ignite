@@ -623,51 +623,76 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String getCommunicationSpiFormatted() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return cfg.getCommunicationSpi().toString();
+        ObjectMetricImpl<String> gridLogMetric =
+            ctx.metric().registry(CACHE_METRICS).findMetric("communicationSpiFormatted");
+
+        assert gridLogMetric != null;
+
+        return gridLogMetric.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getDeploymentSpiFormatted() {
-        assert cfg != null;
+        assert ctx != null;
 
-        return cfg.getDeploymentSpi().toString();
+        ObjectMetricImpl<String> deploymentSpiFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("deploymentSpiFormatted");
+
+        assert deploymentSpiFormatted != null;
+
+        return deploymentSpiFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getDiscoverySpiFormatted() {
-        assert cfg != null;
+        ObjectMetricImpl<String> discoverySpiFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("discoverySpiFormatted");
 
-        return cfg.getDiscoverySpi().toString();
+        assert discoverySpiFormatted != null;
+
+        return discoverySpiFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getEventStorageSpiFormatted() {
-        assert cfg != null;
+        ObjectMetricImpl<String> evtStorageSpiFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("evtStorageSpiFormatted");
 
-        return cfg.getEventStorageSpi().toString();
+        assert evtStorageSpiFormatted != null;
+
+        return evtStorageSpiFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getCollisionSpiFormatted() {
-        assert cfg != null;
+        ObjectMetricImpl<String> collisionSpiFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("collisionSpiFormatted");
 
-        return cfg.getCollisionSpi().toString();
+        assert collisionSpiFormatted != null;
+
+        return collisionSpiFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getFailoverSpiFormatted() {
-        assert cfg != null;
+        ObjectMetricImpl<String> failoverSpiFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("failoverSpiFormatted");
 
-        return Arrays.toString(cfg.getFailoverSpi());
+        assert failoverSpiFormatted != null;
+
+        return failoverSpiFormatted.value();
     }
 
     /** {@inheritDoc} */
     @Override public String getLoadBalancingSpiFormatted() {
-        assert cfg != null;
+        ObjectMetricImpl<String> loadBalancingSpiFormatted =
+            ctx.metric().registry(CACHE_METRICS).findMetric("loadBalancingSpiFormatted");
 
-        return Arrays.toString(cfg.getLoadBalancingSpi());
+        assert loadBalancingSpiFormatted != null;
+
+        return loadBalancingSpiFormatted.value();
     }
 
     /** {@inheritDoc} */
@@ -736,14 +761,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String getMBeanServerFormatted() {
-        assert ctx != null;
+        assert cfg != null;
 
-        ObjectMetricImpl<String> mBeanSrvFormatted =
-            ctx.metric().registry(CACHE_METRICS).findMetric("mBeanServerFormatted");
-
-        assert mBeanSrvFormatted != null;
-
-        return mBeanSrvFormatted.value();
+        return cfg.getMBeanServer().toString();
     }
 
     /** {@inheritDoc} */

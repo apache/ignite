@@ -162,6 +162,7 @@ public interface IgniteMXBean {
      * @return MBean server instance.
      */
     @MXBeanDescription("Formatted instance of MBean server instance.")
+    @Deprecated
     public String getMBeanServerFormatted();
 
     /**
