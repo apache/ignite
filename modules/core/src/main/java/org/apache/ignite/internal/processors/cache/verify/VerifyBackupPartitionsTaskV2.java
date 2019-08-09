@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2.PartitionState;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,6 +70,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyMap;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
@@ -118,7 +120,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         if (results.size() != exceptions.size())
             return checkConflicts(clusterHashes, exceptions);
         else
-            return new IdleVerifyResultV2(new HashMap<>(), new HashMap<>(), new HashMap<>(), exceptions);
+            return new IdleVerifyResultV2(emptyMap(), emptyMap(), emptyMap(), emptyMap(), exceptions);
     }
 
     /** {@inheritDoc} */
@@ -157,16 +159,23 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingParts = new HashMap<>();
 
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostParts = new HashMap<>();
+
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
             Long updateCntr = null;
 
             for (PartitionHashRecordV2 record : e.getValue()) {
-                if (record.size() == PartitionHashRecordV2.MOVING_PARTITION_SIZE) {
-                    List<PartitionHashRecordV2> records = movingParts.computeIfAbsent(
-                        e.getKey(), k -> new ArrayList<>());
+                if (record.partitionState() == PartitionState.MOVING) {
+                    movingParts.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
+                        .add(record);
 
-                    records.add(record);
+                    continue;
+                }
+
+                if (record.partitionState() == PartitionState.LOST) {
+                    lostParts.computeIfAbsent(e.getKey(), k -> new ArrayList<>())
+                        .add(record);
 
                     continue;
                 }
@@ -186,7 +195,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, lostParts, exceptions);
     }
 
     /** */
@@ -355,8 +364,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
              * @param closure filter
              * @return this
              */
-            public CachesFiltering filter(
-                    IgniteInClosure<Set<CacheGroupContext>> closure) {
+            public CachesFiltering filter(IgniteInClosure<Set<CacheGroupContext>> closure) {
                 closure.apply(filteredCacheGroups);
 
                 return this;
@@ -432,8 +440,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
-         * Filters cache groups by cache filter, also removes system (if not specified in filter option)
-         * and local caches.
+         * Filters cache groups by cache filter, also removes system (if not specified in filter option) and local
+         * caches.
          *
          * @param cachesToFilter cache groups to filter
          */
@@ -475,8 +483,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
-         * Checks does the name of given cache group or some of the names of its caches
-         * match at least one of regexp from set.
+         * Checks does the name of given cache group or some of the names of its caches match at least one of regexp
+         * from set.
          *
          * @param grp cache group
          * @param patterns compiled regexp patterns
@@ -551,7 +559,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             AtomicBoolean cpFlag
         ) {
             if (!part.reserve())
-                return Collections.emptyMap();
+                return emptyMap();
 
             int partHash = 0;
             long partSize;
@@ -564,14 +572,22 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
             try {
-                if (part.state() == GridDhtPartitionState.MOVING) {
-                    PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(partKey, isPrimary, consId,
-                        partHash, updateCntrBefore, PartitionHashRecordV2.MOVING_PARTITION_SIZE);
+                if (part.state() == GridDhtPartitionState.MOVING || part.state() == GridDhtPartitionState.LOST) {
+                    PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(
+                        partKey,
+                        isPrimary,
+                        consId,
+                        partHash,
+                        updateCntrBefore,
+                        part.state() == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                        part.state() == GridDhtPartitionState.MOVING ? PartitionState.MOVING : PartitionState.LOST
+                    );
 
                     return Collections.singletonMap(partKey, movingHashRecord);
                 }
-                else if (part.state() != GridDhtPartitionState.OWNING)
-                    return Collections.emptyMap();
+
+                if (part.state() != GridDhtPartitionState.OWNING)
+                    return emptyMap();
 
                 partSize = part.dataStore().fullSize();
 
@@ -607,8 +623,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 part.release();
             }
 
-            PartitionHashRecordV2 partRec =
-                new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, updateCntrBefore, partSize);
+            PartitionHashRecordV2 partRec = new PartitionHashRecordV2(
+                partKey, isPrimary, consId, partHash, updateCntrBefore, partSize, PartitionState.OWNING
+            );
 
             completionCntr.incrementAndGet();
 
