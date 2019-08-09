@@ -583,7 +583,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         boolean storeEnabled,
         Boolean mvccOp,
         int txSize,
-        @Nullable String lb
+        @Nullable String lb,
+        boolean tracingEnabled
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
@@ -605,7 +606,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             txSize,
             subjId,
             taskNameHash,
-            lb);
+            lb,
+            tracingEnabled
+        );
 
         if (tx.system()) {
             AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);

@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.MBeanServer;
@@ -45,7 +44,6 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
@@ -163,13 +161,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(
-            int type,
-            long topVer,
-            ClusterNode node,
-            Collection<ClusterNode> topSnapshot,
-            Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage data
+            DiscoveryNotification notification
         ) {
-            if (type == EVT_NODE_METRICS_UPDATED)
+            if (notification.type() == EVT_NODE_METRICS_UPDATED)
                 isMetricsUpdate = true;
 
             return new IgniteFinishedFutureImpl<>();
@@ -248,12 +242,10 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     // No-op.
                 }
 
-                @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node,
-                    Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
-                    @Nullable DiscoverySpiCustomMessage data) {
+                @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
                     // If METRICS_UPDATED came from local node
-                    if (type == EVT_NODE_METRICS_UPDATED
-                        && node.id().equals(spi.getLocalNode().id()))
+                    if (notification.type() == EVT_NODE_METRICS_UPDATED
+                        && notification.getNode().id().equals(spi.getLocalNode().id()))
                         spiCnt.addAndGet(1);
 
                     return new IgniteFinishedFutureImpl<>();
@@ -423,14 +415,10 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                     @SuppressWarnings({"NakedNotify"})
                     @Override public IgniteFuture<?> onDiscovery(
-                        int type,
-                        long topVer,
-                        ClusterNode node,
-                        Collection<ClusterNode> topSnapshot,
-                        Map<Long, Collection<ClusterNode>> topHist,
-                        @Nullable DiscoverySpiCustomMessage data
+                        DiscoveryNotification notification
                     ) {
-                        info("Discovery event [type=" + type + ", node=" + node + ']');
+                        info("Discovery event [type="
+                            + notification.type() + ", node=" + notification.getNode() + ']');
 
                         synchronized (mux) {
                             mux.notifyAll();

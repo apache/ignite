@@ -16,6 +16,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
+import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -25,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage implements TraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,6 +36,9 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
 
     /** Discovery data container. */
     private final DiscoveryDataPacket dataPacket;
+
+    /** Span container. */
+    private SpanContainer spanContainer = new SpanContainer();
 
     /**
      * Constructor.
@@ -94,5 +99,10 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryJoinRequestMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public SpanContainer spanContainer() {
+        return spanContainer;
     }
 }

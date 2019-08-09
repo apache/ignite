@@ -168,7 +168,8 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                                 /*store enabled*/true,
                                 /*sql*/false,
                                 /*tx size*/0,
-                                null
+                                null,
+                                false
                             );
                         }
 

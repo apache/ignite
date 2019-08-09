@@ -20,6 +20,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
+import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
+import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage implements TraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,6 +44,9 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
 
     /** */
     private byte[] msgBytes;
+
+    /** Span container. */
+    private SpanContainer spanContainer = new SpanContainer();
 
     /**
      * @param creatorNodeId Creator node id.
@@ -65,6 +70,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
 
         this.msgBytes = msg.msgBytes;
         this.msg = msg.msg;
+        this.spanContainer = msg.spanContainer;
     }
 
     /**
@@ -127,5 +133,10 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public SpanContainer spanContainer() {
+        return spanContainer;
     }
 }

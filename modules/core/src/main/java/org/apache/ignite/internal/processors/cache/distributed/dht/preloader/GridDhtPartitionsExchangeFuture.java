@@ -103,6 +103,9 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.processors.tracing.NoopSpan;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
@@ -360,6 +363,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partitions scheduled for clearing before rebalance for this topology version. */
     private Map<Integer, Set<Integer>> clearingPartitions;
 
+    /** Tracing span. */
+    private Span span = NoopSpan.INSTANCE;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -401,6 +407,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() + ", fut=" + this + ']');
+    }
+
+    /**
+     * Set span.
+     *
+     * @param span Span.
+     */
+    public void span(Span span) {
+        this.span = span;
+    }
+
+    /**
+     * Gets span instance.
+     *
+     * @return Span.
+     */
+    public Span span() {
+        return span;
     }
 
     /**
@@ -787,6 +811,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", customEvt=" + (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)firstDiscoEvt).customMessage() : null) +
                     ", allowMerge=" + exchCtx.mergeExchanges() + ']');
             }
+
+            span.addLog("Exchange parameters initialization");
 
             timeBag.finishGlobalStage("Exchange parameters initialization");
 
@@ -2183,6 +2209,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert res != null || err != null;
 
+        if (res != null) {
+            span.addTag(SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR),
+                res.topologyVersion());
+            span.addTag(SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR),
+                res.minorTopologyVersion());
+        }
+
+        if (err != null)
+            span.addTag(SpanTags.ERROR, err.toString());
+
         try {
             waitUntilNewCachesAreRegistered();
 
@@ -2322,6 +2358,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (super.onDone(res, err)) {
             afterLsnrCompleteFut.onDone();
+
+            span.addLog("Completed partition exchange");
+
+            span.end();
 
             if (log.isInfoEnabled()) {
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
@@ -3377,6 +3417,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             initFut.get();
 
+            span.addLog("Waiting for all single messages");
+
             timeBag.finishGlobalStage("Waiting for all single messages");
 
             assert crd.isLocal();
@@ -3496,6 +3538,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             TransactionalDrProcessor txDrProc = cctx.kernalContext().txDr();
 
             boolean skipResetOwners = txDrProc != null && txDrProc.shouldIgnoreAssignPartitionStates(this);
+
+            span.addLog("Affinity recalculation (crd)");
 
             timeBag.finishGlobalStage("Affinity recalculation (crd)");
 

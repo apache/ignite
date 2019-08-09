@@ -176,6 +176,8 @@
     <Compile Include="Encryption\Keystore\KeystoreEncryptionSpi.cs" />
     <Compile Include="Metric\Package-Info.cs" />
     <Compile Include="Metric\IMetricExporterSpi.cs" />
+    <Compile Include="Tracing\Package-Info.cs" />
+    <Compile Include="Tracing\ITracingSpi.cs" />
     <Compile Include="Impl\Binary\BinaryArrayEqualityComparer.cs" />
     <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />

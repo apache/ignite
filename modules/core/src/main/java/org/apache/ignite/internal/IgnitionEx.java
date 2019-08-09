@@ -16,9 +16,6 @@
 
 package org.apache.ignite.internal;
 
-import javax.management.JMException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,6 +45,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -77,6 +77,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.processors.tracing.NoopTracingSpi;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -2391,6 +2392,9 @@ public class IgnitionEx {
 
             if (F.isEmpty(cfg.getMetricExporterSpi()))
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+
+            if (cfg.getTracingSpi() == null)
+                cfg.setTracingSpi(new NoopTracingSpi());
         }
 
         /**

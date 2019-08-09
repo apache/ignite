@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster.r
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import com.google.common.collect.Sets;
@@ -34,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -389,16 +388,11 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(
-            int type,
-            long topVer,
-            ClusterNode node,
-            Collection<ClusterNode> topSnapshot,
-            @Nullable Map<Long, Collection<ClusterNode>> topHist,
-            @Nullable DiscoverySpiCustomMessage data
+            DiscoveryNotification notification
         ) {
-            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
+            IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            if (type == EVT_CLIENT_NODE_DISCONNECTED) {
+            if (notification.type() == EVT_CLIENT_NODE_DISCONNECTED) {
                 try {
                     System.out.println("Await cluster change state");
 

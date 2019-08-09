@@ -53,6 +53,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Ssl;
+    using Apache.Ignite.Core.Tracing;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -1108,6 +1109,11 @@ namespace Apache.Ignite.Core
         /// Gets or sets the MetricExporterSpi.
         /// </summary>
         public IMetricExporterSpi MetricExporterSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the TracingSpi.
+        /// </summary>
+        public ITracingSpi TracingSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.

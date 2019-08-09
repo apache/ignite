@@ -76,6 +76,12 @@
 
         <dependency>
             <groupId>io.opencensus</groupId>
+            <artifactId>opencensus-exporter-trace-zipkin</artifactId>
+            <version>${opencensus.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opencensus</groupId>
             <artifactId>opencensus-exporter-stats-prometheus</artifactId>
             <version>${opencensus.version}</version>
             <scope>test</scope>

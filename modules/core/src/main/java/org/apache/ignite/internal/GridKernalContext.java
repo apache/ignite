@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -225,6 +226,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Distributed configuration processor.
      */
     public DistributedConfigurationProcessor distributedConfiguration();
+
+    /**
+     * Gets tracing processor.
+     *
+     * @return Tracing processor.
+     */
+    public Tracing tracing();
 
     /**
      * Gets task session processor.

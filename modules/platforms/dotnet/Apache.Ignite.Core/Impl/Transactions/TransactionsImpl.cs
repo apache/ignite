@@ -171,12 +171,18 @@ namespace Apache.Ignite.Core.Impl.Transactions
             DoOutInOp(OpResetMetrics);
         }
 
-        /** <inhertiDoc /> */
+        /** <inheritDoc /> */
         public ITransactions WithLabel(string label)
         {
             IgniteArgumentCheck.NotNullOrEmpty(label, "label");
 
             return _ignite.GetTransactionsWithLabel(label);
+        }
+
+        /** <inheritDoc /> */
+        public ITransactions WithTracing()
+        {
+            return this;
         }
 
         /** <inheritDoc /> */
