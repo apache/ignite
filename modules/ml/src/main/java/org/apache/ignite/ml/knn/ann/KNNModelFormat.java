@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.ml.knn.ann;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /**
@@ -32,8 +33,8 @@ public class KNNModelFormat implements Serializable {
     /** Distance measure. */
     protected DistanceMeasure distanceMeasure;
 
-    /** kNN strategy. */
-    protected NNStrategy stgy;
+    /** Weighted or not. */
+    protected boolean weighted;
 
     /** Gets amount of nearest neighbors.*/
     public int getK() {
@@ -45,9 +46,9 @@ public class KNNModelFormat implements Serializable {
         return distanceMeasure;
     }
 
-    /** Gets kNN strategy.*/
-    public NNStrategy getStgy() {
-        return stgy;
+    /** Weighted or not. */
+    public boolean isWeighted() {
+        return weighted;
     }
 
     /** */
@@ -58,12 +59,12 @@ public class KNNModelFormat implements Serializable {
      * Creates an instance.
      * @param k Amount of nearest neighbors.
      * @param measure Distance measure.
-     * @param stgy kNN strategy.
+     * @param weighted Weighted or not.
      */
-    public KNNModelFormat(int k, DistanceMeasure measure, NNStrategy stgy) {
+    public KNNModelFormat(int k, DistanceMeasure measure, boolean weighted) {
         this.k = k;
         this.distanceMeasure = measure;
-        this.stgy = stgy;
+        this.weighted = weighted;
     }
 
     /** {@inheritDoc} */
@@ -72,7 +73,7 @@ public class KNNModelFormat implements Serializable {
 
         res = res * 37 + k;
         res = res * 37 + distanceMeasure.hashCode();
-        res = res * 37 + stgy.hashCode();
+        res = res * 37 + Boolean.hashCode(weighted);
 
         return res;
     }
@@ -87,6 +88,6 @@ public class KNNModelFormat implements Serializable {
 
         KNNModelFormat that = (KNNModelFormat)obj;
 
-        return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy);
+        return k == that.k && distanceMeasure.equals(that.distanceMeasure) && weighted == that.weighted;
     }
 }

@@ -261,6 +261,9 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     public void resetMetrics() {
         for (ThreadMetrics metrics : allMetrics)
             metrics.reset();
+
+        sentBytesCnt.reset();
+        rcvdBytesCnt.reset();
     }
 
     /**
