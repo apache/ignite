@@ -14,22 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
+package org.apache.ignite.ml.selection.paramgrid;
 
 /**
- * Flush (write) dirty page implementation for freed page during page replacement. When possible, will be called by
- * removePageForReplacement().
+ * The parent abstract class of all hyper-parameter tuning strategies.
  */
-public interface ReplacedPageWriter {
+public abstract class HyperParameterTuningStrategy {
     /**
-     * @param fullPageId Full page ID being evicted.
-     * @param byteBuf Buffer with page data.
-     * @param tag partition update tag, increasing counter.
-     * @throws IgniteCheckedException if page write failed.
+     * Returns the name of strategy.
      */
-    void writePage(FullPageId fullPageId, ByteBuffer byteBuf, int tag) throws IgniteCheckedException;
+    public abstract String getName();
 }

@@ -15,15 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.ml.util.genetic;
 
-/** This enum contains settings for kNN algorithm. */
-public enum NNStrategy {
-    /** The default strategy. All k neighbors have the same weight which is independent
-     * on their distance to the query point.*/
-    SIMPLE,
+/**
+ * Represents the crossover strategy depending of locus point amount.
+ */
+public enum CrossoverStrategy {
+    /** One point. */
+    ONE_POINT,
 
-    /** A refinement of the k-NN classification algorithm is to weigh the contribution of each of the k neighbors
-     * according to their distance to the query point, giving greater weight to closer neighbors. */
-    WEIGHTED
+    /** Two point. */
+    TWO_POINT,
+
+    /** Multi point. */
+    MULTI_POINT,
+
+    /** Uniform. */
+    UNIFORM
 }
