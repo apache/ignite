@@ -95,6 +95,8 @@ public class XGBoostModelParserExample {
                     System.out.println("Expected: " + expPrediction + ", prediction: " + prediction);
                 }
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

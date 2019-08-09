@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.sql;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -30,8 +31,6 @@ import org.apache.ignite.ml.sql.SQLFunctions;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.util.List;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer} on a data stored in SQL table and inference
@@ -139,6 +138,8 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
                 cache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }
