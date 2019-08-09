@@ -6738,6 +6738,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
 
                             if (!req.responded()) {
+                                if (sock instanceof SSLSocket) {
+                                    HashMap<String, Object> attrs = new HashMap<>(req.node().getAttributes());
+
+                                    attrs.put("sslCerts", ((SSLSocket) sock).getSession().getPeerCertificateChain());
+
+                                    req.node().setAttributes(attrs);
+                                }
+
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
 
                                 if (clientMsgWrk != null && ok)
