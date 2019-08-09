@@ -93,6 +93,15 @@ public final class ClientConfiguration implements Serializable {
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
 
     /**
+     * Whether affinity awareness should be enabled.
+     *
+     * When {@code true} client attempts to send the request directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.
+     * By default {@code false} only one connection is established at a given moment to a random server node.
+     */
+    private boolean affinityAwarenessEnabled;
+
+    /**
      * @return Host addresses.
      */
     public String[] getAddresses() {
@@ -412,6 +421,24 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setTransactionConfiguration(ClientTransactionConfiguration txCfg) {
         this.txCfg = txCfg;
+
+        return this;
+    }
+
+    /**
+     * @return Whether affinity awareness should be enabled.
+     */
+    public boolean isAffinityAwarenessEnabled() {
+        return affinityAwarenessEnabled;
+    }
+
+    /**
+     * Enable or disable affinity awareness.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setAffinityAwarenessEnabled(boolean affinityAwarenessEnabled) {
+        this.affinityAwarenessEnabled = affinityAwarenessEnabled;
 
         return this;
     }
