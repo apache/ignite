@@ -1009,6 +1009,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT = "IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT";
 
     /**
+     * Keep static cache configuration even if stored cache data differs from the static config. When this property
+     * is set, static cache configuration will override persisted configuration. DDL operations are not allowed
+     * when this system property is set.
+     */
+    public static final String IGNITE_KEEP_STATIC_CACHE_CONFIGURATION = "IGNITE_KEEP_STATIC_CACHE_CONFIGURATION";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

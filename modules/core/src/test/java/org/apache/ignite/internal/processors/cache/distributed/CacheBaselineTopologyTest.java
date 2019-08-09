@@ -798,7 +798,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        startGrids(5);
+        startGrid(1); //TODO https://issues.apache.org/jira/browse/IGNITE-8717 (replace with startGrids(5); //after)
+        startGrid(0);
+        startGrid(2);
+        startGrid(3);
+        startGrid(4);
 
         GridTestUtils.waitForCondition(() -> grid(0).cluster().active(), getTestTimeout());
 
