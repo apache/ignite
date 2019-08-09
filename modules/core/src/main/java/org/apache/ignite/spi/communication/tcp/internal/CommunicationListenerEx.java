@@ -27,11 +27,11 @@ import org.apache.ignite.spi.communication.CommunicationListener;
  */
 public interface CommunicationListenerEx<T extends Serializable> extends CommunicationListener<T> {
     /**
-     * @param nodeId Remote node id.
+     * @param rmtNodeId Remote node id.
      * @param initMsg Init channel message.
      * @param channel Locally created channel endpoint.
      */
-    public default void onChannelOpened(UUID nodeId, T initMsg, Channel channel) {
+    public default void onChannelOpened(UUID rmtNodeId, T initMsg, Channel channel) {
         // No-op.
     }
 }

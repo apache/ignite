@@ -448,9 +448,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelOpened(UUID nodeId, Serializable initMsg, Channel channel) {
+            @Override public void onChannelOpened(UUID rmtNodeId, Serializable initMsg, Channel channel) {
                 try {
-                    onChannelOpened0(nodeId, (GridIoMessage)initMsg, channel);
+                    onChannelOpened0(rmtNodeId, (GridIoMessage)initMsg, channel);
                 }
                 catch (ClassCastException ignored) {
                     U.error(log, "Communication manager received message of unknown type (will ignore): " +
@@ -937,7 +937,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                 while (it.hasNext()) {
                                     Map.Entry<Object, ReceiverContext> e = it.next();
 
-                                    if (nodeId.equals(e.getValue().nodeId)) {
+                                    if (nodeId.equals(e.getValue().rmtNodeId)) {
                                         it.remove();
 
                                         interruptRecevier(e.getValue(),
@@ -2704,7 +2704,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             rctx.lastState = rctx.lastState == null ?
                 new TransmissionMeta(ex) : rctx.lastState.error(ex);
 
-            rctx.hnd.onException(rctx.nodeId, ex);
+            rctx.hnd.onException(rctx.rmtNodeId, ex);
 
             U.error(log, "Receiver has been interrupted due to an excpetion occurred [ctx=" + rctx + ']', ex);
         }
@@ -2712,11 +2712,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /**
      * @param topic Topic to which the channel is created.
-     * @param nodeId Remote node id.
+     * @param rmtNodeId Remote node id.
      * @param initMsg Channel initialization message with additional params.
      * @param ch Channel instance.
      */
-    private void processOpenedChannel(Object topic, UUID nodeId, SessionChannelMessage initMsg, SocketChannel ch) {
+    private void processOpenedChannel(Object topic, UUID rmtNodeId, SessionChannelMessage initMsg, SocketChannel ch) {
         ReceiverContext rcvCtx = null;
         ObjectInputStream in = null;
         ObjectOutputStream out = null;
@@ -2729,7 +2729,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             if (initMsg == null || initMsg.sesId() == null) {
                 U.warn(log, "There is no initial message provied for given topic. Opened channel will be closed " +
-                    "[nodeId=" + nodeId + ", topic=" + topic + ", initMsg=" + initMsg + ']');
+                    "[rmtNodeId=" + rmtNodeId + ", topic=" + topic + ", initMsg=" + initMsg + ']');
 
                 return;
             }
@@ -2745,20 +2745,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 TransmissionHandler hnd = topicTransmissionHnds.get(topic);
 
                 if (hnd == null) {
-                    U.warn(log, "There is no handler for a given topic. Channel will be closed [nodeId=" + nodeId +
+                    U.warn(log, "There is no handler for a given topic. Channel will be closed [rmtNodeId=" + rmtNodeId +
                         ", topic=" + topic + ']');
 
                     return;
                 }
 
-                rcvCtx = rcvCtxs.computeIfAbsent(topic, t -> new ReceiverContext(nodeId, hnd, newSesId));
+                rcvCtx = rcvCtxs.computeIfAbsent(topic, t -> new ReceiverContext(rmtNodeId, hnd, newSesId));
             }
 
             // Do not allow multiple connection for the same session.
             if (!newSesId.equals(rcvCtx.sesId)) {
                 IgniteCheckedException err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
                     "It's not allowed to process different sessions over the same topic simultaneously. " +
-                    "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + nodeId + ']');
+                    "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + rmtNodeId + ']');
 
                 U.error(log, err);
 
@@ -2768,7 +2768,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("Trasmission open a new channel [nodeId=" + nodeId + ", topic=" + topic +
+                log.debug("Trasmission open a new channel [rmtNodeId=" + rmtNodeId + ", topic=" + topic +
                     ", initMsg=" + initMsg + ']');
             }
 
@@ -2795,7 +2795,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
 
             // Do not remove receiver context here, since sender will recconect to get this error.
-            interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + nodeId + ']', t));
+            interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
         }
         finally {
             U.closeQuiet(in);
@@ -2836,7 +2836,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 TransmissionMeta meta = (TransmissionMeta)in.readObject();
 
                 if (rcvCtx.rcv == null) {
-                    rcvCtx.rcv = createReceiver(rcvCtx.nodeId,
+                    rcvCtx.rcv = createReceiver(rcvCtx.rmtNodeId,
                         rcvCtx.hnd,
                         meta,
                         () -> stopping || rcvCtx.interrupted.get());
@@ -2860,7 +2860,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     U.log(log, "File has been received " +
                         "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
                         ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
-                        ", rmtId=" + rcvCtx.nodeId + ']');
+                        ", rmtId=" + rcvCtx.rmtNodeId + ']');
 
                     rcvCtx.rcv = null;
                 }
@@ -2877,7 +2877,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         catch (IOException e) {
             // Waiting for re-establishing connection.
             U.warn(log, "Сonnection from the remote node lost. Will wait for the new one to continue file " +
-                "receive [nodeId=" + rcvCtx.nodeId + ", sesKey=" + rcvCtx.sesId + ']', e);
+                "receive [nodeId=" + rcvCtx.rmtNodeId + ", sesKey=" + rcvCtx.sesId + ']', e);
 
             long startTs = U.currentTimeMillis();
 
@@ -2994,7 +2994,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     private static class ReceiverContext {
         /** The remote node input channel came from. */
-        private final UUID nodeId;
+        private final UUID rmtNodeId;
 
         /** Current sesssion handler. */
         @GridToStringExclude
@@ -3019,12 +3019,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private GridTimeoutObject timeoutObj;
 
         /**
-         * @param nodeId Remote node id.
+         * @param rmtNodeId Remote node id.
          * @param hnd Channel handler of current topic.
          * @param sesId Unique session request id.
          */
-        public ReceiverContext(UUID nodeId, TransmissionHandler hnd, IgniteUuid sesId) {
-            this.nodeId = nodeId;
+        public ReceiverContext(UUID rmtNodeId, TransmissionHandler hnd, IgniteUuid sesId) {
+            this.rmtNodeId = rmtNodeId;
             this.hnd = hnd;
             this.sesId = sesId;
         }
