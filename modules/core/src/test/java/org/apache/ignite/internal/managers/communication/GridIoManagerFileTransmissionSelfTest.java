@@ -31,6 +31,7 @@ import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +60,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -102,6 +105,12 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /** The temporary directory to store files. */
     private File tempStore;
 
+    /** Ignite instance which receives files. */
+    private IgniteEx rcv;
+
+    /** Ignite instance which sends files. */
+    private IgniteEx snd;
+
     /**
      * Called before tests started.
      */
@@ -131,8 +140,18 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @After
     public void after() {
-        stopAllGrids();
-        U.closeQuiet(fileIo[0]);
+        try {
+            ensureResourcesFree(snd);
+            ensureResourcesFree(rcv);
+        }
+        finally {
+            stopAllGrids();
+
+            U.closeQuiet(fileIo[0]);
+
+            snd = null;
+            rcv = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -154,8 +173,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testFileHandlerBase() throws Exception {
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -235,8 +254,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     public void testFileHandlerFilePathThrowsEx() throws Exception {
         final String exTestMessage = "Test exception. Handler initialization failed at onBegin.";
 
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -279,8 +298,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicInteger chunksCnt = new AtomicInteger();
 
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -319,8 +338,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void tesFileHandlerReconnectTimeouted() throws Exception {
-        IgniteEx rcv = startGrid(1);
-        IgniteEx snd = startGrid(0);
+        rcv = startGrid(1);
+        snd = startGrid(0);
 
         final AtomicInteger chunksCnt = new AtomicInteger();
         final CountDownLatch sndLatch = ((BlockingOpenChannelCommunicationSpi)snd.context()
@@ -383,8 +402,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testFileHandlerCleanedUpIfSenderLeft() throws Exception {
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -442,8 +461,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     public void testFileHandlerReconnectOnReadFail() throws Exception {
         final String chunkDownloadExMsg = "Test exception. Chunk processing error.";
 
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -489,8 +508,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicBoolean throwFirstTime = new AtomicBoolean();
 
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -524,8 +543,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicBoolean networkExThrown = new AtomicBoolean();
 
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -575,8 +594,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test(expected = IgniteException.class)
     public void testFileHandlerSendToNullTopic() throws Exception {
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -600,8 +619,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         final CountDownLatch waitLatch = new CountDownLatch(2);
         final CountDownLatch completionWait = new CountDownLatch(2);
 
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -620,6 +639,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic);
+
              GridIoManager.TransmissionSender anotherSender = snd.context()
                  .io()
                  .openTransmissionSender(rcv.localNode().id(), topic)) {
@@ -665,8 +685,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testChunkHandlerWithReconnect() throws Exception {
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         final String filePrefix = "testFile";
         final AtomicInteger cnt = new AtomicInteger();
@@ -768,8 +788,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test(expected = IgniteCheckedException.class)
     public void testChunkHandlerInitSizeFail() throws Exception {
-        IgniteEx snd = startGrid(0);
-        IgniteEx rcv = startGrid(1);
+        snd = startGrid(0);
+        rcv = startGrid(1);
 
         snd.cluster().active(true);
 
@@ -787,6 +807,22 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             .openTransmissionSender(rcv.localNode().id(), topic)) {
             sender.send(fileToSend, TransmissionPolicy.CHUNK);
         }
+    }
+
+    /**
+     * @param ig Ignite instance to check.
+     */
+    private static void ensureResourcesFree(IgniteEx ig) {
+        if (ig == null)
+            return;
+
+        final GridIoManager io = ig.context().io();
+
+        ConcurrentMap<Object, Object> ctxs = GridTestUtils.getFieldValue(io, "rcvCtxs");
+        ConcurrentMap<T2<UUID, IgniteUuid>, AtomicBoolean> sndrFlags = GridTestUtils.getFieldValue(io, "senderStopFlags");
+
+        assertTrue("Receiver context map must be empty: " + ctxs, ctxs.isEmpty());
+        assertTrue("Sender stop falgs must be empty: " + sndrFlags, sndrFlags.isEmpty());
     }
 
     /**
