@@ -552,6 +552,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + U.maskName(cc.getName()) + ']');
         }
 
+        if (cacheType == CacheType.USER && !cc.isOnheapCacheEnabled() && !cc.isCopyOnRead())
+            U.warn(log, "CopyOnRead cannot be set 'false' if on-heap is disabled" +
+                " [cacheName=" + U.maskName(cc.getName()) + ']');
+
         DeploymentMode depMode = c.getDeploymentMode();
 
         if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&

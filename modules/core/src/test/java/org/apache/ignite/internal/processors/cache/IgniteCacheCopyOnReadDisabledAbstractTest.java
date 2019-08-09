@@ -39,6 +39,8 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
 
         ccfg.setCopyOnRead(false);
 
+        ccfg.setOnheapCacheEnabled(true);
+
         return ccfg;
     }
 
