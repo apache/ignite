@@ -21,10 +21,10 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
-import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * Exporter of monitoring information to the external recepient.
+ * Exporter of metric information to the external recepient.
  * Expected, that each implementation would support some specific protocol.
  *
  * Implementation of this Spi should work by pull paradigm.
@@ -38,16 +38,15 @@ import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
  * @see IntMetric
  * @see LongMetric
  * @see ObjectMetric
- * @see JmxExporterSpi
+ * @see JmxMetricExporterSpi
  */
 public interface MetricExporterSpi extends IgniteSpi {
     /**
      * Sets metrics registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
      *
-     * Registry should be empty in the time this method called.
      * So all {@link MetricRegistry} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link MetricRegistry#addMetricCreationListener(Consumer)}.
+     * listeners passed to {@link ReadOnlyMetricRegistry#addMetricRegistryCreationListener(Consumer)}.
      *
      * @param registry Metric registry.
      */
@@ -55,9 +54,9 @@ public interface MetricExporterSpi extends IgniteSpi {
 
     /**
      * Sets export filter.
-     * Metrics that not satisfy {@code filter} shouldn't be exported by this filter.
+     * Metric registry that not satisfy {@code filter} shouldn't be exported.
      *
      * @param filter Filter.
      */
-    public void setExportFilter(Predicate<Metric> filter);
+    public void setExportFilter(Predicate<MetricRegistry> filter);
 }

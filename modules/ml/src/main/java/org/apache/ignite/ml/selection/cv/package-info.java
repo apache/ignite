@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for cross-validation algorithms.
  */
+
 package org.apache.ignite.ml.selection.cv;

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains implementations of optimization algorithms and related classes.
  */
+
 package org.apache.ignite.ml.optimization;

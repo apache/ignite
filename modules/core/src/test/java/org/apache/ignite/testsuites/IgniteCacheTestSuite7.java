@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.cache.CacheConfigurationSerializationOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationSerializationOnExchangeTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
@@ -93,7 +93,7 @@ public class IgniteCacheTestSuite7 {
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheAssignmentNodeRestartsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxRollbackAsyncWithPersistenceTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, CacheGroupMetricsMBeanTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheGroupMetricsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsManageTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageEvictionMultinodeMixedRegionsTest.class, ignoredTests);
 

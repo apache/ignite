@@ -63,15 +63,16 @@ public class RegressionEvaluatorTest extends TrainerTest {
         data.put(13, VectorUtils.of(69331, 115.7, 518173, 4806, 2572, 127852, 1961));
         data.put(14, VectorUtils.of(70551, 116.9, 554894, 4007, 2827, 130081, 1962));
 
-        KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+        KNNRegressionTrainer trainer = new KNNRegressionTrainer()
+            .withK(3)
+            .withDistanceMeasure(new EuclideanDistance());
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
         KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             vectorizer
-        ).withK(3)
-            .withDistanceMeasure(new EuclideanDistance());
+        );
 
         double score = Evaluator.evaluate(data, mdl, vectorizer,
             new RegressionMetrics()
@@ -103,7 +104,9 @@ public class RegressionEvaluatorTest extends TrainerTest {
         data.put(13, VectorUtils.of(69331, 115.7, 518173, 4806, 2572, 127852, 1961));
         data.put(14, VectorUtils.of(70551, 116.9, 554894, 4007, 2827, 130081, 1962));
 
-        KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+        KNNRegressionTrainer trainer = new KNNRegressionTrainer()
+            .withK(3)
+            .withDistanceMeasure(new EuclideanDistance());
 
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.5);
@@ -114,8 +117,7 @@ public class RegressionEvaluatorTest extends TrainerTest {
             split.getTestFilter(),
             parts,
             vectorizer
-        ).withK(3)
-            .withDistanceMeasure(new EuclideanDistance());
+        );
 
         double score = Evaluator.evaluate(data, split.getTrainFilter(), mdl, vectorizer,
             new RegressionMetrics()

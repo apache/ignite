@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Base package for local implementation of machine learning dataset.
  */
+
 package org.apache.ignite.ml.dataset.impl.local;

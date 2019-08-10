@@ -152,6 +152,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
 
+    /** Factory used for re-creating partition during it's lifecycle. */
+    private PartitionFactory partFactory;
+
     /**
      * @param ctx Cache shared context.
      * @param grp Cache group.
@@ -173,6 +176,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         locParts = new AtomicReferenceArray<>(grp.affinityFunction().partitions());
 
         cntrMap = new CachePartitionFullCountersMap(locParts.length());
+
+        partFactory = (ctx1, grp1, id) -> new GridDhtLocalPartition(ctx1, grp1, id, false);
+    }
+
+    /**
+     * Set partition factory to use. Currently is used for tests.
+     *
+     * @param factory Factory.
+     */
+    public void partitionFactory(PartitionFactory factory) {
+        this.partFactory = factory;
     }
 
     /** {@inheritDoc} */
@@ -494,14 +508,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         for (int p = 0; p < partitions; p++) {
             if (node2part != null && node2part.valid()) {
                 if (localNode(p, aff)) {
-                    // This will make sure that all non-existing partitions
-                    // will be created in MOVING state.
-                    boolean existing = locParts.get(p) != null;
-
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
-
-                    if (existing && locPart.state() == MOVING && !locPart.isEmpty())
-                        exchFut.addClearingPartition(grp, p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                 }
@@ -781,19 +788,26 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                                 "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                     }
 
-                                // If partition was not still cleared yet start clearing if needed.
-                                // Important: avoid calling clearAsync multiple times in the same rebalance session
-                                // or bad things may happen depending on timing.
-                                if (exchFut.isClearingPartition(grp, p) && !locPart.isClearing() && !locPart.isEmpty())
-                                    locPart.clearAsync();
+                                    // It's important to clear non empty moving partitions before full rebalancing.
+                                    // Consider the scenario:
+                                    // Node1 has keys k1 and k2 in the same partition.
+                                    // Node2 started rebalancing from Node1.
+                                    // Node2 received k1, k2 and failed before moving partition to OWNING state.
+                                    // Node1 removes k2 but update has not been delivered to Node1 because of failure.
+                                    // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
+                                    // NOTE: avoid calling clearAsync for partition twice per topology version.
+                                    // TODO FIXME clearing is not always needed see IGNITE-11799
+                                    if (grp.persistenceEnabled() && !exchFut.isHistoryPartition(grp, locPart.id()) &&
+                                        !locPart.isClearing() && !locPart.isEmpty() && !grp.mvccEnabled())
+                                        locPart.clearAsync();
+                                }
+                                else
+                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
                             }
-                            else
-                                updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
                         }
-                    }
-                    else {
-                        if (locPart != null) {
-                            GridDhtPartitionState state = locPart.state();
+                        else {
+                            if (locPart != null) {
+                                GridDhtPartitionState state = locPart.state();
 
                                 if (state == MOVING) {
                                     locPart.rent(false);
@@ -869,7 +883,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (loc != null)
                 loc.awaitDestroy();
 
-            locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p, false));
+            locParts.set(p, loc = partFactory.create(ctx, grp, p));
 
             long updCntr = cntrMap.updateCounter(p);
 
@@ -897,8 +911,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             GridDhtLocalPartition part = locParts.get(p);
 
-            if (part != null && part.state() != EVICTED)
-                return part;
+            if (part != null) {
+                if (part.state() != EVICTED)
+                    return part;
+                else
+                    part.awaitDestroy();
+            }
 
             part = new GridDhtLocalPartition(ctx, grp, p, true);
 
@@ -977,7 +995,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             "[grp=" + grp.cacheOrGroupName() + ", part=" + p + ", topVer=" + topVer +
                             ", this.topVer=" + this.readyTopVer + ']');
 
-                    locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p, false));
+                    locParts.set(p, loc = partFactory.create(ctx, grp, p));
 
                     this.updateSeq.incrementAndGet();
 
@@ -1653,17 +1671,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public void collectUpdateCounters(CachePartitionPartialCountersMap cntrMap) {
         assert cntrMap != null;
 
-        long now = U.currentTimeMillis();
+        long nowNanos = System.nanoTime();
 
         lock.writeLock().lock();
 
         try {
-            long acquired = U.currentTimeMillis();
+            long acquiredNanos = System.nanoTime();
 
-            if (acquired - now >= 100) {
+            if (acquiredNanos - nowNanos >= U.millisToNanos(100)) {
                 if (timeLog.isInfoEnabled())
                     timeLog.info("Waited too long to acquire topology write lock " +
-                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" + (acquired - now) + ']');
+                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" +
+                        U.nanosToMillis(acquiredNanos - nowNanos) + ']');
             }
 
             if (stopping)
@@ -1688,17 +1707,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void applyUpdateCounters() {
-        long now = U.currentTimeMillis();
+        long nowNanos = System.nanoTime();
 
         lock.writeLock().lock();
 
         try {
-            long acquired = U.currentTimeMillis();
+            long acquiredNanos = System.nanoTime();
 
-            if (acquired - now >= 100) {
+            if (acquiredNanos - nowNanos >= U.millisToNanos(100)) {
                 if (timeLog.isInfoEnabled())
                     timeLog.info("Waited too long to acquire topology write lock " +
-                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" + (acquired - now) + ']');
+                        "[grp=" + grp.cacheOrGroupName() + ", waitTime=" +
+                        U.nanosToMillis(acquiredNanos - nowNanos) + ']');
             }
 
             if (stopping)
@@ -2223,6 +2243,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
+            Map<UUID, Set<Integer>> addToWaitGroups = new HashMap<>();
+
             lock.writeLock().lock();
 
             try {
@@ -2254,7 +2276,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         GridDhtPartitionState state = partMap.get(part);
 
-                        if (state == null || state != OWNING)
+                        if (state != OWNING)
                             continue;
 
                         if (!newOwners.contains(remoteNodeId)) {
@@ -2274,9 +2296,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     UUID nodeId = entry.getKey();
                     Set<Integer> rebalancedParts = entry.getValue();
 
-                    // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
-                    for (Integer part : rebalancedParts)
-                        ctx.cache().context().affinity().addToWaitGroup(groupId(), part, nodeId, topologyVersionFuture().initialVersion());
+                    addToWaitGroups.put(nodeId, new HashSet<>(rebalancedParts));
 
                     if (!rebalancedParts.isEmpty()) {
                         Set<Integer> historical = rebalancedParts.stream()
@@ -2295,8 +2315,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
 
                 node2part = new GridDhtPartitionFullMap(node2part, updateSeq.incrementAndGet());
-            } finally {
+            }
+            finally {
                 lock.writeLock().unlock();
+            }
+
+            for (Map.Entry<UUID, Set<Integer>> entry : addToWaitGroups.entrySet()) {
+                // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
+                for (Integer part : entry.getValue()) {
+                    ctx.cache().context().affinity().addToWaitGroup(
+                        groupId(),
+                        part,
+                        entry.getKey(),
+                        topologyVersionFuture().initialVersion()
+                    );
+                }
             }
         }
         finally {
@@ -2312,8 +2345,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Prevents ongoing renting if required.
      *
      * @param p Partition id.
-     * @param clear If {@code true} partition have to be cleared before rebalance.
-     *              Required in case of full state transfer to handle removals on supplier.
+     * @param clear If {@code true} partition have to be cleared before rebalance (full rebalance or rebalance restart
+     * after cancellation).
      * @param exchFut Future related to partition state change.
      */
     private GridDhtLocalPartition rebalancePartition(int p, boolean clear, GridDhtPartitionsExchangeFuture exchFut) {
@@ -2335,11 +2368,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        if (clear) {
-            exchFut.addClearingPartition(grp, part.id());
-
-            part.clearAsync();
-        }
+        if (!clear)
+            exchFut.addHistoryPartition(grp, part.id());
 
         assert part.state() == MOVING : part;
 
@@ -2451,7 +2481,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             if (log.isDebugEnabled())
                                 log.debug("Partitions have been scheduled to resend [reason=" +
-                                    "Evictions are done [grp" + grp.cacheOrGroupName() + "]");
+                                    "Evictions are done [grp=" + grp.cacheOrGroupName() + "]");
 
                             ctx.exchange().scheduleResendPartitions();
                         }
@@ -3102,5 +3132,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         @Override public void remove() {
             throw new UnsupportedOperationException("remove");
         }
+    }
+
+    /**
+     * Partition factory used for (re-)creating partitions during their lifecycle.
+     * Currently used in tests for overriding default partition behavior.
+     */
+    public interface PartitionFactory {
+        /**
+         * @param ctx Context.
+         * @param grp Group.
+         * @param id Partition id.
+         * @return New partition instance.
+         */
+        public GridDhtLocalPartition create(GridCacheSharedContext ctx,
+            CacheGroupContext grp,
+            int id);
     }
 }

@@ -1466,7 +1466,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         public MockedClusterMetrics(ClusterMetricsImpl original) throws Exception {
             super(
                 getField(original, "ctx"),
-                getField(original, "vmMetrics"),
                 getField(original, "nodeStartTime"));
         }
 

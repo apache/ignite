@@ -51,7 +51,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         SqlViewExporterSpi sqlSpi = new SqlViewExporterSpi();
 
-        sqlSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
+        sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(sqlSpi);
 
@@ -86,7 +86,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             names.add((String)row.get(0));
 
             assertNotNull(row.get(1));
-            assertNotNull(row.get(2));
         }
 
         for (String attr : EXPECTED_ATTRIBUTES)
@@ -109,11 +108,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         Set<IgniteBiTuple<String, String>> vals = new HashSet<>();
 
-        for (List<?> row : res) {
+        for (List<?> row : res)
             vals.add(t((String)row.get(0), (String)row.get(1)));
-
-            assertNotNull(row.get(2));
-        }
 
         assertEquals(expVals, vals);
     }
