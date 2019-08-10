@@ -50,6 +50,9 @@ public class BulkLoadProcessor implements AutoCloseable {
     /** Query id. */
     private final Long qryId;
 
+    /** Exception, current load process ended with, or {@code null} if in progress or if succeded. */
+    private Exception failReason;
+
     /**
      * Creates bulk load processor.
      *
@@ -100,13 +103,21 @@ public class BulkLoadProcessor implements AutoCloseable {
     }
 
     /**
+     * Is called to notify processor, that bulk load execution, this processor is performing, failed with specified
+     * exception.
+     *
+     * @param failReason why current load failed.
+     */
+    public void onError(Exception failReason) {
+        this.failReason = failReason;
+    }
+
+    /**
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
      */
     @Override public void close() throws Exception {
         if (isClosed)
             return;
-
-        boolean failed = false;
 
         try {
             isClosed = true;
@@ -114,12 +125,13 @@ public class BulkLoadProcessor implements AutoCloseable {
             outputStreamer.close();
         }
         catch (Exception e) {
-            failed = true;
+            if (failReason == null)
+                failReason = e;
 
             throw e;
         }
         finally {
-            runningQryMgr.unregister(qryId, failed);
+            runningQryMgr.unregister(qryId, failReason);
         }
     }
 }
