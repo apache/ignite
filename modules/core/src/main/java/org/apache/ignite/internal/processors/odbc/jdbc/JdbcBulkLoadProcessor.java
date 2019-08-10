@@ -142,6 +142,15 @@ public class JdbcBulkLoadProcessor extends JdbcCursor {
     }
 
     /**
+     * Gets notified if current bulk load failed.
+     *
+     * @param reason reason why it failed.
+     */
+    public void onFail(Exception reason) {
+        processor.onError(reason);
+    }
+
+    /**
      * Provides update counter for sending in the {@link JdbcBatchExecuteResult}.
      *
      * @return The update counter for sending in {@link JdbcBatchExecuteResult}.

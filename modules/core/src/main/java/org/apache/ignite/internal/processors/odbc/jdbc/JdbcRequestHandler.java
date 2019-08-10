@@ -473,6 +473,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
 
+            processor.onFail(e);
+
             if (X.cause(e, QueryCancelledException.class) != null)
                 return exceptionToResult(new QueryCancelledException());
             else

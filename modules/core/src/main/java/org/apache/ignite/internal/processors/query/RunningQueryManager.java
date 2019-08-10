@@ -28,6 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,6 +41,9 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * Keep information about all running queries.
  */
 public class RunningQueryManager {
+    /** Name of the MetricRegistry which metrics measure stats of queries initiated by user. */
+    public static final String SQL_USER_QUERIES_REG_NAME = "sql.queries.user";
+
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
@@ -53,6 +59,23 @@ public class RunningQueryManager {
     /** Query history tracker. */
     private volatile QueryHistoryTracker qryHistTracker;
 
+    /** Number of successfully executed queries. */
+    private final LongAdderMetricImpl successQrsCnt;
+
+    /** Number of failed queries in total by any reason. */
+    private final LongMetricImpl failedQrsCnt;
+
+    /**
+     * Number of canceled queries. Canceled queries a treated as failed and counting twice: here and in {@link
+     * #failedQrsCnt}.
+     */
+    private final LongMetricImpl canceledQrsCnt;
+
+    /**
+     * Number of queries, failed due to OOM protection. {@link #failedQrsCnt} metric includes this value.
+     */
+    private final LongMetricImpl oomQrsCnt;
+
     /**
      * Constructor.
      *
@@ -64,6 +87,20 @@ public class RunningQueryManager {
         histSz = ctx.config().getSqlQueryHistorySize();
 
         qryHistTracker = new QueryHistoryTracker(histSz);
+
+        MetricRegistry userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
+
+        successQrsCnt = userMetrics.longAdderMetric("success",
+            "Number of successfully executed user queries that have been started on this node.");
+
+        failedQrsCnt = userMetrics.metric("failed", "Total number of failed by any reason (cancel, oom etc)" +
+            " queries that have been started on this node.");
+
+        canceledQrsCnt = userMetrics.metric("canceled", "Number of canceled queries that have been started " +
+            "on this node. This metric number included in the general 'failed' metric.");
+
+        oomQrsCnt = userMetrics.metric("failedByOOM", "Number of queries started on this node failed due to " +
+            "out of memory protection. This metric number included in the general 'failed' metric.");
     }
 
     /**
@@ -101,20 +138,40 @@ public class RunningQueryManager {
     /**
      * Unregister running query.
      *
-     * @param qryId Query id.
-     * @param failed {@code true} In case query was failed.
+     * @param qryId id of the query, which is given by {@link #register register} method.
+     * @param failReason exception that caused query execution fail, or {@code null} if query succeded.
      */
-    public void unregister(Long qryId, boolean failed) {
+    public void unregister(Long qryId, @Nullable Throwable failReason) {
         if (qryId == null)
             return;
 
+        boolean failed = failReason != null;
+
         GridRunningQueryInfo qry = runs.remove(qryId);
 
-        //We need to collect query history only for SQL queries.
-        if (qry != null && isSqlQuery(qry)) {
+        // Attempt to unregister query twice.
+        if (qry == null)
+            return;
+
+        //We need to collect query history and metrics only for SQL queries.
+        if (isSqlQuery(qry)) {
             qry.runningFuture().onDone();
 
             qryHistTracker.collectMetrics(qry, failed);
+
+            if (!failed)
+                successQrsCnt.increment();
+            else {
+                failedQrsCnt.increment();
+
+                // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
+                // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
+                // right when query failed due to some other reason.
+                if (QueryUtils.wasCancelled(failReason))
+                    canceledQrsCnt.increment();
+                else if (QueryUtils.isLocalOrReduceOom(failReason))
+                    oomQrsCnt.increment();
+            }
         }
     }
 
