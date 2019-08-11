@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    private boolean pds = false;
+    protected boolean pds = false;
 
     /** */
     private static class RoundRobinVariableSizeAffinityFunction implements AffinityFunction {
