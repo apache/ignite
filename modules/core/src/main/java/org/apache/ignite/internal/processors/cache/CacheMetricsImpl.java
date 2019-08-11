@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Set;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
@@ -28,9 +27,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
+import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1118,8 +1119,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             else {
                 AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-                Set<Integer> primaries = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
-                Set<Integer> backups = cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
+                IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
+                IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
 
                 if (cctx.isNear() && cache != null)
                     heapEntriesCnt = cache.nearSize();
