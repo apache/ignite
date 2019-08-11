@@ -81,7 +81,7 @@ public class MetricRegistryMBean implements DynamicMBean {
             attributes.add(new MBeanAttributeInfo(
                 metric.name().substring(mreg.name().length() + 1),
                 metricClass(metric),
-                metric.name(),
+                metric.description() != null ? metric.description() : metric.name(),
                 true,
                 false,
                 false));
