@@ -1092,6 +1092,8 @@ public class IgniteConfiguration {
 
     /**
      * Sets timeout in milliseconds for default query timeout.
+     * {@code 0} means there is no timeout (this
+     * is a default value)
      *
      * @param dfltQryTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.

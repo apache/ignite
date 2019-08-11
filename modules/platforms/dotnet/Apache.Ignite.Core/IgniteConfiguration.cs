@@ -74,6 +74,11 @@ namespace Apache.Ignite.Core
         public const int DefaultJvmMaxMem = -1;
 
         /// <summary>
+        /// Default query timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromMilliseconds(0);
+
+        /// <summary>
         /// Default metrics expire time.
         /// </summary>
         public static readonly TimeSpan DefaultMetricsExpireTime = TimeSpan.MaxValue;
@@ -132,6 +137,9 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="ClientConnectorConfigurationEnabled"/>.
         /// </summary>
         public const bool DefaultClientConnectorConfigurationEnabled = true;
+
+        /** */
+        private TimeSpan? _defaultQueryTimeout;
 
         /** */
         private TimeSpan? _metricsExpireTime;
@@ -324,6 +332,7 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_clientMode);
             writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
 
+            writer.WriteTimeSpanAsLongNullable(_defaultQueryTimeout);
             writer.WriteTimeSpanAsLongNullable(_metricsExpireTime);
             writer.WriteIntNullable(_metricsHistorySize);
             writer.WriteTimeSpanAsLongNullable(_metricsLogFrequency);
@@ -715,6 +724,7 @@ namespace Apache.Ignite.Core
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
             IncludedEventTypes = r.ReadIntArray();
+            _defaultQueryTimeout = r.ReadTimeSpanNullable();
             _metricsExpireTime = r.ReadTimeSpanNullable();
             _metricsHistorySize = r.ReadIntNullable();
             _metricsLogFrequency = r.ReadTimeSpanNullable();
@@ -1179,6 +1189,16 @@ namespace Apache.Ignite.Core
 
                 return _localEventListenerIds;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the default query timeout.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "0")]
+        public TimeSpan DefaultQueryTimeout
+        {
+            get { return _defaultQueryTimeout ?? DefaultQueryTimeout; }
+            set { _defaultQueryTimeout = value; }
         }
 
         /// <summary>
