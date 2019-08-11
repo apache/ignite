@@ -18,22 +18,26 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
+
 /**
  * System view: running queries
  */
 public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
+    /** */
+    private MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;
+
     /**
      * @param ctx Grid context.
      */
@@ -46,47 +50,43 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
             newColumn("START_TIME", Value.TIMESTAMP),
             newColumn("DURATION", Value.LONG)
         );
+
+        sqlQryMonList = ctx.metric().list(metricName("query", "sql"));
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition qryIdCond = conditionForColumn("QUERY_ID", first, last);
 
-        List<GridRunningQueryInfo> runningSqlQueries = ((IgniteH2Indexing)ctx.query().getIndexing()).runningSqlQueries();
+        long now = System.currentTimeMillis();
 
         if (qryIdCond.isEquality()) {
             String qryId = qryIdCond.valueForEquality().getString();
 
-            runningSqlQueries = runningSqlQueries.stream()
-                .filter((r) -> r.globalQueryId().equals(qryId))
-                .findFirst()
-                .map(Collections::singletonList)
-                .orElse(Collections.emptyList());
-        }
+            for (GridRunningQueryInfo info : sqlQryMonList) {
+                if (!info.globalQueryId().equals(qryId))
+                    continue;
 
-        if (runningSqlQueries.isEmpty())
+                return Collections.singletonList(toRow(ses, info, now)).iterator();
+            }
+
             return Collections.emptyIterator();
-
-        long now = System.currentTimeMillis();
-
-        List<Row> rows = new ArrayList<>(runningSqlQueries.size());
-
-        for (GridRunningQueryInfo info : runningSqlQueries) {
-            long duration = now - info.startTime();
-
-            rows.add(
-                createRow(ses,
-                    info.globalQueryId(),
-                    info.query(),
-                    info.schemaName(),
-                    info.local(),
-                    valueTimestampFromMillis(info.startTime()),
-                    duration
-                )
-            );
         }
 
-        return rows.iterator();
+        return iterator(sqlQryMonList,
+            info -> toRow(ses, info, now),
+            true);
+    }
+
+    /** */
+    private Row toRow(Session ses, GridRunningQueryInfo info, long now) {
+        return createRow(ses,
+            info.globalQueryId(),
+            info.query(),
+            info.schemaName(),
+            info.local(),
+            valueTimestampFromMillis(info.startTime()),
+            now - info.startTime());
     }
 
     /** {@inheritDoc} */
@@ -96,6 +96,6 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ((IgniteH2Indexing)ctx.query().getIndexing()).runningSqlQueries().size();
+        return sqlQryMonList.size();
     }
 }

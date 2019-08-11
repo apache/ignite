@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 
 /**
  * Query descriptor.
  */
-public class GridRunningQueryInfo {
+public class GridRunningQueryInfo implements MonitoringRow<Long> {
     /** */
     private final long id;
 
@@ -50,6 +51,9 @@ public class GridRunningQueryInfo {
 
     /** */
     private final QueryRunningFuture fut = new QueryRunningFuture();
+
+    /** */
+    private boolean failed;
 
     /**
      * Constructor.
@@ -81,6 +85,11 @@ public class GridRunningQueryInfo {
         this.startTime = startTime;
         this.cancel = cancel;
         this.loc = loc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String sessionId() {
+        return nodeId.toString();
     }
 
     /**
@@ -162,4 +171,12 @@ public class GridRunningQueryInfo {
     public boolean local() {
         return loc;
     }
+
+    /** */
+    public void failed(boolean failed) {
+        this.failed = failed;
+    }
+
+    /** */
+    public boolean failed() { return failed; }
 }

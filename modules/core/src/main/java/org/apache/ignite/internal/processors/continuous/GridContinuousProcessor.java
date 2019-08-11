@@ -108,6 +108,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_ACK;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_NOTIFICATION;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Processor for continuous routines.
@@ -173,7 +174,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     public GridContinuousProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        cqMonList = ctx.metric().list("continuousQuery");
+        cqMonList = ctx.metric().list(metricName("query", "continuous"));
     }
 
     /** {@inheritDoc} */

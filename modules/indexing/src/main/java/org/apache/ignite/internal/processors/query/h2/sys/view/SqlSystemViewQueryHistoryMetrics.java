@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
-import org.apache.ignite.internal.processors.query.QueryHistoryMetricsKey;
+import org.apache.ignite.internal.processors.query.QueryHistory;
+import org.apache.ignite.internal.processors.query.QueryHistoryKey;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -57,8 +57,8 @@ public class SqlSystemViewQueryHistoryMetrics extends SqlAbstractLocalSystemView
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        Map<QueryHistoryMetricsKey, QueryHistoryMetrics> qryHistMetrics =
-            ((IgniteH2Indexing)ctx.query().getIndexing()).runningQueryManager().queryHistoryMetrics();
+        Map<QueryHistoryKey, QueryHistory> qryHistMetrics =
+            ((IgniteH2Indexing)ctx.query().getIndexing()).queryHistoryTracker().queryHistoryStatistic();
 
         List<Row> rows = new ArrayList<>();
 
@@ -87,6 +87,6 @@ public class SqlSystemViewQueryHistoryMetrics extends SqlAbstractLocalSystemView
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ((IgniteH2Indexing)ctx.query().getIndexing()).runningQueryManager().queryHistoryMetrics().size();
+        return ((IgniteH2Indexing)ctx.query().getIndexing()).queryHistoryTracker().queryHistoryStatistic().size();
     }
 }

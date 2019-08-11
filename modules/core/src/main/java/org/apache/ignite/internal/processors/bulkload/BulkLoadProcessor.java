@@ -21,7 +21,8 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -45,8 +46,8 @@ public class BulkLoadProcessor implements AutoCloseable {
     /** Becomes true after {@link #close()} method is called. */
     private boolean isClosed;
 
-    /** Running query manager. */
-    private final RunningQueryManager runningQryMgr;
+    /** */
+    private final MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;
 
     /** Query id. */
     private final Long qryId;
@@ -62,11 +63,11 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param qryId Running query id.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, Long qryId) {
+        BulkLoadCacheWriter outputStreamer, MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList, Long qryId) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
-        this.runningQryMgr = runningQryMgr;
+        this.sqlQryMonList = sqlQryMonList;
         this.qryId = qryId;
         isClosed = false;
     }
@@ -120,7 +121,13 @@ public class BulkLoadProcessor implements AutoCloseable {
             throw e;
         }
         finally {
-            runningQryMgr.unregister(qryId, failed);
+            GridRunningQueryInfo rmv = sqlQryMonList.get(qryId);
+
+            if (rmv != null) {
+                rmv.failed(failed);
+
+                sqlQryMonList.remove(qryId);
+            }
         }
     }
 }

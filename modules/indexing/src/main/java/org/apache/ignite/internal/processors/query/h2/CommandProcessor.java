@@ -126,6 +126,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
@@ -294,7 +295,8 @@ public class CommandProcessor {
 
         String err = null;
 
-        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().runningQueryInfo(qryId);
+        GridRunningQueryInfo runningQryInfo =
+            ctx.metric().<Long, GridRunningQueryInfo>list(metricName("query", "sql")).get(qryId);
 
         if (runningQryInfo == null)
             err = "Query with provided ID doesn't exist " +
@@ -1285,7 +1287,7 @@ public class CommandProcessor {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            idx.runningQueryManager(), qryId);
+            ctx.metric().list(metricName("query", "sql")), qryId);
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 

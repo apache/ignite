@@ -40,6 +40,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 
 /** */
@@ -129,7 +130,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (int i=0; i<100; i++)
                 cache.put(i, i);
 
-            MonitoringList<UUID, ContinuousQueryView> qrys = g0.context().metric().list("continuousQuery");
+            MonitoringList<UUID, ContinuousQueryView> qrys =
+                g0.context().metric().list(metricName("query", "continuous"));
 
             assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
 
@@ -139,12 +141,13 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals(100, cq.bufferSize());
             assertEquals(1000, cq.interval());
             assertEquals(g0.localNode().id().toString(), cq.sessionId());
+            //Local listener not null on originating node.
             assertTrue(cq.localListener().startsWith(this.getClass().getName()));
             assertTrue(cq.remoteFilter().startsWith(this.getClass().getName()));
             assertNull(cq.localTransformedListener());
             assertNull(cq.remoteTransformer());
 
-            qrys = g1.context().metric().list("continuousQuery");
+            qrys = g1.context().metric().list(metricName("query", "continuous"));
 
             assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
 
@@ -154,11 +157,24 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals(100, cq.bufferSize());
             assertEquals(1000, cq.interval());
             assertEquals(g0.localNode().id().toString(), cq.sessionId());
+            //Local listener is null on remote nodes.
             assertNull(cq.localListener());
             assertTrue(cq.remoteFilter().startsWith(this.getClass().getName()));
             assertNull(cq.localTransformedListener());
             assertNull(cq.remoteTransformer());
+        }
+    }
 
+    @Test
+    /** */
+    public void testComputeClosures() throws Exception {
+        try(IgniteEx g0 = startGrid(0)) {
+            for (int i=0; i<10; i++) {
+                g0.compute().run(() -> { });
+            }
+
+            MonitoringList<UUID, ContinuousQueryView> computeRunnable =
+                g0.context().metric().list(metricName("compute", "runnables"));
         }
     }
 }

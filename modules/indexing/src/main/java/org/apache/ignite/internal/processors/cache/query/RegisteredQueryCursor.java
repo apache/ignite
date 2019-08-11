@@ -22,9 +22,12 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.X;
+
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.unregister;
 
 /**
  * Query cursor for registered as running queries.
@@ -36,10 +39,10 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     private final AtomicBoolean unregistered = new AtomicBoolean(false);
 
     /** */
-    private RunningQueryManager runningQryMgr;
+    private MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;
 
     /** */
-    private Long qryId;
+    private long qryId;
 
     /** Flag to indicate error. */
     private boolean failed;
@@ -47,17 +50,16 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
-     * @param runningQryMgr Running query manager.
+     * @param sqlQryMonList Query monitoring list.
      * @param qryId Registered running query id.
      */
-    public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, RunningQueryManager runningQryMgr,
-        Long qryId) {
+    public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel,
+        MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList, long qryId) {
         super(iterExec, cancel);
 
-        assert runningQryMgr != null;
-        assert qryId != null;
+        assert sqlQryMonList != null;
 
-        this.runningQryMgr = runningQryMgr;
+        this.sqlQryMonList = sqlQryMonList;
         this.qryId = qryId;
     }
 
@@ -87,6 +89,6 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      */
     private void unregisterQuery(){
         if (unregistered.compareAndSet(false, true))
-            runningQryMgr.unregister(qryId, failed);
+            unregister(sqlQryMonList, qryId, failed);
     }
 }

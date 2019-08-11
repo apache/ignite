@@ -138,6 +138,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -11461,5 +11462,24 @@ public abstract class IgniteUtils {
      */
     public static boolean isFlagSet(int flags, int flag) {
         return (flags & flag) == flag;
+    }
+
+    /**
+     * @param t Consumed object.
+     * @param lsnrs Listeners.
+     * @param <T> Type of consumed object.
+     */
+    public static <T> void notifyListeners(T t, List<Consumer<T>> lsnrs, IgniteLogger log) {
+        if (lsnrs == null)
+            return;
+
+        for (Consumer<T> lsnr : lsnrs) {
+            try {
+                lsnr.accept(t);
+            }
+            catch (Exception e) {
+                U.warn(log, "Listener error", e);
+            }
+        }
     }
 }
