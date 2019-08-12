@@ -28,6 +28,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.DiagnosticLogForPartitionStatesTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -247,6 +248,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(ClassPathContentLoggingTest.class);
 
         suite.addTestSuite(IncompleteDeserializationExceptionTest.class);
+
+        suite.addTestSuite(DiagnosticLogForPartitionStatesTest.class);
 
         return suite;
     }
