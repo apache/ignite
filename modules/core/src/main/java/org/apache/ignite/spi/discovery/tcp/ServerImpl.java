@@ -2822,9 +2822,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private DiscoveryDataPacket gridDiscoveryData;
 
+        /** The most recent unprocessed metrics update message, which is on its first discovery round trip. */
         private volatile TcpDiscoveryMetricsUpdateMessage actualFirstLapMetricsUpdate;
 
+        /** The most recent unprocessed metrics update message, which is on its second discovery round trip. */
         private volatile TcpDiscoveryMetricsUpdateMessage actualSecondLapMetricsUpdate;
+
         /**
          * @param log Logger.
          */
@@ -2880,12 +2883,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 addToQueue(msg);
         }
 
+        /**
+         * Adds the provided metrics update message to the worker's queue. If there is already a message in the queue,
+         * that has passed the same number of discovery ring laps, then it's replaced with the provided one.
+         *
+         * @param msg Metrics update message that needs to be added to the worker's queue.
+         */
         private void addMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg) {
             int laps = passedLaps(msg);
 
             if (laps == 2)
                 addToQueue(msg);
             else {
+                // The message will be added to the queue only if a similar message is not there already.
+                // Otherwise one of actualFirstLapMetricsUpdate or actualSecondLapMetricsUpdate will be updated only.
                 boolean addToQueue;
 
                 if (laps == 0) {
@@ -2907,11 +2918,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     DebugLogger log = messageLogger(msg);
 
                     if (log.isDebugEnabled())
-                        log.debug("Metric update message has been replaced in a worker's queue: " + msg);
+                        log.debug("Metric update message has been replaced in the worker's queue: " + msg);
                 }
             }
         }
 
+        /**
+         * @param msg Message to add.
+         */
         private void addToQueue(TcpDiscoveryAbstractMessage msg) {
             queue.add(msg);
 
@@ -2925,7 +2939,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Metrics update message.
          * @return Number of laps, that the provided message passed.
          */
-        int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
+        private int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
             UUID locNodeId = getLocalNodeId();
 
             boolean hasLocMetrics = hasMetrics(msg, locNodeId);
@@ -5680,7 +5694,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Processes regular metrics update message.
+         * Processes regular metrics update message. If a more recent message of the same kind has been received,
+         * then it will be processed instead of the one taken from the queue.
          *
          * @param msg Metrics update message.
          */
@@ -5691,16 +5706,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             int laps = passedLaps(msg);
 
-            if (laps == 0) {
-                msg = actualFirstLapMetricsUpdate;
-
-                actualFirstLapMetricsUpdate = null;
-            }
-            else if (laps == 1) {
-                msg = actualSecondLapMetricsUpdate;
-
-                actualSecondLapMetricsUpdate = null;
-            }
+            msg = getActualMetricsUpdateMessage(msg, laps);
 
             UUID locNodeId = getLocalNodeId();
 
@@ -5819,6 +5825,27 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), locNode);
             }
+        }
+
+        /**
+         * @param msg Message taken from the queue.
+         * @param laps Number of discovery ring laps passed by the message.
+         * @return The most recent message of the same kind received by the local node.
+         */
+        private TcpDiscoveryMetricsUpdateMessage getActualMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg,
+            int laps) {
+            if (laps == 0) {
+                msg = actualFirstLapMetricsUpdate;
+
+                actualFirstLapMetricsUpdate = null;
+            }
+            else if (laps == 1) {
+                msg = actualSecondLapMetricsUpdate;
+
+                actualSecondLapMetricsUpdate = null;
+            }
+
+            return msg;
         }
 
         /**
