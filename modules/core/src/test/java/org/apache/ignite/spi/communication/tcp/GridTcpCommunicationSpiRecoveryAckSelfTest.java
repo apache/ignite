@@ -40,9 +40,9 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
-import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -91,7 +91,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     }
 
     /** */
-    private class TestListener implements CommunicationListenerEx<Message> {
+    private class TestListener implements CommunicationListener<Message> {
         /** */
         private GridConcurrentHashSet<Long> msgIds = new GridConcurrentHashSet<>();
 
