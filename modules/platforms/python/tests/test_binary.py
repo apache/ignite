@@ -278,3 +278,29 @@ def test_add_schema_to_binary_object(client):
     assert not hasattr(result, 'test_bool')
 
     migrate_cache.destroy()
+
+
+def test_complex_object_names(client):
+    """
+    Test the ability to work with Complex types, which names contains symbols
+    not suitable for use in Python identifiers.
+    """
+    type_name = 'Non.Pythonic#type-name$'
+    key = 'key'
+    data = 'test'
+
+    class NonPythonicallyNamedType(
+        metaclass=GenericObjectMeta,
+        type_name=type_name,
+        schema=OrderedDict([
+            ('field', String),
+        ])
+    ):
+        pass
+
+    cache = client.get_or_create_cache('test_name_cache')
+    cache.put(key, NonPythonicallyNamedType(field=data))
+
+    obj = cache.get(key)
+    assert obj.type_name == type_name, 'Complex type name mismatch'
+    assert obj.field == data, 'Complex object data failure'

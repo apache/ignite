@@ -42,6 +42,7 @@ the local (class-wise) registry for GridGain Complex objects.
 
 from collections import defaultdict, OrderedDict
 import random
+import re
 from typing import Dict, Iterable, List, Optional, Tuple, Type, Union
 
 from .api.binary import get_binary_type, put_binary_type
@@ -56,7 +57,8 @@ from .exceptions import (
     BinaryTypeError, CacheError, ReconnectError, SQLError, connection_errors,
 )
 from .utils import (
-    entity_id, schema_id, select_version, status_to_exception, is_iterable
+    capitalize, entity_id, schema_id, process_delimiter, select_version,
+    status_to_exception, is_iterable,
 )
 from .binary import GenericObjectMeta
 
@@ -81,6 +83,10 @@ class Client:
     _connection_args: Dict = None
     _current_node: int = None
     _nodes: List[Connection] = None
+
+    # used for Complex object data class names sanitizing
+    _identifier = re.compile(r'[^0-9a-zA-Z_.+$]', re.UNICODE)
+    _ident_start = re.compile(r'^[^a-zA-Z_]+', re.UNICODE)
 
     affinity_version: Optional[Tuple] = None
     protocol_version: Optional[Tuple] = None
@@ -383,10 +389,39 @@ class Client:
             for schema in type_info['schemas']:
                 if not self._registry[type_id].get(schema_id(schema), None):
                     data_class = self._create_dataclass(
-                        type_info['type_name'],
+                        self._create_type_name(type_info['type_name']),
                         schema,
                     )
                     self._registry[type_id][schema_id(schema)] = data_class
+
+    @classmethod
+    def _create_type_name(cls, type_name: str) -> str:
+        """
+        Creates Python data class name from GridGain binary type name.
+
+        Handles all the special cases found in
+        `java.org.apache.ignite.binary.BinaryBasicNameMapper.simpleName()`.
+        Tries to adhere to PEP8 along the way.
+        """
+
+        # general sanitizing
+        type_name = cls._identifier.sub('', type_name)
+
+        # - name ending with '$' (Scala)
+        # - name + '$' + some digits (anonymous class)
+        # - '$$Lambda$' in the middle
+        type_name = process_delimiter(type_name, '$')
+
+        # .NET outer/inner class delimiter
+        type_name = process_delimiter(type_name, '+')
+
+        # Java fully qualified class name
+        type_name = process_delimiter(type_name, '.')
+
+        # start chars sanitizing
+        type_name = capitalize(cls._ident_start.sub('', type_name))
+
+        return type_name
 
     def register_binary_type(
         self, data_class: Type, affinity_key_field: str = None,
