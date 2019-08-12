@@ -1391,8 +1391,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     break;
                 }
-                catch (GridCacheEntryRemovedException ignore) {
-                    assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                catch (GridCacheEntryRemovedException e) {
+                    log.error("Got removed exception on entry with dht local candidate. Transaction will be " +
+                        "rolled back. Entry: " + entry + " tx: " + CU.txDump(tx), e);
+
+                    // Entry was unlocked by concurrent rollback.
+                    onError(tx.rollbackException());
                 }
 
                 idx++;
@@ -1413,8 +1417,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                         break;
                     }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                    catch (GridCacheEntryRemovedException e) {
+                        log.error("Got removed exception on entry with dht local candidate. Transaction will be " +
+                            "rolled back. Entry: " + entry + " tx: " + CU.txDump(tx), e);
+
+                        // Entry was unlocked by concurrent rollback.
+                        onError(tx.rollbackException());
                     }
                 }
             }
@@ -1488,8 +1496,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             }
 
                             break;
-                        } catch (GridCacheEntryRemovedException ignore) {
-                            assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            log.error("Got removed exception on entry with dht local candidate. Transaction will be " +
+                                "rolled back. Entry: " + entry + " tx: " + CU.txDump(tx), e);
+
+                            // Entry was unlocked by concurrent rollback.
+                            onError(tx.rollbackException());
                         }
                     }
                 }
