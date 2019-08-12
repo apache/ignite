@@ -130,10 +130,11 @@ public class DistributedBaselineConfiguration {
         }
 
         if (isLocalNodeCoordinator(ctx.discovery())) {
-            log.info(format(AUTO_ADJUST_CONFIGURED_MESSAGE,
-                (isBaselineAutoAdjustEnabled() ? "enabled" : "disabled"),
-                getBaselineAutoAdjustTimeout()
-            ));
+            if (log.isInfoEnabled())
+                log.info(format(AUTO_ADJUST_CONFIGURED_MESSAGE,
+                    (isBaselineAutoAdjustEnabled() ? "enabled" : "disabled"),
+                    getBaselineAutoAdjustTimeout()
+                ));
         }
     }
 
