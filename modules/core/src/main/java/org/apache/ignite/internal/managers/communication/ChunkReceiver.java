@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SocketChannel;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
@@ -28,22 +29,22 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Buffered chunked receiver can handle input socket channel by chunks of data and
- * deliver it to an allocated {@link ByteBuffer}.
+ * Chunk receiver used to read a given {@link SocketChannel} by chunks of predefined size into
+ * an allocated {@link ByteBuffer}.
  */
 class ChunkReceiver extends TransmissionReceiver {
-    /** Chunked channel handler to process data with chunks. */
+    /** Handler which accepts received data from the given socket. */
     private final Consumer<ByteBuffer> hnd;
 
-    /** The destination object to transfer data to\from. */
+    /** Destination buffer to transfer data to\from. */
     private ByteBuffer buf;
 
     /**
      * @param meta Initial file meta info.
-     * @param chunkSize Size of chunks.
+     * @param chunkSize Size of the chunk.
      * @param stopChecker Node stop or prcoess interrupt checker.
-     * @param hnd Transmission handler to process download result.
-     * @param log Ignite looger.
+     * @param hnd Transmission handler to process received data.
+     * @param log Ignite logger.
      */
     public ChunkReceiver(
         TransmissionMeta meta,

@@ -78,7 +78,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.fileCount;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /**
- * Test file transmission mamanger operations.
+ * Test file transmission manager operations.
  */
 public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTest {
     /** Number of cache keys to generate. */
@@ -111,9 +111,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /** Ignite instance which sends files. */
     private IgniteEx snd;
 
-    /**
-     * Called before tests started.
-     */
+    /** Called before tests started. */
     @BeforeClass
     public static void beforeAll() {
         topic = GridTopic.TOPIC_CACHE.topic("test", 0);
@@ -135,9 +133,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         tempStore = U.resolveWorkDirectory(U.defaultWorkDirectory(), TEMP_FILES_DIR, true);
     }
 
-    /**
-     * Called after test run.
-     */
+    /** Called after test run. */
     @After
     public void after() {
         try {
@@ -231,11 +227,11 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         assertEquals(fileSizes.size(), tempStore.listFiles(fileBinFilter).length);
 
         for (File file : cacheParts) {
-            // Check received file lenghs
+            // Check received file lengths.
             assertEquals("Received the file length is incorrect: " + file.getName(),
                 fileSizes.get(file.getName()), new Long(file.length()));
 
-            // Check received params
+            // Check received params.
             assertEquals("File additional parameters are not fully transmitted",
                 fileParams.get(file.getName()), file.hashCode());
         }
@@ -387,12 +383,12 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             sender.send(fileToSend, TransmissionPolicy.FILE);
         }
         catch (IgniteCheckedException | IOException | InterruptedException e) {
-            // Ignore err
+            // Ignore err.
             U.warn(log, e);
         }
 
         assertNotNull("Timeout exception not occurred", refErr.get());
-        assertEquals("Type of timeout excpetion incorrect: " + refErr.get(),
+        assertEquals("Type of timeout exception incorrect: " + refErr.get(),
             IgniteCheckedException.class,
             refErr.get().getClass());
     }
@@ -449,7 +445,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
 
         assertEquals(NodeStoppingException.class, err.getClass());
-        assertEquals("Uncomplete resources must be cleaned up on sender left",
+        assertEquals("Incomplete resources must be cleaned up on sender left",
             0,
             fileCount(downloadTo.toPath()));
     }
@@ -775,10 +771,10 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             sender.send(fileToSend, TransmissionPolicy.CHUNK);
         }
 
-        assertEquals("Total number of accepted chunks by remote node is not as expected",
+        assertEquals("Remote node must accept all chunks",
             fileToSend.length() / rcv.configuration().getDataStorageConfiguration().getPageSize(),
             acceptedChunks.get());
-        assertEquals("Received file and sent files have not the same lenght", fileToSend.length(), file.length());
+        assertEquals("Received file and sent files have not the same lengtgh", fileToSend.length(), file.length());
         assertCrcEquals(fileToSend, file);
         assertNull(fileIo[0]);
     }
@@ -822,7 +818,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         ConcurrentMap<T2<UUID, IgniteUuid>, AtomicBoolean> sndrFlags = GridTestUtils.getFieldValue(io, "senderStopFlags");
 
         assertTrue("Receiver context map must be empty: " + ctxs, ctxs.isEmpty());
-        assertTrue("Sender stop falgs must be empty: " + sndrFlags, sndrFlags.isEmpty());
+        assertTrue("Sender stop flags must be empty: " + sndrFlags, sndrFlags.isEmpty());
     }
 
     /**
@@ -839,12 +835,12 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param ignite The ignite instance.
-     * @param cacheName Cache name string representation.
+     * @param ignite An ignite instance.
+     * @param cacheName Cache name.
      * @return The cache working directory.
      */
     private File cacheWorkDir(IgniteEx ignite, String cacheName) {
-        // Resolve cache directory
+        // Resolve cache directory.
         IgniteInternalCache<?, ?> cache = ignite.cachex(cacheName);
 
         FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cache.context()
@@ -894,9 +890,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
     }
 
-    /**
-     * The defailt implementation of transmit session.
-     */
+    /** The defailt implementation of transmit session. */
     private static class DefaultTransmissionHandler extends TransmissionHandlerAdapter {
         /** Ignite recevier node. */
         private final IgniteEx rcv;

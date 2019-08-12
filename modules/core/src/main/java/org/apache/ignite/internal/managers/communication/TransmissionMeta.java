@@ -40,10 +40,10 @@ class TransmissionMeta implements Externalizable {
      */
     private String name;
 
-    /** Offest of transferred file. */
+    /** Offset of transferred file. */
     private long offset;
 
-    /** Number of bytes to transfer started from given <tt>offset</tt>. */
+    /** Number of bytes to transfer started from given {@link #offset}. */
     private long cnt;
 
     /** Additional file params to transfer (e.g. partition id, partition name etc.). */
@@ -55,9 +55,7 @@ class TransmissionMeta implements Externalizable {
     /** Last seen error if it has been occurred, or {@code null} the otherwise. */
     private Exception err;
 
-    /**
-     * Default constructor, usually used to create meta to read channel data into.
-     */
+    /** Default constructor, usually used to create meta to read channel data into. */
     public TransmissionMeta() {
         this(null);
     }
@@ -70,10 +68,10 @@ class TransmissionMeta implements Externalizable {
     }
 
     /**
-     * @param name The string name representation to assoticate particular meta with.
+     * @param name File name to assoticate particular meta with.
      * @param offset The start position of file.
      * @param cnt Number of bytes expected to transfer.
-     * @param params Additional transfer meta params.
+     * @param params Additional meta params.
      * @param plc Policy of how file will be handled.
      * @param err Last seen error if it has been occurred, or {@code null} the otherwise.
      */
@@ -119,14 +117,14 @@ class TransmissionMeta implements Externalizable {
     }
 
     /**
-     * @return The map of additional keys.
+     * @return Additional params.
      */
     public Map<String, Serializable> params() {
         return params;
     }
 
     /**
-     * @return File read way policy {@link TransmissionPolicy}.
+     * @return Transmission policy.
      */
     public TransmissionPolicy policy() {
         return plc;
@@ -134,6 +132,7 @@ class TransmissionMeta implements Externalizable {
 
     /**
      * @param err An exception instance if it has been previously occurred.
+     * @return {@code This} for chaining.
      */
     public TransmissionMeta error(Exception err) {
         this.err = err;

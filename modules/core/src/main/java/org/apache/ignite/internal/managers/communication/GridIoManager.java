@@ -85,6 +85,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -163,23 +164,24 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
 
 /**
  * This class represents the internal grid communication (<em>input</em> and <em>output</em>) manager
- * which is placed as a layer of indirection interaction between the Ignies Kernal and Communicaiton SPI.
- * Communication manager resopnsible for controlling Communication SPI which in turn is responsible
- * for exchanging data between Ignites nodes.
+ * which is placed as a layer of indirection between the {@link IgniteKernal} and {@link CommunicationSpi}.
+ * The IO manager is responsible for controlling CommunicationSPI which in turn is responsible
+ * for exchanging data between Ignite nodes.
  *
  * <h2>Data exchanging</h2>
  * <p>
  * Communication manager provides a rich API for data exchanging between a pair of cluster nodes. Two types
  * of communication <em>Message-based communication</em> and <em>File-based communication</em> are available.
- * Each of them support sending data to an arbitrary topic on the remote node (topics of {@link GridTopic} is used).
+ * Each of them support sending data to an arbitrary topic on the remote node (see {@link GridTopic} for an
+ * additional information about Ignite topics).
  *
  * <h3>Message-based communication</h3>
  * <p>
- * Ignites extension {@link Message} and {@link GridTopic} are used to provide a topic-based messaging protocol
+ * {@link Message} and {@link GridTopic} are used to provide a topic-based messaging protocol
  * between cluster nodes. All of messages used for data exchanging can be devided into two general types:
  * <em>internal</em> and <em>user</em> messages.
  * <p>
- * <em>Internal message</em> communication is used by Ignites Kernal. Please, refer to appropriate methods below:
+ * <em>Internal message</em> communication is used by Ignite Kernal. Please, refer to appropriate methods below:
  * <ul>
  * <li>{@link #sendToGridTopic(ClusterNode, GridTopic, Message, byte)}</li>
  * <li>{@link #sendOrderedMessage(ClusterNode, Object, Message, byte, long, boolean)}</li>
@@ -197,7 +199,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * <h3>File-based communication</h3>
  * <p>
  * Sending or receiving binary data (represented by a <em>File</em>) over a <em>SocketChannel</em> is only
- * possible when the build-in <em>TcpCommunicationSpi</em> implementation of Communication SPI is used and
+ * possible when the build-in {@link TcpCommunicationSpi} implementation of Communication SPI is used and
  * both local and remote nodes are {@link IgniteFeatures#CHANNEL_COMMUNICATION CHANNEL_COMMUNICATION} feature
  * support. To ensue that the remote node satisfies all conditions the {@link #fileTransmissionSupported(ClusterNode)}
  * method must be called prior to data sending.
@@ -212,7 +214,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * </ul>
  * <p>
  * Each transmission sender opens a new transmission session to remote node prior to sending files over it.
- * (see description of {@link TransmissionSender} for details). The TransmissionSender
+ * (see description of {@link TransmissionSender} for details). The {@link TransmissionSender}
  * will send all files within single session syncronously one by one.
  * <p>
  * <em>NOTE.</em> It is important to call <em>close()</em> method or use <em>try-with-resource</em>
@@ -259,7 +261,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
     /**
-     * Default transfer chunk size in bytes used for sending\receiving files over a SocketChannel.
+     * Default chunk size in bytes used for sending\receiving files over a {@link SocketChannel}.
      * Setting the transfer chunk size more than <tt>1 MB</tt> is meaningless because there is
      * no asymptotic benefit. What you're trying to achieve with larger transfer chunk sizes is
      * fewer thread context switches, and every time we double the transfer size you have
@@ -269,7 +271,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     private static final int DFLT_CHUNK_SIZE_BYTES = 256 * 1024;
 
-    /** Mutex to achive consistency of transmission handlers and receiver context. */
+    /** Mutex to achieve consistency of transmission handlers and receiver contexts. */
     private final Object rcvMux = new Object();
 
     /** Map of registered handlers per each IO topic. */
@@ -282,9 +284,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final ConcurrentMap<T2<UUID, IgniteUuid>, AtomicBoolean> senderStopFlags = new ConcurrentHashMap<>();
 
     /**
-     * Default factory to provide IO operation interface over files for futher transmission them between nodes.
-     * Some implementations of file senders\receivers are using the zero-copy algorithm to tranasfer bytes
-     * from a file to the given <tt>SocketChannel</tt> and vice-versa. So, it is necessary to produce an {@link FileIO}
+     * Default factory to provide IO operation interface over files for further transmission them between nodes.
+     * Some implementations of file senders\receivers are using the zero-copy approach to transfer bytes
+     * from a file to the given {@link SocketChannel} and vice-versa. So, it is necessary to produce an {@link FileIO}
      * implementation based on {@link FileChannel} which is reflected in Ignite project as {@link RandomAccessFileIO}.
      *
      * @see FileChannel#transferTo(long, long, WritableByteChannel)
@@ -294,7 +296,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** The maximum number of retry attempts (read or write attempts). */
     private final int retryCnt;
 
-    /** Maximum timeout in milliseconds for waiting network response. */
+    /** Network timeout in milliseconds. */
     private final int netTimeoutMs;
 
     /** Listeners by topic. */
@@ -942,7 +944,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                         it.remove();
 
                                         interruptRecevier(e.getValue(),
-                                            new ClusterTopologyCheckedException("Remove node left the grid. " +
+                                            new ClusterTopologyCheckedException("Remote node left the grid. " +
                                                 "Receiver has been stopped : " + nodeId));
                                     }
                                 }
@@ -1869,7 +1871,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param remoteId The remote note to connect to.
+     * @param remoteId The remote node to connect to.
      * @param topic The remote topic to connect to.
      * @return The channel instance to communicate with remote.
      */
@@ -1910,7 +1912,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * are fully support direct {@link SocketChannel} connection to transfer data.
      *
      * @param node Remote node to check.
-     * @return {@code true} if file can be send over socket channel directly.
+     * @return {@code true} if a file can be sent over socket channel directly.
      */
     public boolean fileTransmissionSupported(ClusterNode node) {
         return ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi) &&
@@ -1931,7 +1933,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) throws IgniteCheckedException {
         assert nodeId != null;
         assert topic != null;
-        assert !locNodeId.equals(nodeId) : "Channel cannot be opened to the local node itself:" + nodeId;
+        assert !locNodeId.equals(nodeId) : "Channel cannot be opened to the local node itself: " + nodeId;
         assert (CommunicationSpi)getSpi() instanceof TcpCommunicationSpi : "Only TcpCommunicationSpi supports direct " +
             "connections between nodes: " + getSpi().getClass();
 
@@ -2707,7 +2709,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             rctx.hnd.onException(rctx.rmtNodeId, ex);
 
-            U.error(log, "Receiver has been interrupted due to an excpetion occurred [ctx=" + rctx + ']', ex);
+            U.error(log, "Receiver has been interrupted due to an exception occurred [ctx=" + rctx + ']', ex);
         }
     }
 
@@ -2755,7 +2757,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 rcvCtx = rcvCtxs.computeIfAbsent(topic, t -> new ReceiverContext(rmtNodeId, hnd, newSesId));
             }
 
-            // Do not allow multiple connection for the same session.
+            // Do not allow multiple connections for the same session.
             if (!newSesId.equals(rcvCtx.sesId)) {
                 IgniteCheckedException err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
                     "It's not allowed to process different sessions over the same topic simultaneously. " +
@@ -2780,7 +2782,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (rcvCtx.timeoutObj != null)
                     ctx.timeout().removeTimeoutObject(rcvCtx.timeoutObj);
 
-                // Send previous context state to sync remote and local node (on manager connected).
+                // Send previous context state to sync remote and local node.
                 out.writeObject(rcvCtx.lastState == null ? new TransmissionMeta() : rcvCtx.lastState);
 
                 if (rcvCtx.lastState == null || rcvCtx.lastState.error() == null)
@@ -2921,7 +2923,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /**
      * @param nodeId Remote node id.
-     * @param hnd Currnet handler instance which produces file handlers.
+     * @param hnd Current handler instance which produces file handlers.
      * @param meta Meta information about file pending to receive to create appropriate receiver.
      * @param stopChecker Process interrupt checker.
      * @return Chunk data recevier.
@@ -2954,14 +2956,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     log);
 
             default:
-                throw new IllegalStateException("The type of transmission policy is unknown. An impelentation " +
+                throw new IllegalStateException("The type of transmission policy is unknown. An implementation " +
                     "required: " + meta.policy());
         }
     }
 
     /**
      * @param channel Socket channel to configure blocking mode.
-     * @param timeout Ignite network ocnfiguration timeout.
+     * @param timeout Ignite network configuration timeout.
      * @throws IOException If fails.
      */
     private static void configureChannel(SocketChannel channel, int timeout) throws IOException {
@@ -3043,8 +3045,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      *
      * <h2>Zero-copy approach</h2>
      * <p>
-     * Current implementation of transmission sender is based on file zero-copy algorithm (the {@link FileSender}
-     * is used under the hood). It is potentially much more efficient than a simple loop that reads data from
+     * Current implementation of transmission sender is based on file zero-copy approach (the {@link FileSender}
+     * is used under the hood). It is much more efficient than a simple loop that reads data from
      * given file and writes it to the target socket channel. But if operating system does not support zero-copy
      * file transfer, sending a file with {@link TransmissionSender} might fail or yield worse performance.
      * <p>
@@ -3078,13 +3080,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * All transport level exceptions of transmission file sender will require transmission to be reconnected.
      * For instance, when the local node closes the socket connection in orderly way, but the file is not fully
      * handled by remote node, the read operation over the same socket endpoint will return <tt>-1</tt>. Such
-     * result will be consideread as an <em>IOException</em> by handler and it will wait for reestablishing connection
+     * result will be consideread as an {@link IOException} by handler and it will wait for reestablishing connection
      * to continue file loading.
      * <p>
      * Another example, the transmission sender gets the <em>Connection reset by peer</em> IOException message.
      * This means that the remote node you are connected to has to reset the connection. This is usually caused by a
      * high amount of traffic on the host, but may be caused by a server error or the remote node has exhausted
-     * system resources as well. Such <em>IOException</em> will be considered as <em>reconnection required</em>.
+     * system resources as well. Such {@link IOException} will be considered as <em>reconnection required</em>.
      *
      * <h3>Timeout exceptions</h3>
      * <p>
@@ -3092,7 +3094,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * the {@link Socket#setSoTimeout(int)} will be used and an {@link SocketTimeoutException} will be
      * thrown when the timeout occured. The default value is taken from {@link IgniteConfiguration#getNetworkTimeout()}.
      * <p>
-     * If reconnection is not occured withing configured timeout interval the timeout object will be fired which
+     * If reconnection is not occurred withing configured timeout interval the timeout object will be fired which
      * clears corresponding to the used topic the {@link ReceiverContext}.
      *
      * <h2>Release resources</h2>
@@ -3118,11 +3120,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** Decorated with data operations socket of output channel. */
         private ObjectOutput out;
 
-        /** Decoreated with data operations socket of input channel. */
+        /** Decorated with data operations socket of input channel. */
         private ObjectInput in;
 
         /**
-         * @param rmtId The remote note to connect to.
+         * @param rmtId The remote node to connect to.
          * @param topic The remote topic to connect to.
          */
         public TransmissionSender(
@@ -3135,7 +3137,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /**
-         * @return The syncronization meta if case connection has been reset.
+         * @return The synchronization meta if case connection has been reset.
          * @throws IgniteCheckedException If fails.
          * @throws IOException If fails.
          */
@@ -3166,7 +3168,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         /**
          * @param file Source file to send to remote.
-         * @param params Additional transfer file description keys.
+         * @param params Additional file params.
          * @param plc The policy of handling data on remote.
          * @throws IgniteCheckedException If fails.
          */
@@ -3194,7 +3196,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param file Source file to send to remote.
          * @param offset Position to start trasfer at.
          * @param cnt Number of bytes to transfer.
-         * @param params Additional transfer file description keys.
+         * @param params Additional file params.
          * @param plc The policy of handling data on remote.
          * @throws IgniteCheckedException If fails.
          */
@@ -3235,11 +3237,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     try {
                         TransmissionMeta rcvMeta = null;
 
-                        // in/out streams are not null if file has been sent successfully
+                        // In/out streams are not null if file has been sent successfully.
                         if (out == null && in == null) {
                             rcvMeta = connect();
 
-                            assert rcvMeta != null : "Remote recevier has not sent its meta";
+                            assert rcvMeta != null : "Remote receiver has not sent its meta";
 
                             // Stop in case of any error occurred on remote node during file processing.
                             if (rcvMeta.error() != null)
@@ -3251,7 +3253,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         // Read file received acknowledge.
                         boolean written = in.readBoolean();
 
-                        assert written : "File is not fully written :" + file.getAbsolutePath();
+                        assert written : "File is not fully written: " + file.getAbsolutePath();
 
                         break;
                     }
@@ -3287,7 +3289,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             catch (IgniteCheckedException e) {
                 closeChannelQuiet();
 
-                throw new IgniteCheckedException("Excpetion while sending file [rmtId=" + rmtId +
+                throw new IgniteCheckedException("Exception while sending file [rmtId=" + rmtId +
                     ", file=" + file.getName() + ", sesKey=" + sesKey + ", retries=" + retries + ']', e);
             }
             catch (Throwable e) {
@@ -3321,7 +3323,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 out0.flush();
             }
             catch (IOException e) {
-                U.warn(log, "An excpetion while writing close session flag occured. " +
+                U.warn(log, "An exception while writing close session flag occured. " +
                     " Session close operation has been ignored", e);
             }
             finally {
@@ -3329,9 +3331,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        /**
-         * Close channel and relese resources.
-         */
+        /** Close channel and relese resources. */
         private void closeChannelQuiet() {
             U.closeQuiet(out);
             U.closeQuiet(in);

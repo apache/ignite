@@ -39,10 +39,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * whole file will be completely received.
  */
 class FileReceiver extends TransmissionReceiver {
-    /** Handler to notify when a file has been processed. */
+    /** Handler to notify when a file has been received. */
     private final Consumer<File> hnd;
 
-    /** The abstract java representation of the chunked file. */
+    /** File to receive data into. */
     private File file;
 
     /** The corresponding file channel to work with. */

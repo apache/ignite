@@ -28,16 +28,16 @@ import java.util.function.Consumer;
  * must be registered to and appropriate topic in {@link GridIoManager} prior to opening a new transmission connection
  * to this topic.
  * <p>
- * <em>NOTE:</em> There is only one such handler per registered topic is allowed for the communication
+ * <em>NOTE:</em> Only one such handler per registered topic is allowed for the communication
  * manager. Only one thread is allowed for data processing within a single topic.
  *
  * <h3>TransmissionPolicy</h3>
  * <p>
  * Files from the remote node can be handled of two different ways within a single established connection.
- * It is up to the sender to decide how the particular file must be prccessed by the remote node. The
- * <em>TransmissionPolicy</em> is used for such purpose. If {@link TransmissionPolicy#FILE} type is received by
- * remote node the <em>FileHandler</em> will be picked up to process this file, the otherwise for the
- * {@link TransmissionPolicy#CHUNK} the <em>ChunkHandler</em> will be picked up.
+ * It is up to the sender to decide how the particular file must be processed by the remote node. The
+ * {@link TransmissionPolicy} is used for such purpose. If {@link TransmissionPolicy#FILE} type is received by
+ * remote node the <em>#fileHandler()</em> will be picked up to process this file, the otherwise for the
+ * {@link TransmissionPolicy#CHUNK} the <em>#chunkHandler()</em> will be picked up.
  */
 public interface TransmissionHandler {
     /**

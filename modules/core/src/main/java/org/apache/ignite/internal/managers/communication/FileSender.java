@@ -38,26 +38,26 @@ import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
 
 /**
  * Class represents a data sender by chunks of predefined size. All of the chunks will be written to the
- * given socket channel. It is important that for each file you are going to send a new <em>FileSender</em>
+ * given socket channel. Please note, that for each file you are going to send a new {@link FileSender}
  * instance will be created. The sender must keep its internal state of how much data already being
  * transferred to send its state to remote node when reconnection required.
  * <p>
- * The <em>FileSender</em> uses the zero-copy streaming algorithm, see <em>FileChannel#transferTo</em> for details.
+ * The <em>FileSender</em> uses the zero-copy streaming approach, see <em>FileChannel#transferTo</em> for details.
  *
  * @see FileChannel#transferTo(long, long, WritableByteChannel)
  */
 class FileSender extends AbstractTransmission {
-    /** Corresponding file channel to work with given file. */
+    /** Corresponding file channel to work with a given file. */
     @GridToStringExclude
     private FileIO fileIo;
 
     /**
-     * @param file File which is going to be send by chunks.
+     * @param file File which is going to be sent by chunks.
      * @param off File offset.
      * @param cnt Number of bytes to transfer.
      * @param params Additional file params.
      * @param plc Policy of handling data on remote.
-     * @param stopChecker Node stop or prcoess interrupt checker.
+     * @param stopChecker Node stop or process interrupt checker.
      * @param log Ignite logger.
      * @param factory Factory to produce IO interface on given file.
      * @param chunkSize Size of chunks.
@@ -78,9 +78,7 @@ class FileSender extends AbstractTransmission {
 
         assert file != null;
 
-        // Can be not null if reconnection is going to be occurred.
-        if (fileIo == null)
-            fileIo = factory.create(file);
+        fileIo = factory.create(file);
     }
 
     /**
@@ -94,7 +92,6 @@ class FileSender extends AbstractTransmission {
         ObjectOutput oo,
         @Nullable TransmissionMeta rcvMeta
     ) throws IOException, InterruptedException {
-        // If not the initial connection for the current session.
         updateSenderState(rcvMeta);
 
         // Write flag to remote to keep currnet transmission opened.
@@ -147,7 +144,7 @@ class FileSender extends AbstractTransmission {
 
         transferred = uploadedBytes;
 
-        U.log(log, "Update senders number of transferred bytes after reconnect: " + uploadedBytes);
+        U.log(log, "The number of transferred bytes after reconnect has been updated: " + uploadedBytes);
     }
 
     /**

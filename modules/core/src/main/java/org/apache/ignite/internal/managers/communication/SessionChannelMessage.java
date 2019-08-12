@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * an appropriate channel is opened.
  */
 class SessionChannelMessage implements Message {
-    /** Initial channel message type (value is {@code 177}). */
+    /** Initial channel message type (value is {@code 175}). */
     public static final short TYPE_CODE = 175;
 
     /** Serialization version. */
@@ -64,7 +64,7 @@ class SessionChannelMessage implements Message {
 
     /**
      * @param sesId The unique session id for the channel.
-     * @return {@code this} for chaining.
+     * @return {@code This} for chaining.
      */
     public SessionChannelMessage sesId(IgniteUuid sesId) {
         this.sesId = sesId;
