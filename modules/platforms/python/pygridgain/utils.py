@@ -304,3 +304,18 @@ class DaemonicTimer(Thread):
         if not self.finished.is_set():
             self.function(*self.args, **self.kwargs)
         self.finished.set()
+
+
+def capitalize(string: str) -> str:
+    """
+    Capitalizing the string, assuming the first character is a letter.
+    Does not touch any other character, unlike the `string.capitalize()`.
+    """
+    return string[:1].upper() + string[1:]
+
+
+def process_delimiter(name: str, delimiter: str) -> str:
+    """
+    Splits the name by delimiter, capitalize each part, merge.
+    """
+    return ''.join([capitalize(x) for x in name.split(delimiter)])
