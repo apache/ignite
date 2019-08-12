@@ -38,13 +38,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -144,6 +145,79 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
+    public void testDifferentFieldsSequenceIndex() throws Exception {
+        runIndexWithDifferentFldsReqAllFldsInIdx("IDX2", "IDX3");
+
+        runIndexWithDifferentFldsReqAllFldsInIdx("IDX3", "IDX2");
+    }
+
+    /** */
+    private void runIndexWithDifferentFldsReqAllFldsInIdx(String idx1, String idx2) throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrids(gridCount());
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, "TEST_TBL_NAME", 2, "FIRST_NAME", "LAST_NAME",
+            "ADDRESS", "LANG");
+
+        String sqlIdx1 = String.format("create index \"%s\" on %s(FIRST_NAME)", idx1, "TEST_TBL_NAME");
+        String sqlIdx2 = String.format("create index \"%s\" on %s(LAST_NAME, FIRST_NAME)", idx2, "TEST_TBL_NAME");
+
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx2), true).getAll();
+
+        String sql = "explain select * from " + "TEST_TBL_NAME" + " where " +
+            "LAST_NAME = 2 and FIRST_NAME >= 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3)";
+
+        String plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
+            .getAll().get(0).get(0).toString().toUpperCase();
+
+        assertTrue("plan=" + plan, plan.contains(idx2));
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** */
+    private void populateTable(GridQueryProcessor qryProc, String tblName, int consPkFldsNum, String... reqFlds) {
+        assert consPkFldsNum <= reqFlds.length;
+
+        String sql = "CREATE TABLE " + tblName + " (";
+        String sqlIns = "INSERT INTO " + tblName + " (";
+
+        for (int i = 0; i < reqFlds.length; ++i) {
+            sql += reqFlds[i] + " VARCHAR, ";
+
+            sqlIns += reqFlds[i] + ((i < reqFlds.length - 1) ? ", " : ") values (");
+        }
+
+        if (consPkFldsNum > 0) {
+            sql += " CONSTRAINT PK_PERSON PRIMARY KEY (";
+
+            for (int i = 0; i < consPkFldsNum; ++i)
+                sql += reqFlds[i] + ((i < consPkFldsNum - 1) ? ", " : "))");
+        }
+        else
+            sql += ")";
+
+        qryProc.querySqlFields(new SqlFieldsQuery(sql), true);
+
+        for (int i = 0; i < 10; ++i) {
+            String s0 = sqlIns;
+
+            for (int f = 0; f < reqFlds.length; ++f)
+                s0 += i + ((f < reqFlds.length - 1) ? ", " : ")");
+
+            qryProc.querySqlFields(new SqlFieldsQuery(s0), true).getAll();
+        }
+    }
+
+    /** */
+    @Test
     public void testNoIndexesNoPersistence() throws Exception {
         int[] inlineSizes = {0, 10, 20, 50, 100};
 
@@ -163,6 +237,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testAllIndexesNoPersistence() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -191,6 +266,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesNoPersistence() throws Exception {
         int[] inlineSizes = {0, 10, 20, 50, 100};
 
@@ -219,6 +295,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testNoIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
@@ -248,6 +325,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testAllIndexesWithPersistence() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -286,6 +364,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
@@ -324,6 +403,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesDropWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
@@ -368,6 +448,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testNoIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
@@ -407,6 +488,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testAllIndexesWithPersistenceIndexRebuild() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -455,6 +537,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
@@ -690,7 +773,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             String schemaName = DEFAULT_CACHE_NAME;
 
             cache.query(new SqlFieldsQuery(
-                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s", indexName, schemaName, col, inlineSize)
+                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s;", indexName, schemaName, col, inlineSize)
             )).getAll();
         }
 
@@ -705,7 +788,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             String indexName = col + "_idx";
 
             cache.query(new SqlFieldsQuery(
-                String.format("drop index %s", indexName)
+                String.format("drop index %s;", indexName)
             )).getAll();
         }
 
