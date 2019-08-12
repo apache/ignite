@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.util.collection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -40,7 +44,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
      *
      */
     private void sizeIsEmpty(int initCap) {
-        BitSetIntSet bitSetIntSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
+        IntSet bitSetIntSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
 
         assertEquals(0, bitSetIntSet.size());
         assertTrue(bitSetIntSet.isEmpty());
@@ -65,9 +69,55 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         testIterator(1024);
     }
 
+    @Test(expected = NoSuchElementException.class)
+    public void shouldThrowExceptionIfHasNotNextElement() {
+        IntSet intSet = new BitSetIntSet(2);
+        intSet.add(1);
+        intSet.add(2);
+        Iterator<Integer> iterator = intSet.iterator();
+
+        iterator.next();
+        iterator.next();
+        iterator.next();
+    }
+
+    @Test
+    public void hasNextShouldBeIdempotent() {
+        IntSet intSet = new BitSetIntSet(3);
+        intSet.add(1);
+        intSet.add(2);
+        intSet.add(3);
+        Iterator<Integer> iter = intSet.iterator();
+
+        assertEquals(1, (int) iter.next());
+
+        iter.hasNext();
+        iter.hasNext();
+        iter.hasNext();
+        assertEquals(2, (int) iter.next());
+
+        iter.hasNext();
+        iter.hasNext();
+        assertEquals(3, (int) iter.next());
+    }
+
+    @Test
+    public void toIntArray() {
+        IntSet emptySet = new BitSetIntSet();
+        int[] emptyArr = emptySet.toIntArray();
+        assertThat(emptyArr.length, is(0));
+
+        IntSet withGapsSet = new BitSetIntSet(100, Arrays.asList(43, 23, 53));
+        int[] arr = withGapsSet.toIntArray();
+        assertThat(arr.length, is(3));
+        assertThat(arr[0], is(23));
+        assertThat(arr[1], is(43));
+        assertThat(arr[2], is(53));
+    }
+
     /** */
     private void testIterator(int initCap) {
-        BitSetIntSet bitSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
+        IntSet bitSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
 
         for (Integer ignored : bitSet)
             fail("BitSet is empty, shouldn't be invoked.");
@@ -124,7 +174,6 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertEquals(11, (int)list.get(3));
         assertEquals(1025, (int)list.get(4));
 
-
         assertFalse(bitSet.remove(2));
         assertEquals(5, bitSet.size());
 
@@ -142,23 +191,22 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContains() {
-        BitSetIntSet bitSetInt = new BitSetIntSet();
+        IntSet intSet = new BitSetIntSet();
 
-        bitSetInt.add(1);
-        bitSetInt.add(10);
-        bitSetInt.add(10);
-        bitSetInt.add(11);
-        bitSetInt.add(1025);
+        intSet.add(Integer.valueOf(1));
+        intSet.add(10);
+        intSet.add(10);
+        intSet.add(11);
+        intSet.add(1025);
 
-
-        assertTrue(bitSetInt.contains(1));
-        assertFalse(bitSetInt.contains(2));
-        assertFalse(bitSetInt.contains(3));
-        assertFalse(bitSetInt.contains(4));
-        assertTrue(bitSetInt.contains(10));
-        assertTrue(bitSetInt.contains(11));
-        assertFalse(bitSetInt.contains(1024));
-        assertTrue(bitSetInt.contains(1025));
+        assertTrue(intSet.contains(1));
+        assertFalse(intSet.contains(2));
+        assertFalse(intSet.contains(3));
+        assertFalse(intSet.contains(4));
+        assertTrue(intSet.contains(10));
+        assertTrue(intSet.contains(11));
+        assertFalse(intSet.contains(1024));
+        assertTrue(intSet.contains(1025));
     }
 
     /**
@@ -166,20 +214,20 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
      */
     @Test
     public void testContainsAll() {
-        BitSetIntSet bitSetInt = new BitSetIntSet();
+        IntSet intSet = new BitSetIntSet();
 
-        bitSetInt.add(1);
-        bitSetInt.add(10);
-        bitSetInt.add(10);
-        bitSetInt.add(11);
-        bitSetInt.add(1025);
+        intSet.add(1);
+        intSet.add(10);
+        intSet.add(10);
+        intSet.add(11);
+        intSet.add(1025);
 
-        assertTrue(bitSetInt.containsAll(new ArrayList<Integer>() {{
+        assertTrue(intSet.containsAll(new ArrayList<Integer>() {{
             add(1);
             add(10);
         }}));
 
-        assertFalse(bitSetInt.containsAll(new ArrayList<Integer>() {{
+        assertFalse(intSet.containsAll(new ArrayList<Integer>() {{
             add(1);
             add(10);
             add(11);
@@ -187,7 +235,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
             add(1026);
         }}));
 
-        assertFalse(bitSetInt.containsAll(new ArrayList<Integer>() {{
+        assertFalse(intSet.containsAll(new ArrayList<Integer>() {{
             add(1);
             add(10);
             add(12);
@@ -199,22 +247,22 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAddAllRemoveAllRetainAll() {
-        BitSetIntSet bitSetInt = new BitSetIntSet();
+        IntSet intSet = new BitSetIntSet();
 
-        bitSetInt.add(1);
-        bitSetInt.add(10);
-        bitSetInt.add(10);
-        bitSetInt.add(11);
-        bitSetInt.add(1025);
+        intSet.add(1);
+        intSet.add(10);
+        intSet.add(10);
+        intSet.add(11);
+        intSet.add(1025);
 
-        assertFalse(bitSetInt.addAll(new ArrayList<Integer>() {{
+        assertFalse(intSet.addAll(new ArrayList<Integer>() {{
             add(1);
             add(10);
         }}));
 
-        assertEquals(4, bitSetInt.size());
+        assertEquals(4, intSet.size());
 
-        assertTrue(bitSetInt.addAll(new ArrayList<Integer>() {{
+        assertTrue(intSet.addAll(new ArrayList<Integer>() {{
             add(1);
             add(10);
             add(11);
@@ -222,10 +270,10 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
             add(1026);
         }}));
 
-        assertEquals(5, bitSetInt.size());
+        assertEquals(5, intSet.size());
 
         try {
-            bitSetInt.retainAll(new ArrayList<Integer>() {{
+            intSet.retainAll(new ArrayList<Integer>() {{
                 add(10);
                 add(1025);
             }});
@@ -242,17 +290,17 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
      */
     @Test
     public void testToArray() {
-        BitSetIntSet bitSetInt = new BitSetIntSet();
+        IntSet intSet = new BitSetIntSet();
 
-        assertEquals(0, bitSetInt.toArray().length);
+        assertEquals(0, intSet.toArray().length);
 
-        bitSetInt.add(1);
-        bitSetInt.add(10);
-        bitSetInt.add(10);
-        bitSetInt.add(11);
-        bitSetInt.add(1025);
+        intSet.add(1);
+        intSet.add(10);
+        intSet.add(10);
+        intSet.add(11);
+        intSet.add(1025);
 
-        Object[] arr = bitSetInt.toArray();
+        Object[] arr = intSet.toArray();
 
         assertEquals(4, arr.length);
 
@@ -263,7 +311,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
 
         Integer[] input = new Integer[1];
 
-        Integer[] output = bitSetInt.toArray(input);
+        Integer[] output = intSet.toArray(input);
 
         assertNotSame(input, output);
 
@@ -276,7 +324,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
 
         input = new Integer[6];
 
-        output = bitSetInt.toArray(input);
+        output = intSet.toArray(input);
 
         assertSame(input, output);
 
@@ -295,54 +343,34 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInvalidValues() {
-        BitSetIntSet bitSetInt = new BitSetIntSet();
+        IntSet intSet = new BitSetIntSet();
 
         try {
-            bitSetInt.add(null);
+            intSet.add(null);
             fail("add should fail here");
         }
-        catch (UnsupportedOperationException ignored) {
+        catch (IllegalArgumentException ignored) {
             // Ignored.
         }
 
         try {
-            bitSetInt.add(-1);
+            intSet.add(-1);
             fail("add should fail here");
         }
-        catch (UnsupportedOperationException ignored) {
+        catch (IllegalArgumentException ignored) {
             // Ignored.
         }
 
         try {
-            bitSetInt.contains(null);
+            intSet.contains(null);
             fail("contains should fail here");
         }
-        catch (UnsupportedOperationException ignored) {
+        catch (NullPointerException ignored) {
             // Ignored.
         }
 
-        try {
-            bitSetInt.contains(-1);
-            fail("contains should fail here");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
-
-        try {
-            bitSetInt.remove(null);
-            fail("remove should fail here");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
-
-        try {
-            bitSetInt.remove(-1);
-            fail("remove should fail here");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
+        assertFalse(intSet.contains(-1));
+        assertFalse(intSet.remove(null));
+        assertFalse(intSet.remove(-1));
     }
 }
