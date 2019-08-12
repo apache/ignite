@@ -94,7 +94,7 @@ class TransmissionMeta implements Externalizable {
     }
 
     /**
-     * @return String representation file name.
+     * @return File name.
      */
     public String name() {
         assert name != null;
