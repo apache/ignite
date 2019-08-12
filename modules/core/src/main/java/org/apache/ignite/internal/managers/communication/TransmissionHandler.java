@@ -55,6 +55,7 @@ public interface TransmissionHandler {
     /**
      * <em>Chunk handler</em> represents by itself the way of input data stream processing.
      * It accepts within each chunk a {@link ByteBuffer} with data from input for further processing.
+     * Activated when the {@link TransmissionPolicy#CHUNK} policy sent.
      *
      * @param nodeId Remote node id from which request has been received.
      * @param initMeta Initial handler meta info.
@@ -65,7 +66,7 @@ public interface TransmissionHandler {
     /**
      * <em>File handler</em> represents by itself the way of input data stream processing. All the data will
      * be processed under the hood using zero-copy transferring algorithm and only start file processing and
-     * the end of processing will be provided.
+     * the end of processing will be provided. Activated when the {@link TransmissionPolicy#FILE} policy sent.
      *
      * @param nodeId Remote node id from which request has been received.
      * @param initMeta Initial handler meta info.

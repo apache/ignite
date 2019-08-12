@@ -204,14 +204,15 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * <p>
  * It is possible to receive a set of files on a particular topic (any of {@link GridTopic}) on the remote node.
  * A transmission handler for desired topic must be registered prior to opening transmission sender to it.
- * Use methods below are used to register handlers and open new transmissions:
+ * Methods below are used to register handlers and open new transmissions:
  * <ul>
  * <li>{@link #addTransmissionHandler(Object, TransmissionHandler)}</li>
+ * <li>{@link #removeTransmissionHandler(Object)}</li>
  * <li>{@link #openTransmissionSender(UUID, Object)}</li>
  * </ul>
  * <p>
  * Each transmission sender opens a new transmission session to remote node prior to sending files over it.
- * (see description of {@link TransmissionSender TransmissionSender} for details). The TransmissionSender
+ * (see description of {@link TransmissionSender} for details). The TransmissionSender
  * will send all files within single session syncronously one by one.
  * <p>
  * <em>NOTE.</em> It is important to call <em>close()</em> method or use <em>try-with-resource</em>
@@ -3061,7 +3062,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      *
      * <h2>Exceptions handling</h2>
      * <p>
-     * The transmission can have two different levels of exception which are handled differently:
+     * Each transmission can have two different high-level types of exception which are handled differently:
      * <ul>
      * <li><em>transport</em> exception(e.g. some network issues)</li>
      * <li><em>application</em>\<em>handler</em> level exception</li>
@@ -3069,7 +3070,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      *
      * <h3><em>Application</em> exceptions</h3>
      * <p>
-     * The transmission will be stopped immediately and wrapping <em>IgniteCheckedExcpetion</em> thrown in case of
+     * The transmission will be stopped immediately and wrapping <em>IgniteExcpetion</em> thrown in case of
      * any <em>application</em> exception occured.
      *
      * <h3><em>Transport</em> exceptions</h3>
@@ -3083,13 +3084,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * Another example, the transmission sender gets the <em>Connection reset by peer</em> IOException message.
      * This means that the remote node you are connected to has to reset the connection. This is usually caused by a
      * high amount of traffic on the host, but may be caused by a server error or the remote node has exhausted
-     * system resources as well. Such <em>IOException</em> will be considered as <em>reconnect required</em>.
+     * system resources as well. Such <em>IOException</em> will be considered as <em>reconnection required</em>.
      *
      * <h3>Timeout exceptions</h3>
      * <p>
      * For read operations over the {@link InputStream} or write operation through the {@link OutputStream}
      * the {@link Socket#setSoTimeout(int)} will be used and an {@link SocketTimeoutException} will be
      * thrown when the timeout occured. The default value is taken from {@link IgniteConfiguration#getNetworkTimeout()}.
+     * <p>
+     * If reconnection is not occured withing configured timeout interval the timeout object will be fired which
+     * clears corresponding to the used topic the {@link ReceiverContext}.
      *
      * <h2>Release resources</h2>
      * <p>
