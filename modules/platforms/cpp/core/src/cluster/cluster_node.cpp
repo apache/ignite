@@ -29,9 +29,59 @@ namespace ignite
             // No-op.
         }
 
+        std::vector<std::string> ClusterNode::GetAddresses()
+        {
+            return impl.Get()->GetAddresses();
+        }
+
+        std::string ClusterNode::GetConsistentId()
+        {
+            return impl.Get()->GetConsistentId();
+        }
+
+        std::vector<std::string> ClusterNode::GetHostNames()
+        {
+            return impl.Get()->GetHostNames();
+        }
+
+        bool ClusterNode::IsAttributeSet(std::string name)
+        {
+            return impl.Get()->IsAttributeSet(name);
+        }
+
+        std::vector<std::string> ClusterNode::GetAttributes()
+        {
+            return impl.Get()->GetAttributes();
+        }
+
         Guid ClusterNode::GetId()
         {
             return impl.Get()->GetId();
+        }
+
+        bool ClusterNode::IsClient()
+        {
+            return impl.Get()->IsClient();
+        }
+
+        bool ClusterNode::IsDaemon()
+        {
+            return impl.Get()->IsDaemon();
+        }
+
+        bool ClusterNode::IsLocal()
+        {
+            return impl.Get()->IsLocal();
+        }
+
+        long ClusterNode::GetOrder()
+        {
+            return impl.Get()->GetOrder();
+        }
+
+        const IgniteProductVersion& ClusterNode::GetVersion()
+        {
+            return impl.Get()->GetVersion();
         }
     }
 }

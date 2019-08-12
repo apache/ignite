@@ -216,6 +216,7 @@
     <ClInclude Include="..\..\include\ignite\ignite_binding_context.h" />
     <ClInclude Include="..\..\include\ignite\ignite.h" />
     <ClInclude Include="..\..\include\ignite\ignite_configuration.h" />
+    <ClInclude Include="..\..\include\ignite\ignite_product_version.h" />
     <ClInclude Include="..\..\include\ignite\ignition.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\bindings.h" />

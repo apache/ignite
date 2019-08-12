@@ -31,23 +31,42 @@ using namespace ignite_test::core::binary;
 template<typename T>
 void CheckRawPrimitive(T val)
 {
+        InteropUnpooledMemory mem(1024);
+
+        InteropOutputStream out(&mem);
+        BinaryWriterImpl writer(&out, NULL);
+        BinaryRawWriter rawWriter(&writer);
+
+        Write<T>(rawWriter, val);
+
+        out.Synchronize();
+
+        InteropInputStream in(&mem);
+        BinaryReaderImpl reader(&in);
+        BinaryRawReader rawReader(&reader);
+
+        T readVal = Read<T>(rawReader);
+
+        BOOST_REQUIRE(readVal == val);
+}
+
+template<typename T>
+void CheckObjectPrimitive(T val)
+{
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
     BinaryWriterImpl writer(&out, NULL);
-    BinaryRawWriter rawWriter(&writer);
 
-    Write<T>(rawWriter, val);
+    writer.WriteObject<T>(val);
 
     out.Synchronize();
 
     InteropInputStream in(&mem);
     BinaryReaderImpl reader(&in);
-    BinaryRawReader rawReader(&reader);
 
-    T readVal = Read<T>(rawReader);
-
-    BOOST_REQUIRE(readVal == val);
+    reader.ReadObject<T>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 }
 
 template<typename T>
@@ -58,7 +77,7 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
     InteropOutputStream out(&mem);
     BinaryWriterImpl writer(&out, NULL);
     BinaryRawWriter rawWriter(&writer);
-    
+
     InteropInputStream in(&mem);
     BinaryReaderImpl reader(&in);
     BinaryRawReader rawReader(&reader);
@@ -68,11 +87,13 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
 
     out.Synchronize();
     in.Synchronize();
-    
+
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 0) == -1);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 2) == -1);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     T arr1[2];
     arr1[0] = dflt;
@@ -80,6 +101,7 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 1) == -1);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
@@ -98,17 +120,21 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
     in.Synchronize();
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 0) == 0);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 2) == 0);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 0) == 0);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 2) == 0);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
@@ -122,19 +148,24 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
     in.Synchronize();
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 0) == 1);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 2) == 1);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 0) == 1);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 1) == 1);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == val1);
     BOOST_REQUIRE(arr1[1] == dflt);
     arr1[0] = dflt;
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 2) == 1);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == val1);
     BOOST_REQUIRE(arr1[1] == dflt);
     arr1[0] = dflt;
@@ -149,17 +180,22 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
     in.Synchronize();
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 0) == 2);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 2) == 2);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 0) == 2);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 1) == 2);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 2) == 2);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(arr1[0] == val1);
     BOOST_REQUIRE(arr1[1] == val2);
 }
@@ -255,6 +291,7 @@ void CheckRawCollectionEmpty(CollectionType::Type* colType)
     BOOST_REQUIRE(!colReader.IsNull());
 
     BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -318,6 +355,7 @@ void CheckRawCollection(CollectionType::Type* colType)
     BOOST_REQUIRE(!colReader.HasNext());
 
     BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -325,7 +363,7 @@ void CheckRawCollection(CollectionType::Type* colType)
 void CheckRawCollectionIterators(CollectionType::Type* colType)
 {
     typedef std::vector<BinaryInner> BinaryInnerVector;
-    
+
     BinaryInnerVector writeValues;
     writeValues.push_back(1);
     writeValues.push_back(0);
@@ -349,8 +387,8 @@ void CheckRawCollectionIterators(CollectionType::Type* colType)
     InteropInputStream in(&mem);
     BinaryReaderImpl reader(&in);
     BinaryRawReader rawReader(&reader);
-    
-    int32_t collectionSize = rawReader.ReadCollectionSize();
+
+    size_t collectionSize = rawReader.ReadCollectionSize();
     BOOST_REQUIRE(collectionSize == writeValues.size());
 
     if (colType)
@@ -359,8 +397,9 @@ void CheckRawCollectionIterators(CollectionType::Type* colType)
         BOOST_REQUIRE(rawReader.ReadCollectionType() == CollectionType::UNDEFINED);
 
     BinaryInnerVector readValues(collectionSize);
-    
+
     int32_t elementsRead = rawReader.ReadCollection<BinaryInner>(readValues.begin());
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(elementsRead == 3);
 
@@ -412,6 +451,7 @@ void CheckRawMapEmpty(MapType::Type* mapType)
     int8_t key;
     BinaryInner val;
     BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -483,6 +523,7 @@ void CheckRawMap(MapType::Type* mapType)
     BOOST_REQUIRE(!mapReader.HasNext());
 
     BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -492,41 +533,49 @@ BOOST_AUTO_TEST_SUITE(BinaryReaderWriterRawTestSuite)
 BOOST_AUTO_TEST_CASE(TestPrimitiveInt8)
 {
     CheckRawPrimitive<int8_t>(1);
+    CheckObjectPrimitive<int8_t>(1);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveBool)
 {
     CheckRawPrimitive<bool>(true);
+    CheckObjectPrimitive<bool>(true);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveInt16)
 {
     CheckRawPrimitive<int16_t>(1);
+    CheckObjectPrimitive<int16_t>(1);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveUInt16)
 {
     CheckRawPrimitive<uint16_t>(1);
+    CheckObjectPrimitive<uint16_t>(1);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveInt32)
 {
     CheckRawPrimitive<int32_t>(1);
+    CheckObjectPrimitive<int32_t>(1);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveInt64)
 {
     CheckRawPrimitive<int64_t>(1);
+    CheckObjectPrimitive<int64_t>(1);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveFloat)
 {
     CheckRawPrimitive<float>(1.1f);
+    CheckObjectPrimitive<float>(1.1f);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveDouble)
 {
     CheckRawPrimitive<double>(1.1);
+    CheckObjectPrimitive<double>(1.1);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveGuid)
@@ -534,6 +583,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveGuid)
     Guid val(1, 2);
 
     CheckRawPrimitive<Guid>(val);
+    CheckObjectPrimitive<Guid>(val);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveDate)
@@ -541,6 +591,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveDate)
     Date val(time(NULL) * 1000);
 
     CheckRawPrimitive<Date>(val);
+    CheckObjectPrimitive<Date>(val);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveTime)
@@ -548,6 +599,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveTime)
     Time val(time(NULL) * 1000);
 
     CheckRawPrimitive<Time>(val);
+    CheckObjectPrimitive<Time>(val);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveTimestamp)
@@ -555,6 +607,7 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveTimestamp)
     Timestamp val(time(NULL), 0);
 
     CheckRawPrimitive<Timestamp>(val);
+    CheckObjectPrimitive<Timestamp>(val);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveArrayInt8)
@@ -651,6 +704,7 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
 
     Guid expVal;
     Guid actualVal = rawReader.ReadGuid();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(actualVal == expVal);
 }
@@ -673,6 +727,7 @@ BOOST_AUTO_TEST_CASE(TestDateNull)
 
     Date expVal;
     Date actualVal = rawReader.ReadDate();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(actualVal == expVal);
 }
@@ -695,6 +750,7 @@ BOOST_AUTO_TEST_CASE(TestTimeNull)
 
     Time expVal;
     Time actualVal = rawReader.ReadTime();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(actualVal == expVal);
 }
@@ -717,11 +773,13 @@ BOOST_AUTO_TEST_CASE(TestTimestampNull)
 
     Timestamp expVal;
     Timestamp actualVal = rawReader.ReadTimestamp();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(actualVal == expVal);
 }
 
-BOOST_AUTO_TEST_CASE(TestString) {
+BOOST_AUTO_TEST_CASE(TestString)
+{
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
@@ -746,27 +804,41 @@ BOOST_AUTO_TEST_CASE(TestString) {
 
     char readVal1[9];
     char readVal2[5];
-    
+
     BOOST_REQUIRE(rawReader.ReadString(NULL, 0) == 8);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(rawReader.ReadString(NULL, 8) == 8);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(rawReader.ReadString(readVal1, 0) == 8);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(rawReader.ReadString(readVal1, 4) == 8);
+    BOOST_REQUIRE(!IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadString(readVal1, 9) == 8);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     std::string writeVal1Str = writeVal1;
     std::string readVal1Str = readVal1;
     BOOST_REQUIRE(readVal1Str.compare(writeVal1Str) == 0);
 
+    int32_t prevPos = in.Position();
     BOOST_REQUIRE(rawReader.ReadString(readVal2, 5) == 4);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
     std::string writeVal2Str = writeVal2;
     std::string readVal2Str = readVal2;
     BOOST_REQUIRE(readVal2Str.compare(writeVal2Str) == 0);
 
+    prevPos = in.Position();
     std::string readVal3 = rawReader.ReadString();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
     BOOST_REQUIRE(readVal3.compare(writeVal3) == 0);
 
+    prevPos = in.Position();
     BOOST_REQUIRE(rawReader.ReadString(readVal1, 9) == -1);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
+
+    prevPos = in.Position();
     BOOST_REQUIRE(rawReader.ReadString(readVal1, 9) == -1);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
 }
 
 BOOST_AUTO_TEST_CASE(TestStringArrayNull)
@@ -796,6 +868,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
 
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -840,6 +913,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     char res[100];
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -894,9 +968,9 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
 
     // 1. Read first value.
     BOOST_REQUIRE(arrReader.HasNext());
-        
+
     char readVal1[9];
-    
+
     BOOST_REQUIRE(arrReader.GetNext(NULL, 0) == 8);
     BOOST_REQUIRE(arrReader.GetNext(NULL, 8) == 8);
     BOOST_REQUIRE(arrReader.GetNext(readVal1, 0) == 8);
@@ -943,6 +1017,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
 
@@ -968,12 +1043,17 @@ BOOST_AUTO_TEST_CASE(TestObject)
     BinaryRawReader rawReader(&reader);
 
     BinaryInner readVal1 = rawReader.ReadObject<BinaryInner>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(writeVal1.GetValue() == readVal1.GetValue());
 
+    int32_t prevPos = in.Position();
     BinaryInner readVal2 = rawReader.ReadObject<BinaryInner>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
     BOOST_REQUIRE(writeVal2.GetValue() == readVal2.GetValue());
 
+    prevPos = in.Position();
     BinaryInner readVal3 = rawReader.ReadObject<BinaryInner>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
     BOOST_REQUIRE(0 == readVal3.GetValue());
 }
 
@@ -999,14 +1079,19 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     BinaryRawReader rawReader(&reader);
 
     BinaryOuter readVal1 = rawReader.ReadObject<BinaryOuter>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
     BOOST_REQUIRE(writeVal1.GetValue() == readVal1.GetValue());
     BOOST_REQUIRE(writeVal1.GetInner().GetValue() == readVal1.GetInner().GetValue());
 
+    int32_t prevPos = in.Position();
     BinaryOuter readVal2 = rawReader.ReadObject<BinaryOuter>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
     BOOST_REQUIRE(writeVal2.GetValue() == readVal2.GetValue());
     BOOST_REQUIRE(writeVal2.GetInner().GetValue() == readVal2.GetInner().GetValue());
 
+    prevPos = in.Position();
     BinaryOuter readVal3 = rawReader.ReadObject<BinaryOuter>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
     BOOST_REQUIRE(0 == readVal3.GetValue());
     BOOST_REQUIRE(0 == readVal3.GetInner().GetValue());
 }
@@ -1029,6 +1114,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     BinaryRawReader rawReader(&reader);
 
     BinaryArrayReader<BinaryInner> arrReader = rawReader.ReadArray<BinaryInner>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(arrReader.GetSize() == -1);
     BOOST_REQUIRE(!arrReader.HasNext());
@@ -1072,6 +1158,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     BOOST_REQUIRE(!arrReader.IsNull());
 
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1129,6 +1216,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
     BOOST_REQUIRE(!arrReader.HasNext());
 
     BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1158,6 +1246,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     BOOST_REQUIRE(colReader.IsNull()); 
 
     BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1225,6 +1314,7 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     int8_t key;
     BinaryInner val;
     BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1270,6 +1360,7 @@ BOOST_AUTO_TEST_CASE(TestUserType)
     BinaryReaderImpl reader(&in);
 
     PureRaw actual = reader.ReadObject<PureRaw>();
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in));
 
     BOOST_REQUIRE(actual == expected);
 }
@@ -1302,8 +1393,15 @@ BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     std::auto_ptr<std::string> field1Res(rawReader.ReadObject<std::string*>());
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, IGNITE_DFLT_HDR_LEN));
+
+    int32_t prevPos = in.Position();
     std::auto_ptr<int8_t> fieldNullRes(rawReader.ReadObject<int8_t*>());
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
+
+    prevPos = in.Position();
     std::auto_ptr<int32_t> field2Res(rawReader.ReadObject<int32_t*>());
+    BOOST_REQUIRE(IsStreamPositionEqualOnSkip(in, prevPos));
 
     BOOST_CHECK_EQUAL(*field1Res, field1);
     BOOST_CHECK(fieldNullRes.get() == 0);
