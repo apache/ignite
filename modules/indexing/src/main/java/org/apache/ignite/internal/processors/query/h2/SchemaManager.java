@@ -614,10 +614,6 @@ public class SchemaManager {
         throws IgniteCheckedException{
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
 
-        GridH2Table tbl = dataTableForIndex(schemaName, idxName);
-
-        tbl.setRemoveIndexOnDestroy(true);
-
         connMgr.executeStatement(schemaName, sql);
     }
 

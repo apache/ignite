@@ -64,9 +64,6 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
  * H2 tree index implementation.
  */
 public class H2Tree extends BPlusTree<H2Row, H2Row> {
-    /** */
-    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
-
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -113,8 +110,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     private final H2RowCache rowCache;
 
     /** How often real invocation of inline size calculation will be skipped. */
-    private final int THROTTLE_INLINE_SIZE_CALCULATION =
-        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, 1_000);
+    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
 
     /** Counter of inline size calculation for throttling real invocations. */
     private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
