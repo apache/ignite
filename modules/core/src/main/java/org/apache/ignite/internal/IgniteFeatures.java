@@ -63,11 +63,11 @@ public enum IgniteFeatures {
     /** Support of suspend/resume operations for pessimistic transactions. */
     SUSPEND_RESUME_PESSIMISTIC_TX(10),
 
-    /** The node can communicate with others via socket channel. */
-    CHANNEL_COMMUNICATION(9),
-
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
+
+    /** The node can communicate with others via socket channel. */
+    CHANNEL_COMMUNICATION(12),
 
     /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14);
