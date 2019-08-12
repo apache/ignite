@@ -59,6 +59,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.DataStorageMetricsAdapter;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -91,6 +92,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -294,26 +296,42 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 
 /**
- * This class represents an implementation of the extended main Ignite API (called {@link IgniteEx}). It also controls
- * the Ignite life cycle and allows listening for Ignite events.
+ * This class represents an implementation of the main Ignite API {@link Ignite} which is expanded by additional
+ * methods of {@link IgniteEx} for the internal Ignite needs. It also controls the Ignite life cycle, checks
+ * thread pools state for starvation, detects long JVM pauses and prints out the local node metrics.
+ *
  * <p>
  * Please, refer to the wiki <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a>
  * for the information on the misspelling.
  * <p>
  * <h3>Start point</h3>
- * The main entry point for all the Ignite instances creation is the <tt>org.apache.ignite.internal.IgniteKernal#start()</tt>
- * method. It starts internal Ignites components (see {@link GridComponent}), for instance:
+ * The main entry point for all the Ignite instances creation is the method:
+ * <p>
+ * {@link #start(IgniteConfiguration, ExecutorService, ExecutorService, ExecutorService, ExecutorService,StripedExecutor, ExecutorService, ExecutorService, ExecutorService, StripedExecutor, ExecutorService, ExecutorService, ExecutorService, IgniteStripedThreadPoolExecutor, ExecutorService, ExecutorService, Map, GridAbsClosure, WorkersRegistry, Thread.UncaughtExceptionHandler, TimeBag)}
+ * <p>
+ * It starts internal Ignites components (see {@link GridComponent}), for instance:
  * <ul>
  * <li>{@link GridManager} - a layer of indirection between kernal and SPI modules.</li>
  * <li>{@link GridProcessor} - an objects responsible for particular internal process implementation.</li>
  * <li>{@link IgnitePlugin} - an Ignite addition of user-provided functionality.</li>
  * </ul>
- * The <tt>start()</tt> method also perfoms additional validation of the provided {@link IgniteConfiguration} and
+ * The {@code start} method also perfoms additional validation of the provided {@link IgniteConfiguration} and
  * prints some suggestions such as:
  * <ul>
  * <li>Ignites configuration optimizations (e.g. disabling {@link EventType} events).</li>
- * <li>{@link JvmConfigurationSuggestions} optimizations</li>
- * <li>{@link OsConfigurationSuggestions} optimizations</li>
+ * <li>{@link JvmConfigurationSuggestions} optimizations.</li>
+ * <li>{@link OsConfigurationSuggestions} optimizations.</li>
+ * </ul>
+ *
+ * <h3>End point</h3>
+ * To stop Ignite instance the {@link #stop(boolean)} method is used. The {@code cancel} argument of this method is used:
+ * <ul>
+ * <li>With {@code true} value. To interrupt all currently acitve {@link GridComponent}s related to the Ignite node.
+ * For instance, {@link ComputeJob} will be interrupted by calling {@link ComputeJob#cancel()} method. Note that just
+ * like with {@link Thread#interrupt()}, it is up to the actual job to exit from execution.</li>
+ * <li>With {@code false} value. To stop the Ignite node gracefully. All jobs currently running will not be interrupted.
+ * The Ignite node will wait for the completion of all {@link GridComponent}s running on it before stopping.
+ * </li>
  * </ul>
  */
 public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
@@ -359,7 +377,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private IgniteMBeansManager mBeansMgr;
 
-    /** Ignite runtime configuration instance. */
+    /** Ignite configuration instance. */
     private IgniteConfiguration cfg;
 
     /** Ignite logger instance which enriches log messages with the node instance name and the node id. */
@@ -383,7 +401,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private GridTimeoutProcessor.CancelableTask starveTask;
 
     /**
-     * The instance of scheduled metrics logger. {@code null} means that the metrics logges have been disabled
+     * The instance of scheduled metrics logger. {@code null} means that the metrics loggin have been disabled
      * by configuration. See {@link IgniteConfiguration#getMetricsLogFrequency()} for details.
      */
     @GridToStringExclude
@@ -396,7 +414,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask longOpDumpTask;
 
-    /** {@code true} if an error occur at Ignite instance stop. */
+    /** {@code true} if an error occurs at Ignite instance stop. */
     @GridToStringExclude
     private boolean errOnStop;
 
@@ -412,7 +430,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
-    /** The state object is used to handle if reconnection occurred. See {@link IgniteKernal#onReconnected(boolean)}. */
+    /** The state object is used when reconnection occurs. See {@link IgniteKernal#onReconnected(boolean)}. */
     private final ReconnectState reconnectState = new ReconnectState();
 
     /**
@@ -909,7 +927,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param cfg Ignite runtime configuration to use.
+     * @param cfg Ignite configuration to use.
      * @param utilityCachePool Utility cache pool.
      * @param execSvc Executor service.
      * @param svcExecSvc Services executor service.
@@ -4157,7 +4175,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * The <tt>ctx.gateway().readLock()</tt> is used underneath.
+     * The {@code ctx.gateway().readLock()} is used underneath.
      */
     private void guard() {
         assert ctx != null;
@@ -4166,7 +4184,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * The <tt>ctx.gateway().readUnlock()</tt> is used underneath.
+     * The {@code ctx.gateway().readUnlock()} is used underneath.
      */
     private void unguard() {
         assert ctx != null;
