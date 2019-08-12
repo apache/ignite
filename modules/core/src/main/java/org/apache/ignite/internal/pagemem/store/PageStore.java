@@ -68,7 +68,7 @@ public interface PageStore {
      * @param pageId Page id.
      * @param pageBuf Page buffer to read into.
      * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
-     * @return Number of readed bytes, or negative value if page readed the first time.
+     * @return Number of read bytes, or negative value if page read the first time.
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
     public int readPage(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;

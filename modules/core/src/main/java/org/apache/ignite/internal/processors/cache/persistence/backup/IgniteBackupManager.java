@@ -38,7 +38,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -48,6 +50,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -213,6 +216,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             @Override public void onCheckpointBegin(Context ctx) {
                 final FilePageStoreManager pageMgr = (FilePageStoreManager)cctx.pageStore();
 
+                // TODO move under the checkpoint write lock
                 for (BackupContext bctx0 : backupCtxs.values()) {
                     if (bctx0.started)
                         continue;
@@ -312,17 +316,17 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
                     bctx.partAllocLengths.put(pair, 0L);
 
+                    final PageStore pageStore = dbMgr.getPageStore(e.getKey(), partId);
+
                     bctx.partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(
                             new FileSerialPageStore(log,
                                 () -> getPartionDeltaFile(grpDir, partId)
                                     .toPath(),
                                 ioFactory,
-                                cctx.gridConfig()
-                                    .getDataStorageConfiguration()
-                                    .getPageSize()),
+                                pageStore.getPageSize()),
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
-                            pageSize));
+                            pageStore.getPageSize()));
                 }
             }
 
@@ -595,10 +599,21 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final ThreadLocal<ByteBuffer> localBuff;
 
         /** {@code true} if need the original page from PageStore instead of given buffer. */
-        private final Supplier<Boolean> checkpointComplete;
+        private final BooleanSupplier checkpointComplete;
 
         /** {@code true} if current writer is stopped. */
         private volatile boolean partProcessed;
+
+        /**
+         * Expected file length in bytes at the moment of checkpoind end.
+         * Size is collected under checkpoint write lock (#onMarkCheckpointBegin).
+         */
+        private long expectedSize;
+
+        /**
+         *
+         */
+        private AtomicLong pageTrackBits = new AtomicLong();
 
         /**
          * @param serial Serial storage to write to.
@@ -607,7 +622,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          */
         public PageStoreSerialWriter(
             FileSerialPageStore serial,
-            Supplier<Boolean> checkpointComplete,
+            BooleanSupplier checkpointComplete,
             int pageSize
         ) throws IOException {
             this.serial = serial;
@@ -623,7 +638,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          * @return {@code true} if writer is stopped and cannot write pages.
          */
         public boolean stopped() {
-            return checkpointComplete.get() && partProcessed;
+            return checkpointComplete.getAsBoolean() && partProcessed;
         }
 
         /**
@@ -635,7 +650,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             if (stopped())
                 return;
 
-            if (checkpointComplete.get()) {
+            if (checkpointComplete.getAsBoolean()) {
+                assert expectedSize > 0;
+
+                int pageIdx = PageIdUtils.pageIndex(pageId);
+
                 final ByteBuffer locBuf = localBuff.get();
 
                 assert locBuf.capacity() == store.getPageSize();
@@ -657,8 +676,39 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             }
         }
 
+        /**
+         * @param pageIdx Page index to track.
+         * @return {@code true} if
+         */
+        private boolean track(int pageIdx) {
+            assert expectedSize > 0;
+            assert pageIdx >= 0;
+
+            int mask = 1 << pageIdx;
+
+            long next = pageTrackBits.getAndUpdate(b -> b |= mask);
+
+            return (pageTrackBits.get() & mask) == mask;
+        }
+
+//        /**
+//         * @param pos Flag position.
+//         * @param val Flag value.
+//         */
+//        private void track(int pos, boolean val) {
+//            assert expectedSize > 0;
+//            assert pos >= 0 && pos < 32;
+//
+//            int mask = 1 << pos;
+//
+//            if (val)
+//                pageTrackBits |= mask;
+//            else
+//                pageTrackBits &= ~mask;
+//        }
+
         /** {@inheritDoc} */
-        @Override public void close() throws IOException {
+        @Override public void close() {
             U.closeQuiet(serial);
         }
     }

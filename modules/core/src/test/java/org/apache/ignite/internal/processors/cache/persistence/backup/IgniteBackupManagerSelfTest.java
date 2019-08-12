@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -178,6 +180,33 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .setConsistentId(igniteInstanceName)
             .setDataStorageConfiguration(memCfg)
             .setCacheConfiguration(defaultCacheCfg);
+    }
+
+    /**
+     * @param pageIdx Page index to track.
+     * @return {@code true} if
+     */
+    private boolean track(AtomicLong pageTrackBits, int pageIdx) {
+        assert pageIdx >= 0;
+
+        int mask = 1 << pageIdx;
+
+        long next = pageTrackBits.getAndUpdate(b -> b |= mask);
+
+        return (pageTrackBits.get() & mask) == mask;
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testShift() throws Exception {
+        final AtomicLong l = new AtomicLong();
+
+        for (int i = 5; i < 10; i ++)
+            track(l, i);
+
+        System.out.println(String.format("%064d", new BigInteger(Long.toBinaryString(l.get()))));
     }
 
     /**
