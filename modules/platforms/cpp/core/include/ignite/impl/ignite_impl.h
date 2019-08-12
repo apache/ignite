@@ -34,21 +34,6 @@ namespace ignite
 {
     namespace impl
     {
-        /*
-        * PlatformProcessor op codes.
-        */
-        struct ProcessorOp
-        {
-            enum Type
-            {
-                GET_CACHE = 1,
-                CREATE_CACHE = 2,
-                GET_OR_CREATE_CACHE = 3,
-                GET_TRANSACTIONS = 9,
-                GET_CLUSTER_GROUP = 10,
-            };
-        };
-
         /**
          * Ignite implementation.
          */
@@ -94,10 +79,7 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            cache::CacheImpl* GetCache(const char* name, IgniteError& err)
-            {
-                return GetOrCreateCache(name, err, ProcessorOp::GET_CACHE);
-            }
+            cache::CacheImpl* GetCache(const char* name, IgniteError& err);
 
             /**
              * Get or create cache.
@@ -105,10 +87,7 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
-            {
-                return GetOrCreateCache(name, err, ProcessorOp::GET_OR_CREATE_CACHE);
-            }
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err);
 
             /**
              * Create cache.
@@ -116,10 +95,7 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
-            {
-                return GetOrCreateCache(name, err, ProcessorOp::CREATE_CACHE);
-            }
+            cache::CacheImpl* CreateCache(const char* name, IgniteError& err);
 
             /**
              * Get ignite binding.
@@ -216,6 +192,44 @@ namespace ignite
             {
                 prjImpl.Get().Get()->SetActive(active);
             }
+
+            /**
+             * Disable write-ahead logging for specified cache.
+             *
+             * @param cacheName Cache name.
+             */
+            void DisableWal(std::string cacheName);
+
+            /**
+             * Enable write-ahead logging for specified cache.
+             *
+             * @param cacheName Cache name.
+             */
+            void EnableWal(std::string cacheName);
+
+            /**
+             * Check if write - ahead logging is enabled for specified cache.
+             *
+             * @param cacheName Cache name.
+             *
+             * @return True if enabled.
+             */
+            bool IsWalEnabled(std::string cacheName);
+
+            /**
+             * Set baseline topology constructed from the cluster topology of the given version.
+             * The method succeeds only if the cluster topology has not changed.
+             *
+             * @param topVer Topology version.
+             */
+            void SetBaselineTopologyVersion(long topVer);
+
+            /**
+             * Set transaction timeout on partition map exchange.
+             *
+             * @param timeout Timeout in milliseconds.
+             */
+            void SetTxTimeoutOnPartitionMapExchange(long timeout);
 
         private:
             /**

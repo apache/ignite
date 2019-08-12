@@ -17,6 +17,7 @@
 #include "ignite/cluster/ignite_cluster.h"
 
 using namespace ignite::common::concurrent;
+using namespace ignite::cluster;
 using namespace ignite::impl::cluster;
 
 namespace ignite
@@ -37,6 +38,46 @@ namespace ignite
         void IgniteCluster::SetActive(bool active)
         {
             impl.Get()->SetActive(active);
+        }
+
+        void IgniteCluster::DisableWal(std::string cacheName)
+        {
+            impl.Get()->DisableWal(cacheName);
+        }
+
+        void IgniteCluster::EnableWal(std::string cacheName)
+        {
+            impl.Get()->EnableWal(cacheName);
+        }
+
+        bool IgniteCluster::IsWalEnabled(std::string cacheName)
+        {
+            return impl.Get()->IsWalEnabled(cacheName);
+        }
+
+        void IgniteCluster::SetBaselineTopologyVersion(long topVer)
+        {
+            impl.Get()->SetBaselineTopologyVersion(topVer);
+        }
+
+        void IgniteCluster::SetTxTimeoutOnPartitionMapExchange(long timeout)
+        {
+            impl.Get()->SetTxTimeoutOnPartitionMapExchange(timeout);
+        }
+
+        bool IgniteCluster::PingNode(Guid nid)
+        {
+            return impl.Get()->PingNode(nid);
+        }
+
+        std::vector<ClusterNode> IgniteCluster::GetTopology(long version)
+        {
+            return impl.Get()->GetTopology(version);
+        }
+
+        long IgniteCluster::GetTopologyVersion()
+        {
+            return impl.Get()->GetTopologyVersion();
         }
 
         cluster::ClusterGroup IgniteCluster::AsClusterGroup()

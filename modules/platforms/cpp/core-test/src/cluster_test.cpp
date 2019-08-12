@@ -257,6 +257,19 @@ BOOST_AUTO_TEST_CASE(IgniteForNodes)
     BOOST_REQUIRE(group3.GetNodes().size() == 3);
 }
 
+BOOST_AUTO_TEST_CASE(IgniteForPingNode)
+{
+    IgniteCluster cluster = server1.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    ClusterGroup group1 = cluster.AsClusterGroup();
+    std::vector<ClusterNode> nodes = group1.GetNodes();
+
+    BOOST_REQUIRE(cluster.PingNode(nodes.at(0).GetId()));
+    BOOST_REQUIRE(!cluster.PingNode(Guid(100, 500)));
+}
+
 BOOST_AUTO_TEST_CASE(IgniteForOldest)
 {
     IgniteCluster cluster = server1.GetCluster();
@@ -354,6 +367,22 @@ BOOST_AUTO_TEST_CASE(IgniteGetNodes)
     std::vector<ClusterNode> nodes = group.GetNodes();
 
     BOOST_REQUIRE(nodes.size() == 4);
+}
+
+BOOST_AUTO_TEST_CASE(IgniteGetTopology)
+{
+    IgniteCluster cluster = server1.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    BOOST_REQUIRE(cluster.GetTopology(1).size() == 1);
+    BOOST_REQUIRE(cluster.GetTopology(INT_MAX).size() == 0);
+
+    long topVer = cluster.GetTopologyVersion();
+
+    BOOST_REQUIRE(Ignition::Stop(server3.GetName(), true));
+
+    BOOST_REQUIRE(cluster.GetTopologyVersion() > topVer);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
