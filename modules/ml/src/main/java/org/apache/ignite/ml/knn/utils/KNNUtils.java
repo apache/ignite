@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn;
+package org.apache.ignite.ml.knn.utils;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -41,13 +41,13 @@ public class KNNUtils {
      * @param vectorizer Upstream vectorizer.
      * @return Dataset.
      */
-    @Nullable public static <K, V, C extends Serializable> Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
+    @Nullable public static <K, V, C extends Serializable> Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> buildDataset(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder
             = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = null;
+        Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = null;
 
         if (datasetBuilder != null) {
             dataset = datasetBuilder.build(
