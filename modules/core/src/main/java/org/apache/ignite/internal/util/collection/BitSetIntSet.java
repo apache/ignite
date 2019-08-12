@@ -13,21 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.util.collection;
 
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Set;
+import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_INTS;
 
 /**
  * Set of Integers implementation based on BitSet.
  *
  * Implementation doesn't support negative values and null, cause we can't distinct null from 0 bit in BitSet.
  */
-public class BitSetIntSet extends GridSerializableCollection<Integer> implements Set<Integer> {
+public class BitSetIntSet extends GridSerializableCollection<Integer> implements IntSet {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,11 +45,19 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     }
 
     /**
-     *
      * @param initCap initial capacity.
      */
     public BitSetIntSet(int initCap) {
         bitSet = new BitSet(initCap);
+    }
+
+    /**
+     * @param initCap initial capacity.
+     * @param coll initial collection.
+     */
+    public BitSetIntSet(int initCap, Collection<Integer> coll) {
+        bitSet = new BitSet(initCap);
+        addAll(coll);
     }
 
     /** {@inheritDoc} */
@@ -58,79 +68,111 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     /** {@inheritDoc} */
     @Override public boolean contains(Object o) {
         if (o == null)
-            throw new UnsupportedOperationException("Null values are not supported!");
+            throw new NullPointerException("Null values are not supported!");
 
-        int val = (int)o;
+        return contains((int)o);
+    }
 
-        if (val < 0)
-            throw new UnsupportedOperationException("Negative values are not supported!");
+    /** {@inheritDoc} */
+    @Override public boolean contains(int element) {
+        if (element < 0)
+            return false;
 
-        return bitSet.get(val);
+        return bitSet.get(element);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<Integer> iterator() {
         return new Iterator<Integer>() {
-            private int next = -1;
+            /** */
+            private int idx = -1;
+
+            /** */
+            private int nextIdx = -1;
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                int nextBit = bitSet.nextSetBit(next + 1);
-
-                if (nextBit != -1) {
-                    next = nextBit;
-
-                    return true;
-                }
-                else
-                    return false;
+                return nextIdx == idx ? (nextIdx = bitSet.nextSetBit(idx + 1)) != -1 : nextIdx != -1;
             }
 
             /** {@inheritDoc} */
             @Override public Integer next() {
-                if (next == -1)
+                if (nextIdx == idx)
+                    nextIdx = bitSet.nextSetBit(idx + 1);
+
+                if (nextIdx == -1)
                     throw new NoSuchElementException();
 
-                return next;
+                idx = nextIdx;
+
+                return idx;
             }
         };
     }
 
-    /** Unsupported operation. */
+    /** {@inheritDoc} */
     @Override public boolean add(Integer integer) {
-        if (integer == null || integer < 0)
-            throw new UnsupportedOperationException("Negative or null values are not supported!");
+        if (integer == null)
+            throw new IllegalArgumentException("Negative or null values are not supported!");
 
-        boolean alreadySet = bitSet.get(integer);
-
-        if (!alreadySet) {
-            bitSet.set(integer);
-
-            size++;
-        }
-
-        return !alreadySet;
+        return add((int)integer);
     }
 
-    /** Unsupported operation. */
+    /** {@inheritDoc} */
+    @Override public boolean add(int element) {
+        if (element < 0)
+            throw new IllegalArgumentException("Negative or null values are not supported!");
+
+        boolean alreadySet = bitSet.get(element);
+
+        if (!alreadySet) {
+            bitSet.set(element);
+
+            size++;
+
+            return true;
+        }
+        else
+            return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean remove(Object o) {
         if (o == null)
-            throw new UnsupportedOperationException("Null values are not supported!");
+            return false;
 
-        int val = (int)o;
+        return remove((int)o);
+    }
 
-        if (val < 0)
-            throw new UnsupportedOperationException("Negative values are not supported!");
+    /** {@inheritDoc} */
+    @Override public boolean remove(int element) {
+        if (element < 0)
+            return false;
 
-        boolean alreadySet = bitSet.get(val);
+        boolean alreadySet = bitSet.get(element);
 
         if (alreadySet) {
-            bitSet.clear(val);
+            bitSet.clear(element);
 
             size--;
         }
 
         return alreadySet;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int[] toIntArray() {
+        if (size == 0)
+            return EMPTY_INTS;
+
+        int[] arr = new int[size];
+
+        for (int i = 0, pos = -1; i < size; i++) {
+            pos = bitSet.nextSetBit(pos + 1);
+            arr[i] = pos;
+        }
+
+        return arr;
     }
 
     /** {@inheritDoc} */

@@ -28,7 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -299,7 +300,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
                 res.add(p);
         }
 
-        return Collections.unmodifiableSet(res);
+        return ImmutableIntSet.wrap(res);
     }
 
     /** {@inheritDoc} */
@@ -320,7 +321,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
             }
         }
 
-        return Collections.unmodifiableSet(res);
+        return ImmutableIntSet.wrap(res);
     }
 
     /** {@inheritDoc} */
