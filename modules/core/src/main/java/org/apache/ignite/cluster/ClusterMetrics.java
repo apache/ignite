@@ -373,7 +373,7 @@ public interface ClusterMetrics {
     public int getTotalCpus();
 
     /**
-     * Returns the CPU usage usage in {@code [0, 1]} range.
+     * Returns the CPU usage in {@code [0, 1]} range.
      * The exact way how this number is calculated depends on SPI implementation.
      * <p>
      * If the CPU usage is not available, a negative value is returned.

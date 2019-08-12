@@ -20,7 +20,7 @@
 #include "ignite/impl/interop/interop_memory.h"
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace interop
@@ -51,12 +51,12 @@ namespace ignite
                  * @return Value.
                  */
                 int32_t ReadInt8(int32_t pos);
-                    
+
                 /**
                  * Read signed 8-byte int array.
                  *
                  * @param res Allocated array.
-                 * @param len Length.                 
+                 * @param len Length.
                  */
                 void ReadInt8Array(int8_t* const res, const int32_t len);
 
@@ -127,7 +127,7 @@ namespace ignite
                  * @return Value.
                  */
                 int32_t ReadInt32(int32_t pos);
-                    
+
                 /**
                  * Read signed 32-byte int array.
                  *
@@ -203,22 +203,30 @@ namespace ignite
                 void Position(int32_t pos);
 
                 /**
+                 * Ignore some number of bytes.
+                 *
+                 * @param cnt Amount of bytes to be ignored.
+                 */
+                void Ignore(int32_t cnt);
+
+                /**
                  * Synchronize data from underlying memory.
                  */
                 void Synchronize();
+
             private:
                 /** Memory. */
                 InteropMemory* mem; 
-                
+
                 /** Pointer to data. */
-                int8_t* data;       
-                
+                int8_t* data;
+
                 /** Length. */
-                int len;            
-                
+                int len;
+
                 /** Current position. */
-                int pos;            
-                    
+                int pos;
+
                 /**
                  * Ensure there is enough data in the stream.
                  *
@@ -243,7 +251,7 @@ namespace ignite
                 void Shift(int32_t cnt);
             };
         }
-    }    
+    }
 }
 
 #endif //_IGNITE_IMPL_INTEROP_INTEROP_INPUT_STREAM

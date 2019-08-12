@@ -29,6 +29,7 @@ using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
 
+
 namespace ignite
 {
     namespace impl
@@ -793,6 +794,151 @@ namespace ignite
                 positionGuard.Release();
 
                 return true;
+            }
+
+            void BinaryReaderImpl::Skip()
+            {
+                int8_t typeId = stream->ReadInt8();
+                switch (typeId) {
+                case IGNITE_TYPE_OPTM_MARSH:
+                {
+                    int32_t realLen = stream->ReadInt32();
+                    stream->Ignore(realLen);
+                    return;
+                }
+
+                case IGNITE_TYPE_BYTE:
+                case IGNITE_TYPE_BOOL:
+                    stream->Ignore(1);
+                    return;
+
+                case IGNITE_TYPE_SHORT:
+                case IGNITE_TYPE_CHAR:
+                    stream->Ignore(2);
+                    return;
+
+                case IGNITE_TYPE_INT:
+                case IGNITE_TYPE_FLOAT:
+                    stream->Ignore(4);
+                    return;
+
+                case IGNITE_TYPE_LONG:
+                case IGNITE_TYPE_DOUBLE:
+                case IGNITE_TYPE_DATE:
+                case IGNITE_TYPE_TIME:
+                    stream->Ignore(8);
+                    return;
+
+                case IGNITE_TYPE_UUID:
+                    stream->Ignore(16);
+                    return;
+
+                case IGNITE_TYPE_STRING:
+                case IGNITE_TYPE_ARRAY_BYTE:
+                case IGNITE_TYPE_ARRAY_BOOL:
+                {
+                    int32_t realLen = stream->ReadInt32();
+                    if (realLen > 0)
+                        stream->Ignore(realLen);
+
+                    return;
+                }
+
+                case IGNITE_TYPE_ARRAY_SHORT:
+                case IGNITE_TYPE_ARRAY_CHAR:
+                {
+                    int32_t realLen = stream->ReadInt32();
+                    if (realLen > 0)
+                        stream->Ignore(realLen * 2);
+
+                    return;
+                }
+
+                case IGNITE_TYPE_ARRAY_INT:
+                case IGNITE_TYPE_ARRAY_FLOAT:
+                {
+                    int32_t realLen = stream->ReadInt32();
+                    if (realLen > 0)
+                        stream->Ignore(realLen * 4);
+
+                    return;
+                }
+
+                case IGNITE_TYPE_ARRAY_LONG:
+                case IGNITE_TYPE_ARRAY_DOUBLE:
+                {
+                    int32_t realLen = stream->ReadInt32();
+                    if (realLen > 0)
+                        stream->Ignore(realLen * 8);
+
+                    return;
+                }
+
+                case IGNITE_TYPE_ARRAY_STRING:
+                case IGNITE_TYPE_ARRAY_UUID:
+                case IGNITE_TYPE_ARRAY_DATE:
+                case IGNITE_TYPE_ARRAY_TIMESTAMP:
+                case IGNITE_TYPE_ARRAY_TIME:
+                case IGNITE_TYPE_ARRAY:
+                {
+                    int32_t cnt = stream->ReadInt32();
+                    for (int32_t i = 0; i < cnt; i++)
+                        Skip();
+
+                    return;
+                }
+
+                case IGNITE_TYPE_COLLECTION:
+                {
+                    int32_t cnt = stream->ReadInt32();
+
+                    // Collection type ID.
+                    stream->Ignore(1);
+
+                    for (int32_t i = 0; i < cnt; i++)
+                        Skip();
+
+                    return;
+                }
+
+                case IGNITE_TYPE_MAP:
+                {
+                    int32_t cnt = stream->ReadInt32();
+
+                    // Map type ID.
+                    stream->Ignore(1);
+
+                    for (int32_t i = 0; i < cnt; i++)
+                    {
+                        Skip();
+                        Skip();
+                    }
+
+                    return;
+                }
+
+                case IGNITE_TYPE_TIMESTAMP:
+                    stream->Ignore(12);
+                    return;
+
+                case IGNITE_HDR_FULL:
+                {
+                    int32_t objectBegin = stream->Position() - 1;
+                    int32_t len = stream->ReadInt32(objectBegin + IGNITE_OFFSET_LEN);
+                    stream->Position(objectBegin + len);
+                    return;
+                }
+
+                case IGNITE_HDR_NULL:
+                    return;
+
+                default:
+                {
+                    int32_t pos = stream->Position() - 1;
+                    IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos,
+                        "unsupported type", static_cast<int>(typeId));
+                }
+                }
             }
 
             void BinaryReaderImpl::SetRawMode()

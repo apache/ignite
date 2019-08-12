@@ -801,6 +801,11 @@ namespace ignite
                 bool SkipIfNull();
 
                 /**
+                 * Skip next value.
+                 */
+                void Skip();
+
+                /**
                  * Read element.
                  *
                  * @param id Session ID.

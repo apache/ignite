@@ -273,6 +273,9 @@
     <ClInclude Include="..\..\include\ignite\cluster\ignite_cluster.h">
       <Filter>Code\cluster</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_product_version.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
