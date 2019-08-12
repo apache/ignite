@@ -834,6 +834,13 @@ public class GridCacheUtils {
     }
 
     /**
+     * Alias for {@link #txString(IgniteInternalTx)}.
+     */
+    public static String txDump(@Nullable IgniteInternalTx tx) {
+        return txString(tx);
+    }
+
+    /**
      * @param tx Transaction.
      * @return String view of all safe-to-print transaction properties.
      */
