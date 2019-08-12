@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -205,6 +206,29 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--activate"));
 
         assertTrue(ignite.cluster().active());
+        assertFalse(ignite.cluster().readOnly());
+    }
+
+    /**
+     * Test enabling/disabling read-only mode works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadOnlyEnableDisable() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        assertFalse(ignite.cluster().readOnly());
+
+        assertEquals(EXIT_CODE_OK, execute("--read-only-on"));
+
+        assertTrue(ignite.cluster().readOnly());
+
+        assertEquals(EXIT_CODE_OK, execute("--read-only-off"));
+
+        assertFalse(ignite.cluster().readOnly());
     }
 
     /**
@@ -236,13 +260,35 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     public void testState() throws Exception {
         Ignite ignite = startGrids(1);
 
+        injectTestSystemOut();
+
         assertFalse(ignite.cluster().active());
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is inactive"));
+
+        testOut.reset();
+
         ignite.cluster().active(true);
 
+        assertTrue(ignite.cluster().active());
+
         assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is active"));
+
+        testOut.reset();
+
+        ignite.cluster().readOnly(true);
+
+        awaitPartitionMapExchange();
+
+        assertTrue(ignite.cluster().readOnly());
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is active (read-only)"));
     }
 
     /**
@@ -2700,6 +2746,26 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         assertNotContains(log, out, nodes.get(1));
 
         assertNotContains(log, out, "error");
+    }
+
+    /**
+     * Verify that in case of setting baseline topology with offline node among others
+     * {@link IgniteException} is thrown.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void setConsistenceIdsWithOfflineBaselineNode() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        ignite(0).createCache(defaultCacheConfiguration().setNodeFilter(
+            (IgnitePredicate<ClusterNode>)node -> node.attribute("some-attr") != null));
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+            execute("--baseline", "set", "non-existing-node-id ," + consistentIds(ignite)));
     }
 
     /**
