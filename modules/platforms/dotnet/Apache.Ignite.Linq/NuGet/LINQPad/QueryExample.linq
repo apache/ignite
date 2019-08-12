@@ -1,5 +1,5 @@
 <Query Kind="Program">
-  <NuGetReference>Apache.Ignite.Linq</NuGetReference>
+  <NuGetReference>GridGain.Ignite.Linq</NuGetReference>
   <Namespace>Apache.Ignite.Core</Namespace>
   <Namespace>Apache.Ignite.Core.Binary</Namespace>
   <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>

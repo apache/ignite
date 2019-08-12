@@ -1,5 +1,5 @@
 <Query Kind="Statements">
-  <NuGetReference>Apache.Ignite</NuGetReference>
+  <NuGetReference>GridGain.Ignite</NuGetReference>
   <Namespace>Apache.Ignite.Core</Namespace>
   <Namespace>Apache.Ignite.Core.Client</Namespace>
   <Namespace>Apache.Ignite.Core.Binary</Namespace>
