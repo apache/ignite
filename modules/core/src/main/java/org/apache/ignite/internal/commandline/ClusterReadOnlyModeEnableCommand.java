@@ -19,42 +19,25 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
-import static org.apache.ignite.internal.commandline.CommandList.STATE;
+import static org.apache.ignite.internal.commandline.CommandList.READ_ONLY_ENABLE;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 
 /**
- * Command to print cluster state.
+ * Command to enable cluster read-only mode.
  */
-public class StateCommand implements Command<Void> {
+public class ClusterReadOnlyModeEnableCommand implements Command<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Print current cluster state:", STATE);
-    }
-
-    /**
-     * Print cluster state.
-     *
-     * @param clientCfg Client configuration.
-     * @throws Exception If failed to print state.
-     */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)){
-            GridClientClusterState state = client.state();
+        try (GridClient client = Command.startClient(clientCfg)) {
+            client.state().readOnly(true);
 
-            if (state.active()) {
-                if (state.readOnly())
-                    log.info("Cluster is active (read-only)");
-                else
-                    log.info("Cluster is active");
-            }
-            else
-                log.info("Cluster is inactive");
+            log.info("Cluster read-only mode enabled");
         }
         catch (Throwable e) {
-            if (!CommandHandler.isAuthError(e))
-                log.severe("Failed to get cluster state.");
+            log.info("Failed to enable read-only mode");
 
             throw e;
         }
@@ -63,12 +46,27 @@ public class StateCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
+    @Override public String confirmationPrompt() {
+        return "Warning: the command will enable read-only mode on a cluster.";
+    }
+
+    /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
     }
 
     /** {@inheritDoc} */
+    @Override public void printUsage(Logger log) {
+        Command.usage(
+            log,
+            "Enable read-only mode on active cluster:",
+            READ_ONLY_ENABLE,
+            optional(CMD_AUTO_CONFIRMATION)
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public String name() {
-        return STATE.toCommandName();
+        return READ_ONLY_ENABLE.toCommandName();
     }
 }
