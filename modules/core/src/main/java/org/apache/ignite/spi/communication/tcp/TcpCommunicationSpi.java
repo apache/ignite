@@ -1255,7 +1255,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
 
     /** SPI listener. */
-    private volatile CommunicationListenerEx<Message> lsnr;
+    private volatile CommunicationListener<Message> lsnr;
 
     /** Bound port. */
     private int boundTcpPort = -1;
@@ -1968,7 +1968,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public void setListener(CommunicationListener<Message> lsnr) {
-        this.lsnr = (CommunicationListenerEx<Message>)lsnr;
+        this.lsnr = lsnr;
     }
 
     /**
@@ -4048,10 +4048,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (log.isDebugEnabled())
             log.debug("Notify appropriate listeners due to a new channel opened: " + channel);
 
-        CommunicationListenerEx<Message> lsnr0 = lsnr;
+        CommunicationListener<Message> lsnr0 = lsnr;
 
-        if (lsnr0 != null)
-            lsnr0.onChannelOpened(nodeId, initMsg, channel);
+        if (lsnr0 instanceof CommunicationListenerEx)
+            ((CommunicationListenerEx<Message>)lsnr0).onChannelOpened(nodeId, initMsg, channel);
     }
 
     /**
