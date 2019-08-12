@@ -98,6 +98,9 @@
     <ClInclude Include="..\..\include\teamcity_messages.h" />
   </ItemGroup>
   <ItemGroup>
+    <Xml Include="..\..\config\cache-native-persistence-test-32.xml" />
+    <Xml Include="..\..\config\cache-native-persistence-test-default.xml" />
+    <Xml Include="..\..\config\cache-native-persistence-test.xml" />
     <Xml Include="..\..\config\compute-client-32.xml" />
     <Xml Include="..\..\config\compute-client-default.xml" />
     <Xml Include="..\..\config\compute-client.xml" />

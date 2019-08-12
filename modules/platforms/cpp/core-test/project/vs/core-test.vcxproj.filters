@@ -225,5 +225,14 @@
     <Xml Include="..\..\config\compute-server1-default.xml">
       <Filter>Configs</Filter>
     </Xml>
+    <Xml Include="..\..\config\cache-native-persistence-test.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\cache-native-persistence-test-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\cache-native-persistence-test-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

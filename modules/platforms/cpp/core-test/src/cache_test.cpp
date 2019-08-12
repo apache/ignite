@@ -132,6 +132,47 @@ struct CacheTestSuiteFixture
     }
 };
 
+/*
+ * Test setup fixture.
+ */
+struct CacheNativePersistenceTestSuiteFixture
+{
+    /* Nodes started during the test. */
+    Ignite grid0;
+
+    /** Cache accessor. */
+    cache::Cache<int, int> Cache()
+    {
+        return grid0.GetCache<int, int>("partitioned");
+    }
+
+    /*
+     * Constructor.
+     */
+    CacheNativePersistenceTestSuiteFixture()
+    {
+        ignite_test::ClearLfs();
+
+#ifdef IGNITE_TESTS_32
+        grid0 = ignite_test::StartNode("cache-native-persistence-test-32.xml", "grid-0");
+#else
+        grid0 = ignite_test::StartNode("cache-native-persistence-test.xml", "grid-0");
+#endif
+    }
+
+    /*
+     * Destructor.
+     */
+    ~CacheNativePersistenceTestSuiteFixture()
+    {
+        grid0 = Ignite();
+
+        Ignition::StopAll(true);
+
+        ignite_test::ClearLfs();
+    }
+};
+
 BOOST_FIXTURE_TEST_SUITE(CacheTestSuite, CacheTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestRemoveAllKeys)
@@ -726,6 +767,29 @@ BOOST_AUTO_TEST_CASE(TestPutGetStructWithEnumField)
 
     PutGetStructWithEnumField(13, TestEnum::TEST_NEGATIVE_42, "hishib");
     PutGetStructWithEnumField(1337, TestEnum::TEST_SOME_BIG, "Some test value");
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_FIXTURE_TEST_SUITE(CacheTestSuiteNativePersistence, CacheNativePersistenceTestSuiteFixture);
+
+BOOST_AUTO_TEST_CASE(TestWal)
+{
+    cluster::IgniteCluster cluster = grid0.GetCluster();
+
+    cluster.SetActive(true);
+
+    cache::Cache<int, int> cache = Cache();
+
+    BOOST_REQUIRE(cluster.IsWalEnabled(cache.GetName()));
+    cluster.DisableWal(cache.GetName());
+    BOOST_REQUIRE(!cluster.IsWalEnabled(cache.GetName()));
+    cluster.EnableWal(cache.GetName());
+    BOOST_REQUIRE(cluster.IsWalEnabled(cache.GetName()));
+
+    BOOST_CHECK_THROW(cluster.IsWalEnabled("foo"), IgniteError);
+    BOOST_CHECK_THROW(cluster.DisableWal("foo"), IgniteError);
+    BOOST_CHECK_THROW(cluster.EnableWal("foo"), IgniteError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

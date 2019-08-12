@@ -616,4 +616,12 @@ BOOST_AUTO_TEST_CASE(TransactionAttributesNe)
     BOOST_CHECK(!tx.IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(TransactionSetTxTimeoutOnPartitionMapExchange)
+{
+    ignite::cluster::IgniteCluster cluster = grid.GetCluster();
+
+    BOOST_CHECK_NO_THROW(cluster.SetTxTimeoutOnPartitionMapExchange(10000));
+    BOOST_CHECK_THROW(cluster.SetTxTimeoutOnPartitionMapExchange(-1), IgniteError);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

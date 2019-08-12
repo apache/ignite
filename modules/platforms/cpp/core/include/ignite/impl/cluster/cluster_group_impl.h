@@ -243,6 +243,67 @@ namespace ignite
                  */
                 void SetActive(bool active);
 
+                /**
+                 * Disable write-ahead logging for specified cache.
+                 *
+                 * @param cacheName Cache name.
+                 */
+                void DisableWal(std::string cacheName);
+
+                /**
+                 * Enable write-ahead logging for specified cache.
+                 *
+                 * @param cacheName Cache name.
+                 */
+                void EnableWal(std::string cacheName);
+
+                /**
+                 * Check if write - ahead logging is enabled for specified cache.
+                 *
+                 * @param cacheName Cache name.
+                 *
+                 * @return True if enabled.
+                 */
+                bool IsWalEnabled(std::string cacheName);
+
+                /**
+                 * Set baseline topology constructed from the cluster topology of the given version.
+                 * The method succeeds only if the cluster topology has not changed.
+                 *
+                 * @param topVer Topology version.
+                 */
+                void SetBaselineTopologyVersion(long topVer);
+
+                /**
+                 * Set transaction timeout on partition map exchange.
+                 *
+                 * @param timeout Timeout in milliseconds.
+                 */
+                void SetTxTimeoutOnPartitionMapExchange(long timeout);
+
+                /**
+                 * Ping node.
+                 *
+                 * @param nid Cluster node ID.
+                 * @return True in case of success.
+                 */
+                bool PingNode(Guid nid);
+
+                /**
+                 * Get a topology by version.
+                 *
+                 * @param version Topology version.
+                 * @return Nodes collection for the requested topology version.
+                 */
+                std::vector<ignite::cluster::ClusterNode> GetTopology(long version);
+
+                /**
+                 * Get current topology version.
+                 *
+                 * @return Current topology version.
+                 */
+                long GetTopologyVersion();
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ClusterGroupImpl);
 
@@ -270,6 +331,13 @@ namespace ignite
                  * @return Pointer to compute.
                  */
                 SP_ComputeImpl InternalGetCompute();
+
+                /**
+                 * Read cluster nodes from stream.
+                 *
+                 * @return Pointer to container of cluster nodes.
+                 */
+                SP_ClusterNodes ReadNodes(binary::BinaryReaderImpl& reader);
 
                 /**
                  * Get container of refreshed cluster nodes over this cluster group.

@@ -72,6 +72,11 @@ namespace ignite_test
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
 
     /**
+     * Remove all the LFS artifacts.
+     */
+    void ClearLfs();
+
+    /**
      * Check if the error is generic.
      *
      * @param err Error.

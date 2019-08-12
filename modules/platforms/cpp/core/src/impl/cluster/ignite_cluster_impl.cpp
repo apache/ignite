@@ -17,6 +17,7 @@
 #include "ignite/impl/cluster/ignite_cluster_impl.h"
 
 using namespace ignite::jni::java;
+using namespace ignite::cluster;
 using namespace ignite::impl::cluster;
 
 namespace ignite
@@ -44,6 +45,46 @@ namespace ignite
             void IgniteClusterImpl::SetActive(bool active)
             {
                 impl.Get()->SetActive(active);
+            }
+
+            void IgniteClusterImpl::DisableWal(std::string cacheName)
+            {
+                impl.Get()->DisableWal(cacheName);
+            }
+
+            void IgniteClusterImpl::EnableWal(std::string cacheName)
+            {
+                impl.Get()->EnableWal(cacheName);
+            }
+
+            bool IgniteClusterImpl::IsWalEnabled(std::string cacheName)
+            {
+                return impl.Get()->IsWalEnabled(cacheName);
+            }
+
+            void IgniteClusterImpl::SetBaselineTopologyVersion(long topVer)
+            {
+                impl.Get()->SetBaselineTopologyVersion(topVer);
+            }
+
+            void IgniteClusterImpl::SetTxTimeoutOnPartitionMapExchange(long timeout)
+            {
+                impl.Get()->SetTxTimeoutOnPartitionMapExchange(timeout);
+            }
+
+            bool IgniteClusterImpl::PingNode(Guid nid)
+            {
+                return impl.Get()->PingNode(nid);
+            }
+
+            std::vector<ClusterNode> IgniteClusterImpl::GetTopology(long version)
+            {
+                return impl.Get()->GetTopology(version);
+            }
+
+            long IgniteClusterImpl::GetTopologyVersion()
+            {
+                return impl.Get()->GetTopologyVersion();
             }
 
             SP_ClusterGroupImpl IgniteClusterImpl::AsClusterGroup()
