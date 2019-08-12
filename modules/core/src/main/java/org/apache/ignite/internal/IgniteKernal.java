@@ -304,7 +304,7 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
  * Please, refer to the wiki <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a>
  * for the information on the misspelling.
  * <p>
- * <h3>Start point</h3>
+ * <h3>Startpoint</h3>
  * The main entry point for all the Ignite instances creation is the method:
  * <p>
  * {@link #start(IgniteConfiguration, ExecutorService, ExecutorService, ExecutorService, ExecutorService,StripedExecutor, ExecutorService, ExecutorService, ExecutorService, StripedExecutor, ExecutorService, ExecutorService, ExecutorService, IgniteStripedThreadPoolExecutor, ExecutorService, ExecutorService, Map, GridAbsClosure, WorkersRegistry, Thread.UncaughtExceptionHandler, TimeBag)}
@@ -323,7 +323,7 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
  * <li>{@link OsConfigurationSuggestions} optimizations.</li>
  * </ul>
  *
- * <h3>End point</h3>
+ * <h3>Endpoint</h3>
  * To stop Ignite instance the {@link #stop(boolean)} method is used. The {@code cancel} argument of this method is used:
  * <ul>
  * <li>With {@code true} value. To interrupt all currently acitve {@link GridComponent}s related to the Ignite node.
