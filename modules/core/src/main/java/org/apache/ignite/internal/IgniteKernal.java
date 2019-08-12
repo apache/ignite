@@ -373,7 +373,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridKernalContextImpl ctx;
 
-    /** Helper which is register and unregister MBeans. */
+    /** Helper which registers and unregisters MBeans. */
     @GridToStringExclude
     private IgniteMBeansManager mBeansMgr;
 
@@ -384,7 +384,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridLoggerProxy log;
 
-    /** Instance name of Ignite node. */
+    /** Name of Ignite node. */
     private String igniteInstanceName;
 
     /** Kernal start timestamp. */
@@ -395,7 +395,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * The instance of scheduled thread pool starvation checker. {@code null} if starvation checks have been
-     * disabled by the value {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property.
+     * disabled by the value of {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property.
      */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask starveTask;
