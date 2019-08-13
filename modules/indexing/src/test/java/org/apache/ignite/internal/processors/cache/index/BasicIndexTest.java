@@ -144,6 +144,51 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    public void testSecondFieldAffectsIndexSelection() throws Exception {
+        checkSecondFieldAffectsIndexSelection("IDX2", "IDX3");
+
+        checkSecondFieldAffectsIndexSelection("IDX3", "IDX2");
+    }
+
+    /** */
+    private void checkSecondFieldAffectsIndexSelection(String idx1, String idx2) throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrids(gridCount());
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, "TEST_TBL_NAME", 2, "FIRST_NAME", "LAST_NAME",
+            "ADDRESS", "LANG");
+
+        String sqlIdx1 = String.format("create index \"%s\" on %s(LAST_NAME, ADDRESS)", idx1, "TEST_TBL_NAME");
+        String sqlIdx2 = String.format("create index \"%s\" on %s(LAST_NAME, FIRST_NAME)", idx2, "TEST_TBL_NAME");
+
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx2), true).getAll();
+
+        String sql = "explain select * from " + "TEST_TBL_NAME" + " where " +
+            "LAST_NAME = 2 and FIRST_NAME >= 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3)";
+
+        String plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
+            .getAll().get(0).get(0).toString().toUpperCase();
+
+        assertTrue("plan=" + plan, plan.contains(idx2));
+
+        sql = "explain select * from " + "TEST_TBL_NAME" + " where " +
+            "LAST_NAME = 2 and ADDRESS >= 1 ";
+
+        plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
+            .getAll().get(0).get(0).toString().toUpperCase();
+
+        assertTrue("plan=" + plan, plan.contains(idx1));
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** */
     public void testDifferentFieldsSequenceIndex() throws Exception {
         runIndexWithDifferentFldsReqAllFldsInIdx("IDX2", "IDX3");
 
