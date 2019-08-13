@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -237,6 +237,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                             bctx0.partAllocLengths.put(pair,
                                 allocRange.getCurrAllocatedPageCnt() == 0 ? 0L :
                                     (long)allocRange.getCurrAllocatedPageCnt() * pageSize + store.headerSize());
+
+                            bctx0.partDeltaWriters.get(pair).pagesWrittenBits =
+                                new AtomicIntegerArray(allocRange.getCurrAllocatedPageCnt());
                         }
 
                         // Submit all tasks for partitions and deltas processing.
@@ -610,10 +613,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          */
         private long expectedSize;
 
-        /**
-         *
-         */
-        private AtomicLong pageTrackBits = new AtomicLong();
+        /** Array of bits. 1 - means pages written, 0 - the otherwise. */
+        private volatile AtomicIntegerArray pagesWrittenBits;
 
         /**
          * @param serial Serial storage to write to.
@@ -653,7 +654,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             if (checkpointComplete.getAsBoolean()) {
                 assert expectedSize > 0;
 
-                int pageIdx = PageIdUtils.pageIndex(pageId);
+                if (!pagesWrittenBits.compareAndSet(PageIdUtils.pageIndex(pageId), 0, 1))
+                    return;
 
                 final ByteBuffer locBuf = localBuff.get();
 
@@ -675,37 +677,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 buf.rewind();
             }
         }
-
-        /**
-         * @param pageIdx Page index to track.
-         * @return {@code true} if
-         */
-        private boolean track(int pageIdx) {
-            assert expectedSize > 0;
-            assert pageIdx >= 0;
-
-            int mask = 1 << pageIdx;
-
-            long next = pageTrackBits.getAndUpdate(b -> b |= mask);
-
-            return (pageTrackBits.get() & mask) == mask;
-        }
-
-//        /**
-//         * @param pos Flag position.
-//         * @param val Flag value.
-//         */
-//        private void track(int pos, boolean val) {
-//            assert expectedSize > 0;
-//            assert pos >= 0 && pos < 32;
-//
-//            int mask = 1 << pos;
-//
-//            if (val)
-//                pageTrackBits |= mask;
-//            else
-//                pageTrackBits &= ~mask;
-//        }
 
         /** {@inheritDoc} */
         @Override public void close() {
