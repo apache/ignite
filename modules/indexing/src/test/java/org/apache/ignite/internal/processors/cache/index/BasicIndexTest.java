@@ -143,6 +143,45 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         return gridCount;
     }
 
+
+    /** */
+    public void testIndexCreationDoesNotAffectIndexSelection() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrids(gridCount());
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, "TEST_TBL_NAME", 2, "FIRST_NAME", "LAST_NAME",
+            "ADDRESS", "LANG");
+
+        String sqlIdx1 = "create index FIRST_LAST_IDX on TEST_TBL_NAME(FIRST_NAME, LAST_NAME)";
+        String sqlIdx2 = "create index LAST_FIRST_IDX on TEST_TBL_NAME(LAST_NAME, FIRST_NAME)";
+
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx1), true).getAll();
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx2), true).getAll();
+
+        String sql = "explain select * from " + "TEST_TBL_NAME" + " where " +
+            "LAST_NAME = 2 and FIRST_NAME >= 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3)";
+
+        String plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
+            .getAll().get(0).get(0).toString().toUpperCase();
+
+        assertTrue("plan=" + plan, plan.contains("LAST_FIRST_IDX"));
+
+        sql = "explain select * from " + "TEST_TBL_NAME" + " where " +
+            "LAST_NAME >= 2 and FIRST_NAME = 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3)";
+
+        plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
+            .getAll().get(0).get(0).toString().toUpperCase();
+
+        assertTrue("plan=" + plan, plan.contains("FIRST_LAST_IDX"));
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /** */
     public void testSecondFieldAffectsIndexSelection() throws Exception {
         checkSecondFieldAffectsIndexSelection("IDX2", "IDX3");
