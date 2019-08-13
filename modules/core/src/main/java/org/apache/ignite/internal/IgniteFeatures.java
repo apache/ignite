@@ -56,7 +56,7 @@ public enum IgniteFeatures {
 
     /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
-    
+
     /** Support of cluster read-only mode. */
     CLUSTER_READ_ONLY_MODE(9),
 
@@ -67,7 +67,10 @@ public enum IgniteFeatures {
     DISTRIBUTED_METASTORAGE(11),
 
     /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
-    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14);
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
+
+    /** LRT system and user time dump settings.  */
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
 
     /**
      * Unique feature identifier.
