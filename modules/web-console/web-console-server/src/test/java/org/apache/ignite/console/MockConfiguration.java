@@ -23,7 +23,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.repositories.AnnouncementRepository;
@@ -97,8 +99,12 @@ public class MockConfiguration {
 
         IgniteCluster cluster = mock(IgniteCluster.class);
 
+        GridTestNode locNode = new GridTestNode(UUID.randomUUID());
+
         when(cluster.nodes())
-            .thenReturn(Collections.singleton(new GridTestNode(UUID.randomUUID())));
+            .thenReturn(Collections.singleton(locNode));
+
+        when(cluster.localNode()).thenReturn(locNode);
 
         return new IgniteMock("testGrid", null, null, null, null, null, null) {
             /** {@inheritDoc} */
@@ -124,6 +130,14 @@ public class MockConfiguration {
                 when(mockedCache.spliterator()).thenReturn(Spliterators.emptySpliterator());
 
                 return mockedCache;
+            }
+
+            @Override public IgniteMessaging message() {
+                return mock(IgniteMessaging.class);
+            }
+
+            @Override public IgniteMessaging message(ClusterGroup prj) {
+                return mock(IgniteMessaging.class);
             }
         };
     }

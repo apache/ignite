@@ -68,12 +68,12 @@ public class AgentsService extends AbstractSocketHandler {
 
     /** */
     protected AccountsRepository accRepo;
+
+    /** */
+    protected ClustersRepository clustersRepo;
     
     /** */
     private AgentsRepository agentsRepo;
-
-    /** */
-    private ClustersRepository clustersRepo;
 
     /** */
     private final Map<WebSocketSession, AgentSession> locAgents;

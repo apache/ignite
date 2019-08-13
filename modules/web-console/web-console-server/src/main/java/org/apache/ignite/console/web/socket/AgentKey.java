@@ -22,7 +22,7 @@ import java.util.UUID;
 /**
  * Connected agent key.
  */
-class AgentKey {
+public class AgentKey {
     /** Account id. */
     private final UUID accId;
 

@@ -137,7 +137,7 @@ public class BrowsersService extends AbstractSocketHandler {
      * @param key Key.
      * @param evt Event.
      */
-    private void sendToAgent(AgentKey key, WebSocketRequest evt) {
+    protected void sendToAgent(AgentKey key, WebSocketRequest evt) {
         ignite.message(ignite.cluster().forLocal())
             .send(SEND_TO_AGENT, new AgentRequest(ignite.cluster().localNode().id(), key, evt));
     }
@@ -166,7 +166,7 @@ public class BrowsersService extends AbstractSocketHandler {
                         throw new IllegalStateException(messages.getMessage("err.missing-cluster-id-param"));
 
                     if (evt.getEventType().equals(NODE_VISOR))
-                        evt.setPayload(toJson(fillVisorGatawayTaskParams(payload)));
+                        evt.setPayload(toJson(fillVisorGatewayTaskParams(payload)));
 
                     sendToAgent(new AgentKey(accId, clusterId), evt);
 
@@ -181,7 +181,7 @@ public class BrowsersService extends AbstractSocketHandler {
         catch (IllegalStateException e) {
             log.warn(e.toString());
 
-            sendMessageQuiet(ses, evt.withError("Failed to send event to agent: " + evt.getPayload(), e));
+            sendMessageQuiet(ses, evt.withError("Failed to send event to agent: ", e));
         }
         catch (Throwable e) {
             String errMsg = "Failed to send event to agent: " + evt.getPayload();
@@ -320,7 +320,7 @@ public class BrowsersService extends AbstractSocketHandler {
      *
      * @param payload Task event.
      */
-    private JsonObject fillVisorGatawayTaskParams(JsonObject payload) {
+    protected JsonObject fillVisorGatewayTaskParams(JsonObject payload) {
         JsonObject params = payload.getJsonObject("params");
 
         String taskId = params.getString("taskId");
@@ -360,7 +360,7 @@ public class BrowsersService extends AbstractSocketHandler {
     /**
      * @param evt Event.
      */
-    void sendResponseToBrowser(WebSocketEvent evt) {
+    protected void sendResponseToBrowser(WebSocketEvent evt) {
         WebSocketSession ses = locRequests.remove(evt.getRequestId());
 
         if (ses == null) {
