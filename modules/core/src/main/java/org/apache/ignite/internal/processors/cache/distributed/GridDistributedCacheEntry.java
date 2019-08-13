@@ -749,6 +749,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Allow next lock in the thread to proceed.
                 if (!cand.used()) {
+                    if (cand.owner())
+                        break;
+
                     GridCacheContext cctx0 = cand.parent().context();
 
                     GridDistributedCacheEntry e =
