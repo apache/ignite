@@ -15,17 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric;
+package org.apache.ignite.spi.communication.tcp.internal;
+
+import java.io.Serializable;
+import java.nio.channels.Channel;
+import java.util.UUID;
+import org.apache.ignite.spi.communication.CommunicationListener;
 
 /**
- * Interface for the metrics that holds long primitive.
+ * Extended communication SPI listener to provide {@link Channel} opened events.
  */
-public interface LongMetric extends Metric {
-    /** @return Value of the metric. */
-    public long value();
-
-    /** {@inheritDoc} */
-    @Override public default String getAsString() {
-        return Long.toString(value());
+public interface CommunicationListenerEx<T extends Serializable> extends CommunicationListener<T> {
+    /**
+     * @param rmtNodeId Remote node id.
+     * @param initMsg Init channel message.
+     * @param channel Locally created channel endpoint.
+     */
+    public default void onChannelOpened(UUID rmtNodeId, T initMsg, Channel channel) {
+        // No-op.
     }
 }
