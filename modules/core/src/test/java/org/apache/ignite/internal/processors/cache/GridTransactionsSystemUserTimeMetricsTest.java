@@ -15,8 +15,6 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -88,9 +86,6 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         "Transaction time dumps skipped because of log throttling: " + TX_COUNT_FOR_LOG_THROTTLING_CHECK / 2;
 
     /** */
-    private static Map<String, String> savedProperties = new HashMap<>();
-
-    /** */
     private LogListener logTxDumpLsnr = new MessageOrderLogListener(TRANSACTION_TIME_DUMP_REGEX);
 
     /** */
@@ -156,23 +151,6 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         restoreProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
 
         super.afterTestsStopped();
-    }
-
-    /** */
-    private void changeProperty(String name, String newVal) {
-        savedProperties.put(name, System.getProperty(name));
-
-        System.setProperty(name, newVal);
-    }
-
-    /** */
-    private void restoreProperty(String name) {
-        String val = savedProperties.get(name);
-
-        if (val != null)
-            System.setProperty(name, val);
-        else
-            System.clearProperty(name);
     }
 
     /** */

@@ -17,13 +17,9 @@
 
 package org.apache.ignite.testframework.junits;
 
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -36,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,8 +42,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.management.DynamicMBean;
@@ -215,6 +210,9 @@ public abstract class GridAbstractTest extends TestCase {
      */
     private static final boolean PERSISTENCE_ALLOWED =
             IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, true);
+
+    /** */
+    private static Map<String, String> savedProperties = new HashMap<>();
 
     /**
      *
@@ -579,7 +577,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        // No-op.
+        savedProperties.clear();
     }
 
     /** {@inheritDoc} */
@@ -2712,4 +2710,33 @@ public abstract class GridAbstractTest extends TestCase {
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
     }
+
+    /**
+     * Changes the system property before running the tests and saves it to restore after tests finish using
+     * {@link #restoreProperty(String)} method.
+     *
+     * @param name Property name.
+     * @param newVal New value.
+     */
+    protected void changeProperty(String name, String newVal) {
+        savedProperties.put(name, System.getProperty(name));
+
+        System.setProperty(name, newVal);
+    }
+
+    /**
+     * Restores the system property that was saved using {@link #changeProperty(String, String)}
+     * after finishing the tests.
+     *
+     * @param name Property name.
+     */
+    protected void restoreProperty(String name) {
+        String val = savedProperties.get(name);
+
+        if (val != null)
+            System.setProperty(name, val);
+        else
+            System.clearProperty(name);
+    }
+
 }
