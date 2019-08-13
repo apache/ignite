@@ -760,7 +760,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
-        boolean lazy, final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        final boolean lazy, final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
         final Connection conn = connMgr.connectionForThread().connection(schemaName);
 
         H2Utils.setupConnection(conn, false, enforceJoinOrder, lazy);
@@ -811,7 +811,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                assert GridH2QueryContext.get() == null;
+                // TODO: HOT FIX: must be fixed by GG-21372
+                // assert GridH2QueryContext.get() == null;
+                if (GridH2QueryContext.get() != null) {
+                    log.warning("Query context is reset for local query. The result may be invalid " +
+                        "if the explicit partitions are specified. [oldQctx=" + GridH2QueryContext.get() + ']');
+
+                    GridH2QueryContext.clearThreadLocal();
+                }
 
                 GridH2QueryContext.set(ctx);
 
@@ -833,7 +840,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw e;
                 }
                 finally {
-                    GridH2QueryContext.clearThreadLocal();
+                    if (!lazy)
+                        GridH2QueryContext.clearThreadLocal();
 
                     runs.remove(run.id());
                 }

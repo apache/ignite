@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 
 /**
  * Special field set iterator based on database result set.
@@ -34,6 +35,9 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
 
     /** Detached connection. */
     private ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+
+    /** Lazy flag. */
+    private final boolean lazy;
 
     /**
      * @param data Data.
@@ -49,6 +53,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         super(data, log, h2, qryInfo);
 
         this.detachedConn = detachedConn;
+        this.lazy = qryInfo.lazy();
     }
 
     /** {@inheritDoc} */
@@ -66,6 +71,9 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
             super.onClose();
         }
         finally {
+            if (lazy && GridH2QueryContext.get() != null)
+                GridH2QueryContext.clearThreadLocal();
+
             if (detachedConn != null) {
                 detachedConn.recycle();
 
