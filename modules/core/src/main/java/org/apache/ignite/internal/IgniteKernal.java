@@ -299,31 +299,31 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
  * This class represents an implementation of the main Ignite API {@link Ignite} which is expanded by additional
  * methods of {@link IgniteEx} for the internal Ignite needs. It also controls the Ignite life cycle, checks
  * thread pools state for starvation, detects long JVM pauses and prints out the local node metrics.
- *
  * <p>
  * Please, refer to the wiki <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a>
  * for the information on the misspelling.
  * <p>
- * <h3>Startpoint</h3>
- * The main entry point for all the Ignite instances creation is the method:
+ * <h3>Starting</h3>
+ * The main entry point for all the Ignite instances creation is the method - {@link #start(IgniteConfiguration,
+ * ExecutorService, ExecutorService, ExecutorService, ExecutorService,StripedExecutor, ExecutorService, ExecutorService,
+ * ExecutorService, StripedExecutor, ExecutorService, ExecutorService, ExecutorService, IgniteStripedThreadPoolExecutor,
+ * ExecutorService, ExecutorService, Map, GridAbsClosure, WorkersRegistry, Thread.UncaughtExceptionHandler, TimeBag)
+ * start}.
  * <p>
- * {@link #start(IgniteConfiguration, ExecutorService, ExecutorService, ExecutorService, ExecutorService,StripedExecutor, ExecutorService, ExecutorService, ExecutorService, StripedExecutor, ExecutorService, ExecutorService, ExecutorService, IgniteStripedThreadPoolExecutor, ExecutorService, ExecutorService, Map, GridAbsClosure, WorkersRegistry, Thread.UncaughtExceptionHandler, TimeBag)}
- * <p>
- * It starts internal Ignites components (see {@link GridComponent}), for instance:
+ * It starts internal Ignite components (see {@link GridComponent}), for instance:
  * <ul>
  * <li>{@link GridManager} - a layer of indirection between kernal and SPI modules.</li>
  * <li>{@link GridProcessor} - an objects responsible for particular internal process implementation.</li>
  * <li>{@link IgnitePlugin} - an Ignite addition of user-provided functionality.</li>
  * </ul>
- * The {@code start} method also perfoms additional validation of the provided {@link IgniteConfiguration} and
+ * The {@code start} method also performs additional validation of the provided {@link IgniteConfiguration} and
  * prints some suggestions such as:
  * <ul>
- * <li>Ignites configuration optimizations (e.g. disabling {@link EventType} events).</li>
+ * <li>Ignite configuration optimizations (e.g. disabling {@link EventType} events).</li>
  * <li>{@link JvmConfigurationSuggestions} optimizations.</li>
  * <li>{@link OsConfigurationSuggestions} optimizations.</li>
  * </ul>
- *
- * <h3>Endpoint</h3>
+ * <h3>Stopping</h3>
  * To stop Ignite instance the {@link #stop(boolean)} method is used. The {@code cancel} argument of this method is used:
  * <ul>
  * <li>With {@code true} value. To interrupt all currently acitve {@link GridComponent}s related to the Ignite node.
@@ -1994,7 +1994,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @return {@code true} if the rest processor is enabled, {@code false} the otherwise.
+     * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
      */
     private boolean isRestEnabled() {
         assert cfg != null;
@@ -2481,7 +2481,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Stops ignite instance.
+     * Stops Ignite instance.
      *
      * @param cancel Whether or not to cancel running jobs.
      */
