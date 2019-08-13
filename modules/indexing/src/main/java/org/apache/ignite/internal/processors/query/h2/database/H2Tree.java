@@ -167,6 +167,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             if (metaInfo.useUnwrappedPk())
                 throw new IgniteCheckedException("Unwrapped PK is not supported by current version");
 
+            if (inlineSize != metaInfo.inlineSize())
+                log.warning("New inline size for idx=" + idxName + " will not be applied");
+
             inlineSize = metaInfo.inlineSize();
 
             this.inlineSize = inlineSize;
