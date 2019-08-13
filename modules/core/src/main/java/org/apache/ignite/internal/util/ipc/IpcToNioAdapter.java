@@ -25,19 +25,25 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterChain;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
-import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
 
 /**
  * Allows to re-use existing {@link GridNioFilter}s on IPC (specifically shared memory IPC)
@@ -62,25 +68,32 @@ public class IpcToNioAdapter<T> {
     /** */
     private final ByteBuffer writeBuf;
 
-    /** */
-    private final GridNioMetricsListener metricsLsnr;
+    /** Received bytes count metric. */
+    private final LongAdderMetric rcvdBytesCntMetric;
+
+    /** Sent bytes count metric. */
+    private final LongAdderMetric sentBytesCntMetric;
 
     /** */
     private final GridNioMessageWriterFactory writerFactory;
 
     /**
-     * @param metricsLsnr Metrics listener.
+     * @param mreg Metrics registry.
      * @param log Log.
      * @param endp Endpoint.
      * @param lsnr Listener.
      * @param writerFactory Writer factory.
      * @param filters Filters.
      */
-    public IpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, IpcEndpoint endp,
-        GridNioServerListener<T> lsnr, GridNioMessageWriterFactory writerFactory, GridNioFilter... filters) {
-        assert metricsLsnr != null;
+    public IpcToNioAdapter(MetricRegistry mreg, IgniteLogger log, IpcEndpoint endp,
+        GridNioServerListener<T> lsnr, GridNioMessageWriterFactory writerFactory, GridNioFilter... filters
+    ) {
+        assert mreg != null;
 
-        this.metricsLsnr = metricsLsnr;
+        rcvdBytesCntMetric = mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+
+        sentBytesCntMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+
         this.endp = endp;
         this.writerFactory = writerFactory;
 
@@ -115,7 +128,7 @@ public class IpcToNioAdapter<T> {
                 int read = in.read(readBuf.array(), pos, readBuf.remaining());
 
                 if (read > 0) {
-                    metricsLsnr.onBytesReceived(read);
+                    rcvdBytesCntMetric.add(read);
 
                     readBuf.position(0);
                     readBuf.limit(pos + read);
@@ -166,7 +179,7 @@ public class IpcToNioAdapter<T> {
         try {
             int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf, writerFactory.writer(ses));
 
-            metricsLsnr.onBytesSent(cnt);
+            sentBytesCntMetric.add(cnt);
         }
         catch (IOException | IgniteCheckedException e) {
             return new GridNioFinishedFuture<Object>(e);

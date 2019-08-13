@@ -65,40 +65,53 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
      * Gets sent messages count.
      *
      * @return Sent messages count.
+     * @deprecated Will be removed in the next major release and replaced with new metrics API.
      */
+    @Deprecated
     public int getSentMessagesCount();
 
     /**
      * Gets sent bytes count.
      *
      * @return Sent bytes count.
+     * @deprecated Will be removed in the next major release and replaced with new metrics API.
      */
+    @Deprecated
     public long getSentBytesCount();
 
     /**
      * Gets received messages count.
      *
      * @return Received messages count.
+     * @deprecated Will be removed in the next major release and replaced with new metrics API.
      */
+    @Deprecated
     public int getReceivedMessagesCount();
 
     /**
      * Gets received bytes count.
      *
      * @return Received bytes count.
+     * @deprecated Will be removed in the next major release and replaced with new metrics API.
      */
+    @Deprecated
     public long getReceivedBytesCount();
 
     /**
      * Gets outbound messages queue size.
      *
      * @return Outbound messages queue size.
+     * @deprecated Will be removed in the next major release and replaced with new metrics API.
      */
+    @Deprecated
     public int getOutboundMessagesQueueSize();
 
     /**
      * Resets metrics for this SPI instance.
+     *
+     * @deprecated Will be removed in the next major release and replaced with new metrics API.
      */
+    @Deprecated
     public void resetMetrics();
 
     /**
