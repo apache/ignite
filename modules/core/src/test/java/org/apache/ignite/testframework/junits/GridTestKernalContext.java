@@ -29,10 +29,13 @@ import org.apache.ignite.internal.GridKernalGatewayImpl;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.LongJVMPauseDetector;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -88,6 +91,12 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         GridTestUtils.setFieldValue(grid(), "ctx", this);
 
         config().setGridLogger(log);
+
+        if (cfg.getMetricExporterSpi() == null || cfg.getMetricExporterSpi().length == 0)
+            cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+
+        add(new GridMetricManager(this));
+        add(new GridResourceProcessor(this));
     }
 
     /**

@@ -17,9 +17,16 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
 
 /**
  * Implements basic lifecycle for communication clients.
@@ -31,19 +38,27 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     /** Reservations. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    /** Metrics listener. */
-    protected final GridNioMetricsListener metricsLsnr;
-
     /** */
     private final int connIdx;
 
+    /** Received bytes count metric. */
+    @Nullable protected final LongAdderMetric rcvdBytesCntMetric;
+
+    /** Sent bytes count metric. */
+    @Nullable protected final LongAdderMetric sentBytesCntMetric;
+
     /**
      * @param connIdx Connection index.
-     * @param metricsLsnr Metrics listener.
+     * @param mreg Metrics registry.
      */
-    protected GridAbstractCommunicationClient(int connIdx, @Nullable GridNioMetricsListener metricsLsnr) {
+    protected GridAbstractCommunicationClient(int connIdx, @Nullable MetricRegistry mreg) {
         this.connIdx = connIdx;
-        this.metricsLsnr = metricsLsnr;
+
+        rcvdBytesCntMetric = mreg == null ?
+            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+
+        sentBytesCntMetric = mreg == null ?
+            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
     }
 
     /** {@inheritDoc} */

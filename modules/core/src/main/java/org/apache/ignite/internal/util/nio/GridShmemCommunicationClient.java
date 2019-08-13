@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryClientEndpoint;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,7 +49,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
     /**
      * @param connIdx Connection index.
-     * @param metricsLsnr Metrics listener.
+     * @param mreg Metrics registry.
      * @param port Shared memory IPC server port.
      * @param connTimeout Connection timeout.
      * @param log Logger.
@@ -57,15 +58,15 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
      */
     public GridShmemCommunicationClient(
         int connIdx,
-        GridNioMetricsListener metricsLsnr,
+        MetricRegistry mreg,
         int port,
         long connTimeout,
         IgniteLogger log,
-        MessageFormatter formatter)
-        throws IgniteCheckedException {
-        super(connIdx, metricsLsnr);
+        MessageFormatter formatter
+    ) throws IgniteCheckedException {
+        super(connIdx, mreg);
 
-        assert metricsLsnr != null;
+        assert mreg != null;
         assert port > 0 && port < 0xffff;
         assert connTimeout >= 0;
 
@@ -110,7 +111,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         try {
             shmem.outputStream().write(data, 0, len);
 
-            metricsLsnr.onBytesSent(len);
+            sentBytesCntMetric.add(len);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to send message to remote node: " + shmem, e);
@@ -132,7 +133,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         try {
             int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf, formatter.writer(nodeId));
 
-            metricsLsnr.onBytesSent(cnt);
+            sentBytesCntMetric.add(cnt);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to send message to remote node: " + shmem, e);
