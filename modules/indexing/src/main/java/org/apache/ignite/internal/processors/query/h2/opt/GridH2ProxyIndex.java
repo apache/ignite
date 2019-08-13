@@ -36,6 +36,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
+
 /**
  * Allows to have 'free' index for alias columns
  * Delegates the calls to underlying normal index
@@ -103,7 +105,7 @@ public class GridH2ProxyIndex extends BaseIndex {
     @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = getTreeIndexCost(this, masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = ((GridH2IndexBase)idx).getDistributedMultiplier(session, filters, filter);
 
