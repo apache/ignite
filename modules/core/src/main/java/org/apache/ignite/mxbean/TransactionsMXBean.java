@@ -127,4 +127,94 @@ public interface TransactionsMXBean {
         "whether to allow"
     )
     public void setTxOwnerDumpRequestsAllowed(boolean allowed);
+
+    /**
+     * Returns threshold timeout in milliseconds for long transactions, if transaction exceeds it,
+     * it will be dumped in log with information about how much time did
+     * it spent in system time (time while aquiring locks, preparing, commiting, etc.)
+     * and user time (time when client node runs some code while holding transaction).
+     * Returns 0 if not set. No transactions are dumped in log if this parameter is not set.
+     *
+     * @return Threshold.
+     */
+    @MXBeanDescription(
+        "Returns threshold timeout in milliseconds for long transactions, if transaction exceeds it, " +
+        "it will be dumped in log with information about how much time did " +
+        "it spent in system time (time while aquiring locks, preparing, commiting, etc.)" +
+        "and user time (time when client node runs some code while holding transaction). " +
+        "Returns 0 if not set. No transactions are dumped in log if this parameter is not set."
+    )
+    public long getLongTransactionTimeDumpThreshold();
+
+    /**
+     * Sets threshold timeout in milliseconds for long transactions, if transaction exceeds it,
+     * it will be dumped in log with information about how much time did
+     * it spent in system time (time while aquiring locks, preparing, commiting, etc.)
+     * and user time (time when client node runs some code while holding transaction).
+     * Can be set to 0 - no transactions will be dumped in log in this case.
+     *
+     * @param threshold Threshold.
+     */
+    @MXBeanDescription(
+        "Sets threshold timeout in milliseconds for long transactions, if transaction exceeds it, " +
+        "it will be dumped in log with information about how much time did " +
+        "it spent in system time (time while aquiring locks, preparing, commiting, etc.) " +
+        "and user time (time when client node runs some code while holding transaction). " +
+        "Can be set to 0 - no transactions will be dumped in log in this case."
+    )
+    @MXBeanParametersNames("threshold")
+    @MXBeanParametersDescriptions("threshold timeout")
+    public void setLongTransactionTimeDumpThreshold(long threshold);
+
+    /**
+     * Returns the coefficient for samples of completed transactions that will be dumped in log.
+     *
+     * @return Coefficient current value.
+     */
+    @MXBeanDescription(
+        "Returns the coefficient for samples of completed transactions that will be dumped in log."
+    )
+    public double getTransactionTimeDumpSamplesCoefficient();
+
+    /**
+     * Sets the coefficient for samples of completed transactions that will be dumped in log.
+     *
+     * @param coefficient Coefficient.
+     */
+    @MXBeanDescription(
+        "Sets the coefficient for samples of completed transactions that will be dumped in log."
+    )
+    @MXBeanParametersNames("coefficient")
+    @MXBeanParametersDescriptions("Samples coefficient.")
+    public void setTransactionTimeDumpSamplesCoefficient(double coefficient);
+
+    /**
+     * Returns the limit of samples of completed transactions that will be dumped in log per second,
+     * if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>.
+     * Must be integer value greater than <code>0</code>.
+     *
+     * @return Limit value.
+     */
+    @MXBeanDescription(
+        "Returns the limit of samples of completed transactions that will be dumped in log per second, " +
+        "if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>. " +
+        "Must be integer value greater than <code>0</code>."
+    )
+    public int getTransactionTimeDumpSamplesPerSecondLimit();
+
+    /**
+     * Sets the limit of samples of completed transactions that will be dumped in log per second,
+     * if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>.
+     * Must be integer value greater than <code>0</code>.
+     *
+     * @param limit Limit value.
+     */
+    @MXBeanDescription(
+        "Sets the limit of samples of completed transactions that will be dumped in log per second, " +
+        "if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>. " +
+        "Must be integer value greater than <code>0</code>."
+    )
+    @MXBeanParametersNames("limit")
+    @MXBeanParametersDescriptions("Samples per second limit.")
+    public void setTransactionTimeDumpSamplesPerSecondLimit(int limit);
 }

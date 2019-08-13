@@ -16,20 +16,14 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.lang.management.ManagementFactory;
 import java.util.Set;
 import javax.management.DynamicMBean;
 import javax.management.MBeanFeatureInfo;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
@@ -82,7 +76,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSysJmxMetrics() throws Exception {
-        DynamicMBean sysMBean = metricSet(null, SYS_METRICS);
+        DynamicMBean sysMBean = metricSet(ignite.name(), null, SYS_METRICS);
 
         Set<String> res = stream(sysMBean.getMBeanInfo().getAttributes())
             .map(MBeanFeatureInfo::getName)
@@ -99,7 +93,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testDataRegionJmxMetrics() throws Exception {
-        DynamicMBean dataRegionMBean = metricSet("io", "dataregion.default");
+        DynamicMBean dataRegionMBean = metricSet(ignite.name(), "io", "dataregion.default");
 
         Set<String> res = stream(dataRegionMBean.getMBeanInfo().getAttributes())
             .map(MBeanFeatureInfo::getName)
@@ -118,29 +112,17 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertThrowsWithCause(new RunnableX() {
             @Override public void runx() throws Exception {
-                metricSet("filtered", "metric");
+                metricSet(ignite.name(), "filtered", "metric");
             }
         }, IgniteException.class);
 
-        DynamicMBean bean1 = metricSet("other", "prefix");
+        DynamicMBean bean1 = metricSet(ignite.name(), "other", "prefix");
 
         assertEquals(42L, bean1.getAttribute("test"));
         assertEquals(43L, bean1.getAttribute("test2"));
 
-        DynamicMBean bean2 = metricSet("other", "prefix2");
+        DynamicMBean bean2 = metricSet(ignite.name(), "other", "prefix2");
 
         assertEquals(44L, bean2.getAttribute("test3"));
-    }
-
-    /** */
-    public DynamicMBean metricSet(String grp, String name) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(ignite.name(), grp, name);
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
     }
 }

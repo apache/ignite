@@ -105,6 +105,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
+        tx.enterSystemSection();
+
         try {
             cctx.kernalContext().gateway().readLock();
         }
@@ -124,6 +126,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     private void leave() {
         try {
             CU.unwindEvicts(cctx);
+
+            tx.leaveSystemSection();
         }
         finally {
             cctx.kernalContext().gateway().readUnlock();
