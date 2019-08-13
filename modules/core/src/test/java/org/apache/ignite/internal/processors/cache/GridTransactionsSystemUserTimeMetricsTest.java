@@ -106,6 +106,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     /** */
     private final TransactionDumpListener transactionDumpsSkippedLsnr =
         new TransactionDumpListener(TRANSACTION_TIME_DUMPS_SKIPPED_REGEX);
+
     /** */
     private final ListeningTestLogger testLog = new ListeningTestLogger(false, log());
 
