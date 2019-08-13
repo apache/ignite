@@ -166,7 +166,7 @@ final class BinaryMetadataTransport {
      * @param newMeta Metadata proposed for update.
      * @return Future to wait for update result on.
      */
-    GridFutureAdapter<MetadataUpdateResult>  requestMetadataUpdate(BinaryMetadata newMeta) {
+    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata newMeta) {
         int typeId = newMeta.typeId();
 
         MetadataUpdateResultFuture resFut;

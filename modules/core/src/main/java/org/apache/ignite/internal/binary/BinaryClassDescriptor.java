@@ -404,6 +404,20 @@ public class BinaryClassDescriptor {
     }
 
     /**
+     * @return {@code True} if the type is registered as an OBJECT.
+     */
+    boolean isObject() {
+        return mode == BinaryWriteMode.OBJECT;
+    }
+
+    /**
+     * @return {@code True} if the type is registered as a BINARY object.
+     */
+    boolean isBinary() {
+        return mode == BinaryWriteMode.BINARY;
+    }
+
+    /**
      * @return Described class.
      */
     Class<?> describedClass() {
@@ -911,6 +925,56 @@ public class BinaryClassDescriptor {
 
             throw new BinaryObjectException(msg, e);
         }
+    }
+
+    /**
+     * @return A copy of this {@code BinaryClassDescriptor} marked as registered.
+     */
+    BinaryClassDescriptor makeRegistered() {
+        if (registered)
+            return this;
+        else
+            return new BinaryClassDescriptor(ctx,
+                cls,
+                userType,
+                typeId,
+                typeName,
+                affKeyFieldName,
+                mapper,
+                initialSerializer,
+                stableFieldsMeta != null,
+                true);
+    }
+
+    /**
+     * @return Instance of {@link BinaryMetadata} for this type.
+     */
+    BinaryMetadata metadata() {
+        return new BinaryMetadata(
+            typeId,
+            typeName,
+            stableFieldsMeta,
+            affKeyFieldName,
+            null,
+            isEnum(),
+            cls.isEnum() ? enumMap(cls) : null);
+    }
+
+    /**
+     * @param cls Enum class.
+     * @return Enum name to ordinal mapping.
+     */
+    private static Map<String, Integer> enumMap(Class<?> cls) {
+        assert cls.isEnum();
+
+        Object[] enumVals = cls.getEnumConstants();
+
+        Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
+
+        for (Object enumVal : enumVals)
+            enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
+
+        return enumMap;
     }
 
     /**

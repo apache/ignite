@@ -174,7 +174,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize() throws BinaryObjectException {
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), true);
+        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), false);
 
         return (T)BinaryEnumCache.get(cls, ord);
     }
@@ -427,14 +427,5 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         }
 
         return reader.afterMessageRead(BinaryEnumObjectImpl.class);
-    }
-
-    /**
-     * @param cls type to examine.
-     * @return true if typeId equals for passed type and current
-     * binary enum.
-     */
-    public boolean isTypeEquals(final Class<?> cls) {
-        return ctx.descriptorForClass(cls, false, false).typeId() == typeId();
     }
 }
