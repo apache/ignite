@@ -220,6 +220,13 @@ public class H2QueryInfo {
     }
 
     /**
+     * @return Lazy flag.
+     */
+    public boolean lazy() {
+        return lazy;
+    }
+
+    /**
      * Query type.
      */
     public enum QueryType {
