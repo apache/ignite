@@ -96,6 +96,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** Wrapper for tree pages operations. Noop by default. Override for test purposes. */
     public static volatile PageHandlerWrapper<Result> pageHndWrapper = (tree, hnd) -> hnd;
 
+    /** Destroy msg. */
+    public static final String CONC_DESTROY_MSG = "Tree is being concurrently destroyed: ";
+
     /** */
     private static volatile boolean interrupted;
 
@@ -992,7 +995,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private void checkDestroyed() {
         if (destroyed.get())
-            throw new IllegalStateException("Tree is being concurrently destroyed: " + getName());
+            throw new IllegalStateException(CONC_DESTROY_MSG + getName());
     }
 
     /** {@inheritDoc} */
