@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
+import org.apache.ignite.internal.processors.cache.GridTransactionsSystemUserTimeMetricsTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
@@ -111,6 +112,8 @@ public class IgniteCacheTestSuite7 extends TestSuite {
 
         suite.addTestSuite(CachePartitionLossDetectionOnNodeLeftTest.class);
         suite.addTestSuite(CachePartitionLostWhileClearingTest.class);
+
+        suite.addTestSuite(GridTransactionsSystemUserTimeMetricsTest.class);
 
         return suite;
     }
