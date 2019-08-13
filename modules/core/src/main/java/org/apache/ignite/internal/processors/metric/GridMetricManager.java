@@ -126,8 +126,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** GC CPU load metric name. */
     public static final String GC_CPU_LOAD = "GcCpuLoad";
 
+    /** GC CPU load metric description. */
+    public static final String GC_CPU_LOAD_DESCRIPTION = "GC CPU load.";
+
     /** CPU load metric name. */
     public static final String CPU_LOAD = "CpuLoad";
+
+    /** CPU load metric description. */
+    public static final String CPU_LOAD_DESCRIPTION = "CPU load.";
 
     /** Up time metric name. */
     public static final String UP_TIME = "UpTime";
@@ -214,8 +220,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         MetricRegistry sysreg = registry(SYS_METRICS);
 
-        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
-        cpuLoad = sysreg.doubleMetric(CPU_LOAD, "CPU load.");
+        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
+        cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
 
         sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
         sysreg.register(UP_TIME, rt::getUptime, null);
