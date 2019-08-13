@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -45,8 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -66,9 +64,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
     /** */
     private int gridCount = 1;
-
-    /** Server listening logger. */
-    private ListeningTestLogger srvLog;
 
     /**
      * {@inheritDoc}
@@ -115,9 +110,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
                 )
             );
         }
-
-        if (srvLog != null)
-            igniteCfg.setGridLogger(srvLog);
 
         return igniteCfg;
     }
@@ -291,69 +283,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             cleanPersistenceDir();
         }
-    }
-
-    /**
-     * Tests inline size changing.
-     */
-    public void testInlineSizeChange() throws Exception {
-        isPersistenceEnabled = true;
-
-        indexes = Collections.singletonList(new QueryIndex("valStr"));
-
-        inlineSize = 33;
-
-        srvLog = new ListeningTestLogger(false, log);
-
-        String msg = "New inline size for idx=.* will not be applied";
-
-        LogListener lstn = LogListener.matches(Pattern.compile(msg)).build();
-
-        srvLog.registerListener(lstn);
-
-        IgniteEx ig0 = startGrid(0);
-
-        ig0.cluster().active(true);
-
-        populateCache();
-
-        IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 1 PARALLEL 28"));
-
-        List<List<?>> res = cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
-
-        log.info("exp: " + res.get(0).get(0));
-
-        assertFalse(lstn.check());
-
-        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
-
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 2 PARALLEL 28"));
-
-        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
-
-        assertFalse(lstn.check());
-
-        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
-
-        stopAllGrids();
-
-        ig0 = startGrid(0);
-
-        ig0.cluster().active(true);
-
-        cache = ig0.cache(DEFAULT_CACHE_NAME);
-
-        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 3 PARALLEL 28"));
-
-        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
-
-        assertFalse(lstn.check());
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /** */

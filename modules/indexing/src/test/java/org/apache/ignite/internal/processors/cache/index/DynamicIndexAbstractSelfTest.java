@@ -49,8 +49,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
-import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.CONC_DESTROY_MSG;
-
 /**
  * Tests for dynamic index creation.
  */
@@ -407,36 +405,28 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param expSize Expected size.
      */
     protected static void assertSqlSimpleData(Ignite node, String sql, int expSize) {
-        try {
-            SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1);
+        SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1);
 
-            List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
+        List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
 
-            Set<Long> ids = new HashSet<>();
+        Set<Long> ids = new HashSet<>();
 
-            for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
-                long id = entry.getKey().field(FIELD_KEY);
+        for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
+            long id = entry.getKey().field(FIELD_KEY);
 
-                long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
-                long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
+            long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
+            long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
 
-                assertTrue(field1 >= SQL_ARG_1);
+            assertTrue(field1 >= SQL_ARG_1);
 
-                assertEquals(id, field1);
-                assertEquals(id, field2);
+            assertEquals(id, field1);
+            assertEquals(id, field2);
 
-                assertTrue(ids.add(id));
-            }
-
-            assertEquals("Size mismatch [node=" + node.name() + ", exp=" + expSize + ", actual=" + res.size() +
-                ", ids=" + ids + ']', expSize, res.size());
+            assertTrue(ids.add(id));
         }
-        catch (Exception e) {
-            for (Throwable th = e; th != null; th = th.getCause()) {
-                if (th.getMessage().contains(CONC_DESTROY_MSG))
-                    return;
-            }
-        }
+
+        assertEquals("Size mismatch [node=" + node.name() + ", exp=" + expSize + ", actual=" + res.size() +
+            ", ids=" + ids + ']', expSize, res.size());
     }
 
     /**
