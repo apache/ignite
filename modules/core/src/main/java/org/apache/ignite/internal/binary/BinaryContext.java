@@ -84,6 +84,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
@@ -532,92 +533,129 @@ public class BinaryContext {
     }
 
     /**
-     * @param cls Class.
+     * Attempts registration of the provided class. If the type is already registered, then an existing descriptor is
+     * returned.
+     *
+     * @param cls Class to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
      * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean failIfUnregistered)
-        throws BinaryObjectException {
-        return descriptorForClass(cls, deserialize, failIfUnregistered, false);
+    @NotNull public BinaryClassDescriptor registerClass(
+        Class<?> cls,
+        boolean registerMeta,
+        boolean failIfUnregistered
+    ) throws BinaryObjectException {
+        return registerClass(cls, registerMeta, failIfUnregistered, false);
     }
 
     /**
      * @param cls Class.
      * @param failIfUnregistered Throw exception if class isn't registered.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
      * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(
+    @NotNull public BinaryClassDescriptor registerClass(
         Class<?> cls,
-        boolean deserialize,
+        boolean registerMeta,
         boolean failIfUnregistered,
         boolean onlyLocReg
     ) throws BinaryObjectException {
         assert cls != null;
 
-        BinaryClassDescriptor desc = descByCls.get(cls);
+        BinaryClassDescriptor desc = descriptorForClass(cls);
 
-        if (desc == null) {
+        if (!desc.registered()) {
             if (failIfUnregistered)
                 throw new UnregisteredClassException(cls);
-
-            desc = registerClassDescriptor(cls, deserialize, onlyLocReg);
-        }
-        else if (!desc.registered()) {
-            if (!desc.userType()) {
-                BinaryClassDescriptor desc0 = new BinaryClassDescriptor(
-                    this,
-                    desc.describedClass(),
-                    false,
-                    desc.typeId(),
-                    desc.typeName(),
-                    desc.affFieldKeyName(),
-                    desc.mapper(),
-                    desc.initialSerializer(),
-                    false,
-                    true
-                );
-
-                if (descByCls.replace(cls, desc, desc0)) {
-                    Collection<BinarySchema> schemas =
-                        desc0.schema() != null ? Collections.singleton(desc.schema()) : null;
-
-                    BinaryMetadata meta = new BinaryMetadata(desc0.typeId(),
-                        desc0.typeName(),
-                        desc0.fieldsMeta(),
-                        desc0.affFieldKeyName(),
-                        schemas, desc0.isEnum(),
-                        cls.isEnum() ? enumMap(cls) : null);
-
-                    metaHnd.addMeta(desc0.typeId(), meta.wrap(this), false);
-
-                    return desc0;
-                }
-            }
-            else {
-                if (failIfUnregistered)
-                    throw new UnregisteredClassException(cls);
-
-                desc = registerUserClassDescriptor(desc, onlyLocReg);
-            }
+            else
+                desc = registerDescriptor(desc, registerMeta, onlyLocReg);
         }
 
         return desc;
     }
 
     /**
+     * @param cls Class.
+     * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
+     * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
+     */
+    @NotNull BinaryClassDescriptor descriptorForClass(Class<?> cls) {
+        assert cls != null;
+
+        BinaryClassDescriptor desc = descByCls.get(cls);
+
+        if (desc != null)
+            return desc;
+        else
+            return createDescriptorForClass(cls);
+    }
+
+    /**
+     * @param cls Class to create a descriptor for.
+     * @return A descriptor for the given class. The descriptor needs to be registered in order to be used.
+     */
+    @NotNull private BinaryClassDescriptor createDescriptorForClass(Class<?> cls) {
+        String clsName = cls.getName();
+
+        if (marshCtx.isSystemType(clsName)) {
+            BinarySerializer serializer = null;
+
+            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
+                serializer = new BinaryReflectiveSerializer();
+
+            return new BinaryClassDescriptor(this,
+                cls,
+                false,
+                clsName.hashCode(),
+                clsName,
+                null,
+                SIMPLE_NAME_LOWER_CASE_MAPPER,
+                serializer,
+                false,
+                false
+            );
+        }
+        else {
+            BinaryInternalMapper mapper = userTypeMapper(clsName);
+
+            final String typeName = mapper.typeName(clsName);
+
+            final int typeId = mapper.typeId(clsName);
+
+            BinarySerializer serializer = serializerForClass(cls);
+
+            String affFieldName = affinityFieldName(cls);
+
+            return new BinaryClassDescriptor(this,
+                cls,
+                true,
+                typeId,
+                typeName,
+                affFieldName,
+                mapper,
+                serializer,
+                true,
+                false
+            );
+        }
+    }
+
+    /**
      * @param userType User type or not.
      * @param typeId Type ID.
      * @param ldr Class loader.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
         boolean userType,
         int typeId,
         ClassLoader ldr,
-        boolean deserialize
+        boolean registerMeta
     ) {
         assert typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
@@ -639,21 +677,21 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
         }
 
         if (desc == null) {
-            desc = registerClassDescriptor(cls, deserialize, false);
+            desc = registerClass(cls, registerMeta, false);
 
             assert desc.typeId() == typeId : "Duplicate typeId [typeId=" + typeId + ", cls=" + cls
                 + ", desc=" + desc + "]";
@@ -663,141 +701,71 @@ public class BinaryContext {
     }
 
     /**
-     * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
+     * Attempts registration of the provided {@link BinaryClassDescriptor} in the cluster.
      *
-     * @param cls Class.
+     * @param desc Class descriptor to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
      * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
-     * @return Class descriptor.
+     * @return Registered class descriptor.
      */
-    private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize, boolean onlyLocReg) {
-        BinaryClassDescriptor desc;
+    @NotNull public BinaryClassDescriptor registerDescriptor(
+        BinaryClassDescriptor desc,
+        boolean registerMeta,
+        boolean onlyLocReg
+    ) {
+        if (desc.userType())
+            return registerUserClassDescriptor(desc, registerMeta, onlyLocReg);
+        else {
+            BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-        String clsName = cls.getName();
+            BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
 
-        if (marshCtx.isSystemType(clsName)) {
-            BinarySerializer serializer = null;
-
-            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
-                serializer = new BinaryReflectiveSerializer();
-
-            desc = new BinaryClassDescriptor(this,
-                cls,
-                false,
-                clsName.hashCode(),
-                clsName,
-                null,
-                SIMPLE_NAME_LOWER_CASE_MAPPER,
-                serializer,
-                false,
-                true /* registered */
-            );
-
-            BinaryClassDescriptor old = descByCls.putIfAbsent(cls, desc);
-
-            if (old != null)
-                desc = old;
+            return old != null
+                ? old
+                : regDesc;
         }
-        else
-            desc = registerUserClassDescriptor(cls, deserialize, onlyLocReg);
-
-        return desc;
     }
 
     /**
-     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
+     * Attempts registration of the provided {@link BinaryClassDescriptor} in the cluster. The provided descriptor should correspond
+     * to a user class.
      *
-     * @param cls Class.
+     * @param desc Class descriptor to register.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the class descriptor.
      * @param onlyLocReg {@code true} if descriptor need to register only locally.
      * @return Class descriptor.
      */
-    private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize, boolean onlyLocReg) {
-        boolean registered;
+    @NotNull private BinaryClassDescriptor registerUserClassDescriptor(
+        BinaryClassDescriptor desc,
+        boolean registerMeta,
+        boolean onlyLocReg
+    ) {
+        assert desc.userType() : "The descriptor doesn't correspond to a user class.";
 
-        final String clsName = cls.getName();
+        Class<?> cls = desc.describedClass();
 
-        BinaryInternalMapper mapper = userTypeMapper(clsName);
+        int typeId = desc.typeId();
 
-        final String typeName = mapper.typeName(clsName);
-
-        final int typeId = mapper.typeId(clsName);
-
-        registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg);
-
-        BinarySerializer serializer = serializerForClass(cls);
-
-        String affFieldName = affinityFieldName(cls);
-
-        BinaryClassDescriptor desc = new BinaryClassDescriptor(this,
-            cls,
-            true,
-            typeId,
-            typeName,
-            affFieldName,
-            mapper,
-            serializer,
-            true,
-            registered
-        );
-
-        if (!deserialize) {
-            BinaryMetadata binaryMetadata = new BinaryMetadata(
-                typeId,
-                typeName,
-                desc.fieldsMeta(),
-                affFieldName,
-                null,
-                desc.isEnum(),
-                cls.isEnum() ? enumMap(cls) : null
-            );
-
-            if (onlyLocReg)
-                metaHnd.addMetaLocally(typeId, binaryMetadata.wrap(this), false);
-            else
-                metaHnd.addMeta(typeId, binaryMetadata.wrap(this), false);
-        }
-
-        descByCls.put(cls, desc);
-
-        typeId2Mapper.putIfAbsent(typeId, mapper);
-
-        return desc;
-    }
-
-    /**
-     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
-     *
-     * @param desc Old descriptor that should be re-registered.
-     * @param onlyLocReg {@code true} if descriptor need to register only locally.
-     * @return Class descriptor.
-     */
-    private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc, boolean onlyLocReg) {
-        boolean registered;
-
-        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName(), false, onlyLocReg);
+        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg);
 
         if (registered) {
-            BinarySerializer serializer = desc.initialSerializer();
+            BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-            if (serializer == null)
-                serializer = serializerForClass(desc.describedClass());
+            if (registerMeta) {
+                if (onlyLocReg)
+                    metaHnd.addMetaLocally(typeId, regDesc.metadata().wrap(this), false);
+                else
+                    metaHnd.addMeta(typeId, regDesc.metadata().wrap(this), false);
+            }
 
-            desc = new BinaryClassDescriptor(
-                this,
-                desc.describedClass(),
-                true,
-                desc.typeId(),
-                desc.typeName(),
-                desc.affFieldKeyName(),
-                desc.mapper(),
-                serializer,
-                true,
-                true
-            );
+            descByCls.put(cls, regDesc);
 
-            descByCls.put(desc.describedClass(), desc);
+            typeId2Mapper.putIfAbsent(typeId, regDesc.mapper());
+
+            return regDesc;
         }
-
-        return desc;
+        else
+            return desc;
     }
 
     /**
@@ -1138,10 +1106,10 @@ public class BinaryContext {
     }
 
     /**
-     * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client. Other
-     * {@link BinaryContext}'s "register" methods and method {@link BinaryContext#descriptorForClass(Class, boolean,
-     * boolean)} already call this functionality so use this method only when registering class names whose {@link
-     * Class} is unknown.
+     * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
+     * Other {@link BinaryContext}'s "register" methods and method
+     * {@link BinaryContext#registerClass(Class, boolean, boolean)} already call this functionality
+     * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
@@ -1394,23 +1362,6 @@ public class BinaryContext {
         }
 
         U.clearClassCache(ldr);
-    }
-
-    /**
-     * @param cls Class
-     * @return Enum name to ordinal mapping.
-     */
-    private static Map<String, Integer> enumMap(Class<?> cls) {
-        assert cls.isEnum();
-
-        Object[] enumVals = cls.getEnumConstants();
-
-        Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
-
-        for (Object enumVal : enumVals)
-            enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
-
-        return enumMap;
     }
 
     /**

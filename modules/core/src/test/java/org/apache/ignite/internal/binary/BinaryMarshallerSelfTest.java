@@ -1979,7 +1979,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         int typeId = ctx.typeId(Value.class.getName());
 
-        BinaryClassDescriptor descriptor = ctx.descriptorForTypeId(true, typeId, null, false);
+        BinaryClassDescriptor descriptor = ctx.descriptorForTypeId(true, typeId, null, true);
 
         assertEquals(Value.class, descriptor.describedClass());
         assertEquals(true, descriptor.registered());
@@ -3000,7 +3000,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             if (id == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
-            BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, false);
+            BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, true);
 
             assertEquals(desc.typeId(), bCtx.typeId(desc.describedClass().getName()));
         }
