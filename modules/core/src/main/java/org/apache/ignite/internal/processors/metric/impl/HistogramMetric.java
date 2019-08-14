@@ -69,12 +69,18 @@ public class HistogramMetric {
         holder = new HistogramHolder(bounds);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Resets the histogram.
+     */
     public void reset() {
         reset(holder.bounds);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Returns content of histogram buckets.
+     *
+     * @return Long array, histogram buckets.
+     */
     public long[] value() {
         HistogramHolder h = holder;
 
@@ -97,7 +103,11 @@ public class HistogramMetric {
         return res;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Metric type.
+     *
+     * @return Metric type.
+     */
     public Class<long[]> type() {
         return long[].class;
     }

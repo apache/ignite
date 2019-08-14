@@ -42,7 +42,9 @@ public class HitRateMetric {
         cntr = new HitRateMetricImpl(rateTimeInterval, size);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Resets the metric.
+     */
     public void reset() {
         cntr = new HitRateMetricImpl(cntr.rateTimeInterval, cntr.size);
     }
@@ -71,7 +73,11 @@ public class HitRateMetric {
         add(1);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Returns the value of metric.
+     *
+     * @return Value.
+     */
     public long value() {
         return cntr.value();
     }
