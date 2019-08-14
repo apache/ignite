@@ -3095,7 +3095,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * thrown when the timeout occured. The default value is taken from {@link IgniteConfiguration#getNetworkTimeout()}.
      * <p>
      * If reconnection is not occurred withing configured timeout interval the timeout object will be fired which
-     * clears corresponding to the used topic the {@link ReceiverContext}.
+     * clears corresponding to the used topic the {@link GridIoManager.ReceiverContext}.
      *
      * <h2>Release resources</h2>
      * <p>
