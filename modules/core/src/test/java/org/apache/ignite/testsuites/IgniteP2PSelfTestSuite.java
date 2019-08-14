@@ -28,6 +28,7 @@ import org.apache.ignite.p2p.GridP2PDifferentClassLoaderSelfTest;
 import org.apache.ignite.p2p.GridP2PDoubleDeploymentSelfTest;
 import org.apache.ignite.p2p.GridP2PHotRedeploymentSelfTest;
 import org.apache.ignite.p2p.GridP2PJobClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest;
 import org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest;
 import org.apache.ignite.p2p.GridP2PMissedResourceCacheSizeSelfTest;
 import org.apache.ignite.p2p.GridP2PNodeLeftSelfTest;
@@ -80,6 +81,7 @@ public class IgniteP2PSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(SharedDeploymentTest.class));
         suite.addTest(new TestSuite(P2PScanQueryUndeployTest.class));
         suite.addTest(new TestSuite(GridP2PComputeWithNestedEntryProcessorTest.class));
+        suite.addTest(new TestSuite(GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest.class));
         GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
 
         return suite;
