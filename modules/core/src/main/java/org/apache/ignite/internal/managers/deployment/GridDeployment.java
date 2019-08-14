@@ -456,7 +456,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
 
         if (cls == null) {
             try {
-                cls = Class.forName(clsName, true, clsLdr);
+                cls = U.forName(clsName, clsLdr);
 
                 Class<?> cur = clss.putIfAbsent(clsName, cls);
 
@@ -477,7 +477,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                         return cls;
                     else if (!a.equals(clsName)) {
                         try {
-                            cls = Class.forName(a, true, clsLdr);
+                            cls = U.forName(a, clsLdr);
                         }
                         catch (ClassNotFoundException ignored0) {
                             continue;
