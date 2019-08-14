@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import userMenu from './components/user-menu/component';
-import {component as content} from './components/web-console-header-content/component';
-import {component as demo} from './components/demo-mode-button/component';
-import {component as helpMenu} from './components/help-menu/component';
+import template from './template.pug';
+import controller from './controller';
+import './style.scss';
 
-export default angular
-    .module('ignite-console.web-console-header', [])
-    .component('webConsoleHeader', component)
-    .component('webConsoleHeaderContent', content)
-    .component('helpMenu', helpMenu)
-    .component('userMenu', userMenu)
-    .component('demoModeButton', demo);
+export const component: ng.IComponentOptions = {
+    template,
+    controller
+};

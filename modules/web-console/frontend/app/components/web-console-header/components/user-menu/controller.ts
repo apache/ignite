@@ -18,19 +18,17 @@ import {UserService} from 'app/modules/user/User.service';
 import {tap} from 'rxjs/operators';
 
 export default class UserMenu {
-    static $inject = ['User', 'IgniteUserbar', 'AclService', '$state', 'gettingStarted'];
+    static $inject = ['User', 'IgniteUserbar', 'AclService', '$state'];
 
     constructor(
         private User: UserService,
         private IgniteUserbar: any,
         private AclService: any,
-        private $state: any,
-        private gettingStarted: any
+        private $state: any
     ) {}
 
     items = [
-        {text: 'Profile', sref: 'base.settings.profile'},
-        {text: 'Getting started', click: '$ctrl.gettingStarted.tryShow(true)'}
+        {text: 'Profile', sref: 'base.settings.profile'}
     ];
 
     user$ = this.User.current$;
