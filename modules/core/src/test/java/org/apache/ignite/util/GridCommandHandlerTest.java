@@ -1368,8 +1368,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
             .setBackups(1));
 
         try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 1000; i++)
-                streamer.addData(i, i);
+            for (int i = 0; i < 10000; i++)
+                streamer.addData(i, new byte[i]);
         }
 
         String g1Name = grid(1).name();
