@@ -17,6 +17,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 
 /**
  *
@@ -35,5 +37,19 @@ public class IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse ex
         super.afterTest();
 
         System.clearProperty(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testReActivateSimple_5_Servers_4_Clients_FromClient() throws Exception {
+        Assume.assumeFalse("https://ggsystems.atlassian.net/browse/GG-22712", MvccFeatureChecker.forcedMvcc());
+
+        super.testReActivateSimple_5_Servers_4_Clients_FromClient();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
+        Assume.assumeFalse("https://ggsystems.atlassian.net/browse/GG-22712", MvccFeatureChecker.forcedMvcc());
+
+        super.testReActivateSimple_5_Servers_4_Clients_FromServer();
     }
 }
