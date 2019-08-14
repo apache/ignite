@@ -33,6 +33,8 @@ import org.h2.table.TableFilter;
 
 import java.util.HashSet;
 
+import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
+
 /**
  * Meta view H2 index.
  */
@@ -84,7 +86,7 @@ public class SqlSystemIndex extends BaseIndex {
         HashSet<Column> allColsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
+        double baseCost = getTreeIndexCost(this, masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
 
         if (((SqlSystemTable)table).view.isDistributed())
             baseCost = baseCost * DISTRIBUTED_MUL;

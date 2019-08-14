@@ -25,6 +25,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 
+import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
+
 /**
  * Wrapper type for primary key.
  */
@@ -71,7 +73,7 @@ public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
         SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rows = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
+        double baseCost = getTreeIndexCost(this, masks, rows, filters, filter, sortOrder, true, allColumnsSet);
 
         int mul = delegate().getDistributedMultiplier(ses, filters, filter);
 
