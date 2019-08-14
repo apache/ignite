@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceStatisticsUtils.RebalanceFutureStatistics;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -73,10 +75,17 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceStatisticsUtils.rebalanceStatistics;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
@@ -114,6 +123,10 @@ public class GridDhtPartitionDemander {
 
     /** Cached rebalance topics. */
     private final Map<Integer, Object> rebalanceTopics;
+
+    /** Futures involved in the last rebalance. For statistics. */
+    @GridToStringExclude
+    private final Collection<RebalanceFuture> lastStatFutures = new ConcurrentLinkedQueue<>();
 
     /**
      * @param grp Ccahe group.
@@ -362,17 +375,18 @@ public class GridDhtPartitionDemander {
             }
 
             return () -> {
-                if (next != null)
-                    fut.listen(f -> {
-                        try {
-                            if (f.get()) // Not cancelled.
-                                next.run(); // Starts next cache rebalancing (according to the order).
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (log.isDebugEnabled())
-                                log.debug(e.getMessage());
-                        }
-                    });
+                fut.listen(f -> {
+                    try {
+                        printRebalanceStatistics();
+
+                        if (f.get() && nonNull(next))
+                            next.run();
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug(e.getMessage());
+                    }
+                });
 
                 requestPartitions(fut, assignments);
             };
@@ -517,6 +531,8 @@ public class GridDhtPartitionDemander {
                             return;
 
                         try {
+                            fut.stat.addMessageStatistics(topicId, node);
+
                             ctx.io().sendOrderedMessage(node, rebalanceTopics.get(topicId),
                                 demandMsg.convertIfNeeded(node.version()), grp.ioPolicy(), demandMsg.timeout());
 
@@ -738,8 +754,10 @@ public class GridDhtPartitionDemander {
             }
         }
 
-        try {
-            AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
+            try {
+                fut.stat.addReceivePartitionStatistics(topicId, ctx.node(nodeId), supplyMsg);
+
+                AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
             // Preload.
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
@@ -1023,6 +1041,10 @@ public class GridDhtPartitionDemander {
 
         /** The number of rebalance routines. */
         private final long routines;
+
+        /** Rebalance statistics */
+        @GridToStringExclude
+        final RebalanceFutureStatistics stat = new RebalanceFutureStatistics();
 
         /**
          * @param grp Cache group.
@@ -1322,6 +1344,76 @@ public class GridDhtPartitionDemander {
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(RebalanceFuture.class, this);
+        }
+    }
+
+    /**
+     * Collect demander per cache groups. For print statistics.
+     *
+     * @return List demanders.
+     * */
+    private List<GridDhtPartitionDemander> demanders(){
+        return ctx.cacheContexts().stream()
+            .map(GridCacheContext::preloader)
+            .filter(GridDhtPreloader.class::isInstance)
+            .map(GridDhtPreloader.class::cast)
+            .map(GridDhtPreloader::demander)
+            .collect(toList());
+    }
+
+    /**
+     * Print rebalance statistics into log.
+     * Statistic will print if
+     * {@link RebalanceStatisticsUtils#printRebalanceStatistics()
+     * printRebalanceStatistics()} == true.
+     * To use correctly you need to call this method exactly once right after
+     * {@code RebalanceFuture} was completed (successfully or not).
+     * <p/>
+     * If {@link #rebalanceFut} was done successfully, prints statistics
+     * for cache group.
+     * <p/>
+     * If the whole rebalance is over, print statistics for all cache groups.
+     * The end of the rebalance is determined by the successful done all
+     * {@code RebalanceFuture}'s.
+     *
+     * @throws IgniteCheckedException when get result {@code RebalanceFuture}
+     * @see RebalanceFuture RebalanceFuture
+     */
+    private void printRebalanceStatistics() throws IgniteCheckedException {
+        if (!RebalanceStatisticsUtils.printRebalanceStatistics())
+            return;
+
+        RebalanceFuture currRebFut = rebalanceFut;
+        assert currRebFut.isDone() : "RebalanceFuture should be done.";
+
+        currRebFut.stat.endTime(currentTimeMillis());
+        lastStatFutures.add(currRebFut);
+
+        if (currRebFut.get()) //Success rebalance for current cache group
+            log.info(rebalanceStatistics(false, singletonMap(grp, singletonList(currRebFut))));
+        else
+            return;
+
+        for (GridCacheContext gridCacheContext : ctx.cacheContexts()) {
+            IgniteInternalFuture<Boolean> rebalanceFuture = gridCacheContext.preloader().rebalanceFuture();
+
+            if (!rebalanceFuture.isDone() || !rebalanceFuture.get()) //Rebalance not done or not success
+                return;
+        }
+
+        List<GridDhtPartitionDemander> demanders = demanders();
+
+        Map<CacheGroupContext, Collection<RebalanceFuture>> rebFutrs =
+            demanders.stream().collect(toMap(demander -> demander.grp, demander -> demander.lastStatFutures));
+
+        try {
+            log.info(rebalanceStatistics(true, rebFutrs));
+        }
+        finally {
+            demanders.forEach(demander -> {
+                demander.rebalanceFut.stat.clear();
+                demander.lastStatFutures.clear();
+            });
         }
     }
 }
