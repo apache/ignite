@@ -1653,7 +1653,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
-        ctx.addNodeAttribute("USE_POOL_FOR_LAZY", IgniteSystemProperties.getBoolean("USE_POOL_FOR_LAZY"));
+        ctx.addNodeAttribute("USE_POOL_FOR_LAZY_ATTR", IgniteSystemProperties.getBoolean("USE_POOL_FOR_LAZY"));
 
         final String[] incProps = cfg.getIncludeProperties();
 

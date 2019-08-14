@@ -931,8 +931,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (node.isClient() || node.isDaemon())
             return null;
 
-        Boolean locPoolFlag = ctx.discovery().localNode().attribute("USE_POOL_FOR_LAZY");
-        Boolean rmtPoolFlag = node.attribute("USE_POOL_FOR_LAZY");
+        Boolean locPoolFlag = ctx.discovery().localNode().attribute("USE_POOL_FOR_LAZY_ATTR");
+        Boolean rmtPoolFlag = node.attribute("USE_POOL_FOR_LAZY_ATTR");
 
         if (!F.eq(locPoolFlag, rmtPoolFlag))
             log.warning("Local USE_POOL_FOR_LAZY flag differs from remote nodeId=" + node.id());
