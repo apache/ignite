@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.metrics.impl;
 
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toJson;
 
@@ -27,7 +26,6 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toJs
  */
 public class MetricUtilsTest extends GridCommonAbstractTest {
     /** */
-    @Test
     public void testToJson() {
         HistogramMetric singleBucket = new HistogramMetric(new long[] { 1 });
 

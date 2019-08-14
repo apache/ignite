@@ -42,7 +42,6 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD;
@@ -162,7 +161,6 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     }
 
     /** */
-    @Test
     public void testTransactionsSystemUserTime() throws Exception {
         Ignite ignite = startGrids(2);
 
