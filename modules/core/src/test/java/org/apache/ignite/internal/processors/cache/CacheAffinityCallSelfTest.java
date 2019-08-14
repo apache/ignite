@@ -189,6 +189,47 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testAffinityCallMergedExchanges() throws Exception {
+        startGrids(SRVS + 1);
+
+        final Integer key = 1;
+
+        final IgniteEx client = grid(SRVS);
+
+        assertTrue(client.configuration().isClientMode());
+        assertNull(client.context().cache().cache(CACHE_NAME));
+
+        try {
+            grid(0).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+                new AffinityTopologyVersion(SRVS + 3, 0),
+                null
+            );
+
+            IgniteInternalFuture<IgniteEx> fut1 = GridTestUtils.runAsync(() -> startGrid(SRVS + 1));
+
+            assertTrue(GridTestUtils.waitForCondition(() -> client.context().cache().context()
+                .exchange().lastTopologyFuture()
+                .initialVersion().equals(new AffinityTopologyVersion(SRVS + 2, 0)), 5_000));
+
+            assertFalse(fut1.isDone());
+
+            IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(() ->
+                client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null)));
+
+            startGrid(SRVS + 2);
+
+            fut1.get();
+            fut2.get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
