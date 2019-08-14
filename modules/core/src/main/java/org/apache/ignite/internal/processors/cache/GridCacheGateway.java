@@ -132,6 +132,8 @@ public class GridCacheGateway<K, V> {
         ctx.tm().resetContext();
         ctx.mvcc().contextReset();
 
+        ctx.tm().leaveNearTxSystemSection();
+
         // Unwind eviction notifications.
         if (!ctx.shared().closed(ctx))
             CU.unwindEvicts(ctx);
@@ -168,6 +170,8 @@ public class GridCacheGateway<K, V> {
             throw new IgniteException("Failed to wait for cache preloader start [cacheName=" +
                 ctx.name() + "]", e);
         }
+
+        ctx.tm().enterNearTxSystemSection();
 
         onEnter(opCtx);
 
@@ -237,6 +241,8 @@ public class GridCacheGateway<K, V> {
 
         // Unwind eviction notifications.
         CU.unwindEvicts(ctx);
+
+        ctx.tm().leaveNearTxSystemSection();
 
         // Return back previous thread local operation context per call.
         ctx.operationContextPerCall(prev);

@@ -141,6 +141,36 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getLongTransactionTimeDumpThreshold() {
+        return ctx.cache().context().tm().longTransactionTimeDumpThreshold();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setLongTransactionTimeDumpThreshold(long threshold) {
+        ctx.cache().longTransactionTimeDumpThreshold(threshold);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getTransactionTimeDumpSamplesCoefficient() {
+        return ctx.cache().context().tm().transactionTimeDumpSamplesCoefficient();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionTimeDumpSamplesCoefficient(double coefficient) {
+        ctx.cache().transactionTimeDumpSamplesCoefficient(coefficient);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTransactionTimeDumpSamplesPerSecondLimit() {
+        return ctx.cache().context().tm().transactionTimeDumpSamplesPerSecondLimit();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionTimeDumpSamplesPerSecondLimit(int limit) {
+        ctx.cache().longTransactionTimeDumpSamplesPerSecondLimit(limit);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TransactionsMXBeanImpl.class, this);
     }
