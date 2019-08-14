@@ -278,6 +278,26 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public GridDeployment searchDeploymentCache(GridDeploymentMetadata meta) {
+        List<SharedDeployment> deps = null;
+
+        synchronized (mux) {
+            deps = cache.get(meta.userVersion());
+        }
+
+        if (deps != null) {
+            assert !deps.isEmpty();
+
+            for (SharedDeployment d : deps) {
+                if (d.hasParticipant(meta.senderNodeId(), meta.classLoaderId()))
+                    return d;
+            }
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public GridDeployment getDeployment(GridDeploymentMetadata meta) {
         assert meta != null;
 
@@ -356,22 +376,14 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                List<SharedDeployment> deps = cache.get(meta.userVersion());
+                dep = (SharedDeployment)searchDeploymentCache(meta);
 
-                if (deps != null) {
-                    assert !deps.isEmpty();
+                if (dep == null) {
+                    List<SharedDeployment> deps = cache.get(meta.userVersion());
 
-                    for (SharedDeployment d : deps) {
-                        if (d.hasParticipant(meta.senderNodeId(), meta.classLoaderId()) ||
-                            meta.senderNodeId().equals(ctx.localNodeId())) {
-                            // Done.
-                            dep = d;
+                    if (deps != null) {
+                        assert !deps.isEmpty();
 
-                            break;
-                        }
-                    }
-
-                    if (dep == null) {
                         checkRedeploy(meta);
 
                         // Find existing deployments that need to be checked
@@ -413,12 +425,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                             deps.add(dep);
                         }
                     }
-                }
-                else {
-                    checkRedeploy(meta);
+                    else {
+                        checkRedeploy(meta);
 
-                    // Create peer class loader.
-                    dep = createNewDeployment(meta, true);
+                        // Create peer class loader.
+                        dep = createNewDeployment(meta, true);
+                    }
                 }
             }
 
@@ -1195,8 +1207,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         boolean hasParticipant(UUID nodeId, IgniteUuid ldrId) {
             assert nodeId != null;
             assert ldrId != null;
-
-            assert Thread.holdsLock(mux);
 
             return classLoader().hasRegisteredNode(nodeId, ldrId);
         }
