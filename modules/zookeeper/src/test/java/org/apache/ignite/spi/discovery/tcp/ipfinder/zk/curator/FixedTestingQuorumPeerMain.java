@@ -19,6 +19,8 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator;
 
 import org.apache.curator.test.ZooKeeperMainFace;
 import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.admin.AdminServer;
+import org.apache.zookeeper.server.admin.AdminServer.AdminServerException;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
@@ -29,7 +31,7 @@ import java.nio.channels.ServerSocketChannel;
 /**
  */
 public class FixedTestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace {
-    @Override public void runFromConfig(QuorumPeerConfig config) throws IOException {
+    @Override public void runFromConfig(QuorumPeerConfig config) throws IOException, AdminServerException {
         quorumPeer = QuorumPeer.testingQuorumPeer();
         super.runFromConfig(config);
     }
