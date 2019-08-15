@@ -625,13 +625,4 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public void dumpDebugInfo() {
         // No-op
     }
-
-    /**
-     * Return demander.
-     *
-     * @return Demander.
-     * */
-    public GridDhtPartitionDemander demander() {
-        return demander;
-    }
 }
