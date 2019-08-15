@@ -39,8 +39,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -114,11 +114,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** System metrics prefix. */
     public static final String SYS_METRICS = "sys";
 
+    /** Partition map exchange metrics prefix. */
+    public static final String PME_METRICS = "pme";
+
+    /** Transaction metrics prefix. */
+    public static final String TX_METRICS = "tx";
+
     /** GC CPU load metric name. */
     public static final String GC_CPU_LOAD = "GcCpuLoad";
 
+    /** GC CPU load metric description. */
+    public static final String GC_CPU_LOAD_DESCRIPTION = "GC CPU load.";
+
     /** CPU load metric name. */
     public static final String CPU_LOAD = "CpuLoad";
+
+    /** CPU load metric description. */
+    public static final String CPU_LOAD_DESCRIPTION = "CPU load.";
 
     /** Up time metric name. */
     public static final String UP_TIME = "UpTime";
@@ -134,6 +146,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Daemon thread count metric name. */
     public static final String DAEMON_THREAD_CNT = "DaemonThreadCount";
+
+    /** PME duration metric name. */
+    public static final String PME_DURATION = "Duration";
+
+    /** PME cache operations blocked duration metric name. */
+    public static final String PME_OPS_BLOCKED_DURATION = "CacheOperationsBlockedDuration";
+
+    /** Histogram of PME durations metric name. */
+    public static final String PME_DURATION_HISTOGRAM = "DurationHistogram";
+
+    /** Histogram of blocking PME durations metric name. */
+    public static final String PME_OPS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
 
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
@@ -187,8 +211,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         MetricRegistry sysreg = registry(SYS_METRICS);
 
-        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
-        cpuLoad = sysreg.doubleMetric(CPU_LOAD, "CPU load.");
+        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
+        cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
 
         sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
         sysreg.register(UP_TIME, rt::getUptime, null);
@@ -198,6 +222,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
+
+        MetricRegistry pmeReg = registry(PME_METRICS);
+
+        long[] pmeBounds = new long[] {500, 1000, 5000, 30000};
+
+        pmeReg.histogram(PME_DURATION_HISTOGRAM, pmeBounds,
+            "Histogram of PME durations in milliseconds.");
+
+        pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
+            "Histogram of cache operations blocked PME durations in milliseconds.");
     }
 
     /** {@inheritDoc} */
