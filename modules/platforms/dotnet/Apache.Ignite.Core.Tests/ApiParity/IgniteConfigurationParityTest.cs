@@ -65,7 +65,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "PlatformConfiguration",
             "ExecutorConfiguration",
             "CommunicationFailureResolver",
-            "EncryptionSpi"
+            "EncryptionSpi",
+            "MetricExporterSpi"
         };
 
         /** Properties that are missing on .NET side. */
