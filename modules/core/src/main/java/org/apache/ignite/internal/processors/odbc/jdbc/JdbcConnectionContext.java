@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 
 /**
  * JDBC Connection Context.
@@ -65,7 +67,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -213,6 +215,15 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled, updateBatchSize, actx, ver, this);
 
         handler.start();
+
+        monList.add(connectionId(), new ClientConnectionView(
+            connectionId(),
+            JDBC_CLIENT,
+            ses.remoteAddress(),
+            ses.localAddress(),
+            actx == null ? null : actx.userName(),
+            ver
+        ));
     }
 
     /** {@inheritDoc} */
@@ -228,6 +239,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         handler.onDisconnect();
+
+        monList.remove(connectionId());
 
         super.onDisconnected();
     }

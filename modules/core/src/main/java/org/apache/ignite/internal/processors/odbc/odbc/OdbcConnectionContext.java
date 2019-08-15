@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -33,6 +34,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 
 /**
  * ODBC Connection Context.
@@ -174,6 +177,15 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         parser = new OdbcMessageParser(ctx, ver);
 
         handler.start();
+
+        monList.add(connectionId(), new ClientConnectionView(
+            connectionId(),
+            ODBC_CLIENT,
+            ses.remoteAddress(),
+            ses.localAddress(),
+            user,
+            ver
+        ));
     }
 
     /** {@inheritDoc} */
@@ -189,6 +201,8 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         handler.onDisconnect();
+
+        monList.remove(connectionId());
 
         super.onDisconnected();
     }

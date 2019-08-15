@@ -23,6 +23,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -32,6 +33,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 
 /**
  * Thin Client connection context.
@@ -85,17 +89,22 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
 
+    /** Session. */
+    private final GridNioSession ses;
+
     /**
      * Ctor.
-     *
-     * @param ctx Kernal context.
+     *  @param ctx Kernal context.
      * @param connId Connection ID.
      * @param maxCursors Max active cursors.
+     * @param ses Network session.
      */
-    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors) {
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors,
+        GridNioSession ses) {
         super(ctx, connId);
 
         this.maxCursors = maxCursors;
+        this.ses = ses;
     }
 
     /**
@@ -153,6 +162,15 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         handler = new ClientRequestHandler(this, authCtx, ver);
 
         parser = new ClientMessageParser(this, ver);
+
+        monList.add(connectionId(), new ClientConnectionView(
+            connectionId(),
+            THIN_CLIENT,
+            ses.remoteAddress(),
+            ses.localAddress(),
+            user,
+            ver
+        ));
     }
 
     /** {@inheritDoc} */
@@ -168,6 +186,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         resReg.clean();
+
+        monList.remove(connectionId());
 
         super.onDisconnected();
     }

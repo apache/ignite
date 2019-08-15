@@ -17,23 +17,32 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.sql.Connection;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.CacheGroupView;
 import org.apache.ignite.internal.processors.metric.list.view.CacheView;
+import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.internal.processors.metric.list.view.ServiceView;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -42,6 +51,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
+import static org.apache.ignite.internal.util.lang.GridFunc.identity;
 
 /** */
 public class MonitoringListSelfTest extends GridCommonAbstractTest {
@@ -113,18 +123,16 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
     /** */
     public void testContinuousQuery() throws Exception {
         try(IgniteEx g0 = startGrid(0); IgniteEx g1 = startGrid(1)) {
-            IgniteCache cache = g0.createCache("cache-1");
+            IgniteCache<Integer, Integer> cache = g0.createCache("cache-1");
 
-            QueryCursor qry = cache.query(new ContinuousQuery()
+            QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
                 .setPageSize(100)
                 .setTimeInterval(1000)
                 .setLocalListener(evts -> {
                     // No-op.
                 })
-                .setRemoteFilterFactory(() -> {
-                    return (CacheEntryEventFilter)evt -> true;
-                })
+                .setRemoteFilterFactory(() -> evt -> true)
             );
 
             for (int i=0; i<100; i++)
@@ -176,5 +184,55 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             MonitoringList<UUID, ContinuousQueryView> computeRunnable =
                 g0.context().metric().list(metricName("compute", "runnables"));
         }
+    }
+
+    @Test
+    /** */
+    public void testClientsConnections() throws Exception {
+        try(IgniteEx g0 = startGrid(0)) {
+            String host = g0.configuration().getClientConnectorConfiguration().getHost();
+
+            if (host == null)
+                host = g0.configuration().getLocalHost();
+
+            int port = g0.configuration().getClientConnectorConfiguration().getPort();
+
+            try (IgniteClient client =
+                     Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+
+                MonitoringList<Long, ClientConnectionView> conns =
+                    g0.context().metric().list(metricName("client", "connections"));
+
+                assertEquals(1, F.size(conns.iterator(), alwaysTrue()));
+
+                ClientConnectionView cliConn = conns.iterator().next();
+
+                assertEquals(cliConn.type(), "THIN");
+                assertEquals(cliConn.localAddress().getHostName(), cliConn.remoteAddress().getHostName());
+                assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
+                    cliConn.localAddress().getPort());
+                assertEquals(cliConn.version(), ClientConnectionContext.DEFAULT_VER);
+
+                try(Connection conn =
+                        new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
+                    assertEquals(2, F.size(conns.iterator(), alwaysTrue()));
+                    assertEquals(1, F.size(jdbcConnectionsIterator(conns), alwaysTrue()));
+
+                    ClientConnectionView jdbcConn = jdbcConnectionsIterator(conns).next();
+
+                    assertEquals(jdbcConn.type(), "JDBC");
+                    assertEquals(jdbcConn.localAddress().getHostName(), jdbcConn.remoteAddress().getHostName());
+                    assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
+                        jdbcConn.localAddress().getPort());
+                    assertEquals(jdbcConn.version(), JdbcConnectionContext.CURRENT_VER);
+                }
+            }
+        }
+    }
+
+    /** */
+    private GridIterator<ClientConnectionView> jdbcConnectionsIterator(
+        MonitoringList<Long, ClientConnectionView> conns) {
+        return F.iterator(conns, identity(), true, v -> "JDBC".equals(v.type()));
     }
 }

@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -30,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.UUID;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
 /**
@@ -48,6 +51,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** Authorization context. */
     private AuthorizationContext authCtx;
 
+    protected final MonitoringList<Long, ClientConnectionView> monList;
+
     /**
      * Constructor.
      *
@@ -56,6 +61,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId) {
         this.ctx = ctx;
         this.connId = connId;
+        this.monList = ctx.metric().list(metricName("client", "connections"));
     }
 
     /**

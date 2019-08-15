@@ -32,11 +32,11 @@ public class QueryHistory {
     @GridToStringExclude
     private final AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistory>> linkRef;
 
-    /** Query history metrics immutable wrapper. */
-    private volatile QueryHistoryMetricsValue val;
-
     /** Query history metrics group key. */
     private final QueryHistoryKey key;
+
+    /** Query history metrics immutable wrapper. */
+    private volatile QueryHistoryMetricsValue val;
 
     /**
      * Constructor with metrics.

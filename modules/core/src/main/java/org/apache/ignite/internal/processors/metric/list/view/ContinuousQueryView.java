@@ -116,7 +116,7 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     public boolean notifyExisting() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
-        return hnd0 == null ? false : hnd0.notifyExisting();
+        return hnd0 != null && hnd0.notifyExisting();
     }
 
     public boolean oldValueRequired() {
