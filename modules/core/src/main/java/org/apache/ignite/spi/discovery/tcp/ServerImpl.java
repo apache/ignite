@@ -6229,16 +6229,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
          */
         private void checkMetricsReceiving() {
-            if (lastTimeStatusMsgSentNanos - locNode.lastUpdateTimeNanos() < 0)
+            if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
                 lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
 
-            long updateTimeNanos = lastTimeStatusMsgSentNanos - lastRingMsgTimeNanos > 0
-                ? lastTimeStatusMsgSentNanos
-                : lastRingMsgTimeNanos;
+            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
 
-            long elapsed = metricsCheckFreq - U.millisSinceNanos(updateTimeNanos);
-
-            if (elapsed > 0)
+            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
                 return;
 
             msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
