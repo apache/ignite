@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -2668,50 +2667,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             doInParallel(
-                parallelismLvl,
-                sharedCtx.kernalContext().getSystemExecutorService(),
-                cachesToStop.entrySet(),
-                cachesToStopByGrp -> {
-                    CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
+                    parallelismLvl,
+                    sharedCtx.kernalContext().getSystemExecutorService(),
+                    cachesToStop.entrySet(),
+                    cachesToStopByGrp -> {
+                        CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
 
-                    Lock lock = null;
+                        if (gctx != null)
+                            gctx.preloader().pause();
 
-                    if (gctx != null)
-                        lock = gctx.preloader().lock();
+                        try {
 
-                    if (lock != null)
-                        lock.lock();
+                            if (gctx != null) {
+                                final String msg = "Failed to wait for topology update, cache group is stopping.";
 
-                    try {
-                        if (gctx != null) {
-                            final String msg = "Failed to wait for topology update, cache group is stopping.";
-
-                            // If snapshot operation in progress we must throw CacheStoppedException
-                            // for correct cache proxy restart. For more details see
-                            // IgniteCacheProxy.cacheException()
-                            gctx.affinity().cancelFutures(new CacheStoppedException(msg));
-                        }
-
-                        for (ExchangeActions.CacheActionData action : cachesToStopByGrp.getValue()) {
-                            stopGateway(action.request());
-
-                            sharedCtx.database().checkpointReadLock();
-
-                            try {
-                                prepareCacheStop(action.request().cacheName(), action.request().destroy());
+                                // If snapshot operation in progress we must throw CacheStoppedException
+                                // for correct cache proxy restart. For more details see
+                                // IgniteCacheProxy.cacheException()
+                                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
                             }
-                            finally {
-                                sharedCtx.database().checkpointReadUnlock();
+
+                            for (ExchangeActions.CacheActionData action: cachesToStopByGrp.getValue()) {
+                                stopGateway(action.request());
+
+                                sharedCtx.database().checkpointReadLock();
+
+                                try {
+                                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
+                                }
+                                finally {
+                                    sharedCtx.database().checkpointReadUnlock();
+                                }
                             }
                         }
-                    }
-                    finally {
-                        if (lock != null)
-                            lock.unlock();
-                    }
+                        finally {
+                            if (gctx != null)
+                                gctx.preloader().resume();
+                        }
 
-                    return null;
-                }
+                        return null;
+                    }
             );
         }
         catch (IgniteCheckedException e) {

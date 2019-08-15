@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -75,9 +74,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
-    /** Demand lock. */
-    private final ReadWriteLock demandLock = new ReentrantReadWriteLock();
-
     /** */
     private boolean stopped;
 
@@ -108,8 +104,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
 
-        // Acquire write busy lock.
-        busyLock.writeLock().lock();
+        pause();
 
         try {
             if (supplier != null)
@@ -123,7 +118,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             stopped = true;
         }
         finally {
-            busyLock.writeLock().unlock();
+            resume();
         }
     }
 
@@ -347,14 +342,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 return;
 
             try {
-                demandLock.readLock().lock();
-
-                try {
-                    demander.handleSupplyMessage(id, s);
-                }
-                finally {
-                    demandLock.readLock().unlock();
-                }
+                demander.handleSupplyMessage(id, s);
             }
             finally {
                 leaveBusy();
@@ -406,9 +394,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @return {@code true} if entered to busy state.
      */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     private boolean enterBusy() {
-        if (!busyLock.readLock().tryLock())
-            return false;
+        busyLock.readLock().lock();
 
         if (stopped) {
             busyLock.readLock().unlock();
@@ -549,19 +537,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void unwindUndeploys() {
-        demandLock.writeLock().lock();
-
-        try {
-            grp.unwindUndeploys();
-        }
-        finally {
-            demandLock.writeLock().unlock();
-        }
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    @Override public void pause() {
+        busyLock.writeLock().lock();
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lock() {
-        return demandLock.writeLock();
+    @Override public void resume() {
+        busyLock.writeLock().unlock();
     }
 }
