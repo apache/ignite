@@ -67,20 +67,21 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
         try {
             if (req instanceof ClientTxAwareRequest) {
-                if (((ClientTxAwareRequest)req).isTransactional()) {
-                    int txId = ((ClientTxAwareRequest)req).txId();
+                ClientTxAwareRequest req0 = (ClientTxAwareRequest)req;
+
+                if (req0.isTransactional()) {
+                    int txId = req0.txId();
 
                     ClientTxContext txCtx = ctx.txContext(txId);
 
                     if (txCtx != null) {
                         try {
-                            txCtx.aquire();
+                            txCtx.acquire();
 
                             return ((ClientRequest)req).process(ctx);
                         }
                         catch (IgniteCheckedException e) {
-                            throw e.getCause() instanceof IgniteClientException ? (IgniteClientException)e.getCause() :
-                                new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+                            throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
                         }
                         finally {
                             try {

@@ -40,15 +40,18 @@ public class ClientTxContext {
      * Constructor.
      */
     public ClientTxContext(int txId, GridNearTxLocal tx) {
+        assert txId != 0;
+        assert tx != null;
+
         this.txId = txId;
         this.tx = tx;
     }
 
     /**
-     * Aquire context to work with transaction in the current thread.
+     * Acquire context to work with transaction in the current thread.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public void aquire() throws IgniteCheckedException {
+    public void acquire() throws IgniteCheckedException {
         lock.lock();
 
         tx.resume();
