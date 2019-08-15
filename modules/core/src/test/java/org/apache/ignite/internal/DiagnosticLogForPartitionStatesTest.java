@@ -30,8 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.PARTITION_STATE_FAILED_MSG;
 
@@ -59,11 +57,10 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
                     .setMaxSize(200L * 1024 * 1024)));
     }
 
-    /**
-     * @throws Exception if stopAllGrid fails.
-     */
-    @After
-    public void tearDown() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
         cleanPersistenceDir();
     }
@@ -71,16 +68,14 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
     /**
      *
      */
-    @Test
-    public void shouldPrintMessageIfPartitionHasOtherCounter() throws Exception {
+    public void testShouldPrintMessageIfPartitionHasOtherCounter() throws Exception {
         doTest(new CacheConfiguration<>(CACHE_1).setBackups(1), true);
     }
 
     /**
      *
      */
-    @Test
-    public void shouldNotPrintMessageIfPartitionHasOtherCounterButHasCustomExpiryPolicy() throws Exception {
+    public void testShouldNotPrintMessageIfPartitionHasOtherCounterButHasCustomExpiryPolicy() throws Exception {
         doTest(
             new CacheConfiguration<>(CACHE_1)
                 .setBackups(1)
