@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.query;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -36,7 +39,7 @@ public class SqlPartOfComplexPkLookupTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testPartOfComplexPkLookup() throws Exception {
+    public void testPartOfComplexPkLookupDdl() throws Exception {
         IgniteEx ign = startGrid(0);
 
         IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
@@ -52,6 +55,28 @@ public class SqlPartOfComplexPkLookupTest extends GridCommonAbstractTest {
         cache.query(new SqlFieldsQuery("INSERT INTO Person (id, city_id, name) VALUES (1, 3, 'John Doe');"));
         cache.query(new SqlFieldsQuery("INSERT INTO Person (id, city_id, name) VALUES (1, 4, 'John Dean');"));
 
+        checkPartialPkLookup(cache);
+    }
+
+    /** */
+    @Test
+    public void testPartOfComplexPkLookupQueryEntity() throws Exception {
+        IgniteEx ign = startGrid(0);
+
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setQueryEntities(Collections.singleton(new QueryEntity(TestPk.class, String.class)
+                .setTableName("Person")
+                .addQueryField("name", String.class.getName(), "name")
+                .setValueFieldName("name"))));
+
+        cache.put(new TestPk(1, 3), "John Doe");
+        cache.put(new TestPk(1, 4), "John Dean");
+
+        checkPartialPkLookup(cache);
+    }
+
+    /** */
+    private void checkPartialPkLookup(IgniteCache<Object, Object> cache) {
         assertTrue(cache.query(new SqlFieldsQuery("SELECT name FROM Person WHERE id = 1 and city_id is null")).getAll()
             .isEmpty());
 
@@ -70,5 +95,22 @@ public class SqlPartOfComplexPkLookupTest extends GridCommonAbstractTest {
 
         assertEquals(1, rows2.size());
         assertEquals("John Doe", rows2.get(0).get(0));
+    }
+
+    /** */
+    public static class TestPk {
+        /** */
+        @QuerySqlField(name = "id")
+        private final int id;
+
+        /** */
+        @QuerySqlField(name = "city_id")
+        private final int cityId;
+
+        /** */
+        public TestPk(int id, int cityId) {
+            this.id = id;
+            this.cityId = cityId;
+        }
     }
 }
