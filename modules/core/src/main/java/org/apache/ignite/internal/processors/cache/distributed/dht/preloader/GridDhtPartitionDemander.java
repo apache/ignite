@@ -828,6 +828,8 @@ public class GridDhtPartitionDemander {
                 }
             }
             catch (IgniteSpiException | IgniteCheckedException e) {
+                fut.cancel(nodeId);
+
                 LT.error(log, e, "Error during rebalancing [" + demandRoutineInfo(nodeId, supplyMsg) +
                     ", err=" + e + ']');
             }
@@ -838,7 +840,7 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param fut Future.
+     * Owns the partition recursively.
      */
     protected void ownPartition(
         final RebalanceFuture fut,
@@ -1251,11 +1253,12 @@ public class GridDhtPartitionDemander {
 
                 historical.addAll(v.partitions().historicalSet());
 
-                Stream.concat(v.partitions().historicalSet().stream(), v.partitions().fullSet().stream()).forEach(
-                    p -> {
-                        queued.put(p, new LongAdder());
-                        processed.put(p, new LongAdder());
-                    });
+                Stream.concat(v.partitions().historicalSet().stream(), v.partitions().fullSet().stream())
+                    .forEach(
+                        p -> {
+                            queued.put(p, new LongAdder());
+                            processed.put(p, new LongAdder());
+                        });
             });
 
             this.routines = remaining.size();
