@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
+package org.apache.ignite;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
