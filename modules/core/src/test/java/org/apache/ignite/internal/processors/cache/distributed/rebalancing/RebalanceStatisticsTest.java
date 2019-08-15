@@ -27,8 +27,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.junits.SystemPropertiesRule;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
@@ -38,10 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.parseInt;
-import static java.lang.System.setProperty;
 import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
 import static java.util.regex.Pattern.compile;
@@ -53,8 +54,14 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WRITE_REBALANCE_PA
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WRITE_REBALANCE_STATISTICS;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
+@WithSystemProperty(key = IGNITE_QUIET, value = "false")
+@WithSystemProperty(key = IGNITE_WRITE_REBALANCE_STATISTICS, value = "true")
+@WithSystemProperty(key = IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, value = "true")
 /** For testing of rebalance statistics. */
 public class RebalanceStatisticsTest extends GridCommonAbstractTest {
+    /** Class rule. */
+    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
+
     /** Cache names. */
     private static final String[] DEFAULT_CACHE_NAMES = {"ch0", "ch1", "ch2", "ch3"};
 
@@ -96,15 +103,6 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
     /** Coordinator. */
     private IgniteEx crd;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        setProperty(IGNITE_QUIET, FALSE.toString());
-        setProperty(IGNITE_WRITE_REBALANCE_STATISTICS, TRUE.toString());
-        setProperty(IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, TRUE.toString());
-
-        super.beforeTest();
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -154,10 +152,9 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      * @see IgniteSystemProperties#IGNITE_WRITE_REBALANCE_STATISTICS
      */
     @Test
+    @WithSystemProperty(key = IGNITE_QUIET, value = "true")
+    @WithSystemProperty(key = IGNITE_WRITE_REBALANCE_STATISTICS, value = "false")
     public void testNotPrintStat() throws Exception {
-        setProperty(IGNITE_QUIET, TRUE.toString());
-        setProperty(IGNITE_WRITE_REBALANCE_STATISTICS, FALSE.toString());
-
         cacheCfgs = defaultCacheConfigurations(10, 0);
 
         crd = startGrids(DEFAULT_NODE_CNT);
@@ -170,7 +167,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
         assertNotContainsAfterCreateNewNode(nodeCnt++, TOTAL_INFORMATION_TEXT);
 
-        setProperty(IGNITE_QUIET, FALSE.toString());
+        System.setProperty(IGNITE_QUIET, Boolean.FALSE.toString());
 
         assertNotContainsAfterCreateNewNode(nodeCnt++, TOTAL_INFORMATION_TEXT);
     }
@@ -184,9 +181,8 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      * @see IgniteSystemProperties#IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS
      */
     @Test
+    @WithSystemProperty(key = IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, value = "false")
     public void testNotPrintPartitionDistribution() throws Exception {
-        setProperty(IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, FALSE.toString());
-
         cacheCfgs = defaultCacheConfigurations(10, 0);
 
         crd = startGrids(DEFAULT_NODE_CNT);

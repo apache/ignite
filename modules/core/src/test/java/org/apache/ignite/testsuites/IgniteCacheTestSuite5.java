@@ -85,7 +85,9 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(CacheRebalancingSelfTest.class);
         suite.addTestSuite(CacheManualRebalancingTest.class);
-        suite.addTestSuite(RebalanceStatisticsTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheRebalancingSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheManualRebalancingTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RebalanceStatisticsTest.class, ignoredTests);
 
         // Affinity tests.
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
