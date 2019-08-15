@@ -20,18 +20,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
 /**
- * This class is responsible for getting Ignite updates information via HTTP
+ * This class is responsible for getting GridGain updates information via HTTP
  */
 public class HttpIgniteUpdatesChecker {
     /** Url for request updates. */
     private final String url;
-
-    /** Params. */
-    private final String params;
 
     /** Charset for encoding requests/responses */
     private final String charset;
@@ -41,25 +39,30 @@ public class HttpIgniteUpdatesChecker {
      * @param url URL for getting Ignite updates information
      * @param charset Charset for encoding
      */
-    HttpIgniteUpdatesChecker(String url, String params, String charset) {
+    HttpIgniteUpdatesChecker(String url, String charset) {
         this.url = url;
-        this.params = params;
         this.charset = charset;
     }
 
     /**
      * Gets information about Ignite updates via HTTP
+     * @param updateReq HTTP Request parameters
      * @return Information about Ignite updates separated by line endings
      * @throws IOException If HTTP request was failed
      */
-    public String getUpdates(boolean first) throws IOException {
-        String addr = first ? url + params : url;
-
-        URLConnection conn = new URL(addr).openConnection();
+    public String getUpdates(String updateReq) throws IOException {
+        URLConnection conn = new URL(url).openConnection();
+        conn.setDoOutput(true);
         conn.setRequestProperty("Accept-Charset", charset);
+        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + charset);
+        conn.setRequestProperty("user-agent", "");
 
-        conn.setConnectTimeout(3000);
-        conn.setReadTimeout(3000);
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(updateReq.getBytes(charset));
+        }
 
         try (InputStream in = conn.getInputStream()) {
             if (in == null)
