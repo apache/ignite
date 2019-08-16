@@ -191,6 +191,5 @@ public class EncoderTrainerTest extends TrainerTest {
         assertArrayEquals(new double[] {0.5, 0.166}, preprocessor.apply(7, new DenseVector(new Serializable[] {"Monday", "September"})).features().asArray(), 0.1);
         assertArrayEquals(new double[] {0.33, 0.5}, preprocessor.apply(7, new DenseVector(new Serializable[] {"Friday", "August"})).features().asArray(), 0.1);
         assertArrayEquals(new double[] {0.166, 0.33}, preprocessor.apply(7, new DenseVector(new Serializable[] {"Sunday", "June"})).features().asArray(), 0.1);
-
     }
 }

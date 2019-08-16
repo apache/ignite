@@ -150,7 +150,6 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
         return res;
     }
 
-
     /**
      * Calculates the encoding values values by frequencies keeping in the given dataset.
      *
