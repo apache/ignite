@@ -1246,6 +1246,13 @@ public final class IgniteSystemProperties {
      */
     public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
+    /** Enable write rebalnce statistics into log. Default: false */
+    public static final String IGNITE_WRITE_REBALANCE_STATISTICS = "IGNITE_WRITE_REBALANCE_STATISTICS";
+
+    /**  Enable write rebalnce statistics by partitions into log. Default: false */
+    public static final String IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS =
+        "IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS";
+
     /**
      * Enforces singleton.
      */
