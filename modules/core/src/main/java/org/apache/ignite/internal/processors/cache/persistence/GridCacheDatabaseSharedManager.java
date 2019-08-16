@@ -2418,7 +2418,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.info("Finished applying memory changes [changesApplied=" + applied +
                 ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
-            assert applied.get() > 0;
+            //Error in backport GG-17348 to 2.5.X branch.
+            //assert applied.get() > 0;
 
             finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr, exec);
         }
