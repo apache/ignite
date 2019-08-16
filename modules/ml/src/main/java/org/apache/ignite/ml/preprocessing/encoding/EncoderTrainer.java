@@ -97,6 +97,31 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     }
 
     /**
+     * Calculates encoding frequencies as frequency divided on amount of rows in dataset.
+     *
+     * NOTE: The amount of rows is calculated as sum of absolute frequencies.
+     *
+     * @param dataset Dataset.
+     * @return Encoding frequency for each feature.
+     */
+    private Map<String, Double>[] calculateEncodingFrequencies(Dataset<EmptyContext, EncoderPartitionData> dataset) {
+        Map<String, Integer>[] frequencies = calculateFrequencies(dataset);
+
+        Map<String, Double>[] res = new Map[frequencies.length];
+
+        int[] counters = new int[frequencies.length];
+
+        for (int i = 0; i < frequencies.length; i++) {
+            counters[i] = frequencies[i].values().stream().reduce(0, Integer::sum);
+            int locI = i;
+            res[locI] = new HashMap<>();
+            frequencies[i].forEach((k, v) -> res[locI].put(k, (double)v / counters[locI]));
+        }
+
+        return res;
+    }
+
+    /**
      * Calculates frequencies for each feature.
      *
      * @param dataset Dataset.
@@ -123,31 +148,6 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 return b;
             }
         );
-    }
-
-    /**
-     * Calculates encoding frequencies as frequency divided on amount of rows in dataset.
-     *
-     * NOTE: The amount of rows is calculated as sum of absolute frequencies.
-     *
-     * @param dataset Dataset.
-     * @return Encoding frequency for each feature.
-     */
-    private Map<String, Double>[] calculateEncodingFrequencies(Dataset<EmptyContext, EncoderPartitionData> dataset) {
-        Map<String, Integer>[] frequencies = calculateFrequencies(dataset);
-
-        Map<String, Double>[] res = new Map[frequencies.length];
-
-        int[] counters = new int[frequencies.length];
-
-        for (int i = 0; i < frequencies.length; i++) {
-            counters[i] = frequencies[i].values().stream().reduce(0, Integer::sum);
-            int locI = i;
-            res[locI] = new HashMap<>();
-            frequencies[i].forEach((k, v) -> res[locI].put(k, (double)v / counters[locI]));
-        }
-
-        return res;
     }
 
     /**
