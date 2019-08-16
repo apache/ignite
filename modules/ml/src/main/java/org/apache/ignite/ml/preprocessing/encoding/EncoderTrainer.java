@@ -78,13 +78,11 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     .withCategoryFrequencies(categoryFrequencies);
             }
         )) {
-            Map<String, Integer>[] encodingValues = calculateEncodingValuesByFrequencies(dataset);
-
             switch (encoderType) {
                 case ONE_HOT_ENCODER:
-                    return new OneHotEncoderPreprocessor<>(encodingValues, basePreprocessor, handledIndices);
+                    return new OneHotEncoderPreprocessor<>(calculateEncodingValuesByFrequencies(dataset), basePreprocessor, handledIndices);
                 case STRING_ENCODER:
-                    return new StringEncoderPreprocessor<>(encodingValues, basePreprocessor, handledIndices);
+                    return new StringEncoderPreprocessor<>(calculateEncodingValuesByFrequencies(dataset), basePreprocessor, handledIndices);
                 case FREQUENCY_ENCODER:
                     return new FrequencyEncoderPreprocessor<>(calculateEncodingFrequencies(dataset), basePreprocessor, handledIndices);
                 default:
