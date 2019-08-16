@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateT
 import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
 import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
 import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
+import org.apache.ignite.internal.processors.query.SqlPartOfComplexPkLookupTest;
 import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessorTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
@@ -156,7 +157,9 @@ import org.junit.runners.Suite;
 
     QueryMemoryTrackerSelfTest.class,
 
-    DmlBatchSizeDeadlockTest.class
+    DmlBatchSizeDeadlockTest.class,
+
+    SqlPartOfComplexPkLookupTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite2 {
 }
