@@ -19,10 +19,13 @@
 package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Index statistics holder to gather statistics related to concrete index.
@@ -44,16 +47,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     public static final String PHYSICAL_READS_INNER = "PHYSICAL_READS_INNER";
 
     /** */
-    private final LongAdderMetricImpl logicalReadLeafCtr;
+    private final LongAdderMetric logicalReadLeafCtr;
 
     /** */
-    private final LongAdderMetricImpl logicalReadInnerCtr;
+    private final LongAdderMetric logicalReadInnerCtr;
 
     /** */
-    private final LongAdderMetricImpl physicalReadLeafCtr;
+    private final LongAdderMetric physicalReadLeafCtr;
 
     /** */
-    private final LongAdderMetricImpl physicalReadInnerCtr;
+    private final LongAdderMetric physicalReadInnerCtr;
 
     /** */
     private final String cacheName;
@@ -65,28 +68,28 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
      * @param type Type of statistics.
      * @param cacheName Cache name.
      * @param idxName Index name.
-     * @param mreg Metric registry.
+     * @param mmgr Metric manager.
      */
     public IoStatisticsHolderIndex(
         IoStatisticsType type,
         String cacheName,
         String idxName,
-        MetricRegistry mreg) {
+        GridMetricManager mmgr) {
         assert cacheName != null && idxName != null;
 
         this.cacheName = cacheName;
         this.idxName = idxName;
 
-        MetricRegistry mset = mreg.withPrefix(type.metricGroupName(), cacheName, idxName);
+        MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), cacheName, idxName));
 
-        mset.metric("startTime", null).value(U.currentTimeMillis());
-        mset.objectMetric("name", String.class, null).value(cacheName);
-        mset.objectMetric("indexName", String.class, null).value(idxName);
+        mreg.longMetric("startTime", null).value(U.currentTimeMillis());
+        mreg.objectMetric("name", String.class, null).value(cacheName);
+        mreg.objectMetric("indexName", String.class, null).value(idxName);
 
-        logicalReadLeafCtr = mset.longAdderMetric(LOGICAL_READS_LEAF, null);
-        logicalReadInnerCtr = mset.longAdderMetric(LOGICAL_READS_INNER, null);
-        physicalReadLeafCtr = mset.longAdderMetric(PHYSICAL_READS_LEAF, null);
-        physicalReadInnerCtr = mset.longAdderMetric(PHYSICAL_READS_INNER, null);
+        logicalReadLeafCtr = mreg.longAdderMetric(LOGICAL_READS_LEAF, null);
+        logicalReadInnerCtr = mreg.longAdderMetric(LOGICAL_READS_INNER, null);
+        physicalReadLeafCtr = mreg.longAdderMetric(PHYSICAL_READS_LEAF, null);
+        physicalReadInnerCtr = mreg.longAdderMetric(PHYSICAL_READS_INNER, null);
     }
 
     /** {@inheritDoc} */
@@ -136,12 +139,12 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public long logicalReads() {
-        return logicalReadLeafCtr.longValue() + logicalReadInnerCtr.longValue();
+        return logicalReadLeafCtr.value() + logicalReadInnerCtr.value();
     }
 
     /** {@inheritDoc} */
     @Override public long physicalReads() {
-        return physicalReadLeafCtr.longValue() + physicalReadInnerCtr.longValue();
+        return physicalReadLeafCtr.value() + physicalReadInnerCtr.value();
     }
 
     /** {@inheritDoc} */

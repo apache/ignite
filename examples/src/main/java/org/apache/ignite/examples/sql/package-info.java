@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Demonstrates Ignite SQL API usage.
  */
+
 package org.apache.ignite.examples.sql;

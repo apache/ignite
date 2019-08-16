@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * This package contains commands that command line tool provides. Pico CLI is used to make these commands maintainable.
  */
+
 package org.apache.ignite.tensorflow.submitter.command;

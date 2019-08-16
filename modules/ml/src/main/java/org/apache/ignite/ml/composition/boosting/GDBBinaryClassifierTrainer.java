@@ -74,7 +74,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
             envBuilder,
             new EmptyContextBuilder<>(),
             new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor))
-            .compute((IgniteFunction<LabeledVectorSet<Double, LabeledVector>, Set<Double>>)x ->
+            .compute((IgniteFunction<LabeledVectorSet<LabeledVector>, Set<Double>>)x ->
                     Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
                     if (a == null)
                         return b;
