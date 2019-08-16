@@ -248,8 +248,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            if (!cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
-                tree.compareRows((GridH2SearchRow)lower, (GridH2SearchRow)upper) == 0) {
+            // If it is known that only one row will be returned an optimization is employed
+            if (isSingleRowLookup(lower, upper, tree)) {
                 GridH2Row row = tree.findOne((GridH2SearchRow)lower, filter(GridH2QueryContext.get()), null);
 
                 return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
@@ -262,6 +262,23 @@ public class H2TreeIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+    }
+
+    /** */
+    private boolean isSingleRowLookup(SearchRow lower, SearchRow upper, H2Tree tree) {
+        return !cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
+            tree.compareRows((GridH2SearchRow)lower, (GridH2SearchRow)upper) == 0 && hasAllIndexColumns(lower);
+    }
+
+    /** */
+    private boolean hasAllIndexColumns(SearchRow searchRow) {
+        for (Column c : columns) {
+            // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
+            if (searchRow.getValue(c.getColumnId()) == null)
+                return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
