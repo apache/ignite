@@ -4576,10 +4576,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Get configuration for the given cache.
+     * Get configuration for the given cache. Fails if cache does not exist or restarting.
      *
      * @param name Cache name.
      * @return Cache configuration.
+     * @throws org.apache.ignite.IgniteCacheRestartingException If the cache with the given name
+     *      is currently restarting.
+     * @throws IllegalStateException If the cache with the given name does not exist.
      */
     public CacheConfiguration cacheConfiguration(String name) {
         assert name != null;
@@ -4602,6 +4605,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else
             return desc.cacheConfiguration();
+    }
+
+    /**
+     * Get configuration for the given cache. If a cache with the given name does not exist, will return {@code null}.
+     *
+     * @param name Cache name.
+     * @return Cache configuration or {@code null}.
+     */
+    public CacheConfiguration cacheConfigurationNoProxyCheck(String name) {
+        assert name != null;
+
+        DynamicCacheDescriptor desc = cacheDescriptor(name);
+
+        return desc == null ? null : desc.cacheConfiguration();
     }
 
     /**
