@@ -161,4 +161,36 @@ public class EncoderTrainerTest extends TrainerTest {
 
         assertArrayEquals(new double[] {2.0, 0.0}, preprocessor.apply(7, new DenseVector(new Serializable[]{"Monday", "September"})).features().asArray(), 1e-8);
     }
+
+    /** Tests {@code fit()} method. */
+    @Test
+    public void testFitOnStringCategorialFeaturesWithFrequencyEncoding() {
+        Map<Integer, Vector> data = new HashMap<>();
+        data.put(1, new DenseVector(new Serializable[] {"Monday", "September"}));
+        data.put(2, new DenseVector(new Serializable[] {"Monday", "August"}));
+        data.put(3, new DenseVector(new Serializable[] {"Monday", "August"}));
+        data.put(4, new DenseVector(new Serializable[] {"Friday", "June"}));
+        data.put(5, new DenseVector(new Serializable[] {"Friday", "June"}));
+        data.put(6, new DenseVector(new Serializable[] {"Sunday", "August"}));
+
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1);
+
+        DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+
+        EncoderTrainer<Integer, Vector> strEncoderTrainer = new EncoderTrainer<Integer, Vector>()
+            .withEncoderType(EncoderType.FREQUENCY_ENCODER)
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
+
+        EncoderPreprocessor<Integer, Vector> preprocessor = strEncoderTrainer.fit(
+            TestUtils.testEnvBuilder(),
+            datasetBuilder,
+            vectorizer
+        );
+
+        assertArrayEquals(new double[] {0.5, 0.166}, preprocessor.apply(7, new DenseVector(new Serializable[] {"Monday", "September"})).features().asArray(), 0.1);
+        assertArrayEquals(new double[] {0.33, 0.5}, preprocessor.apply(7, new DenseVector(new Serializable[] {"Friday", "August"})).features().asArray(), 0.1);
+        assertArrayEquals(new double[] {0.166, 0.33}, preprocessor.apply(7, new DenseVector(new Serializable[] {"Sunday", "June"})).features().asArray(), 0.1);
+
+    }
 }
