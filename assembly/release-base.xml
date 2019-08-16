@@ -23,11 +23,6 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>RELEASE_NOTES.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
-        <file>
             <source>README.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
