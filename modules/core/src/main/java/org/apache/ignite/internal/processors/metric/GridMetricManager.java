@@ -325,6 +325,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
      * @param rebalanceExecSvc Rebalance executor service.
+     * @param rebalanceStripedExecSvc Rebalance striped executor service.
      * @param customExecSvcs Custom named executors.
      */
     public void registerThreadPools(
@@ -344,6 +345,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         ExecutorService rebalanceExecSvc,
+        StripedExecutor rebalanceStripedExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs
     ) {
         // Executors
@@ -360,6 +362,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         monitorExecutor("GridQueryExecutor", qryExecSvc);
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
+        monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
         if (idxExecSvc != null)
             monitorExecutor("GridIndexingExecutor", idxExecSvc);

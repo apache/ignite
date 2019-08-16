@@ -97,6 +97,7 @@ public class IgniteMBeansManager {
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
      * @param rebalanceExecSvc Rebalance executor service.
+     * @param rebalanceStripedExecSvc Rebalance striped executor service.
      * @param customExecSvcs Custom named executors.
      * @param workersRegistry Worker registry.
      * @throws IgniteCheckedException if fails to register any of the MBeans.
@@ -118,6 +119,7 @@ public class IgniteMBeansManager {
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         ExecutorService rebalanceExecSvc,
+        StripedExecutor rebalanceStripedExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         WorkersRegistry workersRegistry
     ) throws IgniteCheckedException {
@@ -164,6 +166,7 @@ public class IgniteMBeansManager {
         registerExecutorMBean("GridQueryExecutor", qryExecSvc);
         registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
         registerExecutorMBean("GridRebalanceExecutor", rebalanceExecSvc);
+        registerExecutorMBean("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
         if (idxExecSvc != null)
             registerExecutorMBean("GridIndexingExecutor", idxExecSvc);

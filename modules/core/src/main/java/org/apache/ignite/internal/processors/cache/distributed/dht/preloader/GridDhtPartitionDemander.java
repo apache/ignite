@@ -598,9 +598,9 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Accepts supply message.
+     * Enqueues supply message.
      */
-    public void acceptSupplyMessage(final UUID id, final GridDhtPartitionSupplyMessage supplyMsg, final Runnable r) {
+    public void registerSupplyMessage(final UUID nodeId, final GridDhtPartitionSupplyMessage supplyMsg, final Runnable r) {
         final RebalanceFuture fut = rebalanceFut;
 
         if (!topologyChanged(fut) && fut.isActual(supplyMsg.rebalanceId())) {
@@ -615,9 +615,9 @@ public class GridDhtPartitionDemander {
                     historical = true;
             }
 
-            if (historical)
-                r.run(); // Sync execution to prevent reordering.
-            else
+            if (historical) // Can not be reordered.
+                ctx.kernalContext().getStripedRebalanceExecutorService().execute(Math.abs(nodeId.hashCode()), r);
+            else // Can be reordered.
                 ctx.kernalContext().getRebalanceExecutorService().execute(r);
         }
     }
