@@ -30,7 +30,6 @@ public class ServiceView implements MonitoringRow<IgniteUuid> {
 
     /**
      * @param serviceInfo Service info.
-     * @param sessionId Session id.
      */
     public ServiceView(ServiceInfo serviceInfo) {
         this.serviceInfo = serviceInfo;

@@ -41,6 +41,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
+import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -69,6 +72,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
  */
@@ -84,6 +89,12 @@ public class SchemaManager {
 
     /** Data tables. */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
+
+    /** */
+    private final MonitoringList<String, SqlSchemaView> schMonList;
+
+    /** */
+    private final MonitoringList<String, SqlTableView> tblsMonList;
 
     /** Mutex to synchronize schema operations. */
     private final Object schemaMux = new Object();
@@ -104,6 +115,9 @@ public class SchemaManager {
         this.ctx = ctx;
         this.connMgr = connMgr;
 
+        this.schMonList = ctx.metric().list(metricName("sql", "schemas"));
+        this.tblsMonList = ctx.metric().list(metricName("sql", "tables"));
+
         log = ctx.log(SchemaManager.class);
     }
 
@@ -115,6 +129,7 @@ public class SchemaManager {
     public void start(String[] schemaNames) throws IgniteCheckedException {
         // Register PUBLIC schema which is always present.
         schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, true));
+        schMonList.add(QueryUtils.DFLT_SCHEMA, new SqlSchemaView(QueryUtils.DFLT_SCHEMA, true));
 
         // Create system views.
         createSystemViews();
@@ -128,6 +143,8 @@ public class SchemaManager {
      */
     public void stop() {
         schemas.clear();
+        schMonList.clear();
+
         cacheName2schema.clear();
     }
 
@@ -264,6 +281,9 @@ public class SchemaManager {
 
             if (dataTables.putIfAbsent(h2tbl.identifier(), h2tbl) != null)
                 throw new IllegalStateException("Table already exists: " + h2tbl.identifierString());
+
+            tblsMonList.add(h2tbl.identifierString(),
+                new SqlTableView(cacheInfo.cacheContext().group().cacheOrGroupName(), h2tbl));
         }
         catch (SQLException e) {
             connMgr.onSqlException(conn);
@@ -307,12 +327,14 @@ public class SchemaManager {
                 GridH2Table h2Tbl = tbl.table();
 
                 dataTables.remove(h2Tbl.identifier(), h2Tbl);
+                tblsMonList.remove(h2Tbl.identifierString());
             }
         }
 
         synchronized (schemaMux) {
             if (schema.decrementUsageCount()) {
                 schemas.remove(schemaName);
+                schMonList.remove(schemaName);
 
                 try {
                     dropSchema(schemaName);
@@ -345,9 +367,11 @@ public class SchemaManager {
 
         H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
 
-        if (oldSchema == null)
+        if (oldSchema == null) {
             createSchema0(schemaName);
-        else
+
+            schMonList.add(schemaName, new SqlSchemaView(schemaName, predefined));
+        } else
             schema = oldSchema;
 
         schema.incrementUsageCount();
@@ -436,6 +460,7 @@ public class SchemaManager {
      * Get schemas names.
      *
      * @return Schemas names.
+     * @deprecated Use monitoringList instead.
      */
     public Set<String> schemaNames(){
         return new HashSet<>(schemas.keySet());

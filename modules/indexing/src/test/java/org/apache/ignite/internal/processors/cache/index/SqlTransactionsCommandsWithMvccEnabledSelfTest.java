@@ -62,7 +62,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
      */
     @Test
     public void testBegin() {
-        execute(node(), "BEGIN");
+        executeSql(node(), "BEGIN");
 
         assertTxPresent();
 
@@ -74,7 +74,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
      */
     @Test
     public void testCommit() {
-        execute(node(), "BEGIN WORK");
+        executeSql(node(), "BEGIN WORK");
 
         assertTxPresent();
 
@@ -82,7 +82,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
 
         assertTxState(tx, TransactionState.ACTIVE);
 
-        execute(node(), "COMMIT TRANSACTION");
+        executeSql(node(), "COMMIT TRANSACTION");
 
         assertTxState(tx, TransactionState.COMMITTED);
 
@@ -94,7 +94,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
      */
     @Test
     public void testCommitNoTransaction() {
-        execute(node(), "COMMIT");
+        executeSql(node(), "COMMIT");
     }
 
     /**
@@ -102,7 +102,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
      */
     @Test
     public void testRollbackNoTransaction() {
-        execute(node(), "ROLLBACK");
+        executeSql(node(), "ROLLBACK");
     }
 
     /**
@@ -110,7 +110,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
      */
     @Test
     public void testRollback() {
-        execute(node(), "BEGIN TRANSACTION");
+        executeSql(node(), "BEGIN TRANSACTION");
 
         assertTxPresent();
 
@@ -118,7 +118,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
 
         assertTxState(tx, TransactionState.ACTIVE);
 
-        execute(node(), "ROLLBACK TRANSACTION");
+        executeSql(node(), "ROLLBACK TRANSACTION");
 
         assertTxState(tx, TransactionState.ROLLED_BACK);
 
@@ -161,7 +161,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
 
             assertSqlException(new Runnable() {
                 @Override public void run() {
-                    execute(node(), sql);
+                    executeSql(node(), sql);
                 }
             }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
         }
@@ -181,7 +181,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
      * Test that attempting to perform a cache API operation from within an SQL transaction fails.
      */
     private void checkCacheOperationThrows(final String opName, final Object... args) {
-        execute(node(), "BEGIN");
+        executeSql(node(), "BEGIN");
 
         try {
             GridTestUtils.assertThrows(null, new Callable<Object>() {
@@ -233,7 +233,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
         }
         finally {
             try {
-                execute(node(), "ROLLBACK");
+                executeSql(node(), "ROLLBACK");
             }
             catch (Throwable e) {
                 // No-op.
@@ -299,7 +299,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     }
 
     /** {@inheritDoc} */
-    @Override protected List<List<?>> execute(Ignite node, String sql) {
+    protected List<List<?>> executeSql(Ignite node, String sql) {
         return node.cache("ints").query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
     }
 

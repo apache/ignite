@@ -55,7 +55,7 @@ public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridH2IndexBase delegate() {
+    @Override public GridH2IndexBase delegate() {
         boolean rebuildFromHashInProgress = tbl.rebuildFromHashInProgress();
 
         if (hashIdx != null) {

@@ -253,7 +253,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
                 }
             }
 
-            assertTrue("Index not found: " + idxName, res.size() > 0);
+            assertTrue("Index not found: " + idxName, !res.isEmpty());
 
             assertEquals(Arrays.asList(fields), res);
         }
@@ -422,7 +422,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @param node Node.
      * @param sql Statement.
      */
-    protected List<List<?>> execute(Ignite node, String sql) {
+    public static List<List<?>> execute(Ignite node, String sql) {
         return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
     }
 

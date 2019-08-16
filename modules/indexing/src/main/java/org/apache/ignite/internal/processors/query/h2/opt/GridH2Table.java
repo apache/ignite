@@ -42,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
+import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
@@ -79,6 +82,7 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -128,6 +132,9 @@ public class GridH2Table extends TableBase {
 
     /** */
     private final ReentrantReadWriteLock lock;
+
+    /** */
+    private MonitoringList<String, SqlIndexView> idxMonList;
 
     /** */
     private volatile boolean destroyed;
@@ -244,6 +251,12 @@ public class GridH2Table extends TableBase {
 
         if (desc != null && desc.context() != null) {
             GridKernalContext ctx = desc.context().kernalContext();
+
+            idxMonList = ctx.metric().list(metricName("sql", "indexes"));
+
+            for (Index idx : idxs)
+                addToMonitoring(idx);
+
 
             log = ctx.log(getClass());
         }
@@ -670,8 +683,11 @@ public class GridH2Table extends TableBase {
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
-                if (idxs.get(i) instanceof GridH2IndexBase)
+                if (idxs.get(i) instanceof GridH2IndexBase) {
+                    idxMonList.remove(metricName(identifierStr, idxs.get(i).getName()));
+
                     index(i).destroy(rmIndex);
+                }
         }
         finally {
             unlock(true);
@@ -718,8 +734,8 @@ public class GridH2Table extends TableBase {
     public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
         assert desc != null;
 
-        H2CacheRow row0 = (H2CacheRow)desc.createRow(row);
-        H2CacheRow prevRow0 = prevRow != null ? (H2CacheRow)desc.createRow(prevRow) :
+        H2CacheRow row0 = desc.createRow(row);
+        H2CacheRow prevRow0 = prevRow != null ? desc.createRow(prevRow) :
             null;
 
         row0.prepareValuesCache();
@@ -981,6 +997,8 @@ public class GridH2Table extends TableBase {
             newIdxs.addAll(idxs);
 
             newIdxs.add(idx);
+
+            addToMonitoring(idx);
 
             if (cloneIdx != null)
                 newIdxs.add(cloneIdx);
@@ -1538,6 +1556,46 @@ public class GridH2Table extends TableBase {
             if (t instanceof GridH2Table)
                 ((GridH2Table)t).checkVersion(s);
         }
+    }
+
+    /**
+     * @param idx Index to monitor.
+     */
+    private void addToMonitoring(Index idx) {
+        String cacheGrpName = cacheInfo.cacheContext().group().cacheOrGroupName();
+
+        String idxId = metricName(identifierStr, idx.getName());
+
+        H2IndexType type = type(idx);
+
+        if (type == null) {
+            U.debug(log, "Unknown index type [idxId=" + idxId + ']');
+
+            return;
+        }
+
+        int inlineSz = -1;
+
+        if (idx instanceof H2TreeIndexBase)
+            inlineSz = ((H2TreeIndexBase)idx).inlineSize();
+
+        idxMonList.add(idxId,
+            new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
+    }
+
+    private H2IndexType type(Index idx) {
+        if (idx instanceof H2TreeIndexBase) {
+            return H2IndexType.BTREE;
+        } else if (idx instanceof H2PkHashIndex)
+            return H2IndexType.HASH;
+        else if (idx instanceof H2TableScanIndex)
+            return H2IndexType.SCAN;
+        else if (idx instanceof GridH2ProxyIndex)
+            return type(((GridH2ProxyIndex)idx).underlyingIndex());
+        else if (idx.getIndexType().isSpatial())
+            return H2IndexType.SPATIAL;
+
+        return null;
     }
 
     /**
