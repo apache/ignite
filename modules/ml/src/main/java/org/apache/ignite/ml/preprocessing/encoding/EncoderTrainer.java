@@ -32,6 +32,7 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.encoding.frequency.FrequencyEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -83,7 +84,9 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 case ONE_HOT_ENCODER:
                     return new OneHotEncoderPreprocessor<>(encodingValues, basePreprocessor, handledIndices);
                 case STRING_ENCODER:
-                    return new StringEncoderPreprocessor<>(encodingValues, basePreprocessor, handledIndices);
+                    return new StringEncoderPreprocessor<>(calculateEncodingValuesByFrequencies(dataset), basePreprocessor, handledIndices);
+                case FREQUENCY_ENCODER:
+                    return new FrequencyEncoderPreprocessor<>(calculateEncodingFrequencies(dataset), basePreprocessor, handledIndices);
                 default:
                     throw new IllegalStateException("Define the type of the resulting prerocessor.");
             }
@@ -92,6 +95,32 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Calculates encoding frequencies as frequency divided on amount of rows in dataset.
+     *
+     * NOTE: The amount of rows is calculated as sum of absolute frequencies.
+     *
+     * @param dataset Dataset.
+     * @return Encoding frequency for each feature.
+     */
+    private Map<String, Double>[] calculateEncodingFrequencies(Dataset<EmptyContext, EncoderPartitionData> dataset) {
+        Map<String, Integer>[] frequencies = calculateEncodingValuesByFrequencies(dataset);
+
+        Map<String, Double>[] res = new Map[frequencies.length];
+
+        int[] counters = new int[frequencies.length];
+
+        for (int i = 0; i < frequencies.length; i++) {
+            counters[i] = frequencies[i].values().stream().reduce(0, Integer::sum);
+            int locI = i;
+            res[locI] = new HashMap<>();
+            frequencies[i].forEach((k, v) -> res[locI].put(k, (double)v / counters[locI]));
+        }
+
+        return res;
+    }
+
 
     /**
      * Calculates the encoding values values by frequencies keeping in the given dataset.
