@@ -618,6 +618,8 @@ public class SchemaManager {
 
         GridH2Table tbl = dataTableForIndex(schemaName, idxName);
 
+        assert tbl != null;
+
         tbl.setRemoveIndexOnDestroy(true);
 
         connMgr.executeStatement(schemaName, sql);
