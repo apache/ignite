@@ -500,6 +500,12 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
             if (err == null) {
                 assert res != null;
 
+                try {
+                    throw new RuntimeException();
+                } catch (Exception e) {
+                    log.error("GridCacheTxRecoveryFuture: ", e);
+                }
+
                 cctx.tm().finishTxOnRecovery(tx, res);
             }
             else {
