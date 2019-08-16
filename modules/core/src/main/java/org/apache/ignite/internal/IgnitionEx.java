@@ -2172,8 +2172,10 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
+            String userProvidedWorkDir = cfg.getWorkDirectory();
+
             // Correctly resolve work directory and set it back to configuration.
-            String workDir = U.workDirectory(cfg.getWorkDirectory(), ggHome);
+            String workDir = U.workDirectory(userProvidedWorkDir, ggHome);
 
             myCfg.setWorkDirectory(workDir);
 
@@ -2196,6 +2198,9 @@ public class IgnitionEx {
             log = cfgLog.getLogger(G.class);
 
             myCfg.setGridLogger(cfgLog);
+
+            if(F.isEmpty(userProvidedWorkDir) && F.isEmpty(U.IGNITE_WORK_DIR))
+                log.warning("Ignite work directory is not provided, automatically resolved to: " + workDir);
 
             // Check Ignite home folder (after log is available).
             if (ggHome != null) {
