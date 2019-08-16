@@ -618,7 +618,7 @@ public class GridDhtPartitionDemander {
             if (historical)
                 r.run(); // Sync execution to prevent reordering.
             else
-                ctx.kernalContext().closure().runLocalSafe(r, GridIoPolicy.REBALANCE_POOL);
+                ctx.kernalContext().getRebalanceExecutorService().execute(r);
         }
     }
 
