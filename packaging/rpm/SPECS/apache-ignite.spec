@@ -202,7 +202,6 @@ ln -sf %{_var}/log/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 
 %doc %{name}-*/README.txt
 %doc %{name}-*/NOTICE
-%doc %{name}-*/RELEASE_NOTES.txt
 %license %{name}-*/LICENSE
 
 #-------------------------------------------------------------------------------
