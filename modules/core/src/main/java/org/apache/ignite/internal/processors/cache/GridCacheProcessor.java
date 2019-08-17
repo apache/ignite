@@ -605,6 +605,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
 
         ctx.coordinators().preProcessCacheConfiguration(cfg);
+        ctx.igfsHelper().preProcessCacheConfiguration(cfg);
     }
 
     /**
@@ -664,6 +665,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!ctx.clientNode())
             addRemovedItemsCleanupTask(Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000));
+
+        // Notify shared managers.
+        for (GridCacheSharedManager mgr : sharedCtx.managers())
+            mgr.onKernalStart(active);
 
         // Escape if cluster inactive.
         if (!active)

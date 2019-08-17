@@ -50,6 +50,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** If true activate else deactivate. */
     private boolean activate;
 
+    /** If true read-only mode. */
+    private boolean readOnly;
+
     /** Configurations read from persistent store. */
     private List<StoredCacheData> storedCfgs;
 
@@ -75,6 +78,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      * @param initiatingNodeId Node initiated state change.
      * @param storedCfgs Configurations read from persistent store.
      * @param activate New cluster state.
+     * @param readOnly New read-only mode flag.
      * @param baselineTopology Baseline topology.
      * @param forceChangeBaselineTopology Force change baseline topology flag.
      * @param timestamp Timestamp.
@@ -84,9 +88,11 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         UUID initiatingNodeId,
         @Nullable List<StoredCacheData> storedCfgs,
         boolean activate,
+        boolean readOnly,
         BaselineTopology baselineTopology,
         boolean forceChangeBaselineTopology,
-        long timestamp) {
+        long timestamp
+    ) {
         assert reqId != null;
         assert initiatingNodeId != null;
 
@@ -94,6 +100,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
         this.activate = activate;
+        this.readOnly = readOnly;
         this.baselineTopology = baselineTopology;
         this.forceChangeBaselineTopology = forceChangeBaselineTopology;
         this.timestamp = timestamp;
@@ -157,8 +164,11 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
+    @Override public DiscoCache createDiscoCache(
+        GridDiscoveryManager mgr,
+        AffinityTopologyVersion topVer,
+        DiscoCache discoCache
+    ) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
     }
 
@@ -174,6 +184,13 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     public boolean activate() {
         return activate;
+    }
+
+    /**
+     * @return Read-only mode flag.
+     */
+    public boolean readOnly() {
+        return readOnly;
     }
 
     /**

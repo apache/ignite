@@ -638,7 +638,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return <code>null</code> if <code>creatorNode</code> is null and we cannot retrieve creator node from ring
      * by <code>creatorNodeId</code>, and new instance of {@link TcpDiscoveryStatusCheckMessage} in other cases.
      */
-    private  @Nullable TcpDiscoveryStatusCheckMessage createTcpDiscoveryStatusCheckMessage(
+    private @Nullable TcpDiscoveryStatusCheckMessage createTcpDiscoveryStatusCheckMessage(
         @Nullable TcpDiscoveryNode creatorNode,
         UUID creatorNodeId,
         UUID failedNodeId
@@ -5571,10 +5571,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                             "[recipient=" + msg0.creatorNodeId() + ", status=" + msg0.status() + ']', e);
                                     }
                                     else if (!spi.isNodeStopping0()) {
-                                        if (pingNode(msg0.creatorNode()))
+                                        if (pingNode(msg0.creatorNodeId())) {
                                             // Node exists and accepts incoming connections.
                                             U.error(log, "Failed to respond to status check message [recipient=" +
                                                 msg0.creatorNodeId() + ", status=" + msg0.status() + ']', e);
+                                        }
                                         else if (log.isDebugEnabled()) {
                                             log.debug("Failed to respond to status check message (did the node stop?)" +
                                                 "[recipient=" + msg0.creatorNodeId() +
