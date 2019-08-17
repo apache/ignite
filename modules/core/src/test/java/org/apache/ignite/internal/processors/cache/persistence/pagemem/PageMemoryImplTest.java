@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,30 +33,38 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
 import org.mockito.Mockito;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.CHECKPOINT_POOL_OVERFLOW_ERROR_MSG;
 
 /**
@@ -73,12 +83,13 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThatAllocationTooMuchPagesCauseToOOMException() throws Exception {
         PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
 
         try {
             while (!Thread.currentThread().isInterrupted())
-                memory.allocatePage(1, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
+                memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
         }
         catch (IgniteOutOfMemoryException ignore) {
             //Success
@@ -90,6 +101,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferOverusageDontCauseWriteLockLeak() throws Exception {
         PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
 
@@ -97,7 +109,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                long pageId = memory.allocatePage(1, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
+                long pageId = memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
 
                 FullPageId fullPageId = new FullPageId(pageId, 1);
 
@@ -143,6 +155,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled CHECKPOINT_BUFFER_ONLY throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoad() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY);
     }
@@ -151,6 +164,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled SPEED_BASED throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoadSpeedBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.SPEED_BASED);
     }
@@ -159,8 +173,173 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled TARGET_RATIO_BASED throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoadRatioBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testCheckpointProtocolWriteDirtyPageAfterWriteUnlock() throws Exception {
+        TestPageStoreManager pageStoreMgr = new TestPageStoreManager();
+
+        // Create a 1 mb page memory.
+        PageMemoryImpl memory = createPageMemory(
+            1,
+            PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED,
+            pageStoreMgr,
+            pageStoreMgr
+        );
+
+        int initPageCnt = 10;
+
+        List<FullPageId> allocated = new ArrayList<>(initPageCnt);
+
+        for (int i = 0; i < initPageCnt; i++) {
+            long id = memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
+
+            FullPageId fullId = new FullPageId(id, 1);
+
+            allocated.add(fullId);
+
+            writePage(memory, fullId, (byte)1);
+        }
+
+        doCheckpoint(memory.beginCheckpoint(), memory, pageStoreMgr);
+
+        FullPageId cowPageId = allocated.get(0);
+
+        // Mark some pages as dirty.
+        writePage(memory, cowPageId, (byte)2);
+
+        GridMultiCollectionWrapper<FullPageId> cpPages = memory.beginCheckpoint();
+
+        assertEquals(1, cpPages.size());
+
+        // At this point COW mechanics kicks in.
+        writePage(memory, cowPageId, (byte)3);
+
+        doCheckpoint(cpPages, memory, pageStoreMgr);
+
+        byte[] data = pageStoreMgr.storedPages.get(cowPageId);
+
+        for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
+            assertEquals(2, data[i]);
+    }
+
+    /**
+     * @param cpPages Checkpoint pages acuiqred by {@code beginCheckpoint()}.
+     * @param memory Page memory.
+     * @param pageStoreMgr Test page store manager.
+     * @throws Exception If failed.
+     */
+    private void doCheckpoint(
+        GridMultiCollectionWrapper<FullPageId> cpPages,
+        PageMemoryImpl memory,
+        TestPageStoreManager pageStoreMgr
+    ) throws Exception {
+        PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
+            assertNotNull(tag);
+
+            pageStoreMgr.write(fullPageId.groupId(), fullPageId.pageId(), buf, 1);
+        };
+
+        for (FullPageId cpPage : cpPages) {
+            byte[] data = new byte[PAGE_SIZE];
+
+            ByteBuffer buf = ByteBuffer.wrap(data);
+
+            memory.checkpointWritePage(cpPage, buf, pageStoreWriter, null);
+        }
+
+        memory.finishCheckpoint();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testCheckpointProtocolCannotReplaceUnwrittenPage() throws Exception {
+        TestPageStoreManager pageStoreMgr = new TestPageStoreManager();
+
+        // Create a 1 mb page memory.
+        PageMemoryImpl memory = createPageMemory(
+            1,
+            PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED,
+            pageStoreMgr,
+            pageStoreMgr);
+
+        int initPageCnt = 500;
+
+        List<FullPageId> allocated = new ArrayList<>(initPageCnt);
+
+        for (int i = 0; i < initPageCnt; i++) {
+            long id = memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
+
+            FullPageId fullId = new FullPageId(id, 1);
+            allocated.add(fullId);
+
+            writePage(memory, fullId, (byte)1);
+        }
+
+        // CP Write lock.
+        memory.beginCheckpoint();
+        // CP Write unlock.
+
+        byte[] buf = new byte[PAGE_SIZE];
+
+        memory.checkpointWritePage(allocated.get(0), ByteBuffer.wrap(buf),
+            (fullPageId, buf0, tag) -> {
+                assertNotNull(tag);
+
+                boolean oom = false;
+
+                try {
+                    // Try force page replacement.
+                    while (true) {
+                        memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
+                    }
+                }
+                catch (IgniteOutOfMemoryException ex) {
+                    oom = true;
+                }
+
+                assertTrue("Should oom before check replaced page.", oom);
+
+                assertTrue("Missing page: " + fullPageId, memory.hasLoadedPage(fullPageId));
+            }
+            , null);
+    }
+
+    /**
+     * @param mem Page memory.
+     * @param fullPageId Full page ID to write.
+     * @param val Value to write.
+     * @throws Exception If failed.
+     */
+    private void writePage(PageMemoryImpl mem, FullPageId fullPageId, byte val) throws Exception {
+        int grpId = fullPageId.groupId();
+        long pageId = fullPageId.pageId();
+        long page = mem.acquirePage(grpId, pageId);
+
+        try {
+            long ptr = mem.writeLock(grpId, pageId, page);
+
+            try {
+                new DummyPageIO().initNewPage(ptr, pageId, PAGE_SIZE);
+
+                for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++)
+                    PageUtils.putByte(ptr, i, val);
+            }
+            finally {
+                mem.writeUnlock(grpId, pageId, page, Boolean.FALSE, true);
+            }
+        }
+        finally {
+            mem.releasePage(grpId, pageId, page);
+        }
     }
 
     /**
@@ -172,7 +351,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         List<FullPageId> pages = new ArrayList<>();
 
         for (int i = 0; i < (MAX_SIZE - 10) * MB / PAGE_SIZE / 2; i++) {
-            long pageId = memory.allocatePage(1, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
+            long pageId = memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
 
             FullPageId fullPageId = new FullPageId(pageId, 1);
 
@@ -186,12 +365,15 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         CheckpointMetricsTracker mockTracker = Mockito.mock(CheckpointMetricsTracker.class);
 
         for (FullPageId checkpointPage : pages)
-            memory.getForCheckpoint(checkpointPage, ByteBuffer.allocate(PAGE_SIZE), mockTracker);
+            memory.checkpointWritePage(checkpointPage, ByteBuffer.allocate(PAGE_SIZE),
+                (fullPageId, buffer, tag) -> {
+                    // No-op.
+                }, mockTracker);
 
         memory.finishCheckpoint();
 
         for (int i = (int)((MAX_SIZE - 10) * MB / PAGE_SIZE / 2); i < (MAX_SIZE - 20) * MB / PAGE_SIZE; i++) {
-            long pageId = memory.allocatePage(1, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
+            long pageId = memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
 
             FullPageId fullPageId = new FullPageId(pageId, 1);
 
@@ -261,11 +443,31 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * @param throttlingPlc Throttling Policy.
      * @throws Exception If creating mock failed.
      */
-    private PageMemoryImpl createPageMemory(PageMemoryImpl.ThrottlingPolicy throttlingPlc) throws Exception {
+    private PageMemoryImpl createPageMemory(
+        PageMemoryImpl.ThrottlingPolicy throttlingPlc) throws Exception {
+        return createPageMemory(
+            MAX_SIZE,
+            throttlingPlc,
+            new NoOpPageStoreManager(),
+            (fullPageId, byteBuf, tag) -> {
+                assert false : "No page replacement (rotation with disk) should happen during the test";
+            });
+    }
+
+    /**
+     * @param throttlingPlc Throttling Policy.
+     * @throws Exception If creating mock failed.
+     */
+    private PageMemoryImpl createPageMemory(
+        int maxSize,
+        PageMemoryImpl.ThrottlingPolicy throttlingPlc,
+        IgnitePageStoreManager mgr,
+        PageStoreWriter replaceWriter
+    ) throws Exception {
         long[] sizes = new long[5];
 
         for (int i = 0; i < sizes.length; i++)
-            sizes[i] = MAX_SIZE * MB / 4;
+            sizes[i] = maxSize * MB / 4;
 
         sizes[4] = 5 * MB;
 
@@ -275,12 +477,14 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration());
         igniteCfg.setFailureHandler(new NoOpFailureHandler());
         igniteCfg.setEncryptionSpi(new NoopEncryptionSpi());
+        igniteCfg.setEventStorageSpi(new NoopEventStorageSpi());
 
         GridTestKernalContext kernalCtx = new GridTestKernalContext(new GridTestLog4jLogger(), igniteCfg);
 
         kernalCtx.add(new IgnitePluginProcessor(kernalCtx, igniteCfg, Collections.<PluginProvider>emptyList()));
         kernalCtx.add(new GridInternalSubscriptionProcessor(kernalCtx));
         kernalCtx.add(new GridEncryptionManager(kernalCtx));
+        kernalCtx.add(new GridEventStorageManager(kernalCtx));
 
         FailureProcessor failureProc = new FailureProcessor(kernalCtx);
 
@@ -293,7 +497,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null,
             null,
             null,
-            new NoOpPageStoreManager(),
+            mgr,
             new NoOpWALManager(),
             null,
             new IgniteCacheDatabaseSharedManager(),
@@ -321,17 +525,15 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             sizes,
             sharedCtx,
             PAGE_SIZE,
-            (fullPageId, byteBuf, tag) -> {
-                assert false : "No page replacement (rotation with disk) should happen during the test";
-            },
+            replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
                 }
             }, new CheckpointLockStateChecker() {
-                @Override public boolean checkpointLockIsHeldByThread() {
-                    return true;
-                }
-            },
+            @Override public boolean checkpointLockIsHeldByThread() {
+                return true;
+            }
+        },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()),
             throttlingPlc,
             noThrottle
@@ -340,5 +542,43 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         mem.start();
 
         return mem;
+    }
+
+    /**
+     *
+     */
+    private static class TestPageStoreManager extends NoOpPageStoreManager implements PageStoreWriter {
+        /** */
+        private Map<FullPageId, byte[]> storedPages = new HashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+            FullPageId fullPageId = new FullPageId(pageId, grpId);
+
+            byte[] bytes = storedPages.get(fullPageId);
+
+            if (bytes != null)
+                pageBuf.put(bytes);
+            else
+                pageBuf.put(new byte[PAGE_SIZE]);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+            byte[] data = new byte[PAGE_SIZE];
+
+            pageBuf.get(data);
+
+            storedPages.put(new FullPageId(pageId, grpId), data);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writePage(FullPageId fullPageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+            byte[] data = new byte[PAGE_SIZE];
+
+            pageBuf.get(data);
+
+            storedPages.put(fullPageId, data);
+        }
     }
 }

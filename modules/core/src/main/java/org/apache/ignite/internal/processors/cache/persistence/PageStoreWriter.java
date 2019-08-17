@@ -14,22 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.pagemem;
+
+package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 
 /**
- * Flush (write) dirty page implementation for freed page during page replacement. When possible, will be called by
- * removePageForReplacement().
+ * Interface for write page to {@link PageStore}.
  */
-public interface ReplacedPageWriter {
+public interface PageStoreWriter {
     /**
-     * @param fullPageId Full page ID being evicted.
-     * @param byteBuf Buffer with page data.
-     * @param tag partition update tag, increasing counter.
-     * @throws IgniteCheckedException if page write failed.
+     * Callback for write page. {@link PageMemoryEx} will copy page content to buffer before call.
+     *
+     * @param fullPageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
+     *      the {@link PageMemoryEx#beginCheckpoint()} method call.
+     * @param buf Temporary buffer to write changes into.
+     * @param tag  {@code Partition generation} if data was read, {@code null} otherwise (data already saved to storage).
+     * @throws IgniteCheckedException If write page failed.
      */
-    void writePage(FullPageId fullPageId, ByteBuffer byteBuf, int tag) throws IgniteCheckedException;
+    void writePage(FullPageId fullPageId, ByteBuffer buf, int tag) throws IgniteCheckedException;
 }
