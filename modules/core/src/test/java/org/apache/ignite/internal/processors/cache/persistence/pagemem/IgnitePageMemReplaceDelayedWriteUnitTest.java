@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointWritePr
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,7 +90,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         AtomicInteger totalEvicted = new AtomicInteger();
 
-        ReplacedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
+        PageStoreWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
             log.info("Evicting " + fullPageId);
 
             assert getLockedPages(fullPageId).contains(fullPageId);
@@ -146,7 +147,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         AtomicInteger totalEvicted = new AtomicInteger();
 
-        ReplacedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
+        PageStoreWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
             log.info("Evicting " + fullPageId);
 
             assert getSegment(fullPageId).writeLock().isHeldByCurrentThread();
@@ -211,7 +212,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      * @return implementation for test
      */
     @NotNull
-    private PageMemoryImpl createPageMemory(IgniteConfiguration cfg, ReplacedPageWriter pageWriter, int pageSize) {
+    private PageMemoryImpl createPageMemory(IgniteConfiguration cfg, PageStoreWriter pageWriter, int pageSize) {
         IgniteCacheDatabaseSharedManager db = mock(GridCacheDatabaseSharedManager.class);
 
         when(db.checkpointLockIsHeldByThread()).thenReturn(true);
