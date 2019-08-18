@@ -1232,7 +1232,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 // Start new user tx in case of autocommit == false.
                 if (autoStartTx)
-                    txStart(ctx, qryParams.timeout());
+                    txStart(ctx, getQueryTimeout(qryParams));
 
                 tx = tx(ctx);
 
@@ -1243,7 +1243,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 tracker = MvccUtils.mvccTracker(mvccCctx, tx);
             }
 
-            int timeout = operationTimeout(qryParams.timeout(), tx);
+            int timeout = operationTimeout(getQueryTimeout(qryParams), tx);
 
             Iterable<List<?>> iter = executeSelect0(
                 qryDesc,
@@ -1280,6 +1280,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw new IgniteSQLException("Failed to execute SELECT statement: " + qryDesc.sql(), e);
         }
+    }
+
+    /**
+     * Get Query timeout.
+     *
+     * @param qryParams Parameters.
+     * @return Query timeout.
+     */
+    private int getQueryTimeout(QueryParameters qryParams) {
+        long timeout = 0;
+
+        if (qryParams.timeout() > 0)
+            timeout = qryParams.timeout();
+        else
+            timeout = ctx.config().getDefaultQueryTimeout();
+
+        return (int)timeout;
     }
 
     /**
@@ -2661,7 +2678,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryParams.arguments(),
                 qryDesc.enforceJoinOrder(),
                 qryParams.pageSize(),
-                qryParams.timeout(),
+                getQueryTimeout(qryParams),
                 qryParams.partitions(),
                 distributedPlan.isReplicatedOnly(),
                 cancel
@@ -2678,7 +2695,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
             .setLocal(qryDesc.local())
             .setPageSize(qryParams.pageSize())
-            .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
+            .setTimeout(getQueryTimeout(qryParams), TimeUnit.MILLISECONDS);
 
         Iterable<List<?>> cur;
 
@@ -2692,7 +2709,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 selectFieldsQry,
                 null,
                 cancel,
-                qryParams.timeout()
+                getQueryTimeout(qryParams)
             );
         }
         else if (plan.hasRows())
@@ -2710,7 +2727,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 null,
                 cancel,
                 false,
-                qryParams.timeout()
+                getQueryTimeout(qryParams)
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -2764,7 +2781,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean commit = implicit && qryParams.autoCommit();
 
         if (implicit)
-            tx = txStart(cctx, qryParams.timeout());
+            tx = txStart(cctx, getQueryTimeout(qryParams));
 
         requestSnapshot(tx);
 
@@ -2773,7 +2790,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             long timeout = implicit
                 ? tx.remainingTime()
-                : operationTimeout(qryParams.timeout(), tx);
+                : operationTimeout(getQueryTimeout(qryParams), tx);
 
             if (cctx.isReplicated() || distributedPlan == null || ((plan.mode() == UpdateMode.INSERT
                 || plan.mode() == UpdateMode.MERGE) && !plan.isLocalSubquery())) {
