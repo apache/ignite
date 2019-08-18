@@ -298,15 +298,13 @@ public class CachesRegistry {
             }
         }
 
-        return cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-            @Override public void run() {
-                try {
-                    for (StoredCacheData data : cacheConfigsToPersist)
-                        cctx.cache().saveCacheConfiguration(data, false);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Error while saving cache configurations on disk", e);
-                }
+        return cctx.kernalContext().closure().runLocalSafe(() -> {
+            try {
+                for (StoredCacheData data : cacheConfigsToPersist)
+                    cctx.pageStore().storeCacheData(data, false);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Error while saving cache configurations on disk", e);
             }
         });
     }
