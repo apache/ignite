@@ -77,6 +77,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinished
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.TransactionView;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -183,6 +185,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Deadlock detection futures. */
     private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap<>();
+
+    /** */
+    private MonitoringList<IgniteUuid, TransactionView> txMonList;
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
@@ -309,6 +314,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+
+        this.txMonList = cctx.kernalContext().metric().list("transactions");
     }
 
     /** {@inheritDoc} */
@@ -646,6 +653,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Transaction created: " + tx);
+
+        txMonList.add(tx.xid(), new TransactionView(tx));
 
         return tx;
     }
@@ -1408,6 +1417,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 tx.txState().onTxEnd(cctx, tx, true);
             }
 
+            txMonList.remove(tx.xid());
+
             if (slowTxWarnTimeout > 0 && tx.local() &&
                 U.currentTimeMillis() - tx.startTime() > slowTxWarnTimeout)
                 U.warn(log, "Slow transaction detected [tx=" + tx +
@@ -1477,6 +1488,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 tx.txState().onTxEnd(cctx, tx, false);
             }
 
+            txMonList.remove(tx.xid());
+
             if (log.isDebugEnabled())
                 log.debug("Rolled back from TM: " + tx);
         }
@@ -1529,6 +1542,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 tx.txState().onTxEnd(cctx, tx, commit);
             }
+
+            txMonList.remove(tx.xid());
         }
     }
 

@@ -33,7 +33,10 @@ import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
 
 /**
  * System view: running queries
+ *
+ * @deprecated Use monitoring list instead.
  */
+@Deprecated
 public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
     /** */
     private MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;

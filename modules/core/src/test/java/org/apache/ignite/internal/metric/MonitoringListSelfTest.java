@@ -23,9 +23,12 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -39,6 +42,7 @@ import org.apache.ignite.internal.processors.metric.list.view.CacheView;
 import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.internal.processors.metric.list.view.ServiceView;
+import org.apache.ignite.internal.processors.metric.list.view.TransactionView;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
@@ -46,12 +50,20 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** */
 public class MonitoringListSelfTest extends GridCommonAbstractTest {
@@ -150,8 +162,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals(1000, cq.interval());
             assertEquals(g0.localNode().id().toString(), cq.sessionId());
             //Local listener not null on originating node.
-            assertTrue(cq.localListener().startsWith(this.getClass().getName()));
-            assertTrue(cq.remoteFilter().startsWith(this.getClass().getName()));
+            assertTrue(cq.localListener().startsWith(getClass().getName()));
+            assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
             assertNull(cq.localTransformedListener());
             assertNull(cq.remoteTransformer());
 
@@ -227,6 +239,85 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                     assertEquals(jdbcConn.version(), JdbcConnectionContext.CURRENT_VER);
                 }
             }
+        }
+    }
+
+    @Test
+    /** */
+    public void testTransactions() throws Exception {
+        try(IgniteEx g = startGrid(0)) {
+            IgniteCache<Integer, Integer> cache = g.createCache(new CacheConfiguration<Integer, Integer>("c")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+            MonitoringList<IgniteUuid, TransactionView> txs =
+                g.context().metric().list(metricName("transactions"));
+
+            assertEquals(0, F.size(txs.iterator(), alwaysTrue()));
+
+            CountDownLatch latch = new CountDownLatch(1);
+
+            try {
+                AtomicInteger cntr = new AtomicInteger();
+
+                GridTestUtils.runMultiThreadedAsync(() -> {
+                    try(Transaction tx = g.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                        latch.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, 5, "xxx");
+
+                boolean res = waitForCondition(() -> F.size(txs.iterator(), alwaysTrue()) == 5, 5_000L);
+
+                assertTrue(res);
+
+                TransactionView txv = txs.iterator().next();
+
+                assertEquals(g.localNode().id().toString(), txv.sessionId());
+                assertEquals(txv.isolation(), REPEATABLE_READ);
+                assertEquals(txv.concurrency(), PESSIMISTIC);
+                assertEquals(txv.state(), ACTIVE);
+                assertNotNull(txv.xid());
+                assertFalse(txv.system());
+                assertFalse(txv.implicit());
+                assertFalse(txv.implicitSingle());
+                assertTrue(txv.near());
+                assertFalse(txv.dht());
+                assertTrue(txv.colocated());
+                assertTrue(txv.local());
+                assertEquals("test", txv.label());
+                assertFalse(txv.onePhaseCommit());
+                assertFalse(txv.internal());
+                assertEquals(0, txv.timeout());
+                assertTrue(txv.startTime() <= System.currentTimeMillis());
+
+                GridTestUtils.runMultiThreadedAsync(() -> {
+                    try(Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                        latch.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, 5, "xxx");
+
+                res = waitForCondition(() -> F.size(txs.iterator(), alwaysTrue()) == 10, 5_000L);
+
+                assertTrue(res);
+            }
+            finally {
+                latch.countDown();
+            }
+
+            boolean res = waitForCondition(() -> F.size(txs.iterator(), alwaysTrue()) == 0, 5_000L);
+
+            assertTrue(res);
         }
     }
 

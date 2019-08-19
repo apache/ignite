@@ -34,7 +34,10 @@ import org.h2.value.Value;
 
 /**
  * View that contains information about all the sql tables in the cluster.
+ *
+ * @deprecated Use monitoring list instead.
  */
+@Deprecated
 public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
 
     /** Schema manager. */

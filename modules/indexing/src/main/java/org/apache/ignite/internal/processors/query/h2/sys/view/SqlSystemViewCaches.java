@@ -32,7 +32,10 @@ import org.h2.value.Value;
 
 /**
  * System view: caches.
+ *
+ * @deprecated Use monitoring list instead.
  */
+@Deprecated
 public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
     /**
      * @param ctx Grid context.

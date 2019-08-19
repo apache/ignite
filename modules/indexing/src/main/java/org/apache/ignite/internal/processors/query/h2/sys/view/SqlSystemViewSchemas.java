@@ -31,7 +31,10 @@ import org.h2.result.SearchRow;
 
 /**
  * View that contains information about all the sql tables in the cluster.
+ *
+ * @deprecated Use monitoring list instead.
  */
+@Deprecated
 public class SqlSystemViewSchemas extends SqlAbstractLocalSystemView {
     /** Schema manager. */
     private final SchemaManager schemaMgr;

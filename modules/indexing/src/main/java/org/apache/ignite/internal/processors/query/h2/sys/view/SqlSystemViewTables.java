@@ -34,7 +34,10 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * View that contains information about all the sql tables in the cluster.
+ *
+ * @deprecated Use monitoring list instead.
  */
+@Deprecated
 public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     /** Name of the column that contains names of sql tables. */
     private static final String TABLE_NAME = "TABLE_NAME";
