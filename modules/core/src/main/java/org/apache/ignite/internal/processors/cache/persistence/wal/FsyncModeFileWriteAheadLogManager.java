@@ -1298,7 +1298,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         File[] allFiles = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
 
-        if (allFiles.length != 0 && allFiles.length > dsCfg.getWalSegments())
+        if (isArchiverEnabled() && allFiles.length != 0 && allFiles.length > dsCfg.getWalSegments())
             throw new StorageException("Failed to initialize wal (work directory contains " +
                 "incorrect number of segments) [cur=" + allFiles.length + ", expected=" + dsCfg.getWalSegments() + ']');
 
@@ -1354,9 +1354,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Creates a file atomically with temp file.
      *
      * @param file File to create.
+     * @return destination file
      * @throws StorageException If failed.
      */
-    private void createFile(File file) throws StorageException {
+    private File createFile(File file) throws StorageException {
         if (log.isDebugEnabled())
             log.debug("Creating new file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
@@ -1365,15 +1366,17 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         formatFile(tmp);
 
         try {
-            Files.move(tmp.toPath(), file.toPath());
+            Path dest = Files.move(tmp.toPath(), file.toPath());
+
+            if (log.isDebugEnabled())
+                log.debug("Created WAL segment [file=" + file.getAbsolutePath() + ", size=" + file.length() + ']');
+
+            return dest.toFile();
         }
         catch (IOException e) {
             throw new StorageException("Failed to move temp file to a regular WAL segment file: " +
                 file.getAbsolutePath(), e);
         }
-
-        if (log.isDebugEnabled())
-            log.debug("Created WAL segment [file=" + file.getAbsolutePath() + ", size=" + file.length() + ']');
     }
 
     /**
@@ -1388,8 +1391,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private File pollNextFile(long curIdx) throws StorageException, IgniteInterruptedCheckedException {
         FileArchiver archiver0 = archiver;
 
-        if (archiver0 == null)
-            return new File(walWorkDir, FileDescriptor.fileName(curIdx + 1));
+        if (archiver0 == null) {
+            File next = new File(walWorkDir, FileDescriptor.fileName(curIdx + 1));
+            return createFile(next);
+        }
 
         // Signal to archiver that we are done with the segment and it can be archived.
         long absNextIdx = archiver0.nextAbsoluteSegmentIndex(curIdx);
