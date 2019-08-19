@@ -691,7 +691,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         final int THREADS_PER_NODE = 5;
         final int KEY_RANGE = 10_000;
-        final int ITERATIONS = GridTestUtils.SF.applyLB(3000, 100);
+        final int ITERATIONS = GridTestUtils.SF.applyLB(2000, 100);
 
         for (int i = 0; i < gridCount(); i++) {
             final int idx = i;
