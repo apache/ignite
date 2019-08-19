@@ -72,7 +72,7 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
      *
      */
     @Test
-    public void shouldPrintMessageIfPartitionHasOtherCounter() throws Exception {
+    public void testShouldPrintMessageIfPartitionHasOtherCounter() throws Exception {
         doTest(new CacheConfiguration<>(CACHE_1).setBackups(1), true);
     }
 
@@ -80,7 +80,7 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
      *
      */
     @Test
-    public void shouldNotPrintMessageIfPartitionHasOtherCounterButHasCustomExpiryPolicy() throws Exception {
+    public void testShouldNotPrintMessageIfPartitionHasOtherCounterButHasCustomExpiryPolicy() throws Exception {
         doTest(
             new CacheConfiguration<>(CACHE_1)
                 .setBackups(1)
