@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyListRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
@@ -64,7 +65,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricExporterSpi
  * @see MetricRegistry
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
+    implements ReadOnlyMetricRegistry, ReadOnlyListRegistry {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 

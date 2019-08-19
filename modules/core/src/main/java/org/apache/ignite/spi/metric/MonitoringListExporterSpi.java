@@ -17,18 +17,26 @@
 
 package org.apache.ignite.spi.metric;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 
 /**
- * Read only metric registry.
+ * Exporter of monitoring list to the external recepient.
+ * Expected, that each implementation would support some specific protocol.
+ *
+ * Implementation of this Spi should work by pull paradigm.
+ * So after start SPI should respond to some incoming request.
+ * HTTP servlet or JMX bean are good examples of expected implementations.
+ *
+ * @see ReadOnlyListRegistry
+ * @see ReadOnlyMetricRegistry
+ * @see MonitoringList
+ * @see MonitoringRow
  */
-public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
-    /**
-     * Adds listener of metrics group creation events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
+public interface MonitoringListExporterSpi {
+
+    public void setMetricRegistry(ReadOnlyListRegistry registry);
+
+    public void setExportFilter(Predicate<MonitoringList> filter);
 }

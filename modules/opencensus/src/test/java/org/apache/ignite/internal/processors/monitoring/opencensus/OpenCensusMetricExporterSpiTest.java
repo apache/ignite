@@ -94,6 +94,12 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
+    public void testMetrics() throws Exception {
+
+    }
+
+    /** */
+    @Test
     public void testDataRegionOcMetrics() throws Exception {
         boolean res = waitForCondition(() -> {
             try {

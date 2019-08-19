@@ -179,7 +179,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals(g0.localNode().id().toString(), cq.sessionId());
             //Local listener is null on remote nodes.
             assertNull(cq.localListener());
-            assertTrue(cq.remoteFilter().startsWith(this.getClass().getName()));
+            assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
             assertNull(cq.localTransformedListener());
             assertNull(cq.remoteTransformer());
         }
