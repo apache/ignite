@@ -384,6 +384,21 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     }
 
     /**
+     * Wait appropriate exception.
+     *
+     * @param e Exception to be processed.
+     * @throws Exception If failed.
+     */
+    protected void awaitConcDestroyException(Exception e) throws Exception {
+        for (Throwable th = e; th != null; th = th.getCause()) {
+            if (th.getMessage().contains(CONC_DESTROY_MSG))
+                return;
+        }
+
+        throw e;
+    }
+
+    /**
      * Assert SQL simple data state.
      *
      * @param node Node.
@@ -416,11 +431,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
                 ", ids=" + ids + ']', expSize, res.size());
         }
         catch (Exception e) {
-            for (Throwable th = e; th != null; th = th.getCause()) {
-                if (th.getMessage().contains(CONC_DESTROY_MSG))
-                    return;
-            }
-
             // Swallow QueryRetryException.
             if (X.cause(e, QueryRetryException.class) == null)
                 throw e;
