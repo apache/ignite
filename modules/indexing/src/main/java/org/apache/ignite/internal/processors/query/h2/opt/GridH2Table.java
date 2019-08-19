@@ -1064,19 +1064,19 @@ public class GridH2Table extends TableBase {
                 if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
                     ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
 
-                    Index idx0 = idxs.remove(i);
+                    idxs.remove(i);
 
-                    if (idx0 instanceof GridH2ProxyIndex &&
+                    if (idx instanceof GridH2ProxyIndex &&
                         idx.getSchema().findIndex(session, idx.getName()) != null)
                         database.removeSchemaObject(session, idx);
 
                     GridCacheContext cctx0 = cacheInfo.cacheContext();
 
-                    if (cctx0 != null && idx0 instanceof GridH2IndexBase) {
+                    if (cctx0 != null && idx instanceof GridH2IndexBase) {
                         cctx0.shared().database().checkpointReadLock();
 
                         try {
-                            ((GridH2IndexBase)idx0).destroy(rmIndex);
+                            ((GridH2IndexBase)idx).destroy(rmIndex);
                         }
                         finally {
                             cctx0.shared().database().checkpointReadUnlock();
