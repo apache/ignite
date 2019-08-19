@@ -50,7 +50,6 @@ import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.IntStream.range;
 import static java.util.stream.Stream.of;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WRITE_REBALANCE_STATISTICS;
@@ -138,7 +137,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
     private CacheConfiguration cacheConfiguration(final String cacheName, final int parts, final int backups) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, parts));
         ccfg.setBackups(backups);
         return ccfg;
@@ -242,7 +241,6 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      * @throws Exception
      * */
     @Test
-    @WithSystemProperty(key = IGNITE_FORCE_MVCC_MODE_IN_TESTS, value = "false")
     public void testPrintCorrectStatisticInMultiJvm() throws Exception{
         multiJvm = true;
 
