@@ -304,11 +304,7 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
  * for the information on the misspelling.
  * <p>
  * <h3>Starting</h3>
- * The main entry point for all the Ignite instances creation is the method - {@link #start(IgniteConfiguration,
- * ExecutorService, ExecutorService, ExecutorService, ExecutorService,StripedExecutor, ExecutorService, ExecutorService,
- * ExecutorService, StripedExecutor, ExecutorService, ExecutorService, ExecutorService, IgniteStripedThreadPoolExecutor,
- * ExecutorService, ExecutorService, Map, GridAbsClosure, WorkersRegistry, Thread.UncaughtExceptionHandler, TimeBag)
- * start}.
+ * The main entry point for all the Ignite instances creation is the method - {@link #start}.
  * <p>
  * It starts internal Ignite components (see {@link GridComponent}), for instance:
  * <ul>
