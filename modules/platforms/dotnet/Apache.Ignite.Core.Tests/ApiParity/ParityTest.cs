@@ -148,7 +148,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             {
                 if (!knownMissing.ContainsKey(javaMissingProp.Key))
                 {
-                    sb.AppendFormat("{0}.{1} member is missing in .NET.\n", type.Name, javaMissingProp.Key);
+                    sb.AppendFormat("{0}.{1} member is missing in .NET.\n" +
+                                    "For new functionality please file a .NET ticket and update MissingProperties " +
+                                    "array accordingly with a link to that ticket.\n", type.Name, javaMissingProp.Key);
+
                     codeSb.AppendFormat("\"{0}\", ", javaMissingProp.Key);
                 }
             }
