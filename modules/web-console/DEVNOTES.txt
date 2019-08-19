@@ -44,7 +44,16 @@ The image will be available in local docker registry (can be seen by calling the
 Web Console Run In Development Mode
 ==========================================
 1. Install Node.js (version >=8.0.0) using installer from https://nodejs.org/en/download/current for your OS.
-2. Launch backend module `modules/web-console/web-console-server` from your IDE https://docs.spring.io/spring-boot/docs/current/reference/html/using-boot-running-your-application.html#using-boot-running-from-an-ide
+2. Launch backend module `modules/web-console/web-console-server`
+
+    From your IDE https://docs.spring.io/spring-boot/docs/current/reference/html/using-boot-running-your-application.html#using-boot-running-from-an-ide
+
+   or run following maven commands in terminal:
+
+    mvn clean install -Plgpl,web-console -pl :ignite-web-console-server -am  -DskipTests -DskipClientDocs -Dmaven.javadoc.skip=true
+
+    mvn exec:java -Plgpl,web-console -pl :ignite-web-console-server -Dexec.mainClass="org.apache.ignite.console.Application" -Dexec.classpathScope=test  -Dorg.eclipse.jetty.util.log.class="org.eclipse.jetty.util.log.StdErrLog" -DIGNITE_HOME=$(pwd)/work
+
 3. In new terminal change directory to 'modules/web-console/frontend'.
   If needed run "npm install" (if dependencies changed) and start webpack in development mode "npm start".
 4. Open in browser: http://localhost:9000
