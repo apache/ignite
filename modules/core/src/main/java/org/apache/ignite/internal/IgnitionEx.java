@@ -1983,7 +1983,7 @@ public class IgnitionEx {
                 cfg.getRebalanceThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
-                GridIoPolicy.REBALANCE_POOL,
+                GridIoPolicy.UNDEFINED,
                 oomeHnd);
 
             rebalanceExecSvc.allowCoreThreadTimeOut(true);

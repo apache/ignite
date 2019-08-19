@@ -41,7 +41,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -866,8 +865,7 @@ public class GridDhtPartitionDemander {
                     "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p +
                     ", processed=" + processed + ", queued=" + queued + "]");
 
-            ctx.kernalContext().closure().runLocalSafe(
-                () -> ownPartition(fut, p, nodeId, supplyMsg), GridIoPolicy.REBALANCE_POOL);
+            ctx.kernalContext().getRebalanceExecutorService().execute(() -> ownPartition(fut, p, nodeId, supplyMsg));
         }
     }
 
