@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTree
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.MemoryLeakAfterRebalanceSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
@@ -83,8 +82,6 @@ public class IgnitePdsMvccTestSuite {
 
         ignoredTests.add(IgnitePdsDestroyCacheTest.class);
         ignoredTests.add(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
-
-        ignoredTests.add(MemoryLeakAfterRebalanceSelfTest.class);
 
         return new ArrayList<>(IgnitePdsTestSuite.suite(ignoredTests));
     }
