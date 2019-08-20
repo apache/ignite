@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.RebalanceAfterResettingLostPartitionTest;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
@@ -72,6 +73,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(HeapArrayLockStackTest.class);
         suite.addTestSuite(OffHeapLockLogTest.class);
         suite.addTestSuite(OffHeapLockStackTest.class);
+
+        suite.addTestSuite(RebalanceAfterResettingLostPartitionTest.class);
 
         return suite;
     }
