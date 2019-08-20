@@ -1122,6 +1122,9 @@ public final class IgniteSystemProperties {
      */
     public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
+    /** Force full index rebuild. */
+    public static final String FORCE_FULL_INDEX_REBUILD = "FORCE_FULL_INDEX_REBUILD";
+
     /**
      * Enforces singleton.
      */
