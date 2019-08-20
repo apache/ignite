@@ -17,20 +17,23 @@
 
 package org.apache.ignite.stream.rocketmq;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Apache RocketMQ streamers tests.
  */
-public class RocketMQStreamerTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class RocketMQStreamerTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Apache RocketMQ streamer Test Suite");
 
-        suite.addTest(new TestSuite(RocketMQStreamerTest.class));
+        suite.addTest(new JUnit4TestAdapter(RocketMQStreamerTest.class));
 
         return suite;
     }

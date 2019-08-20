@@ -19,18 +19,16 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean lateAff;
 
@@ -42,8 +40,6 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLateAffinityAssignment(lateAff);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -60,6 +56,7 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinValidation1() throws Exception {
         checkNodeJoinValidation(false);
     }
@@ -67,6 +64,7 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinValidation2() throws Exception {
         checkNodeJoinValidation(true);
     }

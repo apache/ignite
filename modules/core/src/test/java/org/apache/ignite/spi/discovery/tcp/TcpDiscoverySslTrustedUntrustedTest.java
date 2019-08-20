@@ -22,11 +22,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cases when node connects to cluster with different SSL configuration.
  * Exception with meaningful message should be thrown.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest {
     /** */
     private volatile String keyStore;
@@ -50,6 +54,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameKey() throws Exception {
         checkDiscoverySuccess("node01", "trustone", "node01", "trustone");
     }
@@ -57,6 +62,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentKeys() throws Exception {
         checkDiscoverySuccess("node02", "trusttwo", "node03", "trusttwo");
     }
@@ -64,6 +70,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBothTrusts() throws Exception {
         checkDiscoverySuccess("node01", "trustboth", "node02", "trustboth", "node03", "trustboth");
     }
@@ -71,6 +78,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentCa() throws Exception {
         checkDiscoveryFailure("node01", "trustone", "node02", "trusttwo");
     }
@@ -78,6 +86,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWrongCa() throws Exception {
         checkDiscoveryFailure("node02", "trustone", "node03", "trustone");
     }
@@ -85,6 +94,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMismatchingCaSecond() throws Exception {
         checkDiscoveryFailure("node01", "trustboth", "node03", "trusttwo");
     }
@@ -92,6 +102,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMismatchingCaFirst() throws Exception {
         checkDiscoveryFailure("node02", "trusttwo", "node01", "trustboth");
     }

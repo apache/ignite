@@ -232,6 +232,13 @@ class TestingHelper {
         TestingHelper.checkError(error, Errors.IgniteClientError, done)
     }
 
+    static checkEnumItemSerializationError(error, done) {
+        if (!(error instanceof Errors.IgniteClientError) ||
+            error.message.indexOf('Enum item can not be serialized') < 0) {
+            done.fail('unexpected error: ' + error);
+        }
+    }
+
     static checkError(error, errorType, done) {
         if (!(error instanceof errorType)) {
             done.fail('unexpected error: ' + error);

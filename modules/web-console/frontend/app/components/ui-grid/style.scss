@@ -18,6 +18,7 @@
 .ignite-grid-table,
 ignite-grid-table {
 	@import 'public/stylesheets/variables';
+    display: block;
 
     .ui-grid.ui-grid--ignite.ui-grid--thin {
         // Start section row height.

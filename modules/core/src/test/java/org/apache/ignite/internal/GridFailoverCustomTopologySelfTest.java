@@ -40,11 +40,15 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test failover and custom topology. Topology returns local node if remote node fails.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
     /** */
     private final AtomicInteger failCnt = new AtomicInteger(0);
@@ -80,7 +84,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait", "unchecked"})
+    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait"})
+    @Test
     public void testFailoverTopology() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

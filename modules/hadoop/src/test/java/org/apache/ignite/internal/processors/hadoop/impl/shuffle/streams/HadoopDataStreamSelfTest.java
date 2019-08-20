@@ -34,16 +34,21 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOu
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
     private static final int BUFF_SIZE = 4 * 1024;
 
     /**
      * @throws IOException If failed.
      */
+    @Test
     public void testStreams() throws IOException {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
@@ -65,6 +70,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IOException If failed.
      */
+    @Test
     public void testDirectStreams() throws IOException {
         HadoopDirectDataOutput out = new HadoopDirectDataOutput(BUFF_SIZE);
 
@@ -80,6 +86,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IOException If failed.
      */
+    @Test
     public void testReadline() throws IOException {
         checkReadLine("String1\rString2\r\nString3\nString4");
         checkReadLine("String1\rString2\r\nString3\nString4\r\n");

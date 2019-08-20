@@ -16,11 +16,10 @@
  */
 
 import {assert} from 'chai';
-import {of} from 'rxjs/observable/of';
-import {_throw} from 'rxjs/observable/throw';
+import {of, throwError} from 'rxjs';
+import {TestScheduler} from 'rxjs/testing';
 import {default as Effects} from './effects';
 import {default as Selectors} from './selectors';
-import {TestScheduler} from 'rxjs/testing/TestScheduler';
 
 const makeMocks = (target, mocks) => new Map(target.$inject.map((provider) => {
     return (provider in mocks) ? [provider, mocks[provider]] : [provider, {}];
@@ -121,7 +120,7 @@ suite('Configuration store effects', () => {
                 stateMarbles: 'AB',
                 mocks: {
                     ...mocks,
-                    Clusters: {getCluster: () => _throw({data: 'Error'})}
+                    Clusters: {getCluster: () => throwError({data: 'Error'})}
                 }
             });
 

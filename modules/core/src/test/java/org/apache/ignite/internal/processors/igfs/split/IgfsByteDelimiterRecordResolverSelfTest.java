@@ -21,16 +21,21 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
 import org.apache.ignite.igfs.mapreduce.records.IgfsByteDelimiterRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Byte delimiter split resolver self test.
  */
+@RunWith(JUnit4.class)
 public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordResolverSelfTest {
     /**
      * Test split resolution when there are no delimiters in the file.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDelimiters() throws Exception {
         byte[] delim = wrap(2);
         byte[] data = array(F.t(wrap(1), 8));
@@ -47,6 +52,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHeadDelimiter() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(delim, 1), F.t(wrap(1), 8));
@@ -73,6 +79,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEndDelimiter() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(wrap(1), 8), F.t(delim, 1));
@@ -99,6 +106,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMiddleDelimiter() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(wrap(1), 8), F.t(delim, 1), F.t(wrap(1), 8));
@@ -139,6 +147,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoHeadDelimiters() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(delim, 2), F.t(wrap(1), 8));
@@ -179,6 +188,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoTailDelimiters() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(wrap(1), 8), F.t(delim, 2));
@@ -219,6 +229,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHeadAndTailDelimiters() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(delim, 1), F.t(wrap(1), 8), F.t(delim, 1));
@@ -259,6 +270,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterStartsWithTheSameBytesAsLastPreviousDataByte() throws Exception {
         byte[] delim = array(F.t(wrap(1, 1, 2), 1));
         byte[] data = array(F.t(wrap(1), 1), F.t(delim, 1), F.t(wrap(1), 1));

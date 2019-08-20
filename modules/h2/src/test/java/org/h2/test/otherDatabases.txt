@@ -1,0 +1,75 @@
+MySQL
+--------------------------------------------------------------------------------------------------------
+Start:
+sudo mysqld_safe --default-storage-engine=innodb
+sudo mysqld_safe --default-storage-engine=innodb --wait_timeout=10
+
+Stop:
+sudo mysqladmin shutdown
+
+Configuration:
+sudo cp /usr/local/mysql/support-files/my-medium.cnf /etc/my.cnf
+sudo pico /etc/my.cnf
+innodb_flush_log_at_trx_commit = 0
+
+Initialization:
+sudo mysql
+create database test;
+create user 'sa'@'localhost' identified by 'sa';
+use test;
+grant all on * to 'sa'@'localhost' with grant option;
+
+'TRADITIONAL' is default; ANSI mode can be set using:
+SET GLOBAL sql_mode='ANSI';
+SELECT @@global.sql_mode;
+
+Non-standard escape mechanism:
+select 'Joe''s', 'Joe\'s';
+
+Compare with NULL problem:
+drop table test;
+create table test(id int);
+insert into test values(1);
+insert into test values(null);
+-- 2 rows even in ANSI mode (correct is 1 row):
+select * from test where id=id and 1=1;
+
+
+MS SQL Server 2005
+--------------------------------------------------------------------------------------------------------
+Problems when trying to select large objects (even if ResultSet.getBinaryStream is used).
+The workaround responseBuffering=adaptive doesn't always seem to work
+(jdbc:sqlserver://localhost:4220;DatabaseName=test;responseBuffering=adaptive)
+
+
+PostgreSQL
+--------------------------------------------------------------------------------------------------------
+
+Non-standard escape mechanism:
+select 'Joe''s', 'Joe\'s';
+
+Configuration:
+Mac OS:
+/Library/PostgreSQL/8.4/data/postgresql.conf
+fsync = off
+commit_delay = 1000
+
+
+HSQLDB
+--------------------------------------------------------------------------------------------------------
+To use the same default settings as H2, use:
+jdbc:hsqldb:data/test;hsqldb.default_table_type=cached;sql.enforce_size=true
+Also, you need to execute the following statement:
+SET WRITE_DELAY 1
+No optimization for COUNT(*)
+
+
+Derby
+--------------------------------------------------------------------------------------------------------
+To call getFD().sync() (which results in the OS call fsync()),
+set the system property derby.storage.fileSyncTransactionLog to true true.
+See
+http://db.apache.org/derby/javadoc/engine/org/apache/derby/iapi/reference/Property.html#FILESYNC_TRANSACTION_LOG
+Missing features:
+LIMIT OFFSET is not supported.
+No optimization for COUNT(*)

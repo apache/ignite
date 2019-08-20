@@ -20,13 +20,18 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.ArrayDeque;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class GridCircularQueueTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testQueue() {
         GridCacheQueryManager.CircularQueue<Integer> q = new GridCacheQueryManager.CircularQueue<>(4);
 

@@ -58,6 +58,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
@@ -201,7 +202,7 @@ public class GridSqlQuerySplitter {
         // subqueries because we do not have unique FROM aliases yet.
         GridSqlQuery qry = parse(prepared, false);
 
-        String originalSql = qry.getSQL();
+        String originalSql = prepared.getSQL();
 
 //        debug("ORIGINAL", originalSql);
 
@@ -2142,15 +2143,22 @@ public class GridSqlQuerySplitter {
             case SUM: // SUM( SUM(x) ) or SUM(DISTINCT x)
             case MAX: // MAX( MAX(x) ) or MAX(DISTINCT x)
             case MIN: // MIN( MIN(x) ) or MIN(DISTINCT x)
+                GridSqlElement rdcAgg0;
+
                 if (hasDistinctAggregate) /* and has no collocated group by */ {
                     mapAgg = agg.child();
 
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+                    rdcAgg0 = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
                 }
                 else {
                     mapAgg = aggregate(agg.distinct(), agg.type()).resultType(agg.resultType()).addChild(agg.child());
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+
+                    rdcAgg0 = function(CAST).resultType(agg.resultType())
+                        .addChild(aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias())));
                 }
+
+                // Avoid second type upcast on reducer (e.g. Int -> (map) -> Long -> (reduce) -> BigDecimal).
+                rdcAgg = function(CAST).resultType(agg.resultType()).addChild(rdcAgg0);
 
                 break;
 
@@ -2375,6 +2383,9 @@ public class GridSqlQuerySplitter {
 
         GridH2Table tbl = (GridH2Table) column.column().getTable();
 
+        if (!isAffinityKey(column.column().getColumnId(), tbl))
+            return null;
+
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
@@ -2395,6 +2406,27 @@ public class GridSqlQuerySplitter {
 
         return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
             column.column().getType(), param.index());
+    }
+
+    /**
+     *
+     * @param colId Column ID to check
+     * @param tbl H2 Table
+     * @return is affinity key or not
+     */
+    private static boolean isAffinityKey(int colId, GridH2Table tbl) {
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        if (desc.isKeyColumn(colId))
+            return true;
+
+        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
+
+        try {
+            return affKeyCol != null && colId >= DEFAULT_COLUMNS_COUNT && desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) && colId == affKeyCol.column.getColumnId();
+        } catch(IllegalStateException e) {
+            return false;
+        }
     }
 
     /**

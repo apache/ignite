@@ -31,31 +31,23 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests {@link IgniteH2Indexing} support {@link CacheConfiguration#setSqlSchema(String)} configuration.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -85,10 +77,11 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCaseSensitive() throws Exception {
         //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
-        //TODO https://issues.apache.org/jira/browse/IGNITE-1094
-        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+        //TODO IGNITE-1094
+        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -114,11 +107,11 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
         //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
-        //TODO: https://issues.apache.org/jira/browse/IGNITE-1094
-        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+        //TODO: IGNITE-1094
+        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -144,6 +137,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheUnregistration() throws Exception {
         startGridsMultiThreaded(3, true);
 
@@ -182,6 +176,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaEscapeAll() throws Exception {
         startGridsMultiThreaded(3, true);
 
@@ -239,7 +234,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
         }
     }
 
-    // TODO add tests with dynamic cache unregistration, after resolve of https://issues.apache.org/jira/browse/IGNITE-1094
+    // TODO add tests with dynamic cache unregistration - IGNITE-1094 resolved
 
     /** Test class as query entity */
     private static class Fact {

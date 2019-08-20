@@ -196,6 +196,9 @@
     <ClCompile Include="..\..\src\streaming\streaming_context.cpp">
       <Filter>Code\streaming</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ssl\ssl_api.cpp">
+      <Filter>Code\ssl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -344,9 +347,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h">
       <Filter>Code\ssl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h">
-      <Filter>Code\ssl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h">
       <Filter>Code\config</Filter>
     </ClInclude>
@@ -391,6 +391,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_context.h">
       <Filter>Code\streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_api.h">
+      <Filter>Code\ssl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

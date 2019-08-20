@@ -33,11 +33,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.assertions.Assertion;
 import org.apache.ignite.testframework.junits.common.GridRollingRestartAbstractTest;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test the behavior of the partition rebalancing during a rolling restart.
  */
+@RunWith(JUnit4.class)
 public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRestartAbstractTest {
     /** The maximum allowable deviation from a perfect distribution. */
     private static final double MAX_DEVIATION = 0.20;
@@ -60,6 +63,7 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
      * The test performs rolling restart and checks no server drops out and the partitions are balanced during
      * redistribution.
      */
+    @Test
     public void testRollingRestart() throws InterruptedException {
         awaitPartitionMapExchange();
 

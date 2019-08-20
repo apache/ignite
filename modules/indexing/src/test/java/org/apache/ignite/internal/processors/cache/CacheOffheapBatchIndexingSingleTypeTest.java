@@ -27,17 +27,22 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests various cache operations with indexing enabled.
  * Cache contains single type.
  */
+@RunWith(JUnit4.class)
 public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIndexingBaseTest {
     /**
      * Tests removal using EntryProcessor.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchRemove() throws Exception {
         Ignite ignite = grid(0);
 
@@ -84,6 +89,7 @@ public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIn
     /**
      *
      */
+    @Test
     public void testPutAllAndStreamer() {
         doStreamerBatchTest(50,
             1_000,
@@ -94,6 +100,7 @@ public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIn
     /**
      *
      */
+    @Test
     public void testPuAllSingleEntity() {
         doStreamerBatchTest(50,
             1_000,

@@ -57,11 +57,16 @@
 	    <version>${project.version}</version>
         </dependency>
 
-
         <dependency>
 	    <groupId>org.apache.ignite</groupId>
 	    <artifactId>ignite-spring</artifactId>
 	    <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-h2</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

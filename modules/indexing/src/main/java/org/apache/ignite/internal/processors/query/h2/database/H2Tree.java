@@ -108,6 +108,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** */
     private final IgniteLogger log;
 
+    /** Whether index was created from scratch during owning node lifecycle. */
+    private final boolean created;
+
     /**
      * Constructor.
      *
@@ -191,6 +194,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         this.log = log;
 
         initTree(initNew, inlineSize);
+
+        this.created = initNew;
     }
 
     /**
@@ -506,6 +511,14 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Comparison result.
      */
     public abstract int compareValues(Value v1, Value v2);
+
+    /**
+     * @return {@code True} if index was created during curren node's lifetime, {@code False} if it was restored from
+     * disk.
+     */
+    public boolean created() {
+        return created;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

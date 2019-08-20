@@ -27,22 +27,20 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
     /** */
     private static final int THREAD_CNT = 30;
-
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -74,12 +72,6 @@ public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
                 1300));
         cc1.setBackups(2);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
         c.setIgfsThreadPoolSize(1);
         c.setSystemThreadPoolSize(2);
         c.setPublicThreadPoolSize(2);
@@ -101,6 +93,7 @@ public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartPerformance() throws Exception {
 //
 //        for (int i = 0; i < 10; i++) {

@@ -39,6 +39,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -49,6 +52,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+@RunWith(JUnit4.class)
 public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /** Cache. */
     private static final String CACHE = "testCache";
@@ -62,23 +66,34 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /** Is client. */
     private boolean isClient;
 
+    /** Atomicity mode. */
+    private CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return super.getConfiguration(gridName)
             .setClientMode(isClient)
             .setCacheConfiguration(
                 new CacheConfiguration(CACHE)
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setAtomicityMode(atomicityMode)
                     .setCacheMode(CacheMode.REPLICATED)
                     .setAffinity(new TestAffinity()),
                 new CacheConfiguration(CACHE2)
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+                    .setAtomicityMode(atomicityMode));
     }
 
     /**
      *
      */
-    public void testOneServerOptimistic() throws Exception {
+    @Test
+    public void testOneServerTx() throws Exception {
         try {
             isClient = false;
             startGrid(0);
@@ -86,13 +101,11 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
             isClient = true;
             final IgniteEx client = startGrid(1);
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    testNotMapped(client, OPTIMISTIC, REPEATABLE_READ);
+            checkNotMapped(client, OPTIMISTIC, REPEATABLE_READ);
 
-                    return null;
-                }
-            }, ClusterTopologyServerNotFoundException.class, "Failed to map keys to nodes (partition is not mapped to any node)");
+            checkNotMapped(client, OPTIMISTIC, SERIALIZABLE);
+
+            checkNotMapped(client, PESSIMISTIC, READ_COMMITTED);
         }
         finally {
             stopAllGrids();
@@ -102,21 +115,20 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testOneServerOptimisticSerializable() throws Exception {
+    @Test
+    public void testOneServerMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10377");
+
         try {
+            atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
             isClient = false;
             startGrid(0);
 
             isClient = true;
             final IgniteEx client = startGrid(1);
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    testNotMapped(client, OPTIMISTIC, SERIALIZABLE);
-
-                    return null;
-                }
-            }, ClusterTopologyServerNotFoundException.class, "Failed to map keys to nodes (partition is not mapped to any node)");
+            checkNotMapped(client, PESSIMISTIC, REPEATABLE_READ);
         }
         finally {
             stopAllGrids();
@@ -126,45 +138,20 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testOneServerPessimistic() throws Exception {
+    @Test
+    public void testFourServersTx() throws Exception {
         try {
             isClient = false;
-            startGrid(0);
-
-            isClient = true;
-            final IgniteEx client = startGrid(1);
-
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    testNotMapped(client, PESSIMISTIC, READ_COMMITTED);
-
-                    return null;
-                }
-            }, ClusterTopologyServerNotFoundException.class, "Failed to lock keys (all partition nodes left the grid)");
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     *
-     */
-    public void testFourServersOptimistic() throws Exception {
-        try {
-            isClient = false;
-            startGrids(4);
+            startGridsMultiThreaded(4);
 
             isClient = true;
             final IgniteEx client = startGrid(4);
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    testNotMapped(client, OPTIMISTIC, REPEATABLE_READ);
+            checkNotMapped(client, OPTIMISTIC, REPEATABLE_READ);
 
-                    return null;
-                }
-            }, ClusterTopologyServerNotFoundException.class, "Failed to map keys to nodes (partition is not mapped to any node)");
+            checkNotMapped(client, OPTIMISTIC, SERIALIZABLE);
+
+            checkNotMapped(client, PESSIMISTIC, READ_COMMITTED);
         }
         finally {
             stopAllGrids();
@@ -174,45 +161,20 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testFourServersOptimisticSerializable() throws Exception {
+    @Test
+    public void testFourServersMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10377");
+
         try {
+            atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
             isClient = false;
-            startGrids(4);
+            startGridsMultiThreaded(4);
 
             isClient = true;
             final IgniteEx client = startGrid(4);
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    testNotMapped(client, OPTIMISTIC, SERIALIZABLE);
-
-                    return null;
-                }
-            }, ClusterTopologyServerNotFoundException.class, "Failed to map keys to nodes (partition is not mapped to any node)");
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     *
-     */
-    public void testFourServersPessimistic() throws Exception {
-        try {
-            isClient = false;
-            startGrids(4);
-
-            isClient = true;
-            final IgniteEx client = startGrid(4);
-
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    testNotMapped(client, PESSIMISTIC, READ_COMMITTED);
-
-                    return null;
-                }
-            }, ClusterTopologyServerNotFoundException.class, "Failed to lock keys (all partition nodes left the grid)");
+            checkNotMapped(client, PESSIMISTIC, READ_COMMITTED);
         }
         finally {
             stopAllGrids();
@@ -222,24 +184,35 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      * @param client Ignite client.
      */
-    private void testNotMapped(IgniteEx client, TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        IgniteCache cache2 = client.cache(CACHE2);
-        IgniteCache cache1 = client.cache(CACHE).withKeepBinary();
+    private void checkNotMapped(final IgniteEx client, final TransactionConcurrency concurrency,
+        final TransactionIsolation isolation) {
+        String msg = concurrency == PESSIMISTIC ? "Failed to lock keys (all partition nodes left the grid)" :
+           "Failed to map keys to nodes (partition is not mapped to any node";
 
-        try(Transaction tx = client.transactions().txStart(concurrency, isolation)) {
 
-            Map<String, Integer> param = new TreeMap<>();
-            param.put(TEST_KEY + 1, 1);
-            param.put(TEST_KEY + 1, 3);
-            param.put(TEST_KEY, 3);
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() {
+                IgniteCache cache2 = client.cache(CACHE2);
+                IgniteCache cache1 = client.cache(CACHE).withKeepBinary();
 
-            cache1.put(TEST_KEY, 3);
+                try (Transaction tx = client.transactions().txStart(concurrency, isolation)) {
 
-            cache1.putAll(param);
-            cache2.putAll(param);
+                    Map<String, Integer> param = new TreeMap<>();
+                    param.put(TEST_KEY + 1, 1);
+                    param.put(TEST_KEY + 1, 3);
+                    param.put(TEST_KEY, 3);
 
-            tx.commit();
-        }
+                    cache1.put(TEST_KEY, 3);
+
+                    cache1.putAll(param);
+                    cache2.putAll(param);
+
+                    tx.commit();
+                }
+
+                return null;
+            }
+        }, ClusterTopologyServerNotFoundException.class, msg);
     }
 
     /** */

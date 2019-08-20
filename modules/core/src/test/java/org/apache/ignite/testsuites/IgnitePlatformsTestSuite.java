@@ -17,24 +17,27 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.platform.PlatformDefaultJavaObjectFactorySelfTest;
 import org.apache.ignite.platform.PlatformJavaObjectFactoryProxySelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Suite for platform tests.
  */
-public class IgnitePlatformsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePlatformsTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Deployment SPI Test Suite");
 
         // LocalDeploymentSpi tests
-        suite.addTest(new TestSuite(PlatformDefaultJavaObjectFactorySelfTest.class));
-        suite.addTest(new TestSuite(PlatformJavaObjectFactoryProxySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(PlatformDefaultJavaObjectFactorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(PlatformJavaObjectFactoryProxySelfTest.class));
 
         return suite;
     }

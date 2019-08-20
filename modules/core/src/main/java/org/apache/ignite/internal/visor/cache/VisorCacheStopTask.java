@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.cache;
 import java.util.Collection;
 import java.util.HashSet;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task that stop specified caches on specified node.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCacheStopTask extends VisorOneNodeTask<VisorCacheStopTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

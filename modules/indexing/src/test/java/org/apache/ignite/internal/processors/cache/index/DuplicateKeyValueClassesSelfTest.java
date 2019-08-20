@@ -22,11 +22,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.UUID;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Make sure that cache can start with multiple key-value classes of the same type.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -48,6 +52,7 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDuplicateKeyClass() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)
@@ -61,6 +66,7 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDuplicateValueClass() throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)

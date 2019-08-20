@@ -24,7 +24,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /** */
 public class CacheMvccReplicatedSelectForUpdateQueryTest extends CacheMvccSelectForUpdateQueryAbstractTest {
     /** {@inheritDoc} */
-    public CacheMode cacheMode() {
+    @Override public CacheMode cacheMode() {
         return REPLICATED;
     }
 }

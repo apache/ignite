@@ -19,10 +19,8 @@ import {suite, test} from 'mocha';
 import {assert} from 'chai';
 import {spy} from 'sinon';
 
-import {TestScheduler} from 'rxjs/testing/TestScheduler';
-import {Subject} from 'rxjs/Subject';
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
-import {Subscriber} from 'rxjs/Subscriber';
+import {TestScheduler} from 'rxjs/testing';
+import {Subscriber, Subject, BehaviorSubject} from 'rxjs';
 import Controller from './controller';
 
 const mocks = () => new Map([

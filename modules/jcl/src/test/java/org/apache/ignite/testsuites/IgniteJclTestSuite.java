@@ -17,21 +17,24 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.logger.jcl.JclLoggerTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Commons logging test.
  */
-public class IgniteJclTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteJclTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Commons Logging Test Suite");
 
-        suite.addTest(new TestSuite(JclLoggerTest.class));
+        suite.addTest(new JUnit4TestAdapter(JclLoggerTest.class));
 
         return suite;
     }

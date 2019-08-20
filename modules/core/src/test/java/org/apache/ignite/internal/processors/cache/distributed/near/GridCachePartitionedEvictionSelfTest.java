@@ -30,12 +30,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for partitioned cache automatic eviction.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final boolean TEST_INFO = true;
@@ -62,9 +63,6 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     /** */
     private static final int KEY_CNT = 100;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
@@ -75,12 +73,6 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -117,6 +109,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticReadCommitted() throws Exception {
         doTestEviction(PESSIMISTIC, READ_COMMITTED);
     }
@@ -126,6 +119,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticRepeatableRead() throws Exception {
         doTestEviction(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -135,6 +129,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticSerializable() throws Exception {
         doTestEviction(PESSIMISTIC, SERIALIZABLE);
     }
@@ -144,6 +139,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticReadCommitted() throws Exception {
         doTestEviction(OPTIMISTIC, READ_COMMITTED);
     }
@@ -153,6 +149,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticRepeatableRead() throws Exception {
         doTestEviction(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -162,6 +159,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticSerializable() throws Exception {
         doTestEviction(OPTIMISTIC, SERIALIZABLE);
     }

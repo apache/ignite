@@ -31,23 +31,29 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Store session listeners test.
  */
+@RunWith(JUnit4.class)
 public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final Queue<String> evts = new ConcurrentLinkedDeque<>();
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -57,12 +63,6 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             new SessionListenerFactory("Shared 1"),
             new SessionListenerFactory("Shared 2")
         );
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -75,6 +75,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCaches() throws Exception {
         try {
             startGrid();
@@ -90,6 +91,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoOverride() throws Exception {
         try {
             Ignite ignite = startGrid();
@@ -152,6 +154,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartialOverride() throws Exception {
         try {
             Ignite ignite = startGrid();
@@ -227,6 +230,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOverride() throws Exception {
         try {
             Ignite ignite = startGrid();

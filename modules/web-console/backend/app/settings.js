@@ -18,6 +18,7 @@
 'use strict';
 
 const fs = require('fs');
+const _ = require('lodash');
 
 // Fire me up!
 
@@ -53,7 +54,23 @@ module.exports = {
         const dfltHost = packaged ? '0.0.0.0' : '127.0.0.1';
         const dfltPort = packaged ? 80 : 3000;
 
-        return {
+        // We need this function because nconf() can return String or Boolean.
+        // And in JS we cannot compare String with Boolean.
+        const _isTrue = (confParam) => {
+            const v = nconf.get(confParam);
+
+            return v === 'true' || v === true;
+        };
+
+        let activationEnabled = _isTrue('activation:enabled');
+
+        if (activationEnabled && _.isEmpty(mail)) {
+            activationEnabled = false;
+
+            console.warn('Mail server settings are required for account confirmation!');
+        }
+
+        const settings = {
             agent: {
                 dists: nconf.get('agent:dists') || dfltAgentDists
             },
@@ -61,19 +78,73 @@ module.exports = {
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
-                SSLOptions: nconf.get('server:ssl') && {
-                    enable301Redirects: true,
-                    trustXFPHeader: true,
-                    key: fs.readFileSync(nconf.get('server:key')),
-                    cert: fs.readFileSync(nconf.get('server:cert')),
-                    passphrase: nconf.get('server:keyPassphrase')
-                }
+                disableSignup: _isTrue('server:disable:signup')
             },
             mail,
+            activation: {
+                enabled: activationEnabled,
+                timeout: nconf.get('activation:timeout') || 1800000,
+                sendTimeout: nconf.get('activation:sendTimeout') || 180000
+            },
             mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
             cookieTTL: 3600000 * 24 * 30,
             sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
             tokenLength: 20
         };
+
+        // Configure SSL options.
+        if (_isTrue('server:ssl')) {
+            const sslOptions = {
+                enable301Redirects: true,
+                trustXFPHeader: true,
+                isServer: true
+            };
+
+            const setSslOption = (name, fromFile = false) => {
+                const v = nconf.get(`server:${name}`);
+
+                const hasOption = !!v;
+
+                if (hasOption)
+                    sslOptions[name] = fromFile ? fs.readFileSync(v) : v;
+
+                return hasOption;
+            };
+
+            const setSslOptionBoolean = (name) => {
+                const v = nconf.get(`server:${name}`);
+
+                if (v)
+                    sslOptions[name] = v === 'true' || v === true;
+            };
+
+            setSslOption('key', true);
+            setSslOption('cert', true);
+            setSslOption('ca', true);
+            setSslOption('passphrase');
+            setSslOption('ciphers');
+            setSslOption('secureProtocol');
+            setSslOption('clientCertEngine');
+            setSslOption('pfx', true);
+            setSslOption('crl');
+            setSslOption('dhparam');
+            setSslOption('ecdhCurve');
+            setSslOption('maxVersion');
+            setSslOption('minVersion');
+            setSslOption('secureOptions');
+            setSslOption('sessionIdContext');
+
+            setSslOptionBoolean('honorCipherOrder');
+            setSslOptionBoolean('requestCert');
+            setSslOptionBoolean('rejectUnauthorized');
+
+            // Special care for case, when user set password for something like "123456".
+            if (sslOptions.passphrase)
+                sslOptions.passphrase = sslOptions.passphrase.toString();
+
+            settings.server.SSLOptions = sslOptions;
+        }
+
+        return settings;
     }
 };

@@ -44,8 +44,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
+@RunWith(JUnit4.class)
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Predicate classname. */
     private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTruePredicate";
@@ -108,6 +112,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed.
      */
+    @Test
     public void testAfterClientDisconnect() throws Exception {
         ClassLoader extClsLdr = new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 

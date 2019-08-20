@@ -26,11 +26,14 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Full API compute test.
  */
-public class IgniteComputeBasicConfigVariationsFullApiTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteComputeBasicConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_COMPUTE_SET = new ConfigParameter[][] {
@@ -45,9 +48,8 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite extends TestSuit
 
     /**
      * @return Compute API test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Compute New Full API Test Suite");
 
         suite.addTest(new ConfigVariationsTestSuiteBuilder(

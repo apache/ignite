@@ -50,6 +50,9 @@ public abstract class VisorDataTransferObject implements Externalizable {
     /** Version 3. */
     protected static final byte V3 = 3;
 
+    /** Version 4. */
+    protected static final byte V4 = 4;
+
     /**
      * @param col Source collection.
      * @param <T> Collection type.

@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Ping other node.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorNodePingTask extends VisorOneNodeTask<VisorNodePingTaskArg, VisorNodePingTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

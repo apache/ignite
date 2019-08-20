@@ -21,10 +21,14 @@ import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for schemas.
  */
+@RunWith(JUnit4.class)
 public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
     /** Node. */
     private IgniteEx node;
@@ -43,6 +47,7 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testPushDownFunction() {
         sql("CREATE TABLE Person(id INTEGER PRIMARY KEY, company_id INTEGER)");
         sql("CREATE TABLE Company(id INTEGER PRIMARY KEY, name VARCHAR)");

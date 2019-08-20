@@ -40,6 +40,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import java.util.UUID;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -50,6 +53,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * See IGNITE-6915 for details.
  */
 
+@RunWith(JUnit4.class)
 public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
     /** Test name 1 */
     private static final String TEST_NAME1 = "Name1";
@@ -111,6 +115,7 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
      * Verifies that BPlusTree are not erroneously shared between tables in the same cache
      * due to IGNITE-6915 bug.
      */
+    @Test
     public void testOptimizedMarshallerIndex() {
 
         // Put objects of different types into the same cache

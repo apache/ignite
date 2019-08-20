@@ -46,13 +46,16 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 
 /**
  * Binary builder test.
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
+@RunWith(JUnit4.class)
 public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstractTest {
     /** */
     private static IgniteConfiguration cfg;
@@ -111,6 +114,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testAllFieldsSerialization() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
         obj.setDefaultData();
@@ -124,6 +128,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -152,6 +157,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -168,6 +174,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShortField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -184,6 +191,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -200,6 +208,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -216,6 +225,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloatField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -232,6 +242,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDoubleField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -248,6 +259,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCharField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -281,6 +293,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBooleanField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -297,6 +310,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -313,6 +327,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStringField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -329,6 +344,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDateField() throws Exception {
         Date date = new Date();
 
@@ -338,6 +354,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestampField() throws Exception {
         Timestamp ts = new Timestamp(new Date().getTime());
         ts.setNanos(1000);
@@ -348,6 +365,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUuidField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -366,6 +384,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -382,6 +401,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShortArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -398,6 +418,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -414,6 +435,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -430,6 +452,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloatArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -446,6 +469,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDoubleArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -462,6 +486,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCharArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -478,6 +503,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBooleanArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -499,6 +525,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -515,6 +542,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStringArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -531,6 +559,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDateArrayField() throws Exception {
         Date date1 = new Date();
         Date date2 = new Date(date1.getTime() + 1000);
@@ -543,6 +572,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestampArrayField() throws Exception {
         Timestamp ts1 = new Timestamp(new Date().getTime());
         Timestamp ts2 = new Timestamp(new Date().getTime() + 1000);
@@ -558,6 +588,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUuidArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -576,6 +607,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -592,6 +624,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectArrayField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -613,6 +646,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -640,6 +674,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -671,6 +706,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeveralFields() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -701,6 +737,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOffheapBinary() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
@@ -761,6 +798,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBuildAndDeserialize() throws Exception {
         BinaryObjectBuilder builder = builder(Value.class.getName());
 
@@ -777,6 +815,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetaData2() throws Exception {
         BinaryObjectBuilder builder = builder("org.test.MetaTest2");
 
@@ -806,6 +845,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetaData() throws Exception {
         BinaryObjectBuilder builder = builder("org.test.MetaTest");
 
@@ -855,6 +895,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testGetFromCopiedObj() {
         BinaryObject objStr = builder(GridBinaryTestClasses.TestObjectAllTypes.class.getName()).setField("str", "aaa").build();
 
@@ -872,6 +913,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testCopyFromInnerObjects() {
         ArrayList<Object> list = new ArrayList<>();
         list.add(new GridBinaryTestClasses.TestObjectAllTypes());
@@ -896,6 +938,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testSetBinaryObject() {
         // Prepare marshaller context.
         CacheObjectBinaryProcessorImpl proc = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects());
@@ -915,6 +958,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testPlainBinaryObjectCopyFrom() {
         GridBinaryTestClasses.TestObjectPlainBinary obj = new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
 
@@ -928,6 +972,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testRemoveFromNewObject() {
         BinaryObjectBuilder builder = builder(GridBinaryTestClasses.TestObjectAllTypes.class.getName());
 
@@ -941,6 +986,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testRemoveFromExistingObject() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
         obj.setDefaultData();
@@ -960,6 +1006,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testRemoveFromExistingObjectAfterGet() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
         obj.setDefaultData();
@@ -977,6 +1024,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @throws IgniteCheckedException If any error occurs.
      */
+    @Test
     public void testDontBrokeCyclicDependency() throws IgniteCheckedException {
         GridBinaryTestClasses.TestObjectOuter outer = new GridBinaryTestClasses.TestObjectOuter();
         outer.inner = new GridBinaryTestClasses.TestObjectInner();
@@ -1025,7 +1073,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class CustomIdMapper {
         /** */
         private String str = "a";
@@ -1036,7 +1083,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Key {
         /** */
         private int i;
@@ -1075,7 +1121,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Value {
         /** */
         private int i;

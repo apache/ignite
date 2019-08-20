@@ -44,11 +44,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
@@ -60,10 +60,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Metadata tests.
  */
+@RunWith(JUnit4.class)
 public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=pers@modules/clients/src/test/config/jdbc-config.xml";
 
@@ -90,12 +88,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             )),
             cacheConfiguration("org").setQueryEntities(Arrays.asList(
                 new QueryEntity(AffinityKey.class, Organization.class))));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -137,6 +129,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResultSetMetaData() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             Statement stmt = conn.createStatement();
@@ -171,6 +164,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -207,6 +201,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetColumns() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -295,6 +290,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetadataResultSetClose() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL);
              ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
@@ -313,6 +309,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
@@ -351,6 +348,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryKeyMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL);
              ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
@@ -370,6 +368,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParametersMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             conn.setSchema("pers");
@@ -394,6 +393,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemasMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
@@ -415,6 +415,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             assertEquals("Apache Ignite", conn.getMetaData().getDatabaseProductName());

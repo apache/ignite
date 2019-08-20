@@ -40,8 +40,10 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -146,16 +148,23 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
         Map<KeyCacheObject, MvccTxEntry> cached = buf.getCached();
 
-        if (F.isEmpty(cached) || !commit)
+        if (F.isEmpty(cached))
             return;
 
         TxCounters txCntrs = tx.txCounters(false);
 
-        assert txCntrs != null;
+        assert txCntrs != null || !commit;
 
-        Collection<PartitionUpdateCountersMessage> cntrsColl =  txCntrs.updateCounters();
+        if (txCntrs == null)
+            return;
 
-        assert  !F.isEmpty(cntrsColl) : cntrsColl;
+        Collection<PartitionUpdateCountersMessage> cntrsColl = txCntrs.updateCounters();
+
+        if (F.isEmpty(cntrsColl)) {
+            assert !commit;
+
+            return;
+        }
 
         // cacheId -> partId -> initCntr -> cntr + delta.
         Map<Integer, Map<Integer, T2<AtomicLong, Long>>> cntrsMap = new HashMap<>();
@@ -219,8 +228,8 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
                         contQryMgr.onEntryUpdated(
                             lsnrCol,
                             e.key(),
-                            e.value(),
-                            e.oldValue(),
+                            commit ? e.value() : null, // Force skip update counter if rolled back.
+                            commit ? e.oldValue() : null, // Force skip update counter if rolled back.
                             false,
                             e.key().partition(),
                             tx.local(),
@@ -253,7 +262,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
      * @return Map of listeners to be notified by this update.
      */
     public Map<UUID, CacheContinuousQueryListener> continuousQueryListeners(GridCacheContext ctx0, @Nullable IgniteInternalTx tx, KeyCacheObject key) {
-        boolean internal = key.internal() || !ctx0.userCache();
+        boolean internal = key != null && key.internal() || !ctx0.userCache();
 
         return ctx0.continuousQueries().notifyContinuousQueries(tx) ?
             ctx0.continuousQueries().updateListeners(internal, false) : null;
@@ -268,9 +277,11 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         private IgniteUuid lastFutId;
 
         /** Main buffer for entries. */
+        @GridToStringInclude
         private Map<KeyCacheObject, MvccTxEntry> cached = new LinkedHashMap<>();
 
         /** Pending entries. */
+        @GridToStringInclude
         private SortedMap<Integer, Map<KeyCacheObject, MvccTxEntry>> pending;
 
         /**
@@ -336,6 +347,11 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             }
 
             pending.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(EnlistBuffer.class, this);
         }
     }
 }

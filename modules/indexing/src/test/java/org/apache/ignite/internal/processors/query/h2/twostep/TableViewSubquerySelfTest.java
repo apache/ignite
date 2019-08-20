@@ -24,10 +24,14 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TableViewSubquerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 1;
@@ -52,6 +56,7 @@ public class TableViewSubquerySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testSubqueryTableView() {
         final String cacheName = "a1";
 

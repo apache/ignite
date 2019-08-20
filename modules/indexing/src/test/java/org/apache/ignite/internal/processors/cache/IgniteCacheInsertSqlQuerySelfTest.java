@@ -25,10 +25,10 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
@@ -36,21 +36,13 @@ import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQu
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -58,6 +50,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testInsertWithExplicitKey() {
         IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
 
@@ -72,6 +65,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testInsertFromSubquery() {
         IgniteCache p = ignite(0).cache("S2P").withKeepBinary();
 
@@ -92,6 +86,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testInsertWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P").withKeepBinary();
 
@@ -107,6 +102,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testInsertWithDynamicKeyInstantiation() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
 
@@ -121,6 +117,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      * Test insert with implicit column names.
      */
+    @Test
     public void testImplicitColumnNames() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
 
@@ -139,6 +136,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
@@ -153,6 +151,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testPrimitives() {
         IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
@@ -167,7 +166,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testDuplicateKeysException() {
         final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
@@ -193,6 +192,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testUuidHandling() {
         IgniteCache<UUID, Integer> p = ignite(0).cache("U2I");
 
@@ -206,6 +206,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testNestedFieldsHandling() {
         IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
 
@@ -231,6 +232,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      * Check that few sequential start-stops of the cache do not affect work of DML.
      */
+    @Test
     public void testCacheRestartHandling() {
         for (int i = 0; i < 4; i++) {
             IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p =

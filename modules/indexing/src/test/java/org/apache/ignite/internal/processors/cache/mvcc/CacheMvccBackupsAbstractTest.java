@@ -46,6 +46,10 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -58,8 +62,8 @@ import static org.junit.Assert.assertArrayEquals;
  * Backups tests.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest {
-
     /** Test timeout. */
     private final long txLongTimeout = getTestTimeout() / 4;
 
@@ -68,6 +72,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testBackupsCoherenceSimple() throws Exception {
         disableScheduledVacuum = true;
 
@@ -181,6 +186,8 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10104")
+    @Test
     public void testBackupsCoherenceWithLargeOperations() throws Exception {
         disableScheduledVacuum = true;
 
@@ -277,6 +284,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupsCoherenceWithInFlightBatchesOverflow() throws Exception {
         testSpi = true;
 
@@ -387,6 +395,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupsCoherenceWithConcurrentUpdates2ServersNoClients() throws Exception {
         checkBackupsCoherenceWithConcurrentUpdates(2, 0);
     }
@@ -396,6 +405,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupsCoherenceWithConcurrentUpdates4ServersNoClients() throws Exception {
         checkBackupsCoherenceWithConcurrentUpdates(4, 0);
     }
@@ -405,6 +415,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupsCoherenceWithConcurrentUpdates3Servers1Client() throws Exception {
         checkBackupsCoherenceWithConcurrentUpdates(3, 1);
     }
@@ -414,6 +425,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupsCoherenceWithConcurrentUpdates5Servers2Clients() throws Exception {
         checkBackupsCoherenceWithConcurrentUpdates(5, 2);
     }
@@ -461,6 +473,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoForceKeyRequestDelayedRebalanceNoVacuum() throws Exception {
         disableScheduledVacuum = true;
 
@@ -470,6 +483,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoForceKeyRequestDelayedRebalance() throws Exception {
         doTestRebalanceNodeAdd(true);
     }
@@ -477,6 +491,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoForceKeyRequestNoVacuum() throws Exception {
         disableScheduledVacuum = true;
 
@@ -486,6 +501,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoForceKeyRequest() throws Exception {
         doTestRebalanceNodeAdd(false);
     }
@@ -569,6 +585,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceNodeLeaveClient() throws Exception {
         doTestRebalanceNodeLeave(true);
     }
@@ -576,6 +593,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceNodeLeaveServer() throws Exception {
         doTestRebalanceNodeLeave(false);
     }

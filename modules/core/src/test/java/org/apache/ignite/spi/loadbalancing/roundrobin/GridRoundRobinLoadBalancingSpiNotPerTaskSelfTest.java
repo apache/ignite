@@ -33,6 +33,9 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
@@ -42,6 +45,7 @@ import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestU
  * Tests round robin load balancing.
  */
 @GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /**
@@ -70,6 +74,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleNodes() throws Exception {
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
@@ -85,6 +90,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleTaskSessions() throws Exception {
         ComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
         ComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());
@@ -106,6 +112,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBalancingOneNode() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession();
 
@@ -120,6 +127,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     }
 
     /** */
+    @Test
     public void testNodeNotInTopology() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession();
 

@@ -26,10 +26,14 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Contains tests for compact offsets.
  */
+@RunWith(JUnit4.class)
 public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbstractTest {
     /** 2 pow 8. */
     private static int POW_8 = 1 << 8;
@@ -78,6 +82,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test1Byte() throws Exception {
         check(POW_8 >> 2);
     }
@@ -87,6 +92,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test1ByteSign() throws Exception {
         check(POW_8 >> 1);
     }
@@ -96,6 +102,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test2Bytes() throws Exception {
         check(POW_16 >> 2);
     }
@@ -105,6 +112,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test2BytesSign() throws Exception {
         check(POW_16 >> 1);
     }
@@ -114,6 +122,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test4Bytes() throws Exception {
         check(POW_16 << 2);
     }

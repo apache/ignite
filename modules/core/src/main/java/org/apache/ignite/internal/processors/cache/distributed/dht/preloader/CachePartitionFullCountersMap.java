@@ -94,27 +94,6 @@ public class CachePartitionFullCountersMap implements Serializable {
     }
 
     /**
-     * Creates submap for provided partition IDs.
-     *
-     * @param parts Partition IDs.
-     * @return Partial counters map.
-     */
-    public CachePartitionPartialCountersMap subMap(Set<Integer> parts) {
-        CachePartitionPartialCountersMap res = new CachePartitionPartialCountersMap(parts.size());
-
-        for (int p = 0; p < updCntrs.length; p++) {
-            if (!parts.contains(p))
-                continue;
-
-            res.add(p, initialUpdCntrs[p], updCntrs[p]);
-        }
-
-        assert res.size() == parts.size();
-
-        return res;
-    }
-
-    /**
      * Clears full counters map.
      */
     public void clear() {

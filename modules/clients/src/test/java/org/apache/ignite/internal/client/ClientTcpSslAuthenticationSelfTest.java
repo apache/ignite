@@ -32,10 +32,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests
  */
+@RunWith(JUnit4.class)
 public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /** REST TCP port. */
     private static final int REST_TCP_PORT = 12121;
@@ -112,6 +116,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAuthenticated() throws Exception {
         checkServerAuthenticatedByClient(false);
     }
@@ -119,6 +124,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNotAuthenticatedByClient() throws Exception {
         try {
             checkServerAuthenticatedByClient(true);
@@ -131,6 +137,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientAuthenticated() throws Exception {
         checkClientAuthenticatedByServer(false);
     }
@@ -138,6 +145,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNotAuthenticated() throws Exception {
         try {
             checkServerAuthenticatedByClient(true);

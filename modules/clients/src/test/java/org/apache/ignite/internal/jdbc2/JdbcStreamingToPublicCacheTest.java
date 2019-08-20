@@ -31,6 +31,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,6 +42,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Data streaming test.
  */
+@RunWith(JUnit4.class)
 public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=%s@modules/clients/src/test/config/jdbc-config.xml";
@@ -105,6 +109,7 @@ public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsert() throws Exception {
         // Create table
         try (Connection conn = createConnection(DEFAULT_CACHE_NAME, false)) {

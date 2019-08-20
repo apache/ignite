@@ -25,9 +25,14 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -35,6 +40,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Cache map entry self test.
  */
+@RunWith(JUnit4.class)
 public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -76,24 +82,37 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
         cfg.setAtomicityMode(atomicityMode);
         cfg.setName(cacheName);
 
+        if (atomicityMode == TRANSACTIONAL_SNAPSHOT && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            cfg.setNearConfiguration(null);
+
         return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheMapEntry() throws Exception {
         checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
 
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, LOCAL, GridLocalCacheEntry.class);
+
         checkCacheMapEntry(ATOMIC, PARTITIONED, GridNearCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, PARTITIONED, GridDhtCacheEntry.class);
+
         checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtCacheEntry.class);
+
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, REPLICATED, GridDhtCacheEntry.class);
     }
 
     /**

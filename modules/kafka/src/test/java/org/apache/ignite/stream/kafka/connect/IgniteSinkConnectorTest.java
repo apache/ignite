@@ -51,6 +51,9 @@ import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.easymock.EasyMock.mock;
@@ -58,6 +61,7 @@ import static org.easymock.EasyMock.mock;
 /**
  * Tests for {@link IgniteSinkConnector}.
  */
+@RunWith(JUnit4.class)
 public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /** Number of input messages. */
     private static final int EVENT_CNT = 10000;
@@ -90,7 +94,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private static Ignite grid;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
@@ -128,7 +131,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 
@@ -137,6 +139,10 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         grid = startGrid("igniteServerNode", cfg);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
     public void testSinkPutsWithoutTransformation() throws Exception {
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
@@ -145,6 +151,10 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         testSinkPuts(sinkProps, false);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
     public void testSinkPutsWithTransformation() throws Exception {
         testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
     }
@@ -291,7 +301,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * Test transformer.
      */
     static class TestExtractor implements StreamSingleTupleExtractor<SinkRecord, String, String> {
-
         /** {@inheritDoc} */
         @Override public Map.Entry<String, String> extract(SinkRecord msg) {
             String[] parts = ((String)msg.value()).split("_");

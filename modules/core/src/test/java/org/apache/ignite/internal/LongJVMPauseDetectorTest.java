@@ -20,10 +20,14 @@ package org.apache.ignite.internal;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests if LongJVMPauseDetector starts properly.
  */
+@RunWith(JUnit4.class)
 public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
     /** */
     private GridStringLogger strLog;
@@ -46,6 +50,7 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJulMessage() throws Exception {
         this.strLog = new GridStringLogger(true);
 
@@ -59,6 +64,7 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopWorkerThread() throws Exception {
         strLog = new GridStringLogger(true);
 

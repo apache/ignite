@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
 import angular from 'angular';
+
 import negate from 'lodash/negate';
 import isNil from 'lodash/isNil';
 import isEmpty from 'lodash/isEmpty';
 import mixin from 'lodash/mixin';
 
+import {user as userAction, register as registerStore} from './store';
 const nonNil = negate(isNil);
 const nonEmpty = negate(isEmpty);
 
@@ -35,6 +36,8 @@ import dropdownTemplateUrl from 'views/templates/dropdown.tpl.pug';
 import validationTemplateUrl from 'views/templates/validation-error.tpl.pug';
 
 const igniteConsoleCfg = angular.module('ignite-console.config', ['ngAnimate', 'mgcrea.ngStrap']);
+
+igniteConsoleCfg.run(registerStore);
 
 // Configure AngularJS animation: do not animate fa-spin.
 igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
@@ -134,3 +137,6 @@ igniteConsoleCfg.directive('uiGridSelection', function() {
     };
 });
 
+igniteConsoleCfg.run(['$rootScope', 'Store', ($root, store) => {
+    $root.$on('user', (event, user) => store.dispatch(userAction({...user})));
+}]);

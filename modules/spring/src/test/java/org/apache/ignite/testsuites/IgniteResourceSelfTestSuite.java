@@ -17,29 +17,32 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.resource.GridLoggerInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessorSelfTest;
 import org.apache.ignite.internal.processors.resource.GridServiceInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite resource injection test Suite.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
-public class IgniteResourceSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteResourceSelfTestSuite {
     /**
      * @return Resource injection test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("Ignite Resource Injection Test Suite");
 
-        suite.addTestSuite(GridResourceProcessorSelfTest.class);
-        suite.addTestSuite(GridLoggerInjectionSelfTest.class);
-        suite.addTestSuite(GridServiceInjectionSelfTest.class);
-        suite.addTestSuite(GridSpringResourceInjectionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridResourceProcessorSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLoggerInjectionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridServiceInjectionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSpringResourceInjectionSelfTest.class));
 
         return suite;
     }

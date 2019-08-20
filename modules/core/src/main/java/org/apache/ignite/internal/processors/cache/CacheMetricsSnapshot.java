@@ -1148,11 +1148,13 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rebalancingBytesRate = in.readLong();
         rebalancingKeysRate = in.readLong();
 
-        rebalancedKeys = in.readLong();
-        estimatedRebalancingKeys = in.readLong();
-        rebalanceStartTime = in.readLong();
-        rebalanceFinishTime = in.readLong();
-        rebalanceClearingPartitionsLeft = in.readLong();
+        if (in.available() >= 40) {
+            rebalancedKeys = in.readLong();
+            estimatedRebalancingKeys = in.readLong();
+            rebalanceStartTime = in.readLong();
+            rebalanceFinishTime = in.readLong();
+            rebalanceClearingPartitionsLeft = in.readLong();
+        }
 
         // 11 long and 5 float values give 108 bytes in total.
         if (in.available() >= 108) {

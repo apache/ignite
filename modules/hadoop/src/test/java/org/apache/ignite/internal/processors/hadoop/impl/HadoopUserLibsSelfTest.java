@@ -25,10 +25,14 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for user libs parsing.
  */
+@RunWith(JUnit4.class)
 public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
     /** Directory 1. */
     private static final File DIR_1 = HadoopTestUtils.testDir("dir1");
@@ -89,6 +93,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNullOrEmptyUserLibs() throws Exception {
         assert parse(null).isEmpty();
         assert parse("").isEmpty();
@@ -99,6 +104,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingle() throws Exception {
         Collection<File> res = parse(single(FILE_1_1));
 
@@ -115,6 +121,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiple() throws Exception {
         Collection<File> res =
             parse(merge(single(FILE_1_1), single(FILE_1_2), single(FILE_2_1), single(FILE_2_2), single(MISSING_FILE)));
@@ -131,6 +138,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleWildcard() throws Exception {
         Collection<File> res = parse(wildcard(DIR_1));
 
@@ -148,6 +156,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleWildcards() throws Exception {
         Collection<File> res = parse(merge(wildcard(DIR_1), wildcard(DIR_2), wildcard(MISSING_DIR)));
 
@@ -163,6 +172,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMixed() throws Exception {
         String str = merge(
             single(FILE_1_1),

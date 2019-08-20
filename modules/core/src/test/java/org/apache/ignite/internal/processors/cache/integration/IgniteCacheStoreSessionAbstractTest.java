@@ -43,12 +43,16 @@ import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbstractTest {
     /** */
     protected static volatile List<ExpectedData> expData;
@@ -113,6 +117,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreSession() throws Exception {
         assertEquals(DEFAULT_CACHE_NAME, jcache(0).getName());
 

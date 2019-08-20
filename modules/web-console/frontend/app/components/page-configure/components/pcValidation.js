@@ -21,21 +21,37 @@ export class IgniteFormField {
     static animName = 'ignite-form-field__error-blink';
     static eventName = 'webkitAnimationEnd oAnimationEnd msAnimationEnd animationend';
     static $inject = ['$element', '$scope'];
+
     constructor($element, $scope) {
         Object.assign(this, {$element});
         this.$scope = $scope;
     }
+
     $postLink() {
         this.onAnimEnd = () => this.$element.removeClass(IgniteFormField.animName);
         this.$element.on(IgniteFormField.eventName, this.onAnimEnd);
     }
+
     $onDestroy() {
         this.$element.off(IgniteFormField.eventName, this.onAnimEnd);
         this.$element = this.onAnimEnd = null;
     }
+
     notifyAboutError() {
-        if (this.$element) this.$element.addClass(IgniteFormField.animName);
+        if (!this.$element)
+            return;
+
+        this.$element.addClass(IgniteFormField.animName);
+        this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
     }
+
+    hideError() {
+        if (!this.$element)
+            return;
+
+        this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
+    }
+
     /**
      * Exposes control in $scope
      * @param {ng.INgModelController} control

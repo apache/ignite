@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
@@ -29,21 +30,20 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNati
 public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
         //Integrity test with reduced count of pages.
-        suite.addTestSuite(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class));
 
-        suite.addTestSuite(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class));
 
-        suite.addTestSuite(IgniteNativeIoWalFlushFsyncSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoWalFlushFsyncSelfTest.class));
 
-        suite.addTestSuite(FsyncWalRolloverDoesNotBlockTest.class);
+        suite.addTest(new JUnit4TestAdapter(FsyncWalRolloverDoesNotBlockTest.class));
 
         return suite;
     }

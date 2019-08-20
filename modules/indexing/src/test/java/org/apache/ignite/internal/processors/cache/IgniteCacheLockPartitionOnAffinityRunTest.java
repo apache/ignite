@@ -45,10 +45,15 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
     /**
      * @param ignite Ignite.
@@ -290,7 +295,11 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7692")
+    @Test
     public void testSingleCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7692");
+
         final PersonsCountGetter personsCntGetter = new PersonsCountGetter() {
             @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
                 return getPersonsCountSingleCache(ignite, log, orgId);
@@ -344,6 +353,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleCaches() throws Exception {
         final PersonsCountGetter personsCntGetter = new PersonsCountGetter() {
             @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
@@ -402,6 +412,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckReservePartitionException() throws Exception {
         int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
@@ -424,6 +435,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePartitionJobCompletesNormally() throws Exception {
         final int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
@@ -472,6 +484,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePartitionJobThrowsException() throws Exception {
         final int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
@@ -532,6 +545,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePartitionJobThrowsError() throws Exception {
         final int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
@@ -591,6 +605,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePartitionJobUnmarshalingFails() throws Exception {
         final int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
@@ -609,6 +624,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePartitionJobMasterLeave() throws Exception {
         final int orgId = primaryKey(grid(0).cache(Organization.class.getSimpleName()));
 
@@ -698,6 +714,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePartitionJobImplementMasterLeave() throws Exception {
         final int orgId = primaryKey(grid(0).cache(Organization.class.getSimpleName()));
 

@@ -25,37 +25,21 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for cache clear.
  */
+@RunWith(JUnit4.class)
 public class GridCacheClearSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
@@ -74,6 +58,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearPartitioned() throws Exception {
         testClear(CacheMode.PARTITIONED, false, null);
     }
@@ -81,6 +66,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearPartitionedNear() throws Exception {
         testClear(CacheMode.PARTITIONED, true, null);
     }
@@ -88,6 +74,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearReplicated() throws Exception {
         testClear(CacheMode.REPLICATED, false, null);
     }
@@ -95,6 +82,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearReplicatedNear() throws Exception {
         testClear(CacheMode.REPLICATED, true, null);
     }
@@ -102,6 +90,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeyPartitioned() throws Exception {
         testClear(CacheMode.PARTITIONED, false, Collections.singleton(3));
     }
@@ -109,6 +98,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeyPartitionedNear() throws Exception {
         testClear(CacheMode.PARTITIONED, true, Collections.singleton(3));
     }
@@ -116,6 +106,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeyReplicated() throws Exception {
         testClear(CacheMode.REPLICATED, false, Collections.singleton(3));
     }
@@ -123,6 +114,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeyReplicatedNear() throws Exception {
         testClear(CacheMode.REPLICATED, true, Collections.singleton(3));
     }
@@ -130,6 +122,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeysPartitioned() throws Exception {
         testClear(CacheMode.PARTITIONED, false, F.asSet(2, 6, 9));
     }
@@ -137,6 +130,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeysPartitionedNear() throws Exception {
         testClear(CacheMode.PARTITIONED, true, F.asSet(2, 6, 9));
     }
@@ -144,6 +138,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeysReplicated() throws Exception {
         testClear(CacheMode.REPLICATED, false, F.asSet(2, 6, 9));
     }
@@ -151,6 +146,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearKeysReplicatedNear() throws Exception {
         testClear(CacheMode.REPLICATED, true, F.asSet(2, 6, 9));
     }

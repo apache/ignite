@@ -17,23 +17,26 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
 import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite Spring Data 2.0 test suite.
  */
-public class IgniteSpringData2TestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpringData2TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Spring Data 2.0 Test Suite");
 
-        suite.addTestSuite(IgniteSpringDataCrudSelfTest.class);
-        suite.addTestSuite(IgniteSpringDataQueriesSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteSpringDataCrudSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteSpringDataQueriesSelfTest.class));
 
         return suite;
     }

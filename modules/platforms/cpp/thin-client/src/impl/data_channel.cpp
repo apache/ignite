@@ -23,7 +23,7 @@
 #include <ignite/common/fixed_size_array.h>
 
 #include "impl/message.h"
-#include "impl/ssl/ssl_gateway.h"
+#include "impl/ssl/ssl_api.h"
 #include "impl/ssl/secure_socket_client.h"
 #include "impl/net/tcp_socket_client.h"
 #include "impl/net/remote_type_updater.h"
@@ -81,7 +81,7 @@ namespace ignite
 
                 if (sslMode != SslMode::DISABLE)
                 {
-                    ssl::SslGateway::GetInstance().LoadAll();
+                    ssl::EnsureSslLoaded();
 
                     socket.reset(new ssl::SecureSocketClient(config.GetSslCertFile(),
                         config.GetSslKeyFile(), config.GetSslCaFile()));

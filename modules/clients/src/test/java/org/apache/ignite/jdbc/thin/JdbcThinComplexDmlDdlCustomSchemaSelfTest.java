@@ -22,10 +22,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base class for complex SQL tests based on JDBC driver.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinComplexDmlDdlCustomSchemaSelfTest extends JdbcThinComplexDmlDdlSelfTest {
     /** Simple schema. */
     private static final String SCHEMA_1 = "SCHEMA_1";
@@ -55,6 +59,7 @@ public class JdbcThinComplexDmlDdlCustomSchemaSelfTest extends JdbcThinComplexDm
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateSelectDropEscapedSchema() throws Exception {
         try {
             curSchema = SCHEMA_2;
@@ -71,6 +76,7 @@ public class JdbcThinComplexDmlDdlCustomSchemaSelfTest extends JdbcThinComplexDm
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiple() throws Exception {
         testCreateSelectDrop();
         testCreateSelectDrop();

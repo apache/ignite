@@ -23,6 +23,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 
@@ -30,6 +33,7 @@ import static org.apache.ignite.events.EventType.EVTS_ALL;
  * Test for invalid input parameters.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
@@ -47,6 +51,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testAddEventLocalListener() throws Exception {
         try {
             ignite.events().localListen(null, EVTS_ALL);
@@ -61,6 +66,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testRemoveEventLocalListener() throws Exception {
         try {
             ignite.events().stopLocalListen(null);
@@ -75,6 +81,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testAddDiscoveryListener() throws Exception {
         try {
             ignite.events().localListen(null, EVTS_ALL);
@@ -89,6 +96,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testRemoveDiscoveryListener() throws Exception {
         try {
             ignite.events().stopLocalListen(null);
@@ -103,6 +111,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testGetNode() throws Exception {
         try {
             ignite.cluster().node(null);
@@ -117,6 +126,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testPingNode() throws Exception {
         try {
             ignite.cluster().pingNode(null);
@@ -131,6 +141,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testDeployTask() throws Exception {
         try {
             ignite.compute().localDeployTask(null, null);
