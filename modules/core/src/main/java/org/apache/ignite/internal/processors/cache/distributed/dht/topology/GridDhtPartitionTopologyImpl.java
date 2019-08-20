@@ -310,8 +310,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public AffinityTopologyVersion readyTopologyVersion() {
         AffinityTopologyVersion topVer = this.readyTopVer;
 
-        log.error("RTV@RTV");
-
         assert topVer.topologyVersion() > 0 : "Invalid topology version [topVer=" + topVer +
             ", group=" + grp.cacheOrGroupName() + ']';
 
@@ -548,8 +546,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         ", evtsVer=" + evts.topologyVersion() + ']';
 
                     lastTopChangeVer = readyTopVer = evts.topologyVersion();
-
-                    log.error("RTV@3"+readyTopVer);
 
                     discoCache = evts.discoveryCache();
                 }
@@ -1554,7 +1550,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchangeVer.compareTo(readyTopVer) >= 0 && exchangeVer.compareTo(lastTopChangeVer) >= 0;
 
                     lastTopChangeVer = readyTopVer = exchangeVer;
-                    log.error("RTV@2"+readyTopVer);
                 }
 
                 node2part = partMap;
@@ -1959,7 +1954,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 assignment.topologyVersion().equals(((GridDhtPartitionsExchangeFuture)topReadyFut).context().events().topologyVersion());
 
             readyTopVer = lastTopChangeVer = assignment.topologyVersion();
-            log.error("RTV1@"+readyTopVer);
 
             if (fut != null)
                 discoCache = fut.events().discoveryCache();

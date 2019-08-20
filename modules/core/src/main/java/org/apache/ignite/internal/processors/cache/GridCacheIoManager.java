@@ -232,33 +232,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (locAffVer.compareTo(lastAffChangedVer) < 0) {
                     IgniteLogger log = cacheMsg.messageLogger(cctx);
 
-                    StringBuilder msg0 = new StringBuilder("Received message has higher affinity topology version [");
+                    if (log.isDebugEnabled()) {
+                        StringBuilder msg0 = new StringBuilder("Received message has higher affinity topology version [");
 
-                    appendMessageInfo(cacheMsg, nodeId, msg0);
+                        appendMessageInfo(cacheMsg, nodeId, msg0);
 
-                    msg0.append(", locTopVer=").append(locAffVer).
-                        append(", rmtTopVer=").append(rmtAffVer).
-                        append(", lastAffChangedVer=").append(lastAffChangedVer).
-                        append(']');
+                        msg0.append(", locTopVer=").append(locAffVer).
+                            append(", rmtTopVer=").append(rmtAffVer).
+                            append(", lastAffChangedVer=").append(lastAffChangedVer).
+                            append(']');
 
-                    log.error(msg0.toString());
+                        log.debug(msg0.toString());
+                    }
 
                     fut = cctx.exchange().affinityReadyFuture(lastAffChangedVer);
-                } else {
-                    String msg0 = "Received message has higher affinity topology version 2 [" + ", locTopVer=" + locAffVer +
-                        ", rmtTopVer=" + rmtAffVer +
-                        ", lastAffChangedVer=" + lastAffChangedVer +
-                        ']';
-                    log.error(msg0);
                 }
             }
-
-            if(fut == null) {
-                log.error("Received unordered cache communication message [nodeId=" + nodeId +
-                    ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
-            }
-
-            log.error("RTV@EX: " + fut);
 
             if (fut != null && !fut.isDone()) {
                 synchronized (pendingMsgs) {
