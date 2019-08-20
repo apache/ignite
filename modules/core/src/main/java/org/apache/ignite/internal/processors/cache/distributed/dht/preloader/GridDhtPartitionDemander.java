@@ -976,61 +976,64 @@ public class GridDhtPartitionDemander {
 
         cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
 
-        GridCacheEntryEx cached = cctx.cache().entryEx(row.key(), topVer);
-
         try {
-            if (log.isTraceEnabled()) {
-                log.trace("Rebalancing key [key=" + row.key() + ", part=" + cached.partition() +
-                    ", grpId=" + grp.groupId() + ']');
+            GridCacheEntryEx cached = cctx.cache().entryEx(row.key(), topVer);
+
+            try {
+                if (log.isTraceEnabled()) {
+                    log.trace("Rebalancing key [key=" + cached.key() + ", part=" + cached.partition() +
+                        ", grpId=" + grp.groupId() + ']');
+                }
+
+                assert row.expireTime() >= 0 : row.expireTime();
+
+                if (cached.initialValue(
+                    row.value(),
+                    row.version(),
+                    null,
+                    null,
+                    TxState.NA,
+                    TxState.NA,
+                    TTL_ETERNAL,
+                    row.expireTime(),
+                    true,
+                    topVer,
+                    cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                    false,
+                    row
+                )) {
+                    cached.touch(); // Start tracking.
+
+                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
+                        cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
+                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
+                            false, null, null, null, true);
+
+                    return true;
+                }
+                else {
+                    cached.touch(); // Start tracking.
+
+                    if (log.isTraceEnabled())
+                        log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                            ", part=" + cached.partition() + ']');
+                }
             }
-
-            assert row.expireTime() >= 0 : row.expireTime();
-
-            if (cached.initialValue(
-                row.value(),
-                row.version(),
-                null,
-                null,
-                TxState.NA,
-                TxState.NA,
-                TTL_ETERNAL,
-                row.expireTime(),
-                true,
-                topVer,
-                cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
-                false,
-                row
-            )) {
-                cached.touch(); // Start tracking.
-
-                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                    cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
-                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
-                        false, null, null, null, true);
-
-                return true;
-            }
-            else {
-                cached.touch(); // Start tracking.
-
+            catch (GridCacheEntryRemovedException ignored) {
                 if (log.isTraceEnabled())
-                    log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                        ", part=" + cached.partition() + ']');
+                    log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
+                        cached.key() + ", part=" + cached.partition() + ']');
             }
-        }
-        catch (GridCacheEntryRemovedException ignored) {
-            if (log.isTraceEnabled())
-                log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
-                    cached.key() + ", part=" + cached.partition() + ']');
+            finally {
+                updateCacheMetrics();
+            }
         }
         catch (IgniteInterruptedCheckedException e) {
             throw e;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [" +
-                "key=" + row.key() + ", part=" + cached.partition() + ']', e);
-        } finally {
-            updateCacheMetrics();
+                "key=" + row.key() + ", part=" + row.partition() + ']', e);
         }
 
         return false;

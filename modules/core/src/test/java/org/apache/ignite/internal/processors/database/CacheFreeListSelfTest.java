@@ -265,11 +265,11 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkInsertDeleteMultiThreaded(final int pageSize, final boolean batched) throws Exception {
-        final FreeList list = createFreeList(pageSize);
+        final FreeList<CacheDataRow> list = createFreeList(pageSize);
 
         Random rnd = new Random();
 
-        final ConcurrentMap<Long, TestDataRow> stored = new ConcurrentHashMap<>();
+        final ConcurrentMap<Long, CacheDataRow> stored = new ConcurrentHashMap<>();
 
         for (int i = 0; i < 100; i++) {
             int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
@@ -281,7 +281,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
             assertTrue(row.link() != 0L);
 
-            TestDataRow old = stored.put(row.link(), row);
+            CacheDataRow old = stored.put(row.link(), row);
 
             assertNull(old);
         }
@@ -290,7 +290,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                List<TestDataRow> rows = new ArrayList<>(BATCH_SIZE);
+                List<CacheDataRow> rows = new ArrayList<>(BATCH_SIZE);
 
                 Random rnd = ThreadLocalRandom.current();
 
@@ -322,43 +322,45 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                         TestDataRow row = new TestDataRow(keySize, valSize);
 
-                        if (batched)
+                        if (batched) {
                             rows.add(row);
-                        else {
-                            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
-                            assertTrue(row.link() != 0L);
+                            if (rows.size() == BATCH_SIZE) {
+                                list.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
 
-                            TestDataRow old = stored.put(row.link(), row);
+                                for (CacheDataRow row0 : rows) {
+                                    assertTrue(row0.link() != 0L);
 
-                            assertNull(old);
-                        }
+                                    CacheDataRow old = stored.put(row0.link(), row0);
 
-                        if (rows.size() == BATCH_SIZE) {
-                            list.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
+                                    assertNull(old);
+                                }
 
-                            for (TestDataRow row0 : rows) {
-                                assertTrue(row0.link() != 0L);
-
-                                TestDataRow old = stored.put(row0.link(), row0);
-
-                                assertNull(old);
+                                rows.clear();
                             }
 
-                            rows.clear();
+                            continue;
                         }
+
+                        list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+                        assertTrue(row.link() != 0L);
+
+                        CacheDataRow old = stored.put(row.link(), row);
+
+                        assertNull(old);
                     }
                     else {
                         while (!stored.isEmpty()) {
-                            Iterator<TestDataRow> it = stored.values().iterator();
+                            Iterator<CacheDataRow> it = stored.values().iterator();
 
                             if (it.hasNext()) {
-                                TestDataRow row = it.next();
+                                CacheDataRow row = it.next();
 
-                                TestDataRow rmvd = stored.remove(row.link);
+                                CacheDataRow rmvd = stored.remove(row.link());
 
                                 if (rmvd != null) {
-                                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
+                                    list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
 
                                     break;
                                 }
@@ -386,11 +388,11 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     protected void checkInsertDeleteSingleThreaded(int pageSize, boolean batched) throws Exception {
-        FreeList list = createFreeList(pageSize);
+        FreeList<CacheDataRow> list = createFreeList(pageSize);
 
         Random rnd = new Random();
 
-        Map<Long, TestDataRow> stored = new HashMap<>();
+        Map<Long, CacheDataRow> stored = new HashMap<>();
 
         for (int i = 0; i < 100; i++) {
             int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
@@ -402,14 +404,14 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
             assertTrue(row.link() != 0L);
 
-            TestDataRow old = stored.put(row.link(), row);
+            CacheDataRow old = stored.put(row.link(), row);
 
             assertNull(old);
         }
 
         boolean grow = true;
 
-        List<TestDataRow> rows = new ArrayList<>(BATCH_SIZE);
+        List<CacheDataRow> rows = new ArrayList<>(BATCH_SIZE);
 
         for (int i = 0; i < 1_000_000; i++) {
             if (grow) {
@@ -435,43 +437,45 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                 TestDataRow row = new TestDataRow(keySize, valSize);
 
-                if (batched)
+                if (batched) {
                     rows.add(row);
-                else {
-                    list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
-                    assertTrue(row.link() != 0L);
+                    if (rows.size() == BATCH_SIZE) {
+                        list.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
 
-                    TestDataRow old = stored.put(row.link(), row);
+                        for (CacheDataRow row0 : rows) {
+                            assertTrue(row0.link() != 0L);
 
-                    assertNull(old);
-                }
+                            CacheDataRow old = stored.put(row0.link(), row0);
 
-                if (rows.size() == BATCH_SIZE) {
-                    list.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
+                            assertNull(old);
+                        }
 
-                    for (TestDataRow row0 : rows) {
-                        assertTrue(row0.link() != 0L);
-
-                        TestDataRow old = stored.put(row0.link(), row0);
-
-                        assertNull(old);
+                        rows.clear();
                     }
 
-                    rows.clear();
+                    continue;
                 }
+
+                list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+                assertTrue(row.link() != 0L);
+
+                CacheDataRow old = stored.put(row.link(), row);
+
+                assertNull(old);
             }
             else {
-                Iterator<TestDataRow> it = stored.values().iterator();
+                Iterator<CacheDataRow> it = stored.values().iterator();
 
                 if (it.hasNext()) {
-                    TestDataRow row = it.next();
+                    CacheDataRow row = it.next();
 
-                    TestDataRow rmvd = stored.remove(row.link);
+                    CacheDataRow rmvd = stored.remove(row.link());
 
                     assertTrue(rmvd == row);
 
-                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
+                    list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
                 }
             }
         }
@@ -499,7 +503,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
      * @return Free list.
      * @throws Exception If failed.
      */
-    protected FreeList createFreeList(int pageSize) throws Exception {
+    protected FreeList<CacheDataRow> createFreeList(int pageSize) throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration()
             .setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
