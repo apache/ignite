@@ -969,6 +969,8 @@ public class GridDhtPartitionDemander {
         assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
+        updateCacheMetrics();
+
         GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
         if (cctx == null)
@@ -976,57 +978,52 @@ public class GridDhtPartitionDemander {
 
         cctx = cctx.isNear() ? cctx.dhtCache().context() : cctx;
 
+        GridCacheEntryEx cached = cctx.cache().entryEx(row.key(), topVer);
+
         try {
-            GridCacheEntryEx cached = cctx.cache().entryEx(row.key(), topVer);
-
-            try {
-                if (log.isTraceEnabled()) {
-                    log.trace("Rebalancing key [key=" + cached.key() + ", part=" + cached.partition() +
-                        ", grpId=" + grp.groupId() + ']');
-                }
-
-                assert row.expireTime() >= 0 : row.expireTime();
-
-                if (cached.initialValue(
-                    row.value(),
-                    row.version(),
-                    null,
-                    null,
-                    TxState.NA,
-                    TxState.NA,
-                    TTL_ETERNAL,
-                    row.expireTime(),
-                    true,
-                    topVer,
-                    cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
-                    false,
-                    row
-                )) {
-                    cached.touch(); // Start tracking.
-
-                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                        cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
-                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
-                            false, null, null, null, true);
-
-                    return true;
-                }
-                else {
-                    cached.touch(); // Start tracking.
-
-                    if (log.isTraceEnabled())
-                        log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                            ", part=" + cached.partition() + ']');
-                }
+            if (log.isTraceEnabled()) {
+                log.trace("Rebalancing key [key=" + cached.key() + ", part=" + cached.partition() +
+                    ", grpId=" + grp.groupId() + ']');
             }
-            catch (GridCacheEntryRemovedException ignored) {
+
+            assert row.expireTime() >= 0 : row.expireTime();
+
+            if (cached.initialValue(
+                row.value(),
+                row.version(),
+                null,
+                null,
+                TxState.NA,
+                TxState.NA,
+                TTL_ETERNAL,
+                row.expireTime(),
+                true,
+                topVer,
+                cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                false,
+                row
+            )) {
+                cached.touch(); // Start tracking.
+
+                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
+                    cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
+                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, row.value(), true, null,
+                        false, null, null, null, true);
+
+                return true;
+            }
+            else {
+                cached.touch(); // Start tracking.
+
                 if (log.isTraceEnabled())
-                    log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
-                        cached.key() + ", part=" + cached.partition() + ']');
+                    log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                        ", part=" + cached.partition() + ']');
             }
-            finally {
-                updateCacheMetrics();
-            }
+        }
+        catch (GridCacheEntryRemovedException ignored) {
+            if (log.isTraceEnabled())
+                log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
+                    cached.key() + ", part=" + cached.partition() + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
             throw e;
