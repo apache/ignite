@@ -90,6 +90,7 @@ import org.apache.ignite.thread.IgniteThread;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
@@ -800,8 +801,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
-        authCtx.nodeAttributes(req.sslCerts() != null ? Collections.singletonMap("sslCerts", req.sslCerts()) :
-            Collections.emptyMap());
+        authCtx.nodeAttributes(req.sslCerts() == null ? Collections.emptyMap() :
+            Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, req.sslCerts()));
         authCtx.address(req.address());
 
         SecurityCredentials creds = credentials(req);

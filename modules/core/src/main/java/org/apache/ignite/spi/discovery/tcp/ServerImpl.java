@@ -172,6 +172,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
@@ -1047,6 +1048,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         failedNodesMsgSent.clear();
 
                         locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+                        locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES);
 
                         locNode.order(1);
                         locNode.internalOrder(1);
@@ -6741,7 +6743,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (sock instanceof SSLSocket) {
                                     HashMap<String, Object> attrs = new HashMap<>(req.node().getAttributes());
 
-                                    attrs.put("sslCerts", ((SSLSocket) sock).getSession().getPeerCertificateChain());
+                                    attrs.put(ATTR_SECURITY_CERTIFICATES, ((SSLSocket) sock).getSession()
+                                        .getPeerCertificateChain());
 
                                     req.node().setAttributes(attrs);
                                 }

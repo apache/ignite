@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -141,6 +142,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Handler for all Redis requests. */
     private GridRedisNioListener redisLsnr;
 
+    /** Client SSL enabled. */
+    private final boolean sslEnabled;
+
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
      * a given rest handler.
@@ -158,6 +162,10 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
+
+        ConnectorConfiguration connCfg = ctx.config().getConnectorConfiguration();
+
+        sslEnabled = connCfg.isSslEnabled() && connCfg.isSslClientAuth() && ctx.config().getSslContextFactory() != null;
     }
 
     /**
@@ -390,14 +398,11 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             GridSslMeta meta = ses.meta(SSL_META.ordinal());
 
-            if (meta != null && meta.sslEngine() != null && meta.sslEngine().getSession() != null) {
+            if (sslEnabled && meta != null && meta.sslEngine() != null && meta.sslEngine().getSession() != null) {
                 try {
                     restReq.sslCerts(meta.sslEngine().getSession().getPeerCertificates());
                 } catch (SSLPeerUnverifiedException e) {
-                    U.error(log, "Failed to process client request (failed to get peer certificates) [ses=" +
-                        ses + ", msg=" + msg + ']', e);
-
-                    return null;
+                    log.warning("Failed to get peer certificates [ses=" + ses + ", msg=" + msg + ']');
                 }
             }
         }
