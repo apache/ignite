@@ -615,7 +615,7 @@ public class GridDhtPartitionDemander {
             }
 
             if (historical) // Can not be reordered.
-                ctx.kernalContext().getStripedRebalanceExecutorService().execute(Math.abs(nodeId.hashCode()), r);
+                ctx.kernalContext().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
             else // Can be reordered.
                 ctx.kernalContext().getRebalanceExecutorService().execute(r);
         }

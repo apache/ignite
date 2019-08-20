@@ -1576,7 +1576,7 @@ public class IgnitionEx {
         private ThreadPoolExecutor rebalanceExecSvc;
 
         /** Rebalance striped executor service. */
-        private StripedExecutor rebalanceStripedExecSvc;
+        private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
 
         /** Executor service. */
         private Map<String, ThreadPoolExecutor> customExecSvcs;
@@ -1888,7 +1888,9 @@ public class IgnitionEx {
                 cfg.getAsyncCallbackPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "callback",
-                oomeHnd);
+                oomeHnd,
+                false,
+                0);
 
             if (cfg.getConnectorConfiguration() != null) {
                 validateThreadPoolSize(cfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
@@ -1988,19 +1990,13 @@ public class IgnitionEx {
 
             rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
-            rebalanceStripedExecSvc = new StripedExecutor(
+            rebalanceStripedExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getRebalanceThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "rebalance-striped",
-                log,
-                new IgniteInClosure<Throwable>() {
-                    @Override public void apply(Throwable t) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
-                    }
-                },
-                workerRegistry,
-                cfg.getFailureDetectionTimeout());
+                oomeHnd,
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME);
 
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());

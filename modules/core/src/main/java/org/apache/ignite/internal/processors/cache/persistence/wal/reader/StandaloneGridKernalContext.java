@@ -626,7 +626,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public StripedExecutor getStripedRebalanceExecutorService() {
+    @Override public IgniteStripedThreadPoolExecutor getStripedRebalanceExecutorService() {
         return null;
     }
 
