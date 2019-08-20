@@ -740,6 +740,8 @@ public class GridH2Table extends TableBase {
         lock(true);
 
         try {
+            ensureNotDestroyed();
+
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
 
             Index targetIdx = (h2Idx instanceof GridH2ProxyIndex) ?
@@ -751,18 +753,28 @@ public class GridH2Table extends TableBase {
                 if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
                     ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
 
-                    idxs.remove(i);
+                    Index idx0 = idxs.remove(i);
 
-                    if (idx instanceof GridH2ProxyIndex &&
+                    if (idx0 instanceof GridH2ProxyIndex &&
                         idx.getSchema().findIndex(session, idx.getName()) != null)
                         database.removeSchemaObject(session, idx);
+
+                    if (idx0 instanceof GridH2IndexBase) {
+                        cache().shared().database().checkpointReadLock();
+
+                        try {
+                            ((GridH2IndexBase)idx0).destroy(rmIndex);
+                        }
+                        finally {
+                            cache().shared().database().checkpointReadUnlock();
+                        }
+                    }
 
                     continue;
                 }
 
                 i++;
             }
-
             this.idxs = idxs;
         }
         finally {
