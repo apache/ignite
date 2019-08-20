@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPa
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnMapOnInvalidTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutOnePhaseCommitTest;
@@ -127,6 +128,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);
         //suite.addTestSuite(IgniteCacheClientMultiNodeUpdateTopologyLockTest.class);
 
+        suite.addTestSuite(TxRollbackOnMapOnInvalidTopologyTest.class);
+        
         return suite;
     }
 }
