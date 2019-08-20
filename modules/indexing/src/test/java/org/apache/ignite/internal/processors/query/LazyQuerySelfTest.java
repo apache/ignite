@@ -94,6 +94,17 @@ public class LazyQuerySelfTest extends AbstractIndexingCommonTest {
         checkMultipleNodes(4);
     }
 
+    /** */
+    public void testDifferentLazyPoolFlag() throws Exception {
+        startGrid(1);
+
+        System.setProperty("USE_POOL_FOR_LAZY", "true");
+
+        startGrid(2);
+
+        System.setProperty("USE_POOL_FOR_LAZY", "false");
+    }
+
     /**
      * Check local query execution.
      *
