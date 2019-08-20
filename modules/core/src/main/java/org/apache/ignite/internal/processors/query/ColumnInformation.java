@@ -87,6 +87,7 @@ public class ColumnInformation {
     public int columnId() {
         return ordinalPosition;
     }
+
     /**
      * @return Schema name.
      */

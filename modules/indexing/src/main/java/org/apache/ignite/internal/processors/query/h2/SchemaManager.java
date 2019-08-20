@@ -161,7 +161,6 @@ public class SchemaManager {
                 SqlSystemTableEngine.registerView(c, view);
 
                     systemViews.add(view);
-                }
             }
         }
         catch (IgniteCheckedException | SQLException e) {
