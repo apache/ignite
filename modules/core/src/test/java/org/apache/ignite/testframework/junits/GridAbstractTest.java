@@ -683,10 +683,10 @@ public abstract class GridAbstractTest extends TestCase {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected final Ignite startGrids(int cnt) throws Exception {
+    protected final IgniteEx startGrids(int cnt) throws Exception {
         assert cnt > 0;
 
-        Ignite ignite = null;
+        IgniteEx ignite = null;
 
         for (int i = 0; i < cnt; i++)
             if (ignite == null)

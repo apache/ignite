@@ -162,6 +162,13 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         }
 
         /**
+         * @return Long which bits represent some flags.
+         */
+        public long getFlags() {
+            return flags;
+        }
+
+        /**
          * @param ois ObjectInputStream.
          */
         private void readObject(ObjectInputStream ois)

@@ -839,7 +839,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
                 cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
-            addStoredCache(caches, cacheData, cacheName, cacheType, true);
+            addStoredCache(caches, cacheData, cacheName, cacheType, false, true);
         }
     }
 
@@ -852,14 +852,21 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param cacheType Cache type.
      * @param isStaticalyConfigured Statically configured flag.
      */
-    private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
-        CacheType cacheType, boolean isStaticalyConfigured) {
+    private void addStoredCache(
+        Map<String, CacheInfo> caches,
+        StoredCacheData cacheData,
+        String cacheName,
+        CacheType cacheType,
+        boolean persistedBefore,
+        boolean isStaticalyConfigured
+    ) {
         if (!cacheType.userCache())
             stopSeq.addLast(cacheName);
         else
             stopSeq.addFirst(cacheName);
 
-        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured));
+        caches.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(),
+            persistedBefore ? 1 : 0, isStaticalyConfigured));
     }
 
     /**
@@ -893,7 +900,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
-                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
+                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), true, false);
                     else {
                         CacheConfiguration cfg = caches.get(cacheName).cacheData().config();
                         CacheConfiguration cfgFromStore = storedCacheData.config();
@@ -2739,6 +2746,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     ) {
         if(!cachesInfo.isMergeConfigSupports(node))
             return null;
+
+        String validationRes = cachesInfo.validateJoiningNodeData(discoData);
+
+        if (validationRes != null)
+            return new IgniteNodeValidationResult(node.id(), validationRes, validationRes);
+
 
         if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
             CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
