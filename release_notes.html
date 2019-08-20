@@ -9,23 +9,24 @@
 <div></div>
 <h2>Fixed</h2>
 <ul>
-    <li>Ignite work directory is set to current user's home directory by default, native persistence files aren't stored
-        in Temp anymore <a href="https://issues.apache.org/jira/browse/IGNITE-12057">[#IGNITE-12057]</a></li>
-    <li>Fixed the bug when SELECT with an equality predicate on the part of a primary compound key returned a single row
-        result while multiple matching rows existed in the table <a
+    <li>Ignite work directory is now set to the current user's home directory by default, native persistence files will
+        not be stored in the Temp directory anymore <a href="https://issues.apache.org/jira/browse/IGNITE-12057">[#IGNITE-12057]</a>
+    </li>
+    <li>Fixed a bug that caused a SELECT query with an equality predicate on a part of the primary compound key to
+        return a single row even if the query matched multiple rows <a
                 href="https://issues.apache.org/jira/browse/IGNITE-12068">[#IGNITE-12068]</a></li>
-    <li>Fixed data corruption in the rare case when page replacement can reload an outdated page during checkpoint <a
+    <li>Fixed an issue that could cause data corruption during checkpointing <a
             href="https://issues.apache.org/jira/browse/IGNITE-12081">[#IGNITE-12081]</a></li>
-    <li>Fixed tree corruption caused by incorrect row size calculation for shared cache groups <a
-            href="https://issues.apache.org/jira/browse/IGNITE-12060">[#IGNITE-12060]</a></li>
-    <li>Java heap footprint reduced by optimizing GridDhtPartitionsFullMessage maps in exchange history <a
+    <li>Fixed an issue where a row size was calculated incorrectly for shared cache groups, which caused a tree
+        corruption <a href="https://issues.apache.org/jira/browse/IGNITE-12060">[#IGNITE-12060]</a></li>
+    <li>Reduced java heap footprint by optimizing GridDhtPartitionsFullMessage maps in exchange history <a
             href="https://issues.apache.org/jira/browse/IGNITE-11767">[#IGNITE-11767]</a></li>
-    <li>.NET: Fix for native persistence, now it works with custom affinity function <a
+    <li>.NET: Native persistence now works with a custom affinity function <a
             href="https://issues.apache.org/jira/browse/IGNITE-10451">[#IGNITE-10451]</a></li>
-    <li>Fixed case when an outdated node with already destroyed cache causes cluster hang <a
+    <li>Fixed an issue where an outdated node with a destroyed cache caused the cluster to hang <a
             href="https://issues.apache.org/jira/browse/IGNITE-9562">[#IGNITE-9562]</a></li>
-    <li>Fixed the bug with the inability to change the inline_size of an existing index after a drop and further
-        recreation with a different one <a
+    <li>Fixed a bug that made it impossible to change the inline_size property of an existing index after it was dropped
+        and recreated with a different value <a
                 href="https://issues.apache.org/jira/browse/IGNITE-12061">[#IGNITE-12061]</a></li>
 </ul>
 </body>
