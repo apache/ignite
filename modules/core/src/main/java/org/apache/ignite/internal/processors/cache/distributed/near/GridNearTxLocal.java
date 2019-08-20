@@ -79,9 +79,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyRollbackOnlyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -127,9 +124,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.DIAGNOSTIC_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TRANSACTION_METRICS;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -148,22 +142,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable, MvccCoordinatorChangeAware {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Metric name for total system time on node. */
-    public static final String METRIC_TOTAL_SYSTEM_TIME = "totalNodeSystemTime";
-
-    /** Metric name system time histogram on node. */
-    public static final String METRIC_SYSTEM_TIME_HISTOGRAM = "nodeSystemTimeHistogram";
-
-    /** Metric name for total user time on node. */
-    public static final String METRIC_TOTAL_USER_TIME = "totalNodeUserTime";
-
-    /** Metric name user time histogram on node. */
-    public static final String METRIC_USER_TIME_HISTOGRAM = "nodeUserTimeHistogram";
-
-    /** Histogram buckets for metrics of system and user time. */
-    public static final long[] METRIC_TIME_BUCKETS =
-        new long[] { 1, 2, 4, 8, 16, 25, 50, 75, 100, 250, 500, 750, 1000, 3000, 5000, 10000, 25000, 60000};
 
     /** */
     private static final ThreadLocal<SimpleDateFormat> TIME_FORMAT =
@@ -248,6 +226,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private IgniteTxManager.TxDumpsThrottling txDumpsThrottling;
 
     /** */
+    private IgniteTxManager txManager;
+
+    /** */
     @GridToStringExclude
     private TransactionProxyImpl proxy;
 
@@ -292,8 +273,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param lb Label.
-     * @param txDumpsThrottling Log throttling information.
      * @param tracingEnabled {@code true} if the transaction should be traced.
+     * @param txDumpsThrottling Log throttling information.
+     * @param txManager Transaction manager.
      */
     public GridNearTxLocal(
         GridCacheSharedContext ctx,
@@ -310,8 +292,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable String lb,
+        boolean tracingEnabled,
         IgniteTxManager.TxDumpsThrottling txDumpsThrottling,
-        boolean tracingEnabled
+        IgniteTxManager txManager
     ) {
         super(
             ctx,
@@ -337,6 +320,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         this.mvccOp = mvccOp;
 
         this.txDumpsThrottling = txDumpsThrottling;
+
+        this.txManager = txManager;
 
         initResult();
 
@@ -3849,7 +3834,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             //in some cases totalTimeMillis can be less than systemTimeMillis, as they are calculated with different precision
             long userTimeMillis = Math.max(totalTimeMillis - systemTimeMillis, 0);
 
-            writeTxMetrics(systemTimeMillis, userTimeMillis);
+            txManager.writeNearTxMetrics(systemTimeMillis, userTimeMillis);
 
             boolean willBeSkipped = txDumpsThrottling == null || txDumpsThrottling.skipCurrent();
 
@@ -5090,36 +5075,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (systemStartTime0 > 0)
             systemTime.addAndGet(System.nanoTime() - systemStartTime0);
-    }
-
-    /**
-     * Writes system and user time metrics.
-     *
-     * @param systemTime System time.
-     * @param userTime User time.
-     */
-    private void writeTxMetrics(long systemTime, long userTime) {
-        MetricRegistry txMetricRegistry = cctx.kernalContext().metric()
-            .registry(metricName(DIAGNOSTIC_METRICS, TRANSACTION_METRICS));
-
-        writeTxMetrics(txMetricRegistry, METRIC_TOTAL_SYSTEM_TIME, METRIC_SYSTEM_TIME_HISTOGRAM, systemTime);
-        writeTxMetrics(txMetricRegistry, METRIC_TOTAL_USER_TIME, METRIC_USER_TIME_HISTOGRAM, userTime);
-    }
-
-    /** */
-    private void writeTxMetrics(MetricRegistry registry, String monotonicMetricName, String histoMetricName, long val) {
-        if (registry == null || val <= 0)
-            return;
-
-        LongAdderMetric monotonic = registry.findMetric(monotonicMetricName);
-
-        if (monotonic != null)
-            monotonic.add(val);
-
-        HistogramMetric histo = registry.findMetric(histoMetricName);
-
-        if (histo != null)
-            histo.value(val);
     }
 
     /**

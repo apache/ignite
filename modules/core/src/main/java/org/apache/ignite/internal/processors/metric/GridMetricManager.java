@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -55,6 +54,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_SYSTEM_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TIME_BUCKETS;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_SYSTEM_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_USER_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_USER_TIME_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -151,9 +155,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Daemon thread count metric name. */
     public static final String DAEMON_THREAD_CNT = "DaemonThreadCount";
-
-    /** Metric registry name for transaction metrics. */
-    public static final String TRANSACTION_METRICS = "transactions";
 
     /** PME duration metric name. */
     public static final String PME_DURATION = "Duration";
@@ -538,19 +539,19 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** */
     private void registerTransactionMetrics() {
-        MetricRegistry reg = registry(metricName(DIAGNOSTIC_METRICS, TRANSACTION_METRICS));
+        MetricRegistry reg = registry(TX_METRICS);
 
-        reg.longAdderMetric(GridNearTxLocal.METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node.");
-        reg.longAdderMetric(GridNearTxLocal.METRIC_TOTAL_USER_TIME, "Total transactions user time on node.");
+        reg.longAdderMetric(METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node.");
+        reg.longAdderMetric(METRIC_TOTAL_USER_TIME, "Total transactions user time on node.");
 
         reg.histogram(
-            GridNearTxLocal.METRIC_SYSTEM_TIME_HISTOGRAM,
-            GridNearTxLocal.METRIC_TIME_BUCKETS,
+            METRIC_SYSTEM_TIME_HISTOGRAM,
+            METRIC_TIME_BUCKETS,
             "Transactions system times on node represented as histogram."
         );
         reg.histogram(
-            GridNearTxLocal.METRIC_USER_TIME_HISTOGRAM,
-            GridNearTxLocal.METRIC_TIME_BUCKETS,
+            METRIC_USER_TIME_HISTOGRAM,
+            METRIC_TIME_BUCKETS,
             "Transactions user times on node represented as histogram."
         );
     }
