@@ -77,7 +77,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinished
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -123,6 +126,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -166,6 +170,22 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
             DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
     );
+
+    /** Metric name for total system time on node. */
+    public static final String METRIC_TOTAL_SYSTEM_TIME = "totalNodeSystemTime";
+
+    /** Metric name for system time histogram on node. */
+    public static final String METRIC_SYSTEM_TIME_HISTOGRAM = "nodeSystemTimeHistogram";
+
+    /** Metric name for total user time on node. */
+    public static final String METRIC_TOTAL_USER_TIME = "totalNodeUserTime";
+
+    /** Metric name for user time histogram on node. */
+    public static final String METRIC_USER_TIME_HISTOGRAM = "nodeUserTimeHistogram";
+
+    /** Histogram buckets for metrics of system and user time. */
+    public static final long[] METRIC_TIME_BUCKETS =
+        new long[] { 1, 2, 4, 8, 16, 25, 50, 75, 100, 250, 500, 750, 1000, 3000, 5000, 10000, 25000, 60000};
 
     /** Committing transactions. */
     private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
@@ -270,6 +290,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Pending transactions tracker. */
     private LocalPendingTransactionsTracker pendingTracker;
 
+    /** Holds the reference to metric for total system time on node.*/
+    private LongAdderMetric totalTxSystemTime;
+
+    /** Holds the reference to metric for total user time on node. */
+    private LongAdderMetric totalTxUserTime;
+
+    /** Holds the reference to metric for system time histogram on node. */
+    private HistogramMetric txSystemTimeHistogram;
+
+    /** Holds the reference to metric for user time histogram on node. */
+    private HistogramMetric txUserTimeHistogram;
+
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_TX);
@@ -347,6 +379,30 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         // todo gg-13416 unhardcode
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+
+        initMetrics();
+    }
+
+    /**
+     * Initializes metrics.
+     */
+    private void initMetrics() {
+        MetricRegistry txMetrics = cctx.kernalContext().metric().registry(TX_METRICS);
+
+        assert txMetrics != null;
+
+        totalTxSystemTime = txMetrics.findMetric(METRIC_TOTAL_SYSTEM_TIME);
+
+        totalTxUserTime = txMetrics.findMetric(METRIC_TOTAL_USER_TIME);
+
+        txSystemTimeHistogram = txMetrics.findMetric(METRIC_SYSTEM_TIME_HISTOGRAM);
+
+        txUserTimeHistogram = txMetrics.findMetric(METRIC_USER_TIME_HISTOGRAM);
+
+        assert totalTxSystemTime != null;
+        assert totalTxUserTime != null;
+        assert txSystemTimeHistogram != null;
+        assert txUserTimeHistogram != null;
     }
 
     /**
@@ -708,7 +764,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             taskNameHash,
             lb,
             tracingEnabled,
-            txDumpsThrottling
+            txDumpsThrottling,
+            this
         );
 
         if (tx.system()) {
@@ -2781,6 +2838,26 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             U.error(log, "Failed to log TxRecord: " + record, e);
 
             throw new IgniteException("Failed to log TxRecord: " + record, e);
+        }
+    }
+
+    /**
+     * Writes metrics of single near transaction.
+     *
+     * @param systemTime Transacton system time.
+     * @param userTime Transaction user time.
+     */
+    public void writeNearTxMetrics(long systemTime, long userTime) {
+        if (systemTime >= 0) {
+            totalTxSystemTime.add(systemTime);
+
+            txSystemTimeHistogram.value(systemTime);
+        }
+
+        if (userTime >= 0) {
+            totalTxUserTime.add(userTime);
+
+            txUserTimeHistogram.value(userTime);
         }
     }
 

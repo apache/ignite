@@ -51,12 +51,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_D
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.METRIC_SYSTEM_TIME_HISTOGRAM;
-import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.METRIC_TOTAL_SYSTEM_TIME;
-import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.METRIC_TOTAL_USER_TIME;
-import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.METRIC_USER_TIME_HISTOGRAM;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.DIAGNOSTIC_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TRANSACTION_METRICS;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_SYSTEM_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_SYSTEM_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_USER_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_USER_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 
 /**
  *
@@ -175,7 +174,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
                 return null;
             };
 
-            DynamicMBean tranMBean = metricSet(CLIENT, DIAGNOSTIC_METRICS, TRANSACTION_METRICS);
+            DynamicMBean tranMBean = metricSet(CLIENT, null, TX_METRICS);
 
             //slow user
             slowPrepare = false;
