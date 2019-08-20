@@ -19,37 +19,29 @@ package org.apache.ignite.internal.processors.security.impl;
 
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
-/** */
-public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
-    /** Login. */
-    protected final String login;
-
-    /** Password. */
-    protected final String pwd;
-
-    /** Permissions. */
-    protected final SecurityPermissionSet perms;
-
-    /** Users security data. */
-    protected final TestSecurityData[] clientData;
+/**
+ *
+ */
+public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
+    /** Check ssl certificates. */
+    protected final boolean checkSslCerts;
 
     /** */
-    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        TestSecurityData... clientData) {
-        this.login = login;
-        this.pwd = pwd;
-        this.perms = perms;
-        this.clientData = clientData.clone();
+    public TestSslSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+        boolean checkSslCerts, TestSecurityData... clientData) {
+        super(login, pwd, perms, clientData);
+
+        this.checkSslCerts = checkSslCerts;
     }
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-        return new TestSecurityProcessor(ctx,
+        return new TestSslSecurityProcessor(ctx,
             new TestSecurityData(login, pwd, perms),
-            Arrays.asList(clientData));
+            Arrays.asList(clientData),
+            checkSslCerts);
     }
 }
