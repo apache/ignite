@@ -832,6 +832,7 @@ public class GridCacheUtils {
             ", rollbackOnly=" + tx.isRollbackOnly() +
             ", nodeId=" + tx.nodeId() +
             ", timeout=" + tx.timeout() +
+            ", startTime=" + tx.startTime() +
             ", duration=" + (U.currentTimeMillis() - tx.startTime()) +
             (tx instanceof GridNearTxLocal ? ", label=" + tx.label() : "") +
             ']';
