@@ -55,7 +55,7 @@ public class CacheView implements MonitoringRow<String> {
     }
 
     /** */
-    public Integer cacheId() {
+    public int cacheId() {
         return cache.cacheId();
     }
 

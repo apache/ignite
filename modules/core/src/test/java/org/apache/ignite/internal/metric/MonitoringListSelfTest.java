@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -76,7 +77,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (String name : cacheNames)
                 g.createCache(name);
 
-            MonitoringList<String, CacheView> caches = g.context().metric().list("caches");
+            MonitoringList<String, CacheView> caches = g.context().metric().list("caches", CacheView.class);
 
             assertEquals("ignite-sys, cache-1, cache-2", 3, F.size(caches.iterator(), alwaysTrue()));
 
@@ -96,7 +97,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (String grpName : grpNames)
                 g.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-            MonitoringList<String, CacheGroupView> grps = g.context().metric().list("cacheGroups");
+            MonitoringList<String, CacheGroupView> grps =
+                g.context().metric().list("cacheGroups", CacheGroupView.class);
 
             assertEquals("ignite-sys, grp-1, grp-2", 3, F.size(grps.iterator(), alwaysTrue()));
 
@@ -119,7 +121,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             g.services().deploy(srvcCfg);
 
-            MonitoringList<IgniteUuid, ServiceView> srvs = g.context().metric().list("services");
+            MonitoringList<IgniteUuid, ServiceView> srvs = g.context().metric().list("services", ServiceView.class);
 
             assertEquals(1, F.size(srvs.iterator(), alwaysTrue()));
 
@@ -151,7 +153,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                 cache.put(i, i);
 
             MonitoringList<UUID, ContinuousQueryView> qrys =
-                g0.context().metric().list(metricName("query", "continuous"));
+                g0.context().metric().list(metricName("query", "continuous"), ContinuousQueryView.class);
 
             assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
 
@@ -167,7 +169,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertNull(cq.localTransformedListener());
             assertNull(cq.remoteTransformer());
 
-            qrys = g1.context().metric().list(metricName("query", "continuous"));
+            qrys = g1.context().metric().list(metricName("query", "continuous"), ContinuousQueryView.class);
 
             assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
 
@@ -194,7 +196,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             }
 
             MonitoringList<UUID, ContinuousQueryView> computeRunnable =
-                g0.context().metric().list(metricName("compute", "runnables"));
+                g0.context().metric().list(metricName("compute", "runnables"), ContinuousQueryView.class);
         }
     }
 
@@ -213,7 +215,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                      Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
 
                 MonitoringList<Long, ClientConnectionView> conns =
-                    g0.context().metric().list(metricName("client", "connections"));
+                    g0.context().metric().list(metricName("client", "connections"), ClientConnectionView.class);
 
                 assertEquals(1, F.size(conns.iterator(), alwaysTrue()));
 
@@ -223,7 +225,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                 assertEquals(cliConn.localAddress().getHostName(), cliConn.remoteAddress().getHostName());
                 assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                     cliConn.localAddress().getPort());
-                assertEquals(cliConn.version(), ClientConnectionContext.DEFAULT_VER);
+                assertEquals(cliConn.version(), ClientConnectionContext.DEFAULT_VER.asString());
 
                 try(Connection conn =
                         new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
@@ -236,7 +238,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                     assertEquals(jdbcConn.localAddress().getHostName(), jdbcConn.remoteAddress().getHostName());
                     assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                         jdbcConn.localAddress().getPort());
-                    assertEquals(jdbcConn.version(), JdbcConnectionContext.CURRENT_VER);
+                    assertEquals(jdbcConn.version(), JdbcConnectionContext.CURRENT_VER.asString());
                 }
             }
         }
@@ -250,7 +252,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
             MonitoringList<IgniteUuid, TransactionView> txs =
-                g.context().metric().list(metricName("transactions"));
+                g.context().metric().list(metricName("transactions"), TransactionView.class);
 
             assertEquals(0, F.size(txs.iterator(), alwaysTrue()));
 
@@ -319,6 +321,59 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             assertTrue(res);
         }
+    }
+
+    @Test
+    /** */
+    public void testFieldVisitor() {
+        MonitoringRowAttributeWalker fv = new MonitoringRowAttributeWalker<>(TransactionView.class);
+
+        Set<String> fields = new HashSet<>();
+
+        fv.visitAll(new MonitoringRowAttributeWalker.AttributeVisitor() {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                fields.add(name);
+            }
+
+            @Override public void acceptInt(int idx, String name) {
+                fields.add(name);
+            }
+
+            @Override public void acceptLong(int idx, String name) {
+                fields.add(name);
+            }
+
+            @Override public void acceptFloat(int idx, String name) {
+                fields.add(name);
+            }
+
+            @Override public void acceptDouble(int idx, String name) {
+                fields.add(name);
+            }
+
+            @Override public void acceptBoolean(int idx, String name) {
+                fields.add(name);
+            }
+
+            @Override public void acceptChar(int idx, String name) {
+                fields.add(name);
+            }
+
+            @Override public void acceptByte(int idx, String name) {
+                fields.add(name);
+            }
+
+            @Override public void acceptShort(int idx, String name) {
+                fields.add(name);
+            }
+        });
+
+        Set<String> expected = new HashSet<>(Arrays.asList("sessionId", "threadId", "startTime", "isolation",
+            "concurrency", "state", "timeout", "implicit", "xid", "system", "implicitSingle", "near", "dht",
+            "colocated", "local", "subjectId", "label", "onePhaseCommit", "internal"));
+
+        assertEquals(expected, fields);
+
     }
 
     /** */

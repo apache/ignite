@@ -80,6 +80,13 @@ public class ClientListenerProtocolVersion implements Comparable<ClientListenerP
         return maintenance;
     }
 
+    /**
+     * @return String representation of version.
+     */
+    public String asString() {
+        return String.valueOf(major) + '.' + minor + '.' + maintenance;
+    }
+
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull ClientListenerProtocolVersion other) {
         int res = major - other.major;

@@ -72,7 +72,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
+    @Override public void setMetricExportFilter(Predicate<MetricRegistry> filter) {
         this.filter = filter;
     }
 

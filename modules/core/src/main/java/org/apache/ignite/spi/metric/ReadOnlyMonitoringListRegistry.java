@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 /**
  * Read only monitoring list registry.
  */
-public interface ReadOnlyListRegistry extends Iterable<MonitoringList<?, ?>> {
+public interface ReadOnlyMonitoringListRegistry extends Iterable<MonitoringList<?, ?>> {
     /**
      * Adds listener of list creation events.
      *

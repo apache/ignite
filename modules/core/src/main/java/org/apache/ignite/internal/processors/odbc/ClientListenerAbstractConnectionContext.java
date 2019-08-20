@@ -61,7 +61,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId) {
         this.ctx = ctx;
         this.connId = connId;
-        this.monList = ctx.metric().list(metricName("client", "connections"));
+        this.monList = ctx.metric().list(metricName("client", "connections"), ClientConnectionView.class);
     }
 
     /**

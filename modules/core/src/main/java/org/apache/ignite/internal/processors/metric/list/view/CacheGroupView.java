@@ -21,7 +21,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
@@ -86,8 +85,8 @@ public class CacheGroupView implements MonitoringRow<String> {
     }
 
     /** */
-    public AffinityFunction affinity() {
-        return ccfg.getAffinity();
+    public Class<?> affinity() {
+        return ccfg.getAffinity().getClass();
     }
 
     /** */
@@ -96,8 +95,10 @@ public class CacheGroupView implements MonitoringRow<String> {
     }
 
     /** */
-    public IgnitePredicate<ClusterNode> nodeFilter() {
-        return ccfg.getNodeFilter();
+    public Class<?> nodeFilter() {
+        IgnitePredicate<ClusterNode> filter = ccfg.getNodeFilter();
+
+        return filter == null ? null : filter.getClass();
     }
 
     /** */
@@ -106,8 +107,10 @@ public class CacheGroupView implements MonitoringRow<String> {
     }
 
     /** */
-    public TopologyValidator topologyValidator() {
-        return ccfg.getTopologyValidator();
+    public Class<?> topologyValidator() {
+        TopologyValidator validator = ccfg.getTopologyValidator();
+
+        return validator == null ? null : validator.getClass();
     }
 
     /** */

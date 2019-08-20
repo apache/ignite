@@ -33,6 +33,9 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     /** Name of the list. */
     private final String name;
 
+    /** Class of the row */
+    private final Class<R> rowClass;
+
     /** Ignite logger. */
     private final IgniteLogger log;
 
@@ -47,11 +50,20 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
 
     /**
      * @param name Name of the list.
+     * @param rowClass Class of the row.
      * @param log Logger.
      */
-    public MonitoringList(String name, IgniteLogger log) {
+    public MonitoringList(String name, Class<R> rowClass, IgniteLogger log) {
         this.name = name;
+        this.rowClass = rowClass;
         this.log = log;
+    }
+
+    /**
+     * @return Class of the row.
+     */
+    public Class<R> rowClass() {
+        return rowClass;
     }
 
     /**

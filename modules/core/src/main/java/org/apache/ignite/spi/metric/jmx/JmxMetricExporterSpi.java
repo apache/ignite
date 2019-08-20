@@ -26,11 +26,13 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
@@ -39,11 +41,17 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.pars
  * This SPI implementation exports metrics as JMX beans.
  */
 public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
-    /** Monitoring registry. */
+    /** Metric registry. */
     private ReadOnlyMetricRegistry mreg;
 
+    /** Monitoring list registry. */
+    private ReadOnlyMonitoringListRegistry mlreg;
+
     /** Metric filter. */
-    private @Nullable Predicate<MetricRegistry> filter;
+    private @Nullable Predicate<MetricRegistry> metricFilter;
+
+    /** Monitoring list filter. */
+    private @Nullable Predicate<MonitoringList<?, ?>> monListFilter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
@@ -52,20 +60,69 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         mreg.forEach(this::register);
 
+        mlreg.forEach(this::register);
+
         mreg.addMetricRegistryCreationListener(this::register);
+
+        mlreg.addListCreationListener(this::register);
     }
 
-    private void register(MetricRegistry grp) {
-        if (filter != null && !filter.test(grp))
+    /**
+     * Registers JMX bean for specific monitoring list.
+     *
+     * @param mlist Monitoring list.
+     */
+    private void register(MonitoringList<?, ?> mlist) {
+        if (monListFilter != null && !monListFilter.test(mlist)) {
+            if (log.isDebugEnabled())
+                U.debug(log, "Monitoring list filtered and will not be registered.[name=" + mlist.name() + ']');
+
             return;
-
-        if (log.isDebugEnabled())
-            log.debug("Found new metric registry [name=" + grp.name() + ']');
-
-        MetricUtils.MetricName n = parse(grp.name());
+        }
+        else if (log.isDebugEnabled())
+            log.debug("Found new monitoring list [name=" + mlist.name() + ']');
 
         try {
-            MetricRegistryMBean mregBean = new MetricRegistryMBean(grp);
+            MonitoringListMBean mlBean = new MonitoringListMBean<>(mlist);
+
+            ObjectName mbean = U.registerMBean(
+                ignite().configuration().getMBeanServer(),
+                igniteInstanceName,
+                "list",
+                mlist.name(),
+                mlBean,
+                MonitoringListMBean.class);
+
+            mBeans.add(mbean);
+
+            if (log.isDebugEnabled())
+                log.debug("MetricGroup JMX bean created. " + mbean);
+        }
+        catch (JMException e) {
+            log.error("MBean for monitoring list '" + mlist.name() + "' can't be created.", e);
+        }
+
+    }
+
+    /**
+     * Registers JMX bean for specific metric registry.
+     *
+     * @param mreg Metric registry.
+     */
+    private void register(MetricRegistry mreg) {
+        if (metricFilter != null && !metricFilter.test(mreg)) {
+            if (log.isDebugEnabled())
+                U.debug(log, "Metric registry filtered and will not be registered.[registry=" + mreg.name() + ']');
+
+            return;
+        }
+        else if (log.isDebugEnabled())
+            log.debug("Found new metric registry [name=" + mreg.name() + ']');
+
+        MetricUtils.MetricName n = parse(mreg.name());
+
+        try {
+            MetricRegistryMBean mregBean = new MetricRegistryMBean(mreg);
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
@@ -81,7 +138,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
                 log.debug("MetricGroup JMX bean created. " + mbean);
         }
         catch (JMException e) {
-            log.error("MBean for " + grp.name() + " can't be created.", e);
+            log.error("MBean for metric registryc '" + mreg.name() + "' can't be created.", e);
         }
     }
 
@@ -113,7 +170,18 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
-        this.filter = filter;
+    @Override public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry mlreg) {
+        this.mlreg = mlreg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMetricExportFilter(Predicate<MetricRegistry> filter) {
+        this.metricFilter = filter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
+        this.monListFilter = filter;
+
     }
 }

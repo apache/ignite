@@ -105,7 +105,7 @@ public class ClientConnectionView implements MonitoringRow<Long> {
     }
 
     /** */
-    public ClientListenerProtocolVersion version() {
-        return ver;
+    public String version() {
+        return ver.asString();
     }
 }

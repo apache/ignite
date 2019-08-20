@@ -19,11 +19,13 @@ package org.apache.ignite.spi.metric.noop;
 
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -47,7 +49,17 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
+    @Override public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry registry) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMetricExportFilter(Predicate<MetricRegistry> filter) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
         // No-op.
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 
 /**
  * Read only metric registry.

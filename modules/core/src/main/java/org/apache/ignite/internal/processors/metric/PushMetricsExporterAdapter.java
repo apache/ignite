@@ -21,10 +21,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Predicate;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -36,8 +38,14 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     /** Metric registry. */
     protected ReadOnlyMetricRegistry mreg;
 
+    /** Monitoring list registry. */
+    protected ReadOnlyMonitoringListRegistry mlreg;
+
     /** Metric filter. */
-    protected  @Nullable Predicate<MetricRegistry> filter;
+    protected  @Nullable Predicate<MetricRegistry> mregFilter;
+
+    /** Monitoring list filter. */
+    protected  @Nullable Predicate<MonitoringList<?, ?>> mlistFilter;
 
     /** Export period. */
     private long period;
@@ -98,7 +106,18 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
-        this.filter = filter;
+    @Override public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry mlreg) {
+        this.mlreg = mlreg;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMetricExportFilter(Predicate<MetricRegistry> filter) {
+        this.mregFilter = filter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
+        this.mlistFilter = filter;
     }
 }

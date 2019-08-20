@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.metric;
 
-import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 
@@ -29,14 +28,10 @@ import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
  * So after start SPI should respond to some incoming request.
  * HTTP servlet or JMX bean are good examples of expected implementations.
  *
- * @see ReadOnlyListRegistry
+ * @see ReadOnlyMonitoringListRegistry
  * @see ReadOnlyMetricRegistry
  * @see MonitoringList
  * @see MonitoringRow
  */
 public interface MonitoringListExporterSpi {
-
-    public void setMetricRegistry(ReadOnlyListRegistry registry);
-
-    public void setExportFilter(Predicate<MonitoringList> filter);
 }

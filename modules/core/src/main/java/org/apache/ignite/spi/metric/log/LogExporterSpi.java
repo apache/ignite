@@ -36,7 +36,7 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
         log.info("Metrics:");
 
         mreg.forEach(grp -> {
-            if (filter != null && !filter.test(grp))
+            if (mregFilter != null && !mregFilter.test(grp))
                 return;
 
             grp.forEach(m -> log.info(m.name() + " = " + m.getAsString()));
