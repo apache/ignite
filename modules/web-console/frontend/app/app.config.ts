@@ -78,7 +78,7 @@ igniteConsoleCfg.config(['$tooltipProvider', ($tooltipProvider) => {
 igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
     Object.assign($selectProvider.defaults, {
         container: 'body',
-        maxLength: '5',
+        maxLength: '1',
         allText: 'Select All',
         noneText: 'Clear All',
         template: '<bs-select-menu></bs-select-menu>',
