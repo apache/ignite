@@ -205,6 +205,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         cacheCfgs = defaultCacheConfigurations(10,2);
 
         crd = startGrids(DEFAULT_NODE_CNT);
+        awaitPartitionMapExchange();
 
         fillCaches(100);
 
