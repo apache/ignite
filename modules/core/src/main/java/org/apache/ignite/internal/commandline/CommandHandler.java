@@ -95,7 +95,7 @@ public class CommandHandler {
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
 
     /** */
-    public static final int EXIT_CODE_ILLEGAL_SATE_ERROR = 5;
+    public static final int EXIT_CODE_ILLEGAL_STATE_ERROR = 5;
 
     /** */
     private static final long DFLT_PING_INTERVAL = 5000L;
@@ -320,9 +320,9 @@ public class CommandHandler {
                 VisorIllegalStateException vise = X.cause(e, VisorIllegalStateException.class);
 
                 logger.severe(CommandLogger.errorMessage(vise));
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_ILLEGAL_SATE_ERROR);
+                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_ILLEGAL_STATE_ERROR);
 
-                return EXIT_CODE_ILLEGAL_SATE_ERROR;
+                return EXIT_CODE_ILLEGAL_STATE_ERROR;
             }
 
             logger.severe(CommandLogger.errorMessage(e));
