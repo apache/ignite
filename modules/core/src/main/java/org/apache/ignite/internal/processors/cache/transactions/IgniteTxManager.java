@@ -70,9 +70,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -2995,13 +2995,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private AtomicInteger skippedTxCntr = new AtomicInteger();
 
         /** */
-        private HitRateMetric transactionHitRateCntr = new HitRateMetric(1000, 2);
+        private HitRateMetrics transactionHitRateCntr = new HitRateMetrics(1000, 2);
 
         /**
          * Returns should we skip dumping the transaction in current moment.
          */
         public boolean skipCurrent() {
-            boolean res = transactionHitRateCntr.value() >= transactionTimeDumpSamplesPerSecondLimit();
+            boolean res = transactionHitRateCntr.getRate() >= transactionTimeDumpSamplesPerSecondLimit();
 
             if (!res) {
                 int skipped = skippedTxCntr.getAndSet(0);
@@ -3018,7 +3018,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * Should be called when we dump transaction to log.
          */
         public void dump() {
-            transactionHitRateCntr.increment();
+            transactionHitRateCntr.onHit();
         }
 
         /**
