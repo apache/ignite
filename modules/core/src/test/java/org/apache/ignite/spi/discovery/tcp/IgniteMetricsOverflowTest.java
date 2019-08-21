@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -88,6 +89,11 @@ public class IgniteMetricsOverflowTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks a case when one discovery link processes messages slower than {@link TcpDiscoveryMetricsUpdateMessage}s
+     * are generated. In such situation metrics updates shouldn't block processing of other discovery messages.
+     *
+     * This test doesn't have any asserts, since it will time out if discovery SPI is blocked.
+     *
      * @throws Exception If failed.
      */
     @Test
