@@ -57,6 +57,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final H2RowFactory rowStore;
 
     /** */
+    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
+    /** */
     private final int inlineSize;
 
     /** */
@@ -97,7 +100,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final H2RowCache rowCache;
 
     /** How often real invocation of inline size calculation will be skipped. */
-    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
+    private final int inlineSizeThrottleThreshold =
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, 1_000);
 
     /** Counter of inline size calculation for throttling real invocations. */
     private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
@@ -436,7 +440,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
         inlineSizeCalculationCntr.set(++invokeCnt);
 
-        boolean throttle = invokeCnt % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+        boolean throttle = invokeCnt % inlineSizeThrottleThreshold != 0;
 
         if (throttle)
             return;
