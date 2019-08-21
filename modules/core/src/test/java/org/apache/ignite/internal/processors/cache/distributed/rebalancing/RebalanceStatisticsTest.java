@@ -42,7 +42,6 @@ import java.util.regex.Matcher;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.parseInt;
-import static java.lang.System.setProperty;
 import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
 import static java.util.regex.Pattern.compile;
@@ -99,12 +98,12 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
     private IgniteEx crd;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        setProperty(IGNITE_QUIET, FALSE.toString());
-        setProperty(IGNITE_WRITE_REBALANCE_STATISTICS, TRUE.toString());
-        setProperty(IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, TRUE.toString());
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
-        super.beforeTest();
+        withSystemPropertyByClass(IGNITE_QUIET, FALSE.toString());
+        withSystemPropertyByClass(IGNITE_WRITE_REBALANCE_STATISTICS, TRUE.toString());
+        withSystemPropertyByClass(IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, TRUE.toString());
     }
 
     /** {@inheritDoc} */
@@ -156,8 +155,8 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotPrintStat() throws Exception {
-        setProperty(IGNITE_QUIET, TRUE.toString());
-        setProperty(IGNITE_WRITE_REBALANCE_STATISTICS, FALSE.toString());
+        withSystemProperty(IGNITE_QUIET, TRUE.toString());
+        withSystemProperty(IGNITE_WRITE_REBALANCE_STATISTICS, FALSE.toString());
 
         cacheCfgs = defaultCacheConfigurations(10, 0);
 
@@ -171,7 +170,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
 
         assertNotContainsAfterCreateNewNode(nodeCnt++, TOTAL_INFORMATION_TEXT);
 
-        setProperty(IGNITE_QUIET, FALSE.toString());
+        withSystemProperty(IGNITE_QUIET, FALSE.toString());
 
         assertNotContainsAfterCreateNewNode(nodeCnt++, TOTAL_INFORMATION_TEXT);
     }
@@ -186,7 +185,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotPrintPartitionDistribution() throws Exception {
-        setProperty(IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, FALSE.toString());
+        withSystemProperty(IGNITE_WRITE_REBALANCE_PARTITION_STATISTICS, FALSE.toString());
 
         cacheCfgs = defaultCacheConfigurations(10, 0);
 

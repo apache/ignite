@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.util.LinkedList;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import java.io.ObjectStreamException;
@@ -203,6 +204,12 @@ public abstract class GridAbstractTest extends TestCase {
      */
     private static final boolean PERSISTENCE_ALLOWED =
             IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, true);
+
+    /** Hold system property values before all tests started. The properties will be restored in {@link #afterTestsStopped()} */
+    private final LinkedList<IgniteBiTuple<String, String>> changedSysPropertiesInTestClass = new LinkedList<>();
+
+    /** Hold system property values before test started. The properties will be restored in {@link #afterTest()} */
+    private final LinkedList<IgniteBiTuple<String, String>> changedSysPropertiesInTest = new LinkedList<>();
 
     /**
      *
@@ -536,7 +543,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
      */
     protected void beforeTest() throws Exception {
-        // No-op.
+        changedSysPropertiesInTest.clear();
     }
 
     /**
@@ -546,7 +553,12 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTest() throws Exception {
-        // No-op.
+        try {
+            restoreSystemProperties(changedSysPropertiesInTest);
+        }
+        finally {
+            changedSysPropertiesInTest.clear();
+        }
     }
 
     /**
@@ -558,6 +570,8 @@ public abstract class GridAbstractTest extends TestCase {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
+
+        changedSysPropertiesInTestClass.clear();
     }
 
     /**
@@ -567,7 +581,60 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        // No-op.
+        try {
+            restoreSystemProperties(changedSysPropertiesInTestClass);
+        }
+        finally {
+            changedSysPropertiesInTestClass.clear();
+        }
+    }
+
+    /**
+     * Analogue of @withSystemProperty on test's class in JUnit4. In {@link #afterTestsStopped()} changed system
+     * properties will be restored.
+     *
+     * @param name System property name.
+     * @param val New value of property. If {@code null} will be invoked {@link System#clearProperty}.
+     */
+    protected final void withSystemPropertyByClass(String name, @Nullable String val) {
+        String oldVal = System.getProperty(name);
+
+        if (val == null)
+            System.clearProperty(name);
+        else
+            System.setProperty(name, val);
+
+        changedSysPropertiesInTestClass.add(new IgniteBiTuple<>(name, oldVal));
+    }
+
+    /**
+     * Analogue of @withSystemProperty on test's method in JUnit4. In {@link #afterTest()}} changed system properties
+     * will be restored.
+     *
+     * @param name System property name.
+     * @param val New value of property. If {@code null} will be invoked {@link System#clearProperty}.
+     */
+    protected final void withSystemProperty(String name, @Nullable String val) {
+        String oldVal = System.getProperty(name);
+
+        if (val == null)
+            System.clearProperty(name);
+        else
+            System.setProperty(name, val);
+
+        changedSysPropertiesInTest.add(new IgniteBiTuple<>(name, oldVal));
+    }
+
+    /** */
+    private void restoreSystemProperties(LinkedList<IgniteBiTuple<String, String>> propList) {
+        propList.descendingIterator().forEachRemaining(t -> {
+            assertNotNull(t.getKey());
+
+            if (t.getValue() == null)
+                System.clearProperty(t.getKey());
+            else
+                System.setProperty(t.getKey(), t.getValue());
+        });
     }
 
     /** {@inheritDoc} */
