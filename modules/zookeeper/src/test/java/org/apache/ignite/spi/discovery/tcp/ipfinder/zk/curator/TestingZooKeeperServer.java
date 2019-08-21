@@ -22,6 +22,7 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.QuorumConfigBuilder;
 import org.apache.curator.test.TestingZooKeeperMain;
 import org.apache.curator.test.ZooKeeperMainFace;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
@@ -30,11 +31,15 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  */
 public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable {
+    /** */
+    public static final String SECURITY_CLIENT_PORT = "secureClientPort";
+
     /** Logger. */
     private static final Logger logger = LoggerFactory.getLogger(org.apache.curator.test.TestingZooKeeperServer.class);
 
@@ -159,6 +164,15 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable 
             @Override public void run() {
                 try {
                     QuorumPeerConfig config = configBuilder.buildConfig(thisInstanceIndex);
+
+                    String port = System.getProperty(SECURITY_CLIENT_PORT);
+
+                    if (!F.isEmpty(port)) {
+                        Properties props = new Properties();
+                        props.setProperty(SECURITY_CLIENT_PORT, port);
+                        config.parseProperties(props);
+                    }
+
                     main.runFromConfig(config);
                 }
                 catch (Exception e) {

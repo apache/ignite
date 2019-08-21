@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator;
 
 import org.apache.curator.test.ZooKeeperMainFace;
 import org.apache.zookeeper.server.ServerCnxnFactory;
-import org.apache.zookeeper.server.admin.AdminServer;
 import org.apache.zookeeper.server.admin.AdminServer.AdminServerException;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
