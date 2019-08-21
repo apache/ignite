@@ -1048,7 +1048,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         failedNodesMsgSent.clear();
 
                         locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
-                        locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES);
 
                         locNode.order(1);
                         locNode.internalOrder(1);
