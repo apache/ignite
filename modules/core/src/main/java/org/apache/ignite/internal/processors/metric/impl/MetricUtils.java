@@ -18,6 +18,9 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import org.apache.ignite.internal.util.GridStringBuilder;
 
+/**
+ * Utility class for metrics.
+ */
 public class MetricUtils {
     /**
      * Returns histogram represented by json string.
