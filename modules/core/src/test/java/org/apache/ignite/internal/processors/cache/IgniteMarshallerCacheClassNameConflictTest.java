@@ -16,8 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +32,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -195,15 +193,10 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
             /** {@inheritDoc} */
             @Override public IgniteFuture<?> onDiscovery(
-                    int type,
-                    long topVer,
-                    ClusterNode node,
-                    Collection<ClusterNode> topSnapshot,
-                    @Nullable Map<Long, Collection<ClusterNode>> topHist,
-                    @Nullable DiscoverySpiCustomMessage spiCustomMsg
+                DiscoveryNotification notification
             ) {
-                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
-                        : (DiscoveryCustomMessage) U.field(spiCustomMsg, "delegate");
+                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
+                        : (DiscoveryCustomMessage) U.field(notification.getCustomMsgData(), "delegate");
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator
@@ -220,7 +213,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 }
 
                 if (delegate != null)
-                    return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(notification);
 
                 return new IgniteFinishedFutureImpl<>();
             }

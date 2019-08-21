@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

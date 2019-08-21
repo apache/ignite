@@ -84,6 +84,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -477,12 +478,17 @@ public class ZookeeperDiscoveryImpl {
         if (rtState.joined) {
             assert rtState.evtsData != null;
 
-            lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
-                rtState.evtsData.topVer,
-                locNode,
-                rtState.top.topologySnapshot(),
-                Collections.emptyMap(),
-                null).get();
+            lsnr.onDiscovery(
+                new DiscoveryNotification(
+                    EVT_CLIENT_NODE_DISCONNECTED,
+                    rtState.evtsData.topVer,
+                    locNode,
+                    rtState.top.topologySnapshot(),
+                    Collections.emptyMap(),
+                    null,
+                    null
+                )
+            ).get();
         }
 
         try {
@@ -545,12 +551,17 @@ public class ZookeeperDiscoveryImpl {
         if (nodes.isEmpty())
             nodes = Collections.singletonList(locNode);
 
-        lsnr.onDiscovery(EVT_NODE_SEGMENTED,
-            rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
-            locNode,
-            nodes,
-            Collections.emptyMap(),
-            null).get();
+        lsnr.onDiscovery(
+            new DiscoveryNotification(
+                EVT_NODE_SEGMENTED,
+                rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
+                locNode,
+                nodes,
+                Collections.emptyMap(),
+                null,
+                null
+            )
+        ).get();
     }
 
     /**
@@ -2350,12 +2361,17 @@ public class ZookeeperDiscoveryImpl {
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
         try {
-            lsnr.onDiscovery(EVT_NODE_JOINED,
-                1L,
-                locNode,
-                topSnapshot,
-                Collections.emptyMap(),
-                null).get();
+            lsnr.onDiscovery(
+                new DiscoveryNotification(
+                    EVT_NODE_JOINED,
+                    1L,
+                    locNode,
+                    topSnapshot,
+                    Collections.emptyMap(),
+                    null,
+                    null
+                )
+            ).get();
         }
         catch (IgniteException e) {
             joinFut.onDone(e);
@@ -3050,20 +3066,30 @@ public class ZookeeperDiscoveryImpl {
 
             final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-            lsnr.onDiscovery(EVT_NODE_JOINED,
-                joinedEvtData.topVer,
-                locNode,
-                topSnapshot,
-                Collections.emptyMap(),
-                null).get();
-
-            if (rtState.reconnect) {
-                lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
+            lsnr.onDiscovery(
+                new DiscoveryNotification(
+                    EVT_NODE_JOINED,
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
                     Collections.emptyMap(),
-                    null).get();
+                    null,
+                    null
+                )
+            ).get();
+
+            if (rtState.reconnect) {
+                lsnr.onDiscovery(
+                    new DiscoveryNotification(
+                        EVT_CLIENT_NODE_RECONNECTED,
+                        joinedEvtData.topVer,
+                        locNode,
+                        topSnapshot,
+                        Collections.emptyMap(),
+                        null,
+                        null
+                    )
+                ).get();
 
                 U.quietAndWarn(log, "Client node was reconnected after it was already considered failed [locId=" + locNode.id() + ']');
             }
@@ -3514,12 +3540,15 @@ public class ZookeeperDiscoveryImpl {
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
         IgniteFuture<?> fut = lsnr.onDiscovery(
-            DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-            evtData.topologyVersion(),
-            sndNode,
-            topSnapshot,
-            Collections.emptyMap(),
-            msg
+            new DiscoveryNotification(
+                DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                evtData.topologyVersion(),
+                sndNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                msg,
+                null
+            )
         );
 
         if (msg != null && msg.isMutable())
@@ -3540,12 +3569,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            joinedEvtData.topVer,
-            joinedNode,
-            topSnapshot,
-            Collections.emptyMap(),
-            null).get();
+        lsnr.onDiscovery(
+            new DiscoveryNotification(
+                EVT_NODE_JOINED,
+                joinedEvtData.topVer,
+                joinedNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null,
+                null
+            )
+        ).get();
     }
 
     /**
@@ -3571,12 +3605,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_FAILED,
-            topVer,
-            failedNode,
-            topSnapshot,
-            Collections.emptyMap(),
-            null).get();
+        lsnr.onDiscovery(
+            new DiscoveryNotification(
+                EVT_NODE_FAILED,
+                topVer,
+                failedNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null,
+                null
+            )
+        ).get();
 
         stats.onNodeFailed();
     }

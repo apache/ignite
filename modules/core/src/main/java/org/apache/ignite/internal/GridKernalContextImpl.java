@@ -89,6 +89,8 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.processors.tracing.TracingProcessor;
 import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -229,6 +231,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Global metastorage. */
     @GridToStringInclude
     private DistributedConfigurationProcessor distributedConfigurationProcessor;
+
+    /** Tracing. */
+    @GridToStringInclude
+    private TracingProcessor tracingProcessor;
 
     /** */
     @GridToStringInclude
@@ -607,6 +613,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             distributedMetastorage = (DistributedMetaStorage)comp;
         else if (comp instanceof DistributedConfigurationProcessor)
             distributedConfigurationProcessor = (DistributedConfigurationProcessor)comp;
+        else if (comp instanceof TracingProcessor)
+            tracingProcessor = (TracingProcessor) comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -768,6 +776,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return distributedConfigurationProcessor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Tracing tracing() {
+        return tracingProcessor;
     }
 
     /** {@inheritDoc} */
