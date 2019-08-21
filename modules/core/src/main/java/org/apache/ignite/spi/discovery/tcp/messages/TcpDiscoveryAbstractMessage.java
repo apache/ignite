@@ -279,6 +279,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /**
+     * @return {@code true} if message must be added to head of queue.
+     */
+    public boolean highPriority() {
+        return false;
+    }
+
+    /**
      * Adds node ID to the failed nodes list.
      *
      * @param nodeId Node ID.

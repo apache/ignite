@@ -54,6 +54,11 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean highPriority() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryClientAckResponse.class, this, "super", super.toString());
     }

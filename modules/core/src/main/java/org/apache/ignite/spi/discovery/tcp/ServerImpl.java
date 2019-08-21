@@ -49,11 +49,12 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2859,11 +2860,21 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Adds message to queue.
+         * Adds message to queue. Equivalent to {@code addMessage(msg, false)}.
          *
          * @param msg Message to add.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
+            addMessage(msg, false);
+        }
+
+        /**
+         * Adds message to queue.
+         *
+         * @param msg Message to add.
+         * @param ignoreHighPriority If {@code true}, high priority messages will be added to the top of the queue.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg, boolean ignoreHighPriority) {
             if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
                 msg instanceof TcpDiscoveryJoinRequestMessage ||
                 msg instanceof TcpDiscoveryCustomEventMessage ||
@@ -2880,7 +2891,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
                 addMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
             else
-                addToQueue(msg);
+                addToQueue(msg, msg.highPriority() && !ignoreHighPriority);
         }
 
         /**
@@ -2893,7 +2904,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             int laps = passedLaps(msg);
 
             if (laps == 2)
-                addToQueue(msg);
+                addToQueue(msg, msg.highPriority());
             else {
                 // The message will be added to the queue only if a similar message is not there already.
                 // Otherwise one of actualFirstLapMetricsUpdate or actualSecondLapMetricsUpdate will be updated only.
@@ -2913,7 +2924,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (addToQueue)
-                    addToQueue(msg);
+                    addToQueue(msg, msg.highPriority());
                 else {
                     DebugLogger log = messageLogger(msg);
 
@@ -2925,14 +2936,23 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param msg Message to add.
+         * @param addFirst If {@code true}, then the message will be added to a head of a worker's queue.
          */
-        private void addToQueue(TcpDiscoveryAbstractMessage msg) {
-            queue.add(msg);
-
+        private void addToQueue(TcpDiscoveryAbstractMessage msg, boolean addFirst) {
             DebugLogger log = messageLogger(msg);
 
-            if (log.isDebugEnabled())
-                log.debug("Message has been added to a worker's queue: " + msg);
+            if (addFirst) {
+                queue.addFirst(msg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Message has been added to a head of a worker's queue: " + msg);
+            }
+            else {
+                queue.add(msg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Message has been added to a worker's queue: " + msg);
+            }
         }
 
         /**
@@ -3288,7 +3308,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         !(msg instanceof TcpDiscoveryStatusCheckMessage && msg.creatorNodeId().equals(locNodeId))) {
                         msg.senderNodeId(locNodeId);
 
-                        addMessage(msg);
+                        addMessage(msg, true);
                     }
 
                     break;
@@ -7477,7 +7497,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
             T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
 
-            queue.add(t);
+            if (msg.highPriority())
+                queue.addFirst(t);
+            else
+                queue.add(t);
 
             DebugLogger log = messageLogger(msg);
 
@@ -7745,7 +7768,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private abstract class MessageWorker<T> extends GridWorker {
         /** Message queue. */
-        protected final BlockingQueue<T> queue = new LinkedBlockingQueue<>();
+        protected final BlockingDeque<T> queue = new LinkedBlockingDeque<>();
 
         /** Polling timeout. */
         private final long pollingTimeout;
