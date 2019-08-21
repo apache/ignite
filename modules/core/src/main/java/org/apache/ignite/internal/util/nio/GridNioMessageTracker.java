@@ -55,6 +55,13 @@ public class GridNioMessageTracker implements IgniteRunnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
+        onMessageProcessed();
+    }
+
+    /**
+     *
+     */
+    public void onMessageProcessed() {
         // In case of ordered messages this may be called twice for 1 message.
         // Example: message arrives, but listener has not been installed yet.
         // Message set is created, but message does not get actually processed.
@@ -89,13 +96,6 @@ public class GridNioMessageTracker implements IgniteRunnable {
                 lock.unlock();
             }
         }
-    }
-
-    /**
-     *
-     */
-    public void onMessageProcessed() {
-        run();
     }
 
     /**
