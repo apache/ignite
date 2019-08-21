@@ -19,6 +19,7 @@ package org.apache.ignite.events;
 
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,6 +75,12 @@ public class DiscoveryEvent extends EventAdapter {
 
     /** Collection of nodes corresponding to topology version. */
     private Collection<ClusterNode> topSnapshot;
+
+    /** Template to generate {@link #message()} lazily. Will be joined with {@link #eventNode()} converted to string. */
+    private volatile String msgTemplate;
+
+    /** Span. */
+    private transient Span span;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -152,6 +159,57 @@ public class DiscoveryEvent extends EventAdapter {
     public void topologySnapshot(long topVer, Collection<ClusterNode> topSnapshot) {
         this.topVer = topVer;
         this.topSnapshot = topSnapshot;
+    }
+
+    /**
+     * Template to generate {@link #message()} lazily. Will be joined with {@link #eventNode()} converted to string.
+     *
+     * @param msgTemplate Template.
+     */
+    public void messageTemplate(String msgTemplate) {
+        this.msgTemplate = msgTemplate;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String message() {
+        String msg = super.message();
+
+        if (msg != null)
+            return msg;
+
+        if (msgTemplate == null)
+            return null;
+
+        synchronized (this) {
+            msg = super.message();
+
+            if (msg != null)
+                return msg;
+
+            msg = msgTemplate + eventNode();
+
+            message(msg);
+        }
+
+        return msg;
+    }
+
+    /**
+     * Gets span instance.
+     *
+     * @return Span.
+     */
+    public Span span() {
+        return span;
+    }
+
+    /**
+     * Set span.
+     *
+     * @param span Span.
+     */
+    public void span(Span span) {
+        this.span = span;
     }
 
     /** {@inheritDoc} */

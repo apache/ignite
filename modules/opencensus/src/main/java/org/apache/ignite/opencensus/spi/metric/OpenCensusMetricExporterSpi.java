@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.opencensus;
+package org.apache.ignite.opencensus.spi.metric;
 
 import io.opencensus.common.Scope;
 import io.opencensus.stats.Aggregation.LastValue;

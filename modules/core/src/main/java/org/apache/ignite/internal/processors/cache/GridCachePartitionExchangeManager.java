@@ -116,6 +116,9 @@ import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.processors.tracing.Traces;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -659,6 +662,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             // Event callback - without this callback future will never complete.
             exchFut.onEvent(exchId, evt, cache);
+
+            Span span = cctx.kernalContext().tracing().create(Traces.Exchange.EXCHANGE_FUTURE, evt.span());
+
+            if (exchId != null) {
+                span.addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), evt.eventNode().id().toString());
+                span.addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
+                    evt.eventNode().consistentId().toString());
+                span.addTag(SpanTags.tag(SpanTags.EVENT, SpanTags.TYPE), evt.type());
+                span.addTag(SpanTags.tag(SpanTags.EXCHANGE, SpanTags.ID), exchId.toString());
+                span.addTag(SpanTags.tag(SpanTags.INITIAL, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR),
+                    exchId.topologyVersion().topologyVersion());
+                span.addTag(SpanTags.tag(SpanTags.INITIAL, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR),
+                    exchId.topologyVersion().minorTopologyVersion());
+            }
+
+            span.addTag(SpanTags.NODE_ID, cctx.localNodeId().toString());
+            span.addLog("Created");
+
+            exchFut.span(span);
 
             // Start exchange process.
             addFuture(exchFut);

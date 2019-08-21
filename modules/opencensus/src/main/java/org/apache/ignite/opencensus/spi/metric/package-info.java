@@ -18,7 +18,7 @@
 /**
  *
  */
-package org.apache.ignite.spi.metric.opencensus;
+package org.apache.ignite.opencensus.spi.metric;
 
 /**
  * <!-- Package description. -->

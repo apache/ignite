@@ -114,6 +114,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -236,6 +237,14 @@ public final class GridTestUtils {
 
             return fut;
         }
+
+//        /** {@inheritDoc} */
+//        @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
+//            hook.handleDiscoveryMessage(notification.getCustomMsgData());
+//
+//            return delegate.onDiscovery(notification);
+//        }
+
 
         /** {@inheritDoc} */
         @Override public void onLocalNodeInitialized(ClusterNode locNode) {
