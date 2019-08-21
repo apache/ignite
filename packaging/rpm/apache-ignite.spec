@@ -266,7 +266,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 # Changelog
 #
 
-* Fri 20 Aug 2019 Peter Ivanov <mr.weider@gmail.com> - 2.7.6
+* Fri Aug 21 2019 Peter Ivanov <mr.weider@gmail.com> - 2.7.6
 - Updated Apache Ignite to version 2.7.6
 
 * Fri Apr 12 2019 Peter Ivanov <mr.weider@gmail.com> - 2.7.5-1
