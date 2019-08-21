@@ -24,12 +24,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.metric.list.MonitoringListExclude;
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 
 /**
  *
  */
-public class MonitoringRowAttributeWalker<T extends MonitoringRow<?>>  {
+public class MonitoringRowAttributeWalker<R extends MonitoringRow<?>>  {
     /** */
     public interface AttributeVisitor {
         /** */
@@ -95,12 +96,12 @@ public class MonitoringRowAttributeWalker<T extends MonitoringRow<?>>  {
         "getClass"));
 
     /** Class to explore. */
-    private Class<T> clazz;
+    private Class<R> clazz;
 
     /**
      * @param clazz Class to explore.
      */
-    public MonitoringRowAttributeWalker(Class<T> clazz) {
+    public MonitoringRowAttributeWalker(Class<R> clazz) {
         this.clazz = clazz;
     }
 
@@ -149,56 +150,45 @@ public class MonitoringRowAttributeWalker<T extends MonitoringRow<?>>  {
      * @param row Row to explore.
      * @param visitor Visitor.
      */
-    public void visitAllWithValues(T row, AttributeWithValueVisitor visitor) {
-        Method[] methods = clazz.getMethods();
+    public void visitAllWithValues(R row, AttributeWithValueVisitor visitor) {
+        forEachMethod((m, i) -> {
+            String name = m.getName();
 
-        try {
+            Class<?> clazz = m.getReturnType();
 
-            for (int i = 0; i < methods.length; i++) {
-                Method method = methods[i];
-
-                if (SYSTEM_METHODS.contains(method.getName()))
-                    continue;
-
-                Class<?> clazz = method.getReturnType();
-
-                if (clazz == void.class)
-                    continue;
-
-                String name = method.getName();
-
+            try {
                 if (!clazz.isPrimitive())
-                    visitor.accept(i, name, (Class)clazz, method.invoke(row));
+                    visitor.accept(i, name, (Class)clazz, m.invoke(row));
                 else if (clazz == boolean.class)
-                    visitor.acceptBoolean(i, name, (boolean)method.invoke(row));
+                    visitor.acceptBoolean(i, name, (boolean)m.invoke(row));
                 else if (clazz == char.class)
-                    visitor.acceptChar(i, name, (char)method.invoke(row));
+                    visitor.acceptChar(i, name, (char)m.invoke(row));
                 else if (clazz == byte.class)
-                    visitor.acceptByte(i, name, (byte)method.invoke(row));
+                    visitor.acceptByte(i, name, (byte)m.invoke(row));
                 else if (clazz == short.class)
-                    visitor.acceptShort(i, name, (short)method.invoke(row));
+                    visitor.acceptShort(i, name, (short)m.invoke(row));
                 else if (clazz == int.class)
-                    visitor.acceptInt(i, name, (int)method.invoke(row));
+                    visitor.acceptInt(i, name, (int)m.invoke(row));
                 else if (clazz == long.class)
-                    visitor.acceptLong(i, name, (long)method.invoke(row));
+                    visitor.acceptLong(i, name, (long)m.invoke(row));
                 else if (clazz == float.class)
-                    visitor.acceptFloat(i, name, (float)method.invoke(row));
+                    visitor.acceptFloat(i, name, (float)m.invoke(row));
                 else if (clazz == double.class)
-                    visitor.acceptDouble(i, name, (double)method.invoke(row));
-
+                    visitor.acceptDouble(i, name, (double)m.invoke(row));
             }
-        }
-        catch (InvocationTargetException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
+            catch (InvocationTargetException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+        });
     }
-
 
     /**
      * @param c Method consumer.
      */
     private void forEachMethod(ObjIntConsumer<Method> c) {
         Method[] methods = clazz.getMethods();
+
+        int idx = 0;
 
         for (int i = 0; i < methods.length; i++) {
             Method method = methods[i];
@@ -211,7 +201,10 @@ public class MonitoringRowAttributeWalker<T extends MonitoringRow<?>>  {
             if (clazz == void.class)
                 continue;
 
-            c.accept(method, i);
+            if (method.getAnnotation(MonitoringListExclude.class) != null)
+                continue;
+
+            c.accept(method, idx++);
         }
     }
 }

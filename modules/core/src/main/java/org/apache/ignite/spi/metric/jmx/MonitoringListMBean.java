@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
 import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker.AttributeVisitor;
 import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
 
@@ -53,8 +52,6 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
 
     /** Monitoring list to export. */
     private final MonitoringList<Id, R> mlist;
-    
-    private final MonitoringRowAttributeWalker<R> attrWalker;
 
     /** MBean info. */
     private MBeanInfo info;
@@ -71,14 +68,12 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
     public MonitoringListMBean(MonitoringList<Id, R> mlist) {
         this.mlist = mlist;
 
-        attrWalker = new MonitoringRowAttributeWalker<>(mlist.rowClass());
-
-        int cnt = attrWalker.count();
+        int cnt = mlist.walker().count();
 
         String[] fields = new String[cnt+1];
         OpenType[] types = new OpenType[cnt+1];
 
-        attrWalker.visitAll(new AttributeVisitor() {
+        mlist.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 fields[idx] = name;
 
@@ -110,8 +105,10 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
                     types[idx] = SimpleType.FLOAT;
                 else if (clazz.isAssignableFrom(Double.class))
                     types[idx] = SimpleType.DOUBLE;
-                else
-                    throw new IllegalStateException("Unsupported type " + clazz.getName());
+                else {
+                    throw new IllegalStateException(
+                        "Unsupported type [rowClass=" + mlist.rowClass().getName() + ",col=" + name);
+                }
             }
 
             @Override public void acceptBoolean(int idx, String name) {
@@ -167,14 +164,14 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
 
         try {
             rowType = new CompositeType(mlist.rowClass().getName(),
-                mlist.rowClass().getName(),
+                mlist.description(),
                 fields,
                 fields,
                 types);
 
             info = new OpenMBeanInfoSupport(
                 mlist.rowClass().getName(),
-                mlist.name(),
+                mlist.description(),
                 new OpenMBeanAttributeInfo[] {
                     new OpenMBeanAttributeInfoSupport(LIST, LIST, rowType, true, false, false)
                 },
@@ -185,7 +182,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
 
             listType = new TabularType(
                 mlist.rowClass().getName(),
-                "List of " + mlist.rowClass().getName(),
+                mlist.description(),
                 rowType,
                 new String[] {"ROW_ID"}
             );
@@ -210,7 +207,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
 
                     visitor.data(data);
 
-                    attrWalker.visitAllWithValues(row, visitor);
+                    mlist.walker().visitAllWithValues(row, visitor);
 
                     data.put("ROW_ID", idx++);
 
@@ -237,11 +234,6 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
     private static class AttributeToMapVisitor implements AttributeWithValueVisitor {
         /** Map to store data. */
         private Map<String, Object> data;
-
-        /** */
-        public AttributeToMapVisitor() {
-            // No-op.
-        }
 
         /** */
         public void data(Map<String, Object> data) {
@@ -298,5 +290,5 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
         @Override public void acceptDouble(int idx, String name, double val) {
             data.put(name, val);
         }
-    };
+    }
 }

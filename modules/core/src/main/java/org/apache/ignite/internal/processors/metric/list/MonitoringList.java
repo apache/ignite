@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +33,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable<R> {
     /** Name of the list. */
     private final String name;
+
+    /** Description of the list. */
+    private final String description;
 
     /** Class of the row */
     private final Class<R> rowClass;
@@ -48,15 +52,27 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     /** */
     private volatile List<Consumer<R>> rowRemoveLsnrs;
 
+    private final MonitoringRowAttributeWalker<R> walker;
+
     /**
      * @param name Name of the list.
+     * @param description Description of the list.
      * @param rowClass Class of the row.
      * @param log Logger.
      */
-    public MonitoringList(String name, Class<R> rowClass, IgniteLogger log) {
+    public MonitoringList(String name, String description, Class<R> rowClass, IgniteLogger log) {
         this.name = name;
+        this.description = description;
         this.rowClass = rowClass;
         this.log = log;
+        this.walker = new MonitoringRowAttributeWalker<>(rowClass);
+    }
+
+    /**
+     * @return
+     */
+    public MonitoringRowAttributeWalker<R> walker() {
+        return walker;
     }
 
     /**
@@ -114,6 +130,13 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * @return List description.
+     */
+    public String description() {
+        return description;
     }
 
     /** {@inheritDoc} */

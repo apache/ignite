@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
+import org.apache.ignite.spi.metric.log.LogExporterSpi;
+import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,12 +42,25 @@ import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanInde
 
 /** */
 public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        LogExporterSpi logExporterSpi = new LogExporterSpi();
+
+        logExporterSpi.setPeriod(1_000L);
+
+        cfg.setMetricExporterSpi(new SqlViewExporterSpi(), logExporterSpi);
+
+        return cfg;
+    }
+
     @Test
     /** */
     public void testSchemas() throws Exception {
         try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
             MonitoringList<String, SqlSchemaView> schemasMonList =
-                g.context().metric().list(metricName("sql", "schemas"), SqlSchemaView.class);
+                g.context().metric().list(metricName("sql", "schemas"), "SQL schemas", SqlSchemaView.class);
 
             Set<String> schemaFromMon = new HashSet<>();
 
@@ -60,7 +75,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     public void testTables() throws Exception {
         try (IgniteEx g = startGrid()) {
             MonitoringList<String, SqlTableView> tblsMonList =
-                g.context().metric().list(metricName("sql", "tables"), SqlTableView.class);
+                g.context().metric().list(metricName("sql", "tables"), "SQL tables", SqlTableView.class);
 
             assertEquals(0, tblsMonList.size());
 
@@ -72,6 +87,8 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals(3, tblsMonList.size());
 
             final boolean[] found = new boolean[1];
+
+            Thread.sleep(60_000L);
 
             tblsMonList.forEach(v -> {
                 if (!"T1".equals(v.tableName()))
@@ -98,7 +115,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     public void testIndexes() throws Exception {
         try (IgniteEx g = startGrid()) {
             MonitoringList<String, SqlIndexView> idxMonList =
-                g.context().metric().list(metricName("sql", "indexes"), SqlIndexView.class);
+                g.context().metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
 
             assertEquals(0, idxMonList.size());
 

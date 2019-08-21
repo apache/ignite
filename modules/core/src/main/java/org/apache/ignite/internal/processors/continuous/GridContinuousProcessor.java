@@ -174,7 +174,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     public GridContinuousProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        cqMonList = ctx.metric().list(metricName("query", "continuous"), ContinuousQueryView.class);
+        cqMonList = ctx.metric().list(metricName("query", "continuous"), "Continuous queries", ContinuousQueryView.class);
     }
 
     /** {@inheritDoc} */

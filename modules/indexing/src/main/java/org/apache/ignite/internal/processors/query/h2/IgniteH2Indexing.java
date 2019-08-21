@@ -1999,8 +1999,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this), ctx);
 
-        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), GridRunningQueryInfo.class);
-        textQryMonList = ctx.metric().list(metricName("query", "text"), GridRunningQueryInfo.class);
+        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), "SQL queries", GridRunningQueryInfo.class);
+        textQryMonList = ctx.metric().list(metricName("query", "text"), "Text queries", GridRunningQueryInfo.class);
 
         qryHistTracker = new QueryHistoryTracker(ctx.config().getSqlQueryHistorySize());
 

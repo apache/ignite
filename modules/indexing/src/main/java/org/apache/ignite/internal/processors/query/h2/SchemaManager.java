@@ -115,8 +115,8 @@ public class SchemaManager {
         this.ctx = ctx;
         this.connMgr = connMgr;
 
-        this.schMonList = ctx.metric().list(metricName("sql", "schemas"), SqlSchemaView.class);
-        this.tblsMonList = ctx.metric().list(metricName("sql", "tables"), SqlTableView.class);
+        this.schMonList = ctx.metric().list(metricName("sql", "schemas"), "SQL schemas", SqlSchemaView.class);
+        this.tblsMonList = ctx.metric().list(metricName("sql", "tables"), "SQL tables", SqlTableView.class);
 
         log = ctx.log(SchemaManager.class);
     }

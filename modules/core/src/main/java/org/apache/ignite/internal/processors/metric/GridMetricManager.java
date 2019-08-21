@@ -299,12 +299,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
      * Gets or creates monitoring list.
      *
      * @param name Name of the list.
+     * @param description Description.
      * @param rowClazz Class of the row.
      * @return Monitoring list.
      */
-    public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, Class<R> rowClazz) {
+    public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, String description,
+        Class<R> rowClazz) {
         return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
-            MonitoringList<Id, R> list = new MonitoringList<>(name, rowClazz, log);
+            MonitoringList<Id, R> list = new MonitoringList<>(name, description, rowClazz, log);
 
             notifyListeners(list, listCreationLsnrs, log);
 

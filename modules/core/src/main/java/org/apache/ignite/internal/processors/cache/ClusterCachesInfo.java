@@ -154,8 +154,8 @@ class ClusterCachesInfo {
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        cachesMonitoring = ctx.metric().list("caches", CacheView.class);
-        cachesGrpMonitoring = ctx.metric().list("cacheGroups", CacheGroupView.class);
+        cachesMonitoring = ctx.metric().list("caches", "Caches", CacheView.class);
+        cachesGrpMonitoring = ctx.metric().list("cacheGroups", "Cache groups", CacheGroupView.class);
 
         log = ctx.log(getClass());
     }

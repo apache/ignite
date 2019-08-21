@@ -54,7 +54,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
             newColumn("DURATION", Value.LONG)
         );
 
-        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), GridRunningQueryInfo.class);
+        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), "SQL queries", GridRunningQueryInfo.class);
     }
 
     /** {@inheritDoc} */

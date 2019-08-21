@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.metric.list.MonitoringListExclude;
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 
 /**
@@ -154,7 +155,7 @@ public class GridRunningQueryInfo implements MonitoringRow<Long> {
     /**
      * @return Query running future.
      */
-    public QueryRunningFuture runningFuture(){
+    @MonitoringListExclude public QueryRunningFuture runningFuture() {
         return fut;
     }
 

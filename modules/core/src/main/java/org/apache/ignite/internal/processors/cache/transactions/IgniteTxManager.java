@@ -315,7 +315,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
 
-        this.txMonList = cctx.kernalContext().metric().list("transactions", TransactionView.class);
+        this.txMonList = cctx.kernalContext().metric().list("transactions", "Transactions", TransactionView.class);
     }
 
     /** {@inheritDoc} */

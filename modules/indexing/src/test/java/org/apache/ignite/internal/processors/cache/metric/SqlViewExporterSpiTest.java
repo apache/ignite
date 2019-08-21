@@ -51,7 +51,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         SqlViewExporterSpi sqlSpi = new SqlViewExporterSpi();
 
-        sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+        sqlSpi.setMetricExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(sqlSpi);
 

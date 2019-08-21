@@ -252,7 +252,7 @@ public class GridH2Table extends TableBase {
         if (desc != null && desc.context() != null) {
             GridKernalContext ctx = desc.context().kernalContext();
 
-            idxMonList = ctx.metric().list(metricName("sql", "indexes"), SqlIndexView.class);
+            idxMonList = ctx.metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
 
             for (Index idx : idxs)
                 addToMonitoring(idx);
