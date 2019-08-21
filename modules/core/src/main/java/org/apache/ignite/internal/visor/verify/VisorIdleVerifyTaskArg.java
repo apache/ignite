@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.NotNull;
 
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.DEFAULT;
+
 /**
  * Arguments for task {@link VisorIdleVerifyTask}. <br/>
  */
@@ -45,7 +48,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     private boolean skipZeros;
 
     /** Cache kind. */
-    private CacheFilterEnum cacheFilterEnum;
+    private CacheFilterEnum cacheFilterEnum = DEFAULT;
 
     /**
      * Default constructor.
@@ -58,7 +61,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
      * @param caches Caches.
      * @param excludeCaches Exclude caches or group.
      * @param skipZeros Skip zeros partitions.
-     * @param cacheFilterEnum Cache kind.
+     * @param cacheFilterEnum Cache kind, require non null.
      * @param checkCrc Check CRC sum on stored pages on disk.
      */
     public VisorIdleVerifyTaskArg(
@@ -68,12 +71,13 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         CacheFilterEnum cacheFilterEnum,
         boolean checkCrc
     ) {
+        assert nonNull(cacheFilterEnum) : "Cache filter can't be null";
+
         this.caches = caches;
         this.excludeCaches = excludeCaches;
         this.skipZeros = skipZeros;
         this.checkCrc = checkCrc;
-
-        cacheFilterEnum(cacheFilterEnum);
+        this.cacheFilterEnum = cacheFilterEnum;
     }
 
     /**
@@ -81,15 +85,14 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
      * @param checkCrc Check CRC sum on stored pages on disk.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches, boolean checkCrc) {
-        this.caches = caches;
-        this.checkCrc = checkCrc;
+        this(caches, null, false, DEFAULT, false);
     }
 
     /**
      * @param caches Caches.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches) {
-        this.caches = caches;
+        this(caches, null, false, DEFAULT, false);
     }
 
     /** */
@@ -162,8 +165,6 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
                 cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
             }
-
-            cacheFilterEnum(cacheFilterEnum);
         }
     }
 
@@ -191,7 +192,9 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /** */
     protected void cacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
-        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
+        assert nonNull(cacheFilterEnum);
+
+        this.cacheFilterEnum = cacheFilterEnum;
     }
 
     /**
