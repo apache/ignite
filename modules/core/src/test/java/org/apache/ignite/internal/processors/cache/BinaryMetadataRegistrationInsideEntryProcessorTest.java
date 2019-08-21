@@ -102,6 +102,7 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
      * @throws Exception If failed.
      */
     public void testContinuousQueryAndBinaryObjectBuilder() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-22863");
         startGrids(3).cluster().active(true);
 
         grid(0).createCache(new CacheConfiguration<>()

@@ -130,25 +130,10 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     }
 
     /**
-     * Setting long op timeout to small value to make this tests faster
-     */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        changeProperty(IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD, String.valueOf(LONG_TRAN_TIMEOUT));
-        changeProperty(IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT, String.valueOf(1.0f));
-        changeProperty(IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT, "5");
-        changeProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(LONG_OP_TIMEOUT));
-    }
-
-    /**
      * Returning long operations timeout to its former value.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        restoreProperty(IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD);
-        restoreProperty(IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT);
-        restoreProperty(IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT);
-        restoreProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
+        stopAllGrids();
 
         super.afterTestsStopped();
     }
@@ -162,6 +147,11 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
     /** */
     public void testTransactionsSystemUserTime() throws Exception {
+        withSystemProperty(IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD, String.valueOf(LONG_TRAN_TIMEOUT));
+        withSystemProperty(IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT, String.valueOf(1.0f));
+        withSystemProperty(IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT, "5");
+        withSystemProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(LONG_OP_TIMEOUT));
+
         Ignite ignite = startGrids(2);
 
         Ignite client = startGrid(CLIENT);

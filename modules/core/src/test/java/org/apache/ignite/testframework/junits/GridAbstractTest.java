@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -211,8 +211,11 @@ public abstract class GridAbstractTest extends TestCase {
     private static final boolean PERSISTENCE_ALLOWED =
             IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, true);
 
-    /** */
-    private static Map<String, String> savedProperties = new HashMap<>();
+    /** Hold system property values before all tests started. The properties will be restored in {@link #afterTestsStopped()} */
+    private final LinkedList<IgniteBiTuple<String, String>> changedSysPropertiesInTestClass = new LinkedList<>();
+
+    /** Hold system property values before test started. The properties will be restored in {@link #afterTest()} */
+    private final LinkedList<IgniteBiTuple<String, String>> changedSysPropertiesInTest = new LinkedList<>();
 
     /**
      *
@@ -546,7 +549,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
      */
     protected void beforeTest() throws Exception {
-        // No-op.
+        changedSysPropertiesInTest.clear();
     }
 
     /**
@@ -556,7 +559,12 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTest() throws Exception {
-        // No-op.
+        try {
+            restoreSystemProperties(changedSysPropertiesInTest);
+        }
+        finally {
+            changedSysPropertiesInTest.clear();
+        }
     }
 
     /**
@@ -568,6 +576,8 @@ public abstract class GridAbstractTest extends TestCase {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
+
+        changedSysPropertiesInTestClass.clear();
     }
 
     /**
@@ -577,7 +587,60 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        savedProperties.clear();
+        try {
+            restoreSystemProperties(changedSysPropertiesInTestClass);
+        }
+        finally {
+            changedSysPropertiesInTestClass.clear();
+        }
+    }
+
+    /**
+     * Analogue of @withSystemProperty on test's class in JUnit4. In {@link #afterTestsStopped()} changed system
+     * properties will be restored.
+     *
+     * @param name System property name.
+     * @param val New value of property. If {@code null} will be invoked {@link System#clearProperty}.
+     */
+    protected final void withSystemPropertyByClass(String name, @Nullable String val) {
+        String oldVal = System.getProperty(name);
+
+        if (val == null)
+            System.clearProperty(name);
+        else
+            System.setProperty(name, val);
+
+        changedSysPropertiesInTestClass.add(new IgniteBiTuple<>(name, oldVal));
+    }
+
+    /**
+     * Analogue of @withSystemProperty on test's method in JUnit4. In {@link #afterTest()}} changed system properties
+     * will be restored.
+     *
+     * @param name System property name.
+     * @param val New value of property. If {@code null} will be invoked {@link System#clearProperty}.
+     */
+    protected final void withSystemProperty(String name, @Nullable String val) {
+        String oldVal = System.getProperty(name);
+
+        if (val == null)
+            System.clearProperty(name);
+        else
+            System.setProperty(name, val);
+
+        changedSysPropertiesInTest.add(new IgniteBiTuple<>(name, oldVal));
+    }
+
+    /** */
+    private void restoreSystemProperties(LinkedList<IgniteBiTuple<String, String>> propList) {
+        propList.descendingIterator().forEachRemaining(t -> {
+            assertNotNull(t.getKey());
+
+            if (t.getValue() == null)
+                System.clearProperty(t.getKey());
+            else
+                System.setProperty(t.getKey(), t.getValue());
+        });
     }
 
     /** {@inheritDoc} */
@@ -2686,57 +2749,4 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
     }
-
-    /**
-     * Returns metric set.
-     *
-     * @param igniteInstanceName Ignite instance name.
-     * @param grp Name of the group.
-     * @param metrics Metrics.
-     * @return MX bean.
-     * @throws Exception If failed.
-     */
-    public DynamicMBean metricSet(
-        String igniteInstanceName,
-        String grp,
-        String metrics
-    ) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(igniteInstanceName, grp, metrics);
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
-    }
-
-    /**
-     * Changes the system property before running the tests and saves it to restore after tests finish using
-     * {@link #restoreProperty(String)} method.
-     *
-     * @param name Property name.
-     * @param newVal New value.
-     */
-    protected void changeProperty(String name, String newVal) {
-        savedProperties.put(name, System.getProperty(name));
-
-        System.setProperty(name, newVal);
-    }
-
-    /**
-     * Restores the system property that was saved using {@link #changeProperty(String, String)}
-     * after finishing the tests.
-     *
-     * @param name Property name.
-     */
-    protected void restoreProperty(String name) {
-        String val = savedProperties.get(name);
-
-        if (val != null)
-            System.setProperty(name, val);
-        else
-            System.clearProperty(name);
-    }
-
 }
