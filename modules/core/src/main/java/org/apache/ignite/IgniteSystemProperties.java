@@ -1130,6 +1130,12 @@ public final class IgniteSystemProperties {
     public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
     /**
+     * Disables smart DR throttling. Default value is <code>false</code>.
+     */
+    public static final String IGNITE_DISABLE_SMART_DR_THROTTLING =
+        "IGNITE_DISABLE_SMART_DR_THROTTLING";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

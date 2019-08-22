@@ -56,7 +56,11 @@ public enum IgniteFeatures {
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
 
     /** Supports tracking update counter for transactions. */
-    TX_TRACKING_UPDATE_COUNTER(12);
+    TX_TRACKING_UPDATE_COUNTER(12),
+    /**
+     * A mode when data nodes throttle update rate regarding to DR sender load
+     */
+    DR_DATA_NODE_SMART_THROTTLING(19);
 
     /**
      * Unique feature identifier.
