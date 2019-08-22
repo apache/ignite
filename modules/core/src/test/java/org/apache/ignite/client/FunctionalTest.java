@@ -50,7 +50,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -772,9 +771,12 @@ public class FunctionalTest {
             }
 
             // Test active transactions limit.
-            List<ClientTransaction> txs = new ArrayList<>(ClientConnectionContext.ACTIVE_TX_LIMIT);
+            int txLimit = ignite.configuration().getClientConnectorConfiguration().getThinClientConfiguration()
+                .getMaxActiveTxPerConnection();
 
-            for (int i = 0; i < ClientConnectionContext.ACTIVE_TX_LIMIT; i++) {
+            List<ClientTransaction> txs = new ArrayList<>(txLimit);
+
+            for (int i = 0; i < txLimit; i++) {
                 Thread t = new Thread(() -> txs.add(client.transactions().txStart()));
 
                 t.start();

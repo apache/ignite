@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -36,8 +36,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_THIN_MAX_ACTIVE_TX_PER_CONNECTION;
 
 /**
  * Thin Client connection context.
@@ -74,10 +72,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         VER_1_0_0
     );
 
-    /** Active transactions limit. */
-    public static final int ACTIVE_TX_LIMIT = IgniteSystemProperties.getInteger(
-        IGNITE_THIN_MAX_ACTIVE_TX_PER_CONNECTION, 100);
-
     /** Message parser. */
     private ClientMessageParser parser;
 
@@ -99,6 +93,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
 
+    /** Active tx count limit. */
+    private final int maxActiveTxCnt;
+
     /** Tx id. */
     private final AtomicInteger txIdSeq = new AtomicInteger();
 
@@ -114,11 +111,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      * @param ctx Kernal context.
      * @param connId Connection ID.
      * @param maxCursors Max active cursors.
+     * @param thinCfg Thin-client configuration.
      */
-    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors) {
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors, ThinClientConfiguration thinCfg) {
         super(ctx, connId);
 
         this.maxCursors = maxCursors;
+        maxActiveTxCnt = thinCfg.getMaxActiveTxPerConnection();
     }
 
     /**
@@ -266,13 +265,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      * @param txCtx Tx context.
      */
     public void addTxContext(ClientTxContext txCtx) {
-        if (txsCnt.incrementAndGet() > ACTIVE_TX_LIMIT) {
+        if (txsCnt.incrementAndGet() > maxActiveTxCnt) {
             txsCnt.decrementAndGet();
 
             throw new IgniteClientException(ClientStatus.TX_LIMIT_EXCEEDED, "Active transactions per connection limit " +
-                "(" + ACTIVE_TX_LIMIT + ") exceeded. To start a new transaction you need to wait for some of currently " +
-                "active transactions complete. To change the limit set up " + IGNITE_THIN_MAX_ACTIVE_TX_PER_CONNECTION +
-                " servers system property.");
+                "(" + maxActiveTxCnt + ") exceeded. To start a new transaction you need to wait for some of currently " +
+                "active transactions complete. To change the limit set up " +
+                "ThinClientConfiguration.MaxActiveTxPerConnection property.");
         }
 
         txs.put(txCtx.txId(), txCtx);

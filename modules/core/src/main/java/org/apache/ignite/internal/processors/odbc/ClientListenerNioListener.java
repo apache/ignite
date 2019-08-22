@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -79,6 +80,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Client connection config. */
     private ClientConnectorConfiguration cliConnCfg;
 
+    /** Thin client configuration. */
+    private final ThinClientConfiguration thinCfg;
+
     /**
      * Constructor.
      *
@@ -96,6 +100,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         log = ctx.log(getClass());
+
+        thinCfg = cliConnCfg.getThinClientConfiguration() == null ? new ThinClientConfiguration()
+            : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -361,7 +368,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx, connId, maxCursors);
+                return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg);
         }
 
         throw new IgniteCheckedException("Unknown client type: " + clientType);
