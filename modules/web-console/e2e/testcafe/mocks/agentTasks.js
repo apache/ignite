@@ -63,7 +63,7 @@ export const simeplFakeSQLQuery = (nid, response) => (ws) => {
 };
 
 export const FAKE_CLUSTERS = {
-    count: 1,
+    hasAgent: true,
     hasDemo: true,
     clusters: [
         {
@@ -98,7 +98,7 @@ export const FAKE_CLUSTERS = {
 };
 
 export const AGENT_DISCONNECTED_GRID = {
-    count: 0,
+    hasAgent: false,
     hasDemo: false,
     clusters: []
 };
