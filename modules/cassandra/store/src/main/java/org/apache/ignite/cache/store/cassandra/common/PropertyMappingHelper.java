@@ -34,8 +34,8 @@ import org.apache.ignite.cache.store.cassandra.persistence.PojoFieldAccessor;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 
 /**
- * Helper class providing bunch of methods to discover fields of POJO objects and
- * map builtin Java types to appropriate Cassandra types.
+ * Helper class providing bunch of methods to discover fields of POJO objects and map builtin Java types to appropriate
+ * Cassandra types.
  */
 public class PropertyMappingHelper {
     /** Bytes array Class type. */
@@ -69,7 +69,6 @@ public class PropertyMappingHelper {
      * Maps Cassandra type to specified Java type.
      *
      * @param clazz java class.
-     *
      * @return Cassandra type.
      */
     public static DataType.Name getCassandraType(Class clazz) {
@@ -81,26 +80,19 @@ public class PropertyMappingHelper {
      *
      * @param clazz class from which to get property accessor.
      * @param prop name of the property.
-     *
      * @return property accessor.
      */
     public static PojoFieldAccessor getPojoFieldAccessor(Class clazz, String prop) {
-        PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(clazz);
-
-        if (descriptors != null) {
-            for (PropertyDescriptor descriptor : descriptors) {
-                if (descriptor.getName().equals(prop)) {
-                    Field field = null;
-
-                    try {
-                        field = clazz.getDeclaredField(prop);
-                    }
-                    catch (Throwable ignore) {
-                    }
-
-                    return new PojoFieldAccessor(descriptor, field);
-                }
+        final PropertyDescriptor descriptor = getPropertyDescriptor(clazz, prop);
+        if (null != descriptor) {
+            Field field = null;
+            try {
+                field = clazz.getDeclaredField(prop);
             }
+            catch (final Exception ignored) {
+                // ignored
+            }
+            return new PojoFieldAccessor(descriptor, field);
         }
 
         try {
@@ -112,13 +104,31 @@ public class PropertyMappingHelper {
     }
 
     /**
+     * Returns property descriptor by class property name.
+     *
+     * @param clazz class from which to get property accessor.
+     * @param prop name of the property.
+     * @return property accessor or null if not found
+     */
+    public static PropertyDescriptor getPropertyDescriptor(final Class clazz, final String prop) {
+        final PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(clazz);
+        if (descriptors != null) {
+            for (final PropertyDescriptor descriptor : descriptors) {
+                if (descriptor.getName().equals(prop)) {
+                    return descriptor;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Returns value of specific column in the row returned by CQL statement.
      *
      * @param row row returned by CQL statement.
      * @param col column name.
      * @param clazz java class to which column value should be casted.
      * @param serializer serializer to use if column stores BLOB otherwise could be null.
-     *
      * @return row column value.
      */
     public static Object getCassandraColumnValue(Row row, String col, Class clazz, Serializer serializer) {
@@ -131,7 +141,7 @@ public class PropertyMappingHelper {
         if (int.class.equals(clazz)) {
             if (row.isNull(col)) {
                 throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
-                        "' to " + "int value used in domain object model");
+                    "' to " + "int value used in domain object model");
             }
 
             return row.getInt(col);
@@ -143,7 +153,7 @@ public class PropertyMappingHelper {
         if (short.class.equals(clazz)) {
             if (row.isNull(col)) {
                 throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
-                        "' to " + "short value used in domain object model");
+                    "' to " + "short value used in domain object model");
             }
 
             return row.getShort(col);
@@ -155,7 +165,7 @@ public class PropertyMappingHelper {
         if (long.class.equals(clazz)) {
             if (row.isNull(col)) {
                 throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
-                        "' to " + "long value used in domain object model");
+                    "' to " + "long value used in domain object model");
             }
 
             return row.getLong(col);
@@ -167,7 +177,7 @@ public class PropertyMappingHelper {
         if (double.class.equals(clazz)) {
             if (row.isNull(col)) {
                 throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
-                        "' to " + "double value used in domain object model");
+                    "' to " + "double value used in domain object model");
             }
 
             return row.getDouble(col);
@@ -179,7 +189,7 @@ public class PropertyMappingHelper {
         if (boolean.class.equals(clazz)) {
             if (row.isNull(col)) {
                 throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
-                        "' to " + "boolean value used in domain object model");
+                    "' to " + "boolean value used in domain object model");
             }
 
             return row.getBool(col);
@@ -191,7 +201,7 @@ public class PropertyMappingHelper {
         if (float.class.equals(clazz)) {
             if (row.isNull(col)) {
                 throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
-                        "' to " + "float value used in domain object model");
+                    "' to " + "float value used in domain object model");
             }
 
             return row.getFloat(col);
