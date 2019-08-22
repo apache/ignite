@@ -1140,6 +1140,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_USE_POOL_FOR_LAZY_QUERIES = "IGNITE_USE_POOL_FOR_LAZY_QUERIES";
 
     /**
+     * Disables smart DR throttling. Default value is <code>false</code>.
+     */
+    public static final String IGNITE_DISABLE_SMART_DR_THROTTLING =
+        "IGNITE_DISABLE_SMART_DR_THROTTLING";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
