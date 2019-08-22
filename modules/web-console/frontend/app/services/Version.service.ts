@@ -22,9 +22,25 @@ import _ from 'lodash';
  */
 const VERSION_MATCHER = /(\d+)\.(\d+)\.(\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\d+))?(-([\da-f]+))?/i;
 
-const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
+type ComparisonNumbers = -1|0|1
+
+const numberComparator = <T>(a: T, b: T): ComparisonNumbers => a > b ? 1 : a < b ? -1 : 0;
+
+interface ParsedVersion {
+    major: number,
+    minor: number,
+    maintenance: number,
+    stage: string,
+    revTs: number,
+    revHash?: string
+}
+
+type VersionInfo = {label: string, ignite: string}
 
 export default class IgniteVersion {
+    webConsole: string
+    supportedVersions: VersionInfo[]
+    currentSbj: BehaviorSubject<VersionInfo>
     constructor() {
         this.webConsole = '2.8.0';
 
@@ -97,7 +113,7 @@ export default class IgniteVersion {
     }
 
     /**
-     * @return {String} Current Ignite version.
+     * @return Current Ignite version.
      */
     get current() {
         return this.currentSbj.getValue().ignite;
@@ -106,11 +122,11 @@ export default class IgniteVersion {
     /**
      * Check if version in range.
      *
-     * @param {String} target Target version.
-     * @param {String | Array.<String>} ranges Version ranges to compare with.
-     * @returns {Boolean} `True` if version is equal or greater than specified range.
+     * @param target Target version.
+     * @param ranges Version ranges to compare with.
+     * @returns `True` if version is equal or greater than specified range.
      */
-    since(target, ...ranges) {
+    since(target: string, ...ranges: (string|string[])[]): boolean {
         const targetVer = this.parse(target);
 
         return !!_.find(ranges, (range) => {
@@ -128,31 +144,28 @@ export default class IgniteVersion {
     /**
      * Check whether version before than specified version.
      *
-     * @param {String} target Target version.
-     * @param {String} ranges Version ranges to compare with.
-     * @return {Boolean} `True` if version before than specified version.
+     * @param target Target version.
+     * @param ranges Version ranges to compare with.
+     * @return `True` if version before than specified version.
      */
-    before(target, ...ranges) {
+    before(target: string, ...ranges: (string|string[])[]): boolean {
         return !this.since(target, ...ranges);
     }
 
     /**
      * Check if current version in specified range.
      *
-     * @param {String|Array.<String>} ranges Version ranges to compare with.
-     * @returns {Boolean} `True` if configuration version is equal or greater than specified range.
+     * @param ranges Version ranges to compare with.
+     * @returns `True` if configuration version is equal or greater than specified range.
      */
-    available(...ranges) {
+    available(...ranges: (string|string[])[]): boolean {
         return this.since(this.current, ...ranges);
     }
 
     /**
      * Tries to parse product version from it's string representation.
-     *
-     * @param {String} ver - String representation of version.
-     * @returns {{major: Number, minor: Number, maintenance: Number, stage: String, revTs: Number, revHash: String}} - Object that contains product version fields.
      */
-    parse(ver) {
+    parse(ver: string): ParsedVersion {
         // Development or built from source ZIP.
         ver = ver.replace(/(-DEV|-n\/a)$/i, '');
 
@@ -170,12 +183,8 @@ export default class IgniteVersion {
 
     /**
      * Compare to version.
-     *
-     * @param {Object} a first compared version.
-     * @param {Object} b second compared version.
-     * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
      */
-    compare(a, b) {
+    compare(a: ParsedVersion, b: ParsedVersion): ComparisonNumbers {
         let res = numberComparator(a.major, b.major);
 
         if (res !== 0)
