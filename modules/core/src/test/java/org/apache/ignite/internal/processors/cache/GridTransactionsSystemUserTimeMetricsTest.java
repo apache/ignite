@@ -51,7 +51,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- *
+ * Test for transaction system/user time tracking and metrics.
  */
 public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstractTest {
     /** */
@@ -145,7 +145,11 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         super.afterTest();
     }
 
-    /** */
+    /**
+     * Test method.
+     *
+     * @throws Exception If failed.
+     */
     public void testTransactionsSystemUserTime() throws Exception {
         withSystemProperty(IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD, String.valueOf(LONG_TRAN_TIMEOUT));
         withSystemProperty(IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT, String.valueOf(1.0f));
@@ -275,7 +279,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     }
 
     /**
-     *
+     * Test communication SPI that can delay transaction on system time.
      */
     private class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
@@ -293,7 +297,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     }
 
     /**
-     *
+     * Transaction dump log listener.
      */
     private static class TransactionDumpListener extends LogListener {
         /** */

@@ -22,10 +22,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toJson;
 
 /**
- *
+ * Tests for metric utils.
  */
 public class MetricUtilsTest extends GridCommonAbstractTest {
-    /** */
+    /**
+     * Test for exporting histogram metric as json.
+     */
     public void testToJson() {
         HistogramMetric singleBucket = new HistogramMetric(new long[] { 1 });
 
