@@ -163,7 +163,7 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
     /**
      * @return {@code true} if Visor should collect metrics for system caches.
      */
-    public boolean getSystemCaches() {
+    public boolean isSystemCaches() {
         return sysCaches;
     }
 

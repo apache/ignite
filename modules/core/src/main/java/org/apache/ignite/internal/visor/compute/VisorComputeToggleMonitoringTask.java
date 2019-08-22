@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.compute;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,9 +26,8 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.COMPUTE_MONITORING_HOLDER_KEY;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.checkExplicitTaskMonitoring;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.checkExplicitEvents;
 
 /**
  * Task to run gc on nodes.
@@ -73,21 +71,10 @@ public class VisorComputeToggleMonitoringTask extends
 
         /** {@inheritDoc} */
         @Override protected Boolean run(VisorComputeToggleMonitoringTaskArg arg) {
-            if (checkExplicitTaskMonitoring(ignite))
+            if (checkExplicitEvents(ignite, VISOR_TASK_EVTS))
                 return Boolean.TRUE;
 
-            ConcurrentMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
-
-            VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
-
-            if (holder == null) {
-                VisorComputeMonitoringHolder holderNew = new VisorComputeMonitoringHolder();
-
-                VisorComputeMonitoringHolder holderOld =
-                    storage.putIfAbsent(COMPUTE_MONITORING_HOLDER_KEY, holderNew);
-
-                holder = holderOld == null ? holderNew : holderOld;
-            }
+            VisorComputeMonitoringHolder holder = VisorComputeMonitoringHolder.getInstance(ignite);
 
             String visorKey = arg.getVisorKey();
 
@@ -95,7 +82,7 @@ public class VisorComputeToggleMonitoringTask extends
 
             // Set task monitoring state.
             if (state)
-                holder.startCollect(ignite, visorKey);
+                holder.startCollect(ignite, visorKey, VISOR_TASK_EVTS);
             else
                 holder.stopCollect(ignite, visorKey);
 
