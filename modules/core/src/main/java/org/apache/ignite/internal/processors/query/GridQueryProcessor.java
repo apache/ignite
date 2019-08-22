@@ -1502,7 +1502,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             if (e instanceof SchemaOperationException)
                 throw (SchemaOperationException)e;
             else
