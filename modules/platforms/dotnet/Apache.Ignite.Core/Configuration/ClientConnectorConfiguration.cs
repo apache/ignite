@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Configuration
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Client connector configuration (ODBC, JDBC, Thin Client).

@@ -17,9 +17,7 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
-    using System;
     using System.ComponentModel;
-    using System.Diagnostics;
 
     /// <summary>
     /// Server-side thin client specific configuration.
