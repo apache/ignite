@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByN
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
 
 /**
- * Commands assosiated with baseline functionality.
+ * Commands associated with baseline functionality.
  */
 public class BaselineCommand implements Command<BaselineArguments> {
     /** Arguments. */

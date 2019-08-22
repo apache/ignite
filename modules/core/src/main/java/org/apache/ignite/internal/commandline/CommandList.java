@@ -61,7 +61,10 @@ public enum CommandList {
     KILL("--kill", new KillCommand()),
 
     /** Snapshot commands. */
-    SNAPSHOT("--snapshot", new SnapshotCommand());
+    SNAPSHOT("--snapshot", new SnapshotCommand()),
+
+    /** */
+    CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
