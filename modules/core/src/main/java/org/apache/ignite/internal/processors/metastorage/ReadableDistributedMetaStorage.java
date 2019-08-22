@@ -59,7 +59,7 @@ public interface ReadableDistributedMetaStorage {
     long getUpdatesCount();
 
     /**
-     * Get value by the key. Should be consistent for all nodes in cluster when it's in active state.
+     * Get value by the key. Should be consistent for all nodes.
      *
      * @param key The key.
      * @return Value associated with the key.

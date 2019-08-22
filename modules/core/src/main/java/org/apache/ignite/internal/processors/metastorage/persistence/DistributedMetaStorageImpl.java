@@ -561,9 +561,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *         to apply it to the cluster.
      *     </li>
      *     <li>
-     *         Do not join node that has updates count greater then on local node and cluster is active.
-     *     </li>
-     *     <li>
      *         Do not join node if its distributed metastorage version hash differs from the local one. In such cases
      *         node is probably from different cluster or has some inconsistent data.
      *     </li>
@@ -983,8 +980,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *
      * @param key The key.
      * @param valBytes Value bytes to write. Null if value needs to be removed.
-     * @throws IgniteCheckedException If there was an error while sending discovery message or message was sent but
-     * cluster is not active.
+     * @throws IgniteCheckedException If there was an error while sending discovery message.
      */
     private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
        if (!isSupported(ctx))
@@ -1106,7 +1102,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Store data in local metastorage or in memory.
      *
      * @param histItem {@code <key, value>} pair to process.
-     * activation.
      * @throws IgniteCheckedException In case of IO/unmarshalling errors.
      */
     private void completeWrite(
@@ -1258,7 +1253,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * Notify listeners at the end of activation. Even if there was no data restoring.
+     * Notify listeners on node start. Even if there was no data restoring.
      *
      * @param newData Data about which listeners should be notified.
      */
