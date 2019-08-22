@@ -1185,6 +1185,12 @@ public final class IgniteSystemProperties {
         "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT";
 
     /**
+     * Disables smart DR throttling. Default value is <code>false</code>.
+     */
+    public static final String IGNITE_DISABLE_SMART_DR_THROTTLING =
+        "IGNITE_DISABLE_SMART_DR_THROTTLING";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
