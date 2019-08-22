@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// </summary>
     public static class ParityTest
     {
+        /** Test ignore reason: we should not fail builds due to new APIs being added in Java. */
+        public const string IgnoreReason = "API parity tests are supposed to be run manually.";
+
         /** Property regex. */
         private static readonly Regex JavaPropertyRegex = 
             new Regex("(@Deprecated)?\\s+public [^=^\r^\n]+ (\\w+)\\(\\) {", RegexOptions.Compiled);

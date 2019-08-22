@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="IDataStorageMetrics"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class DataStorageMetricsParityTest
     {
         /** Properties that are missing on .NET side. */
