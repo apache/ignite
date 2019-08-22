@@ -1080,6 +1080,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return Value of {@link System#nanoTime()} in microseconds.
+     */
+    public static long microTime() {
+        return System.nanoTime() / 1000;
+    }
+
+    /**
      * Convert milliseconds time interval to nanoseconds.
      *
      * @param millis Original time interval.
