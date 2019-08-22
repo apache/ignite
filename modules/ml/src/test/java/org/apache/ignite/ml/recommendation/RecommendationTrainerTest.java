@@ -49,14 +49,14 @@ public class RecommendationTrainerTest {
             data.put(seq++, triplet);
 
         RecommendationTrainer trainer = new RecommendationTrainer()
-            .withMaxIterations(100)
-            .withLearningRate(25.0)
-            .withBatchSize(100)
+            .withMaxIterations(1000)
+            .withLearningRate(50.0)
+            .withBatchSize(10)
             .withK(2)
             .withLearningEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1))
             .withTrainerEnvironment(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1).buildForTrainer());
 
-        RecommendationModel<Integer, Integer> mdl = trainer.fit(new LocalDatasetBuilder<>(data, 1));
+        RecommendationModel<Integer, Integer> mdl = trainer.fit(new LocalDatasetBuilder<>(data, 10));
 
         int incorrect = 0;
         for (ObjectSubjectRatingTriplet<Integer, Integer> triplet : toList(ratings)) {

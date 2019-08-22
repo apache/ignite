@@ -16,6 +16,7 @@
 
 package org.apache.ignite.ml.inference;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -50,8 +51,11 @@ public class IgniteModelStorageUtil {
      * @param ignite Ignite instance.
      * @param mdl Model to be saved.
      * @param name Model name to be used.
+     * @param <I> Type of input.
+     * @param <O> Type of output.
      */
-    public static void saveModel(Ignite ignite, IgniteModel<Vector, Double> mdl, String name) {
+    public static <I extends Serializable, O extends Serializable> void saveModel(Ignite ignite,
+        IgniteModel<I, O> mdl, String name) {
         IgniteModel<byte[], byte[]> mdlWrapper = wrapIgniteModel(mdl);
         byte[] serializedMdl = Utils.serialize(mdlWrapper);
         UUID mdlId = UUID.randomUUID();
@@ -89,9 +93,11 @@ public class IgniteModelStorageUtil {
      *
      * @param ignite Ignite instance.
      * @param name Model name.
+     * @param <I> Type of input.
+     * @param <O> Type of output.
      * @return Synchronous model built using {@link SingleModelBuilder}.
      */
-    public static Model<Vector, Double> getModel(Ignite ignite, String name) {
+    public static <I extends Serializable, O extends Serializable> Model<I, O> getModel(Ignite ignite, String name) {
         return getSyncModel(ignite, name, new SingleModelBuilder());
     }
 
@@ -101,9 +107,12 @@ public class IgniteModelStorageUtil {
      * @param ignite Ignite instance.
      * @param name Model name.
      * @param mdlBldr Synchronous model builder.
+     * @param <I> Type of input.
+     * @param <O> Type of output.
      * @return Synchronous model built using specified model builder.
      */
-    public static Model<Vector, Double> getSyncModel(Ignite ignite, String name, SyncModelBuilder mdlBldr) {
+    public static <I extends Serializable, O extends Serializable> Model<I, O> getSyncModel(Ignite ignite, String name,
+        SyncModelBuilder mdlBldr) {
         ModelDescriptor desc = Objects.requireNonNull(getModelDescriptor(ignite, name),
             "Model not found [name=" + name + "]");
 
@@ -208,10 +217,11 @@ public class IgniteModelStorageUtil {
      * @param mdl Ignite model.
      * @return Ignite model that accepts and returns serialized objects (byte arrays).
      */
-    private static IgniteModel<byte[], byte[]> wrapIgniteModel(IgniteModel<Vector, Double> mdl) {
+    private static  <I extends Serializable, O extends Serializable> IgniteModel<byte[], byte[]> wrapIgniteModel(
+        IgniteModel<I, O> mdl) {
         return input -> {
-            Vector deserializedInput = Utils.deserialize(input);
-            Double output = mdl.predict(deserializedInput);
+            I deserializedInput = Utils.deserialize(input);
+            O output = mdl.predict(deserializedInput);
 
             return Utils.serialize(output);
         };
@@ -221,16 +231,19 @@ public class IgniteModelStorageUtil {
      * Unwraps Ignite model so that model accepts and returns deserialized objects ({@link Vector} and {@link Double}).
      *
      * @param mdl Ignite model.
+     * @param <I> Type of input.
+     * @param <O> Type of output.
      * @return Ignite model that accepts and returns deserialized objects ({@link Vector} and {@link Double}).
      */
-    private static Model<Vector, Double> unwrapIgniteSyncModel(Model<byte[], byte[]> mdl) {
-        return new Model<Vector, Double>() {
+    private static <I extends Serializable, O extends Serializable> Model<I, O> unwrapIgniteSyncModel(
+        Model<byte[], byte[]> mdl) {
+        return new Model<I, O>() {
             /** {@inheritDoc} */
-            @Override public Double predict(Vector input) {
+            @Override public O predict(I input) {
                 byte[] serializedInput = Utils.serialize(input);
                 byte[] serializedOutput = mdl.predict(serializedInput);
 
-                return Utils.deserialize(serializedOutput);
+                return (O) Utils.deserialize(serializedOutput);
             }
 
             /** {@inheritDoc} */

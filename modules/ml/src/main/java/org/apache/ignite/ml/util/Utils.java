@@ -157,7 +157,6 @@ public class Utils {
      * @param <T> Type of serialized object.
      * @return Deserialized object.
      */
-    @SuppressWarnings("unchecked")
     public static <T extends Serializable> T deserialize(byte[] o) {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(o);
              ObjectInputStream ois = new ObjectInputStream(bais)) {

@@ -80,13 +80,7 @@ public class RecommendationDatasetData<O extends Serializable, S extends Seriali
             subjGrads.put(triplet.getSubj(), subjGrad);
         }
 
-        for (Map.Entry<O, Vector> e : objGrads.entrySet())
-            e.setValue(e.getValue().divide(rows.length));
-
-        for (Map.Entry<S, Vector> e : subjGrads.entrySet())
-            e.setValue(e.getValue().divide(rows.length));
-
-        return new MatrixFactorizationGradient<>(objGrads, subjGrads);
+        return new MatrixFactorizationGradient<>(objGrads, subjGrads, rows.length);
     }
 
     /**

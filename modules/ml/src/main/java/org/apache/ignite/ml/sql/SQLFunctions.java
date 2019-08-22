@@ -16,14 +16,15 @@
 
 package org.apache.ignite.ml.sql;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
 import org.apache.ignite.ml.inference.Model;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.recommendation.ObjectSubjectPair;
 import org.apache.ignite.ml.util.LRUCache;
 
 /**
@@ -39,7 +40,8 @@ public class SQLFunctions {
 
     /** Default LRU model cache. */
     // TODO: IGNITE-11163: Add hart beat tracker to DistributedInfModel.
-    private static final Map<String, Model<Vector, Double>> cache = new LRUCache<>(LRU_CACHE_SIZE, Model::close);
+    private static final Map<String, Model<Serializable, Serializable>> cache =
+        new LRUCache<>(LRU_CACHE_SIZE, Model::close);
 
     static {
         Thread invalidationThread = new Thread(() -> {
@@ -47,7 +49,7 @@ public class SQLFunctions {
                 LockSupport.parkNanos(CACHE_CLEAR_INTERVAL_SEC * 1_000_000_000L);
 
             synchronized (cache) {
-                for (Model<Vector, Double> mdl : cache.values())
+                for (Model<Serializable, Serializable> mdl : cache.values())
                     mdl.close();
 
                 cache.clear();
@@ -68,7 +70,7 @@ public class SQLFunctions {
      */
     @QuerySqlFunction
     public static double predict(String mdl, Double... x) {
-        Model<Vector, Double> infMdl;
+        Model<Serializable, Serializable> infMdl;
 
         synchronized (cache) {
             infMdl = cache.computeIfAbsent(
@@ -77,6 +79,29 @@ public class SQLFunctions {
             );
         }
 
-        return infMdl.predict(VectorUtils.of(x));
+        return (double)infMdl.predict(VectorUtils.of(x));
+    }
+
+    /**
+     * Makes prediction using specified model name to extract model from model storage and specified input values
+     * as input object for prediction.
+     *
+     * @param mdl Pretrained model.
+     * @param objId Object id.
+     * @param subjId Subject id.
+     * @return Prediction.
+     */
+    @QuerySqlFunction
+    public static double predictRecommendation(String mdl, Integer objId, Integer subjId) {
+        Model<Serializable, Serializable> infMdl;
+
+        synchronized (cache) {
+            infMdl = cache.computeIfAbsent(
+                mdl,
+                key -> IgniteModelStorageUtil.getModel(Ignition.ignite(), mdl)
+            );
+        }
+
+        return (double)infMdl.predict(new ObjectSubjectPair<>(objId, subjId));
     }
 }

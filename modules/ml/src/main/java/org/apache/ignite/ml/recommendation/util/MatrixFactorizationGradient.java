@@ -37,15 +37,20 @@ public class MatrixFactorizationGradient<O extends Serializable, S extends Seria
     /** Gradient of subject of recommendation function. */
     private final Map<S, Vector> subjGrad;
 
+    /** Number of rows the gradient calculated on. */
+    private final int rows;
+
     /**
      * Constructs a new instance of matrix factorization gradient.
      *
      * @param objGrad Gradient of object of recommendation matrix.
      * @param subjGrad Gradient of subject of recommendation matrix.
+     * @param rows Number of rows the gradient calculated on.
      */
-    public MatrixFactorizationGradient(Map<O, Vector> objGrad, Map<S, Vector> subjGrad) {
+    public MatrixFactorizationGradient(Map<O, Vector> objGrad, Map<S, Vector> subjGrad, int rows) {
         this.objGrad = Collections.unmodifiableMap(objGrad);
         this.subjGrad = Collections.unmodifiableMap(subjGrad);
+        this.rows = rows;
     }
 
     /**
@@ -59,13 +64,13 @@ public class MatrixFactorizationGradient<O extends Serializable, S extends Seria
         // Apply object gradient on object matrix.
         for (Map.Entry<O, Vector> e : objGrad.entrySet()) {
             Vector vector = objMatrix.get(e.getKey());
-            objMatrix.put(e.getKey(), vector.minus(e.getValue()));
+            objMatrix.put(e.getKey(), vector.minus(e.getValue().divide(rows)));
         }
 
         // Apply subject gradient on subject matrix.
         for (Map.Entry<S, Vector> e : subjGrad.entrySet()) {
             Vector vector = subjMatrix.get(e.getKey());
-            subjMatrix.put(e.getKey(), vector.minus(e.getValue()));
+            subjMatrix.put(e.getKey(), vector.minus(e.getValue().divide(rows)));
         }
     }
 
@@ -85,5 +90,14 @@ public class MatrixFactorizationGradient<O extends Serializable, S extends Seria
      */
     public Map<S, Vector> getSubjGrad() {
         return subjGrad;
+    }
+
+    /**
+     * Returns number of rows the gradient calculated on.
+     *
+     * @return Number of rows the gradient calculated on.
+     */
+    public int getRows() {
+        return rows;
     }
 }

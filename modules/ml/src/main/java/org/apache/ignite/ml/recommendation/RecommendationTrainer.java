@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -33,6 +34,7 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.recommendation.util.MatrixFactorizationGradient;
+import org.apache.ignite.ml.recommendation.util.RecommendationBinaryDatasetDataBuilder;
 import org.apache.ignite.ml.recommendation.util.RecommendationDatasetData;
 import org.apache.ignite.ml.recommendation.util.RecommendationDatasetDataBuilder;
 
@@ -62,6 +64,30 @@ public class RecommendationTrainer {
     private int k = 10;
 
     /**
+     * Fits prediction model on a data storen in binary format.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param objFieldName Object field name.
+     * @param subjFieldName Subject field name.
+     * @param ratingFieldName Rating field name.
+     * @return Trained recommendation model.
+     */
+    public RecommendationModel<Serializable, Serializable> fit(DatasetBuilder<Object, BinaryObject> datasetBuilder,
+        String objFieldName, String subjFieldName, String ratingFieldName) {
+        try (Dataset<EmptyContext, RecommendationDatasetData<Serializable, Serializable>> dataset = datasetBuilder.build(
+            environmentBuilder,
+            new EmptyContextBuilder<>(),
+            new RecommendationBinaryDatasetDataBuilder(objFieldName, subjFieldName, ratingFieldName),
+            trainerEnvironment
+        )) {
+            return train(dataset);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Fits prediction model.
      *
      * @param datasetBuilder Dataset builder.
@@ -78,41 +104,54 @@ public class RecommendationTrainer {
             new RecommendationDatasetDataBuilder<>(),
             trainerEnvironment
         )) {
-            // Collect total set of objects and subjects (their identifiers).
-            Set<O> objects = dataset.compute(RecommendationDatasetData::getObjects, RecommendationTrainer::join);
-            Set<S> subjects = dataset.compute(RecommendationDatasetData::getSubjects, RecommendationTrainer::join);
-
-            // Generate initial model (object and subject matrices) initializing them with random values.
-            Map<O, Vector> objMatrix = generateRandomVectorForEach(objects, trainerEnvironment.randomNumbersGenerator());
-            Map<S, Vector> subjMatrix = generateRandomVectorForEach(subjects, trainerEnvironment.randomNumbersGenerator());
-
-            // SGD steps.
-            // TODO: GG-22916 Add convergence check into recommendation system SGD
-            for (int i = 0; i < maxIterations; i++) {
-                int seed = i;
-
-                // Calculate gradient on reach partition and aggregate results.
-                MatrixFactorizationGradient<O, S> grad = dataset.compute(
-                    (data, env) -> data.calculateGradient(
-                        objMatrix,
-                        subjMatrix,
-                        batchSize,
-                        seed ^ env.partition(),
-                        regParam,
-                        learningRate
-                    ),
-                    RecommendationTrainer::sum
-                );
-
-                // Apply aggregated gradient.
-                grad.applyGradient(objMatrix, subjMatrix);
-            }
-
-            return new RecommendationModel<>(objMatrix, subjMatrix);
+            return train(dataset);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Trains recommendation model using specified dataset.
+     *
+     * @param dataset Partition based dataset.
+     * @param <O> Type of an object.
+     * @param <S> Type of a subject.
+     * @return Trained recommendation model.
+     */
+    private <O extends Serializable, S extends Serializable> RecommendationModel<O, S> train(
+        Dataset<EmptyContext, RecommendationDatasetData<O, S>> dataset) {
+        // Collect total set of objects and subjects (their identifiers).
+        Set<O> objects = dataset.compute(RecommendationDatasetData::getObjects, RecommendationTrainer::join);
+        Set<S> subjects = dataset.compute(RecommendationDatasetData::getSubjects, RecommendationTrainer::join);
+
+        // Generate initial model (object and subject matrices) initializing them with random values.
+        Map<O, Vector> objMatrix = generateRandomVectorForEach(objects, trainerEnvironment.randomNumbersGenerator());
+        Map<S, Vector> subjMatrix = generateRandomVectorForEach(subjects, trainerEnvironment.randomNumbersGenerator());
+
+        // SGD steps.
+        // TODO: GG-22916 Add convergence check into recommendation system SGD
+        for (int i = 0; i < maxIterations; i++) {
+            int seed = i;
+
+            // Calculate gradient on reach partition and aggregate results.
+            MatrixFactorizationGradient<O, S> grad = dataset.compute(
+                (data, env) -> data.calculateGradient(
+                    objMatrix,
+                    subjMatrix,
+                    batchSize,
+                    seed ^ env.partition(),
+                    regParam,
+                    learningRate
+                ),
+                RecommendationTrainer::sum
+            );
+
+            // Apply aggregated gradient.
+            grad.applyGradient(objMatrix, subjMatrix);
+        }
+
+        return new RecommendationModel<>(objMatrix, subjMatrix);
     }
 
     /**
@@ -247,7 +286,8 @@ public class RecommendationTrainer {
         MatrixFactorizationGradient<O, S> b) {
         return new MatrixFactorizationGradient<>(
             sum(a == null ? null : a.getObjGrad(), b == null ? null : b.getObjGrad()),
-            sum(a == null ? null : a.getSubjGrad(), b == null ? null : b.getSubjGrad())
+            sum(a == null ? null : a.getSubjGrad(), b == null ? null : b.getSubjGrad()),
+            (a == null ? 0 : a.getRows()) + (b == null ? 0 : b.getRows())
         );
     }
 
