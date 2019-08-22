@@ -281,9 +281,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
-    /** */
-    private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
-
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;
 
@@ -726,8 +723,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             if (ptr != null) {
                 metrics.onWalRecordLogged();
 
-                lastWALPtr.set(ptr);
-
                 if (walAutoArchiveAfterInactivity > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
 
@@ -744,23 +739,36 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
-            return;
+            return null;
 
         FileWriteHandle cur = currentHandle();
 
         // WAL manager was not started (client node).
         if (cur == null)
-            return;
+            return null;
 
-        FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
+        FileWALPointer filePtr;
+
+        if (ptr == null) {
+            WALRecord rec = cur.head.get();
+
+            if (rec instanceof FakeRecord)
+                return null;
+
+            filePtr = (FileWALPointer)rec.position();
+        }
+        else
+            filePtr = (FileWALPointer)ptr;
 
         // No need to sync if was rolled over.
-        if (filePtr != null && !cur.needFsync(filePtr))
-            return;
+        if (!cur.needFsync(filePtr))
+            return filePtr;
 
         cur.fsync(filePtr, false);
+
+        return filePtr;
     }
 
     /** {@inheritDoc} */

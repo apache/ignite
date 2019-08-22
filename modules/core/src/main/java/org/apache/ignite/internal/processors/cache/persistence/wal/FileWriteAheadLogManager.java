@@ -333,9 +333,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
-    /** */
-    private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
-
     /** Current log segment handle. */
     private volatile FileWriteHandle currHnd;
 
@@ -840,8 +837,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (ptr != null) {
                 metrics.onWalRecordLogged();
 
-                lastWALPtr.set(ptr);
-
                 if (walAutoArchiveAfterInactivity > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
 
@@ -858,29 +853,39 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
-            return;
+            return null;
 
         FileWriteHandle cur = currentHandle();
 
         // WAL manager was not started (client node).
         if (cur == null)
-            return;
+            return null;
 
-        FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
+        FileWALPointer filePtr;
+
+        if (ptr == null) {
+            long pos = cur.buf.tail();
+
+            filePtr = new FileWALPointer(cur.getSegmentId(), (int)pos, 0);
+        }
+        else
+            filePtr = (FileWALPointer)ptr;
 
         if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);
 
         if (!explicitFsync && mode != WALMode.FSYNC)
-            return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
+            return filePtr; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
 
         // No need to sync if was rolled over.
-        if (filePtr != null && !cur.needFsync(filePtr))
-            return;
+        if (!cur.needFsync(filePtr))
+            return filePtr;
 
         cur.fsync(filePtr);
+
+        return filePtr;
     }
 
     /** {@inheritDoc} */
