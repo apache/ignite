@@ -21,7 +21,7 @@ import java.io.Serializable;
 /**
  * Distributed metastorage data that cluster sends to joining node.
  */
-@SuppressWarnings("PublicField")
+@SuppressWarnings({"PublicField", "AssignmentOrReturnOfFieldWithMutableType"})
 class DistributedMetaStorageClusterNodeData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -55,6 +55,9 @@ class DistributedMetaStorageClusterNodeData implements Serializable {
         DistributedMetaStorageHistoryItem[] hist,
         DistributedMetaStorageHistoryItem[] updates
     ) {
+        assert ver != null;
+        assert fullData == null || hist != null;
+
         this.fullData = fullData;
         this.ver = ver;
         this.hist = hist;

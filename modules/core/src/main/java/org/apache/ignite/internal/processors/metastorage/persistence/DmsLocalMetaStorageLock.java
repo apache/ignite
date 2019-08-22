@@ -16,15 +16,11 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /** */
-@SuppressWarnings("PublicField")
-class StartupExtras {
-    /** */
-    public List<DistributedMetaStorageHistoryItem> deferredUpdates = new ArrayList<>();
+interface DmsLocalMetaStorageLock {
+    /** Lock. */
+    public void lock();
 
-    /** */
-    public DistributedMetaStorageClusterNodeData fullNodeData;
+    /** Unlock. */
+    public void unlock();
 }

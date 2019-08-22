@@ -179,8 +179,8 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    @Test(expected = NotWritablePropertyException.class)
-    public void testPropagateValueOnInactiveGridShouldThrowException() throws Exception {
+    @Test
+    public void testPropagateValueOnInactiveGridShouldNotThrowException() throws Exception {
         assumeTrue(isPersistent());
 
         IgniteEx ignite0 = (IgniteEx)startGrids(2);
