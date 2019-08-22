@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="IDataRegionMetrics"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class DataRegionMetricsParityTest
     {
         /** Known name mappings. */

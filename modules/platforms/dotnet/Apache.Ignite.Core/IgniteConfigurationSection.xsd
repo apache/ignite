@@ -950,16 +950,6 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="metricExporterSpi" minOccurs="0">
-                    <xs:annotation>
-                        <xs:documentation>Metrics exporter spi. Null for NoOp implementation.</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
-                <xs:element name="tracingSpi" minOccurs="0">
-                    <xs:annotation>
-                        <xs:documentation>Metrics exporter spi. Null for NoOp implementation.</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
                 <xs:element name="discoverySpi" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Discovery service provider. Null for default discovery.</xs:documentation>

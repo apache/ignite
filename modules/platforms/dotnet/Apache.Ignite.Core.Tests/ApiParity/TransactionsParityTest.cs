@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="ITransactions"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class TransactionsParityTest
     {
         /** Members that are missing on .NET side and should be added in future. */

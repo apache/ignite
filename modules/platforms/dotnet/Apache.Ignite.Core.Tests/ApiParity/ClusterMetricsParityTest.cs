@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="IClusterMetrics"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class ClusterMetricsParityTest
     {
         /** Properties that are missing on .NET side. */
