@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -41,8 +42,6 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     private final WALMode mode;
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
-    /** Last WAL pointer. */
-    private final Supplier<WALPointer> lastWALPtr;
     /** */
     protected final RecordSerializer serializer;
     /** Current handle supplier. */
@@ -57,7 +56,6 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     /**
      * @param cctx Context.
      * @param metrics Data storage metrics.
-     * @param ptr Last WAL pointer.
      * @param serializer Serializer.
      * @param handle Current handle supplier.
      * @param mode WAL mode.
@@ -65,15 +63,20 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
      * @param fsyncDelay Fsync delay.
      * @param tlbSize Thread local byte buffer size.
      */
-    public FsyncFileHandleManagerImpl(GridCacheSharedContext cctx,
-        DataStorageMetricsImpl metrics, Supplier<WALPointer> ptr, RecordSerializer serializer,
-        Supplier<FileWriteHandle> handle, WALMode mode,
-        long maxWalSegmentSize, long fsyncDelay, int tlbSize) {
+    public FsyncFileHandleManagerImpl(
+        GridCacheSharedContext cctx,
+        DataStorageMetricsImpl metrics,
+        RecordSerializer serializer,
+        Supplier<FileWriteHandle> handle,
+        WALMode mode,
+        long maxWalSegmentSize,
+        long fsyncDelay,
+        int tlbSize
+    ) {
         this.cctx = cctx;
         this.log = cctx.logger(FsyncFileHandleManagerImpl.class);
         this.mode = mode;
         this.metrics = metrics;
-        lastWALPtr = ptr;
         this.serializer = serializer;
         currentHandleSupplier = handle;
         this.maxWalSegmentSize = maxWalSegmentSize;
@@ -125,22 +128,35 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
-            return;
+            return null;
 
         FsyncFileWriteHandle cur = currentHandle();
 
         // WAL manager was not started (client node).
         if (cur == null)
-            return;
+            return null;
 
-        FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
+        FileWALPointer filePtr;
+
+        if (ptr == null) {
+            WALRecord rec = cur.head.get();
+
+            if (rec instanceof FsyncFileWriteHandle.FakeRecord)
+                return null;
+
+            filePtr = (FileWALPointer)rec.position();
+        }
+        else
+            filePtr = (FileWALPointer)ptr;
 
         // No need to sync if was rolled over.
-        if (filePtr != null && !cur.needFsync(filePtr))
-            return;
+        if (!cur.needFsync(filePtr))
+            return filePtr;
 
         cur.fsync(filePtr, false);
+
+        return filePtr;
     }
 }

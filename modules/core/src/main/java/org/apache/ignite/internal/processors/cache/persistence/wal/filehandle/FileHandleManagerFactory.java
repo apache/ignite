@@ -20,7 +20,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -47,7 +46,6 @@ public class FileHandleManagerFactory {
      * @param cctx Cache context.
      * @param metrics Data storage metrics.
      * @param mmap Using mmap.
-     * @param lastWALPtr Last WAL pointer.
      * @param serializer Serializer.
      * @param currHandleSupplier Supplier of current handle.
      * @return One of implementation of {@link FileHandleManager}.
@@ -56,7 +54,6 @@ public class FileHandleManagerFactory {
         GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics,
         boolean mmap,
-        Supplier<WALPointer> lastWALPtr,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currHandleSupplier
     ) {
@@ -64,7 +61,6 @@ public class FileHandleManagerFactory {
             return new FsyncFileHandleManagerImpl(
                 cctx,
                 metrics,
-                lastWALPtr,
                 serializer,
                 currHandleSupplier,
                 dsConf.getWalMode(),
@@ -77,7 +73,6 @@ public class FileHandleManagerFactory {
                 cctx,
                 metrics,
                 mmap,
-                lastWALPtr,
                 serializer,
                 currHandleSupplier,
                 dsConf.getWalMode(),

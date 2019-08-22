@@ -65,6 +65,8 @@ public interface FileHandleManager {
      * @param explicitFsync {@code true} if fsync required.
      * @throws IgniteCheckedException if fail.
      * @throws StorageException if storage was fail.
+     * @return Last WAL position which was flushed to WAL segment file. May be greater than or equal to a {@code ptr}.
+     * May be {@code null}, it means nothing has been flushed.
      */
-    void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
+    WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 }
