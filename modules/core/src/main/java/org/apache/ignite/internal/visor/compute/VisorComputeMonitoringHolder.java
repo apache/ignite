@@ -16,47 +16,113 @@
 
 package org.apache.ignite.internal.visor.compute;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Holder class to store information in node local map between data collector task executions.
  */
 public class VisorComputeMonitoringHolder {
     /** Task monitoring events holder key. */
-    public static final String COMPUTE_MONITORING_HOLDER_KEY = "VISOR_COMPUTE_MONITORING_KEY";
+    private static final String COMPUTE_MONITORING_HOLDER_KEY = "VISOR_COMPUTE_MONITORING_KEY";
 
-    /** Visors that collect events (Visor instance key -> collect events since last cleanup check) */
-    private final Map<String, Boolean> listenVisor = new HashMap<>();
+    /** Visors that collect events (instance key -> event types + expire flag) */
+    private final Map<String, EventsSession> listeners = new HashMap<>();
 
     /** If cleanup process not scheduled. */
-    private boolean cleanupStopped = true;
+    private boolean cleanupScheduled = true;
 
     /** Timeout between disable events check. */
-    protected static final int CLEANUP_TIMEOUT = 2 * 60 * 1000;
+    private static final int CLEANUP_TIMEOUT = 2 * 60 * 1000;
 
     /**
-     * Start collect events for Visor instance.
+     * Get holder instance.
+     *
+     * @param ignite Grid.
+     */
+    public static VisorComputeMonitoringHolder getInstance(IgniteEx ignite) {
+        ConcurrentMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
+
+        VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
+
+        if (holder == null) {
+            holder = new VisorComputeMonitoringHolder();
+
+            VisorComputeMonitoringHolder holderOld = storage.putIfAbsent(COMPUTE_MONITORING_HOLDER_KEY, holder);
+
+            return holderOld == null ? holder : holderOld;
+        }
+
+        return holder;
+    }
+
+    /**
+     * Start collect events.
      *
      * @param ignite Grid.
      * @param visorKey unique Visor instance key.
+     * @param types Events to enable.
      */
-    public void startCollect(IgniteEx ignite, String visorKey) {
-        synchronized (listenVisor) {
-            if (cleanupStopped) {
+    public void startCollect(IgniteEx ignite, String visorKey, int[] types) {
+        synchronized (listeners) {
+            if (cleanupScheduled)
                 scheduleCleanupJob(ignite);
 
-                cleanupStopped = false;
-            }
+            listeners.compute(visorKey, (k, v) -> {
+                if (v == null)
+                    return new EventsSession(types);
 
-            listenVisor.put(visorKey, Boolean.TRUE);
+                v.addEvents(types);
 
-            ignite.events().enableLocal(VISOR_TASK_EVTS);
+                return v;
+            });
+
+            ignite.events().enableLocal(types);
+        }
+    }
+
+    /**
+     * Disable collect events.
+     *
+     * @param ignite Grid.
+     * @param visorKey Unique Visor instance key.
+     */
+    public void stopCollect(IgniteEx ignite, String visorKey) {
+        synchronized (listeners) {
+            EventsSession ses = listeners.remove(visorKey);
+
+            if (ses != null)
+                tryDisableEvents(ignite, ses.types());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorComputeMonitoringHolder.class, this);
+    }
+
+    /**
+     * Check if collection of events may be disabled.
+     *
+     * @param ignite Grid.
+     */
+    private void tryDisableEvents(IgniteEx ignite, Set<Integer> expiredEvts) {
+        Set<Integer> activeEvts = listeners.values().stream().flatMap(s -> s.types.stream()).collect(toSet());
+
+        expiredEvts.removeAll(activeEvts);
+
+        if (!expiredEvts.isEmpty()) {
+            int[] types = expiredEvts.stream().mapToInt(Integer::intValue).toArray();
+
+            ignite.events().disableLocal(types);
         }
     }
 
@@ -64,31 +130,20 @@ public class VisorComputeMonitoringHolder {
      * Check if collect events may be disable.
      *
      * @param ignite Grid.
-     * @return {@code true} if task events should remain enabled.
      */
-    private boolean tryDisableEvents(IgniteEx ignite) {
-        if (!listenVisor.values().contains(Boolean.TRUE)) {
-            listenVisor.clear();
+    private void removeExpired(IgniteEx ignite) {
+        Set<EventsSession> expiredSes = listeners.values().stream()
+            .filter(EventsSession::isExpired)
+            .collect(toSet());
 
-            ignite.events().disableLocal(VISOR_TASK_EVTS);
-        }
+        if (expiredSes.isEmpty())
+            return;
 
-        // Return actual state. It could stay the same if events explicitly enabled in configuration.
-        return ignite.allEventsUserRecordable(VISOR_TASK_EVTS);
-    }
+        listeners.values().removeAll(expiredSes);
 
-    /**
-     * Disable collect events for Visor instance.
-     *
-     * @param g Grid.
-     * @param visorKey Unique Visor instance key.
-     */
-    public void stopCollect(IgniteEx g, String visorKey) {
-        synchronized (listenVisor) {
-            listenVisor.remove(visorKey);
+        Set<Integer> expiredEvts = expiredSes.stream().flatMap((s) -> s.types.stream()).collect(toSet());
 
-            tryDisableEvents(g);
-        }
+        tryDisableEvents(ignite, expiredEvts);
     }
 
     /**
@@ -97,24 +152,71 @@ public class VisorComputeMonitoringHolder {
      * @param ignite grid.
      */
     private void scheduleCleanupJob(final IgniteEx ignite) {
-        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
+        cleanupScheduled = ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
             @Override public void onTimeout() {
-                synchronized (listenVisor) {
-                    if (tryDisableEvents(ignite)) {
-                        for (String visorKey : listenVisor.keySet())
-                            listenVisor.put(visorKey, Boolean.FALSE);
+                synchronized (listeners) {
+                    removeExpired(ignite);
 
-                        scheduleCleanupJob(ignite);
-                    }
+                    for (EventsSession v : listeners.values())
+                        v.markExpired();
+
+                    if (listeners.isEmpty())
+                        cleanupScheduled = false;
                     else
-                        cleanupStopped = true;
+                        scheduleCleanupJob(ignite);
                 }
             }
         });
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorComputeMonitoringHolder.class, this);
+    /**
+     * Session that activate events.
+     */
+    private static final class EventsSession {
+        /** Flag to mark expired session. */
+        private boolean expired;
+        
+        /** Event types. */
+        private Set<Integer> types;
+
+        /**
+         * @param types Event types.
+         */
+        EventsSession(int[] types) {
+            expired = true;
+            this.types = Arrays.stream(types).boxed().collect(toSet());
+        }
+
+        /**
+         * @return Flag is session marked as expired.
+         */
+        boolean isExpired() {
+            return expired;
+        }
+
+        /**
+         * @return Event types.
+         */
+        Set<Integer> types() {
+            return types;
+        }
+
+        /**
+         * @param types Types.
+         */
+        void addEvents(int[] types) {
+            for (int type : types)
+                this.types.add(type);
+
+            expired = false;
+        }
+
+
+        /**
+         * Mark session as expired.
+         */
+        void markExpired() {
+            expired = false;
+        }
     }
 }
