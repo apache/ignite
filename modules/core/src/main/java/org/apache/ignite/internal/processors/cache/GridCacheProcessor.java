@@ -34,12 +34,15 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
@@ -140,6 +143,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.InitializationProtector;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -5552,15 +5556,48 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (log.isInfoEnabled())
                 log.info("Restoring partition state for local groups.");
 
-            long totalProcessed = 0;
+            AtomicLong totalProcessed = new AtomicLong();
 
-            for (CacheGroupContext grp : forGroups)
-                totalProcessed += grp.offheap().restorePartitionStates(partitionStates);
+            AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
+
+            StripedExecutor stripedExec = ctx.getStripedExecutorService();
+
+            int roundRobin = 0;
+
+            for (CacheGroupContext grp : forGroups) {
+                stripedExec.execute(roundRobin % stripedExec.stripes(), () -> {
+                    try {
+                        long processed = grp.offheap().restorePartitionStates(partitionStates);
+
+                        totalProcessed.addAndGet(processed);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to restore partition state for " +
+                            "groupName=" + grp.name() + " groupId=" + grp.groupId(), e);
+
+                        restoreStateError.compareAndSet(null, e);
+                    }
+                });
+
+                roundRobin++;
+            }
+
+            try {
+                // Await completion restore state tasks in all stripes.
+                stripedExec.awaitComplete();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+
+            // Checking error after all task applied.
+            if (restoreStateError.get() != null)
+                throw restoreStateError.get();
 
             if (log.isInfoEnabled())
                 log.info("Finished restoring partition state for local groups [" +
                     "groupsProcessed=" + forGroups.size() +
-                    ", partitionsProcessed=" + totalProcessed +
+                    ", partitionsProcessed=" + totalProcessed.get() +
                     ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
         }
     }
