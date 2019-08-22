@@ -32,6 +32,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -62,7 +64,14 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(isPersistent())
             )
+            .setWalSegments(3)
+            .setWalSegmentSize(512 * 1024)
         );
+
+        DiscoverySpi discoSpi = cfg.getDiscoverySpi();
+
+        if (discoSpi instanceof TcpDiscoverySpi)
+            ((TcpDiscoverySpi)discoSpi).setNetworkTimeout(1000);
 
         return cfg;
     }
@@ -423,11 +432,11 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     stopGrid(gridIdx, true);
 
-                    Thread.sleep(100L);
+                    Thread.sleep(50L);
 
                     startGrid(gridIdx);
 
-                    Thread.sleep(100L);
+                    Thread.sleep(50L);
                 }
             }
             catch (Exception e) {
@@ -440,9 +449,11 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         long duration = GridTestUtils.SF.applyLB(15_000, 5_000);
 
         try {
-            for (int i = 0; System.currentTimeMillis() < start + duration; i++) {
+            while (System.currentTimeMillis() < start + duration) {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
                 metastorage(0).write(
-                    "key" + i, Integer.toString(ThreadLocalRandom.current().nextInt(1000))
+                    "key" + rnd.nextInt(5000), Integer.toString(rnd.nextInt(1000))
                 );
             }
         }
@@ -453,12 +464,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         }
 
         awaitPartitionMapExchange();
-
-        for (int i = 0; i < cnt; i++) {
-            DistributedMetaStorage distributedMetastorage = metastorage(i);
-
-            assertNull(U.field(distributedMetastorage, "startupExtras"));
-        }
 
         for (int i = 1; i < cnt; i++)
             assertDistributedMetastoragesAreEqual(grid(0), grid(i));
