@@ -89,8 +89,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @throws IgniteCheckedException If failed to write.
      * @throws StorageException If IO exception occurred during the write. If an exception is thrown from this
      *      method, the WAL will be invalidated and the node will be stopped.
+     * @return Last WAL position which was flushed to WAL segment file. May be greater than or equal to a {@code ptr}.
+     * May be {@code null}, it means nothing has been flushed.
      */
-    public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
+    public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 
     /**
      * Reads WAL record by the specified pointer.
