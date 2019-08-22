@@ -32,8 +32,8 @@ public interface DistributedMetaStorageListener<T extends Serializable> {
      * Invoked in two cases:
      * <ul>
      *     <li>data was dynamicaly updated;</li>
-     *     <li>node was activated. In this case {@code oldVal} and {@code newVal} might be different only if new data
-     *     was received from cluster before activation</li>
+     *     <li>node was started. In this case {@code oldVal} and {@code newVal} might be different only if new data
+     *     was received from cluster</li>
      * </ul>
      *
      * @param key The key.
