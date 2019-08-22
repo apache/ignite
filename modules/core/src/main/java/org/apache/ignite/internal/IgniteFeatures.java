@@ -53,8 +53,10 @@ public enum IgniteFeatures {
     TX_INFO_COMMAND(7),
 
     /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
-    FIND_AND_DELETE_GARBAGE_COMMAND(8)
-    ;
+    FIND_AND_DELETE_GARBAGE_COMMAND(8),
+
+    /** LRT system and user time dump settings.  */
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
 
     /**
      * Unique feature identifier.

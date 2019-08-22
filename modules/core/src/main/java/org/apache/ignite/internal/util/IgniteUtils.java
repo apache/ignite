@@ -1011,6 +1011,16 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Convert nanoseconds time interval to milliseconds.
+     *
+     * @param nanos Original time interval.
+     * @return Calculated time interval.
+     */
+    public static long nanosToMillis(long nanos) {
+        return TimeUnit.NANOSECONDS.toMillis(nanos);
+    }
+
+    /**
      * Gets nearest power of 2 larger or equal than v.
      *
      * @param v Value.
