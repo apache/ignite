@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.spi.metric.list.QueryView;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
 @Deprecated
 public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
     /** */
-    private MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;
+    private MonitoringList<Long, QueryView> sqlQryMonList;
 
     /**
      * @param ctx Grid context.
@@ -54,7 +54,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
             newColumn("DURATION", Value.LONG)
         );
 
-        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), "SQL queries", GridRunningQueryInfo.class);
+        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), "SQL queries", QueryView.class);
     }
 
     /** {@inheritDoc} */
@@ -66,7 +66,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
         if (qryIdCond.isEquality()) {
             String qryId = qryIdCond.valueForEquality().getString();
 
-            for (GridRunningQueryInfo info : sqlQryMonList) {
+            for (QueryView info : sqlQryMonList) {
                 if (!info.globalQueryId().equals(qryId))
                     continue;
 
@@ -82,7 +82,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
     }
 
     /** */
-    private Row toRow(Session ses, GridRunningQueryInfo info, long now) {
+    private Row toRow(Session ses, QueryView info, long now) {
         return createRow(ses,
             info.globalQueryId(),
             info.query(),

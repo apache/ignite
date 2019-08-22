@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list;
+package org.apache.ignite.spi.metric.list;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 
 /**
- * Marker annotation for exclusion ceratin method from export.
+ *
  */
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface MonitoringListExclude {
+public interface QueryView extends MonitoringRow<Long> {
+    public String originNodeId();
+
+    public Long id();
+
+    public String globalQueryId();
+
+    public String query();
+
+    public GridCacheQueryType queryType();
+
+    public String schemaName();
+
+    public long startTime();
+
+    public boolean local();
+
+    public boolean failed();
 }

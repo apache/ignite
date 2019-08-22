@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.metric.list.view;
 
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.h2.table.IndexColumn;
 
 /** */
 public interface SqlTableView extends MonitoringRow<String> {

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.metric.list.QueryView;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
@@ -50,7 +51,7 @@ public class QueryHistoryTracker {
     /**
      * @param runningQryInfo Running query info.
      */
-    public void collectMetrics(GridRunningQueryInfo runningQryInfo) {
+    public void collectMetrics(QueryView runningQryInfo) {
         if (histSz <= 0)
             return;
 

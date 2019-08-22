@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.metric.list.QueryView;
 
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
@@ -47,7 +48,7 @@ public class BulkLoadProcessor implements AutoCloseable {
     private boolean isClosed;
 
     /** */
-    private final MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;
+    private final MonitoringList<Long, QueryView> sqlQryMonList;
 
     /** Query id. */
     private final Long qryId;
@@ -63,7 +64,7 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param qryId Running query id.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer, MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList, Long qryId) {
+        BulkLoadCacheWriter outputStreamer, MonitoringList<Long, QueryView> sqlQryMonList, Long qryId) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
@@ -121,7 +122,7 @@ public class BulkLoadProcessor implements AutoCloseable {
             throw e;
         }
         finally {
-            GridRunningQueryInfo rmv = sqlQryMonList.get(qryId);
+            GridRunningQueryInfo rmv = (GridRunningQueryInfo)sqlQryMonList.get(qryId);
 
             if (rmv != null) {
                 rmv.failed(failed);

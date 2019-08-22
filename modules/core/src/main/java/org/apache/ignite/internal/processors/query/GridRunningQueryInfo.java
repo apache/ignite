@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.metric.list.MonitoringListExclude;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.QueryView;
 
 /**
  * Query descriptor.
  */
-public class GridRunningQueryInfo implements MonitoringRow<Long> {
+public class GridRunningQueryInfo implements QueryView {
     /** */
     private final long id;
 
@@ -89,49 +88,49 @@ public class GridRunningQueryInfo implements MonitoringRow<Long> {
     }
 
     /** */
-    public String originNodeId() {
+    @Override public String originNodeId() {
         return nodeId.toString();
     }
 
     /**
      * @return Query ID.
      */
-    public Long id() {
+    @Override public Long id() {
         return id;
     }
 
     /**
      * @return Global query ID.
      */
-    public String globalQueryId() {
+    @Override public String globalQueryId() {
         return QueryUtils.globalQueryId(nodeId, id);
     }
 
     /**
      * @return Query text.
      */
-    public String query() {
+    @Override public String query() {
         return qry;
     }
 
     /**
      * @return Query type.
      */
-    public GridCacheQueryType queryType() {
+    @Override public GridCacheQueryType queryType() {
         return qryType;
     }
 
     /**
      * @return Schema name.
      */
-    public String schemaName() {
+    @Override public String schemaName() {
         return schemaName;
     }
 
     /**
      * @return Query start time.
      */
-    public long startTime() {
+    @Override public long startTime() {
         return startTime;
     }
 
@@ -155,7 +154,7 @@ public class GridRunningQueryInfo implements MonitoringRow<Long> {
     /**
      * @return Query running future.
      */
-    @MonitoringListExclude public QueryRunningFuture runningFuture() {
+    public QueryRunningFuture runningFuture() {
         return fut;
     }
 
@@ -169,7 +168,7 @@ public class GridRunningQueryInfo implements MonitoringRow<Long> {
     /**
      * @return {@code true} if query is local.
      */
-    public boolean local() {
+    @Override public boolean local() {
         return loc;
     }
 
@@ -179,5 +178,5 @@ public class GridRunningQueryInfo implements MonitoringRow<Long> {
     }
 
     /** */
-    public boolean failed() { return failed; }
+    @Override public boolean failed() { return failed; }
 }

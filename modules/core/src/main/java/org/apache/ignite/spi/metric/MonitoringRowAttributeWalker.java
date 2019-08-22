@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.metric.list.MonitoringListExclude;
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 
 /**
@@ -199,9 +198,6 @@ public class MonitoringRowAttributeWalker<R extends MonitoringRow<?>>  {
             Class<?> clazz = method.getReturnType();
 
             if (clazz == void.class)
-                continue;
-
-            if (method.getAnnotation(MonitoringListExclude.class) != null)
                 continue;
 
             c.accept(method, idx++);

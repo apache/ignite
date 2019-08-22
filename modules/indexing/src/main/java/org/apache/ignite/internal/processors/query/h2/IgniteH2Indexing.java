@@ -170,6 +170,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
+import org.apache.ignite.spi.metric.list.QueryView;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
@@ -263,10 +264,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private volatile QueryHistoryTracker qryHistTracker;
 
     /** */
-    private MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;
+    private MonitoringList<Long, QueryView> sqlQryMonList;
 
     /** */
-    private MonitoringList<Long, GridRunningQueryInfo> textQryMonList;
+    private MonitoringList<Long, QueryView> textQryMonList;
 
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
@@ -1999,8 +2000,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this), ctx);
 
-        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), "SQL queries", GridRunningQueryInfo.class);
-        textQryMonList = ctx.metric().list(metricName("query", "text"), "Text queries", GridRunningQueryInfo.class);
+        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), "SQL queries", QueryView.class);
+        textQryMonList = ctx.metric().list(metricName("query", "text"), "Text queries", QueryView.class);
 
         qryHistTracker = new QueryHistoryTracker(ctx.config().getSqlQueryHistorySize());
 
@@ -2195,8 +2196,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         qryCtxRegistry.clearSharedOnLocalNodeStop();
 
-        for (GridRunningQueryInfo info : sqlQryMonList)
-            info.cancel();
+        for (QueryView info : sqlQryMonList)
+            ((GridRunningQueryInfo)info).cancel();
 
         sqlQryMonList.clear();
 
@@ -2399,9 +2400,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         long curTime = System.currentTimeMillis();
 
-        for (GridRunningQueryInfo runningQryInfo : sqlQryMonList) {
-            if (runningQryInfo.longQuery(curTime, duration))
-                res.add(runningQryInfo);
+        for (QueryView runningQryInfo : sqlQryMonList) {
+            GridRunningQueryInfo qryInfo = (GridRunningQueryInfo)runningQryInfo;
+
+            if (qryInfo.longQuery(curTime, duration))
+                res.add(qryInfo);
         }
 
         return res;
@@ -2411,7 +2414,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void cancelQueries(Collection<Long> queries) {
         if (!F.isEmpty(queries)) {
             for (Long qryId : queries) {
-                GridRunningQueryInfo run = sqlQryMonList.get(qryId);
+                GridRunningQueryInfo run = (GridRunningQueryInfo)sqlQryMonList.get(qryId);
 
                 if (run != null)
                     run.cancel();
@@ -2972,8 +2975,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryId Query id.
      * @param failed {@code true} In case query was failed.
      */
-    public static void unregister(MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList, long qryId, boolean failed) {
-        GridRunningQueryInfo rmv = sqlQryMonList.get(qryId);
+    public static void unregister(MonitoringList<Long, QueryView> sqlQryMonList, long qryId, boolean failed) {
+        GridRunningQueryInfo rmv = (GridRunningQueryInfo)sqlQryMonList.get(qryId);
 
         if (rmv != null) {
             rmv.failed(failed);

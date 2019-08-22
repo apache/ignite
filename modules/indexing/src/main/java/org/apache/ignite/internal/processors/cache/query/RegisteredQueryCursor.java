@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.metric.list.QueryView;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.unregister;
 
@@ -39,7 +40,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     private final AtomicBoolean unregistered = new AtomicBoolean(false);
 
     /** */
-    private MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList;
+    private MonitoringList<Long, QueryView> sqlQryMonList;
 
     /** */
     private long qryId;
@@ -54,7 +55,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      * @param qryId Registered running query id.
      */
     public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel,
-        MonitoringList<Long, GridRunningQueryInfo> sqlQryMonList, long qryId) {
+        MonitoringList<Long, QueryView> sqlQryMonList, long qryId) {
         super(iterExec, cancel);
 
         assert sqlQryMonList != null;
