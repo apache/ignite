@@ -37,12 +37,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.view.CacheGroupView;
-import org.apache.ignite.internal.processors.metric.list.view.CacheView;
-import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
-import org.apache.ignite.internal.processors.metric.list.view.ContinuousQueryView;
-import org.apache.ignite.internal.processors.metric.list.view.ServiceView;
-import org.apache.ignite.internal.processors.metric.list.view.TransactionView;
+import org.apache.ignite.spi.metric.list.CacheGroupView;
+import org.apache.ignite.spi.metric.list.CacheView;
+import org.apache.ignite.spi.metric.list.ClientConnectionView;
+import org.apache.ignite.spi.metric.list.ContinuousQueryView;
+import org.apache.ignite.spi.metric.list.ServiceView;
+import org.apache.ignite.spi.metric.list.TransactionView;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
@@ -130,7 +130,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             assertEquals(srvcCfg.getName(), sview.name());
             assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
-            assertEquals(DummyService.class, sview.service());
+            assertEquals(DummyService.class, sview.serviceClass());
         }
     }
 
@@ -164,7 +164,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals("cache-1", cq.cacheName());
             assertEquals(100, cq.bufferSize());
             assertEquals(1000, cq.interval());
-            assertEquals(g0.localNode().id().toString(), cq.sessionId());
+            assertEquals(g0.localNode().id(), cq.nodeId());
             //Local listener not null on originating node.
             assertTrue(cq.localListener().startsWith(getClass().getName()));
             assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
@@ -181,7 +181,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals("cache-1", cq.cacheName());
             assertEquals(100, cq.bufferSize());
             assertEquals(1000, cq.interval());
-            assertEquals(g0.localNode().id().toString(), cq.sessionId());
+            assertEquals(g0.localNode().id(), cq.nodeId());
             //Local listener is null on remote nodes.
             assertNull(cq.localListener());
             assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
@@ -283,7 +283,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
                 TransactionView txv = txs.iterator().next();
 
-                assertEquals(g.localNode().id().toString(), txv.sessionId());
+                assertEquals(g.localNode().id(), txv.nodeId());
                 assertEquals(txv.isolation(), REPEATABLE_READ);
                 assertEquals(txv.concurrency(), PESSIMISTIC);
                 assertEquals(txv.state(), ACTIVE);
@@ -372,7 +372,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        Set<String> expected = new HashSet<>(Arrays.asList("sessionId", "threadId", "startTime", "isolation",
+        Set<String> expected = new HashSet<>(Arrays.asList("nodeId", "threadId", "startTime", "isolation",
             "concurrency", "state", "timeout", "implicit", "xid", "system", "implicitSingle", "near", "dht",
             "colocated", "local", "subjectId", "label", "onePhaseCommit", "internal"));
 

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.net.InetSocketAddress;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.spi.metric.list.ClientConnectionView;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -38,7 +40,8 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
 /**
  * Base connection context.
  */
-public abstract class ClientListenerAbstractConnectionContext implements ClientListenerConnectionContext {
+public abstract class ClientListenerAbstractConnectionContext
+    implements ClientListenerConnectionContext, ClientConnectionView {
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -48,20 +51,31 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** Connection ID. */
     private long connId;
 
-    /** Authorization context. */
-    private AuthorizationContext authCtx;
+    /** Session. */
+    protected final GridNioSession ses;
 
+    /** Client version. */
+    private ClientListenerProtocolVersion ver;
+
+    /** Authorization context. */
+    protected AuthorizationContext authCtx;
+
+    /** Monitoring list. */
     protected final MonitoringList<Long, ClientConnectionView> monList;
 
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
+     * @param connId Connection id.
+     * @param ses Grid NIO session.
      */
-    protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId) {
+    protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId, GridNioSession ses) {
         this.ctx = ctx;
         this.connId = connId;
-        this.monList = ctx.metric().list(metricName("client", "connections"), "Client connections", ClientConnectionView.class);
+        this.ses = ses;
+        this.monList = ctx.metric().list(metricName("client", "connections"), "Client connections",
+            ClientConnectionView.class);
     }
 
     /**
@@ -137,5 +151,42 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     @Override public void onDisconnected() {
         if (ctx.security().enabled())
             ctx.security().onSessionExpired(secCtx.subject().id());
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public InetSocketAddress localAddress() {
+        return ses.localAddress();
+    }
+
+    /** {@inheritDoc} */
+    @Override public InetSocketAddress remoteAddress() {
+        return ses.remoteAddress();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String user() {
+        return authorizationContext() == null ? null : authorizationContext().userName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String version() {
+        return ver == null ? null : ver.asString();
+    }
+
+    /**
+     * @return Currently used protocol version.
+     */
+    public ClientListenerProtocolVersion clientVersion() {
+        return ver;
+    }
+
+    /**
+     * Sets client version.
+     *
+     * @param ver Client version.
+     */
+    protected void version(ClientListenerProtocolVersion ver) {
+        this.ver = ver;
     }
 }

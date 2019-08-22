@@ -23,7 +23,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -34,8 +33,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 
 /**
  * Thin Client connection context.
@@ -80,17 +77,11 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Max cursors. */
     private final int maxCursors;
 
-    /** Current protocol version. */
-    private ClientListenerProtocolVersion currentVer;
-
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
-
-    /** Session. */
-    private final GridNioSession ses;
 
     /**
      * Ctor.
@@ -101,10 +92,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      */
     public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors,
         GridNioSession ses) {
-        super(ctx, connId);
+        super(ctx, connId, ses);
 
         this.maxCursors = maxCursors;
-        this.ses = ses;
     }
 
     /**
@@ -124,13 +114,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion defaultVersion() {
         return DEFAULT_VER;
-    }
-
-    /**
-     * @return Currently used protocol version.
-     */
-    public ClientListenerProtocolVersion currentVersion() {
-        return currentVer;
     }
 
     /** {@inheritDoc} */
@@ -157,20 +140,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         AuthorizationContext authCtx = authenticate(user, pwd);
 
-        currentVer = ver;
+        version(ver);
 
         handler = new ClientRequestHandler(this, authCtx, ver);
 
         parser = new ClientMessageParser(this, ver);
 
-        monList.add(connectionId(), new ClientConnectionView(
-            connectionId(),
-            THIN_CLIENT,
-            ses.remoteAddress(),
-            ses.localAddress(),
-            user,
-            ver
-        ));
+        monList.add(connectionId(), this);
     }
 
     /** {@inheritDoc} */
@@ -187,9 +163,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     @Override public void onDisconnected() {
         resReg.clean();
 
-        monList.remove(connectionId());
-
         super.onDisconnected();
+
+        monList.remove(connectionId());
     }
 
     /**
@@ -235,5 +211,10 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
             return new ClientAffinityTopologyVersion(newVer, changed);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String type() {
+        return "THIN";
     }
 }

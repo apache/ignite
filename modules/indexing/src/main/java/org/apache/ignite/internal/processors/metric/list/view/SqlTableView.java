@@ -22,86 +22,37 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 
 /** */
-public class SqlTableView implements MonitoringRow<String> {
+public interface SqlTableView extends MonitoringRow<String> {
     /** */
-    private final String cacheGrpName;
-
-    /** */
-    private final GridH2Table tbl;
+    public int cacheGroupId();
 
     /** */
-    public SqlTableView(String cacheGrpName, GridH2Table tbl) {
-        this.cacheGrpName = cacheGrpName;
-
-        this.tbl = tbl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String sessionId() {
-        return "unknown";
-    }
+    public String cacheGroupName();
 
     /** */
-    public int cacheGrpId() {
-        return tbl.cacheInfo().groupId();
-    }
+    public int cacheId();
 
     /** */
-    public String cacheGrpName() {
-        return cacheGrpName;
-    }
+    public String cacheName();
 
     /** */
-    public int cacheId() {
-        return tbl.cacheId();
-    }
+    public String schemaName();
 
     /** */
-    public String cacheName() {
-        return tbl.cacheName();
-    }
+    public String tableName();
 
     /** */
-    public String schemaName() {
-        return tbl.getSchema().getName();
-    }
+    public String affKeyCol();
 
     /** */
-    public String tableName() {
-        return tbl.getName();
-    }
+    public String keyAlias();
 
     /** */
-    public String affKeyCol() {
-        IndexColumn affCol = tbl.getAffinityKeyColumn();
-
-        if (affCol == null)
-            return null;
-
-        // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
-        if (tbl.rowDescriptor().isKeyColumn(affCol.column.getColumnId()))
-            return null;
-
-        return affCol.columnName;
-    }
+    public String valAlias();
 
     /** */
-    public String keyAlias() {
-        return tbl.rowDescriptor().type().keyFieldAlias();
-    }
+    public String keyTypeName();
 
     /** */
-    public String valAlias() {
-        return tbl.rowDescriptor().type().valueFieldAlias();
-    }
-
-    /** */
-    public String keyTypeName() {
-        return tbl.rowDescriptor().type().keyTypeName();
-    }
-
-    /** */
-    public String valTypeName() {
-        return tbl.rowDescriptor().type().valueTypeName();
-    }
+    public String valTypeName();
 }

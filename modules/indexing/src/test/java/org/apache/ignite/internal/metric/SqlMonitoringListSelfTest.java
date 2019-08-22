@@ -88,8 +88,6 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
 
             final boolean[] found = new boolean[1];
 
-            Thread.sleep(60_000L);
-
             tblsMonList.forEach(v -> {
                 if (!"T1".equals(v.tableName()))
                     return;
@@ -97,8 +95,8 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
                 found[0] = true;
 
                 assertEquals("c1", v.cacheName());
-                assertEquals("g1", v.cacheGrpName());
-                assertEquals(cacheGroupId("c1", "g1"), v.cacheGrpId());
+                assertEquals("g1", v.cacheGroupName());
+                assertEquals(cacheGroupId("c1", "g1"), v.cacheGroupId());
                 assertEquals(cacheId("c1"), v.cacheId());
                 assertEquals("PUBLIC", v.schemaName());
                 assertEquals("ID", v.keyAlias());

@@ -54,8 +54,8 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.view.CacheGroupView;
-import org.apache.ignite.internal.processors.metric.list.view.CacheView;
+import org.apache.ignite.spi.metric.list.CacheGroupView;
+import org.apache.ignite.spi.metric.list.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -981,7 +981,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
-        cachesMonitoring.add(ccfg.getName(), new CacheView("???", startDesc));
+        cachesMonitoring.add(ccfg.getName(), startDesc);
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1417,7 +1417,7 @@ class ClusterCachesInfo {
             String cacheName = cacheData.cacheConfiguration().getName();
 
             registeredCaches.put(cacheName, desc);
-            cachesMonitoring.add(cacheName, new CacheView("???", desc));
+            cachesMonitoring.add(cacheName, desc);
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1516,7 +1516,7 @@ class ClusterCachesInfo {
             }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
-            cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView("???", grpDesc));
+            cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView(grpDesc));
 
             assert old == null : old;
 
@@ -2050,7 +2050,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
-        cachesMonitoring.add(cfg.getName(), new CacheView("???", desc));
+        cachesMonitoring.add(cfg.getName(), desc);
 
         assert old == null : old;
     }
@@ -2197,7 +2197,7 @@ class ClusterCachesInfo {
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
-        cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView(grpDesc.cacheOrGroupName(), grpDesc));
+        cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView(grpDesc));
 
         assert old == null : old;
 

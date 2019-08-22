@@ -282,8 +282,7 @@ public class SchemaManager {
             if (dataTables.putIfAbsent(h2tbl.identifier(), h2tbl) != null)
                 throw new IllegalStateException("Table already exists: " + h2tbl.identifierString());
 
-            tblsMonList.add(h2tbl.identifierString(),
-                new SqlTableView(cacheInfo.cacheContext().group().cacheOrGroupName(), h2tbl));
+            tblsMonList.add(h2tbl.identifierString(), h2tbl);
         }
         catch (SQLException e) {
             connMgr.onSqlException(conn);

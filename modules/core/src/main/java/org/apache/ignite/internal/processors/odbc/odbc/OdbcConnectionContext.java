@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -34,8 +33,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 
 /**
  * ODBC Connection Context.
@@ -101,7 +98,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * @param maxCursors Maximum allowed cursors.
      */
     public OdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId, int maxCursors) {
-        super(ctx, connId);
+        super(ctx, connId, ses);
 
         this.ses = ses;
         this.busyLock = busyLock;
@@ -124,6 +121,8 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
+
+        version(ver);
 
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
@@ -178,14 +177,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler.start();
 
-        monList.add(connectionId(), new ClientConnectionView(
-            connectionId(),
-            ODBC_CLIENT,
-            ses.remoteAddress(),
-            ses.localAddress(),
-            user,
-            ver
-        ));
+        monList.add(connectionId(), this);
     }
 
     /** {@inheritDoc} */
@@ -202,8 +194,13 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     @Override public void onDisconnected() {
         handler.onDisconnect();
 
-        monList.remove(connectionId());
-
         super.onDisconnected();
+
+        monList.remove(connectionId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String type() {
+        return "ODBC";
     }
 }

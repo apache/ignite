@@ -25,8 +25,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.metric.list.view.ClientConnectionView;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -39,7 +37,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 
 /**
  * JDBC Connection Context.
@@ -71,9 +68,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
-
-    /** Session. */
-    private final GridNioSession ses;
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -114,9 +108,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
-        super(ctx, connId);
+        super(ctx, connId, ses);
 
-        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 
@@ -138,6 +131,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
 
+        version(ver);
+
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
@@ -148,7 +143,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean skipReducerOnUpdate = false;
 
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
@@ -192,7 +186,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(user, passwd);
+            authenticate(user, passwd);
         }
 
         parser = new JdbcMessageParser(ctx, ver);
@@ -212,18 +206,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, updateBatchSize, actx, ver, this);
+            dataPageScanEnabled, updateBatchSize, authorizationContext(), ver, this);
 
         handler.start();
 
-        monList.add(connectionId(), new ClientConnectionView(
-            connectionId(),
-            JDBC_CLIENT,
-            ses.remoteAddress(),
-            ses.localAddress(),
-            actx == null ? null : actx.userName(),
-            ver
-        ));
+        monList.add(connectionId(), this);
     }
 
     /** {@inheritDoc} */
@@ -240,9 +227,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     @Override public void onDisconnected() {
         handler.onDisconnect();
 
-        monList.remove(connectionId());
-
         super.onDisconnected();
+
+        monList.add(connectionId(), this);
     }
 
     /**
@@ -264,5 +251,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
             return changed ? newVer : null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String type() {
+        return "JDBC";
     }
 }

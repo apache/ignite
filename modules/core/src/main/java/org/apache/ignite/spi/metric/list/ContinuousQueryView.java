@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list.view;
+package org.apache.ignite.spi.metric.list;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -50,12 +50,12 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
         this.hnd = locQry.handler();
     }
 
-    /** {@inheritDoc} */
-    @Override public String sessionId() {
+    /** */
+    public UUID nodeId() {
         if (locQry != null)
-            return locQry.nodeId().toString();
+            return locQry.nodeId();
 
-        return rmtQry.nodeId().toString();
+        return rmtQry.nodeId();
     }
 
     /** */

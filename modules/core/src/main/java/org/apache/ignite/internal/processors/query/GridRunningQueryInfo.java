@@ -88,8 +88,8 @@ public class GridRunningQueryInfo implements MonitoringRow<Long> {
         this.loc = loc;
     }
 
-    /** {@inheritDoc} */
-    @Override public String sessionId() {
+    /** */
+    public String originNodeId() {
         return nodeId.toString();
     }
 

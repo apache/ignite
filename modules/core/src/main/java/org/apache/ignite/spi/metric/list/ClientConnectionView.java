@@ -15,11 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list;
+package org.apache.ignite.spi.metric.list;
 
-/**
- * Monitoring list row.
- * Idenitified by the instance of {@code Id}.
- */
-public interface MonitoringRow<Id> {
+import java.net.InetSocketAddress;
+import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+
+/** */
+public interface ClientConnectionView extends MonitoringRow<Long> {
+    /** */
+    public long connectionId();
+
+    /** */
+    public String type();
+
+    /** */
+    public InetSocketAddress localAddress();
+
+    /** */
+    public InetSocketAddress remoteAddress();
+
+    /** */
+    public String user();
+
+    /** */
+    public String version();
 }

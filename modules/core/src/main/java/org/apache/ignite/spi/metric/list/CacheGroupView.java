@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list.view;
+package org.apache.ignite.spi.metric.list;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /** */
@@ -36,22 +37,12 @@ public class CacheGroupView implements MonitoringRow<String> {
     /** Cache configuration. */
     private CacheConfiguration<?, ?> ccfg;
 
-    /** Idenity of the user activity causes cache creation. */
-    private String sessionId;
-
     /**
-     * @param sessionId Idenity of the user activity causes cache creation.
      * @param grp Cache group.
      */
-    public CacheGroupView(String sessionId, CacheGroupDescriptor grp) {
+    public CacheGroupView(CacheGroupDescriptor grp) {
         this.grp = grp;
         this.ccfg = grp.config();
-        this.sessionId = sessionId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String sessionId() {
-        return sessionId;
     }
 
     /** */
@@ -71,7 +62,7 @@ public class CacheGroupView implements MonitoringRow<String> {
 
     /** */
     public int cacheCount() {
-        return grp.caches() == null ? 0 : grp.caches().size();
+        return F.size(grp.caches());
     }
 
     /** */
@@ -86,7 +77,7 @@ public class CacheGroupView implements MonitoringRow<String> {
 
     /** */
     public Class<?> affinity() {
-        return ccfg.getAffinity().getClass();
+        return ccfg.getAffinity() != null ? ccfg.getAffinity().getClass() : null;
     }
 
     /** */

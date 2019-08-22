@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
+import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -89,7 +90,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanInde
 /**
  * H2 Table implementation.
  */
-public class GridH2Table extends TableBase {
+public class GridH2Table extends TableBase implements SqlTableView {
     /** Insert hack flag. */
     private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
 
@@ -446,14 +447,68 @@ public class GridH2Table extends TableBase {
     /**
      * @return Cache name.
      */
-    public String cacheName() {
+    @Override public String cacheName() {
         return cacheInfo.name();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return getSchema().getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tableName() {
+        return getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String affKeyCol() {
+        IndexColumn affCol = getAffinityKeyColumn();
+
+        if (affCol == null)
+            return null;
+
+        // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
+        if (desc.isKeyColumn(affCol.column.getColumnId()))
+            return null;
+
+        return affCol.columnName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String keyAlias() {
+        return rowDescriptor().type().keyFieldAlias();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String valAlias() {
+        return rowDescriptor().type().valueFieldAlias();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String keyTypeName() {
+        return rowDescriptor().type().keyTypeName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String valTypeName() {
+        return rowDescriptor().type().valueTypeName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheGroupId() {
+        return cacheInfo.groupId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheGroupName() {
+        return cacheInfo.cacheContext().group().cacheOrGroupName();
     }
 
     /**
      * @return Cache ID.
      */
-    public int cacheId() {
+    @Override public int cacheId() {
         return cacheInfo.cacheId();
     }
 
@@ -1579,8 +1634,7 @@ public class GridH2Table extends TableBase {
         if (idx instanceof H2TreeIndexBase)
             inlineSz = ((H2TreeIndexBase)idx).inlineSize();
 
-        idxMonList.add(idxId,
-            new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
+        idxMonList.add(idxId, new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
     }
 
     private H2IndexType type(Index idx) {

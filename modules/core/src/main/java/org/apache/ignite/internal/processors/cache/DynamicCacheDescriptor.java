@@ -35,12 +35,13 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.metric.list.CacheView;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache start descriptor.
  */
-public class DynamicCacheDescriptor {
+public class DynamicCacheDescriptor implements CacheView {
     /** Cache start ID. */
     private IgniteUuid deploymentId;
 
@@ -158,10 +159,15 @@ public class DynamicCacheDescriptor {
     /**
      * @return Cache group ID.
      */
-    public int groupId() {
+    @Override public int groupId() {
         assert grpDesc != null : this;
 
         return grpDesc.groupId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String groupName() {
+        return groupDescriptor().cacheOrGroupName();
     }
 
     /**
@@ -176,7 +182,7 @@ public class DynamicCacheDescriptor {
     /**
      * @return Cache ID.
      */
-    public Integer cacheId() {
+    @Override public Integer cacheId() {
         return cacheId;
     }
 
@@ -190,7 +196,7 @@ public class DynamicCacheDescriptor {
     /**
      * @return Cache type.
      */
-    public CacheType cacheType() {
+    @Override public CacheType cacheType() {
         return cacheType;
     }
 
@@ -218,7 +224,7 @@ public class DynamicCacheDescriptor {
     /**
      * @return Cache name.
      */
-    public String cacheName() {
+    @Override public String cacheName() {
         assert cacheCfg != null : this;
 
         return cacheCfg.getName();

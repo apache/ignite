@@ -62,7 +62,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.view.ServiceView;
+import org.apache.ignite.spi.metric.list.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -343,7 +343,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         for (ServiceInfo desc : clusterData.registeredServices()) {
             registeredServices.put(desc.serviceId(), desc);
-            serviceMonitoringList.add(desc.serviceId(), new ServiceView(desc));
+            serviceMonitoringList.add(desc.serviceId(), desc);
         }
     }
 
@@ -378,7 +378,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             if (oldDesc == null) {
                 registeredServices.put(desc.serviceId(), desc);
-                serviceMonitoringList.add(desc.serviceId(), new ServiceView(desc));
+                serviceMonitoringList.add(desc.serviceId(), desc);
 
                 continue;
             }
@@ -1508,7 +1508,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             staticServicesInfo.forEach(desc -> {
                 registeredServices.put(desc.serviceId(), desc);
-                serviceMonitoringList.add(desc.serviceId(), new ServiceView(desc));
+                serviceMonitoringList.add(desc.serviceId(), desc);
             });
         }
 
@@ -1612,7 +1612,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
                             registeredServices.put(reqSrvcId, desc);
-                            serviceMonitoringList.add(desc.serviceId(), new ServiceView(desc));
+                            serviceMonitoringList.add(desc.serviceId(), desc);
 
                             toDeploy.put(reqSrvcId, desc);
                         }

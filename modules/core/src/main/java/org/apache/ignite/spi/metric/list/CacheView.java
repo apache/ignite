@@ -15,11 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list;
+package org.apache.ignite.spi.metric.list;
 
-/**
- * Monitoring list row.
- * Idenitified by the instance of {@code Id}.
- */
-public interface MonitoringRow<Id> {
+import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+
+/** */
+public interface CacheView extends MonitoringRow<String> {
+    /** */
+    public int groupId();
+
+    /** */
+    public String groupName();
+
+    /** */
+    public Integer cacheId();
+
+    /** */
+    public String cacheName();
+
+    /** */
+    public CacheType cacheType();
 }
