@@ -116,7 +116,7 @@ class ClusterCachesInfo {
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
 
     /** */
-    private final MonitoringList<String, CacheGroupView> cachesGrpMonitoring;
+    private final MonitoringList<Integer, CacheGroupView> cachesGrpMonitoring;
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
@@ -227,7 +227,7 @@ class ClusterCachesInfo {
 
             if (removeGrp) {
                 grpsIter.remove();
-                cachesGrpMonitoring.remove(e.getValue().cacheOrGroupName());
+                cachesGrpMonitoring.remove(e.getKey());
 
                 ctx.discovery().removeCacheGroup(e.getValue());
             }
@@ -797,7 +797,7 @@ class ClusterCachesInfo {
             markedForDeletionCacheGrps.put(grpDesc.groupId(), grpDesc);
 
             registeredCacheGrps.remove(grpDesc.groupId());
-            cachesGrpMonitoring.remove(grpDesc.cacheOrGroupName());
+            cachesGrpMonitoring.remove(grpDesc.groupId());
 
             ctx.discovery().removeCacheGroup(grpDesc);
 
@@ -1516,7 +1516,7 @@ class ClusterCachesInfo {
             }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
-            cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView(grpDesc));
+            cachesGrpMonitoring.add(grpDesc.groupId(), new CacheGroupView(grpDesc));
 
             assert old == null : old;
 
@@ -2197,7 +2197,7 @@ class ClusterCachesInfo {
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
-        cachesGrpMonitoring.add(grpDesc.cacheOrGroupName(), new CacheGroupView(grpDesc));
+        cachesGrpMonitoring.add(grpDesc.groupId(), new CacheGroupView(grpDesc));
 
         assert old == null : old;
 

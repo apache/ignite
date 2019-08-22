@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /** */
-public class CacheGroupView implements MonitoringRow<String> {
+public class CacheGroupView implements MonitoringRow<Integer> {
     /** Cache group. */
     private CacheGroupDescriptor grp;
 

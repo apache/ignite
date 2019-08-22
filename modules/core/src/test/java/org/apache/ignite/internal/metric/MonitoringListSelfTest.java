@@ -97,7 +97,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (String grpName : grpNames)
                 g.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-            MonitoringList<String, CacheGroupView> grps =
+            MonitoringList<Integer, CacheGroupView> grps =
                 g.context().metric().list("cacheGroups", "Caches group", CacheGroupView.class);
 
             assertEquals("ignite-sys, grp-1, grp-2", 3, F.size(grps.iterator(), alwaysTrue()));

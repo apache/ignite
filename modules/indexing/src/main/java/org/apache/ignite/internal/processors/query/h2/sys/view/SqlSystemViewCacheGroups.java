@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.metric.list.CacheGroupView;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -37,6 +35,9 @@ import org.h2.value.Value;
  */
 @Deprecated
 public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
+    /** Groups monitoring list. */
+    private final MonitoringList<Integer, CacheGroupView> grps;
+
     /**
      * @param ctx Grid context.
      */
@@ -59,51 +60,49 @@ public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
             newColumn("REBALANCE_ORDER", Value.INT),
             newColumn("BACKUPS", Value.INT)
         );
+
+        this.grps = ctx.metric().list("cacheGroups", "Caches group", CacheGroupView.class);
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition idCond = conditionForColumn("ID", first, last);
 
-        Collection<CacheGroupDescriptor> cacheGroups;
+        Iterator<CacheGroupView> cacheGroups;
 
         if (idCond.isEquality()) {
             try {
-                CacheGroupDescriptor cacheGrp = ctx.cache().cacheGroupDescriptors().get(idCond.valueForEquality().getInt());
+                CacheGroupView cacheGrp = grps.get(idCond.valueForEquality().getInt());
 
-                cacheGroups = cacheGrp == null ? Collections.emptySet() : Collections.singleton(cacheGrp);
+                cacheGroups = cacheGrp == null ? Collections.emptyIterator() :
+                    Collections.singletonList(cacheGrp).iterator();
             }
             catch (Exception ignore) {
-                cacheGroups = Collections.emptySet();
+                cacheGroups = Collections.emptyIterator();
             }
         }
         else
-            cacheGroups = ctx.cache().cacheGroupDescriptors().values();
+            cacheGroups = grps.iterator();
 
-        return F.iterator(cacheGroups,
-            grp -> {
-                CacheConfiguration<?, ?> ccfg = grp.config();
-
-                return createRow(
-                    ses,
-                    grp.groupId(),
-                    grp.cacheOrGroupName(),
-                    grp.sharedGroup(),
-                    grp.caches() == null ? 0 : grp.caches().size(),
-                    ccfg.getCacheMode(),
-                    ccfg.getAtomicityMode(),
-                    toStringSafe(ccfg.getAffinity()),
-                    ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null,
-                    nodeFilter(ccfg),
-                    ccfg.getDataRegionName(),
-                    toStringSafe(ccfg.getTopologyValidator()),
-                    ccfg.getPartitionLossPolicy(),
-                    ccfg.getRebalanceMode(),
-                    ccfg.getRebalanceDelay(),
-                    ccfg.getRebalanceOrder(),
-                    ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups()
-                );
-            }, true);
+        return F.iterator(cacheGroups, grp -> createRow(
+            ses,
+            grp.groupId(),
+            grp.groupName(),
+            grp.sharedGroup(),
+            grp.cacheCount(),
+            grp.cacheMode(),
+            grp.atomicityMode(),
+            grp.affinity(),
+            grp.partitions(),
+            grp.nodeFilter(),
+            grp.dataRegionName(),
+            grp.topologyValidator(),
+            grp.partitionLossPolicy(),
+            grp.rebalanceMode(),
+            grp.rebalanceDelay(),
+            grp.rebalanceOrder(),
+            grp.backups()
+        ), true);
     }
 
     /** {@inheritDoc} */
