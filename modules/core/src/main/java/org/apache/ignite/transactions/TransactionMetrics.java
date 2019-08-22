@@ -102,4 +102,33 @@ public interface TransactionMetrics extends Serializable {
      * @return The number of active transactions for which this node is the initiator.
      */
     public long getOwnerTransactionsNumber();
+
+    /**
+     * Returns total transaction system time on this node.
+     *
+     * @return Total system time.
+     */
+    public long getTotalNodeSystemTime();
+
+    /**
+     * Returns total transaction user time on this node.
+     *
+     * @return Total user time.
+     */
+    public long getTotalNodeUserTime();
+
+    /**
+     * Returns histogram of transaction system time on this node.
+     *
+     * @return Histogram as json.
+     */
+    public String getNodeSystemTimeHistogram();
+
+    /**
+     * Returns histogram of transaction user time on this node.
+     *
+     * @return Histogram as json.
+     */
+    public String getNodeUserTimeHistogram();
 }
+

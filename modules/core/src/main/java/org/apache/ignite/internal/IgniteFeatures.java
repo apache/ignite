@@ -57,10 +57,15 @@ public enum IgniteFeatures {
 
     /** Supports tracking update counter for transactions. */
     TX_TRACKING_UPDATE_COUNTER(12),
-    /**
-     * A mode when data nodes throttle update rate regarding to DR sender load
-     */
-    DR_DATA_NODE_SMART_THROTTLING(19);
+
+    /** Distributed metastorage. */
+    IGNITE_SECURITY_PROCESSOR(13),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
+
+    /** LRT system and user time dump settings.  */
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
 
     /**
      * Unique feature identifier.

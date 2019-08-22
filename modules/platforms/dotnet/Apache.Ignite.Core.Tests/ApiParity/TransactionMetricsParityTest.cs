@@ -35,6 +35,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
                 "TransactionsHoldingLockNumber",
                 "LockedKeysNumber",
                 "OwnerTransactionsNumber",
+                "TotalNodeSystemTime",
+                "TotalNodeUserTime",
+                "NodeSystemTimeHistogram",
+                "NodeUserTimeHistogram"
             };
 
         /// <summary>

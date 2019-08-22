@@ -99,6 +99,26 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     @Override public long getOwnerTransactionsNumber() {
         return transactionMetrics.getOwnerTransactionsNumber();
     }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalNodeSystemTime() {
+        return transactionMetrics.getTotalNodeSystemTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalNodeUserTime() {
+        return transactionMetrics.getTotalNodeUserTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getNodeSystemTimeHistogram() {
+        return transactionMetrics.getNodeSystemTimeHistogram();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getNodeUserTimeHistogram() {
+        return transactionMetrics.getNodeUserTimeHistogram();
+    }
 }
 
 
