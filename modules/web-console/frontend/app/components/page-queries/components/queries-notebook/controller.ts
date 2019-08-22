@@ -2014,6 +2014,21 @@ export class NotebookCtrl {
         //    .catch(Messages.showError);
         // };
 
+        $scope.clearResult = (paragraph) => {
+            Confirm.confirm('Are you sure you want to clear query result?')
+                .then(() => {
+                    delete paragraph.resNodeId;
+                    delete paragraph.queryId;
+
+                    $scope.stopRefresh(paragraph);
+
+                    paragraph.rows = [];
+                    paragraph.meta = [];
+                    paragraph.setError({message: ''});
+                    paragraph.hasNext = false;
+                });
+        };
+
         $scope.rateAsString = function(paragraph) {
             if (paragraph.rate && paragraph.rate.installed) {
                 const idx = _.findIndex($scope.timeUnit, function(unit) {

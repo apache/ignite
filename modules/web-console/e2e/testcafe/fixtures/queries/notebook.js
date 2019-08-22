@@ -21,7 +21,7 @@ import {
 } from '../../mocks/agentTasks';
 import {resolveUrl, dropTestDB, insertTestUser} from '../../environment/envtools';
 import {createRegularUser} from '../../roles';
-import {Paragraph, showQueryDialog} from '../../page-models/pageQueryNotebook';
+import {Paragraph, showQueryDialog, confirmClearQueryDialog} from '../../page-models/pageQueryNotebook';
 import {PageQueriesNotebooksList} from '../../page-models/PageQueries';
 
 const user = createRegularUser();
@@ -43,7 +43,6 @@ fixture('Notebook')
         t.ctx.ws.destroy();
         await dropTestDB();
     });
-
 
 test('Sending a request', async(t) => {
     const notebooks = new PageQueriesNotebooksList();
@@ -69,5 +68,8 @@ test('Sending a request', async(t) => {
         .click(paragraph.showQueryButton)
         .expect(showQueryDialog.body.innerText).contains(query)
         .expect(showQueryDialog.footer.innerText).contains('Duration: 0')
-        .click(showQueryDialog.okButton);
+        .click(showQueryDialog.okButton)
+        .click(paragraph.clearResultButton)
+        .click(confirmClearQueryDialog.confirmButton)
+        .expect(paragraph.resultsTable._selector.exists).notOk();
 });

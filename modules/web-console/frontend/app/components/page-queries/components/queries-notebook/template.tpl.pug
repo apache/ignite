@@ -62,6 +62,7 @@ mixin chart-settings
                 div
                     label Duration: #[b {{paragraph.duration | duration}}]
                     label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+                    i.btn.btn-default.fa.fa-eraser(ng-click='clearResult(paragraph)' bs-tooltip='' data-title='Clear query result' data-trigger='hover' data-placement='bottom')
         .col-xs-2
             +result-toolbar
 
@@ -194,6 +195,7 @@ mixin table-result-heading-query
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
             label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+            i.btn.btn-default.fa.fa-eraser(ng-click='clearResult(paragraph)' bs-tooltip='' data-title='Clear query result' data-trigger='hover' data-placement='bottom')
         .col-xs-2
             div(ng-if='paragraph.queryType === "SQL_FIELDS"')
                 +result-toolbar
@@ -233,6 +235,7 @@ mixin table-result-heading-scan
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
             label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
+            i.btn.btn-default.fa.fa-eraser(ng-click='clearResult(paragraph)' bs-tooltip='' data-title='Clear query result' data-trigger='hover' data-placement='bottom')
         .col-xs-2
             div(ng-if='paragraph.queryType === "SQL_FIELDS"')
                 +result-toolbar

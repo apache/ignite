@@ -1571,10 +1571,16 @@ th[st-sort] {
         .caret { margin-left: 3px; }
     }
 
-    a, i {
+    a {
         font-size: $font-size-base;
         color: $link-color !important;
         margin-right: 5px;
+
+        i {
+            font-size: $font-size-base;
+            color: $link-color !important;
+            margin-right: 5px;
+        }
     }
 
     div {
