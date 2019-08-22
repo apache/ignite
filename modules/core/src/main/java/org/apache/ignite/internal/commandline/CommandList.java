@@ -49,7 +49,10 @@ public enum CommandList {
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
 
     /** */
-    ROLLING_UPGRADE("--rolling-upgrade", new RollingUpgradeCommand());
+    ROLLING_UPGRADE("--rolling-upgrade", new RollingUpgradeCommand()),
+
+    /** */
+    CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

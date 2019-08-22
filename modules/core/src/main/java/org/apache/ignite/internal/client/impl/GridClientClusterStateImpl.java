@@ -27,12 +27,26 @@ import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.client.impl.id_and_tag.IdAndTagViewTask;
+import org.apache.ignite.internal.client.impl.id_and_tag.IdAndTagViewTaskResult;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
  *
  */
 public class GridClientClusterStateImpl extends GridClientAbstractProjection<GridClientClusterStateImpl>
     implements GridClientClusterState {
+    /**
+     * Closure to execute Cluster ID and Tag view action on cluster.
+     */
+    private static final ClientProjectionClosure<IdAndTagViewTaskResult> ID_AND_TAG_VIEW_CL = (conn, nodeId) ->
+        conn.execute(
+            IdAndTagViewTask.class.getName(),
+            new VisorTaskArgument<>(nodeId, null, false),
+            nodeId,
+            false
+        );
+
     /**
      * Creates projection with specified client.
      *
@@ -70,5 +84,15 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
                 return conn.currentState(nodeId);
             }
         }).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID id() throws GridClientException {
+        return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().id();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tag() throws GridClientException {
+        return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().tag();
     }
 }
