@@ -17,7 +17,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -112,7 +114,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     @Override public int hashCode() {
         assert val != null;
 
-        return val.hashCode();
+        return IgniteUtils.hashCode(val);
     }
 
     /** {@inheritDoc} */
@@ -197,7 +199,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         KeyCacheObjectImpl other = (KeyCacheObjectImpl)obj;
 
-        return val.equals(other.val);
+        return Objects.deepEquals(val, other.val);
     }
 
     /** {@inheritDoc} */
