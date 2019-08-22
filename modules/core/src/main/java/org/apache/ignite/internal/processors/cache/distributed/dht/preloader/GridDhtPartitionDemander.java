@@ -921,7 +921,7 @@ public class GridDhtPartitionDemander {
                         if (cctx != null) {
                             mvccPreloadEntry(cctx, node, entryHist, topVer, p);
 
-                            updateCacheMetrics();
+                            updateGroupMetrics();
                         }
 
                         if (!hasMore)
@@ -969,7 +969,7 @@ public class GridDhtPartitionDemander {
         assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
-        updateCacheMetrics();
+        updateGroupMetrics();
 
         GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
@@ -1119,7 +1119,7 @@ public class GridDhtPartitionDemander {
     /**
      * Update rebalancing metrics.
      */
-    private void updateCacheMetrics() {
+    private void updateGroupMetrics() {
         // TODO: IGNITE-11330: Update metrics for touched cache only.
         // Due to historical rebalancing "EstimatedRebalancingKeys" metric is currently calculated for the whole cache
         // group (by partition counters), so "RebalancedKeys" and "RebalancingKeysRate" is calculated in the same way.
