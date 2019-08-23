@@ -483,6 +483,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
+     * @param rebalanceExecSvc Rebalance excutor service.
+     * @param rebalanceStripedExecSvc Striped rebalance excutor service.
      * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
      * @param workerRegistry Worker registry.
