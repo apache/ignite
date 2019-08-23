@@ -30,6 +30,8 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+
 /**
  * System view: caches.
  *

@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+
 /** */
 public class CacheGroupView implements MonitoringRow<Integer> {
     /** Cache group. */
@@ -76,20 +78,23 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
-    public Class<?> affinity() {
-        return ccfg.getAffinity() != null ? ccfg.getAffinity().getClass() : null;
+    public String affinity() {
+        return ccfg.getAffinity() != null ? toStringSafe(ccfg.getAffinity()) : null;
     }
 
     /** */
-    public int partitions() {
-        return ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : -1;
+    public Integer partitions() {
+        return ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null;
     }
 
     /** */
-    public Class<?> nodeFilter() {
-        IgnitePredicate<ClusterNode> filter = ccfg.getNodeFilter();
+    public String nodeFilter() {
+        IgnitePredicate<ClusterNode> nodeFilter = ccfg.getNodeFilter();
 
-        return filter == null ? null : filter.getClass();
+        if (nodeFilter instanceof CacheConfiguration.IgniteAllNodesPredicate)
+            return null;
+
+        return toStringSafe(nodeFilter);
     }
 
     /** */
@@ -98,10 +103,10 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
-    public Class<?> topologyValidator() {
+    public String topologyValidator() {
         TopologyValidator validator = ccfg.getTopologyValidator();
 
-        return validator == null ? null : validator.getClass();
+        return validator == null ? null : toStringSafe(validator);
     }
 
     /** */
@@ -125,7 +130,7 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
-    public int backups() {
-        return ccfg.getBackups();
+    public Integer backups() {
+        return ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups();
     }
 }

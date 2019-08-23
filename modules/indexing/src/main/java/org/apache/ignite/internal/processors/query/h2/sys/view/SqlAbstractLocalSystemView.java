@@ -33,6 +33,8 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+
 /**
  * Local system view base class (which uses only local node data).
  */
@@ -160,37 +162,12 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      *
      * @return String representation of node filter.
      */
-    @Nullable protected static String nodeFilter(CacheConfiguration<?, ?> ccfg) {
+    @Nullable public static String nodeFilter(CacheConfiguration<?, ?> ccfg) {
         IgnitePredicate<ClusterNode> nodeFilter = ccfg.getNodeFilter();
 
         if (nodeFilter instanceof CacheConfiguration.IgniteAllNodesPredicate)
             nodeFilter = null;
 
         return toStringSafe(nodeFilter);
-    }
-
-    /**
-     * Get string representation of an object properly catching all exceptions.
-     *
-     * @param obj Object.
-     * @return Result or {@code null}.
-     */
-    @Nullable protected static String toStringSafe(@Nullable Object obj) {
-        if (obj == null)
-            return null;
-        else {
-            try {
-                return obj.toString();
-            }
-            catch (Exception e) {
-                try {
-                    return "Failed to convert object to string: " + e.getMessage();
-                }
-                catch (Exception e0) {
-                    return "Failed to convert object to string (error message is not available)";
-                }
-            }
-        }
-
     }
 }

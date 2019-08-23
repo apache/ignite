@@ -38,6 +38,7 @@ import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -789,9 +790,6 @@ public class GridH2Table extends TableBase implements SqlTableView {
     public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
         assert desc != null;
 
-        H2CacheRow row0 = desc.createRow(row);
-        H2CacheRow prevRow0 = prevRow != null ? desc.createRow(prevRow) :
-            null;
         H2CacheRow row0 = desc.createRow(row);
         H2CacheRow prevRow0 = prevRow != null ? desc.createRow(prevRow) : null;
 
@@ -1634,7 +1632,11 @@ public class GridH2Table extends TableBase implements SqlTableView {
      * @param idx Index to monitor.
      */
     private void addToMonitoring(Index idx) {
-        String cacheGrpName = cacheInfo.cacheContext().group().cacheOrGroupName();
+        if (idxMonList == null) {
+            return;
+        }
+
+        String cacheGrpName = CacheGroupContext.cacheOrGroupName(cacheInfo.config());
 
         String idxId = metricName(identifierStr, idx.getName());
 
