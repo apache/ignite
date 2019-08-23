@@ -51,21 +51,24 @@ public class ClientTxContext {
      * Acquire context to work with transaction in the current thread.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public void acquire() throws IgniteCheckedException {
+    public void acquire(boolean resumeTx) throws IgniteCheckedException {
         lock.lock();
 
-        tx.resume();
+        if (resumeTx)
+            tx.resume();
     }
 
     /**
      * Release context.
      */
-    public void release() throws IgniteCheckedException {
+    public void release(boolean suspendTx) throws IgniteCheckedException {
         try {
-            TransactionState state = tx.state();
+            if (suspendTx) {
+                TransactionState state = tx.state();
 
-            if (state != TransactionState.COMMITTED && state != TransactionState.ROLLED_BACK)
-                tx.suspend();
+                if (state != TransactionState.COMMITTED && state != TransactionState.ROLLED_BACK)
+                    tx.suspend();
+            }
         } finally {
             lock.unlock();
         }

@@ -516,7 +516,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         TcpClientTransaction tx = transactions.tx();
 
-        if (tx != null && !tx.isClosed()) {
+        if (tx != null) {
             flags |= TRANSACTIONAL_FLAG_MASK;
 
             if (tx.clientChannel() != payloadCh.clientChannel()) {

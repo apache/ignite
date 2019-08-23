@@ -793,6 +793,26 @@ public class FunctionalTest {
 
             for (ClientTransaction tx : txs)
                 tx.close();
+
+            // Test that new transaction can be started after commit of the previous one without closing.
+            ClientTransaction tx = client.transactions().txStart();
+            tx.commit();
+
+            tx = client.transactions().txStart();
+            tx.rollback();
+
+            // Test that new transaction can be started after rollback of the previous one without closing.
+            tx = client.transactions().txStart();
+            tx.commit();
+
+            // Test that implicit transaction started after commit of previous one without closing.
+            cache.put(0, "value24");
+
+            Thread t = new Thread(() -> assertEquals("value24", cache.get(0)));
+
+            t.start();
+
+            t.join();
         }
     }
 

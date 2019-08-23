@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 /**
  * End the transaction request.
  */
-public class ClientTxEndRequest extends ClientRequest implements ClientTxAwareRequest {
+public class ClientTxEndRequest extends ClientRequest {
     /** Transaction id. */
     private final int txId;
 
@@ -58,29 +58,30 @@ public class ClientTxEndRequest extends ClientRequest implements ClientTxAwareRe
         if (txCtx == null)
             throw new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
 
-        try (GridNearTxLocal tx = txCtx.tx()) {
-            if (committed)
-                tx.commit();
-            else
-                tx.rollback();
+        try {
+            txCtx.acquire(committed);
+
+            try (GridNearTxLocal tx = txCtx.tx()) {
+                if (committed)
+                    tx.commit();
+                else
+                    tx.rollback();
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
         }
         finally {
             ctx.removeTxContext(txId);
+
+            try {
+                txCtx.release(false);
+            }
+            catch (IgniteCheckedException ignore) {
+                // No-op.
+            }
         }
 
         return super.process(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int txId() {
-        return txId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isTransactional() {
-        return true;
     }
 }

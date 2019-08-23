@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
@@ -41,8 +43,11 @@ class TcpClientTransactions implements ClientTransactions {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
-    /** Current thread transaction. */
-    private final ThreadLocal<TcpClientTransaction> tx = new ThreadLocal<>();
+    /** Current thread transaction id. */
+    private final ThreadLocal<Integer> threadLocTxId = new ThreadLocal<>();
+
+    /** Tx map. */
+    private final Map<Integer, TcpClientTransaction> txMap = new ConcurrentHashMap<>();
 
     /** Tx config. */
     private final ClientTransactionConfiguration txCfg;
@@ -78,7 +83,7 @@ class TcpClientTransactions implements ClientTransactions {
     private ClientTransaction txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation, Long timeout) {
         TcpClientTransaction tx0 = tx();
 
-        if (tx0 != null && !tx0.isClosed())
+        if (tx0 != null)
             throw new ClientException("A transaction has already started by the current thread.");
 
         tx0 = ch.service(ClientOperation.TX_START,
@@ -98,7 +103,9 @@ class TcpClientTransactions implements ClientTransactions {
             res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel())
         );
 
-        tx.set(tx0);
+        threadLocTxId.set(tx0.txId);
+
+        txMap.put(tx0.txId, tx0);
 
         return tx0;
     }
@@ -119,7 +126,12 @@ class TcpClientTransactions implements ClientTransactions {
      * Current thread transaction.
      */
     TcpClientTransaction tx() {
-        TcpClientTransaction tx0 = tx.get();
+        Integer txId = threadLocTxId.get();
+
+        if (txId == null)
+            return null;
+
+        TcpClientTransaction tx0 = txMap.get(txId);
 
         // Also check isClosed() flag, since transaction can be closed by another thread.
         return tx0 == null || tx0.isClosed() ? null : tx0;
@@ -149,47 +161,56 @@ class TcpClientTransactions implements ClientTransactions {
 
         /** {@inheritDoc} */
         @Override public void commit() {
-            if (tx.get() == null || closed)
+            Integer threadTxId;
+
+            if (closed || (threadTxId = threadLocTxId.get()) == null)
                 throw new ClientException("The transaction is already closed");
 
-            if (tx.get() != this)
+            if (txId != threadTxId)
                 throw new ClientException("You can commit transaction only from the thread it was started");
 
-            sendTxStatus(true);
+            endTx(true);
         }
 
         /** {@inheritDoc} */
         @Override public void rollback() {
-            sendTxStatus(false);
+            endTx(false);
         }
 
         /** {@inheritDoc} */
         @Override public void close() {
             try {
-                sendTxStatus(false);
+                endTx(false);
             }
             catch (Exception ignore) {
                 // No-op.
             }
-
-            closed = true;
-
-            if (tx.get() == this)
-                tx.set(null);
         }
 
         /**
          * @param committed Committed.
          */
-        private void sendTxStatus(boolean committed) {
-            ch.service(ClientOperation.TX_END,
-                req -> {
-                    if (clientCh != req.clientChannel())
-                        throw new ClientException("Transaction context has been lost due to connection errors");
+        private void endTx(boolean committed) {
+            try {
+                ch.service(ClientOperation.TX_END,
+                    req -> {
+                        if (clientCh != req.clientChannel())
+                            throw new ClientException("Transaction context has been lost due to connection errors");
 
-                    req.out().writeInt(txId);
-                    req.out().writeBoolean(committed);
-                }, null);
+                        req.out().writeInt(txId);
+                        req.out().writeBoolean(committed);
+                    }, null);
+            }
+            finally {
+                txMap.remove(txId);
+
+                closed = true;
+
+                Integer threadTxId = threadLocTxId.get();
+
+                if (threadTxId != null && txId == threadTxId)
+                    threadLocTxId.set(null);
+            }
         }
 
         /**

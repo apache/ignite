@@ -76,7 +76,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
                     if (txCtx != null) {
                         try {
-                            txCtx.acquire();
+                            txCtx.acquire(true);
 
                             return ((ClientRequest)req).process(ctx);
                         }
@@ -85,7 +85,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                         }
                         finally {
                             try {
-                                txCtx.release();
+                                txCtx.release(true);
                             }
                             catch (Exception e) {
                                 log.warning("Failed to release client transaction context", e);
