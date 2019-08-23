@@ -36,6 +36,130 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
  * Data pages IO.
+ *
+ * Rows in a data page are organized into two arrays growing toward each other: items table and row data.
+ * <p>
+ * Items table contains direct or indirect items which locate a row within the page. Items table is stored at the
+ * beginning of a page. Each item has an item ID which serves as an external item reference
+ * (see {@link PageIdUtils#link(long, int)}) and can be either direct or indirect. The size of any item in the items
+ * table is 2 bytes. ID of a direct item is always the same as its index in items table so it is not stored in the
+ * item itself. ID of an indirect item may differ from its index (see example below) so it is stored it the item
+ * along with ID (index) of direct item.
+ * <p>
+ * Direct and indirect items are always placed in the items table in such a way that direct items are stored first,
+ * and indirect items are always stored after direct items. A data page explicitly stores both direct and indirect
+ * items count (see {@link #getDirectCount(long)} and {@link #getIndirectCount(long)}), so that the item type can be
+ * easily determined: items with indexes {@code [0, directCnt)} are always direct and items with indexes
+ * {@code [directCnt, directCnt + indirectCnt)} are always indirect. Having both direct and indirect items in a
+ * page allows page defragmentation without breaking external links. Total number of rows stored in a page is equal
+ * to the number of direct items.
+ * <p>
+ * The row data is stored at the end of the page; newer rows are stored closer to the end of the items table.
+ * <h3>Direct Items</h3>
+ * Direct items refer a stored row directly by offset in the page:
+ * <pre>
+ *     +-----------------------------------------------------------------------------+
+ *     | Direct Items             ..... (rows data)                                  |
+ *     | (4000), (3800), (3600)   ..... row_2_cccc  row_1_bbbb   row_0_aaaa          |
+ *     |  |       |       |_____________^           ^            ^                   |
+ *     |  |       |_________________________________|            |                   |
+ *     |  |______________________________________________________|                   |
+ *     | directCnt: 3                                                                |
+ *     | indirectCnt: 0                                                              |
+ *     +-----------------------------------------------------------------------------+
+ * </pre>
+ * Direct item ID always matches it's index in the items table. The value of a direct item in the table is an
+ * offset of the row data within the page.
+ * <h3>Indirect Items</h3>
+ * An indirect item explicitly stores the indirect item ID (1 byte) and the index of the direct item it refers to
+ * (1 byte). The referred direct item (referrent) stores the actual offset of the row in the data page:
+ * <pre>
+ *     +-----------------------------------------------------------------------------+
+ *     |  Direct Items .. Indirect items .... (rows data)                            |
+ *     |   ____________________                                                      |
+ *     |  ⌄                    |                                                     |
+ *     | (3600), (3800), (3 -> 0)        ....   row_2_cccc  row_1_bbbb               |
+ *     |  |       |_____________________________^___________^                        |
+ *     |  |_____________________________________|                                    |
+ *     | directCnt: 2                                                                |
+ *     | indirectCount: 1                                                            |
+ *     +-----------------------------------------------------------------------------+
+ * </pre>
+ * An indirect item can only be created as a result of row deletion. Note that indirect item ID does not
+ * necessarily match the item index in the items table, however, indirect item IDs are always stored in sorted order
+ * by construction. In the picture above, the page contains two rows which are referred by two items:
+ * <ul>
+ *     <li>{@code 1} is a direct item which is stored at index 1 in the items table</li>
+ *     <li>{@code 3} is an indirect item which is stored at index 2 in the items table and refers to the direct
+ *     item {@code 0}</li>
+ * </ul>
+ *
+ * <h2>Items insertion and deletion</h2>
+ * <p>
+ * When rows are added to an empty page or a page with only direct items, the items table grows naturally:
+ * <pre>
+ *     +---------------------------------------------------------------+
+ *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 |
+ *     +---------------------------------------------------------------+
+ *     | Item        |  a |  b |  c |  d |  e |  f |  g |  h |  i |  j |
+ *     +---------------------------------------------------------------+
+ * </pre>
+ *
+ * When an item is removed, the items table is modified in such a way, that:
+ * <ul>
+ *     <li>Item of deleted row is modified to point to the row of the last direct item</li>
+ *     <li>The last direct item is converted to an indirect item, pointing to the deleted item</li>
+ * </ul>
+ *
+ * <pre>
+ *     remove(itemId=07)
+ *     +-----------------------------------------------------------------------+
+ *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 |         09 |
+ *     +-----------------------------------------------------------------------+
+ *     | Item        |  a |  b |  c |  d |  e |  f |  g |  j |  i | (09 -> 07) |
+ *     +-----------------------------------------------------------------------+
+ *
+ *      remove(itemId=02)
+ *     +--------------------------------------------------------------------------------+
+ *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 |          08 |         09 |
+ *     +--------------------------------------------------------------------------------+
+ *     | Item        |  a |  b |  i |  d |  e |  f |  g |  j |  (08 -> 02) | (09 -> 07) |
+ *     +--------------------------------------------------------------------------------+
+ * </pre>
+ *
+ * If the last direct item is already referred by an indirect item, that indirect item is updated and
+ * all indirect items are shifted to the left by 1 effectively dropping last direct item:
+ * <pre>
+ *      remove(itemId=00)
+ *     +--------------------------------------------------------------------------------+
+ *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 |          07 |         08 | 09 |
+ *     +--------------------------------------------------------------------------------+
+ *     | Item        |  j |  b |  i |  d |  e |  f |  g |  (08 -> 02) | (09 -> 00) |    |
+ *     +--------------------------------------------------------------------------------+
+ * </pre>
+ *
+ * When adding a row to a page with indirect items, the item is added to the end of direct items in the table and
+ * indirect items are shifted to the right:
+ * <pre>
+ *      add(k)
+ *     +-------------------------------------------------------------------------------+
+ *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 |         08 |         09 |
+ *     +-------------------------------------------------------------------------------+
+ *     | Item        |  j |  b |  i |  d |  e |  f |  g |  k | (08 -> 02) | (09 -> 00) |
+ *     +-------------------------------------------------------------------------------+
+ * </pre>
+ *
+ * If during an insert a newly added direct item ID matches with an existing indirect item ID, the corresponding
+ * indirect item is converted to a direct item, and the row being inserted is represented by a direct item
+ * with the referrent ID:
+ * <pre>
+ *      add(l)
+ *     +-----------------------------------------------------------------------+
+ *     | Table index | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 |         09 |
+ *     +-----------------------------------------------------------------------+
+ *     | Item        |  j |  b |  l |  d |  e |  f |  g |  k |  i | (09 -> 00) |
+ *     +-----------------------------------------------------------------------+
+ * </pre>
  */
 public abstract class AbstractDataPageIO<T extends Storable> extends PageIO implements CompactablePageIO {
     /** */
