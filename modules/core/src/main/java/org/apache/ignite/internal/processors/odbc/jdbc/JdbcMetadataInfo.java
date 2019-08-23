@@ -67,7 +67,7 @@ public class JdbcMetadataInfo {
     };
 
     /** Comparator for {@link JdbcTableMeta} by table type then schema then table name. */
-    private static final Comparator<TableInformation> byTblTypeThenSchemaThenTabname =
+    private static final Comparator<TableInformation> byTblTypeThenSchemaThenTblName =
         new Comparator<TableInformation>() {
             @Override public int compare(TableInformation o1, TableInformation o2) {
                 int tblTypeCmp = o1.tableType().compareTo(o2.tableType());
@@ -155,7 +155,7 @@ public class JdbcMetadataInfo {
             .tablesInformation(schemaNamePtrn, tblNamePtrn, tblTypes);
 
         return tblsMeta.stream()
-            .sorted(byTblTypeThenSchemaThenTabname)
+            .sorted(byTblTypeThenSchemaThenTblName)
             .map(t -> new JdbcTableMeta(t.schemaName(), t.tableName(), t.tableType()))
             .collect(Collectors.toList());
     }

@@ -64,8 +64,8 @@ public class ColumnInformation {
      * @param fieldCls Field class.
      * @param nullable Nullable.
      * @param dfltVal Default value.
-     * @param precision Precision for for a column or -1 if not applicable.
-     * @param scale Scale  forfor a column or -1 if not applicable.
+     * @param precision Precision for a column or -1 if not applicable.
+     * @param scale Scale for a column or -1 if not applicable.
      */
     public ColumnInformation(int ordinalPosition, String schemaName, String tblName, String colName, Class<?> fieldCls,
         boolean nullable, Object dfltVal, int precision, int scale, boolean affinityCol) {

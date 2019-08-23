@@ -1788,7 +1788,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     CacheGroupDescriptor cacheGrpDesc = ctx.cache().cacheGroupDescriptors().get(cacheGrpId);
 
-                    // We should skip table in case in case regarding cache group has been removed.
+                    // We should skip table in case regarding cache group has been removed.
                     if (cacheGrpDesc == null)
                         return null;
 

@@ -48,7 +48,7 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     /**
      * @param schemaName Schema search pattern.
      * @param tblName Table search pattern.
-     * @param tblTypes Table types
+     * @param tblTypes Table types.
      */
     public JdbcMetaTablesRequest(String schemaName, String tblName, String[] tblTypes) {
         super(META_TABLES);
