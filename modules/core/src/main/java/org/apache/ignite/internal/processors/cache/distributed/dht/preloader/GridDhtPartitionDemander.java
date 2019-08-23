@@ -1062,10 +1062,7 @@ public class GridDhtPartitionDemander {
                         cached.key() + ", part=" + p + ']');
             }
             catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
-
-                return false;
+                assert false;
             }
         }
         catch (IgniteInterruptedCheckedException e) {
@@ -1135,10 +1132,7 @@ public class GridDhtPartitionDemander {
                         cached.key() + ", part=" + p + ']');
             }
             catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
-
-                return false;
+                assert false;
             }
         }
         catch (IgniteInterruptedCheckedException | ClusterTopologyCheckedException e) {
