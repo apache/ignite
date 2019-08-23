@@ -53,7 +53,8 @@ public class MovieLensExample {
             try {
                 LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1);
                 RecommendationTrainer trainer = new RecommendationTrainer()
-                    .withMaxIterations(1000)
+                    .withMaxIterations(-1)
+                    .withMinMdlImprovement(10)
                     .withBatchSize(10)
                     .withLearningRate(10)
                     .withLearningEnvironmentBuilder(envBuilder)

@@ -49,10 +49,11 @@ public class RecommendationTrainerTest {
             data.put(seq++, triplet);
 
         RecommendationTrainer trainer = new RecommendationTrainer()
-            .withMaxIterations(1000)
             .withLearningRate(50.0)
             .withBatchSize(10)
             .withK(2)
+            .withMaxIterations(-1)
+            .withMinMdlImprovement(0.5)
             .withLearningEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1))
             .withTrainerEnvironment(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1).buildForTrainer());
 

@@ -58,7 +58,10 @@ public class RecommendationTrainer {
     private double learningRate = 10.0;
 
     /** Max number of SGD iterations. */
-    private double maxIterations = 1000;
+    private int maxIterations = 1000;
+
+    /** Minimal improvement of the model to continue training. */
+    private double minMdlImprovement = 0.0;
 
     /** Number of rows/cols in matrices after factorization. */
     private int k = 10;
@@ -130,8 +133,7 @@ public class RecommendationTrainer {
         Map<S, Vector> subjMatrix = generateRandomVectorForEach(subjects, trainerEnvironment.randomNumbersGenerator());
 
         // SGD steps.
-        // TODO: GG-22916 Add convergence check into recommendation system SGD
-        for (int i = 0; i < maxIterations; i++) {
+        for (int i = 0; maxIterations == -1 || i < maxIterations; i++) {
             int seed = i;
 
             // Calculate gradient on reach partition and aggregate results.
@@ -147,11 +149,41 @@ public class RecommendationTrainer {
                 RecommendationTrainer::sum
             );
 
+            if (minMdlImprovement != 0 && calculateImprovement(grad) < minMdlImprovement)
+                break;
+
             // Apply aggregated gradient.
             grad.applyGradient(objMatrix, subjMatrix);
         }
 
         return new RecommendationModel<>(objMatrix, subjMatrix);
+    }
+
+    /**
+     * Calculates improvement of the model that corresponds to the specified gradient (how significatly model will be
+     * improved after the gradient application).
+     *
+     * @param grad Matrix factorization gradient.
+     * @param <O> Type of an object.
+     * @param <S> Type of a subject.
+     * @return Measure of model improvement correspondent to the specified gradient.
+     */
+    private <O extends Serializable, S extends Serializable> double calculateImprovement(MatrixFactorizationGradient<O, S> grad) {
+        double mean = 0;
+
+        for (Vector vector : grad.getObjGrad().values()) {
+            for (int i = 0; i < vector.size(); i++)
+                mean += Math.abs(vector.get(i));
+        }
+
+        for (Vector vector : grad.getSubjGrad().values()) {
+            for (int i = 0; i < vector.size(); i++)
+                mean += Math.abs(vector.get(i));
+        }
+
+        mean /= (grad.getSubjGrad().size() + grad.getObjGrad().size());
+
+        return mean;
     }
 
     /**
@@ -256,6 +288,18 @@ public class RecommendationTrainer {
      */
     public RecommendationTrainer withMaxIterations(int maxIterations) {
         this.maxIterations = maxIterations;
+
+        return this;
+    }
+
+    /**
+     * Set up {@code minModelImprovement} parameter (minimal improvement of the model to continue training).
+     *
+     * @param minMdlImprovement Minimal improvement of the model to continue training.
+     * @return This object.
+     */
+    public RecommendationTrainer withMinMdlImprovement(double minMdlImprovement) {
+        this.minMdlImprovement = minMdlImprovement;
 
         return this;
     }
