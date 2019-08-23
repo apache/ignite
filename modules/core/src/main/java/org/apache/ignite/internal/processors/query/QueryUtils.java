@@ -1224,6 +1224,17 @@ public class QueryUtils {
     }
 
     /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    public static String createTableValueTypeName(String schemaName, String tblName, String tblDigest) {
+        return createTableCacheName(schemaName, tblName) + "_" + tblDigest;
+    }
+
+    /**
      * Construct key type name for table.
      *
      * @param valTypeName Value type name.
