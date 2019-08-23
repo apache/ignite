@@ -1672,6 +1672,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new ParsingResult(prepared, newQry, remainingSql, twoStepQry, cachedQryKey, meta);
         }
 
+
+        // The part executed in user thread. In case user open few iterators ThreadLocal context will be invalid.
+        // To prevent it we keep old context and restore after.
+        GridH2QueryContext oldCtx = GridH2QueryContext.get();
+
+        if(oldCtx != null)
+            GridH2QueryContext.clearThreadLocal();
+
         try {
             GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
                 .distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins())));
@@ -1693,6 +1701,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             GridH2QueryContext.clearThreadLocal();
+
+            if(oldCtx != null)
+                GridH2QueryContext.set(oldCtx);
+
         }
     }
 
