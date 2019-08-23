@@ -293,6 +293,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     tbl.cacheName(),
                     cctx.offheap().reuseListForIndex(treeName),
                     cctx.groupId(),
+                    cctx.group().name(),
                     cctx.dataRegion().pageMemory(),
                     cctx.shared().wal(),
                     cctx.offheap().globalRemoveId(),

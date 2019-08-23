@@ -143,7 +143,7 @@ public abstract class PagesList extends DataStructure {
         long metaPageId,
         PageLockListener lockLsnr
     ) {
-        super(cacheId, pageMem, wal, lockLsnr);
+        super(cacheId, null, pageMem, wal, lockLsnr);
 
         this.name = name;
         this.buckets = buckets;

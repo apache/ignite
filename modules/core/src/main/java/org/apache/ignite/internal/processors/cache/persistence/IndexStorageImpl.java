@@ -191,18 +191,18 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public Collection<String> getIndexNames() throws IgniteCheckedException {
         assert metaTree != null;
-        
+
         GridCursor<IndexItem> cursor = metaTree.find(null, null);
 
         ArrayList<String> names = new ArrayList<>((int)metaTree.size());
 
         while (cursor.next()) {
             IndexItem item = cursor.get();
-            
+
             if (item != null)
                 names.add(new String(item.idxName));
         }
-        
+
         return names;
     }
 
@@ -258,6 +258,7 @@ public class IndexStorageImpl implements IndexStorage {
             super(
                 treeName("meta", "Meta"),
                 cacheId,
+                null,
                 pageMem,
                 wal,
                 globalRmvId,
