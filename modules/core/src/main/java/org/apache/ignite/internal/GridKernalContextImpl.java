@@ -1165,6 +1165,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return rebalanceExecSvc;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteStripedThreadPoolExecutor getStripedRebalanceExecutorService() {
         return rebalanceStripedExecSvc;
     }
