@@ -2907,6 +2907,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Thread local variable indicates that discovery manager was notified after message processing. */
         private final ThreadLocal<Boolean> notifiedDiscovery = ThreadLocal.withInitial(() -> false);
 
+        /** Filter for {@link TcpDiscoveryMetricsUpdateMessage}s. */
+        private final MetricsUpdateMessageFilter metricsMsgFilter = new MetricsUpdateMessageFilter();
+
         /**
          * @param log Logger.
          */
@@ -2995,13 +2998,39 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (msg.highPriority() && !ignoreHighPriority)
-                queue.addFirst(msg);
+            boolean addFirst = msg.highPriority() && !ignoreHighPriority;
+
+            if (msg instanceof TcpDiscoveryMetricsUpdateMessage) {
+                if (metricsMsgFilter.addMessage((TcpDiscoveryMetricsUpdateMessage)msg))
+                    addToQueue(msg, addFirst);
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Metric update message has been replaced in the worker's queue: " + msg);
+                }
+            }
             else
+                addToQueue(msg, addFirst);
+        }
+
+        /**
+         * @param msg Message to add.
+         * @param addFirst If {@code true}, then the message will be added to a head of a worker's queue.
+         */
+        private void addToQueue(TcpDiscoveryAbstractMessage msg, boolean addFirst) {
+            DebugLogger log = messageLogger(msg);
+
+            if (addFirst) {
+                queue.addFirst(msg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Message has been added to a head of a worker's queue: " + msg);
+            }
+            else {
                 queue.add(msg);
 
-            if (log.isDebugEnabled())
-                log.debug("Message has been added to queue: " + msg);
+                if (log.isDebugEnabled())
+                    log.debug("Message has been added to a worker's queue: " + msg);
+            }
         }
 
         /** */
@@ -5937,7 +5966,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Processes regular metrics update message.
+         * Processes regular metrics update message. If a more recent message of the same kind has been received,
+         * then it will be processed instead of the one taken from the queue.
          *
          * @param msg Metrics update message.
          */
@@ -5945,6 +5975,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert msg != null;
 
             assert !msg.client();
+
+            int laps = metricsMsgFilter.passedLaps(msg);
+
+            msg = metricsMsgFilter.pollActualMessage(laps, msg);
 
             UUID locNodeId = getLocalNodeId();
 
@@ -5971,7 +6005,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (locNodeId.equals(msg.creatorNodeId()) && !hasMetrics(msg, locNodeId) && msg.senderNodeId() != null) {
+            if (laps == 2) {
                 if (log.isTraceEnabled())
                     log.trace("Discarding metrics update message that has made two passes: " + msg);
 
@@ -5999,8 +6033,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (sendMessageToRemotes(msg)) {
-                if ((locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null ||
-                    !hasMetrics(msg, locNodeId)) && spiStateCopy() == CONNECTED) {
+                if (laps == 0 && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
                     msg.setMetrics(locNodeId, spi.metricsProvider.metrics());
                     msg.setCacheMetrics(locNodeId, spi.metricsProvider.cacheMetrics());
@@ -6092,13 +6125,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else if (log.isDebugEnabled())
                 log.debug("Received metrics from unknown node: " + nodeId);
-        }
-
-        /**
-         * @param msg Message.
-         */
-        private boolean hasMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
-            return msg.hasMetrics(nodeId) || msg.hasCacheMetrics(nodeId);
         }
 
         /**
@@ -6457,16 +6483,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
          */
         private void checkMetricsReceiving() {
-            if (lastTimeStatusMsgSentNanos - locNode.lastUpdateTimeNanos() < 0)
+            if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
                 lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
 
-            long updateTimeNanos = lastTimeStatusMsgSentNanos - lastRingMsgTimeNanos > 0
-                ? lastTimeStatusMsgSentNanos
-                : lastRingMsgTimeNanos;
+            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
 
-            long elapsed = metricsCheckFreq - U.millisSinceNanos(updateTimeNanos);
-
-            if (elapsed > 0)
+            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
                 return;
 
             msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
@@ -8219,6 +8241,100 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CrossRingMessageSendState.class, this);
+        }
+    }
+
+    /**
+     * Filter to keep track of the most recent {@link TcpDiscoveryMetricsUpdateMessage}s.
+     */
+    private class MetricsUpdateMessageFilter {
+        /** The most recent unprocessed metrics update message, which is on its first discovery round trip. */
+        private volatile TcpDiscoveryMetricsUpdateMessage actualFirstLapMetricsUpdate;
+
+        /** The most recent unprocessed metrics update message, which is on its second discovery round trip. */
+        private volatile TcpDiscoveryMetricsUpdateMessage actualSecondLapMetricsUpdate;
+
+        /**
+         * Adds the provided metrics update message to the worker's queue. If there is already a message in the queue,
+         * that has passed the same number of discovery ring laps, then it's replaced with the provided one.
+         *
+         * @param msg Metrics update message that needs to be added to the worker's queue.
+         * @return {@code True} if the message should be added to the worker's queue.
+         * {@code False} if another message of the same kind is already in the queue.
+         */
+        private boolean addMessage(TcpDiscoveryMetricsUpdateMessage msg) {
+            int laps = passedLaps(msg);
+
+            if (laps == 2)
+                return true;
+            else {
+                // The message should be added to the queue only if a similar message is not there already.
+                // Otherwise one of actualFirstLapMetricsUpdate or actualSecondLapMetricsUpdate will be updated only.
+                boolean addToQueue;
+
+                if (laps == 0) {
+                    addToQueue = actualFirstLapMetricsUpdate == null;
+
+                    actualFirstLapMetricsUpdate = msg;
+                }
+                else {
+                    assert laps == 1 : "Unexpected number of laps passed by a metric update message: " + laps;
+
+                    addToQueue = actualSecondLapMetricsUpdate == null;
+
+                    actualSecondLapMetricsUpdate = msg;
+                }
+
+                return addToQueue;
+            }
+        }
+
+
+        /**
+         * @param laps Number of discovery ring laps passed by the message.
+         * @param msg Message taken from the queue.
+         * @return The most recent message of the same kind received by the local node.
+         */
+        private TcpDiscoveryMetricsUpdateMessage pollActualMessage(int laps, TcpDiscoveryMetricsUpdateMessage msg) {
+            if (laps == 0) {
+                msg = actualFirstLapMetricsUpdate;
+
+                actualFirstLapMetricsUpdate = null;
+            }
+            else if (laps == 1) {
+                msg = actualSecondLapMetricsUpdate;
+
+                actualSecondLapMetricsUpdate = null;
+            }
+
+            return msg;
+        }
+
+        /**
+         * @param msg Metrics update message.
+         * @return Number of laps, that the provided message passed.
+         */
+        private int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
+            UUID locNodeId = getLocalNodeId();
+
+            boolean hasLocMetrics = hasMetrics(msg, locNodeId);
+
+            if (locNodeId.equals(msg.creatorNodeId()) && !hasLocMetrics && msg.senderNodeId() != null)
+                return 2;
+            else if (msg.senderNodeId() == null || !hasLocMetrics)
+                return 0;
+            else
+                return 1;
+        }
+
+        /**
+         * @param msg Metrics update message to check.
+         * @param nodeId Node ID for which the check should be performed.
+         * @return {@code True} is the message contains metrics of the node with the provided ID.
+         * {@code False} otherwise.
+         */
+        private boolean hasMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
+            return msg.hasMetrics(nodeId) || msg.hasCacheMetrics(nodeId);
         }
     }
 }
