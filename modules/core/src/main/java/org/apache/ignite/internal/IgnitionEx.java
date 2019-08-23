@@ -2139,8 +2139,10 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
+            String userProvidedWorkDir = cfg.getWorkDirectory();
+
             // Correctly resolve work directory and set it back to configuration.
-            String workDir = U.workDirectory(cfg.getWorkDirectory(), ggHome);
+            String workDir = U.workDirectory(userProvidedWorkDir, ggHome);
 
             myCfg.setWorkDirectory(workDir);
 
@@ -2168,6 +2170,9 @@ public class IgnitionEx {
             log = cfgLog.getLogger(G.class);
 
             myCfg.setGridLogger(cfgLog);
+
+            if(F.isEmpty(userProvidedWorkDir) && F.isEmpty(U.IGNITE_WORK_DIR))
+                log.warning("Ignite work directory is not provided, automatically resolved to: " + workDir);
 
             // Check Ignite home folder (after log is available).
             if (ggHome != null) {
@@ -2250,11 +2255,8 @@ public class IgnitionEx {
 
             if (marsh == null) {
                 if (!BinaryMarshaller.available()) {
-                    U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
-                        "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
-                        "Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.");
+                    U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
+                        "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
 
                     marsh = new JdkMarshaller();
                 }

@@ -50,7 +50,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.Metric;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Ssl;
@@ -1104,11 +1103,6 @@ namespace Apache.Ignite.Core
         /// Null for disabled encryption.
         /// </summary>
         public IEncryptionSpi EncryptionSpi { get; set; }
-
-        /// <summary>
-        /// Gets or sets the MetricExporterSpi.
-        /// </summary>
-        public IMetricExporterSpi MetricExporterSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
