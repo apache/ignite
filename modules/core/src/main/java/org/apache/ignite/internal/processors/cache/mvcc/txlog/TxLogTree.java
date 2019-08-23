@@ -52,6 +52,7 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
         super(
             TxLog.TX_LOG_CACHE_NAME,
             TxLog.TX_LOG_CACHE_ID,
+            TxLog.TX_LOG_CACHE_NAME,
             pageMem,
             wal,
             new AtomicLong(),
