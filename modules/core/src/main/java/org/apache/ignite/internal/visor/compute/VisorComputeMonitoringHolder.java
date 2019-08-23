@@ -175,7 +175,7 @@ public class VisorComputeMonitoringHolder {
     private static final class EventsSession {
         /** Flag to mark expired session. */
         private boolean expired;
-        
+
         /** Event types. */
         private Set<Integer> types;
 
