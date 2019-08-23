@@ -605,9 +605,7 @@ public class GridDhtPartitionDemander {
         if (!topologyChanged(fut) && fut.isActual(supplyMsg.rebalanceId())) {
             boolean historical = false;
 
-            for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
-                int p = e.getKey();
-
+            for (Integer p : supplyMsg.infos().keySet()) {
                 fut.queued.get(p).increment();
 
                 if (fut.historical.contains(p))
