@@ -34,7 +34,7 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
  * DiscreteNaiveBayesModel}.
  */
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = -5045925321135798960L;
 
     /** Prior probabilities of each class. */
@@ -84,47 +84,47 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return labels[maxLabelIndex];
     }
 
-    /** */
+    /** Returns a gaussian model. */
     public GaussianNaiveBayesModel getGaussianModel() {
         return gaussianModel;
     }
 
-    /** */
+    /** Returns a discrete model. */
     public DiscreteNaiveBayesModel getDiscreteModel() {
         return discreteModel;
     }
 
-    /** */
+    /** Sets prior probabilities. */
     public CompoundNaiveBayesModel wirhPriorProbabilities(double[] priorProbabilities) {
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
 
-    /** */
+    /** Sets labels. */
     public CompoundNaiveBayesModel withLabels(double[] labels) {
         this.labels = labels.clone();
         return this;
     }
 
-    /** */
+    /** Sets a gaussian model. */
     public CompoundNaiveBayesModel withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
         this.gaussianModel = gaussianModel;
         return this;
     }
 
-    /** */
+    /** Sets a discrete model. */
     public CompoundNaiveBayesModel withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
         this.discreteModel = discreteModel;
         return this;
     }
 
-    /** */
+    /** Sets feature ids to skip in Gaussian Bayes. */
     public CompoundNaiveBayesModel withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
         this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
         return this;
     }
 
-    /** */
+    /** Sets feature ids to skip in discrete Bayes. */
     public CompoundNaiveBayesModel withDiscreteFeatureIdsToSkip(Collection<Integer> discreteFeatureIdsToSkip) {
         this.discreteFeatureIdsToSkip = discreteFeatureIdsToSkip;
         return this;

@@ -31,7 +31,7 @@ import java.io.Serializable;
  * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
 public class DiscreteNaiveBayesModel implements BayesModel, IgniteModel<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
     /**

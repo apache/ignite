@@ -30,7 +30,7 @@ import java.io.Serializable;
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
 public class GaussianNaiveBayesModel implements BayesModel, IgniteModel<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
-    /** UID */
+    /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
     /** Means of features for all classes. kth row contains means for labels[k] class. */

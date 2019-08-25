@@ -110,31 +110,31 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         return compoundModel;
     }
 
-    /** */
+    /** Sets prior probabilities. */
     public CompoundNaiveBayesTrainer withPriorProbabilities(double[] priorProbabilities) {
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
 
-    /** */
+    /** Sets a gaussian trainer. */
     public CompoundNaiveBayesTrainer withGaussianNaiveBayesTrainer(GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer) {
         this.gaussianNaiveBayesTrainer = gaussianNaiveBayesTrainer;
         return this;
     }
 
-    /** */
+    /** Sets a discrete trainer. */
     public CompoundNaiveBayesTrainer withDiscreteNaiveBayesTrainer(DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer) {
         this.discreteNaiveBayesTrainer = discreteNaiveBayesTrainer;
         return this;
     }
 
-    /** */
+    /** Sets feature ids to skip in Gaussian Bayes. */
     public CompoundNaiveBayesTrainer withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
         this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
         return this;
     }
 
-    /** */
+    /** Sets feature ids to skip in discrete Bayes. */
     public CompoundNaiveBayesTrainer withDiscreteFeatureIdsToSkip(Collection<Integer> discreteFeatureIdsToSkip) {
         this.discreteFeatureIdsToSkip = discreteFeatureIdsToSkip;
         return this;
