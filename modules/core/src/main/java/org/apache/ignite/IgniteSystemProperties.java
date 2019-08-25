@@ -1156,6 +1156,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT =
         "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT";
 
+    /** */
+    public static final String IGNITE_USE_POOL_FOR_LAZY_QUERIES = "IGNITE_USE_POOL_FOR_LAZY_QUERIES";
+
     /**
      * Enforces singleton.
      */
