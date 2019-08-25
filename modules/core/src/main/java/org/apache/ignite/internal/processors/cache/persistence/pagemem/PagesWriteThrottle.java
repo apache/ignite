@@ -15,8 +15,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
@@ -59,8 +58,8 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Currently parking threads. */
-    private final Collection<Thread> parkThrds = new ConcurrentLinkedQueue<>();
+    /** Threads that are throttled due to checkpoint buffer overflow. */
+    private final ConcurrentHashMap<Long, Thread> cpBufThrottledThreads = new ConcurrentHashMap<>();
 
     /**
      * @param pageMemory Page memory.
@@ -125,23 +124,36 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
 
             long throttleParkTimeNs = (long) (STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel));
 
+            Thread curThread = Thread.currentThread();
+
             if (throttleParkTimeNs > LOGGING_THRESHOLD) {
-                U.warn(log, "Parking thread=" + Thread.currentThread().getName()
+                U.warn(log, "Parking thread=" + curThread.getName()
                     + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
             }
 
-            if (isPageInCheckpoint)
-                parkThrds.add(Thread.currentThread());
+            if (isPageInCheckpoint) {
+                cpBufThrottledThreads.put(curThread.getId(), curThread);
 
-            LockSupport.parkNanos(throttleParkTimeNs);
+                try {
+                    LockSupport.parkNanos(throttleParkTimeNs);
+                }
+                finally {
+                    cpBufThrottledThreads.remove(curThread.getId());
+
+                    if (throttleParkTimeNs > LOGGING_THRESHOLD) {
+                        U.warn(log, "Unparking thread=" + curThread.getName()
+                            + " with park timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
+                    }
+                }
+            }
+            else
+                LockSupport.parkNanos(throttleParkTimeNs);
         }
         else {
             int oldCntr = cntr.getAndSet(0);
 
-            if (isPageInCheckpoint && oldCntr != 0) {
-                parkThrds.forEach(LockSupport::unpark);
-                parkThrds.clear();
-            }
+            if (isPageInCheckpoint && oldCntr != 0)
+                cpBufThrottledThreads.values().forEach(LockSupport::unpark);
         }
     }
 
@@ -150,8 +162,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         if (!shouldThrottle()) {
             inCheckpointBackoffCntr.set(0);
 
-            parkThrds.forEach(LockSupport::unpark);
-            parkThrds.clear();
+            cpBufThrottledThreads.values().forEach(LockSupport::unpark);
         }
     }
 
