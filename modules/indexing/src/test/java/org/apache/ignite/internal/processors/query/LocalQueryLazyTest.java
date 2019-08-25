@@ -114,9 +114,6 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
     /** */
     public void testParallelIterator() throws Exception {
-        System.setProperty("USE_POOL_FOR_LAZY_STUB", "false");
-
-        IgniteEx g0 = grid();
         IgniteEx g1 = startGrid(0);
 
         awaitPartitionMapExchange(true, true, null);
