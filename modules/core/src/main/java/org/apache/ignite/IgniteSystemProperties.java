@@ -1125,6 +1125,9 @@ public final class IgniteSystemProperties {
     /** Force full index rebuild. */
     public static final String FORCE_FULL_INDEX_REBUILD = "FORCE_FULL_INDEX_REBUILD";
 
+    /** */
+    public static final String IGNITE_USE_POOL_FOR_LAZY_QUERIES = "IGNITE_USE_POOL_FOR_LAZY_QUERIES";
+
     /**
      * Enforces singleton.
      */
