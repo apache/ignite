@@ -17,18 +17,20 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.naivebayes.BayesModel;
+
+import java.io.Serializable;
 
 /**
  * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
  * {@code p(C_k,y) =x_1*p_k1^x *...*x_i*p_ki^x_i}. Where {@code x_i} is a discrete feature, {@code p_ki} is a prior
  * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
-public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
+public class DiscreteNaiveBayesModel implements BayesModel, IgniteModel<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
 
@@ -94,10 +96,8 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return labels[maxLabelIndex];
     }
 
-    /**
-     * Returns an array where the index correapons a label, and value corresponds probalility to be this label. The
-     * prior probabilities are not count.
-     */
+    /** {@inheritDoc} */
+    @Override
     public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[clsProbabilities.length];
 
@@ -112,27 +112,27 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return probapilityPowers;
     }
 
-    /** */
+    /** A getter for probabilities.*/
     public double[][][] getProbabilities() {
         return probabilities;
     }
 
-    /** */
+    /** A getter for clsProbabilities.*/
     public double[] getClsProbabilities() {
         return clsProbabilities;
     }
 
-    /** */
+    /** A getter for bucketThresholds.*/
     public double[][] getBucketThresholds() {
         return bucketThresholds;
     }
 
-    /** */
+    /** A getter for labels.*/
     public double[] getLabels() {
         return labels;
     }
 
-    /** */
+    /** A getter for sumsHolder.*/
     public DiscreteNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }

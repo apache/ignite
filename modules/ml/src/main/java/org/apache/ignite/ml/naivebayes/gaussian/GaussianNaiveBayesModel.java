@@ -17,18 +17,20 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.naivebayes.BayesModel;
+
+import java.io.Serializable;
 
 /**
  * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
-public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
-    /** */
+public class GaussianNaiveBayesModel implements BayesModel, IgniteModel<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
+    /** UID */
     private static final long serialVersionUID = -127386523291350345L;
 
     /** Means of features for all classes. kth row contains means for labels[k] class. */
@@ -82,10 +84,8 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return labels[max];
     }
 
-    /**
-     * Returns an array where the index correapons a label, and value corresponds probalility to be this label. The
-     * prior probabilities are not count.
-     */
+    /** {@inheritDoc} */
+    @Override
     public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[classProbabilities.length];
 
@@ -99,32 +99,32 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return probapilityPowers;
     }
 
-    /** */
+    /** A getter for means.*/
     public double[][] getMeans() {
         return means;
     }
 
-    /** */
+    /** A getter for variances.*/
     public double[][] getVariances() {
         return variances;
     }
 
-    /** */
+    /** A getter for classProbabilities.*/
     public double[] getClassProbabilities() {
         return classProbabilities;
     }
 
-    /** */
+    /** A getter for labels.*/
     public double[] getLabels() {
         return labels;
     }
 
-    /** */
+    /** A getter for sumsHolder.*/
     public GaussianNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }
 
-    /** Gauss distribution */
+    /** Gauss distribution. */
     private static double gauss(double x, double mean, double variance) {
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }

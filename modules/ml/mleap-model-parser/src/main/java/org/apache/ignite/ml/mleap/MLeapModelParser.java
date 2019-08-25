@@ -93,7 +93,7 @@ public class MLeapModelParser implements ModelParser<NamedVector, Double, MLeapM
             throw new IllegalArgumentException("Parser supports only scalar outputs");
 
         return output.get(0).name();
-    }
+    }ń
 
     /**
      * Util method that checks that output schema contains only double types and returns list of field names.
