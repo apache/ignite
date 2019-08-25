@@ -2119,10 +2119,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         SchemaIndexCacheVisitorClosure clo;
 
-        boolean idxStoreMissing = !pageStore.hasIndexStore(cctx.groupId());
-
-        if (idxStoreMissing ||
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.FORCE_FULL_INDEX_REBUILD, true)) {
+        if (!pageStore.hasIndexStore(cctx.groupId())) {
             // If there are no index store, rebuild all indexes.
             clo = new IndexRebuildFullClosure(cctx.queries());
         }
@@ -2136,8 +2133,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 tblDesc.table().collectIndexesForPartialRebuild(clo0);
             }
 
-            if (clo0.hasIndexes())
-                clo = clo0;
+            if (clo0.hasIndexes()) {
+                if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.FORCE_FULL_INDEX_REBUILD, true))
+                    clo = new IndexRebuildFullClosure(cctx.queries());
+                else
+                    clo = clo0;
+            }
             else
                 return null;
         }
