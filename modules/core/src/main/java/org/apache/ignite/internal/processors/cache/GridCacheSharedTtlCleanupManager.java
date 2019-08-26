@@ -16,8 +16,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -48,18 +49,11 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Map of registered ttl managers, where the cache id is used as the key. */
-    private final Map<Integer, GridCacheTtlManager> mgrs = new HashMap<>();
+    private final Map<Integer, GridCacheTtlManager> mgrs = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        lock.lock();
-
-        try {
-            stopCleanupWorker();
-        }
-        finally {
-            lock.unlock();
-        }
+        stopCleanupWorker();
     }
 
     /**
@@ -68,17 +62,10 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      * @param mgr ttl manager of cache.
      * */
     public void register(GridCacheTtlManager mgr) {
-        lock.lock();
+        if (mgrs.isEmpty())
+            startCleanupWorker();
 
-        try {
-            if (cleanupWorker == null)
-                startCleanupWorker();
-
-            mgrs.put(mgr.context().cacheId(), mgr);
-        }
-        finally {
-            lock.unlock();
-        }
+        mgrs.put(mgr.context().cacheId(), mgr);
     }
 
     /**
@@ -87,17 +74,10 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      * @param mgr ttl manager of cache.
      * */
     public void unregister(GridCacheTtlManager mgr) {
-        lock.lock();
+        mgrs.remove(mgr.context().cacheId());
 
-        try {
-            mgrs.remove(mgr.context().cacheId());
-
-            if (mgrs.isEmpty())
-                stopCleanupWorker();
-        }
-        finally {
-            lock.unlock();
-        }
+        if (mgrs.isEmpty())
+            stopCleanupWorker();
     }
 
     /**
@@ -120,24 +100,37 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      *
      */
     private void startCleanupWorker() {
-        assert lock.isHeldByCurrentThread() : "The lock must be held by the current thread.";
+        lock.lock();
 
-        cleanupWorker = new CleanupWorker();
+        try {
+            if (cleanupWorker != null)
+                return;
 
-        new IgniteThread(cleanupWorker).start();
+            cleanupWorker = new CleanupWorker();
+
+            new IgniteThread(cleanupWorker).start();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
      *
      */
     private void stopCleanupWorker() {
-        assert lock.isHeldByCurrentThread() : "The lock must be held by the current thread.";
+        lock.lock();
 
-        if (null != cleanupWorker) {
-            U.cancel(cleanupWorker);
-            U.join(cleanupWorker, log);
+        try {
+            if (null != cleanupWorker) {
+                U.cancel(cleanupWorker);
+                U.join(cleanupWorker, log);
 
-            cleanupWorker = null;
+                cleanupWorker = null;
+            }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -169,43 +162,32 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
                 assert !cctx.kernalContext().recoveryMode();
 
+                final AtomicBoolean expiredRemains = new AtomicBoolean();
+
                 while (!isCancelled()) {
-                    boolean expiredRemains = false;
+                    expiredRemains.set(false);
 
-                    Map<Integer, GridCacheTtlManager> cp;
+                    for (Map.Entry<Integer, GridCacheTtlManager> mgr : mgrs.entrySet()) {
+                        updateHeartbeat();
 
-                    lock.lockInterruptibly();
+                        Integer processedCacheID = mgr.getKey();
 
-                    try {
-                        cp = new HashMap<>(mgrs);
-                    }
-                    finally {
-                        lock.unlock();
-                    }
+                        // Need to be sure that the cache to be processed will not be unregistered and,
+                        // therefore, stopped during the process of expiration is in progress.
+                        mgrs.computeIfPresent(processedCacheID, (id, m) -> {
+                            if (m.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
+                                expiredRemains.set(true);
 
-                    for (Map.Entry<Integer, GridCacheTtlManager> mgr : cp.entrySet()) {
-                        lock.lockInterruptibly();
+                            return m;
+                        });
 
-                        try {
-                            if (!mgrs.containsKey(mgr.getKey()))
-                                continue;
-
-                            updateHeartbeat();
-
-                            if (mgr.getValue().expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
-                                expiredRemains = true;
-
-                            if (isCancelled())
-                                return;
-                        }
-                        finally {
-                            lock.unlock();
-                        }
+                        if (isCancelled())
+                            return;
                     }
 
                     updateHeartbeat();
 
-                    if (!expiredRemains)
+                    if (!expiredRemains.get())
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
 
                     onIdle();
