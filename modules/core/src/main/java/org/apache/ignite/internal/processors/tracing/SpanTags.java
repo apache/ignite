@@ -61,6 +61,8 @@ public class SpanTags {
     public static final String EVENT_NODE = tag(EVENT, NODE);
     /** */
     public static final String NODE_ID = tag(NODE, ID);
+    /** */
+    public static final String MESSAGE = "message";
 
     /** */
     private SpanTags() {}

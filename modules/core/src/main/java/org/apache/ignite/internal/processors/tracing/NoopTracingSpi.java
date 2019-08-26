@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class NoopTracingSpi extends IgniteSpiAdapter implements TracingSpi {
     /** Noop span. */
-    private static final Span NOOP_SPAN = new NoopSpan();
+    private static final Span NOOP_SPAN = NoopSpan.INSTANCE;
 
     /** Noop serialized span. */
     private static final byte[] NOOP_SERIALIZED_SPAN = new byte[0];

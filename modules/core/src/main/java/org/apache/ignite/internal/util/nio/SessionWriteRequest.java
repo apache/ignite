@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -74,4 +75,11 @@ public interface SessionWriteRequest {
      *
      */
     public void onMessageWritten();
+
+    /**
+     * Stored span for tracing.
+     *
+     * @return Span.
+     */
+    Span span();
 }

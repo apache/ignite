@@ -40,7 +40,8 @@ public class Traces {
         /**
          * Default constructor.
          */
-        private Discovery() {}
+        private Discovery() {
+        }
     }
 
     /**
@@ -53,11 +54,37 @@ public class Traces {
         /**
          * Default constructor.
          */
-        private Exchange() {}
+        private Exchange() {
+        }
+    }
+
+    /**
+     * Communication traces.
+     */
+    public static class Communication {
+        /**
+         * Default constructor.
+         */
+        private Communication() {
+        }
+
+        /** Job execution request. */
+        public static final String JOB_EXECUTE_REQUEST = "communication.job.execute.request";
+        /** Job execution response. */
+        public static final String JOB_EXECUTE_RESPONSE = "communication.job.execute.response";
+        /** Socket write action. */
+        public static final String SOCKET_WRITE = "socket.write";
+        /** Socket read action. */
+        public static final String SOCKET_READ = "socket.read";
+        /** Process regular. */
+        public static final String REGULAR_PROCESS = "process.regular";
+        /** Process ordered. */
+        public static final String ORDERED_PROCESS = "process.ordered";
     }
 
     /**
      * Default constructor.
      */
-    private Traces() {}
+    private Traces() {
+    }
 }
