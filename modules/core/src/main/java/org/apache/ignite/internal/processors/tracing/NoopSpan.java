@@ -25,6 +25,10 @@ public class NoopSpan implements Span {
     /** Instance. */
     public static final Span INSTANCE = new NoopSpan();
 
+    private NoopSpan(){
+
+    }
+
     /** {@inheritDoc} */
     @Override public Span addTag(String tagName, String tagVal) {
         return this;

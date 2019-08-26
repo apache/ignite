@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.tracing.messages;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridJobExecuteRequest;
+import org.apache.ignite.internal.GridJobExecuteResponse;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.tracing.Traces;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -35,7 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustom
  */
 public class TraceableMessagesTable {
     /** Message trace lookup table. */
-    private static final Map<Class<? extends TraceableMessage>, String> msgTraceLookupTable = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, String> msgTraceLookupTable = new ConcurrentHashMap<>();
 
     static {
         msgTraceLookupTable.put(TcpDiscoveryJoinRequestMessage.class, Traces.Discovery.NODE_JOIN_REQUEST);
@@ -45,10 +48,13 @@ public class TraceableMessagesTable {
         msgTraceLookupTable.put(TcpDiscoveryNodeLeftMessage.class, Traces.Discovery.NODE_LEFT);
         msgTraceLookupTable.put(TcpDiscoveryCustomEventMessage.class, Traces.Discovery.CUSTOM_EVENT);
         msgTraceLookupTable.put(TcpDiscoveryServerOnlyCustomEventMessage.class, Traces.Discovery.CUSTOM_EVENT);
+        msgTraceLookupTable.put(GridJobExecuteRequest.class, Traces.Communication.JOB_EXECUTE_REQUEST);
+        msgTraceLookupTable.put(GridJobExecuteResponse.class, Traces.Communication.JOB_EXECUTE_RESPONSE);
     }
 
     /** */
-    private TraceableMessagesTable() {};
+    private TraceableMessagesTable() {
+    }
 
     /**
      * @param msgCls Traceable message class.
@@ -61,5 +67,19 @@ public class TraceableMessagesTable {
             throw new IgniteException("Trace name is not defined for " + msgCls);
 
         return traceName;
+    }
+
+    /**
+     * @param obj Traceable message object.
+     * @return Trace name associated with message with given class.
+     */
+    public static String traceName(Object obj) {
+        if (obj == null)
+            return "unknown";
+
+        if (obj instanceof GridIoMessage)
+            return traceName(((GridIoMessage)obj).message());
+
+        return msgTraceLookupTable.getOrDefault(obj.getClass(), obj.getClass().getSimpleName());
     }
 }
