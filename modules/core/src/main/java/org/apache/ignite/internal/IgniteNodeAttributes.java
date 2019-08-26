@@ -211,6 +211,8 @@ public final class IgniteNodeAttributes {
     /** Supported features. */
     public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";
 
+    /** */
+    public static final String ATTR_USE_POOL_FOR_LAZY_QUERIES = ATTR_PREFIX + ".query.lazy.usepool";
     /**
      * Enforces singleton.
      */

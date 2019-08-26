@@ -1190,6 +1190,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_SMART_DR_THROTTLING =
         "IGNITE_DISABLE_SMART_DR_THROTTLING";
 
+    /** */
+    public static final String IGNITE_USE_POOL_FOR_LAZY_QUERIES = "IGNITE_USE_POOL_FOR_LAZY_QUERIES";
+
     /**
      * Enforces singleton.
      */
