@@ -1228,6 +1228,7 @@ public class QueryUtils {
      *
      * @param schemaName Schema name.
      * @param tblName Table name.
+     * @param tblDigest Table digest.
      * @return Value type name.
      */
     public static String createTableValueTypeName(String schemaName, String tblName, String tblDigest) {

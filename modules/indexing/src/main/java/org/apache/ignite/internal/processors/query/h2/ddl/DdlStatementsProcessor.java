@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.security.MessageDigest;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -722,40 +723,39 @@ public class DdlStatementsProcessor {
     /**
      * Creates table digest as MD5 hash from sorted list of column names and types.
      *
-     * @param tbl Create table command
+     * @param tbl Create table command.
      * @return Digest from sorted list of column names and types.
      */
     private static String createFieldsDigest(GridSqlCreateTable tbl) {
         try {
-            List<String> fieldDigests = new ArrayList<>(tbl.columns().size());
+            String concatedFields = concatFields(tbl);
 
-            for (Map.Entry<String, GridSqlColumn> e : tbl.columns().entrySet()) {
-                String colName = e.getKey();
-                String colType = getTypeClassName(e.getValue());
-
-                String fd = "[" + colName + ":" + colType + "]";
-
-                fieldDigests.add(fd.toUpperCase());
-            }
-
-            Collections.sort(fieldDigests);
-
-            String fieldsDigest = String.join(", ", fieldDigests);
-
-            MessageDigest md = MessageDigest.getInstance("MD5");
-
-            md.update(fieldsDigest.getBytes());
-
-            StringBuilder sb = new StringBuilder();
-
-            for (byte md5Byte : md.digest())
-                sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
-
-            return sb.toString();
+            return U.calculateMD5(new ByteArrayInputStream(concatedFields.getBytes()));
         }
-        catch (NoSuchAlgorithmException e) {
+        catch (NoSuchAlgorithmException | IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param tbl Table.
+     * @return Concated table fields and their types.
+     */
+    private static String concatFields(GridSqlCreateTable tbl) {
+        List<String> fieldDigests = new ArrayList<>(tbl.columns().size());
+
+        for (Map.Entry<String, GridSqlColumn> e : tbl.columns().entrySet()) {
+            String colName = e.getKey();
+            String colType = getTypeClassName(e.getValue());
+
+            String fd = "[" + colName + ":" + colType + "]";
+
+            fieldDigests.add(fd.toUpperCase());
+        }
+
+        Collections.sort(fieldDigests);
+
+        return String.join(", ", fieldDigests);
     }
 
     /**
