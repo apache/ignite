@@ -1852,6 +1852,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param name Instance name.
+     */
+    protected void cleanPersistenceDir(String name) throws Exception {
+        String dn2DirName = name.replace(".", "_");
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/archive/" + dn2DirName, true));
+    }
+
+    /**
      * @param aff Affinity.
      * @param key Counter.
      * @param node Target node.
