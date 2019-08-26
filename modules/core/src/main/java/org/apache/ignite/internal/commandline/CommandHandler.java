@@ -307,10 +307,17 @@ public class CommandHandler {
             if (isConnectionError(e)) {
                 IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
 
-                if (cause != null && cause.getMessage() != null && cause.getMessage().contains("SSL"))
-                    e = cause;
+                if (isConnectionClosedSilentlyException(e))
+                    logger.severe("Connection to cluster failed. Please check firewall settings and " +
+                        "client and server are using the same SSL configuration.");
+                else {
+                    if (isSSLMisconfigurationError(cause))
+                        e = cause;
 
-                logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
+                    logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
+
+                }
+
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 return EXIT_CODE_CONNECTION_FAILED;
@@ -342,6 +349,53 @@ public class CommandHandler {
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
         }
+    }
+
+    /**
+     * Analyses passed exception to find out whether it is related to SSL misconfiguration issues.
+     *
+     * (!) Implementation depends heavily on structure of exception stack trace
+     * thus is very fragile to any changes in that structure.
+     *
+     * @param e Exception to analyze.
+     *
+     * @return {@code True} if exception may be related to SSL misconfiguration issues.
+     */
+    private boolean isSSLMisconfigurationError(Throwable e) {
+        return e != null && e.getMessage() != null && e.getMessage().contains("SSL");
+    }
+
+    /**
+     * Analyses passed exception to find out whether it is caused by server closing connection silently.
+     * This happens when client tries to establish unprotected connection
+     * to the cluster supporting only secured communications (e.g. when server is configured to use SSL certificates
+     * and client is not).
+     *
+     * (!) Implementation depends heavily on structure of exception stack trace
+     * thus is very fragile to any changes in that structure.
+     *
+     * @param e Exception to analyse.
+     * @return {@code True} if exception may be related to the attempt to establish unprotected connection
+     * to secured cluster.
+     */
+    private boolean isConnectionClosedSilentlyException(Throwable e) {
+        if (!(e instanceof GridClientDisconnectedException))
+            return false;
+
+        Throwable cause = e.getCause();
+
+        if (cause == null)
+            return false;
+
+        cause = cause.getCause();
+
+        if (cause instanceof GridClientConnectionResetException &&
+            cause.getMessage() != null &&
+            cause.getMessage().contains("Failed to perform handshake")
+        )
+            return true;
+
+        return false;
     }
 
     /**
