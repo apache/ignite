@@ -112,6 +112,30 @@ checkJava() {
 }
 
 #
+# JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
+#
+# ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
+#
+if [ -z "$JVM_OPTS" ] ; then
+    JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
+fi
+
+#
+# Disable update notifier.
+#
+JVM_OPTS="-DIGNITE_UPDATE_NOTIFIER=false ${JVM_OPTS}"
+
+#
+# Set 'file.encoding' to UTF-8 default if not specified otherwise
+#
+case "${JVM_OPTS:-}" in
+    *-Dfile.encoding=*)
+        ;;
+    *)
+        JVM_OPTS="${JVM_OPTS:-} -Dfile.encoding=UTF-8";;
+esac
+
+#
 # Discover path to Java executable and check it's version.
 #
 checkJava
@@ -130,7 +154,6 @@ elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
         --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
         --illegal-access=permit \
-        --add-modules=java.transaction \
         --add-modules=java.xml.bind \
         ${JVM_OPTS}"
 

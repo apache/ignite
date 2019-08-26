@@ -19,6 +19,8 @@ package org.apache.ignite.console;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import static org.springframework.boot.Banner.Mode.OFF;
+
 /**
  * Web console launcher.
  */
@@ -28,6 +30,10 @@ public class Application {
      * @param args Args.
      */
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+        SpringApplication app = new SpringApplication(Application.class);
+
+        app.setBannerMode(OFF);
+
+        app.run(args);
     }
 }

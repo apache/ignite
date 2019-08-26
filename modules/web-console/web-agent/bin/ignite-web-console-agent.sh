@@ -85,6 +85,16 @@ if [ -z "${JVM_OPTS:-}" ] ; then
     JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
 fi
 
+#
+# Set 'file.encoding' to UTF-8 default if not specified otherwise
+#
+case "${JVM_OPTS:-}" in
+    *-Dfile.encoding=*)
+        ;;
+    *)
+        JVM_OPTS="${JVM_OPTS:-} -Dfile.encoding=UTF-8";;
+esac
+
 # https://confluence.atlassian.com/kb/basic-authentication-fails-for-outgoing-proxy-in-java-8u111-909643110.html
 JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true -Djdk.http.auth.tunneling.disabledSchemes="
 
@@ -114,7 +124,6 @@ elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
         --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
         --illegal-access=permit \
-        --add-modules=java.transaction \
         --add-modules=java.xml.bind \
         ${JVM_OPTS}"
 

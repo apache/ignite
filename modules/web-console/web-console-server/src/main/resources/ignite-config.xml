@@ -21,6 +21,8 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+
         <property name="consistentId" value="we-console-data"/>
         <property name="metricsLogFrequency" value="0"/>
         <property name="queryThreadPoolSize" value="16"/>
@@ -31,32 +33,35 @@
         <property name="connectorConfiguration"><null/></property>
         <property name="clientConnectorConfiguration"><null/></property>
 
-        <!-- Recommened by CS team. -->
+        <!-- Recommended by CS team. -->
         <property name="transactionConfiguration">
             <bean class="org.apache.ignite.configuration.TransactionConfiguration">
                 <property name="txTimeoutOnPartitionMapExchange" value="#{60L * 1000L}"/>
             </bean>
         </property>
 
-        <!-- Persitence required to store user data on disk. -->
+        <!-- Persistence required to store user data on disk. -->
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="persistenceEnabled" value="true"/>
+
+                        <property name="maxSize" value="#{256 * 1024 * 1024}"/>
                     </bean>
                 </property>
+
+                <property name="maxWalArchiveSize" value="#{128 * 1024 * 1024}"/>
+
+                <!-- Disabling WAL archiving. -->
+                <property name="walArchivePath" value="db/wal"/>
             </bean>
         </property>
 
         <!-- Logging configuration. -->
         <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.java.JavaLogger">
-                <constructor-arg type="java.util.logging.Logger">
-                    <bean class="java.util.logging.Logger">
-                        <constructor-arg type="java.lang.String" value="global"/>
-                    </bean>
-                </constructor-arg>
+            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
+                <constructor-arg type="java.lang.String" value="log4j2.xml"/>
             </bean>
         </property>
 
