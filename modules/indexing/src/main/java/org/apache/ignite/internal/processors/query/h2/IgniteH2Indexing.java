@@ -1677,8 +1677,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // To prevent it we keep old context and restore after.
         GridH2QueryContext oldCtx = GridH2QueryContext.get();
 
-        if(oldCtx != null)
+        if (oldCtx != null) {
             GridH2QueryContext.clearThreadLocal();
+
+            log.debug("Query context is not empty. Single thread is shared between few queries." +
+                " Saving query context for switching between queries. [oldCtx=" + oldCtx + ']');
+        }
 
         try {
             GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
