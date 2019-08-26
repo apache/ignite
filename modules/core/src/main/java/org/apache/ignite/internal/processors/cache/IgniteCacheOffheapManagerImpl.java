@@ -1718,10 +1718,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            // Set real stored cacheId to properly calculate row size.
-            if (oldRow != null)
-                oldRow.cacheId(cacheId);
-
             DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
             if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData()))
@@ -1737,13 +1733,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             assert dataRow.link() != 0 : dataRow;
 
-            if (grp.sharedGroup()) {
-                if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                    dataRow.cacheId(cctx.cacheId());
-
-                if (oldRow != null && oldRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                    oldRow.cacheId(cctx.cacheId());
-            }
+            if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
+                dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
         }
@@ -2750,7 +2741,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cctx Cache context.
          * @param key Key.
          * @param oldRow Removed row.
-         * @tombstoneRow Tombstone row (if tombstone was created for remove).
+         * @param tombstoneRow Tombstone row (if tombstone was created for remove).
          * @throws IgniteCheckedException If failed.
          */
         private void finishRemove(GridCacheContext cctx,

@@ -190,12 +190,12 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
                 cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false)).findMetric("Tombstones");
 
         // On first node there should not be tombstones.
-        assertEquals(0, tombstoneMetric0.get());
+        assertEquals(0, tombstoneMetric0.value());
 
         if (expTombstone)
-            assertEquals(removed.size(), tombstoneMetric1.get());
+            assertEquals(removed.size(), tombstoneMetric1.value());
         else
-            assertEquals(0, tombstoneMetric1.get());
+            assertEquals(0, tombstoneMetric1.value());
 
         // Update some of removed keys, this should remove tombstones.
         for (int i = 0; i < KEYS; i++) {
@@ -208,12 +208,12 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
 
         assert !removed.isEmpty();
 
-        assertEquals(0, tombstoneMetric0.get());
+        assertEquals(0, tombstoneMetric0.value());
 
         if (expTombstone)
-            assertEquals(removed.size(), tombstoneMetric1.get());
+            assertEquals(removed.size(), tombstoneMetric1.value());
         else
-            assertEquals(0, tombstoneMetric1.get());
+            assertEquals(0, tombstoneMetric1.value());
 
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock();
 
@@ -231,15 +231,15 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
         // Tombstones should be removed after once rebalance is completed.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return tombstoneMetric1.get() == 0;
+                return tombstoneMetric1.value() == 0;
             }
         }, 30_000);
 
-        assertEquals(0, tombstoneMetric1.get());
+        assertEquals(0, tombstoneMetric1.value());
     }
 
     /**
-     *
+     * @param node Node.
      */
     private void blockRebalance(Ignite node) {
         final int grpId = groupIdForCache(ignite(0), DEFAULT_CACHE_NAME);

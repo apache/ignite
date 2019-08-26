@@ -280,11 +280,11 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return tombstones.get() == 0;
+                    return tombstones.value() == 0;
                 }
             }, 30_000);
 
-            assertEquals("Failed to wait for tombstone cleanup: " + node.name(), 0, tombstones.get());
+            assertEquals("Failed to wait for tombstone cleanup: " + node.name(), 0, tombstones.value());
         }
     }
 

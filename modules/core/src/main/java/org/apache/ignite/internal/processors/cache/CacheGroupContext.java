@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -189,6 +190,9 @@ public class CacheGroupContext {
 
     /** Cache group metrics. */
     private final CacheGroupMetricsImpl metrics;
+
+    /** */
+    private final boolean forceTombstones = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FORCE_TOMBSTONES_TESTS, false);
 
     /**
      * @param ctx Context.
@@ -1296,6 +1300,9 @@ public class CacheGroupContext {
      * @return {@code True} if need create temporary tombstones entries for removed data.
      */
     public boolean supportsTombstone() {
+        if (forceTombstones)
+            return true;
+
         return !mvccEnabled && !isLocal();
     }
 
@@ -1304,6 +1311,9 @@ public class CacheGroupContext {
      * @return {@code True} if need create tombstone for remove in given partition.
      */
     public boolean createTombstone(@Nullable GridDhtLocalPartition part) {
+        if (forceTombstones && part != null)
+            return true;
+
         return part != null && supportsTombstone() && part.state() == GridDhtPartitionState.MOVING;
     }
 

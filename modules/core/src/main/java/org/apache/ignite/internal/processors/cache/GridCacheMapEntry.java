@@ -1712,9 +1712,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
 
-                if (cctx.cancelRemove(interceptRes)) {
+                if (cctx.cancelRemove(interceptRes))
                     return new GridCacheUpdateTxResult(false, logPtr);
-                }
             }
 
             if (cctx.group().createTombstone(localPartition())) {
@@ -5856,7 +5855,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
          * @param val New value.
          * @param ver New version.
          * @param expireTime New expire time.
-         * @param predicate Optional predicate.
+         * @param p Optional predicate.
          */
         UpdateClosure(GridCacheMapEntry entry,
             @Nullable CacheObject val,

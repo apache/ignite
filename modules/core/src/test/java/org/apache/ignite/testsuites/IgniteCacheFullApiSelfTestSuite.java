@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtom
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedReloadAllSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledAtomicOnheapFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledFullApiForceTombstonesTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledMultiNodeP2PDisabledFullApiSelfTest;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFilteredPutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiForceTombstonesTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeCounterSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest;
@@ -148,6 +150,10 @@ import org.junit.runners.Suite;
     GridCachePartitionedNearDisabledOnheapMultiNodeFullApiSelfTest.class,
     GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest.class,
     GridCacheAtomicOnheapMultiNodeFullApiSelfTest.class,
+
+    // With forced tombstones.
+    GridCachePartitionedFullApiForceTombstonesTest.class,
+    GridCachePartitionedNearDisabledFullApiForceTombstonesTest.class,
 
     // Multithreaded.
     GridCacheLocalFullApiMultithreadedSelfTest.class,
