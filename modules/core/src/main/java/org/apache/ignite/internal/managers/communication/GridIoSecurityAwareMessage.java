@@ -93,7 +93,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 
     /** {@inheritDoc} */
@@ -111,13 +111,13 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         }
 
         switch (writer.state()) {
-            case 7:
+            case 8:
                 if (!writer.writeByteArray("secCtx", secCtx))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeUuid("secSubjId", secSubjId))
                     return false;
 
@@ -139,7 +139,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
             return false;
 
         switch (reader.state()) {
-            case 7:
+            case 8:
                 secCtx = reader.readByteArray("secCtx");
 
                 if (!reader.isLastRead())
@@ -147,7 +147,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 secSubjId = reader.readUuid("secSubjId");
 
                 if (!reader.isLastRead())
