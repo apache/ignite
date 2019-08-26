@@ -153,14 +153,26 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
      *  </ul>
      *  <p>consistency violation event will be recorded in case it's configured as recordable</li>
-     *  <li>for atomic caches: consistency violation exception will be thrown.</li>
+     *  <li>for atomic caches: consistency violation exception will be thrown.
+     *  Be aware that consistency violation event will not be recorded in this case.</li>
      * </ul>
      * <p>
      * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
      * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
      * cached value, for example already read the value or performed a write, you'll gain the cached value.
      * <p>
-     * Local caches and caches without backups, obviously, can not be checked using this feature.
+     * Due to the nature of the atomic cache, false-positive results can be observed. For example, an attempt to check
+     * consistency under cache loading may lead to consistency violation exception. By default, the implementation tries
+     * to check the given key three times. The number of attempts can be changed using
+     * {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
+     * <p>
+     * Consistency check is incompatible with the following cache configurations:
+     * <ul>
+     *     <li>Caches without backups.</li>
+     *     <li>Local caches.</li>
+     *     <li>Near caches.</li>
+     *     <li>Caches that use "read-through" mode.</li>
+     * </ul>
      * <p>
      * Full list of repairable methods:
      * <ul>
