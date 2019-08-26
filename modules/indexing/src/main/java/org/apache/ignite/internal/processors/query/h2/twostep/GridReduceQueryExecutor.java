@@ -839,8 +839,8 @@ public class GridReduceQueryExecutor {
                         if (oldCtx != null) {
                             GridH2QueryContext.clearThreadLocal();
 
-                            U.warn(log, "Query context wasn't empty. One thread is used for few queries in the same time." +
-                                "[oldCtx=" + oldCtx + ']');
+                            log.debug("Query context is not empty. Single thread is shared between few queries." +
+                                " Saving query context for switching between queries. [oldCtx=" + oldCtx + ']');
                         }
 
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
