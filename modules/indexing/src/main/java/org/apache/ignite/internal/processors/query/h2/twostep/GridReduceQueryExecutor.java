@@ -832,6 +832,17 @@ public class GridReduceQueryExecutor {
 
                         H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
 
+                        // The part executed in user thread. In case user open few iterators ThreadLocal context will be invalid.
+                        // To prevent it we keep old context and restore after.
+                        GridH2QueryContext oldCtx = GridH2QueryContext.get();
+
+                        if (oldCtx != null) {
+                            GridH2QueryContext.clearThreadLocal();
+
+                            U.warn(log, "Query context wasn't empty. One thread is used for few queries in the same time." +
+                                "[oldCtx=" + oldCtx + ']');
+                        }
+
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize()).distributedJoinMode(OFF));
 
@@ -859,6 +870,9 @@ public class GridReduceQueryExecutor {
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
+
+                            if(oldCtx != null)
+                                GridH2QueryContext.set(oldCtx);
                         }
                     }
                 }
