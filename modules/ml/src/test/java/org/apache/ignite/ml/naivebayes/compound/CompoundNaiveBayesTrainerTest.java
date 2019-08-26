@@ -41,7 +41,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
-    /** */
+    /** Trainer under test. */
     private CompoundNaiveBayesTrainer trainer;
 
     /** Initialization {@code CompoundNaiveBayesTrainer}. */
@@ -56,7 +56,8 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
                 .withDiscreteFeatureIdsToSkip(asList(0, 1, 2));
     }
 
-    @Test /** */
+    /** Test. */
+    @Test
     public void test() {
         CompoundNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
@@ -67,7 +68,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         assertGaussianModel(model.getGaussianModel());
     }
 
-    /** */
+    /** Discrete model assertions. */
     private void assertDiscreteModel(DiscreteNaiveBayesModel model) {
         double[][][] expectedProbabilites = new double[][][] {
             {
@@ -93,7 +94,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
     }
 
-    /** */
+    /** Gaussian model assertions. */
     private void assertGaussianModel(GaussianNaiveBayesModel model) {
         double[] priorProbabilities = new double[] {.5, .5};
 

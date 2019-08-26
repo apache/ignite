@@ -23,6 +23,7 @@ import java.util.Map;
 /** Data class which contains test data with precalculated statistics. */
 final class Data {
 
+    /** Private constructor. */
     private Data() {
     }
 

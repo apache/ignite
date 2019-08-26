@@ -39,7 +39,8 @@ public class CompoundNaiveBayesModelTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
-    @Test /** */
+    /** Test. */
+    @Test
     public void testPredictOnlyGauss() {
         GaussianNaiveBayesModel gaussianModel =
             new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
@@ -54,7 +55,8 @@ public class CompoundNaiveBayesModelTest {
         assertEquals(LABEL_2, model.predict(observation), PRECISION);
     }
 
-    @Test /** */
+    /** Test. */
+    @Test
     public void testPredictOnlyDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
             new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
@@ -69,7 +71,8 @@ public class CompoundNaiveBayesModelTest {
         assertEquals(LABEL_2, model.predict(observation), PRECISION);
     }
 
-    @Test /** */
+    /** Test. */
+    @Test
     public void testPredictGausAndDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
             new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
