@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -236,6 +237,50 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies restrictions for new tag provided for {@link IgniteCluster#tag(String)} method:
+     * <ol>
+     *     <li>Not null.</li>
+     *     <li>Non-empty.</li>
+     *     <li>Below 280 symbols (max tag length).</li>
+     * </ol>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testChangeTagExceptions() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+
+        try {
+            ig0.cluster().tag(null);
+
+            fail("Expected exception has not been thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(e.getMessage().contains("cannot be null"));
+        }
+
+        try {
+            ig0.cluster().tag("");
+
+            fail("Expected exception has not been thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(e.getMessage().contains("should not be empty"));
+        }
+
+        String longString = new String(new char[281]);
+
+        try {
+            ig0.cluster().tag(longString);
+
+            fail("Expected exception has not been thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(e.getMessage().contains("Maximum tag length is exceeded"));
+        }
+    }
+
+    /**
      *  Verifies consistency of tag when set up in inactive and active clusters and on client nodes.
      *
      * @throws Exception If failed.
@@ -246,17 +291,14 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = startGrid(0);
 
-        boolean expectedExceptionThrown = false;
-
         try {
             ig0.cluster().tag(CUSTOM_TAG_0);
+
+            fail("Expected exception has not been thrown.");
         }
         catch (IgniteCheckedException e) {
-            if (e.getMessage().contains("Can not change cluster tag on inactive cluster."))
-                expectedExceptionThrown = true;
+            assertTrue(e.getMessage().contains("Can not change cluster tag on inactive cluster."));
         }
-
-        assertTrue(expectedExceptionThrown);
 
         IgniteEx ig1 = startGrid(1);
 
