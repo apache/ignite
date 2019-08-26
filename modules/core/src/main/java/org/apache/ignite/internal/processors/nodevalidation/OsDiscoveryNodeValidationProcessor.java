@@ -21,6 +21,7 @@ import java.util.HashSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.ru.IgniteRollingUpgradeStatus;
 import org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult;
@@ -39,6 +40,14 @@ import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeR
  * Node validation.
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
+    /** Default value for rolling upgrade status. */
+    private static final RollingUpgradeStatus DEFAULT_ROLLING_UPGRADE_STATUS = new IgniteRollingUpgradeStatus(
+        false,
+        false,
+        IgniteProductVersion.fromString(IgniteVersionUtils.VER_STR),
+        null,
+        new HashSet<>(Arrays.asList(IgniteFeatures.values())));
+
     /**
      * @param ctx Kernal context.
      */
@@ -105,11 +114,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
     /** {@inheritDoc} */
     @Override public RollingUpgradeStatus getStatus() {
-        return new IgniteRollingUpgradeStatus(
-            false,
-            false,
-            IgniteProductVersion.fromString(ctx.discovery().localNode().attribute(ATTR_BUILD_VER)),
-            null,
-            new HashSet<>(Arrays.asList(IgniteFeatures.values())));
+        return DEFAULT_ROLLING_UPGRADE_STATUS;
     }
 }
