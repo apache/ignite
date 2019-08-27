@@ -903,7 +903,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (cache.context().userCache()) {
                     // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
+                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), ctx, false);
 
                     DynamicCacheDescriptor desc = cacheDescriptor(cacheInfo.name());
 
@@ -946,7 +946,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
-        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc, ctx);
 
         ctx.query().onCacheStart(cacheInfo, schema, cacheDesc.sql());
     }
@@ -958,29 +958,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"unchecked"})
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
-        GridCacheContext ctx = cache.context();
+        GridCacheContext cctx = cache.context();
 
         try {
-            if (!cache.isNear() && ctx.shared().wal() != null) {
+            if (!cache.isNear() && cctx.shared().wal() != null) {
                 try {
-                    ctx.shared().wal().flush(null, false);
+                    cctx.shared().wal().flush(null, false);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to flush write-ahead log on cache stop " +
-                        "[cache=" + ctx.name() + "]", e);
+                        "[cache=" + cctx.name() + "]", e);
                 }
             }
 
-            sharedCtx.removeCacheContext(ctx);
+            sharedCtx.removeCacheContext(cctx);
 
             cache.stop();
 
-            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
+            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cctx, ctx, false);
 
-            ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
+            cctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
 
-            if (isNearEnabled(ctx)) {
-                GridDhtCacheAdapter dht = ctx.near().dht();
+            if (isNearEnabled(cctx)) {
+                GridDhtCacheAdapter dht = cctx.near().dht();
 
                 // Check whether dht cache has been started.
                 if (dht != null) {
@@ -998,9 +998,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            List<GridCacheManager> mgrs = ctx.managers();
+            List<GridCacheManager> mgrs = cctx.managers();
 
-            Collection<GridCacheManager> excludes = dhtExcludes(ctx);
+            Collection<GridCacheManager> excludes = dhtExcludes(cctx);
 
             // Reverse order.
             for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
@@ -1010,37 +1010,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     mgr.stop(cancel, destroy);
             }
 
-            ctx.kernalContext().continuous().onCacheStop(ctx);
+            cctx.kernalContext().continuous().onCacheStop(cctx);
 
-            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx, destroy);
+            cctx.kernalContext().cache().context().snapshot().onCacheStop(cctx, destroy);
 
-            ctx.kernalContext().coordinators().onCacheStop(ctx);
+            cctx.kernalContext().coordinators().onCacheStop(cctx);
 
-            ctx.group().stopCache(ctx, destroy);
+            cctx.group().stopCache(cctx, destroy);
 
-            U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
+            U.stopLifecycleAware(log, lifecycleAwares(cctx.group(), cache.configuration(), cctx.store().configuredStore()));
 
             IgnitePageStoreManager pageStore;
 
             if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
                 try {
-                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
+                    pageStore.removeCacheData(new StoredCacheData(cctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
-                        "[cache=" + ctx.name() + "]", e);
+                        "[cache=" + cctx.name() + "]", e);
                 }
             }
 
             if (log.isInfoEnabled()) {
-                if (ctx.group().sharedGroup())
-                    log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + ctx.group().name() + ']');
+                if (cctx.group().sharedGroup())
+                    log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + cctx.group().name() + ']');
                 else
                     log.info("Stopped cache [cacheName=" + cache.name() + ']');
             }
         }
         finally {
-            cleanup(ctx);
+            cleanup(cctx);
         }
     }
 
@@ -1832,7 +1832,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         if (!cctx.isRecoveryMode()) {
                             ctx.query().onCacheStart(
-                                new GridCacheContextInfo(cctx, cacheInfo.isClientCache()),
+                                new GridCacheContextInfo(cctx, ctx, cacheInfo.isClientCache()),
                                 cacheInfo.getCacheDescriptor().schema() != null
                                     ? cacheInfo.getCacheDescriptor().schema()
                                     : new QuerySchema(),
@@ -1895,7 +1895,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             finishRecovery(exchTopVer, cacheCtx);
         else {
             ctx.query().onCacheStart(
-                    new GridCacheContextInfo(cacheCtx, clientCache),
+                    new GridCacheContextInfo(cacheCtx, ctx, clientCache),
                     desc.schema() != null ? desc.schema() : new QuerySchema(),
                     desc.sql()
             );
@@ -2281,7 +2281,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grpCtx.onCacheStarted(cacheCtx);
 
-        ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, false),
+        ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, ctx, false),
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {

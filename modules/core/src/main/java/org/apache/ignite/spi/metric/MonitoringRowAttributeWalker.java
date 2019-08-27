@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -191,6 +192,9 @@ public class MonitoringRowAttributeWalker<R extends MonitoringRow<?>>  {
 
         for (int i = 0; i < methods.length; i++) {
             Method method = methods[i];
+
+            if (Modifier.isStatic(method.getModifiers()))
+                continue;
 
             if (SYSTEM_METHODS.contains(method.getName()))
                 continue;

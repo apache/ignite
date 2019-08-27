@@ -174,7 +174,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals("c1", scan.cacheName());
             assertEquals(cacheGroupId("c1", "g1"), scan.cacheGroupId());
             assertEquals(cacheId("c1"), scan.cacheId());
-            assertEquals("\"_KEY\" ASC", scan.columns());
+            assertNull(scan.columns());
             assertEquals(PK_IDX_NAME + SCAN_INDEX_NAME_SUFFIX, scan.indexName());
             assertEquals("PUBLIC", scan.schemaName());
             assertEquals("T1", scan.tableName());

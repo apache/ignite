@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
@@ -46,13 +47,15 @@ public class GridCacheContextInfo<K, V> {
     /** Full cache context. Can be {@code null} in case a cache is not started. */
     @Nullable private volatile GridCacheContext cctx;
 
+    private final GridKernalContext kctx;
+
     /**
      * Constructor of full cache context.
      *
      * @param cctx Cache context.
      * @param clientCache Client cache or not.
      */
-    public GridCacheContextInfo(GridCacheContext<K, V> cctx, boolean clientCache) {
+    public GridCacheContextInfo(GridCacheContext<K, V> cctx, GridKernalContext kctx, boolean clientCache) {
         config = cctx.config();
         dynamicDeploymentId = null;
         groupId = cctx.groupId();
@@ -61,6 +64,7 @@ public class GridCacheContextInfo<K, V> {
         this.clientCache = clientCache;
 
         this.cctx = cctx;
+        this.kctx = kctx;
     }
 
     /**
@@ -68,13 +72,15 @@ public class GridCacheContextInfo<K, V> {
      *
      * @param cacheDesc Cache descriptor.
      */
-    public GridCacheContextInfo(DynamicCacheDescriptor cacheDesc) {
+    public GridCacheContextInfo(DynamicCacheDescriptor cacheDesc, GridKernalContext kctx) {
         config = cacheDesc.cacheConfiguration();
         dynamicDeploymentId = cacheDesc.deploymentId();
         groupId = cacheDesc.groupId();
         cacheId = CU.cacheId(config.getName());
 
         clientCache = true;
+
+        this.kctx = kctx;
     }
 
     /**
@@ -162,5 +168,9 @@ public class GridCacheContextInfo<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "GridCacheContextInfo: " + name() + " " + (isCacheContextInited() ? "started" : "not started");
+    }
+
+    public GridKernalContext kernalContext() {
+        return kctx;
     }
 }

@@ -981,7 +981,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
-        cachesMonitoring.add(ccfg.getName(), startDesc);
+        cachesMonitoring.add(ccfg.getName(), new CacheView(startDesc));
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1417,7 +1417,7 @@ class ClusterCachesInfo {
             String cacheName = cacheData.cacheConfiguration().getName();
 
             registeredCaches.put(cacheName, desc);
-            cachesMonitoring.add(cacheName, desc);
+            cachesMonitoring.add(cacheName, new CacheView(desc));
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -2050,7 +2050,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
-        cachesMonitoring.add(cfg.getName(), desc);
+        cachesMonitoring.add(cfg.getName(), new CacheView(desc));
 
         assert old == null : old;
     }

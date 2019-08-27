@@ -89,6 +89,11 @@ public class CacheGroupView implements MonitoringRow<Integer> {
 
     /** */
     public String nodeFilter() {
+        return nodeFilter(ccfg);
+    }
+
+    /** */
+    public static String nodeFilter(CacheConfiguration<?, ?> ccfg) {
         IgnitePredicate<ClusterNode> nodeFilter = ccfg.getNodeFilter();
 
         if (nodeFilter instanceof CacheConfiguration.IgniteAllNodesPredicate)

@@ -36,13 +36,13 @@ public class SqlIndexView implements MonitoringRow<String> {
     private final H2IndexType type;
 
     /** */
-    private final int inlineSz;
+    private final Integer inlineSz;
 
     /** */
     private String cacheGrpName;
 
     /** */
-    public SqlIndexView(GridH2Table tbl, String cacheGrpName, Index idx, H2IndexType type, int inlineSz) {
+    public SqlIndexView(GridH2Table tbl, String cacheGrpName, Index idx, H2IndexType type, Integer inlineSz) {
         this.tbl = tbl;
         this.cacheGrpName = cacheGrpName;
         this.idx = idx;
@@ -101,7 +101,7 @@ public class SqlIndexView implements MonitoringRow<String> {
                 return H2Utils.indexColumnsSql(idx.getIndexColumns());
 
             case SCAN:
-                return H2Utils.indexColumnsSql(((H2TableScanIndex)idx).delegate().getIndexColumns());
+                return null;
 
             default:
                 return "???";
@@ -119,7 +119,7 @@ public class SqlIndexView implements MonitoringRow<String> {
     }
 
     /** */
-    public int inlineSize() {
+    public Integer inlineSize() {
         return inlineSz;
     }
 }

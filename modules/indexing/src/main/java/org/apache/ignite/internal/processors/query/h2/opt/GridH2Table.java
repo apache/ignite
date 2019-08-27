@@ -251,17 +251,14 @@ public class GridH2Table extends TableBase implements SqlTableView {
         // topology may not be initialized yet.
         tblStats = new TableStatistics(0, 0);
 
-        if (desc != null && desc.context() != null) {
-            GridKernalContext ctx = desc.context().kernalContext();
+        GridKernalContext ctx = cacheInfo.kernalContext();
 
-            idxMonList = ctx.metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
+        idxMonList = ctx.metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
 
-            for (Index idx : idxs)
-                addToMonitoring(idx);
+        for (Index idx : idxs)
+            addToMonitoring(idx);
 
-
-            log = ctx.log(getClass());
-        }
+        log = ctx.log(getClass());
     }
 
     /**
@@ -1632,10 +1629,6 @@ public class GridH2Table extends TableBase implements SqlTableView {
      * @param idx Index to monitor.
      */
     private void addToMonitoring(Index idx) {
-        if (idxMonList == null) {
-            return;
-        }
-
         String cacheGrpName = CacheGroupContext.cacheOrGroupName(cacheInfo.config());
 
         String idxId = metricName(identifierStr, idx.getName());
@@ -1648,7 +1641,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
             return;
         }
 
-        int inlineSz = -1;
+        Integer inlineSz = null;
 
         if (idx instanceof H2TreeIndexBase)
             inlineSz = ((H2TreeIndexBase)idx).inlineSize();

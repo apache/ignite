@@ -24,24 +24,29 @@ import java.util.List;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  * View that contains information about all the sql tables in the cluster.
  *
- * @deprecated Use monitoring list instead.
+ * @deprecated Use {@link GridMetricManager#list(String, String, Class)} instead.
  */
 @Deprecated
 public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
-
-    /** Schema manager. */
-    private final SchemaManager schemaMgr;
+    /** Index monitoring list. */
+    private MonitoringList<String, SqlIndexView> idxMonList;
 
     /**
      * Creates view with columns.
@@ -64,63 +69,25 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
             newColumn("INLINE_SIZE", Value.INT)
         );
 
-        this.schemaMgr = schemaMgr;
+        this.idxMonList = ctx.metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        SqlSystemViewColumnCondition tblNameCond = conditionForColumn("TABLE_NAME", first, last);
-
-        Predicate<GridH2Table> filter;
-
-        if (tblNameCond.isEquality()) {
-            String tblName = tblNameCond.valueForEquality().getString();
-
-            filter = tbl -> tblName.equals(tbl.getName());
-        }
-        else
-            filter = tbl -> true;
-
-        List<Row> rows = new ArrayList<>();
-
-        schemaMgr.dataTables().stream().filter(filter).forEach(tbl -> {
-            String schema = tbl.getSchema().getName();
-            String tblName = tbl.getName();
-            int cacheGrpId = tbl.cacheInfo().groupId();
-
-            CacheGroupDescriptor cacheGrpDesc = ctx.cache().cacheGroupDescriptors().get(cacheGrpId);
-
-            // We should skip all indexes related to the table in case regarding cache group has been removed.
-            if (cacheGrpDesc == null)
-                return;
-
-            String cacheGrpName = cacheGrpDesc.cacheOrGroupName();
-            int cacheId = tbl.cacheId();
-            String cacheName = tbl.cacheName();
-
-            List<IndexInformation> idxInfoList = tbl.indexesInformation();
-
-            for (IndexInformation idxInfo : idxInfoList) {
-                Object[] data = new Object[] {
-                    cacheGrpId,
-                    cacheGrpName,
-                    cacheId,
-                    cacheName,
-                    schema,
-                    tblName,
-                    idxInfo.name(),
-                    idxInfo.type(),
-                    idxInfo.keySql(),
-                    idxInfo.pk(),
-                    idxInfo.unique(),
-                    idxInfo.inlineSize()
-                };
-
-                rows.add(createRow(ses, data));
-            }
-        });
-
-        return rows.iterator();
+        return F.iterator(idxMonList.iterator(), idx -> createRow(ses,
+            idx.cacheGroupId(),
+            idx.cacheGroupName(),
+            idx.cacheId(),
+            idx.cacheName(),
+            idx.schemaName(),
+            idx.tableName(),
+            idx.indexName(),
+            idx.indexType(),
+            idx.columns(),
+            idx.isPk(),
+            idx.isUnique(),
+            idx.inlineSize()
+        ), true);
     }
 
     /** {@inheritDoc} */
@@ -130,6 +97,6 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return schemaMgr.dataTables().stream().mapToInt(t -> t.indexesInformation().size()).sum();
+        return idxMonList.size();
     }
 }

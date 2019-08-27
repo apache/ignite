@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.Collections;
 import java.util.Iterator;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.list.CacheGroupView;
@@ -31,7 +32,7 @@ import org.h2.value.Value;
 /**
  * System view: cache groups.
  *
- * @deprecated Use monitoring list instead.
+ * @deprecated Use {@link GridMetricManager#list(String, String, Class)} instead.
  */
 @Deprecated
 public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {

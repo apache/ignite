@@ -17,20 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.metric.list.CacheView;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
-
-import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
  * System view: caches.
@@ -39,6 +35,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
  */
 @Deprecated
 public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
+    /** Caches monitoring list. */
+    private final MonitoringList<String, CacheView> caches;
+
     /**
      * @param ctx Grid context.
      */
@@ -105,92 +104,87 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
             newColumn("MAX_QUERY_ITERATORS_COUNT", Value.INT),
             newColumn("DATA_REGION_NAME")
         );
+
+        this.caches = ctx.metric().list("caches", "Caches", CacheView.class);
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_NAME", first, last);
 
-        Collection<DynamicCacheDescriptor> caches;
+        Iterator<CacheView> res;
 
         if (nameCond.isEquality()) {
-            DynamicCacheDescriptor cache = ctx.cache().cacheDescriptor(nameCond.valueForEquality().getString());
+            CacheView cache = caches.get(nameCond.valueForEquality().getString());
 
-            caches = cache == null ? Collections.emptySet() : Collections.singleton(cache);
+            res = cache == null ? Collections.emptyIterator() : Collections.singleton(cache).iterator();
         }
         else
-            caches = ctx.cache().cacheDescriptors().values();
+            res = caches.iterator();
 
-        return F.iterator(caches,
-            cache -> {
-                CacheConfiguration ccfg = cache.cacheConfiguration();
-
-                return createRow(
-                    ses,
-                    cache.groupId(),
-                    cache.groupDescriptor().cacheOrGroupName(),
-                    cache.cacheId(),
-                    cache.cacheName(),
-                    cache.cacheType(),
-                    ccfg.getCacheMode(),
-                    ccfg.getAtomicityMode(),
-                    ccfg.isOnheapCacheEnabled(),
-                    ccfg.isCopyOnRead(),
-                    ccfg.isLoadPreviousValue(),
-                    ccfg.isReadFromBackup(),
-                    ccfg.getPartitionLossPolicy(),
-                    nodeFilter(ccfg),
-                    toStringSafe(ccfg.getTopologyValidator()),
-                    ccfg.isEagerTtl(),
-                    ccfg.getWriteSynchronizationMode(),
-                    ccfg.isInvalidate(),
-                    ccfg.isEventsDisabled(),
-                    ccfg.isStatisticsEnabled(),
-                    ccfg.isManagementEnabled(),
-                    ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups(),
-                    toStringSafe(ccfg.getAffinity()),
-                    toStringSafe(ccfg.getAffinityMapper()),
-                    ccfg.getRebalanceMode(),
-                    ccfg.getRebalanceBatchSize(),
-                    ccfg.getRebalanceTimeout(),
-                    ccfg.getRebalanceDelay(),
-                    ccfg.getRebalanceThrottle(),
-                    ccfg.getRebalanceBatchesPrefetchCount(),
-                    ccfg.getRebalanceOrder(),
-                    toStringSafe(ccfg.getEvictionFilter()),
-                    toStringSafe(ccfg.getEvictionPolicyFactory()),
-                    ccfg.getNearConfiguration() != null,
-                    ccfg.getNearConfiguration() != null ?
-                        toStringSafe(ccfg.getNearConfiguration().getNearEvictionPolicyFactory()) : null,
-                    ccfg.getNearConfiguration() != null ?
-                        ccfg.getNearConfiguration().getNearStartSize() : null,
-                    ccfg.getDefaultLockTimeout(),
-                    toStringSafe(ccfg.getInterceptor()),
-                    toStringSafe(ccfg.getCacheStoreFactory()),
-                    ccfg.isStoreKeepBinary(),
-                    ccfg.isReadThrough(),
-                    ccfg.isWriteThrough(),
-                    ccfg.isWriteBehindEnabled(),
-                    ccfg.getWriteBehindCoalescing(),
-                    ccfg.getWriteBehindFlushSize(),
-                    ccfg.getWriteBehindFlushFrequency(),
-                    ccfg.getWriteBehindFlushThreadCount(),
-                    ccfg.getWriteBehindBatchSize(),
-                    ccfg.getMaxConcurrentAsyncOperations(),
-                    toStringSafe(ccfg.getCacheLoaderFactory()),
-                    toStringSafe(ccfg.getCacheWriterFactory()),
-                    toStringSafe(ccfg.getExpiryPolicyFactory()),
-                    ccfg.isSqlEscapeAll(),
-                    ccfg.getSqlSchema(),
-                    ccfg.getSqlIndexMaxInlineSize(),
-                    ccfg.isSqlOnheapCacheEnabled(),
-                    ccfg.getSqlOnheapCacheMaxSize(),
-                    ccfg.getQueryDetailMetricsSize(),
-                    ccfg.getQueryParallelism(),
-                    ccfg.getMaxQueryIteratorsCount(),
-                    ccfg.getDataRegionName()
-                );
-            }, true);
+        return F.iterator(res, c -> createRow(
+            ses,
+            c.groupId(),
+            c.groupName(),
+            c.cacheId(),
+            c.cacheName(),
+            c.cacheType(),
+            c.cacheMode(),
+            c.atomicityMode(),
+            c.isOnheapCacheEnabled(),
+            c.isCopyOnRead(),
+            c.isLoadPreviousValue(),
+            c.isReadFromBackup(),
+            c.partitionLossPolicy(),
+            c.nodeFilter(),
+            c.topologyValidator(),
+            c.isEagerTtl(),
+            c.writeSynchronizationMode(),
+            c.isInvalidate(),
+            c.isEventsDisabled(),
+            c.isStatisticsEnabled(),
+            c.isManagementEnabled(),
+            c.backups(),
+            c.affinity(),
+            c.affinityMapper(),
+            c.rebalanceMode(),
+            c.rebalanceBatchSize(),
+            c.rebalanceTimeout(),
+            c.rebalanceDelay(),
+            c.rebalanceThrottle(),
+            c.rebalanceBatchesPrefetchCount(),
+            c.rebalanceOrder(),
+            c.evictionFilter(),
+            c.evictionPolicyFactory(),
+            c.nearCacheEnabled(),
+            c.nearEvictionPolicyFactory(),
+            c.nearStartSize(),
+            c.defaultLockTimeout(),
+            c.interceptor(),
+            c.cacheStoreFactory(),
+            c.isStoreKeepBinary(),
+            c.isReadThrough(),
+            c.isWriteThrough(),
+            c.isWriteBehindEnabled(),
+            c.writeBehindCoalescing(),
+            c.writeBehindFlushSize(),
+            c.writeBehindFlushFrequency(),
+            c.writeBehindFlushThreadCount(),
+            c.writeBehindBatchSize(),
+            c.maxConcurrentAsyncOperations(),
+            c.cacheLoaderFactory(),
+            c.cacheWriterFactory(),
+            c.expiryPolicyFactory(),
+            c.isSqlEscapeAll(),
+            c.sqlSchema(),
+            c.sqlIndexMaxInlineSize(),
+            c.isSqlOnheapCacheEnabled(),
+            c.sqlOnheapCacheMaxSize(),
+            c.queryDetailMetricsSize(),
+            c.queryParallelism(),
+            c.maxQueryIteratorsCount(),
+            c.dataRegionName()
+        ), true);
     }
 
     /** {@inheritDoc} */

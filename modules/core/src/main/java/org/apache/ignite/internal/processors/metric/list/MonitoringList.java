@@ -52,6 +52,7 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     /** */
     private volatile List<Consumer<R>> rowRemoveLsnrs;
 
+    /** */
     private final MonitoringRowAttributeWalker<R> walker;
 
     /**
@@ -69,7 +70,7 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     }
 
     /**
-     * @return
+     * @return Helper for exporters.
      */
     public MonitoringRowAttributeWalker<R> walker() {
         return walker;
