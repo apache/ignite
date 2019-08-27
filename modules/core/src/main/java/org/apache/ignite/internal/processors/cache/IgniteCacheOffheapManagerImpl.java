@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDa
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -1022,7 +1021,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public final void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
+    @Override public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
         int p = store.partId();
 
         partStoreLock.lock(p);
