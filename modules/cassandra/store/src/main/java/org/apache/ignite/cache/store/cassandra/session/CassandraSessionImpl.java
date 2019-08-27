@@ -365,7 +365,7 @@ public class CassandraSessionImpl implements CassandraSession {
             " of " + dataSize + " elements, during " + assistant.operationName() +
             " operation with Cassandra";
 
-        log.error(errorMsg, error);
+        log.warning(errorMsg, error);
 
         throw new IgniteException(errorMsg, error);
     }
@@ -528,7 +528,7 @@ public class CassandraSessionImpl implements CassandraSession {
             decrementSessionRefs();
         }
 
-        log.error(errorMsg, error);
+        log.warning(errorMsg, error);
         throw new IgniteException(errorMsg, error);
     }
 
