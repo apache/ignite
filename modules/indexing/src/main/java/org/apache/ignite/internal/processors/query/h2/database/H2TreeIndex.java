@@ -138,9 +138,11 @@ public class H2TreeIndex extends GridH2IndexBase {
                     segments[i] = new H2Tree(
                         name,
                         tbl.getName(),
+                        tbl.cacheName(),
                         name,
                         cctx.offheap().reuseListForIndex(name),
                         cctx.groupId(),
+                        cctx.group().name(),
                         cctx.dataRegion().pageMemory(),
                         cctx.shared().wal(),
                         cctx.offheap().globalRemoveId(),
