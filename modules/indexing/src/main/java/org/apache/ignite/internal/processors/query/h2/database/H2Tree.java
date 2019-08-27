@@ -24,12 +24,14 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -77,6 +79,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     private final String tblName;
 
     /** */
+    private final String cacheName;
+
+    /** */
     private final String idxName;
 
     /** */
@@ -117,9 +122,11 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     protected H2Tree(
         String name,
         String tblName,
+        String cacheName,
         String idxName,
         ReuseList reuseList,
         int grpId,
+        String grpName,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
@@ -137,6 +144,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         super(
             name,
             grpId,
+            grpName,
             pageMem,
             wal,
             globalRmvId,
@@ -151,6 +159,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         this.rowCache = rowCache;
         this.tblName = tblName;
         this.idxName = idxName;
+        this.cacheName = cacheName;
 
         this.rowStore = rowStore;
         this.cols = cols;
@@ -543,5 +552,22 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2Tree.class, this, "super", super.toString());
+    }
+
+    /**
+     * Construct the exception and invoke failure processor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pageIds Pages ids.
+     * @return New CorruptedTreeException instance.
+     */
+    @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, cacheName, idxName, pageIds);
+
+        processFailure(FailureType.CRITICAL_ERROR, e);
+
+        return e;
     }
 }

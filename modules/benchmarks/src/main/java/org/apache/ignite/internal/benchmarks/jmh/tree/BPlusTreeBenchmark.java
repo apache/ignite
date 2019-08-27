@@ -178,6 +178,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             super(
                 "test",
                 cacheId,
+                null,
                 pageMem,
                 null,
                 new AtomicLong(),
