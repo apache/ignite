@@ -20,51 +20,60 @@ import org.apache.ignite.scalar.examples._
 import org.apache.ignite.scalar.examples.spark._
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest
-import org.scalatest.junit.JUnitSuiteLike
+import org.junit.Test
+import org.scalatest.Suite
 
 /**
  * Scalar examples self test.
  */
-class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLike {
+class ScalarExamplesSelfTest extends GridAbstractExamplesTest with Suite {
     /** */
     private def EMPTY_ARGS = Array.empty[String]
 
     /** */
+    @Test
     def testScalarCacheAffinitySimpleExample() {
         ScalarCacheAffinityExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarCacheEntryProcessorExample() {
         ScalarCacheEntryProcessorExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarCacheExample() {
         ScalarCacheExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarCacheQueryExample() {
         ScalarCacheQueryExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarClosureExample() {
         ScalarClosureExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarContinuationExample() {
         ScalarContinuationExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarCreditRiskExample() {
         ScalarCreditRiskExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarPingPongExample() {
         scalar("modules/scalar/src/test/resources/spring-ping-pong-partner.xml") {
             ScalarPingPongExample.main(EMPTY_ARGS)
@@ -72,31 +81,37 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     }
 
     /** */
+    @Test
     def testScalarPopularNumbersRealTimeExample() {
         ScalarCachePopularNumbersExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarPrimeExample() {
         ScalarPrimeExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarTaskExample() {
         ScalarTaskExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarWorldShortestMapReduceExample() {
         ScalarWorldShortestMapReduce.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarSnowflakeSchemaExample() {
         ScalarSnowflakeSchemaExample.main(EMPTY_ARGS)
     }
 
     /** */
+    @Test
     def testScalarSharedRDDExample() {
         ScalarSharedRDDExample.main(EMPTY_ARGS)
     }
