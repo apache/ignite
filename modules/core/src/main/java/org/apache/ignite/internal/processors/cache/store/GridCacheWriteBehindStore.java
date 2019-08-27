@@ -890,7 +890,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
         }
         catch (Exception e) {
-            LT.error(log, e, "Unable to update underlying store: " + store);
+            LT.warn(log, e, "Unable to update underlying store: " + store, false, false);
 
             boolean overflow;
 
@@ -903,7 +903,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
-                    log.warning("Failed to update store (value will be lost as current buffer size is greater " +
+                    log.error("Failed to update store (value will be lost as current buffer size is greater " +
                         "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
                         entry.getKey() + ", val=" + val + ", op=" + operation + "]");
                 }
