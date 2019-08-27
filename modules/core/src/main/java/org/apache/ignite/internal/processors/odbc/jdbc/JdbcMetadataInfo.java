@@ -24,15 +24,16 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.TableInformation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
@@ -47,8 +48,40 @@ public class JdbcMetadataInfo {
     /** Root context. Used to get all the database metadata. */
     private final GridKernalContext ctx;
 
-    /** The only one possible value of table type. */
-    public static final String TABLE_TYPE = "TABLE";
+    /** Comparator for {@link ColumnInformation} by schema then table name then column order. */
+    private static final Comparator<ColumnInformation> bySchemaThenTabNameThenColOrder = new Comparator<ColumnInformation>() {
+        @Override public int compare(ColumnInformation o1, ColumnInformation o2) {
+            int schemaCmp = o1.schemaName().compareTo(o2.schemaName());
+
+            if (schemaCmp != 0)
+                return schemaCmp;
+
+            int tblNameCmp = o1.tableName().compareTo(o2.tableName());
+
+            if (tblNameCmp != 0)
+                return tblNameCmp;
+
+            return Integer.compare(o1.columnId(), o2.columnId());
+        }
+    };
+
+    /** Comparator for {@link JdbcTableMeta} by table type then schema then table name. */
+    private static final Comparator<TableInformation> byTblTypeThenSchemaThenTblName =
+        new Comparator<TableInformation>() {
+            @Override public int compare(TableInformation o1, TableInformation o2) {
+                int tblTypeCmp = o1.tableType().compareTo(o2.tableType());
+
+                if (tblTypeCmp != 0)
+                    return tblTypeCmp;
+
+                int schemCmp = o1.schemaName().compareTo(o2.schemaName());
+
+                if (schemCmp != 0)
+                    return schemCmp;
+
+                return o1.tableName().compareTo(o2.tableName());
+            }
+        };
 
     /**
      * Initializes info.
@@ -66,7 +99,7 @@ public class JdbcMetadataInfo {
      *
      * @return Collection of primary keys information for tables that matches specified schema and table name patterns.
      */
-    public Collection<JdbcPrimaryKeyMeta> getPrimaryKeys(String schemaNamePtrn, String tableNamePtrn) {
+    public Collection<JdbcPrimaryKeyMeta> getPrimaryKeys(String schemaNamePtrn, String tblNamePtrn) {
         Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
 
         for (String cacheName : ctx.cache().publicCacheNames()) {
@@ -74,7 +107,7 @@ public class JdbcMetadataInfo {
                 if (!matches(table.schemaName(), schemaNamePtrn))
                     continue;
 
-                if (!matches(table.tableName(), tableNamePtrn))
+                if (!matches(table.tableName(), tblNamePtrn))
                     continue;
 
                 List<String> fields = new ArrayList<>();
@@ -111,39 +144,19 @@ public class JdbcMetadataInfo {
      *
      * Result is ordered by (schema name, table name).
      *
-     * @param schemaPtrn sql pattern for schema name.
-     * @param tabPtrn sql pattern for table name.
-     * @return List of metadatas of tables that matches .
+     * @param schemaNamePtrn sql pattern for schema name.
+     * @param tblNamePtrn sql pattern for table name.
+     * @param tblTypes Requested table types.
+     * @return List of metadatas of tables that matches.
      */
-    public List<JdbcTableMeta> getTablesMeta(String schemaPtrn, String tabPtrn) {
-        Comparator<JdbcTableMeta> bySchemaThenTabname = new Comparator<JdbcTableMeta>() {
-            @Override public int compare(JdbcTableMeta o1, JdbcTableMeta o2) {
-                int schemCmp = o1.schemaName().compareTo(o2.schemaName());
+    public List<JdbcTableMeta> getTablesMeta(String schemaNamePtrn, String tblNamePtrn, String[] tblTypes) {
+        Collection<TableInformation> tblsMeta = ctx.query().getIndexing()
+            .tablesInformation(schemaNamePtrn, tblNamePtrn, tblTypes);
 
-                if (schemCmp != 0)
-                    return schemCmp;
-
-                return o1.tableName().compareTo(o2.tableName());
-            }
-        };
-
-        TreeSet<JdbcTableMeta> tabMetas = new TreeSet<>(bySchemaThenTabname);
-
-        for (String cacheName : ctx.cache().publicCacheNames()) {
-            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                if (!matches(table.schemaName(), schemaPtrn))
-                    continue;
-
-                if (!matches(table.tableName(), tabPtrn))
-                    continue;
-
-                JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), TABLE_TYPE);
-
-                tabMetas.add(tableMeta);
-            }
-        }
-
-        return new ArrayList<>(tabMetas);
+        return tblsMeta.stream()
+            .sorted(byTblTypeThenSchemaThenTblName)
+            .map(t -> new JdbcTableMeta(t.schemaName(), t.tableName(), t.tableType()))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -151,63 +164,43 @@ public class JdbcMetadataInfo {
      *
      * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
      *
-     * @param protocolVer for what version of protocol to generate metadata. Early versions of protocol don't support
-     * some features like default values or precision/scale. If {@code null}, current version will be used.
+     * @param protoVer for what version of protocol to generate metadata. Early versions of protocol don't support some
+     * features like default values or precision/scale. If {@code null}, current version will be used.
      * @return List of metadatas about columns that match specified schema/tablename/columnname criterias.
      */
-    public Collection<JdbcColumnMeta> getColumnsMeta(@Nullable ClientListenerProtocolVersion protocolVer,
-        String schemaNamePtrn, String tableNamePtrn, String columnNamePtrn) {
+    public Collection<JdbcColumnMeta> getColumnsMeta(@Nullable ClientListenerProtocolVersion protoVer,
+        String schemaNamePtrn, String tblNamePtrn, String colNamePtrn) {
 
-        boolean useNewest = protocolVer == null;
+        boolean useNewest = protoVer == null;
 
         Collection<JdbcColumnMeta> metas = new LinkedHashSet<>();
 
-        for (String cacheName : ctx.cache().publicCacheNames()) {
-            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                if (!matches(table.schemaName(), schemaNamePtrn))
-                    continue;
+        Collection<ColumnInformation> colsInfo = ctx.query().getIndexing()
+            .columnsInformation(schemaNamePtrn, tblNamePtrn, colNamePtrn);
 
-                if (!matches(table.tableName(), tableNamePtrn))
-                    continue;
+        colsInfo.stream().sorted(bySchemaThenTabNameThenColOrder)
+            .forEachOrdered(info -> {
+                JdbcColumnMeta colMeta;
 
-                for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                    String colName = field.getKey();
-
-                    Class<?> fieldCls = field.getValue();
-
-                    if (!matches(colName, columnNamePtrn))
-                        continue;
-
-                    JdbcColumnMeta columnMeta;
-
-                    if (useNewest || protocolVer.compareTo(VER_2_7_0) >= 0) {
-                        GridQueryProperty prop = table.property(colName);
-
-                        columnMeta = new JdbcColumnMetaV4(table.schemaName(), table.tableName(),
-                            colName, fieldCls, !prop.notNull(), prop.defaultValue(),
-                            prop.precision(), prop.scale());
-                    }
-                    else if (protocolVer.compareTo(VER_2_4_0) >= 0) {
-                        GridQueryProperty prop = table.property(colName);
-
-                        columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
-                            colName, fieldCls, !prop.notNull(), prop.defaultValue());
-                    }
-                    else if (protocolVer.compareTo(VER_2_3_0) >= 0) {
-                        GridQueryProperty prop = table.property(colName);
-
-                        columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
-                            colName, fieldCls, !prop.notNull());
-                    }
-                    else
-                        columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
-                            colName, fieldCls);
-
-                    if (!metas.contains(columnMeta))
-                        metas.add(columnMeta);
+                if (useNewest || protoVer.compareTo(VER_2_7_0) >= 0) {
+                    colMeta = new JdbcColumnMetaV4(info.schemaName(), info.tableName(), info.columnName(),
+                        info.fieldClass(), info.nullable(), info.defaultValue(), info.precision(), info.scale());
                 }
-            }
-        }
+                else if (protoVer.compareTo(VER_2_4_0) >= 0) {
+                    colMeta = new JdbcColumnMetaV3(info.schemaName(), info.tableName(), info.columnName(),
+                        info.fieldClass(), info.nullable(), info.defaultValue());
+                }
+                else if (protoVer.compareTo(VER_2_3_0) >= 0) {
+                    colMeta = new JdbcColumnMetaV2(info.schemaName(), info.tableName(), info.columnName(),
+                        info.fieldClass(), info.nullable());
+                }
+                else
+                    colMeta = new JdbcColumnMeta(info.schemaName(), info.tableName(), info.columnName(),
+                        info.fieldClass());
+
+                if (!metas.contains(colMeta))
+                    metas.add(colMeta);
+            });
 
         return metas;
     }
@@ -239,7 +232,7 @@ public class JdbcMetadataInfo {
      *
      * @return Sorted by index name collection of index info, filtered according to specified criterias.
      */
-    public SortedSet<JdbcIndexMeta> getIndexesMeta(String schemaNamePtrn, String tableNamePtrn) {
+    public SortedSet<JdbcIndexMeta> getIndexesMeta(String schemaNamePtrn, String tblNamePtrn) {
         final Comparator<JdbcIndexMeta> byIndexName = new Comparator<JdbcIndexMeta>() {
             @Override public int compare(JdbcIndexMeta o1, JdbcIndexMeta o2) {
                 return o1.indexName().compareTo(o2.indexName());
@@ -253,7 +246,7 @@ public class JdbcMetadataInfo {
                 if (!matches(table.schemaName(), schemaNamePtrn))
                     continue;
 
-                if (!matches(table.tableName(), tableNamePtrn))
+                if (!matches(table.tableName(), tblNamePtrn))
                     continue;
 
                 for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
