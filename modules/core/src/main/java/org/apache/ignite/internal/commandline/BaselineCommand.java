@@ -71,7 +71,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        if (BaselineSubcommands.COLLECT != baselineArgs.getCmd())
+        if (baselineArgs != null && BaselineSubcommands.COLLECT != baselineArgs.getCmd())
             return "Warning: the command will perform changes in baseline.";
 
         return null;

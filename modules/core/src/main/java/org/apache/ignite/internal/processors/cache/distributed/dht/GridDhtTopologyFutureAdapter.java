@@ -101,9 +101,9 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         PartitionLossPolicy lossPlc = grp.config().getPartitionLossPolicy();
 
         if (cctx.shared().readOnlyMode() && opType == WRITE && !isSystemCache(cctx.name())
-                && cctx.group().groupId() != CU.cacheId(DEFAULT_VOLATILE_DS_GROUP_NAME)) {
-            return new IgniteClusterReadOnlyException("Failed to perform cache operation (cluster is in read only mode) " +
-                    "[cacheGrp=" + cctx.group().name() + ", cache=" + cctx.name() + ']');
+            && cctx.group().groupId() != CU.cacheId(DEFAULT_VOLATILE_DS_GROUP_NAME)) {
+            return new IgniteClusterReadOnlyException("Failed to perform cache operation (cluster is in " +
+                "read-only mode) [cacheGrp=" + cctx.group().name() + ", cache=" + cctx.name() + ']');
         }
 
         if (grp.needsRecovery() && !recovery) {
