@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * used to simplify storing a data row into page memory, because in some cases the cache identifier is not stored on the
  * data pages, but is required to link this data row in {@code BPlusTree}.
  */
-public class DataRowStoreAware extends DataRow {
+public class DataRowCacheAware extends DataRow {
     /** Flag indicates that cacheId should be stored in data page. */
     private boolean storeCacheId;
 
@@ -42,7 +42,7 @@ public class DataRowStoreAware extends DataRow {
      * @param cacheId Cache ID.
      * @param storeCacheId Flag indicates that cacheId should be stored in data page.
      */
-    public DataRowStoreAware(KeyCacheObject key, @Nullable CacheObject val, GridCacheVersion ver, int part,
+    public DataRowCacheAware(KeyCacheObject key, @Nullable CacheObject val, GridCacheVersion ver, int part,
         long expireTime, int cacheId, boolean storeCacheId) {
         super(key, val, ver, part, expireTime, cacheId);
 

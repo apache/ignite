@@ -62,7 +62,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.persistence.DataRowStoreAware;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -149,8 +149,8 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
  *
  */
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /** The maximum number of entries that can be preloaded between checkpoints. */
-    public static final int PRELOAD_CHECKPOINT_THRESHOLD = 100;
+    /** The maximum number of entries that can be preloaded under checkpoint read lock. */
+    public static final int PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK = 100;
 
     /** */
     private final boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
@@ -1218,28 +1218,30 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(partId);
 
-        List<DataRowStoreAware> batch = new ArrayList<>(PRELOAD_CHECKPOINT_THRESHOLD);
+        List<DataRowCacheAware> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
 
         while (infos.hasNext()) {
-            do {
-                GridCacheEntryInfo info = infos.next();
+            GridCacheEntryInfo info = infos.next();
 
-                assert info.ttl() == TTL_ETERNAL : info.ttl();
+            assert info.ttl() == TTL_ETERNAL : info.ttl();
 
-                batch.add(new DataRowStoreAware(info.key(),
-                    info.value(),
-                    info.version(),
-                    partId,
-                    info.expireTime(),
-                    info.cacheId(),
-                    grp.storeCacheIdInDataPage()));
+            batch.add(new DataRowCacheAware(info.key(),
+                info.value(),
+                info.version(),
+                partId,
+                info.expireTime(),
+                info.cacheId(),
+                grp.storeCacheIdInDataPage()));
+
+            if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK) {
+                dataStore.insertRows(batch, initPred);
+
+                batch.clear();
             }
-            while (infos.hasNext() && batch.size() < PRELOAD_CHECKPOINT_THRESHOLD);
-
-            dataStore.insertRows(batch, initPred);
-
-            batch.clear();
         }
+
+        if (!batch.isEmpty())
+            dataStore.insertRows(batch, initPred);
     }
 
     /** {@inheritDoc} */
@@ -1750,7 +1752,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void insertRows(Collection<DataRowStoreAware> rows,
+        @Override public void insertRows(Collection<DataRowCacheAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -1760,7 +1762,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
 
-                for (DataRowStoreAware row : rows) {
+                for (DataRowCacheAware row : rows) {
                     row.storeCacheId(cacheIdAwareGrp);
 
                     if (!initPred.apply(row) && row.value() != null)

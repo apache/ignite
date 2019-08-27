@@ -2385,7 +2385,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void insertRows(Collection<DataRowStoreAware> rows,
+        @Override public void insertRows(Collection<DataRowCacheAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 

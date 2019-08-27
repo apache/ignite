@@ -134,10 +134,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** Write a single row on a single page. */
-    private final WriteRowHandler writeRow = new WriteRowHandler();
+    private final WriteRowHandler writeRowHnd = new WriteRowHandler();
 
     /** Write multiple rows on a single page. */
-    private final WriteRowsHandler writeRows = new WriteRowsHandler();
+    private final WriteRowsHandler writeRowsHnd = new WriteRowsHandler();
 
     /**  */
     private class WriteRowHandler extends PageHandler<T, Integer> {
@@ -153,7 +153,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written,
             IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
-            written = write(pageId, page, pageAddr, iox, row, written);
+            written = addRow(pageId, page, pageAddr, iox, row, written);
 
             putPage(((AbstractDataPageIO)iox).getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
 
@@ -170,7 +170,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
          * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
          * @throws IgniteCheckedException If failed.
          */
-        protected Integer write(
+        protected Integer addRow(
             long pageId,
             long page,
             long pageAddr,
@@ -186,7 +186,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             assert oldFreeSpace > 0 : oldFreeSpace;
 
             // If the full row does not fit into this page write only a fragment.
-            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize) :
+            written = (written == 0 && oldFreeSpace >= rowSize) ? addRowFull(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
 
             if (written == rowSize)
@@ -206,7 +206,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
          * @return Written size which is always equal to row size here.
          * @throws IgniteCheckedException If failed.
          */
-        protected int addRow(
+        protected int addRowFull(
             long pageId,
             long page,
             long pageAddr,
@@ -324,14 +324,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         break;
                 }
 
-                written = writeRow.write(pageId, page, pageAddr, io, row, written);
+                written = writeRowHnd.addRow(pageId, page, pageAddr, io, row, written);
 
                 assert written == COMPLETE;
 
                 evictionTracker.touchPage(pageId);
             }
 
-            writeRow.putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
+            writeRowHnd.putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
 
             return written;
         }
@@ -561,7 +561,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 if (written != 0)
                     memMetrics.incrementLargeEntriesPages();
 
-                written = write(row, written, statHolder);
+                written = writeSinglePage(row, written, statHolder);
             }
             while (written != COMPLETE);
         }
@@ -617,7 +617,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     initIo = row.ioVersions().latest();
                 }
 
-                written = write(pageId, writeRows, initIo, cur, written, FAIL_I, statHolder);
+                written = write(pageId, writeRowsHnd, initIo, cur, written, FAIL_I, statHolder);
 
                 assert written != FAIL_I; // We can't fail here.
             }
@@ -644,7 +644,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         int rowSize = row.size();
 
         while (rowSize - written >= MIN_SIZE_FOR_DATA_PAGE) {
-            written = write(row, written, statHolder);
+            written = writeSinglePage(row, written, statHolder);
 
             memMetrics.incrementLargeEntriesPages();
         }
@@ -653,13 +653,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
+     * Take a page and write row on it.
+     *
      * @param row Row to write.
      * @param written Written size.
      * @param statHolder Statistics holder to track IO operations.
      * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
      * @throws IgniteCheckedException If failed.
      */
-    private int write(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    private int writeSinglePage(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         AbstractDataPageIO initIo = null;
 
         long pageId = takePage(row.size() - written, row, statHolder);
@@ -670,7 +672,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             initIo = row.ioVersions().latest();
         }
 
-        written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
+        written = write(pageId, writeRowHnd, initIo, row, written, FAIL_I, statHolder);
 
         assert written != FAIL_I; // We can't fail here.
 
@@ -678,12 +680,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Take page from freelist.
+     * Take page from free list.
      *
      * @param size Required free space on page.
      * @param row Row to write.
      * @param statHolder Statistics holder to track IO operations.
-     * @return Page identifier or 0 if no page found in freelist.
+     * @return Page identifier or 0 if no page found in free list.
      * @throws IgniteCheckedException If failed.
      */
     private long takePage(int size, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
