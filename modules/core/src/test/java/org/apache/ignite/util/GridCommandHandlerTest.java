@@ -17,6 +17,9 @@
 
 package org.apache.ignite.util;
 
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -45,9 +48,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -55,6 +55,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1360,6 +1362,45 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testCacheIdleVerifyPrintLostPartitions() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 16))
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+            .setBackups(1));
+
+        try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 1000; i++)
+                streamer.addData(i, i);
+        }
+
+        String g1Name = grid(1).name();
+
+        stopGrid(1);
+
+        cleanPersistenceDir(g1Name);
+
+        //Start node 2 with empty PDS. Rebalance will be started.
+        startGrid(1);
+
+        //During rebalance stop node 3. Rebalance will be stopped which lead to lost partitions.
+        stopGrid(2);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--yes"));
+
+        assertContains(log, testOut.toString(), "LOST partitions:");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCacheIdleVerifyNodeFilter() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -1506,7 +1547,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
             assertContains(log, dumpWithZeros, "idle_verify check has finished, found " + parts + " partitions");
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
-            assertContains(log, dumpWithZeros, "updateCntr=0, size=0, partHash=0");
+            assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
 
             assertSort(parts, dumpWithZeros);
@@ -1519,7 +1560,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
             assertContains(log, dumpWithoutZeros, (parts - keysCount) + " partitions was skipped");
             assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
 
-            assertNotContains(log, dumpWithoutZeros, "updateCntr=0, size=0, partHash=0");
+            assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
 
