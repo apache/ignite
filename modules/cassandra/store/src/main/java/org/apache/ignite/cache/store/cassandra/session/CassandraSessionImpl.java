@@ -528,7 +528,7 @@ public class CassandraSessionImpl implements CassandraSession {
             decrementSessionRefs();
         }
 
-        log.warning(errorMsg, error);
+        log.error(errorMsg, error);
         throw new IgniteException(errorMsg, error);
     }
 
