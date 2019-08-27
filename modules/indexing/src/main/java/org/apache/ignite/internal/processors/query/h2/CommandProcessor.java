@@ -16,6 +16,9 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
@@ -1036,7 +1040,9 @@ public class CommandProcessor {
         if (!F.isEmpty(scale))
             res.setFieldsScale(scale);
 
-        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
+        String digest = createFieldsDigest(createTbl);
+        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName(), digest);
+
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
         if (!F.isEmpty(createTbl.keyTypeName()))
@@ -1105,6 +1111,44 @@ public class CommandProcessor {
      */
     public static boolean isCommandNoOp(Prepared cmd) {
         return cmd instanceof NoOperation;
+    }
+
+    /**
+     * Creates table digest as MD5 hash from sorted list of column names and types.
+     *
+     * @param tbl Create table command.
+     * @return Digest from sorted list of column names and types.
+     */
+    private static String createFieldsDigest(GridSqlCreateTable tbl) {
+        try {
+            String concatedFields = concatFields(tbl);
+
+           return U.calculateMD5(new ByteArrayInputStream(concatedFields.getBytes()));
+        }
+        catch (NoSuchAlgorithmException | IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param tbl Table.
+     * @return Concated table fields and their types.
+     */
+    private static String concatFields(GridSqlCreateTable tbl) {
+        List<String> fieldDigests = new ArrayList<>(tbl.columns().size());
+
+        for (Map.Entry<String, GridSqlColumn> e : tbl.columns().entrySet()) {
+            String colName = e.getKey();
+            String colType = getTypeClassName(e.getValue());
+
+            String fd = "[" + colName + ":" + colType + "]";
+
+            fieldDigests.add(fd.toUpperCase());
+        }
+
+        Collections.sort(fieldDigests);
+
+        return String.join(", ", fieldDigests);
     }
 
     /**
