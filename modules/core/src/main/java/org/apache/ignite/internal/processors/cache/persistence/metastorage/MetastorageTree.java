@@ -76,6 +76,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         super(
             name,
             cacheId,
+            null,
             pageMem,
             wal,
             globalRmvId,
