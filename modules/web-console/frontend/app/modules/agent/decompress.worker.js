@@ -19,7 +19,7 @@
 onmessage = function(e) {
     const data = e.data;
 
-    const res = JSON.parse(data.replace(/([:,\[])([0-9]{15,}(?:\.\d+)?)/g, '$1"$2"'));
+    const res = JSON.parse(data.replace(/([:,\[])(-?[0-9]{15,}(?:\.\d+)?)/g, '$1"$2"'));
 
     postMessage(res);
 };
