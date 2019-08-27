@@ -30,7 +30,7 @@ import java.io.Serializable;
  * {@code p(C_k,y) =x_1*p_k1^x *...*x_i*p_ki^x_i}. Where {@code x_i} is a discrete feature, {@code p_ki} is a prior
  * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
-public class DiscreteNaiveBayesModel implements BayesModel, IgniteModel<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
+public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesModel, Vector, Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 

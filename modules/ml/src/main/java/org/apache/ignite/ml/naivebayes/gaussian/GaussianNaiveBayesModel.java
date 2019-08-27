@@ -29,7 +29,7 @@ import java.io.Serializable;
  * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
-public class GaussianNaiveBayesModel implements BayesModel, IgniteModel<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
+public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesModel, Vector, Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
