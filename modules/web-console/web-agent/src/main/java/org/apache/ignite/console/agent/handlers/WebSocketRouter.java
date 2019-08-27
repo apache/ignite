@@ -153,11 +153,6 @@ public class WebSocketRouter implements AutoCloseable {
             trustAll = false;
         }
 
-        boolean ssl = trustAll || !F.isEmpty(cfg.serverTrustStore()) || !F.isEmpty(cfg.serverKeyStore());
-
-        if (!ssl)
-            return null;
-
         return sslContextFactory(
             cfg.serverKeyStore(),
             cfg.serverKeyStorePassword(),

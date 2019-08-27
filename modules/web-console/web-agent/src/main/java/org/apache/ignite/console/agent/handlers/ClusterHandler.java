@@ -20,6 +20,7 @@ import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestResult;
@@ -63,11 +64,6 @@ public class ClusterHandler extends AbstractClusterHandler {
             trustAll = false;
         }
 
-        boolean ssl = trustAll || !F.isEmpty(cfg.nodeTrustStore()) || !F.isEmpty(cfg.nodeKeyStore());
-
-        if (!ssl)
-            return null;
-
         return sslContextFactory(
             cfg.nodeKeyStore(),
             cfg.nodeKeyStorePassword(),
@@ -107,6 +103,11 @@ public class ClusterHandler extends AbstractClusterHandler {
             }
             catch (Throwable e) {
                 LT.error(log, e, "Failed execute request on node [url=" + nodeUrl + ", parameters=" + params + "]");
+
+                if (e instanceof SSLException) {
+                    LT.warn(log, "Please check that connection to cluster node configured correctly.");
+                    LT.warn(log, "Options to check: --node-uri, --node-key-store, --node-key-store-password, --node-trust-store, --node-trust-store-password.");
+                }
             }
         }
 
