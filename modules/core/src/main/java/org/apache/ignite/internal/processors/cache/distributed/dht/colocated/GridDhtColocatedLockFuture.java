@@ -829,7 +829,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         final GridDhtTopologyFuture fut;
 
-        final boolean finish;
+        final boolean finished;
 
         try {
             if (cctx.topology().stopping()) {
@@ -843,9 +843,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
             fut = cctx.topologyVersionFuture();
 
-            finish = fut.isDone();
+            finished = fut.isDone();
 
-            if (finish) {
+            if (finished) {
                 Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
@@ -858,7 +858,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                 if (remap) {
                     if (tx != null)
-                        tx.onRemap(topVer);
+                        tx.onRemap(topVer, true);
 
                     synchronized (this) {
                         this.topVer = topVer;
@@ -882,7 +882,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             cctx.topology().readUnlock();
         }
 
-        if (finish) {
+        if (finished) {
             map(keys, remap, false);
 
             if (c != null)
@@ -1702,94 +1702,117 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (res.clientRemapVersion() != null) {
                 assert cctx.kernalContext().clientNode();
 
-                IgniteInternalFuture<?> affFut =
-                    cctx.shared().exchange().affinityReadyFuture(res.clientRemapVersion());
+                if (res.compatibleRemapVersion()) {
+                    if (tx != null) {
+                        // Versions are compatible.
+                        cctx.shared().exchange().
+                            lastAffinityChangedTopologyVersion(res.clientRemapVersion(), tx.topologyVersionSnapshot());
 
-                cctx.time().waitAsync(affFut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
-                    if (errorOrTimeoutOnTopologyVersion(e, timedOut))
-                        return;
+                        tx.onRemap(res.clientRemapVersion(), false);
 
-                    try {
-                        remap();
-                    }
-                    finally {
-                        cctx.shared().txContextReset();
-                    }
-                });
-            }
-            else {
-                int i = 0;
+                        // Use remapped version for all subsequent mappings.
+                        synchronized (GridDhtColocatedLockFuture.this) {
+                            for (GridNearLockMapping mapping : mappings) {
+                                GridNearLockRequest req = mapping.request();
 
-                for (KeyCacheObject k : keys) {
-                    IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);
+                                assert req != null : mapping;
 
-                    CacheObject newVal = res.value(i);
-
-                    GridCacheVersion dhtVer = res.dhtVersion(i);
-
-                    if (newVal == null) {
-                        if (oldValTup != null) {
-                            if (oldValTup.get1().equals(dhtVer))
-                                newVal = oldValTup.get2();
+                                req.topologyVersion(res.clientRemapVersion());
+                            }
                         }
                     }
+                }
+                else {
+                    IgniteInternalFuture<?> affFut =
+                        cctx.shared().exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                    if (inTx()) {
-                        IgniteTxEntry txEntry = tx.entry(cctx.txKey(k));
-
-                        // In colocated cache we must receive responses only for detached entries.
-                        assert txEntry.cached().detached() : txEntry;
-
-                        txEntry.markLocked();
-
-                        GridDhtDetachedCacheEntry entry = (GridDhtDetachedCacheEntry)txEntry.cached();
-
-                        if (res.dhtVersion(i) == null) {
-                            onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
-                                "(will fail the lock): " + res));
-
+                    cctx.time().waitAsync(affFut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
+                        if (errorOrTimeoutOnTopologyVersion(e, timedOut))
                             return;
+
+                        try {
+                            remap();
                         }
+                        finally {
+                            cctx.shared().txContextReset();
+                        }
+                    });
 
-                        // Set value to detached entry.
-                        entry.resetFromPrimary(newVal, dhtVer);
-
-                        tx.hasRemoteLocks(true);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
-                    }
-                    else
-                        cctx.mvcc().markExplicitOwner(cctx.txKey(k), threadId);
-
-                    if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                        cctx.events().addEvent(cctx.affinity().partition(k),
-                            k,
-                            tx,
-                            null,
-                            EVT_CACHE_OBJECT_READ,
-                            newVal,
-                            newVal != null,
-                            null,
-                            false,
-                            CU.subjectId(tx, cctx.shared()),
-                            null,
-                            tx == null ? null : tx.resolveTaskName(),
-                            keepBinary);
-                    }
-
-                    i++;
+                    return;
                 }
-
-                try {
-                    proceedMapping();
-                }
-                catch (IgniteCheckedException e) {
-                    onDone(e);
-                }
-
-                onDone(true);
             }
+
+            int i = 0;
+
+            for (KeyCacheObject k : keys) {
+                IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);
+
+                CacheObject newVal = res.value(i);
+
+                GridCacheVersion dhtVer = res.dhtVersion(i);
+
+                if (newVal == null) {
+                    if (oldValTup != null) {
+                        if (oldValTup.get1().equals(dhtVer))
+                            newVal = oldValTup.get2();
+                    }
+                }
+
+                if (inTx()) {
+                    IgniteTxEntry txEntry = tx.entry(cctx.txKey(k));
+
+                    // In colocated cache we must receive responses only for detached entries.
+                    assert txEntry.cached().detached() : txEntry;
+
+                    txEntry.markLocked();
+
+                    GridDhtDetachedCacheEntry entry = (GridDhtDetachedCacheEntry)txEntry.cached();
+
+                    if (res.dhtVersion(i) == null) {
+                        onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
+                            "(will fail the lock): " + res));
+
+                        return;
+                    }
+
+                    // Set value to detached entry.
+                    entry.resetFromPrimary(newVal, dhtVer);
+
+                    tx.hasRemoteLocks(true);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
+                }
+                else
+                    cctx.mvcc().markExplicitOwner(cctx.txKey(k), threadId);
+
+                if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                    cctx.events().addEvent(cctx.affinity().partition(k),
+                        k,
+                        tx,
+                        null,
+                        EVT_CACHE_OBJECT_READ,
+                        newVal,
+                        newVal != null,
+                        null,
+                        false,
+                        CU.subjectId(tx, cctx.shared()),
+                        null,
+                        tx == null ? null : tx.resolveTaskName(),
+                        keepBinary);
+                }
+
+                i++;
+            }
+
+            try {
+                proceedMapping();
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+            }
+
+            onDone(true);
         }
 
         /**
