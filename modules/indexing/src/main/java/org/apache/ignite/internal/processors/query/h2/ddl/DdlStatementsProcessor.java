@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryEntity;
@@ -59,7 +63,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -661,7 +664,9 @@ public class DdlStatementsProcessor {
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
 
-        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
+
+        String digest = createFieldsDigest(createTbl);
+        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName(), digest);
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
         if (!F.isEmpty(createTbl.keyTypeName()))
@@ -713,6 +718,44 @@ public class DdlStatementsProcessor {
         }
 
         return res;
+    }
+
+    /**
+     * Creates table digest as MD5 hash from sorted list of column names and types.
+     *
+     * @param tbl Create table command.
+     * @return Digest from sorted list of column names and types.
+     */
+    private static String createFieldsDigest(GridSqlCreateTable tbl) {
+        try {
+            String concatedFields = concatFields(tbl);
+
+            return U.calculateMD5(new ByteArrayInputStream(concatedFields.getBytes()));
+        }
+        catch (NoSuchAlgorithmException | IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param tbl Table.
+     * @return Concated table fields and their types.
+     */
+    private static String concatFields(GridSqlCreateTable tbl) {
+        List<String> fieldDigests = new ArrayList<>(tbl.columns().size());
+
+        for (Map.Entry<String, GridSqlColumn> e : tbl.columns().entrySet()) {
+            String colName = e.getKey();
+            String colType = getTypeClassName(e.getValue());
+
+            String fd = "[" + colName + ":" + colType + "]";
+
+            fieldDigests.add(fd.toUpperCase());
+        }
+
+        Collections.sort(fieldDigests);
+
+        return String.join(", ", fieldDigests);
     }
 
     /**
