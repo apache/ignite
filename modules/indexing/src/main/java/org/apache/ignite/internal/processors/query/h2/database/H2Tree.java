@@ -274,7 +274,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /**
      * @return Inline size.
      */
-    private int inlineSize() {
+    public int inlineSize() {
         return inlineSize;
     }
 

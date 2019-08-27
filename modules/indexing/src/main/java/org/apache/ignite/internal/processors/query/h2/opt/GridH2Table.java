@@ -41,8 +41,10 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
+import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -67,6 +69,8 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2PrimaryScanIndex.SCAN_INDEX_NAME_SUFFIX;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
@@ -226,6 +230,56 @@ public class GridH2Table extends TableBase {
 
             log = ctx.log(getClass());
         }
+    }
+
+    /**
+     * @return Information about all indexes related to the table.
+     */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    public List<IndexInformation> indexesInformation() {
+        List<IndexInformation> res = new ArrayList<>();
+
+        IndexColumn keyCol = indexColumn(KEY_COL, SortOrder.ASCENDING);
+
+        List<IndexColumn> wrappedKeyCols = H2Utils.treeIndexColumns(rowDescriptor(),
+            new ArrayList<>(2), keyCol, affKeyCol);
+
+        // Explicit add HASH index, due to we know all their parameters and it doesn't created on non affinity nodes.
+        res.add(
+            new IndexInformation(false,
+                true, PK_HASH_IDX_NAME,
+                H2IndexType.HASH,
+                H2Utils.indexColumnsSql(wrappedKeyCols.toArray(new IndexColumn[0])),
+                null));
+
+        // Explicit add SCAN index, due to we know all their parameters and it depends on affinity node or not.
+        res.add(new IndexInformation(false, false, SCAN_INDEX_NAME_SUFFIX, H2IndexType.SCAN, null, null));
+
+        for (Index idx : idxs) {
+            if (idx instanceof H2TreeIndex) {
+                res.add(new IndexInformation(
+                    idx.getIndexType().isPrimaryKey(),
+                    idx.getIndexType().isUnique(),
+                    idx.getName(),
+                    H2IndexType.BTREE,
+                    H2Utils.indexColumnsSql(idx.getIndexColumns()),
+                    ((H2TreeIndex)idx).inlineSize()
+                ));
+            }
+            else if (idx.getIndexType().isSpatial()) {
+                res.add(
+                    new IndexInformation(
+                        false,
+                        false,
+                        idx.getName(),
+                        H2IndexType.SPATIAL,
+                        H2Utils.indexColumnsSql(idx.getIndexColumns()),
+                        null)
+                );
+            }
+        }
+
+        return res;
     }
 
     /**
