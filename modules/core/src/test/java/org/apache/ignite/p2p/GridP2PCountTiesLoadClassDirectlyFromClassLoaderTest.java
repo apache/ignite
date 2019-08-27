@@ -36,6 +36,7 @@ import org.junit.Test;
 public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCommonAbstractTest {
     /** P2P class path property. */
     public static final String CLS_PATH_PROPERTY = "p2p.uri.cls";
+
     /** Compute task name. */
     private static String COMPUTE_TASK_NAME = "org.apache.ignite.tests.p2p.compute.ExternalCallable";
 
