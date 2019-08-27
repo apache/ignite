@@ -836,20 +836,27 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
-        assert ctx.database() instanceof GridCacheDatabaseSharedManager
-            : "Destroying cache data store when persistence is not enabled: " + ctx.database();
-
-        int partId = store.partId();
-
+    @Override public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
         ctx.database().checkpointReadLock();
 
         try {
-            saveStoreMetadata(store, null, true, false);
+            super.destroyCacheDataStore(store);
         }
         finally {
             ctx.database().checkpointReadUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
+        assert ctx.database() instanceof GridCacheDatabaseSharedManager
+            : "Destroying cache data store when persistence is not enabled: " + ctx.database();
+
+        assert ctx.database().checkpointLockIsHeldByThread();
+
+        int partId = store.partId();
+
+        saveStoreMetadata(store, null, true, false);
 
         ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId);
     }
