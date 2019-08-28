@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_HANDSHAKE_TIMEOUT_TASK;
+
 /**
  * This class implements stream parser based on {@link ClientListenerNioServerBuffer}.
  * <p>
@@ -40,6 +42,9 @@ public class ClientListenerBufferedParser implements GridNioParser {
     /** Buffer metadata key. */
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Length limit of handshake message - 128 MB.*/
+    private static final int HANDSHAKE_MSG_LEN_LIMIT = 1024 * 1024 * 128;
+
     /** {@inheritDoc} */
     @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
         ClientListenerNioServerBuffer nioBuf = ses.meta(BUF_META_KEY);
@@ -54,7 +59,18 @@ public class ClientListenerBufferedParser implements GridNioParser {
             assert old == null;
         }
 
-        return nioBuf.read(buf);
+        int msgLenLimit = 0;
+
+        // It means, we are still in handshake process
+        if (ses.meta(CONN_CTX_HANDSHAKE_TIMEOUT_TASK) != null)
+            msgLenLimit = HANDSHAKE_MSG_LEN_LIMIT;
+
+        try {
+            return nioBuf.read(buf, msgLenLimit);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to parse message from remote " + ses.remoteAddress(), e);
+        }
     }
 
     /** {@inheritDoc} */

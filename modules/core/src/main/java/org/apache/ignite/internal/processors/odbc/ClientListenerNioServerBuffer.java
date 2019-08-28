@@ -66,7 +66,7 @@ public class ClientListenerNioServerBuffer {
      * @return Message bytes or {@code null} if message is not fully read yet.
      * @throws IgniteCheckedException If failed to parse message.
      */
-    @Nullable public byte[] read(ByteBuffer buf) throws IgniteCheckedException {
+    @Nullable public byte[] read(ByteBuffer buf, int msgLenLimit) throws IgniteCheckedException {
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8*(4 + cnt));
@@ -75,7 +75,7 @@ public class ClientListenerNioServerBuffer {
                 return null;
 
             // If count is 0 then message size should be inited.
-            if (msgSize <= 0)
+            if (msgSize <= 0 || (msgLenLimit > 0 && msgSize > msgLenLimit))
                 throw new IgniteCheckedException("Invalid message size: " + msgSize);
 
             data = new byte[msgSize];
