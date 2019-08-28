@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import javax.management.ObjectName;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -65,7 +66,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.management.ObjectName;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -170,6 +170,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
@@ -194,6 +195,7 @@ import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
 import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
@@ -1971,13 +1973,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void waitForCheckpoint(String reason) throws IgniteCheckedException {
+    @Override public <R> void waitForCheckpoint(String reason, IgniteInClosure<? super IgniteInternalFuture<R>> lsnr)
+        throws IgniteCheckedException {
         Checkpointer cp = checkpointer;
 
         if (cp == null)
             return;
 
-        CheckpointProgressSnapshot progSnapshot = cp.wakeupForCheckpoint(0, reason);
+        CheckpointProgressSnapshot progSnapshot = cp.wakeupForCheckpoint(0, reason, lsnr);
 
         IgniteInternalFuture fut1 = progSnapshot.cpFinishFut;
 
@@ -3544,6 +3547,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         private CheckpointProgressSnapshot wakeupForCheckpoint(long delayFromNow, String reason) {
+            return wakeupForCheckpoint(delayFromNow, reason, null);
+        }
+
+        /**
+         *
+         */
+        private <R> CheckpointProgressSnapshot wakeupForCheckpoint(
+            long delayFromNow,
+            String reason,
+            IgniteInClosure<? super IgniteInternalFuture<R>> lsnr
+        ) {
+            if (lsnr != null) {
+                //To be sure lsnr always will be executed in checkpoint thread.
+                synchronized (this) {
+                    CheckpointProgress sched = scheduledCp;
+
+                    sched.cpFinishFut.listen(lsnr);
+                }
+            }
+
             CheckpointProgress sched = scheduledCp;
 
             long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
@@ -3995,7 +4018,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
             long cpTs = updateLastCheckpointTime();
 
-            CheckpointProgress curr = updateCurrentCheckpointProgress();
+            CheckpointProgress curr = scheduledCp;
 
             CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
 
@@ -4028,6 +4051,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointLock.writeLock().lock();
 
             try {
+                updateCurrentCheckpointProgress();
+
                 assert curCpProgress == curr : "Concurrent checkpoint begin should not be happened";
 
                 tracker.onMarkStart();
