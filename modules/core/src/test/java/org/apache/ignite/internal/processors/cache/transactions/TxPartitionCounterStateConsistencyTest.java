@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -36,6 +37,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,8 +50,10 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -58,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -590,10 +595,14 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         fut2.get();
 
         log.info("TX: puts=" + puts.sum() + ", restarts=" + restarts.sum() + ", size=" + cache.size());
+
+        assertPartitionsSame(idleVerify(client));
     }
 
     /**
      * Tests tx load concurrently with PME not changing tx topology.
+     * In such scenario a race is possible with tx updates and PME counters set.
+     * Outdated counters on PME should be ignored.
      */
     @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_TxDuringPME() throws Exception {
@@ -609,8 +618,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
-        IgniteEx grid = grid(1);
-        Integer key0 = primaryKey(grid.cache(DEFAULT_CACHE_NAME));
+        // Put one key per partition.
+        try(IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int k = 0; k < PARTS_CNT; k++)
+                streamer.addData(k, 0);
+        }
+
+        Integer key0 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
         Integer key = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
@@ -643,23 +657,22 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         cliSpi.blockMessages((node, message) -> {
             // Block second lock map req.
             return message instanceof GridNearLockRequest && node.order() == crd.cluster().localNode().order();
-
         });
 
         IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
             try(Transaction tx = client.transactions().txStart()) {
                 Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                map.put(key, key); // clientFirst=true
-                map.put(key0, key0); // clientFirst=false
+                map.put(key, key); // clientFirst=true in lockAll.
+                map.put(key0, key0); // clientFirst=false in lockAll.
 
                 cache.putAll(map);
 
-                tx.commit(); //  Will start preparing in the middle of PME.
+                tx.commit(); // Will start preparing in the middle of PME.
             }
         });
 
-        IgniteInternalFuture crdFut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture lockFut = GridTestUtils.runAsync(() -> {
             try {
                 cliSpi.waitForBlocked(); // Delay first before PME.
 
@@ -674,14 +687,159 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         });
 
-        txFut.get();
-        crdFut.get();
+        txFut.get(); // Transaction should not be blocked by concurrent PME.
+        lockFut.get();
 
         spi.stopBlock();
 
         fut.get();
 
         awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+
+        // Expect correct reservation counters.
+        PartitionUpdateCounter cntr = counter(key, grid(0).name());
+        assertNotNull(cntr);
+        assertEquals(cntr.toString(), 2, cntr.reserved());
+    }
+
+    /**
+     * Tests tx load concurrently with PME for switching late affinity.
+     * <p>
+     * Scenario: two keys tx mapped locally on late affinity topology and when mapped and prepared remotely on ideal
+     * topology, first key is mapped to non-moving partition, second is mapped on moving partition.
+     * <p>
+     * Success: key over moving partition is prepared on new owner (choosed after late affinity switch),
+     * otherwise it's possible txs are prepared on different primaries after late affinity switch.
+     */
+    @Test
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_LateAffinitySwitch() throws Exception {
+        backups = 1;
+
+        customDiscoSpi = new BlockTcpDiscoverySpi().setIpFinder(IP_FINDER);
+
+        Field rndAddrsField = U.findField(BlockTcpDiscoverySpi.class, "skipAddrsRandomization");
+        assertNotNull(rndAddrsField);
+        rndAddrsField.set(customDiscoSpi, true);
+
+        Ignite crd = startGrid(0); // Start coordinator with custom discovery SPI.
+        IgniteEx g1 = startGrid(1);
+        startGrid(2);
+
+        crd.cluster().active(true);
+
+        // Same name pattern as in test configuration.
+        String consistentId = "node" + getTestIgniteInstanceName(3);
+
+        List<Integer> g1Keys = primaryKeys(g1.cache(DEFAULT_CACHE_NAME), 10);
+        List<Integer> movingFromG1 = movingKeysAfterJoin(g1, DEFAULT_CACHE_NAME, 10, null, consistentId);
+
+        // Retain only stable keys;
+        g1Keys.removeAll(movingFromG1);
+
+        // The key will move from grid0 to grid3.
+        Integer key = movingKeysAfterJoin(crd, DEFAULT_CACHE_NAME, 1, null, consistentId).get(0);
+
+        IgniteEx g3 = startGrid(3);
+
+        assertEquals(consistentId, g3.localNode().consistentId());
+
+        resetBaselineTopology();
+        awaitPartitionMapExchange();
+
+        assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(g1.localNode(), g1Keys.get(0)));
+
+        stopGrid(3);
+
+        Ignite client = startGrid("client");
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = client.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME + "2"));
+
+        // Put one key per partition.
+        for (int k = 0; k < PARTS_CNT; k++) {
+            cache.put(k, 0);
+            cache2.put(k, 0);
+        }
+
+        CountDownLatch resumeDiscoSndLatch = new CountDownLatch(1);
+
+        BlockTcpDiscoverySpi crdDiscoSpi = (BlockTcpDiscoverySpi)grid(0).configuration().getDiscoverySpi();
+        CyclicBarrier sync = new CyclicBarrier(2);
+
+        crdDiscoSpi.setClosure((node, msg) -> {
+            if (msg instanceof CacheAffinityChangeMessage) {
+                U.awaitQuiet(sync);
+                U.awaitQuiet(resumeDiscoSndLatch);
+            }
+
+            return null;
+        });
+
+        // Locks mapped wait.
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            try {
+                startGrid(SERVER_NODES);
+
+                awaitPartitionMapExchange();
+            }
+            catch (Exception e) {
+                fail(X.getFullStackTrace(e));
+            }
+        });
+
+        sync.await();
+
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
+        clientSpi.blockMessages((node, msg) -> msg instanceof GridNearLockRequest);
+
+        IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart()) {
+                Map<Integer, Integer> map = new LinkedHashMap<>();
+
+                map.put(g1Keys.get(0), g1Keys.get(0)); // clientFirst=true in lockAll mapped to stable part.
+                map.put(key, key); // clientFirst=false in lockAll mapped to moving part.
+
+                cache.putAll(map);
+                cache2.putAll(new LinkedHashMap<>(map));
+
+                tx.commit(); // Will start preparing in the middle of PME.
+            }
+        });
+
+        IgniteInternalFuture lockFut = GridTestUtils.runAsync(() -> {
+            try {
+                // Wait for first lock request sent on local (late) topology.
+                clientSpi.waitForBlocked();
+                // Continue late switch PME.
+                resumeDiscoSndLatch.countDown();
+                crdDiscoSpi.setClosure(null);
+
+                // Wait late affinity switch.
+                awaitPartitionMapExchange();
+                // Continue tx mapping and preparing.
+                clientSpi.stopBlock();
+            }
+            catch (InterruptedException e) {
+                fail(X.getFullStackTrace(e));
+            }
+        });
+
+        fut.get();
+        txFut.get();
+        lockFut.get();
+
+        assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+
+        // TX must be prepared over new owner.
+        PartitionUpdateCounter cntr = counter(key, grid(3).name());
+        assertNotNull(cntr);
+        assertEquals(cntr.toString(), 2, cntr.reserved());
+
+        PartitionUpdateCounter cntr2 = counter(key, DEFAULT_CACHE_NAME + "2", grid(3).name());
+        assertNotNull(cntr2);
+        assertEquals(cntr2.toString(), 2, cntr2.reserved());
     }
 
     /**
