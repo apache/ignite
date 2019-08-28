@@ -113,6 +113,36 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    public void testParallelIteratorWithReducePhase() throws Exception {
+        IgniteEx g1 = startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        Iterator<List<?>> cursorIter0 = sql(g1, "SELECT * FROM test limit 3").iterator();
+        Iterator<List<?>> cursorIter1 = distributedSql(g1, "SELECT * FROM test limit 3").iterator();
+
+        int r0 = 0;
+        int r1 = 0;
+
+        for (int i =0; i<KEY_CNT; i++) {
+            if (cursorIter0.hasNext()) {
+                r0++;
+
+                cursorIter0.next();
+            }
+
+            if (cursorIter1.hasNext()) {
+                r1++;
+
+                cursorIter1.next();
+            }
+        }
+
+        assertEquals(3, r0);
+        assertEquals(3, r1);
+    }
+
+    /** */
     public void testParallelIterator() throws Exception {
         IgniteEx g1 = startGrid(0);
 
