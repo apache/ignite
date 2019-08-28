@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -257,7 +258,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      *
      */
     private Collection<GridNearTxLocal> nearTxs(long duration) {
+        if (gridKernalCtx.cache().context() == null)
+            return Collections.emptyList();
+
         final long start = System.currentTimeMillis();
+
         IgniteClosure<IgniteInternalTx, GridNearTxLocal> c = new IgniteClosure<IgniteInternalTx, GridNearTxLocal>() {
             @Override public GridNearTxLocal apply(IgniteInternalTx tx) {
                 return ((GridNearTxLocal)tx);
@@ -277,6 +282,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      *
      */
     private long nearTxNum() {
+        if (gridKernalCtx.cache().context() == null)
+            return 0;
+
         IgnitePredicate<IgniteInternalTx> pred = new IgnitePredicate<IgniteInternalTx>() {
             @Override public boolean apply(IgniteInternalTx tx) {
                 return tx.local() && tx.near();
@@ -292,7 +300,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     private long txHoldingLockNum() {
         long holdingLockCounter = 0;
 
+        if (gridKernalCtx.cache().context() == null)
+            return 0;
+
         IgniteTxManager tm = gridKernalCtx.cache().context().tm();
+
         for (IgniteInternalTx tx : tm.activeTransactions()) {
             if ((tx.optimistic() && tx.state() == TransactionState.ACTIVE) || tx.empty() || !tx.local())
                 continue;
@@ -307,7 +319,13 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      * Count total number of locked keys on local node.
      */
     private long txLockedKeysNum() {
+        if (gridKernalCtx.cache().context() == null)
+            return 0;
+
         GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccManager == null)
+            return 0;
 
         return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
     }

@@ -64,6 +64,8 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
+        stopGrid(0);
+
         assertFalse("There was an exception during metric read. See log for details.", lsnr.check());
     }
 }
