@@ -59,8 +59,11 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     /** Filter evaluation results for fast-commit transactions. */
     private boolean[] filterRes;
 
-    /** {@code True} if client node should remap lock request. */
+    /** Set if client node should remap lock request. */
     private AffinityTopologyVersion clientRemapVer;
+
+    /** {@code True} if remap version is compatible with current version. Used together with clientRemapVer. */
+    private boolean compatibleRemapVer;
 
     /**
      * Empty constructor (required by {@link Externalizable}).
@@ -77,8 +80,10 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param filterRes {@code True} if need to allocate array for filter evaluation results.
      * @param cnt Count.
      * @param err Error.
-     * @param clientRemapVer {@code True} if client node should remap lock request.
+     * @param clientRemapVer {@code True} if client node should remap lock request. If {@code compatibleRemapVer} is
+     * {@code true} when first request is not remapped, but all subsequent will use remap version.
      * @param addDepInfo Deployment info.
+     * @param compatibleRemapVer {@code True} if remap version is compatible with lock version.
      */
     public GridNearLockResponse(
         int cacheId,
@@ -89,7 +94,8 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         int cnt,
         Throwable err,
         AffinityTopologyVersion clientRemapVer,
-        boolean addDepInfo
+        boolean addDepInfo,
+        boolean compatibleRemapVer
     ) {
         super(cacheId, lockVer, futId, cnt, err, addDepInfo);
 
@@ -103,6 +109,8 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
         if (filterRes)
             this.filterRes = new boolean[cnt];
+
+        this.compatibleRemapVer = compatibleRemapVer;
     }
 
     /**
@@ -110,6 +118,13 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      */
     @Nullable public AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
+    }
+
+    /**
+     * @return {@code True} is remap version is compatible with current topology version.
+     */
+    public boolean compatibleRemapVersion() {
+        return compatibleRemapVer;
     }
 
     /**
@@ -214,30 +229,36 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
+                if (!writer.writeBoolean("compatibleRemapVer", compatibleRemapVer))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeBooleanArray("filterRes", filterRes))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeObjectArray("mappedVers", mappedVers, MessageCollectionItemType.MSG))
+                if (!writer.writeBooleanArray("filterRes", filterRes))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeObjectArray("mappedVers", mappedVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 16:
+                if (!writer.writeInt("miniId", miniId))
+                    return false;
+
+                writer.incrementState();
+
+            case 17:
                 if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
                     return false;
 
@@ -268,7 +289,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 12:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                compatibleRemapVer = reader.readBoolean("compatibleRemapVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +297,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 13:
-                filterRes = reader.readBooleanArray("filterRes");
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +305,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 14:
-                mappedVers = reader.readObjectArray("mappedVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                filterRes = reader.readBooleanArray("filterRes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +313,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 15:
-                miniId = reader.readInt("miniId");
+                mappedVers = reader.readObjectArray("mappedVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,6 +321,14 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 16:
+                miniId = reader.readInt("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 17:
                 pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -319,7 +348,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 17;
+        return 18;
     }
 
     /** {@inheritDoc} */

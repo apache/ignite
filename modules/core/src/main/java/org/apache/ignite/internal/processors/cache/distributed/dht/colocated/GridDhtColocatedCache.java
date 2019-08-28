@@ -134,7 +134,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         ctx.io().addCacheHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse>() {
             @Override public void apply(UUID nodeId, GridNearLockResponse res) {
-                processLockResponse(nodeId, res);
+                processNearLockResponse(nodeId, res);
             }
         });
     }
@@ -1163,7 +1163,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processLockResponse(UUID nodeId, GridNearLockResponse res) {
+    private void processNearLockResponse(UUID nodeId, GridNearLockResponse res) {
         if (txLockMsgLog.isDebugEnabled())
             txLockMsgLog.debug("Received near lock response [txId=" + res.version() + ", node=" + nodeId + ']');
 
