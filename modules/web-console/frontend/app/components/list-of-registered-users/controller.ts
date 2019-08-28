@@ -214,7 +214,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
         if (ids.length) {
             const user = this.gridApi.selection.legacyGetSelectedRows()[0];
-            const other = this.user.id !== user.id;
+            const other = this.user.email !== user.email;
 
             this.actionOptions[0].available = other; // Become this user.
             this.actionOptions[1].available = other && user.admin; // Revoke admin.
