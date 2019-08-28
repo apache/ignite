@@ -508,14 +508,14 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
-     * Preload entries.
+     * Store entries.
      *
      * @param partId Partition number.
      * @param infos Entry infos.
      * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
      * @throws IgniteCheckedException If failed.
      */
-    public void preload(int partId, Iterator<GridCacheEntryInfo> infos,
+    public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
     /**

@@ -1214,7 +1214,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void preload(int partId, Iterator<GridCacheEntryInfo> infos,
+    @Override public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(partId);
 
