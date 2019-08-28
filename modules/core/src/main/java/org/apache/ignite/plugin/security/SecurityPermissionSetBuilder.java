@@ -155,6 +155,23 @@ public class SecurityPermissionSetBuilder {
     }
 
     /**
+     * Append permission set.
+     *
+     * @param permSet Permission set.
+     * @return {@link SecurityPermissionSetBuilder} refer to same permission builder.
+     */
+    public SecurityPermissionSetBuilder appendPermissionSet(SecurityPermissionSet permSet) {
+        append(cachePerms, permSet.cachePermissions());
+        append(taskPerms, permSet.taskPermissions());
+        append(srvcPerms, permSet.servicePermissions());
+
+        if (permSet.systemPermissions() != null)
+            sysPerms.addAll(permSet.systemPermissions());
+
+        return this;
+    }
+
+    /**
      * Validate method use patterns.
      *
      * @param ptrns Pattern.
@@ -209,6 +226,22 @@ public class SecurityPermissionSetBuilder {
     }
 
     /**
+     * @param target Permissions map to append to.
+     * @param source Permissions than need to be appended.
+     */
+    private void append(
+        Map<String, Collection<SecurityPermission>> target,
+        Map<String, Collection<SecurityPermission>> source
+    ) {
+        assert target != null;
+
+        if (source != null) {
+            for (Map.Entry<String, Collection<SecurityPermission>> e : source.entrySet())
+                append(target, e.getKey(), e.getValue());
+        }
+    }
+
+    /**
      * @param permsMap Permissions map.
      * @param name Name.
      * @param perms Permission.
@@ -224,8 +257,19 @@ public class SecurityPermissionSetBuilder {
 
         Collection<SecurityPermission> col = permsMap.get(name);
 
-        if (col == null)
+        if (col == null) {
+            if (!(perms instanceof Set)) {
+                Set<SecurityPermission> set = U.newLinkedHashSet(perms.size());
+
+                set.addAll(perms);
+
+                perms = set;
+            }
+
+            assert perms instanceof Set;
+
             permsMap.put(name, perms);
+        }
         else
             col.addAll(perms);
     }
