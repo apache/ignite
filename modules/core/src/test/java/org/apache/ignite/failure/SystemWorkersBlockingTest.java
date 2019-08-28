@@ -100,7 +100,7 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
 
         ignite.context().workersRegistry().register(worker);
 
-        assertTrue(hndLatch.await(ignite.configuration().getFailureDetectionTimeout() * 2, TimeUnit.MILLISECONDS));
+        assertTrue(hndLatch.await(ignite.configuration().getSystemWorkerBlockedTimeout() * 2, TimeUnit.MILLISECONDS));
 
         Thread runner = worker.runner();
 
