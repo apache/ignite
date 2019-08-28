@@ -360,10 +360,10 @@ public class CacheGroupMetricsImpl {
 
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
 
-        Map<Integer, Set<String>> partsMap = new LinkedHashMap<>();
-
         if (partFullMap == null)
-            return partsMap;
+            return Collections.emptyMap();
+
+        Map<Integer, Set<String>> partsMap = new LinkedHashMap<>();
 
         for (int part = 0; part < parts; part++) {
             Set<String> partNodesSet = new HashSet<>();
