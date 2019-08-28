@@ -16,6 +16,7 @@
 
 package org.apache.ignite.plugin.security;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,6 +141,45 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         assertEquals(exp.servicePermissions(), actual.servicePermissions());
         assertEquals(exp.systemPermissions(), actual.systemPermissions());
         assertEquals(exp.defaultAllowAll(), actual.defaultAllowAll());
+    }
+
+    /**
+     * Test to check correct work of {@link SecurityPermissionSetBuilder#appendPermissionSet permission builder}
+     */
+    @Test
+    public void testAppendPermissionsSet() {
+        final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
+        SecurityBasicPermissionSet permSet = new SecurityBasicPermissionSet();
+
+        Map<String, Collection<SecurityPermission>> permCache = new HashMap<>();
+        permCache.put("cache1", permissions(CACHE_PUT, CACHE_REMOVE));
+        permCache.put("cache2", permissions(CACHE_READ));
+        permSet.setCachePermissions(permCache);
+
+        Map<String, Collection<SecurityPermission>> permTask = new HashMap<>();
+        permTask.put("task1", permissions(TASK_CANCEL));
+        permTask.put("task2", permissions(TASK_EXECUTE));
+        permSet.setTaskPermissions(permTask);
+
+        Map<String, Collection<SecurityPermission>> permSrvc = new HashMap<>();
+        permSrvc.put("service1", permissions(SERVICE_DEPLOY));
+        permSrvc.put("service2", permissions(SERVICE_INVOKE));
+        permSet.setServicePermissions(permSrvc);
+
+        Collection<SecurityPermission> permSys = new ArrayList<>(permissions(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY));
+        permSet.setSystemPermissions(permSys);
+
+        permsBuilder.appendPermissionSet(permSet);
+
+        SecurityPermissionSet actual = permsBuilder.build();
+
+        assertEquals(permCache, actual.cachePermissions());
+        assertEquals(permTask, actual.taskPermissions());
+        assertEquals(permSrvc, actual.servicePermissions());
+        assertEquals(permSys.size(), actual.systemPermissions().size());
+        for (SecurityPermission permission : permSys) {
+            actual.systemPermissions().contains(permission);
+        }
     }
 
     /**
