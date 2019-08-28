@@ -37,6 +37,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -595,6 +596,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
     /**
      * Tests tx load concurrently with PME not changing tx topology.
+     * In such scenario a race is possible with tx updates and PME counters set.
+     * Outdated counters on PME should be ignored.
      */
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_TxDuringPME() throws Exception {
         backups = 2;
@@ -610,8 +613,10 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         // Put one key per partition.
-        for (int k = 0; k < PARTS_CNT; k++)
-            cache.put(k, 0);
+        try(IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int k = 0; k < PARTS_CNT; k++)
+                streamer.addData(k, 0);
+        }
 
         IgniteEx grid = grid(1);
         Integer key0 = primaryKey(grid.cache(DEFAULT_CACHE_NAME));
@@ -662,7 +667,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         });
 
-        IgniteInternalFuture crdFut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture lockFut = GridTestUtils.runAsync(() -> {
             try {
                 cliSpi.waitForBlocked(); // Delay first before PME.
 
@@ -677,8 +682,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         });
 
-        txFut.get();
-        crdFut.get();
+        txFut.get(); // Transaction should not be blocked by concurrent PME.
+        lockFut.get();
 
         spi.stopBlock();
 

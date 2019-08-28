@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMu
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithPrimaryIndexCorruptionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheMapOnInvalidTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
 
@@ -112,6 +113,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(CachePartitionLossDetectionOnNodeLeftTest.class);
         suite.addTestSuite(CachePartitionLostWhileClearingTest.class);
 
+        suite.addTestSuite(TxCrossCacheMapOnInvalidTopologyTest.class);
         return suite;
     }
 }
