@@ -224,6 +224,9 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
+    /** Default system worker blocked timeout in millis. */
+    public static final Long DFLT_SYS_WORKER_BLOCKED_TIMEOUT = 2 * 60 * 1000L;
+
     /** Default failure detection timeout for client nodes in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
@@ -452,7 +455,7 @@ public class IgniteConfiguration {
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
     /** Timeout for blocked system workers detection. */
-    private Long sysWorkerBlockedTimeout;
+    private Long sysWorkerBlockedTimeout = DFLT_SYS_WORKER_BLOCKED_TIMEOUT;
 
     /** Failure detection timeout for client nodes. */
     private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
