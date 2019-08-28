@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Metric
-{
-    using System.Diagnostics.CodeAnalysis;
-
-    /// <summary>
-    /// MetricExporter SPI.
-    /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IMetricExporterSpi
-    {
-        // No-op.
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Contains frequency encoding preprocessor.
+ */
+package org.apache.ignite.ml.preprocessing.encoding.frequency;

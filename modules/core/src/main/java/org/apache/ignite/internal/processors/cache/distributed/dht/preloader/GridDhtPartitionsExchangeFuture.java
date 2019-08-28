@@ -1837,7 +1837,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (grp.isLocal())
                 continue;
 
-            grp.preloader().unwindUndeploys();
+            grp.preloader().pause();
+
+            try {
+                grp.unwindUndeploys();
+            }
+            finally {
+                grp.preloader().resume();
+            }
 
             cctx.exchange().exchangerUpdateHeartbeat();
         }
