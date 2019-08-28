@@ -144,6 +144,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -5095,19 +5096,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             //write ports
-            sb.a("[");
-            Iterator<GridPortRecord> it = ctx.ports().records().iterator();
+            final GridPortProcessor ports = ctx.ports();
 
-            while (it.hasNext()) {
-                GridPortRecord rec = it.next();
+            if (ports != null) {
+                sb.a("[");
+                Iterator<GridPortRecord> it = ports.records().iterator();
 
-                sb.a(rec.protocol()).a(":").a(rec.port());
+                while (it.hasNext()) {
+                    GridPortRecord rec = it.next();
 
-                if (it.hasNext())
-                    sb.a(", ");
+                    sb.a(rec.protocol()).a(":").a(rec.port());
+
+                    if (it.hasNext())
+                        sb.a(", ");
+                }
+
+                sb.a("]");
             }
-
-            sb.a("]");
 
             String failMsg;
 
