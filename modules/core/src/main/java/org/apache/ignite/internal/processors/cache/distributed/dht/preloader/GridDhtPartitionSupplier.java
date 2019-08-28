@@ -245,7 +245,8 @@ class GridDhtPartitionSupplier {
 
             assert !(sctx != null && !demandMsg.partitions().isEmpty());
 
-            long maxBatchesCnt = grp.preloader().batchesPrefetchCount();
+            long maxBatchesCnt = /* Each thread should gain prefetched batches. */
+                grp.preloader().batchesPrefetchCount() * grp.shared().gridConfig().getRebalanceThreadPoolSize();
 
             if (sctx == null) {
                 if (log.isDebugEnabled())
