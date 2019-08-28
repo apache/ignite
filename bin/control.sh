@@ -150,7 +150,7 @@ fi
 #
 # Final JVM_OPTS for Java 9+ compatibility
 #
-javaMajorVersion "${JAVA_HOME}/bin/java"
+javaMajorVersion "${JAVA}"
 
 if [ $version -eq 8 ] ; then
     JVM_OPTS="\
