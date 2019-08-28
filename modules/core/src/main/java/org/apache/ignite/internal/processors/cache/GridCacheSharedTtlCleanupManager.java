@@ -171,8 +171,12 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                     return;
                 }
 
-                if (!(t instanceof IgniteInterruptedCheckedException))
+                if (!(t instanceof IgniteInterruptedCheckedException || t instanceof InterruptedException)) {
+                    if (isCancelled)
+                        return;
+
                     err = t;
+                }
 
                 throw t;
             }

@@ -229,7 +229,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             else {
                 AffinityTopologyVersion locAffVer = cctx.exchange().readyAffinityVersion();
 
-                if (locAffVer.compareTo(lastAffChangedVer) < 0) {
+                if (locAffVer.before(lastAffChangedVer)) {
                     IgniteLogger log = cacheMsg.messageLogger(cctx);
 
                     if (log.isDebugEnabled()) {
@@ -885,6 +885,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     0,
                     req.classError(),
                     null,
+                    false,
                     false);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
