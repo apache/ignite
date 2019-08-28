@@ -112,6 +112,36 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         assertEquals(KEY_CNT, r0 + r1);
     }
 
+    /** */
+    public void testParallelIterator() throws Exception {
+        IgniteEx g1 = startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        Iterator<List<?>> cursorIter0 = sql(g1, "SELECT * FROM test").iterator();
+        Iterator<List<?>> cursorIter1 = distributedSql(g1, "SELECT * FROM test").iterator();
+
+        int r0 = 0;
+        int r1 = 0;
+
+        for (int i =0; i<KEY_CNT; i++) {
+            if (cursorIter0.hasNext()) {
+                r0++;
+
+                cursorIter0.next();
+            }
+
+            if (cursorIter1.hasNext()) {
+                r1++;
+
+                cursorIter1.next();
+            }
+        }
+
+        assertTrue(r0 < KEY_CNT);
+        assertEquals(KEY_CNT, r1);
+    }
+
     /**
      * @param sql SQL query.
      * @param args Query parameters.
@@ -130,6 +160,19 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
     private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object ... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLocal(true)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setArgs(args), false);
+    }
+
+    /**
+     * @param ign Node.
+     * @param sql SQL query.
+     * @param args Query parameters.
+     * @return Results cursor.
+     */
+    private FieldsQueryCursor<List<?>> distributedSql(IgniteEx ign, String sql, Object ... args) {
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLazy(true)
             .setSchema("TEST")
             .setArgs(args), false);
