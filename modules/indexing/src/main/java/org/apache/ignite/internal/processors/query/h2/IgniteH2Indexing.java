@@ -87,7 +87,14 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
+import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
+import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
+import org.apache.ignite.internal.processors.metric.list.view.walker.SqlIndexViewWalker;
+import org.apache.ignite.internal.processors.metric.list.view.walker.SqlSchemaViewWalker;
+import org.apache.ignite.internal.processors.metric.list.view.walker.SqlTableViewWalker;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
@@ -1967,6 +1974,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         this.ctx = ctx;
 
+        GridMetricManager mmgr = ctx.metric();
+
+        mmgr.registerWalker(SqlSchemaView.class, new SqlSchemaViewWalker());
+        mmgr.registerWalker(SqlTableView.class, new SqlTableViewWalker());
+        mmgr.registerWalker(SqlIndexView.class, new SqlIndexViewWalker());
+
+        sqlQryMonList = mmgr.list(metricName("query", "sql"), "SQL queries", QueryView.class);
+        textQryMonList = mmgr.list(metricName("query", "text"), "Text queries", QueryView.class);
+
         partReservationMgr = new PartitionReservationManager(ctx);
 
         connMgr = new ConnectionManager(ctx);
@@ -1999,9 +2015,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, qryLsnr);
 
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this), ctx);
-
-        sqlQryMonList = ctx.metric().list(metricName("query", "sql"), "SQL queries", QueryView.class);
-        textQryMonList = ctx.metric().list(metricName("query", "text"), "Text queries", QueryView.class);
 
         qryHistTracker = new QueryHistoryTracker(ctx.config().getSqlQueryHistorySize());
 

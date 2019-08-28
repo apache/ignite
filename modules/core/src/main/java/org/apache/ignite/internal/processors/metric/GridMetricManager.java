@@ -25,6 +25,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +49,23 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
+import org.apache.ignite.spi.metric.list.CacheGroupView;
+import org.apache.ignite.spi.metric.list.CacheView;
+import org.apache.ignite.spi.metric.list.ClientConnectionView;
+import org.apache.ignite.spi.metric.list.ContinuousQueryView;
+import org.apache.ignite.spi.metric.list.QueryView;
+import org.apache.ignite.spi.metric.list.ServiceView;
+import org.apache.ignite.spi.metric.list.TransactionView;
+import org.apache.ignite.spi.metric.list.walker.CacheGroupViewWalker;
+import org.apache.ignite.spi.metric.list.walker.CacheViewWalker;
+import org.apache.ignite.spi.metric.list.walker.ClientConnectionViewWalker;
+import org.apache.ignite.spi.metric.list.walker.ContinuousQueryViewWalker;
+import org.apache.ignite.spi.metric.list.walker.QueryViewWalker;
+import org.apache.ignite.spi.metric.list.walker.ServiceViewWalker;
+import org.apache.ignite.spi.metric.list.walker.TransactionViewWalker;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -206,6 +222,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
+    private final Map<Class<?>, MonitoringRowAttributeWalker<?>> walkers = new HashMap<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -243,6 +261,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
+
+        registerWalker(CacheGroupView.class, new CacheGroupViewWalker());
+        registerWalker(CacheView.class, new CacheViewWalker());
+        registerWalker(ClientConnectionView.class, new ClientConnectionViewWalker());
+        registerWalker(ContinuousQueryView.class, new ContinuousQueryViewWalker());
+        registerWalker(QueryView.class, new QueryViewWalker());
+        registerWalker(ServiceView.class, new ServiceViewWalker());
+        registerWalker(TransactionView.class, new TransactionViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -306,12 +332,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
     public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, String description,
         Class<R> rowClazz) {
         return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
-            MonitoringList<Id, R> list = new MonitoringList<>(name, description, rowClazz, log);
+            MonitoringList<Id, R> list = new MonitoringList<>(name, description, rowClazz,
+                (MonitoringRowAttributeWalker<R>)walkers.get(rowClazz), log);
 
             notifyListeners(list, listCreationLsnrs, log);
 
             return list;
         });
+    }
+
+    public <R extends MonitoringRow<?>> void registerWalker(Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
+        walkers.put(rowClass, walker);
     }
 
     /** {@inheritDoc} */

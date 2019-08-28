@@ -59,14 +59,19 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
      * @param name Name of the list.
      * @param description Description of the list.
      * @param rowClass Class of the row.
+     * @param walker Row attribute walker.
      * @param log Logger.
      */
-    public MonitoringList(String name, String description, Class<R> rowClass, IgniteLogger log) {
+    public MonitoringList(String name, String description, Class<R> rowClass, MonitoringRowAttributeWalker<R> walker,
+        IgniteLogger log) {
+        assert rowClass != null;
+        assert walker != null;
+
         this.name = name;
         this.description = description;
         this.rowClass = rowClass;
         this.log = log;
-        this.walker = new MonitoringRowAttributeWalker<>(rowClass);
+        this.walker = walker;
     }
 
     /**

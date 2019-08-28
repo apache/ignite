@@ -50,7 +50,6 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -325,59 +324,6 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             assertTrue(res);
         }
-    }
-
-    @Test
-    /** */
-    public void testFieldVisitor() {
-        MonitoringRowAttributeWalker fv = new MonitoringRowAttributeWalker<>(TransactionView.class);
-
-        Set<String> fields = new HashSet<>();
-
-        fv.visitAll(new MonitoringRowAttributeWalker.AttributeVisitor() {
-            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                fields.add(name);
-            }
-
-            @Override public void acceptInt(int idx, String name) {
-                fields.add(name);
-            }
-
-            @Override public void acceptLong(int idx, String name) {
-                fields.add(name);
-            }
-
-            @Override public void acceptFloat(int idx, String name) {
-                fields.add(name);
-            }
-
-            @Override public void acceptDouble(int idx, String name) {
-                fields.add(name);
-            }
-
-            @Override public void acceptBoolean(int idx, String name) {
-                fields.add(name);
-            }
-
-            @Override public void acceptChar(int idx, String name) {
-                fields.add(name);
-            }
-
-            @Override public void acceptByte(int idx, String name) {
-                fields.add(name);
-            }
-
-            @Override public void acceptShort(int idx, String name) {
-                fields.add(name);
-            }
-        });
-
-        Set<String> expected = new HashSet<>(Arrays.asList("nodeId", "threadId", "startTime", "isolation",
-            "concurrency", "state", "timeout", "implicit", "xid", "system", "implicitSingle", "near", "dht",
-            "colocated", "local", "subjectId", "label", "onePhaseCommit", "internal"));
-
-        assertEquals(expected, fields);
-
     }
 
     /** */
