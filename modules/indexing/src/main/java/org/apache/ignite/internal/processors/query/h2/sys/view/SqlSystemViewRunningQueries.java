@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.Collections;
 import java.util.Iterator;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.QueryView;
 import org.h2.engine.Session;
@@ -34,7 +35,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
 /**
  * System view: running queries
  *
- * @deprecated Use monitoring list instead.
+ * @deprecated Use {@link GridMetricManager} instead.
  */
 @Deprecated
 public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {

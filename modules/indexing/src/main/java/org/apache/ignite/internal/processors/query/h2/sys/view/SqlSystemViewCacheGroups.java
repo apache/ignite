@@ -32,7 +32,7 @@ import org.h2.value.Value;
 /**
  * System view: cache groups.
  *
- * @deprecated Use {@link GridMetricManager#list(String, String, Class)} instead.
+ * @deprecated Use {@link GridMetricManager} instead.
  */
 @Deprecated
 public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {

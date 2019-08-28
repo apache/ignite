@@ -42,7 +42,10 @@ import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
 
 /**
  * System view of cache group IO statistics.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystemView {
     /**
      * @param ctx Grid context.

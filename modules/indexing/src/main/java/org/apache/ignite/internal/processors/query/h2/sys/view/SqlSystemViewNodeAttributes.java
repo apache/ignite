@@ -47,7 +47,6 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         Collection<ClusterNode> nodes;
 

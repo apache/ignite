@@ -26,7 +26,9 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -34,7 +36,10 @@ import org.h2.value.Value;
 
 /**
  * System view: node metrics.
+ *
+ * @deprecated Use {@link GridMetricManager} and {@link SqlViewExporterSpi} instead.
  */
+@Deprecated
 public class SqlSystemViewNodeMetrics extends SqlAbstractLocalSystemView {
     /**
      * @param ctx Grid context.

@@ -35,7 +35,6 @@ import org.h2.value.Value;
  * View that contains query history statistics on local node.
  */
 public class SqlSystemViewQueryHistoryMetrics extends SqlAbstractLocalSystemView {
-
    /**
      * Creates view with columns.
      *

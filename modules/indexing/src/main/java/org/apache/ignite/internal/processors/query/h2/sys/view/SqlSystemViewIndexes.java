@@ -18,18 +18,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -41,12 +35,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 /**
  * View that contains information about all the sql tables in the cluster.
  *
- * @deprecated Use {@link GridMetricManager#list(String, String, Class)} instead.
+ * @deprecated Use {@link GridMetricManager} instead.
  */
 @Deprecated
 public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
     /** Index monitoring list. */
-    private MonitoringList<String, SqlIndexView> idxMonList;
+    private MonitoringList<String, SqlIndexView> idxs;
 
     /**
      * Creates view with columns.
@@ -69,12 +63,12 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
             newColumn("INLINE_SIZE", Value.INT)
         );
 
-        this.idxMonList = ctx.metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
+        this.idxs = ctx.metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        return F.iterator(idxMonList.iterator(), idx -> createRow(ses,
+        return F.iterator(idxs.iterator(), idx -> createRow(ses,
             idx.cacheGroupId(),
             idx.cacheGroupName(),
             idx.cacheId(),
@@ -97,6 +91,6 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return idxMonList.size();
+        return idxs.size();
     }
 }

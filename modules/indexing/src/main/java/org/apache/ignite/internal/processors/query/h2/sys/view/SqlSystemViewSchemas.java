@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -32,7 +33,7 @@ import org.h2.result.SearchRow;
 /**
  * View that contains information about all the sql tables in the cluster.
  *
- * @deprecated Use monitoring list instead.
+ * @deprecated Use {@link GridMetricManager} instead.
  */
 @Deprecated
 public class SqlSystemViewSchemas extends SqlAbstractLocalSystemView {
