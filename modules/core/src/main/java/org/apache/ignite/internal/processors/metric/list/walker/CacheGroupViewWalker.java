@@ -29,14 +29,14 @@ public class CacheGroupViewWalker implements MonitoringRowAttributeWalker<CacheG
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "affinity", String.class);
-        v.accept(1, "atomicityMode", CacheAtomicityMode.class);
-        v.accept(2, "backups", Integer.class);
-        v.acceptInt(3, "cacheCount");
-        v.accept(4, "cacheMode", CacheMode.class);
-        v.accept(5, "dataRegionName", String.class);
-        v.acceptInt(6, "groupId");
-        v.accept(7, "groupName", String.class);
+        v.accept(0, "groupName", String.class);
+        v.acceptInt(1, "cacheCount");
+        v.accept(2, "dataRegionName", String.class);
+        v.accept(3, "cacheMode", CacheMode.class);
+        v.accept(4, "atomicityMode", CacheAtomicityMode.class);
+        v.accept(5, "affinity", String.class);
+        v.accept(6, "backups", Integer.class);
+        v.acceptInt(7, "groupId");
         v.accept(8, "nodeFilter", String.class);
         v.accept(9, "partitionLossPolicy", PartitionLossPolicy.class);
         v.accept(10, "partitions", Integer.class);
@@ -49,14 +49,14 @@ public class CacheGroupViewWalker implements MonitoringRowAttributeWalker<CacheG
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(CacheGroupView row, AttributeWithValueVisitor v) {
-        v.accept(0, "affinity", String.class, row.affinity());
-        v.accept(1, "atomicityMode", CacheAtomicityMode.class, row.atomicityMode());
-        v.accept(2, "backups", Integer.class, row.backups());
-        v.acceptInt(3, "cacheCount", row.cacheCount());
-        v.accept(4, "cacheMode", CacheMode.class, row.cacheMode());
-        v.accept(5, "dataRegionName", String.class, row.dataRegionName());
-        v.acceptInt(6, "groupId", row.groupId());
-        v.accept(7, "groupName", String.class, row.groupName());
+        v.accept(0, "groupName", String.class, row.groupName());
+        v.acceptInt(1, "cacheCount", row.cacheCount());
+        v.accept(2, "dataRegionName", String.class, row.dataRegionName());
+        v.accept(3, "cacheMode", CacheMode.class, row.cacheMode());
+        v.accept(4, "atomicityMode", CacheAtomicityMode.class, row.atomicityMode());
+        v.accept(5, "affinity", String.class, row.affinity());
+        v.accept(6, "backups", Integer.class, row.backups());
+        v.acceptInt(7, "groupId", row.groupId());
         v.accept(8, "nodeFilter", String.class, row.nodeFilter());
         v.accept(9, "partitionLossPolicy", PartitionLossPolicy.class, row.partitionLossPolicy());
         v.accept(10, "partitions", Integer.class, row.partitions());

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.metric.list.view;
 
 import java.util.UUID;
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -27,21 +28,26 @@ import org.apache.ignite.transactions.TransactionState;
 /** */
 public interface TransactionView extends MonitoringRow<IgniteUuid> {
     /** */
+    @Order
     public UUID nodeId();
 
     /** */
     public long threadId();
 
     /** */
+    @Order(4)
     public long startTime();
 
     /** */
+    @Order(5)
     public TransactionIsolation isolation();
 
     /** */
+    @Order(6)
     public TransactionConcurrency concurrency();
 
     /** */
+    @Order(1)
     public TransactionState state();
 
     /** */
@@ -51,6 +57,7 @@ public interface TransactionView extends MonitoringRow<IgniteUuid> {
     public boolean implicit();
 
     /** */
+    @Order(2)
     public IgniteUuid xid();
 
     /** */
@@ -75,6 +82,7 @@ public interface TransactionView extends MonitoringRow<IgniteUuid> {
     public UUID subjectId();
 
     /** */
+    @Order(3)
     public String label();
 
     /** */

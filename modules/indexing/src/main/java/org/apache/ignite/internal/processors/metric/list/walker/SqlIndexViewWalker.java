@@ -26,34 +26,34 @@ public class SqlIndexViewWalker implements MonitoringRowAttributeWalker<SqlIndex
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.acceptInt(0, "cacheGroupId");
-        v.accept(1, "cacheGroupName", String.class);
-        v.acceptInt(2, "cacheId");
-        v.accept(3, "cacheName", String.class);
-        v.accept(4, "columns", String.class);
-        v.accept(5, "indexName", String.class);
-        v.accept(6, "indexType", H2IndexType.class);
-        v.accept(7, "inlineSize", Integer.class);
-        v.acceptBoolean(8, "isPk");
-        v.acceptBoolean(9, "isUnique");
-        v.accept(10, "schemaName", String.class);
-        v.accept(11, "tableName", String.class);
+        v.accept(0, "indexName", String.class);
+        v.accept(1, "indexType", H2IndexType.class);
+        v.accept(2, "columns", String.class);
+        v.accept(3, "schemaName", String.class);
+        v.accept(4, "tableName", String.class);
+        v.accept(5, "cacheName", String.class);
+        v.acceptInt(6, "cacheGroupId");
+        v.accept(7, "cacheGroupName", String.class);
+        v.acceptInt(8, "cacheId");
+        v.accept(9, "inlineSize", Integer.class);
+        v.acceptBoolean(10, "isPk");
+        v.acceptBoolean(11, "isUnique");
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(SqlIndexView row, AttributeWithValueVisitor v) {
-        v.acceptInt(0, "cacheGroupId", row.cacheGroupId());
-        v.accept(1, "cacheGroupName", String.class, row.cacheGroupName());
-        v.acceptInt(2, "cacheId", row.cacheId());
-        v.accept(3, "cacheName", String.class, row.cacheName());
-        v.accept(4, "columns", String.class, row.columns());
-        v.accept(5, "indexName", String.class, row.indexName());
-        v.accept(6, "indexType", H2IndexType.class, row.indexType());
-        v.accept(7, "inlineSize", Integer.class, row.inlineSize());
-        v.acceptBoolean(8, "isPk", row.isPk());
-        v.acceptBoolean(9, "isUnique", row.isUnique());
-        v.accept(10, "schemaName", String.class, row.schemaName());
-        v.accept(11, "tableName", String.class, row.tableName());
+        v.accept(0, "indexName", String.class, row.indexName());
+        v.accept(1, "indexType", H2IndexType.class, row.indexType());
+        v.accept(2, "columns", String.class, row.columns());
+        v.accept(3, "schemaName", String.class, row.schemaName());
+        v.accept(4, "tableName", String.class, row.tableName());
+        v.accept(5, "cacheName", String.class, row.cacheName());
+        v.acceptInt(6, "cacheGroupId", row.cacheGroupId());
+        v.accept(7, "cacheGroupName", String.class, row.cacheGroupName());
+        v.acceptInt(8, "cacheId", row.cacheId());
+        v.accept(9, "inlineSize", Integer.class, row.inlineSize());
+        v.acceptBoolean(10, "isPk", row.isPk());
+        v.acceptBoolean(11, "isUnique", row.isUnique());
     }
 
     /** {@inheritDoc} */

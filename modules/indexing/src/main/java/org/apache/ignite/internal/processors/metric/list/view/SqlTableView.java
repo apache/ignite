@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric.list.view;
 
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
@@ -31,12 +32,15 @@ public interface SqlTableView extends MonitoringRow<String> {
     public int cacheId();
 
     /** */
+    @Order(2)
     public String cacheName();
 
     /** */
+    @Order(1)
     public String schemaName();
 
     /** */
+    @Order
     public String tableName();
 
     /** */

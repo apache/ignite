@@ -31,24 +31,24 @@ public class CacheViewWalker implements MonitoringRowAttributeWalker<CacheView> 
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "affinity", String.class);
-        v.accept(1, "affinityMapper", String.class);
-        v.accept(2, "atomicityMode", CacheAtomicityMode.class);
-        v.accept(3, "backups", Integer.class);
-        v.accept(4, "cacheId", Integer.class);
-        v.accept(5, "cacheLoaderFactory", String.class);
-        v.accept(6, "cacheMode", CacheMode.class);
-        v.accept(7, "cacheName", String.class);
-        v.accept(8, "cacheStoreFactory", String.class);
-        v.accept(9, "cacheType", CacheType.class);
-        v.accept(10, "cacheWriterFactory", String.class);
-        v.accept(11, "dataRegionName", String.class);
-        v.acceptLong(12, "defaultLockTimeout");
-        v.accept(13, "evictionFilter", String.class);
-        v.accept(14, "evictionPolicyFactory", String.class);
-        v.accept(15, "expiryPolicyFactory", String.class);
-        v.acceptInt(16, "groupId");
-        v.accept(17, "groupName", String.class);
+        v.accept(0, "cacheName", String.class);
+        v.accept(1, "cacheId", Integer.class);
+        v.accept(2, "cacheType", CacheType.class);
+        v.accept(3, "cacheMode", CacheMode.class);
+        v.accept(4, "atomicityMode", CacheAtomicityMode.class);
+        v.accept(5, "groupName", String.class);
+        v.accept(6, "affinity", String.class);
+        v.accept(7, "affinityMapper", String.class);
+        v.accept(8, "backups", Integer.class);
+        v.accept(9, "cacheLoaderFactory", String.class);
+        v.accept(10, "cacheStoreFactory", String.class);
+        v.accept(11, "cacheWriterFactory", String.class);
+        v.accept(12, "dataRegionName", String.class);
+        v.acceptLong(13, "defaultLockTimeout");
+        v.accept(14, "evictionFilter", String.class);
+        v.accept(15, "evictionPolicyFactory", String.class);
+        v.accept(16, "expiryPolicyFactory", String.class);
+        v.acceptInt(17, "groupId");
         v.accept(18, "interceptor", String.class);
         v.acceptBoolean(19, "isCopyOnRead");
         v.acceptBoolean(20, "isEagerTtl");
@@ -96,24 +96,24 @@ public class CacheViewWalker implements MonitoringRowAttributeWalker<CacheView> 
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(CacheView row, AttributeWithValueVisitor v) {
-        v.accept(0, "affinity", String.class, row.affinity());
-        v.accept(1, "affinityMapper", String.class, row.affinityMapper());
-        v.accept(2, "atomicityMode", CacheAtomicityMode.class, row.atomicityMode());
-        v.accept(3, "backups", Integer.class, row.backups());
-        v.accept(4, "cacheId", Integer.class, row.cacheId());
-        v.accept(5, "cacheLoaderFactory", String.class, row.cacheLoaderFactory());
-        v.accept(6, "cacheMode", CacheMode.class, row.cacheMode());
-        v.accept(7, "cacheName", String.class, row.cacheName());
-        v.accept(8, "cacheStoreFactory", String.class, row.cacheStoreFactory());
-        v.accept(9, "cacheType", CacheType.class, row.cacheType());
-        v.accept(10, "cacheWriterFactory", String.class, row.cacheWriterFactory());
-        v.accept(11, "dataRegionName", String.class, row.dataRegionName());
-        v.acceptLong(12, "defaultLockTimeout", row.defaultLockTimeout());
-        v.accept(13, "evictionFilter", String.class, row.evictionFilter());
-        v.accept(14, "evictionPolicyFactory", String.class, row.evictionPolicyFactory());
-        v.accept(15, "expiryPolicyFactory", String.class, row.expiryPolicyFactory());
-        v.acceptInt(16, "groupId", row.groupId());
-        v.accept(17, "groupName", String.class, row.groupName());
+        v.accept(0, "cacheName", String.class, row.cacheName());
+        v.accept(1, "cacheId", Integer.class, row.cacheId());
+        v.accept(2, "cacheType", CacheType.class, row.cacheType());
+        v.accept(3, "cacheMode", CacheMode.class, row.cacheMode());
+        v.accept(4, "atomicityMode", CacheAtomicityMode.class, row.atomicityMode());
+        v.accept(5, "groupName", String.class, row.groupName());
+        v.accept(6, "affinity", String.class, row.affinity());
+        v.accept(7, "affinityMapper", String.class, row.affinityMapper());
+        v.accept(8, "backups", Integer.class, row.backups());
+        v.accept(9, "cacheLoaderFactory", String.class, row.cacheLoaderFactory());
+        v.accept(10, "cacheStoreFactory", String.class, row.cacheStoreFactory());
+        v.accept(11, "cacheWriterFactory", String.class, row.cacheWriterFactory());
+        v.accept(12, "dataRegionName", String.class, row.dataRegionName());
+        v.acceptLong(13, "defaultLockTimeout", row.defaultLockTimeout());
+        v.accept(14, "evictionFilter", String.class, row.evictionFilter());
+        v.accept(15, "evictionPolicyFactory", String.class, row.evictionPolicyFactory());
+        v.accept(16, "expiryPolicyFactory", String.class, row.expiryPolicyFactory());
+        v.acceptInt(17, "groupId", row.groupId());
         v.accept(18, "interceptor", String.class, row.interceptor());
         v.acceptBoolean(19, "isCopyOnRead", row.isCopyOnRead());
         v.acceptBoolean(20, "isEagerTtl", row.isEagerTtl());

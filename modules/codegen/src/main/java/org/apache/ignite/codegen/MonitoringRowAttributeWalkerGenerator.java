@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
@@ -239,7 +240,8 @@ public class MonitoringRowAttributeWalkerGenerator {
     private void forEachMethod(Class<?> clazz, ObjIntConsumer<Method> c) {
         Method[] methods = clazz.getMethods();
 
-        List<Method> res = new ArrayList<>();
+        List<Method> notOrdered = new ArrayList<>();
+        List<Method> ordered = new ArrayList<>();
 
         for (int i = 0; i < methods.length; i++) {
             Method m = methods[i];
@@ -255,12 +257,19 @@ public class MonitoringRowAttributeWalkerGenerator {
             if (retClazz == void.class)
                 continue;
 
-            res.add(m);
+            if (m.getAnnotation(Order.class) != null)
+                ordered.add(m);
+            else
+                notOrdered.add(m);
         }
 
-        Collections.sort(res, Comparator.comparing(Method::getName));
+        Collections.sort(ordered, Comparator.comparingInt(m -> m.getAnnotation(Order.class).value()));
+        Collections.sort(notOrdered, Comparator.comparing(Method::getName));
 
-        for (int i = 0; i < res.size(); i++)
-            c.accept(res.get(i), i);
+        for (int i = 0; i < ordered.size(); i++)
+            c.accept(ordered.get(i), i);
+
+        for (int i = 0; i < notOrdered.size(); i++)
+            c.accept(notOrdered.get(i), i + ordered.size());
     }
 }

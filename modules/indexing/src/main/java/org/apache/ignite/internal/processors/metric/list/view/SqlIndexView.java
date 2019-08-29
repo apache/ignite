@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric.list.view;
 
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
@@ -65,31 +66,37 @@ public class SqlIndexView implements MonitoringRow<String> {
     }
 
     /** */
+    @Order(5)
     public String cacheName() {
         return tbl.cacheName();
     }
 
     /** */
+    @Order(3)
     public String schemaName() {
         return idx.getSchema().getName();
     }
 
     /** */
+    @Order(4)
     public String tableName() {
         return idx.getTable().getName();
     }
 
     /** */
+    @Order()
     public String indexName() {
         return idx.getName();
     }
 
     /** */
+    @Order(1)
     public H2IndexType indexType() {
         return type;
     }
 
     /** */
+    @Order(2)
     public String columns() {
         switch (type) {
             case HASH:

@@ -25,30 +25,30 @@ public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTable
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "affKeyCol", String.class);
-        v.acceptInt(1, "cacheGroupId");
-        v.accept(2, "cacheGroupName", String.class);
-        v.acceptInt(3, "cacheId");
-        v.accept(4, "cacheName", String.class);
-        v.accept(5, "keyAlias", String.class);
-        v.accept(6, "keyTypeName", String.class);
-        v.accept(7, "schemaName", String.class);
-        v.accept(8, "tableName", String.class);
+        v.accept(0, "tableName", String.class);
+        v.accept(1, "schemaName", String.class);
+        v.accept(2, "cacheName", String.class);
+        v.accept(3, "affKeyCol", String.class);
+        v.acceptInt(4, "cacheGroupId");
+        v.accept(5, "cacheGroupName", String.class);
+        v.acceptInt(6, "cacheId");
+        v.accept(7, "keyAlias", String.class);
+        v.accept(8, "keyTypeName", String.class);
         v.accept(9, "valAlias", String.class);
         v.accept(10, "valTypeName", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(SqlTableView row, AttributeWithValueVisitor v) {
-        v.accept(0, "affKeyCol", String.class, row.affKeyCol());
-        v.acceptInt(1, "cacheGroupId", row.cacheGroupId());
-        v.accept(2, "cacheGroupName", String.class, row.cacheGroupName());
-        v.acceptInt(3, "cacheId", row.cacheId());
-        v.accept(4, "cacheName", String.class, row.cacheName());
-        v.accept(5, "keyAlias", String.class, row.keyAlias());
-        v.accept(6, "keyTypeName", String.class, row.keyTypeName());
-        v.accept(7, "schemaName", String.class, row.schemaName());
-        v.accept(8, "tableName", String.class, row.tableName());
+        v.accept(0, "tableName", String.class, row.tableName());
+        v.accept(1, "schemaName", String.class, row.schemaName());
+        v.accept(2, "cacheName", String.class, row.cacheName());
+        v.accept(3, "affKeyCol", String.class, row.affKeyCol());
+        v.acceptInt(4, "cacheGroupId", row.cacheGroupId());
+        v.accept(5, "cacheGroupName", String.class, row.cacheGroupName());
+        v.acceptInt(6, "cacheId", row.cacheId());
+        v.accept(7, "keyAlias", String.class, row.keyAlias());
+        v.accept(8, "keyTypeName", String.class, row.keyTypeName());
         v.accept(9, "valAlias", String.class, row.valAlias());
         v.accept(10, "valTypeName", String.class, row.valTypeName());
     }

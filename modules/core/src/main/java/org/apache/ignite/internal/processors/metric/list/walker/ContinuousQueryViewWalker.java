@@ -26,45 +26,45 @@ public class ContinuousQueryViewWalker implements MonitoringRowAttributeWalker<C
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.acceptBoolean(0, "autoUnsubscribe");
-        v.acceptInt(1, "bufferSize");
-        v.accept(2, "cacheName", String.class);
-        v.acceptBoolean(3, "delayedRegister");
-        v.acceptLong(4, "interval");
-        v.acceptBoolean(5, "isEvents");
-        v.acceptBoolean(6, "isMessaging");
-        v.acceptBoolean(7, "isQuery");
-        v.acceptBoolean(8, "keepBinary");
-        v.acceptLong(9, "lastSendTime");
-        v.accept(10, "localListener", String.class);
-        v.accept(11, "localTransformedListener", String.class);
-        v.accept(12, "nodeId", UUID.class);
-        v.acceptBoolean(13, "notifyExisting");
-        v.acceptBoolean(14, "oldValueRequired");
-        v.accept(15, "remoteFilter", String.class);
-        v.accept(16, "remoteTransformer", String.class);
+        v.accept(0, "cacheName", String.class);
+        v.accept(1, "localListener", String.class);
+        v.accept(2, "remoteFilter", String.class);
+        v.accept(3, "remoteTransformer", String.class);
+        v.accept(4, "localTransformedListener", String.class);
+        v.acceptLong(5, "lastSendTime");
+        v.acceptBoolean(6, "autoUnsubscribe");
+        v.acceptInt(7, "bufferSize");
+        v.acceptBoolean(8, "delayedRegister");
+        v.acceptLong(9, "interval");
+        v.acceptBoolean(10, "isEvents");
+        v.acceptBoolean(11, "isMessaging");
+        v.acceptBoolean(12, "isQuery");
+        v.acceptBoolean(13, "keepBinary");
+        v.accept(14, "nodeId", UUID.class);
+        v.acceptBoolean(15, "notifyExisting");
+        v.acceptBoolean(16, "oldValueRequired");
         v.accept(17, "topic", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(ContinuousQueryView row, AttributeWithValueVisitor v) {
-        v.acceptBoolean(0, "autoUnsubscribe", row.autoUnsubscribe());
-        v.acceptInt(1, "bufferSize", row.bufferSize());
-        v.accept(2, "cacheName", String.class, row.cacheName());
-        v.acceptBoolean(3, "delayedRegister", row.delayedRegister());
-        v.acceptLong(4, "interval", row.interval());
-        v.acceptBoolean(5, "isEvents", row.isEvents());
-        v.acceptBoolean(6, "isMessaging", row.isMessaging());
-        v.acceptBoolean(7, "isQuery", row.isQuery());
-        v.acceptBoolean(8, "keepBinary", row.keepBinary());
-        v.acceptLong(9, "lastSendTime", row.lastSendTime());
-        v.accept(10, "localListener", String.class, row.localListener());
-        v.accept(11, "localTransformedListener", String.class, row.localTransformedListener());
-        v.accept(12, "nodeId", UUID.class, row.nodeId());
-        v.acceptBoolean(13, "notifyExisting", row.notifyExisting());
-        v.acceptBoolean(14, "oldValueRequired", row.oldValueRequired());
-        v.accept(15, "remoteFilter", String.class, row.remoteFilter());
-        v.accept(16, "remoteTransformer", String.class, row.remoteTransformer());
+        v.accept(0, "cacheName", String.class, row.cacheName());
+        v.accept(1, "localListener", String.class, row.localListener());
+        v.accept(2, "remoteFilter", String.class, row.remoteFilter());
+        v.accept(3, "remoteTransformer", String.class, row.remoteTransformer());
+        v.accept(4, "localTransformedListener", String.class, row.localTransformedListener());
+        v.acceptLong(5, "lastSendTime", row.lastSendTime());
+        v.acceptBoolean(6, "autoUnsubscribe", row.autoUnsubscribe());
+        v.acceptInt(7, "bufferSize", row.bufferSize());
+        v.acceptBoolean(8, "delayedRegister", row.delayedRegister());
+        v.acceptLong(9, "interval", row.interval());
+        v.acceptBoolean(10, "isEvents", row.isEvents());
+        v.acceptBoolean(11, "isMessaging", row.isMessaging());
+        v.acceptBoolean(12, "isQuery", row.isQuery());
+        v.acceptBoolean(13, "keepBinary", row.keepBinary());
+        v.accept(14, "nodeId", UUID.class, row.nodeId());
+        v.acceptBoolean(15, "notifyExisting", row.notifyExisting());
+        v.acceptBoolean(16, "oldValueRequired", row.oldValueRequired());
         v.accept(17, "topic", String.class, row.topic());
     }
 

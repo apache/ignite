@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
@@ -53,6 +54,7 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
+    @Order()
     public String groupName() {
         return grp.cacheOrGroupName();
     }
@@ -63,16 +65,19 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
+    @Order(1)
     public int cacheCount() {
         return F.size(grp.caches());
     }
 
     /** */
+    @Order(3)
     public CacheMode cacheMode() {
         return ccfg.getCacheMode();
     }
 
     /** */
+    @Order(4)
     public CacheAtomicityMode atomicityMode() {
         return ccfg.getAtomicityMode();
     }
@@ -103,6 +108,7 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
+    @Order(2)
     public String dataRegionName() {
         return ccfg.getDataRegionName();
     }

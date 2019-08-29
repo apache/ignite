@@ -18,27 +18,34 @@
 package org.apache.ignite.spi.metric.list.view;
 
 import java.util.UUID;
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
 public interface ServiceView extends MonitoringRow<IgniteUuid> {
     /** */
+    @Order(1)
     public String name();
 
     /** */
+    @Order
     public IgniteUuid id();
 
     /** */
+    @Order(2)
     public Class<?> serviceClass();
 
     /** */
+    @Order(5)
     public int totalCount();
 
     /** */
+    @Order(6)
     public int maxPerNodeCount();
 
     /** */
+    @Order(3)
     public String cacheName();
 
     /** */
@@ -51,5 +58,6 @@ public interface ServiceView extends MonitoringRow<IgniteUuid> {
     public boolean staticallyConfigured();
 
     /** */
+    @Order(4)
     public UUID originNodeId();
 }

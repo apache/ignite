@@ -27,6 +27,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
@@ -49,31 +50,37 @@ public class CacheView implements MonitoringRow<String> {
     }
 
     /** */
+    @Order(5)
     public String groupName() {
         return cache.groupDescriptor().cacheOrGroupName();
     }
 
     /** */
+    @Order(1)
     public Integer cacheId() {
         return cache.cacheId();
     }
 
     /** */
+    @Order
     public String cacheName() {
         return cache.cacheConfiguration().getName();
     }
 
     /** */
+    @Order(2)
     public CacheType cacheType() {
         return cache.cacheType();
     }
 
     /** */
+    @Order(3)
     public CacheMode cacheMode() {
         return cache.cacheConfiguration().getCacheMode();
     }
 
     /** */
+    @Order(4)
     public CacheAtomicityMode atomicityMode() {
         return cache.cacheConfiguration().getAtomicityMode();
     }

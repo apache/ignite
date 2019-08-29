@@ -27,30 +27,30 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "affinityKeyValue", String.class);
-        v.accept(1, "cacheName", String.class);
-        v.accept(2, "id", IgniteUuid.class);
-        v.acceptInt(3, "maxPerNodeCount");
-        v.accept(4, "name", String.class);
-        v.accept(5, "nodeFilter", Class.class);
-        v.accept(6, "originNodeId", UUID.class);
-        v.accept(7, "serviceClass", Class.class);
-        v.acceptBoolean(8, "staticallyConfigured");
-        v.acceptInt(9, "totalCount");
+        v.accept(0, "id", IgniteUuid.class);
+        v.accept(1, "name", String.class);
+        v.accept(2, "serviceClass", Class.class);
+        v.accept(3, "cacheName", String.class);
+        v.accept(4, "originNodeId", UUID.class);
+        v.acceptInt(5, "totalCount");
+        v.acceptInt(6, "maxPerNodeCount");
+        v.accept(7, "affinityKeyValue", String.class);
+        v.accept(8, "nodeFilter", Class.class);
+        v.acceptBoolean(9, "staticallyConfigured");
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(ServiceView row, AttributeWithValueVisitor v) {
-        v.accept(0, "affinityKeyValue", String.class, row.affinityKeyValue());
-        v.accept(1, "cacheName", String.class, row.cacheName());
-        v.accept(2, "id", IgniteUuid.class, row.id());
-        v.acceptInt(3, "maxPerNodeCount", row.maxPerNodeCount());
-        v.accept(4, "name", String.class, row.name());
-        v.accept(5, "nodeFilter", Class.class, row.nodeFilter());
-        v.accept(6, "originNodeId", UUID.class, row.originNodeId());
-        v.accept(7, "serviceClass", Class.class, row.serviceClass());
-        v.acceptBoolean(8, "staticallyConfigured", row.staticallyConfigured());
-        v.acceptInt(9, "totalCount", row.totalCount());
+        v.accept(0, "id", IgniteUuid.class, row.id());
+        v.accept(1, "name", String.class, row.name());
+        v.accept(2, "serviceClass", Class.class, row.serviceClass());
+        v.accept(3, "cacheName", String.class, row.cacheName());
+        v.accept(4, "originNodeId", UUID.class, row.originNodeId());
+        v.acceptInt(5, "totalCount", row.totalCount());
+        v.acceptInt(6, "maxPerNodeCount", row.maxPerNodeCount());
+        v.accept(7, "affinityKeyValue", String.class, row.affinityKeyValue());
+        v.accept(8, "nodeFilter", Class.class, row.nodeFilter());
+        v.acceptBoolean(9, "staticallyConfigured", row.staticallyConfigured());
     }
 
     /** {@inheritDoc} */

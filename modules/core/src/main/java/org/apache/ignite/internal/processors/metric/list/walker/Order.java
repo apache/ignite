@@ -15,39 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list.view;
+package org.apache.ignite.internal.processors.metric.list.walker;
 
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.metric.list.walker.Order;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  *
  */
-public interface QueryView extends MonitoringRow<Long> {
-    @Order(3)
-    public String originNodeId();
-
-    @Order
-    public Long id();
-
-    public String globalQueryId();
-
-    @Order(1)
-    public String query();
-
-    @Order(2)
-    public GridCacheQueryType queryType();
-
-    public String schemaName();
-
-    @Order(4)
-    public long startTime();
-
-    @Order(5)
-    public long duration();
-
-    public boolean local();
-
-    public boolean failed();
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Order {
+    public int value() default 0;
 }

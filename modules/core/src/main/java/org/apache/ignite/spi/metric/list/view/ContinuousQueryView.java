@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RemoteRoutineInfo;
+import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
@@ -59,6 +60,7 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     }
 
     /** */
+    @Order
     public String cacheName() {
         return hnd.cacheName();
     }
@@ -129,6 +131,7 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     }
 
     /** */
+    @Order(5)
     public long lastSendTime() {
         if (locQry != null)
             return -1;
@@ -145,6 +148,7 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     }
 
     /** */
+    @Order(1)
     public String localListener() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
@@ -155,6 +159,7 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     }
 
     /** */
+    @Order(2)
     public String remoteFilter() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
@@ -170,6 +175,7 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     }
 
     /** */
+    @Order(3)
     public String remoteTransformer() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
@@ -180,6 +186,7 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     }
 
     /** */
+    @Order(4)
     public String localTransformedListener() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
