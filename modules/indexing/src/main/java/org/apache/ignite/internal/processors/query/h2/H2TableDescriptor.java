@@ -47,6 +47,15 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * Information about table in database.
  */
 public class H2TableDescriptor implements GridH2SystemIndexFactory {
+    /** PK index name. */
+    public static final String PK_IDX_NAME = "_key_PK";
+
+    /** PK hashindex name */
+    public static final String PK_HASH_IDX_NAME = "_key_PK_hash";
+
+    /** Affinity key index name */
+    public static final String AFFINITY_KEY_IDX_NAME = "AFFINITY_KEY";
+
     /** Indexing. */
     private final IgniteH2Indexing idx;
 
@@ -191,7 +200,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         Index hashIdx = createHashIndex(
             tbl,
-            "_key_PK_hash",
+            PK_HASH_IDX_NAME,
             H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), keyCol, affCol)
         );
 
@@ -200,7 +209,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         // Add primary key index.
         Index pkIdx = idx.createSortedIndex(
-            "_key_PK",
+            PK_IDX_NAME,
             tbl,
             true,
             H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), keyCol, affCol),
@@ -250,7 +259,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         // Add explicit affinity key index if nothing alike was found.
         if (affCol != null && !affIdxFound) {
-            idxs.add(idx.createSortedIndex("AFFINITY_KEY", tbl, false,
+            idxs.add(idx.createSortedIndex(AFFINITY_KEY_IDX_NAME, tbl, false,
                 H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), affCol, keyCol), -1));
         }
 
