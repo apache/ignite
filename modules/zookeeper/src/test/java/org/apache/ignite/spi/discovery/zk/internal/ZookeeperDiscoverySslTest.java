@@ -103,6 +103,7 @@ public class ZookeeperDiscoverySslTest extends GridCommonAbstractTest {
      *
      */
     private void clearSystemProperties() {
+        System.setProperty("zookeeper.clientCnxnSocket", "");
         System.setProperty("zookeeper.serverCnxnFactory", "");
         System.setProperty("zookeeper.client.secure", "");
         System.setProperty("zookeeper.ssl.keyStore.location", "");
