@@ -5557,11 +5557,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         totalProcessed.addAndGet(processed);
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteCheckedException | RuntimeException | Error e) {
                         U.error(log, "Failed to restore partition state for " +
                             "groupName=" + grp.name() + " groupId=" + grp.groupId(), e);
 
-                        restoreStateError.compareAndSet(null, e);
+                        restoreStateError.compareAndSet(
+                            null,
+                            e instanceof IgniteCheckedException
+                                ? ((IgniteCheckedException)e)
+                                : new IgniteCheckedException(e)
+                        );
                     }
                 });
 
