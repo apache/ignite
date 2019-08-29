@@ -177,37 +177,28 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         for (long value : testValues)
             histogramMetric.value(value);
 
-        assertTrue("Histogram metrics should be exported via http",
-            checkHttpMetrics(expectedValuesPtrn, false, EXPORT_TIMEOUT * 10));
+        assertTrue("Histogram metrics should be exported via http", checkHttpMetrics(expectedValuesPtrn));
 
-        long[] newBounds = new long[] {1};
+        bounds = new long[] {50};
 
-        histogramMetric.reset(newBounds);
+        histogramMetric.reset(bounds);
 
         for (long value : testValues)
             histogramMetric.value(value);
 
-        String[] unexpectedValuesPtrn = expectedValuesPtrn;
-
         expectedValuesPtrn = new String[] {
-            "test_registry_test_histogram_0_1.* 0",
-            "test_registry_test_histogram_1_inf.* 6"};
+            "test_registry_test_histogram_0_50.* 3",
+            "test_registry_test_histogram_50_inf.* 3"};
 
-        assertTrue("Updated histogram metrics should be exported via http",
-            checkHttpMetrics(expectedValuesPtrn, false, EXPORT_TIMEOUT * 10));
-
-        assertFalse("Old histogram metrics should not be exported via http",
-            checkHttpMetrics(unexpectedValuesPtrn, true, EXPORT_TIMEOUT));
+        assertTrue("Updated histogram metrics should be exported via http", checkHttpMetrics(expectedValuesPtrn));
     }
 
     /**
      * @param patterns Patterns to find.
-     * @param atLeastOne At least one pattern should be found.
-     * @param timeout Timeout.
      * @return {@code True} if given patterns present in metrics from http.
      * @throws Exception If failed.
      */
-    private boolean checkHttpMetrics(String[] patterns, boolean atLeastOne, long timeout) throws Exception {
+    private boolean checkHttpMetrics(String[] patterns) throws Exception {
         return waitForCondition(() -> {
             try {
                 String httpMetrics = metricsFromHttp();
@@ -215,9 +206,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
                 for (String exp : patterns) {
                     if (!Pattern.compile(exp).matcher(httpMetrics).find())
                         return false;
-
-                    if (atLeastOne)
-                        return true;
                 }
 
                 return true;
@@ -225,7 +213,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
             catch (IOException e) {
                 return false;
             }
-        }, timeout);
+        }, EXPORT_TIMEOUT * 10);
     }
 
     /** */
