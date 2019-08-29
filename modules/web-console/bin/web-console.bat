@@ -62,7 +62,7 @@ if %MAJOR_JAVA_VER% LSS 8 (
 :checkIgniteHome1
 pushd "%~dp0"
 set IGNITE_HOME=%CD%
-popd
+
 goto :checkIgniteHome2
 
 :checkIgniteHome2
