@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -2760,28 +2759,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grpToStop Cache group to stop.
      */
     private void removeOffheapListenerAfterCheckpoint(List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop) {
-        CheckpointFuture checkpointFut;
-        do {
-            do {
-                checkpointFut = sharedCtx.database().forceCheckpoint("caches stop");
-            }
-            while (checkpointFut != null && checkpointFut.started());
-
-            if (checkpointFut != null)
-                checkpointFut.finishFuture().listen((fut) -> removeOffheapCheckpointListener(grpToStop));
+        try {
+            sharedCtx.database().waitForCheckpoint(
+                "caches stop", (fut) -> removeOffheapCheckpointListener(grpToStop)
+            );
         }
-        while (checkpointFut != null && checkpointFut.finishFuture().isDone());
-
-        if (checkpointFut != null) {
-            try {
-                checkpointFut.finishFuture().get();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-            }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
         }
-        else
-            removeOffheapCheckpointListener(grpToStop);
     }
 
     /**
