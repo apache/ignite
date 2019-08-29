@@ -21,18 +21,26 @@ import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -43,6 +51,8 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+import org.h2.util.JdbcUtils;
+import org.h2.util.Utils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -53,6 +63,21 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UP
  * H2 utility methods.
  */
 public class H2Utils {
+    /**
+     * The default precision for a char/varchar value.
+     */
+    public static final int STRING_DEFAULT_PRECISION = Integer.MAX_VALUE;
+
+    /**
+     * The default precision for a decimal value.
+     */
+    public static final int DECIMAL_DEFAULT_PRECISION = 65535;
+
+    /**
+     * The default scale for a decimal value.
+     */
+    public static final int DECIMAL_DEFAULT_SCALE = 32767;
+
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
@@ -118,9 +143,25 @@ public class H2Utils {
             .a(fullTblName)
             .a(" (");
 
+        sb.a(indexColumnsSql(h2Idx.getIndexColumns()));
+
+        sb.a(')');
+
+        return sb.toString();
+    }
+
+    /**
+     * Generate String represenation of given indexed columns.
+     *
+     * @param idxCols Indexed columns.
+     * @return String represenation of given indexed columns.
+     */
+    public static String indexColumnsSql(IndexColumn[] idxCols) {
+        GridStringBuilder sb = new SB();
+
         boolean first = true;
 
-        for (IndexColumn col : h2Idx.getIndexColumns()) {
+        for (IndexColumn col : idxCols) {
             if (first)
                 first = false;
             else
@@ -128,8 +169,6 @@ public class H2Utils {
 
             sb.a(withQuotes(col.columnName)).a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
         }
-
-        sb.a(')');
 
         return sb.toString();
     }
@@ -276,7 +315,7 @@ public class H2Utils {
         if (val == null)
             return null;
 
-        int objType = DataType.getTypeFromClass(val.getClass());
+        int objType = getTypeFromClass(val.getClass());
 
         if (objType == type)
             return val;
@@ -304,6 +343,68 @@ public class H2Utils {
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
         return resCur;
+    }
+
+    /**
+     * Maps java class on H2's Value type that is supported by Ignite. <p/> Note that Ignite supports fewer types than
+     * H2.
+     *
+     * @param x java class to map on H2's type.
+     * @return H2 type if Ignite supports this type or {@link Value#JAVA_OBJECT} otherwise.
+     * @see Value
+     * @see DataType#getTypeFromClass(Class)
+     */
+    public static int getTypeFromClass(Class<?> x) {
+        if (x == null || Void.TYPE == x)
+            return Value.NULL;
+
+        x = Utils.getNonPrimitiveClass(x);
+
+        if (String.class == x)
+            return Value.STRING;
+        else if (Integer.class == x)
+            return Value.INT;
+        else if (Long.class == x)
+            return Value.LONG;
+        else if (Boolean.class == x)
+            return Value.BOOLEAN;
+        else if (Double.class == x)
+            return Value.DOUBLE;
+        else if (Byte.class == x)
+            return Value.BYTE;
+        else if (Short.class == x)
+            return Value.SHORT;
+        else if (Character.class == x)
+            throw new IgniteSQLException("Character type is not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        else if (Float.class == x)
+            return Value.FLOAT;
+        else if (byte[].class == x)
+            return Value.BYTES;
+        else if (UUID.class == x)
+            return Value.UUID;
+        else if (Void.class == x)
+            return Value.NULL;
+        else if (BigDecimal.class.isAssignableFrom(x))
+            return Value.DECIMAL;
+        else if (Date.class.isAssignableFrom(x))
+            return Value.DATE;
+        else if (Time.class.isAssignableFrom(x))
+            return Value.TIME;
+        else if (Timestamp.class.isAssignableFrom(x))
+            return Value.TIMESTAMP;
+        else if (java.util.Date.class.isAssignableFrom(x))
+            return Value.TIMESTAMP;
+        else if (Object[].class.isAssignableFrom(x)) // Array of any type.
+            return Value.ARRAY;
+        else if (QueryUtils.isGeometryClass(x))
+            return Value.GEOMETRY;
+        else {
+            if (JdbcUtils.customDataTypesHandler != null)
+                return JdbcUtils.customDataTypesHandler.getTypeIdFromClass(x);
+
+            return Value.JAVA_OBJECT;
+        }
     }
 
     /**
@@ -339,6 +440,8 @@ public class H2Utils {
                 stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else if (obj instanceof BigDecimal)
                 stmt.setObject(idx, obj, Types.DECIMAL);
+            else if (obj.getClass() == Instant.class)
+                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else
                 stmt.setObject(idx, obj);
         }

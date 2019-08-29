@@ -183,6 +183,13 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
+     * @return Inline size.
+     */
+    public int inlineSize() {
+        return segments[0].inlineSize();
+    }
+
+    /**
      * Check if index exists in store.
      *
      * @return {@code True} if exists.

@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -59,7 +61,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests for ignite SQL system views.
@@ -103,7 +104,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param sql Sql.
      * @param args Args.
      */
-    private List<List<?>> execSql(String sql, Object ... args) {
+    private List<List<?>> execSql(String sql, Object... args) {
         return execSql(grid(), sql, args);
     }
 
@@ -125,7 +126,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, sqlE.statusCode());
     }
-    
+
     /**
      * Test system views modifications.
      */
@@ -151,6 +152,113 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertSqlError("UPDATE IGNITE.NODES SET ID = '-'");
 
         assertSqlError("DELETE IGNITE.NODES");
+    }
+
+    /**
+     * Test indexes system view.
+     *
+     * @throws Exception in case of failure.
+     */
+    public void testIndexesView() throws Exception {
+        Ignite srv = startGrid(getConfiguration());
+
+        Ignite client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+
+        srv.createCache(cacheConfiguration("TST1"));
+
+        execSql("CREATE TABLE PUBLIC.AFF_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2)) WITH \"affinity_key=ID2\"");
+
+        execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR)");
+
+        execSql("CREATE INDEX IDX_2 ON DEFAULT.CACHE_SQL(ID DESC) INLINE_SIZE 13");
+
+        execSql("CREATE TABLE PUBLIC.DFLT_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2))");
+
+        execSql("CREATE INDEX IDX_1 ON PUBLIC.DFLT_CACHE(ID2 DESC, ID1, MY_VAL DESC)");
+
+        execSql("CREATE INDEX IDX_3 ON PUBLIC.DFLT_CACHE(MY_VAL)");
+
+        execSql("CREATE TABLE PUBLIC.DFLT_AFF_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2)) WITH \"affinity_key=ID1\"");
+
+        execSql("CREATE INDEX IDX_AFF_1 ON PUBLIC.DFLT_AFF_CACHE(ID2 DESC, ID1, MY_VAL DESC)");
+
+        String idxSql = "SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
+
+        List<List<?>> clientNodeIndexes = execSql(client, idxSql);
+
+        assertTrue("Only affinity nodes know about their indexes", clientNodeIndexes.isEmpty());
+
+        List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
+
+        String[][] expRes = {
+            {"PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "\"ID2\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
+            {"PUBLIC", "AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+            {"PUBLIC", "AFF_CACHE", "_key_PK", "\"_KEY\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
+            {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"_KEY\" ASC, \"ID2\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+
+            {"DEFAULT", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"_KEY\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
+            {"DEFAULT", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"DEFAULT", "CACHE_SQL", "_key_PK", "\"_KEY\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
+            {"DEFAULT", "CACHE_SQL", "_key_PK_hash", "\"_KEY\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+
+            {"PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "\"ID1\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"_KEY\" ASC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "\"_KEY\" ASC, \"ID1\" ASC", "BTREE", "true", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "\"_KEY\" ASC, \"ID1\" ASC", "HASH", "false", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
+
+            {"PUBLIC", "DFLT_CACHE", "IDX_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"_KEY\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "IDX_3", "\"MY_VAL\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK", "\"_KEY\" ASC", "BTREE", "true", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", "false", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
+
+            {"TST1", "VALUECLASS", "TST1_INDEX", "\"KEY\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "__SCAN_", "null", "SCAN", "false", "false", "2584860", "TST1", "2584860", "TST1", "null"},
+            {"TST1", "VALUECLASS", "_key_PK", "\"_KEY\" ASC", "BTREE", "true", "true", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "_key_PK_hash", "\"_KEY\" ASC", "HASH", "false", "true", "2584860", "TST1", "2584860", "TST1", "null"},
+        };
+
+        for (int i = 0; i < srvNodeIndexes.size(); i++) {
+            List<?> resRow = srvNodeIndexes.get(i);
+
+            String[] expRow = expRes[i];
+
+            assertEquals(expRow.length, resRow.size());
+
+            for (int j = 0; j < expRow.length; j++)
+                assertEquals(expRow[j], String.valueOf(resRow.get(j)));
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Default cache configuration.
+     */
+    protected CacheConfiguration<AbstractSchemaSelfTest.KeyClass, AbstractSchemaSelfTest.ValueClass> cacheConfiguration(
+        String cacheName) throws Exception {
+        CacheConfiguration ccfg = new CacheConfiguration().setName(cacheName);
+
+        QueryEntity entity = new QueryEntity();
+
+        entity.setKeyType(AbstractSchemaSelfTest.KeyClass.class.getName());
+        entity.setValueType(AbstractSchemaSelfTest.ValueClass.class.getName());
+
+        entity.setKeyFieldName("key");
+        entity.addQueryField("key", entity.getKeyType(), null);
+
+        entity.addQueryField("id", Long.class.getName(), null);
+        entity.addQueryField("field1", Long.class.getName(), null);
+
+        entity.setKeyFields(Collections.singleton("id"));
+
+        entity.setIndexes(Collections.singletonList(
+            new QueryIndex("key", true, cacheName + "_index")
+        ));
+
+        ccfg.setQueryEntities(Collections.singletonList(entity));
+
+        return ccfg;
     }
 
     /**
@@ -197,7 +305,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param rowData Row data.
      * @param colTypes Column types.
      */
-    private void assertColumnTypes(List<?> rowData, Class<?> ... colTypes) {
+    private void assertColumnTypes(List<?> rowData, Class<?>... colTypes) {
         for (int i = 0; i < colTypes.length; i++) {
             if (rowData.get(i) != null)
                 assertEquals("Column " + i + " type", colTypes[i], rowData.get(i).getClass());
@@ -222,7 +330,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         awaitPartitionMapExchange();
 
         List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
-                "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
+            "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
             Integer.class, String.class, String.class);
@@ -367,7 +475,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         // Broadcast jobs to server and client nodes to get non zero metric values.
         for (int i = 0; i < 100; i++) {
-            IgniteFuture<Void > fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
+            IgniteFuture<Void> fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
                 .broadcastAsync(
                     new IgniteRunnable() {
                         @Override public void run() {
@@ -575,22 +683,22 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         awaitPartitionMapExchange();
 
         List<List<?>> resAll = execSql("SELECT NAME, CACHE_ID, CACHE_TYPE, GROUP_ID, GROUP_NAME, " +
-                "CACHE_MODE, ATOMICITY_MODE, IS_ONHEAP_CACHE_ENABLED, IS_COPY_ON_READ, IS_LOAD_PREVIOUS_VALUE, " +
-                "IS_READ_FROM_BACKUP, PARTITION_LOSS_POLICY, NODE_FILTER, TOPOLOGY_VALIDATOR, IS_EAGER_TTL, " +
-                "WRITE_SYNCHRONIZATION_MODE, IS_INVALIDATE, IS_EVENTS_DISABLED, IS_STATISTICS_ENABLED, " +
-                "IS_MANAGEMENT_ENABLED, BACKUPS, AFFINITY, AFFINITY_MAPPER, " +
-                "REBALANCE_MODE, REBALANCE_BATCH_SIZE, REBALANCE_TIMEOUT, REBALANCE_DELAY, REBALANCE_THROTTLE, " +
-                "REBALANCE_BATCHES_PREFETCH_COUNT, REBALANCE_ORDER, " +
-                "EVICTION_FILTER, EVICTION_POLICY_FACTORY, " +
-                "IS_NEAR_CACHE_ENABLED, NEAR_CACHE_EVICTION_POLICY_FACTORY, NEAR_CACHE_START_SIZE, " +
-                "DEFAULT_LOCK_TIMEOUT, CACHE_INTERCEPTOR, CACHE_STORE_FACTORY, " +
-                "IS_STORE_KEEP_BINARY, IS_READ_THROUGH, IS_WRITE_THROUGH, " +
-                "IS_WRITE_BEHIND_ENABLED, WRITE_BEHIND_COALESCING, WRITE_BEHIND_FLUSH_SIZE, " +
-                "WRITE_BEHIND_FLUSH_FREQUENCY, WRITE_BEHIND_FLUSH_THREAD_COUNT, WRITE_BEHIND_FLUSH_BATCH_SIZE, " +
-                "MAX_CONCURRENT_ASYNC_OPERATIONS, CACHE_LOADER_FACTORY, CACHE_WRITER_FACTORY, EXPIRY_POLICY_FACTORY, " +
-                "IS_SQL_ESCAPE_ALL, SQL_SCHEMA, SQL_INDEX_MAX_INLINE_SIZE, IS_SQL_ONHEAP_CACHE_ENABLED, " +
-                "SQL_ONHEAP_CACHE_MAX_SIZE, QUERY_DETAILS_METRICS_SIZE, QUERY_PARALLELISM, MAX_QUERY_ITERATORS_COUNT, " +
-                "DATA_REGION_NAME FROM IGNITE.CACHES");
+            "CACHE_MODE, ATOMICITY_MODE, IS_ONHEAP_CACHE_ENABLED, IS_COPY_ON_READ, IS_LOAD_PREVIOUS_VALUE, " +
+            "IS_READ_FROM_BACKUP, PARTITION_LOSS_POLICY, NODE_FILTER, TOPOLOGY_VALIDATOR, IS_EAGER_TTL, " +
+            "WRITE_SYNCHRONIZATION_MODE, IS_INVALIDATE, IS_EVENTS_DISABLED, IS_STATISTICS_ENABLED, " +
+            "IS_MANAGEMENT_ENABLED, BACKUPS, AFFINITY, AFFINITY_MAPPER, " +
+            "REBALANCE_MODE, REBALANCE_BATCH_SIZE, REBALANCE_TIMEOUT, REBALANCE_DELAY, REBALANCE_THROTTLE, " +
+            "REBALANCE_BATCHES_PREFETCH_COUNT, REBALANCE_ORDER, " +
+            "EVICTION_FILTER, EVICTION_POLICY_FACTORY, " +
+            "IS_NEAR_CACHE_ENABLED, NEAR_CACHE_EVICTION_POLICY_FACTORY, NEAR_CACHE_START_SIZE, " +
+            "DEFAULT_LOCK_TIMEOUT, CACHE_INTERCEPTOR, CACHE_STORE_FACTORY, " +
+            "IS_STORE_KEEP_BINARY, IS_READ_THROUGH, IS_WRITE_THROUGH, " +
+            "IS_WRITE_BEHIND_ENABLED, WRITE_BEHIND_COALESCING, WRITE_BEHIND_FLUSH_SIZE, " +
+            "WRITE_BEHIND_FLUSH_FREQUENCY, WRITE_BEHIND_FLUSH_THREAD_COUNT, WRITE_BEHIND_FLUSH_BATCH_SIZE, " +
+            "MAX_CONCURRENT_ASYNC_OPERATIONS, CACHE_LOADER_FACTORY, CACHE_WRITER_FACTORY, EXPIRY_POLICY_FACTORY, " +
+            "IS_SQL_ESCAPE_ALL, SQL_SCHEMA, SQL_INDEX_MAX_INLINE_SIZE, IS_SQL_ONHEAP_CACHE_ENABLED, " +
+            "SQL_ONHEAP_CACHE_MAX_SIZE, QUERY_DETAILS_METRICS_SIZE, QUERY_PARALLELISM, MAX_QUERY_ITERATORS_COUNT, " +
+            "DATA_REGION_NAME FROM IGNITE.CACHES");
 
         assertColumnTypes(resAll.get(0),
             String.class, Integer.class, String.class, Integer.class, String.class,
@@ -678,7 +786,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         ClusterMetricsImpl original = getField(node, "metrics");
 
-        setField(node, "metrics", new MockedClusterMetrics(original));;
+        setField(node, "metrics", new MockedClusterMetrics(original));
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -797,7 +905,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         fld.setAccessible(true);
 
-        return (T) fld.get(target);
+        return (T)fld.get(target);
     }
 
     /**
