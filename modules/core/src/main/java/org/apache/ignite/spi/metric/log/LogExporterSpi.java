@@ -19,12 +19,12 @@ package org.apache.ignite.spi.metric.log;
 
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
  * This SPI implementation exports metrics to Ignite log.

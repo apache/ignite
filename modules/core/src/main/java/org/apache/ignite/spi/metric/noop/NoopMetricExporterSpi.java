@@ -19,7 +19,7 @@ package org.apache.ignite.spi.metric.noop;
 
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;

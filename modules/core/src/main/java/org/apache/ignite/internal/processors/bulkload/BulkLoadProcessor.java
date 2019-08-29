@@ -21,11 +21,11 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.metric.list.QueryView;
+import org.apache.ignite.spi.metric.list.view.QueryView;
 
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input

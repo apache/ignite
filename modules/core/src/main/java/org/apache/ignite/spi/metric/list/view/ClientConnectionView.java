@@ -15,29 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list.view.walker;
+package org.apache.ignite.spi.metric.list.view;
 
-import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
+import java.net.InetSocketAddress;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
-public class SqlSchemaViewWalker implements MonitoringRowAttributeWalker<SqlSchemaView> {
+public interface ClientConnectionView extends MonitoringRow<Long> {
+    /** */
+    public long connectionId();
 
-    /** {@inheritDoc} */
-    @Override public void visitAll(AttributeVisitor v) {
-        v.acceptBoolean(0, "predefined");
-        v.accept(1, "name", String.class);
-    }
+    /** */
+    public String type();
 
-    /** {@inheritDoc} */
-    @Override public void visitAllWithValues(SqlSchemaView row, AttributeWithValueVisitor v) {
-        v.acceptBoolean(0, "predefined", row.predefined());
-        v.accept(1, "name", String.class, row.name());
-    }
+    /** */
+    public InetSocketAddress localAddress();
 
-    /** {@inheritDoc} */
-    @Override public int count() {
-        return 2;
-    }
+    /** */
+    public InetSocketAddress remoteAddress();
+
+    /** */
+    public String user();
+
+    /** */
+    public String version();
 }
-

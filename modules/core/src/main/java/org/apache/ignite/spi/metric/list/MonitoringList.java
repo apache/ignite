@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list;
+package org.apache.ignite.spi.metric.list;
 
 import java.util.Iterator;
 import java.util.List;
@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

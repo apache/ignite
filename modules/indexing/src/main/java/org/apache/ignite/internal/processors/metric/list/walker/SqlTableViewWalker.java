@@ -15,42 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list.view.walker;
+package org.apache.ignite.internal.processors.metric.list.walker;
 
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
 
 /** */
 public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTableView> {
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "cacheName", String.class);
-        v.accept(1, "schemaName", String.class);
-        v.acceptInt(2, "cacheGroupId");
-        v.accept(3, "cacheGroupName", String.class);
-        v.accept(4, "tableName", String.class);
+        v.accept(0, "affKeyCol", String.class);
+        v.acceptInt(1, "cacheGroupId");
+        v.accept(2, "cacheGroupName", String.class);
+        v.acceptInt(3, "cacheId");
+        v.accept(4, "cacheName", String.class);
         v.accept(5, "keyAlias", String.class);
-        v.accept(6, "affKeyCol", String.class);
-        v.accept(7, "valAlias", String.class);
-        v.accept(8, "keyTypeName", String.class);
-        v.accept(9, "valTypeName", String.class);
-        v.acceptInt(10, "cacheId");
+        v.accept(6, "keyTypeName", String.class);
+        v.accept(7, "schemaName", String.class);
+        v.accept(8, "tableName", String.class);
+        v.accept(9, "valAlias", String.class);
+        v.accept(10, "valTypeName", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(SqlTableView row, AttributeWithValueVisitor v) {
-        v.accept(0, "cacheName", String.class, row.cacheName());
-        v.accept(1, "schemaName", String.class, row.schemaName());
-        v.acceptInt(2, "cacheGroupId", row.cacheGroupId());
-        v.accept(3, "cacheGroupName", String.class, row.cacheGroupName());
-        v.accept(4, "tableName", String.class, row.tableName());
+        v.accept(0, "affKeyCol", String.class, row.affKeyCol());
+        v.acceptInt(1, "cacheGroupId", row.cacheGroupId());
+        v.accept(2, "cacheGroupName", String.class, row.cacheGroupName());
+        v.acceptInt(3, "cacheId", row.cacheId());
+        v.accept(4, "cacheName", String.class, row.cacheName());
         v.accept(5, "keyAlias", String.class, row.keyAlias());
-        v.accept(6, "affKeyCol", String.class, row.affKeyCol());
-        v.accept(7, "valAlias", String.class, row.valAlias());
-        v.accept(8, "keyTypeName", String.class, row.keyTypeName());
-        v.accept(9, "valTypeName", String.class, row.valTypeName());
-        v.acceptInt(10, "cacheId", row.cacheId());
+        v.accept(6, "keyTypeName", String.class, row.keyTypeName());
+        v.accept(7, "schemaName", String.class, row.schemaName());
+        v.accept(8, "tableName", String.class, row.tableName());
+        v.accept(9, "valAlias", String.class, row.valAlias());
+        v.accept(10, "valTypeName", String.class, row.valTypeName());
     }
 
     /** {@inheritDoc} */

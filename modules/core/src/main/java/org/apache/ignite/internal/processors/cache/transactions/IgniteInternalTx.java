@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.TransactionView;
+import org.apache.ignite.spi.metric.list.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;

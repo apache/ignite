@@ -15,28 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.spi.metric.list.view;
 
-import java.net.InetSocketAddress;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 
-/** */
-public interface ClientConnectionView extends MonitoringRow<Long> {
-    /** */
-    public long connectionId();
+/**
+ *
+ */
+public interface QueryView extends MonitoringRow<Long> {
+    public String originNodeId();
 
-    /** */
-    public String type();
+    public Long id();
 
-    /** */
-    public InetSocketAddress localAddress();
+    public String globalQueryId();
 
-    /** */
-    public InetSocketAddress remoteAddress();
+    public String query();
 
-    /** */
-    public String user();
+    public GridCacheQueryType queryType();
 
-    /** */
-    public String version();
+    public String schemaName();
+
+    public long startTime();
+
+    public long duration();
+
+    public boolean local();
+
+    public boolean failed();
 }

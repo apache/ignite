@@ -22,11 +22,10 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.metric.list.QueryView;
+import org.apache.ignite.spi.metric.list.view.QueryView;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.unregister;
 

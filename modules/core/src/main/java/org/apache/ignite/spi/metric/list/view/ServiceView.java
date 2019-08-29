@@ -15,11 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list;
+package org.apache.ignite.spi.metric.list.view;
 
-/**
- * Monitoring list row.
- * Idenitified by the instance of {@code Id}.
- */
-public interface MonitoringRow<Id> {
+import java.util.UUID;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
+
+/** */
+public interface ServiceView extends MonitoringRow<IgniteUuid> {
+    /** */
+    public String name();
+
+    /** */
+    public IgniteUuid id();
+
+    /** */
+    public Class<?> serviceClass();
+
+    /** */
+    public int totalCount();
+
+    /** */
+    public int maxPerNodeCount();
+
+    /** */
+    public String cacheName();
+
+    /** */
+    public String affinityKeyValue();
+
+    /** */
+    public Class<?> nodeFilter();
+
+    /** */
+    public boolean staticallyConfigured();
+
+    /** */
+    public UUID originNodeId();
 }

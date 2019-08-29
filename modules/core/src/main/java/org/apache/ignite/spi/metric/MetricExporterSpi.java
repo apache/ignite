@@ -20,7 +20,7 @@ package org.apache.ignite.spi.metric;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 

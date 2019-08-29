@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list.walker;
+package org.apache.ignite.internal.processors.metric.list.walker;
 
 import java.net.InetSocketAddress;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
-import org.apache.ignite.spi.metric.list.ClientConnectionView;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
 
 /** */
 public class ClientConnectionViewWalker implements MonitoringRowAttributeWalker<ClientConnectionView> {
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "user", String.class);
+        v.acceptLong(0, "connectionId");
         v.accept(1, "localAddress", InetSocketAddress.class);
-        v.acceptLong(2, "connectionId");
-        v.accept(3, "remoteAddress", InetSocketAddress.class);
-        v.accept(4, "type", String.class);
+        v.accept(2, "remoteAddress", InetSocketAddress.class);
+        v.accept(3, "type", String.class);
+        v.accept(4, "user", String.class);
         v.accept(5, "version", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(ClientConnectionView row, AttributeWithValueVisitor v) {
-        v.accept(0, "user", String.class, row.user());
+        v.acceptLong(0, "connectionId", row.connectionId());
         v.accept(1, "localAddress", InetSocketAddress.class, row.localAddress());
-        v.acceptLong(2, "connectionId", row.connectionId());
-        v.accept(3, "remoteAddress", InetSocketAddress.class, row.remoteAddress());
-        v.accept(4, "type", String.class, row.type());
+        v.accept(2, "remoteAddress", InetSocketAddress.class, row.remoteAddress());
+        v.accept(3, "type", String.class, row.type());
+        v.accept(4, "user", String.class, row.user());
         v.accept(5, "version", String.class, row.version());
     }
 

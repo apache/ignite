@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.spi.metric.list.view;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -27,7 +27,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 

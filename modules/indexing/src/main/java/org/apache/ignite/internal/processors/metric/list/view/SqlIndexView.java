@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.metric.list.view;
 
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex;
 import org.h2.index.Index;
 
 /** */

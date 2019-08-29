@@ -41,7 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -58,14 +58,10 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBase
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroups;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewIndexes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewQueryHistoryMetrics;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewRunningQueries;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewSchemas;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -201,11 +197,7 @@ public class SchemaManager {
         views.add(new SqlSystemViewCaches(ctx));
         views.add(new SqlSystemViewCacheGroups(ctx));
         views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
-        views.add(new SqlSystemViewRunningQueries(ctx));
         views.add(new SqlSystemViewQueryHistoryMetrics(ctx));
-        views.add(new SqlSystemViewTables(ctx, this));
-        views.add(new SqlSystemViewIndexes(ctx, this));
-        views.add(new SqlSystemViewSchemas(ctx, this));
 
         return views;
     }

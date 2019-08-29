@@ -15,41 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.internal.processors.metric.list.walker;
 
-import java.util.UUID;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
 
 /** */
-public interface ServiceView extends MonitoringRow<IgniteUuid> {
-    /** */
-    public String name();
+public class SqlSchemaViewWalker implements MonitoringRowAttributeWalker<SqlSchemaView> {
 
-    /** */
-    public IgniteUuid id();
+    /** {@inheritDoc} */
+    @Override public void visitAll(AttributeVisitor v) {
+        v.accept(0, "name", String.class);
+        v.acceptBoolean(1, "predefined");
+    }
 
-    /** */
-    public Class<?> serviceClass();
+    /** {@inheritDoc} */
+    @Override public void visitAllWithValues(SqlSchemaView row, AttributeWithValueVisitor v) {
+        v.accept(0, "name", String.class, row.name());
+        v.acceptBoolean(1, "predefined", row.predefined());
+    }
 
-    /** */
-    public int totalCount();
-
-    /** */
-    public int maxPerNodeCount();
-
-    /** */
-    public String cacheName();
-
-    /** */
-    public String affinityKeyValue();
-
-    /** */
-    public Class<?> nodeFilter();
-
-    /** */
-    public boolean staticallyConfigured();
-
-    /** */
-    public UUID originNodeId();
+    /** {@inheritDoc} */
+    @Override public int count() {
+        return 2;
+    }
 }
+

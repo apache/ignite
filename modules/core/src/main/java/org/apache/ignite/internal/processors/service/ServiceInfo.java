@@ -29,7 +29,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.spi.metric.list.ServiceView;
+import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

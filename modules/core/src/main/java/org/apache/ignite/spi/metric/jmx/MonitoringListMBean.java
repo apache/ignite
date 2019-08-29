@@ -37,11 +37,11 @@ import javax.management.openmbean.SimpleType;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
  *

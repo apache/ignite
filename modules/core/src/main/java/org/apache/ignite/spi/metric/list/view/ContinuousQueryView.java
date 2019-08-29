@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.spi.metric.list.view;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RemoteRoutineInfo;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
 public class ContinuousQueryView implements MonitoringRow<UUID> {

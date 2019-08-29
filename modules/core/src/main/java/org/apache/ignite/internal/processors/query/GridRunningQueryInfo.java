@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.spi.metric.list.QueryView;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.list.view.QueryView;
 
 /**
  * Query descriptor.
@@ -132,6 +133,10 @@ public class GridRunningQueryInfo implements QueryView {
      */
     @Override public long startTime() {
         return startTime;
+    }
+
+    @Override public long duration() {
+        return U.currentTimeMillis() - startTime;
     }
 
     /**

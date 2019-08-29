@@ -17,28 +17,9 @@
 
 package org.apache.ignite.spi.metric.list;
 
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
-
 /**
- *
+ * Monitoring list row.
+ * Idenitified by the instance of {@code Id}.
  */
-public interface QueryView extends MonitoringRow<Long> {
-    public String originNodeId();
-
-    public Long id();
-
-    public String globalQueryId();
-
-    public String query();
-
-    public GridCacheQueryType queryType();
-
-    public String schemaName();
-
-    public long startTime();
-
-    public boolean local();
-
-    public boolean failed();
+public interface MonitoringRow<Id> {
 }

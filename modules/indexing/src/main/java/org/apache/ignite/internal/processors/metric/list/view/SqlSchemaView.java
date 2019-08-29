@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric.list.view;
 
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
 public class SqlSchemaView implements MonitoringRow<String> {

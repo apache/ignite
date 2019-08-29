@@ -25,24 +25,26 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
-import org.apache.ignite.spi.metric.list.CacheGroupView;
-import org.apache.ignite.spi.metric.list.CacheView;
-import org.apache.ignite.spi.metric.list.ClientConnectionView;
-import org.apache.ignite.spi.metric.list.ContinuousQueryView;
-import org.apache.ignite.spi.metric.list.QueryView;
-import org.apache.ignite.spi.metric.list.ServiceView;
-import org.apache.ignite.spi.metric.list.TransactionView;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.view.CacheGroupView;
+import org.apache.ignite.spi.metric.list.view.CacheView;
+import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
+import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
+import org.apache.ignite.spi.metric.list.view.QueryView;
+import org.apache.ignite.spi.metric.list.view.ServiceView;
+import org.apache.ignite.spi.metric.list.view.TransactionView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
@@ -56,6 +58,8 @@ public class MonitoringRowAttributeWalkerGenerator {
     /** */
     private static final Set<String> SYSTEM_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
         "getClass"));
+
+    public static final String WALKER_PACKAGE = "org.apache.ignite.internal.processors.metric.list.walker";
 
     /**
      * @throws Exception
@@ -83,8 +87,8 @@ public class MonitoringRowAttributeWalkerGenerator {
      * @throws IOException
      */
     private <T extends MonitoringRow<?>> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
-        File walkerClass = new File(srcRoot + '/' + clazz.getPackage().getName().replaceAll("\\.", "/") + "/walker/" +
-                clazz.getSimpleName() + "Walker.java");
+        File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
+            clazz.getSimpleName() + "Walker.java");
 
         Collection<String> code = generate(clazz);
 
@@ -110,7 +114,7 @@ public class MonitoringRowAttributeWalkerGenerator {
 
         String simpleName = clazz.getSimpleName();
 
-        code.add("package " + clazz.getPackage().getName() + ".walker;");
+        code.add("package " + WALKER_PACKAGE + ";");
         code.add("");
         code.add("");
         code.add("/** */");
@@ -235,23 +239,28 @@ public class MonitoringRowAttributeWalkerGenerator {
     private void forEachMethod(Class<?> clazz, ObjIntConsumer<Method> c) {
         Method[] methods = clazz.getMethods();
 
-        int idx = 0;
+        List<Method> res = new ArrayList<>();
 
         for (int i = 0; i < methods.length; i++) {
-            Method method = methods[i];
+            Method m = methods[i];
 
-            if (Modifier.isStatic(method.getModifiers()))
+            if (Modifier.isStatic(m.getModifiers()))
                 continue;
 
-            if (SYSTEM_METHODS.contains(method.getName()))
+            if (SYSTEM_METHODS.contains(m.getName()))
                 continue;
 
-            Class<?> retClazz = method.getReturnType();
+            Class<?> retClazz = m.getReturnType();
 
             if (retClazz == void.class)
                 continue;
 
-            c.accept(method, idx++);
+            res.add(m);
         }
+
+        Collections.sort(res, Comparator.comparing(Method::getName));
+
+        for (int i = 0; i < res.size(); i++)
+            c.accept(res.get(i), i);
     }
 }

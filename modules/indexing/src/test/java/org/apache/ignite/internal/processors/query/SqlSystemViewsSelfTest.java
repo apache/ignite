@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -73,6 +72,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -107,6 +107,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     protected String systemSchemaName() {
         return "SYS";
+    }
+
+    /**
+     * @return Monitoring schema name.
+     */
+    protected String monitoringSchemaName() {
+        return "MONITORING";
     }
 
     /**
@@ -193,19 +200,19 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         srv.createCache(cacheConfiguration("TST1"));
 
-        String schemasSql = "SELECT * FROM " + systemSchemaName() + ".SCHEMAS";
+        String schemasSql = "SELECT NAME FROM " + monitoringSchemaName() + ".SQL_SCHEMAS";
 
         List<List<?>> srvNodeSchemas = execSql(schemasSql);
 
         List<List<?>> clientNodeSchemas = execSql(client, schemasSql);
 
-        Set expSchemasSrv = Sets.newHashSet("PREDIFINED_SCHEMA_1", "PUBLIC", "TST1", systemSchemaName());
+        Set expSchemasSrv = Sets.newHashSet("PREDIFINED_SCHEMA_1", "PUBLIC", "TST1", systemSchemaName(), monitoringSchemaName());
 
         Set schemasSrv = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
 
         Assert.assertEquals(expSchemasSrv, schemasSrv);
 
-        Set expSchemasCli = Sets.newHashSet("PREDIFINED_SCHEMA_2", "PUBLIC", "TST1", systemSchemaName());
+        Set expSchemasCli = Sets.newHashSet("PREDIFINED_SCHEMA_2", "PUBLIC", "TST1", systemSchemaName(), monitoringSchemaName());
 
         Set schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
 
@@ -878,7 +885,11 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
+        IgniteConfiguration cfg = super.getConfiguration()
+            .setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME))
+            .setMetricExporterSpi(new SqlViewExporterSpi());
+
+        return cfg;
     }
 
     /**
@@ -918,9 +929,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(1, execSql(sql1).size());
     }
 
-    /**
-     * Simple test for {@link SqlSystemViewTables}
-     */
+    /** */
     @Test
     public void testTablesView() throws Exception {
         IgniteEx ignite = startGrid(getConfiguration());

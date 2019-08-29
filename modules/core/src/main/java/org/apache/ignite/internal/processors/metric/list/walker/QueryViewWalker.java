@@ -15,44 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list.walker;
+package org.apache.ignite.internal.processors.metric.list.walker;
 
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.spi.metric.MonitoringRowAttributeWalker;
-import org.apache.ignite.spi.metric.list.QueryView;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.view.QueryView;
 
 /** */
 public class QueryViewWalker implements MonitoringRowAttributeWalker<QueryView> {
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "globalQueryId", String.class);
-        v.accept(1, "queryType", GridCacheQueryType.class);
-        v.accept(2, "schemaName", String.class);
-        v.acceptLong(3, "startTime");
+        v.acceptLong(0, "duration");
+        v.acceptBoolean(1, "failed");
+        v.accept(2, "globalQueryId", String.class);
+        v.accept(3, "id", Long.class);
         v.acceptBoolean(4, "local");
-        v.acceptBoolean(5, "failed");
-        v.accept(6, "originNodeId", String.class);
-        v.accept(7, "query", String.class);
-        v.accept(8, "id", Long.class);
+        v.accept(5, "originNodeId", String.class);
+        v.accept(6, "query", String.class);
+        v.accept(7, "queryType", GridCacheQueryType.class);
+        v.accept(8, "schemaName", String.class);
+        v.acceptLong(9, "startTime");
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(QueryView row, AttributeWithValueVisitor v) {
-        v.accept(0, "globalQueryId", String.class, row.globalQueryId());
-        v.accept(1, "queryType", GridCacheQueryType.class, row.queryType());
-        v.accept(2, "schemaName", String.class, row.schemaName());
-        v.acceptLong(3, "startTime", row.startTime());
+        v.acceptLong(0, "duration", row.duration());
+        v.acceptBoolean(1, "failed", row.failed());
+        v.accept(2, "globalQueryId", String.class, row.globalQueryId());
+        v.accept(3, "id", Long.class, row.id());
         v.acceptBoolean(4, "local", row.local());
-        v.acceptBoolean(5, "failed", row.failed());
-        v.accept(6, "originNodeId", String.class, row.originNodeId());
-        v.accept(7, "query", String.class, row.query());
-        v.accept(8, "id", Long.class, row.id());
+        v.accept(5, "originNodeId", String.class, row.originNodeId());
+        v.accept(6, "query", String.class, row.query());
+        v.accept(7, "queryType", GridCacheQueryType.class, row.queryType());
+        v.accept(8, "schemaName", String.class, row.schemaName());
+        v.acceptLong(9, "startTime", row.startTime());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 9;
+        return 10;
     }
 }
 

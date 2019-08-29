@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric;
+package org.apache.ignite.spi.metric.list;
 
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /**
  *

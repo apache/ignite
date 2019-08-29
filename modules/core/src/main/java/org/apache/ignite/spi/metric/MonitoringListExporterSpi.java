@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.metric;
 
-import org.apache.ignite.internal.processors.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /**
  * Exporter of monitoring list to the external recepient.

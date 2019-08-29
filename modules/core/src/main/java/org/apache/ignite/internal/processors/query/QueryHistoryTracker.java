@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.metric.list.QueryView;
+import org.apache.ignite.spi.metric.list.view.QueryView;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
