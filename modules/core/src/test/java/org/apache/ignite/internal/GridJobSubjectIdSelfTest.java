@@ -28,6 +28,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
@@ -59,6 +60,15 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
 
     /** Second node. */
     private Ignite node2;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        return cfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

@@ -135,6 +135,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         else
             cfg.setClientMode(true);
 
+        cfg.setIncludeEventTypes(org.apache.ignite.events.EventType.EVTS_ALL);
+
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;

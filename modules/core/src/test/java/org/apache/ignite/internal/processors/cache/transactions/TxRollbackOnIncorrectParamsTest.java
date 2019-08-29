@@ -23,7 +23,9 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -43,9 +45,16 @@ import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
  * Tests transaction rollback on incorrect tx params.
  */
 public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
-    /**
-     *
-     */
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        return cfg;
+    }
+
+    /** */
     @Test
     public void testTimeoutSetLocalGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
