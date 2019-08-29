@@ -30,7 +30,7 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>ignite-web-console</artifactId>
+    <artifactId>ignite-mongodb-realy</artifactId>
     <version>2.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
@@ -46,16 +46,78 @@
 
     <dependencies>
     
-    	
+    	<dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-handler</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-common</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
         
         <!-- Ignite dependencies -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-web-agent</artifactId>
+            <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <!-- Test dependencies -->
+        
+        
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongo-java-driver</artifactId>
+			<version>3.2.2</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+   			<groupId>org.assertj</groupId>
+   			<artifactId>assertj-core</artifactId>
+   			<version>3.11.1</version>   			
+   			<scope>test</scope>
+   		</dependency>
         <!--  
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -435,4 +497,5 @@
             </plugin>
         </plugins>
     </build>
+    
 </project>

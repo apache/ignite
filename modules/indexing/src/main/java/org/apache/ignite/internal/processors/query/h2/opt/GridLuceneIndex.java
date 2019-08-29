@@ -82,6 +82,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.UrlResource;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
@@ -217,7 +218,7 @@ public class GridLuceneIndex implements AutoCloseable {
         GenericApplicationContext springCtx;
 
         try {
-            springCtx = new GenericApplicationContext();
+        	springCtx = new GenericApplicationContext();
 
             XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(springCtx);
 
@@ -226,6 +227,7 @@ public class GridLuceneIndex implements AutoCloseable {
             reader.loadBeanDefinitions(new InputStreamResource(stream));
 
             springCtx.refresh();
+           
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))
