@@ -2738,13 +2738,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param userTime Transaction user time.
      */
     public void writeNearTxMetrics(long systemTime, long userTime) {
-        if (systemTime > 0) {
+        if (systemTime >= 0) {
             totalTxSystemTime.add(systemTime);
 
             txSystemTimeHistogram.value(systemTime);
         }
 
-        if (userTime > 0) {
+        if (userTime >= 0) {
             totalTxUserTime.add(userTime);
 
             txUserTimeHistogram.value(userTime);
