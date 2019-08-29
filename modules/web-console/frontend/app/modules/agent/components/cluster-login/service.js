@@ -19,7 +19,7 @@ import _ from 'lodash';
 import {CancellationError} from 'app/errors/CancellationError';
 
 export default class ClusterLoginService {
-    static $inject = ['$modal', '$q'];
+    static $inject = ['$modal', '$q', 'IgniteMessages'];
 
     deferred;
 
@@ -27,16 +27,18 @@ export default class ClusterLoginService {
      * @param {mgcrea.ngStrap.modal.IModalService} $modal
      * @param {ng.IQService} $q
      */
-    constructor($modal, $q) {
+    constructor($modal, $q, Messages) {
         this.$modal = $modal;
         this.$q = $q;
+        this.Messages = Messages;
     }
 
     /**
      * @param {import('../../types/ClusterSecrets').ClusterSecrets} baseSecrets
+     * @param {Error} reason Error that bring to opening of dialog.
      * @returns {ng.IPromise<import('../../types/ClusterSecrets').ClusterSecrets>}
      */
-    askCredentials(baseSecrets) {
+    askCredentials(baseSecrets, reason) {
         if (this.deferred)
             return this.deferred.promise;
 
@@ -67,6 +69,9 @@ export default class ClusterLoginService {
             backdrop: 'static',
             show: true
         });
+
+        if (reason)
+            this.Messages.showError('Authentication failed: ', reason);
 
         return modal.$promise
             .then(() => this.deferred.promise)
