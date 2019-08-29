@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 /**
  * The set of labeled vectors used in local partition calculations.
  */
-public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
+public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.tree;
 
+import java.util.Random;
 import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,8 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.util.Random;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer}.
@@ -104,6 +103,8 @@ public class DecisionTreeClassificationTrainerExample {
             } finally {
                 trainingSet.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 
