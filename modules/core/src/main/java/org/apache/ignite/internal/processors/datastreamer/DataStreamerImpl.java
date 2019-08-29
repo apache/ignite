@@ -1347,7 +1347,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private void ensureCacheStarted() {
         DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
 
-        assert desc != null;
+        if (desc == null)
+            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
         if (desc.startTopologyVersion() == null)
             return;
