@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-export default [
+export const columnDefsFn = ($translate: ng.translate.ITranslateService) => [
     {
         name: 'name',
-        displayName: 'Cluster',
+        displayName: $translate.instant('connectedClustersDialog.gridColumnTitles.name'),
         field: 'name',
         cellTemplate: `
             <div class='ui-grid-cell-contents'>
@@ -32,7 +32,7 @@ export default [
     },
     {
         name: 'nids',
-        displayName: 'Number of Nodes',
+        displayName: $translate.instant('connectedClustersDialog.gridColumnTitles.nids'),
         field: 'size',
         cellClass: 'ui-grid-number-cell',
         width: 180,
@@ -40,7 +40,7 @@ export default [
     },
     {
         name: 'status',
-        displayName: 'Status',
+        displayName: $translate.instant('connectedClustersDialog.gridColumnTitles.status'),
         field: 'active',
         cellTemplate: `
             <div class='ui-grid-cell-contents ui-grid-cell--status'>

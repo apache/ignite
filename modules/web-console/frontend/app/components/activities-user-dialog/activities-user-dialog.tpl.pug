@@ -17,7 +17,10 @@
     .modal-dialog
         .modal-content
             .modal-header
-                h4.modal-title Activity details: {{ ctrl.user.userName }}
+                h4.modal-title(
+                    translate='admin.userActivitiesDialog.title'
+                    translate-values='{userName: ctrl.user.userName}'
+                )
                 button.close(type='button' aria-label='Close' ng-click='$hide()')
                      svg(ignite-icon='cross')
             .modal-body.modal-body-with-scroll
@@ -30,4 +33,4 @@
 
             .modal-footer
                 div
-                    button.btn-ignite.btn-ignite--success(ng-click='$hide()') Close
+                    button.btn-ignite.btn-ignite--success(ng-click='$hide()' translate="closeButtonLabel")

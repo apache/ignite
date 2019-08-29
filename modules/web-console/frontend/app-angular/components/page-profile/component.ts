@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,7 @@ import {Confirm} from 'app/services/Confirm.service';
 import {
     FORM_FIELD_OPTIONS, FormFieldRequiredMarkerStyles, FormFieldErrorStyles
 } from '../form-field';
+import { TranslateService } from '@ngx-translate/core';
 
 const passwordMatch = (newPassword: string) => (confirmPassword: FormControl) => newPassword === confirmPassword.value
     ? null
@@ -52,14 +53,16 @@ export class PageProfile implements OnInit, OnDestroy {
         [new Inject('IgniteCountries')],
         [new Inject('User')],
         [new Inject('Confirm')],
-        [new Inject(FormBuilder)]
+        [new Inject(FormBuilder)],
+        [new Inject(TranslateService)]
     ];
 
     constructor(
         Countries: ReturnType<typeof CountriesFactory>,
         private User: ReturnType<typeof UserFactory>,
         private Confirm: Confirm,
-        private fb: FormBuilder
+        private fb: FormBuilder,
+        private translate: TranslateService
     ) {
         this.countries = Countries.getAll();
     }
@@ -99,7 +102,8 @@ export class PageProfile implements OnInit, OnDestroy {
 
     async generateToken() {
         try {
-            await this.Confirm.confirm('Are you sure you want to change security token?<br>If you change the token you will need to restart the agent.');
+            const msg = await this.translate.get('profile.confirmChangeToken').toPromise();
+            await this.Confirm.confirm(msg);
             this.form.get('token').setValue(uuidv4());
         }
         catch (ignored) {

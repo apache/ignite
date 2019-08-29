@@ -15,6 +15,7 @@
  */
 
 import angular from 'angular';
+import {UIRouter} from '@uirouter/angularjs';
 
 import _ from 'lodash';
 
@@ -31,15 +32,16 @@ export default angular
         template,
         controller
     })
-    .config(['$stateProvider', ($stateProvider) => {
+    .run(['$uiRouter', '$translate', (router: UIRouter, $translate: ng.translate.ITranslateService) => {
         // set up the states
-        $stateProvider
-        .state('password', {
+        router.stateRegistry.register({
+            name: 'password',
             url: '/password',
             abstract: true,
             template: '<ui-view></ui-view>'
-        })
-        .state('password.reset', {
+        });
+        router.stateRegistry.register({
+            name: 'password.reset',
             url: '/reset?{email}{token}',
             views: {
                 '@': {
@@ -57,7 +59,7 @@ export default angular
             },
             unsaved: true,
             tfMetaTags: {
-                title: 'Reset password'
+                title: $translate.instant('passwordReset.documentTitle')
             }
         });
     }]);

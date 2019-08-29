@@ -41,37 +41,49 @@ mixin btn-toolbar-data(btn, kind, tip)
 
 mixin result-toolbar
     .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='left: 50%; margin: 0 0 0 -70px;display: block;')
-        +btn-toolbar-data('fa-table', 'TABLE', 'Show data in tabular form')
-        +btn-toolbar-data('fa-bar-chart', 'BAR', 'Show bar chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
-        +btn-toolbar-data('fa-pie-chart', 'PIE', 'Show pie chart<br/>By default first column - pie labels, second column - pie values<br/>In case of one column it will be treated as pie values')
-        +btn-toolbar-data('fa-line-chart', 'LINE', 'Show line chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
-        +btn-toolbar-data('fa-area-chart', 'AREA', 'Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
+        +btn-toolbar-data('fa-table', 'TABLE', '{{::"queries.notebook.chartTooltip.table"|translate}}')
+        +btn-toolbar-data('fa-bar-chart', 'BAR', '{{::"queries.notebook.chartTooltip.bar"|translate}}')
+        +btn-toolbar-data('fa-pie-chart', 'PIE', '{{::"queries.notebook.chartTooltip.pie"|translate}}')
+        +btn-toolbar-data('fa-line-chart', 'LINE', '{{::"queries.notebook.chartTooltip.line"|translate}}')
+        +btn-toolbar-data('fa-area-chart', 'AREA', '{{::"queries.notebook.chartTooltip.area"|translate}}')
 
 mixin chart-settings
     .total.row
         .col-xs-7
             .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
-                a(title='Click to show chart settings dialog' ng-click='$event.stopPropagation()' bs-popover data-template-url='{{ $ctrl.chartSettingsTemplateUrl }}' data-placement='bottom' data-auto-close='1' data-trigger='click')
+                a(translate-attr='::{title: "queries.notebook.chartSettings.tooltip"}' ng-click='$event.stopPropagation()' bs-popover data-template-url='{{ $ctrl.chartSettingsTemplateUrl }}' data-placement='bottom' data-auto-close='1' data-trigger='click')
                     i.fa.fa-bars
-                    | Chart settings
+                    span(translate='queries.notebook.chartSettings.buttonLabel')
                 div(ng-show='paragraphTimeSpanVisible(paragraph)')
-                    label Show
+                    label(translate='queries.notebook.chartSettings.timeSpanPrefix')
                     button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartSettings(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
-                    label min
+                    label(translate='queries.notebook.chartSettings.timeSpanSuffix')
 
                 div
-                    label Duration: #[b {{paragraph.duration | duration}}]
-                    label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
-                    i.btn.btn-default.fa.fa-eraser(ng-click='clearResult(paragraph)' bs-tooltip='' data-title='Clear query result' data-trigger='hover' data-placement='bottom')
+                    label(
+                        translate='queries.notebook.chartSettings.durationLabel'
+                        translate-values='{duration: (paragraph.duration | duration)}'
+                    )
+                    label.margin-left-dflt(
+                        ng-show='paragraph.localQueryMode'
+                        translate='queries.notebook.chartSettings.nodeId8Label'
+                        translate-values='{id: (paragraph.resNodeId | id8)}'
+                    )
+                    i.btn.btn-default.fa.fa-eraser(
+                        ng-click='clearResult(paragraph)'
+                        bs-tooltip=''
+                        translate-attr='::{title: "queries.notebook.chartSettings.clearQueryResultButtonTooltip"}'
+                        data-trigger='hover'
+                        data-placement='bottom'
+                    )
         .col-xs-2
             +result-toolbar
 
 mixin query-settings
     div
         .form-field--inline(
-            bs-tooltip
+            bs-tooltip='::{title: ("queries.notebook.querySettings.rowsPerPageInput.tooltip"|translate)}'
             data-placement='top'
-            data-title='Max number of rows to show in query result as one page'
         )
             +form-field__dropdown({
                 label: 'Rows per page:',
@@ -82,9 +94,8 @@ mixin query-settings
             })
 
         .form-field--inline(
-            bs-tooltip
+            bs-tooltip='::{title: ("queries.notebook.querySettings.maxPagesInput.tooltip"|translate)}'
             data-placement='top'
-            data-title='Limit query max results to specified number of pages'
         )
             +form-field__dropdown({
                 label: 'Max pages:',
@@ -95,9 +106,8 @@ mixin query-settings
             })
 
         .form-field--inline(
-            bs-tooltip
+            bs-tooltip='::{title: ("queries.notebook.querySettings.refreshRateInput.tooltip"|translate)}'
             data-placement='bottom'
-            data-title='Configure periodical execution of last successfully executed query'
         )
             button.btn-ignite-group(
                 bs-popover
@@ -126,9 +136,7 @@ mixin query-settings
                 label: 'Allow non-collocated joins',
                 model: 'paragraph.nonCollocatedJoins',
                 name: '"nonCollocatedJoins" + paragraph.id',
-                tip: 'Non-collocated joins is a special mode that allow to join data across cluster without collocation.<br/>\
-                Nested joins are not supported for now.<br/>\
-                <b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins.',
+                tip: '{{::"queries.notebook.querySettings.nonCollocatedJoinsInput.tooltip"|translate}}',
                 tipOpts: { placement: 'top' }
             })
 
@@ -137,11 +145,7 @@ mixin query-settings
                 label: 'Collocated Query',
                 model: 'paragraph.collocated',
                 name: '"collocated" + paragraph.id',
-                tip: 'Used For Optimization Purposes Of Queries With GROUP BY Statements.<br/>\
-                <b>NOTE:</b> Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.<br/>\
-                If you know in advance that the elements of your query selection are collocated together on the same node\
-                and you group by collocated key (primary or affinity key), then Ignite can make significant performance and\
-                network optimizations by grouping data on remote nodes.',
+                tip: '{{::"queries.notebook.querySettings.collocatedQueryInput.tooltip"|translate}}',
                 tipOpts: { placement: 'top' }
             })
 
@@ -150,10 +154,7 @@ mixin query-settings
                 label: 'Enforce join order',
                 model: 'paragraph.enforceJoinOrder',
                 name: '"enforceJoinOrder" + paragraph.id',
-                tip: 'Enforce join order of tables in the query.<br/>\
-                If <b>set</b>, then query optimizer will not reorder tables within join.<br/>\
-                <b>NOTE:</b> It is not recommended to enable this property unless you have verified that\
-                indexes are not selected in optimal order.',
+                tip: '{{::"queries.notebook.querySettings.enforceJoinOrderInput.tooltip"|translate}}',
                 tipOpts: { placement: 'top' }
             })
 
@@ -162,10 +163,7 @@ mixin query-settings
                 label: 'Lazy result set',
                 model: 'paragraph.lazy',
                 name: '"lazy" + paragraph.id',
-                tip: 'By default Ignite attempts to fetch the whole query result set to memory and send it to the client.<br/>\
-                For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>\
-                If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>\
-                Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.',
+                tip: '{{::"queries.notebook.querySettings.lazyResultSetInput.tooltip"|translate}}',
                 tipOpts: { placement: 'top' }
             })
 
@@ -173,29 +171,57 @@ mixin query-actions
     button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph)')
         span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(false)')
         span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(false)')
-        | Execute
+        span(translate='queries.notebook.queryActions.execute.buttonLabel')
 
     button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph, true)')
         span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(true)')
         span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(true)')
-        | Execute on selected node
+        span(translate='queries.notebook.queryActions.executeOnSelectedNode.buttonLabel')
 
-    button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
-        | Explain
+    button.btn-ignite.btn-ignite--secondary(
+        ng-disabled='!queryAvailable(paragraph)'
+        ng-click='explain(paragraph)' 
+        data-placement='bottom'
+        bs-tooltip='{title: queryTooltip(paragraph, ("queries.notebook.queryActions.explain.tooltip"|translate))}'
+    )
+        span(translate='queries.notebook.queryActions.explain.buttonLabel')
 
-    button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.executionInProgress(false) || paragraph.executionInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
-        | Cancel
+    button.btn-ignite.btn-ignite--secondary(
+        ng-if='paragraph.executionInProgress(false) || paragraph.executionInProgress(true)'
+        ng-click='cancelQuery(paragraph)'
+        data-placement='bottom'
+        bs-tooltip='::{title: ("queries.notebook.queryActions.cancel.tooltip"|translate)}'
+    )
+        span(translate='queries.notebook.queryActions.cancel.buttonLabel')
 
 mixin table-result-heading-query
     .total.row
         .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
-            label Page: #[b {{paragraph.page}}]
-            label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
-            label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
-            label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
-            i.btn.btn-default.fa.fa-eraser(ng-click='clearResult(paragraph)' bs-tooltip='' data-title='Clear query result' data-trigger='hover' data-placement='bottom')
+            label(
+                translate='queries.notebook.queryResultTableHeader.currentPage'
+                translate-values='{page: paragraph.page}'
+            )
+            label.margin-left-dflt(
+                translate='queries.notebook.queryResultTableHeader.resultsSoFar'
+                translate-values='{amount: paragraph.rows.length + paragraph.total}'
+            )
+            label.margin-left-dflt(
+                translate='queries.notebook.queryResultTableHeader.duration'
+                translate-values='{duration: (paragraph.duration | duration)}'
+            )
+            label.margin-left-dflt(
+                ng-show='paragraph.localQueryMode'
+                translate='queries.notebook.queryResultTableHeader.nodeId'
+                translate-values='{duration: (paragraph.resNodeId | id8)}'
+            )
+            i.btn.btn-default.fa.fa-eraser(
+                ng-click='clearResult(paragraph)'
+                bs-tooltip='::{title: ("queries.notebook.queryResultTableHeader.clearQueryResultButtonTooltip"|translate)}'
+                data-trigger='hover'
+                data-placement='bottom'
+            )
         .col-xs-2
             div(ng-if='paragraph.queryType === "SQL_FIELDS"')
                 +result-toolbar
@@ -205,19 +231,18 @@ mixin table-result-heading-query
                     button.btn-ignite.btn-ignite--primary(
                         ng-click='exportCsv(paragraph)'
                         ng-disabled='paragraph.loading'
-                        bs-tooltip=''
-                        ng-attr-title='{{ queryTooltip(paragraph, "export query results") }}'
+                        bs-tooltip='{title: queryTooltip(paragraph, ("queries.notebook.queryResultTableHeader.exportButtonTooltip"|translate))}'
                         data-trigger='hover'
                         data-placement='bottom'
                     )
                         svg(ignite-icon='csv' ng-if='!paragraph.csvIsPreparing')
                         svg.fa-spin(ignite-icon='refresh' ng-if='paragraph.csvIsPreparing')
-                        |  &nbsp; Export
+                        |  &nbsp;
+                        span(translate='queries.notebook.export.exportButtonLabel')
 
-                    -var options = [{ text: 'Export', click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
                     button.btn-ignite.btn-ignite--primary(
                         ng-disabled='paragraph.loading'
-                        bs-dropdown=`${JSON.stringify(options)}`
+                        bs-dropdown=`::$ctrl.exportActions`
                         data-toggle='dropdown'
                         data-container='body'
                         data-placement='bottom-right'
@@ -231,11 +256,29 @@ mixin table-result-heading-scan
         .col-xs-7
             grid-column-selector(grid-api='paragraph.gridOptions.api')
                 .fa.fa-bars.icon
-            label Page: #[b {{paragraph.page}}]
-            label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
-            label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
-            label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
-            i.btn.btn-default.fa.fa-eraser(ng-click='clearResult(paragraph)' bs-tooltip='' data-title='Clear query result' data-trigger='hover' data-placement='bottom')
+            label(
+                translate='queries.notebook.queryResultTableHeader.currentPage'
+                translate-values='{page: paragraph.page}'
+            )
+            label.margin-left-dflt(
+                translate='queries.notebook.queryResultTableHeader.resultsSoFar'
+                translate-values='{amount: paragraph.rows.length + paragraph.total}'
+            )
+            label.margin-left-dflt(
+                translate='queries.notebook.queryResultTableHeader.duration'
+                translate-values='{duration: (paragraph.duration | duration)}'
+            )
+            label.margin-left-dflt(
+                ng-show='paragraph.localQueryMode'
+                translate='queries.notebook.queryResultTableHeader.nodeId'
+                translate-values='{duration: (paragraph.resNodeId | id8)}'
+            )
+            i.btn.btn-default.fa.fa-eraser(
+                ng-click='clearResult(paragraph)'
+                bs-tooltip='::{title: ("queries.notebook.queryResultTableHeader.clearQueryResultButtonTooltip"|translate)}'
+                data-trigger='hover'
+                data-placement='bottom'
+            )
         .col-xs-2
             div(ng-if='paragraph.queryType === "SQL_FIELDS"')
                 +result-toolbar
@@ -256,13 +299,12 @@ mixin table-result-heading-scan
                     )
                         svg(ignite-icon='csv' ng-if='!paragraph.csvIsPreparing')
                         i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
-                        span Export
+                        span(translate='queries.notebook.export.exportButtonLabel')
 
-                    -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
                     button.btn.dropdown-toggle.btn-primary(
                         ng-disabled='paragraph.loading || paragraph.csvIsPreparing'
 
-                        bs-dropdown=`${JSON.stringify(options)}`
+                        bs-dropdown=`::$ctrl.exportActions`
 
                         data-toggle='dropdown'
                         data-container='body'
@@ -277,18 +319,27 @@ mixin table-result-body
 mixin chart-result
     div(ng-hide='paragraph.scanExplain()')
         +chart-settings
-        .empty(ng-show='paragraph.chartColumns.length > 0 && !paragraph.chartColumnsConfigured()') Cannot display chart. Please configure axis using #[b Chart settings]
-        .empty(ng-show='paragraph.chartColumns.length == 0') Cannot display chart. Result set must contain Java build-in type columns. Please change query and execute it again.
+        .empty(
+            ng-show='paragraph.chartColumns.length > 0 && !paragraph.chartColumnsConfigured()'
+            translate='queries.notebook.chartResult.columnsNotConfiguredErrorMessage'
+        )
+        .empty(
+            ng-show='paragraph.chartColumns.length == 0'
+            translate='queries.notebook.chartResult.noColumnsErrorMessage'
+        ) 
         div(ng-show='paragraph.chartColumnsConfigured()')
             div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
                 div(ng-repeat='chart in paragraph.charts')
                     nvd3(options='chart.options' data='chart.data' api='chart.api')
-            .empty(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis. Please use another column for X-axis or switch to another chart.
+            .empty(
+                ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()'
+                translate='queries.notebook.chartResult.pieChartNoSupportForTimeLineErrorMessage'
+            ) 
     .empty(ng-show='paragraph.scanExplain()')
         .row
             .col-xs-4.col-xs-offset-4
                 +result-toolbar
-        label.margin-top-dflt Charts do not support #[b Explain] and #[b Scan] query
+        label.margin-top-dflt(translate='queries.notebook.chartResult.noQueryAndScanSupportErrorMessage')
 
 mixin paragraph-scan
     panel-title {{ paragraph.name }}
@@ -301,7 +352,7 @@ mixin paragraph-scan
                     label: 'Cache:',
                     model: 'paragraph.cacheName',
                     name: '"cache"',
-                    placeholder: 'Choose cache',
+                    placeholder: '{{::"queries.notebook.scanPanelContent.chooseCacheInput.placeholder"|translate}}',
                     options: 'caches'
                 })
             .col-sm-3
@@ -310,7 +361,7 @@ mixin paragraph-scan
                     modelFilter: 'paragraph.filter',
                     modelSensitive: 'paragraph.caseSensitive',
                     name: '"filter"',
-                    placeholder: 'Enter filter'
+                    placeholder: '{{::"queries.notebook.scanPanelContent.filterInput.placeholder"|translate}}'
                 })
 
             .col-sm-3
@@ -319,7 +370,7 @@ mixin paragraph-scan
                     model: 'paragraph.pageSize',
                     name: '"pageSize" + paragraph.id',
                     options: 'pageSizesOptions',
-                    tip: 'Max number of rows to show in query result as one page',
+                    tip: '{{::"queries.notebook.scanPanelContent.rowsPerPageInput.tooltip"|translate}}',
                     tipOpts: { placement: 'top' }
                 })
 
@@ -328,34 +379,58 @@ mixin paragraph-scan
                 button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph)')
                     span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(false)')
                     span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(false)')
-                    | Scan
+                    span(translate='queries.notebook.scanActions.scan')
 
                 button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
                     span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
                     span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
-                    | Scan on selected node
+                    span(translate='queries.notebook.scanActions.scanOnSelectedNode')
 
-                button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.checkScanInProgress(false) || paragraph.checkScanInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
-                    | Cancel
+                button.btn-ignite.btn-ignite--secondary(
+                    ng-if='paragraph.checkScanInProgress(false) || paragraph.checkScanInProgress(true)'
+                    ng-click='cancelQuery(paragraph)'
+                    data-placement='bottom'
+                    bs-tooltip='::{title: ("queries.notebook.scanActions.cancelTooltip"|translate)}'
+                    translate='queries.notebook.scanActions.cancel'
+                )
             div
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')
-            .error(ng-switch-when='error') Error: {{paragraph.error.message}}
-            .empty(ng-switch-when='empty') Result set is empty. Duration: #[b {{paragraph.duration | duration}}]
+            .error(
+                ng-switch-when='error'
+                translate='queries.notebook.queryResult.genericError'
+                translate-values='{error: paragraph.error.message}'
+            )
+            .empty(
+                ng-switch-when='empty'
+                translate='queries.notebook.queryResult.emptyResult'
+                translate-values='{duration: (paragraph.duration | duration)}'
+            )
             .table(ng-switch-when='table')
                 +table-result-heading-scan
                 +table-result-body
             .footer.clearfix()
                 .pull-left
-                    | Showing results for scan of #[b {{ paragraph.queryArgs.cacheName | defaultName }}]
-                    span(ng-if='paragraph.queryArgs.filter') &nbsp; with filter: #[b {{ paragraph.queryArgs.filter }}]
-                    span(ng-if='paragraph.queryArgs.localNid') &nbsp; on node: #[b {{ paragraph.queryArgs.localNid | limitTo:8 }}]
+                    span(
+                        translate='queries.notebook.queryResult.scanQueryCache'
+                        translate-values='{cacheName: (paragraph.queryArgs.cacheName | defaultName)}'
+                    )
+                    span(
+                        ng-if='paragraph.queryArgs.filter'
+                        translate='queries.notebook.queryResult.scanQueryFilter'
+                        translate-values='{filter: (paragraph.queryArgs.filter)}'
+                    )
+                    span(
+                        ng-if='paragraph.queryArgs.localNid'
+                        translate='queries.notebook.queryResult.scanQueryNode'
+                        translate-values='{node: (paragraph.queryArgs.localNid | limitTo:8)}'
+                    )
 
                 -var nextVisibleCondition = 'paragraph.resultType() != "error" && !paragraph.loading && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
-                    a Next
+                    a(translate='queries.notebook.queryResult.nextButtonLabel')
 
 mixin paragraph-query
     panel-title {{ paragraph.name }}
@@ -369,10 +444,21 @@ mixin paragraph-query
                 ng-model='paragraph.query' on-selection-change='paragraph.partialQuery = $event')
             .col-xs-4.col-sm-3
                 div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
-                    lable.labelField.labelFormField Caches:
-                    i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}' data-placement='bottom-right' data-trigger='click' data-container='#{{ paragraph.id }}')
+                    lable.labelField.labelFormField(translate='queries.notebook.queryResult.cachesMetadataInput.label')
+                    i.fa.fa-database.tipField(
+                        translate-attr='::{title: "queries.notebook.queryResult.cachesMetadataInput.metadataButtonTooltip"}'
+                        bs-popover
+                        data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}'
+                        data-placement='bottom-right'
+                        data-trigger='click'
+                        data-container=`#{{ paragraph.id }}`
+                    )
                     .input-tip
-                        input.form-control(type='text' st-search='label' placeholder='Filter caches...')
+                        input.form-control(
+                            type='text'
+                            st-search='label'
+                            translate-attr='::{placeholder: "queries.notebook.queryResult.cachesMetadataInput.filterPlaceholder"}'
+                        )
 
                     .queries-notebook-displayed-caches
                         div(ng-repeat='cache in displayedCaches track by cache.value')
@@ -386,20 +472,18 @@ mixin paragraph-query
                     .settings-row
                         .row(ng-if='ddlAvailable(paragraph)')
                             +form-field__checkbox({
-                                label: 'Use selected cache as default schema name',
+                                label: '{{::"queries.notebook.queryResult.useAsDefaultSchemaInput.label"|translate}}',
                                 model: 'paragraph.useAsDefaultSchema',
                                 name: '"useAsDefaultSchema" + paragraph.id',
-                                tip: 'Use selected cache as default schema name.<br/>\
-                                    This will allow to execute query on specified cache without specify schema name.<br/>\
-                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.',
+                                tip: '{{::"queries.notebook.queryResult.useAsDefaultSchemaInput.tooltip"|translate}}',
                                 tipOpts: { placement: 'top' }
                             })
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                     no-data
-                        label Wrong caches filter
+                        label(translate='queries.notebook.queryResult.wrongCachesFilterError')
                 .empty-caches(ng-show='caches.length == 0')
                     no-data
-                        label No caches
+                        label(translate='queries.notebook.queryResult.noCaches')
         .col-sm-12.sql-controls
             div
                 +query-actions
@@ -407,23 +491,37 @@ mixin paragraph-query
             +query-settings
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error')
-                label Error: {{paragraph.error.message}}
+                label(
+                    translate='queries.notebook.queryResult.genericError'
+                    translate-values='{error: paragraph.error.message}'
+                )
                 br
-                a(ng-show='paragraph.resultType() === "error"' ng-click='showStackTrace(paragraph)') Show more
-            .empty(ng-switch-when='empty') Result set is empty. Duration: #[b {{paragraph.duration | duration}}]
+                a(
+                    ng-show='paragraph.resultType() === "error"'
+                    ng-click='showStackTrace(paragraph)'
+                    translate='queries.notebook.queryResult.showMoreButtonLabel'
+                )
+            .empty(
+                ng-switch-when='empty'
+                translate='queries.notebook.queryResult.emptyResult'
+                translate-values='{duration: (paragraph.duration | duration)}'
+            )
             .table(ng-switch-when='table')
                 +table-result-heading-query
                 +table-result-body
             .chart(ng-switch-when='chart')
                 +chart-result
             .footer.clearfix(ng-show='paragraph.resultType() !== "error"')
-                a.pull-left(ng-click='showResultQuery(paragraph)') Show query
+                a.pull-left(
+                    ng-click='showResultQuery(paragraph)'
+                    translate='queries.notebook.queryResult.showQueryButtonLabel'
+                )
 
                 -var nextVisibleCondition = 'paragraph.resultType() !== "error" && !paragraph.loading && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
-                    a Next
+                    a(translate='queries.notebook.queryResult.nextButtonLabel')
 
 div(ng-if='notebook')
     .notebooks-top
@@ -434,44 +532,57 @@ div(ng-if='notebook')
 
         h1(ng-show='notebook.edit')
             input.form-control(ng-model='notebook.editName' required ignite-on-enter='renameNotebook(notebook.editName)' ignite-on-escape='notebook.edit = false;')
-            i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
+            i.btn.fa.fa-floppy-o(
+                ng-show='notebook.editName'
+                ng-click='renameNotebook(notebook.editName)'
+                bs-tooltip='::{title: ("queries.notebook.saveNotebookNameButtonTooltip"|translate)}'
+                data-trigger='hover'
+            )
 
         cluster-selector
 
         .notebook-top-buttons
-            a.dropdown-toggle(style='margin-right: 20px' data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-left') Scroll to query
+            a.dropdown-toggle(
+                style='margin-right: 20px'
+                data-toggle='dropdown'
+                bs-dropdown='scrollParagraphs'
+                data-placement='bottom-left'
+            )
+                span(translate='queries.notebook.scrollToQueryButtonLabel')
                 span.caret
             button.btn-ignite.btn-ignite--primary(ng-click='addQuery()' ignite-on-click-focus=focusId)
                 svg.icon-left(ignite-icon='plus')
-                | Add query
+                span(translate='queries.notebook.addQueryButtonLabel')
 
             button.btn-ignite.btn-ignite--primary(ng-click='addScan()' ignite-on-click-focus=focusId)
                 svg.icon-left(ignite-icon='plus')
-                | Add scan
+                span(translate='queries.notebook.addScanButtonLabel')
 
 div
     breadcrumbs
-        a.link-success(ui-sref='base.sql.tabs') Notebooks
-        span(ui-sref='.' ui-sref-active) Notebook '{{notebook.name}}'
+        a.link-success(
+            ui-sref='base.sql.tabs'
+            translate='queries.notebook.breadcrumbs.parent'
+        )
+        span(
+            ui-sref='.'
+            ui-sref-active
+            translate='queries.notebook.breadcrumbs.here'
+            translate-values='{name: notebook.name}'
+        )
 
     -var example = `CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));\nINSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');\nSELECT * FROM Person;`;
 
     ignite-information(
-        data-title='With query notebook you can'
+        data-title='{{::"queries.notebook.features.title"|translate}}'
         style='margin-bottom: 30px'
         ng-init=`example = "${example}"`
     )
-        ul
-            li Create any number of queries
-            li Execute and explain SQL queries
-            li Execute scan queries
-            li View data in tabular form and as charts
-            li
-                a(href='https://apacheignite-sql.readme.io/docs/sql-reference-overview' target='_blank') More info
+        ul(translate='queries.notebook.features.list')
         .example
             .group
                 .group-legend
-                    label Examples:
+                    label(translate='queries.notebook.features.examplesLabel')
                 .group-content
                     .sql-editor(ignite-ace='{\
                         onLoad: aceInit({}),\
@@ -490,8 +601,8 @@ div
 
     .notebook-failed--block(ng-if='notebookLoadFailed')
         no-data
-            h2 Failed to load notebook
-            label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
+            h2(translate='queries.notebook.noData.title')
+            label.col-sm-12(translate='queries.notebook.noData.message')
 
     div(ng-if='notebook' ignite-loading='sqlLoading' ignite-loading-text='{{ loadingText }}' ignite-loading-position='top')
         .docs-body.paragraphs

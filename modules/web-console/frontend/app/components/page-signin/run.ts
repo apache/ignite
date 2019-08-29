@@ -20,7 +20,9 @@ import {IIgniteNg1StateDeclaration} from 'app/types';
 
 export type PageSigninStateParams = StateParams & {activationToken?: string};
 
-export function registerState($uiRouter: UIRouter) {
+registerState.$inject = ['$uiRouter', '$translate'];
+
+export function registerState($uiRouter: UIRouter, $translate: ng.translate.ITranslateService) {
     const state: IIgniteNg1StateDeclaration = {
         url: '/signin?{activationToken:string}',
         name: 'signin',
@@ -55,7 +57,7 @@ export function registerState($uiRouter: UIRouter) {
                 .catch(() => true);
         },
         tfMetaTags: {
-            title: 'Sign In'
+            title: $translate.instant('signIn.documentTitle')
         },
         resolve: {
             activationToken() {
@@ -66,5 +68,3 @@ export function registerState($uiRouter: UIRouter) {
 
     $uiRouter.stateRegistry.register(state);
 }
-
-registerState.$inject = ['$uiRouter'];

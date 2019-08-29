@@ -17,15 +17,14 @@ include /app/helpers/jade/mixins
 
 global-progress-line(is-loading='$ctrl.isLoading')
 
-h3.public-page__title Sign In
-p(ng-if='$ctrl.activationToken')
-    | Please sign in to confirm your registration
+h3.public-page__title(translate='signIn.pageTitle')
+p(ng-if='$ctrl.activationToken' translate='signIn.confirmRegistrationMessage')
 form(name='$ctrl.form' novalidate ng-submit='$ctrl.signin()')
     +form-field__email({
         label: 'Email:',
         model: '$ctrl.data.email',
         name: '"email"',
-        placeholder: 'Input email',
+        placeholder: '{{::"signIn.emailInput.placeholder"|translate}}',
         required: true
     })(
         ng-model-options='{allowInvalid: true}'
@@ -37,7 +36,7 @@ form(name='$ctrl.form' novalidate ng-submit='$ctrl.signin()')
         label: 'Password:',
         model: '$ctrl.data.password',
         name: '"password"',
-        placeholder: 'Input password',
+        placeholder: '{{::"signIn.passwordInput.placeholder"|translate}}',
         required: true
     })(
         ng-model-options='{allowInvalid: true}'
@@ -45,10 +44,11 @@ form(name='$ctrl.form' novalidate ng-submit='$ctrl.signin()')
     )
         +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
     footer.form-footer
-        a(ui-sref='forgotPassword({email: $ctrl.data.email})') Forgot password?
+        a(ui-sref='forgotPassword({email: $ctrl.data.email})' translate='signIn.forgotPasswordLinkLabel')
         button.btn-ignite.btn-ignite--primary(
             type='submit'
             ng-disabled='$ctrl.isLoading'
-        ) {{ ::$ctrl.activationToken ? "Activate" : "Sign In" }}
-footer.page-signin__no-account-message
-    | Don't have an account? #[a(ui-sref='signup') Get started]
+            translate='signIn.formActionButtonLabel'
+            translate-values='::{activationToken: $ctrl.activationToken}'
+        )
+footer.page-signin__no-account-message(translate='signIn.signupMessage')

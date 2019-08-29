@@ -18,9 +18,18 @@ import {DemoService} from 'app/modules/demo/Demo.module';
 import _ from 'lodash';
 
 export class NotebooksListCtrl {
-    static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', 'IgniteInput', '$scope', '$modal', 'Demo'];
+    static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', 'IgniteInput', '$scope', '$modal', 'Demo', '$translate'];
 
-    constructor(IgniteNotebook, IgniteMessages, IgniteLoading, IgniteInput, $scope, $modal, private Demo: DemoService) {
+    constructor(
+        IgniteNotebook,
+        IgniteMessages,
+        IgniteLoading,
+        IgniteInput,
+        $scope,
+        $modal,
+        private Demo: DemoService,
+        private $translate: ng.translate.ITranslateService
+    ) {
         Object.assign(this, { IgniteNotebook, IgniteMessages, IgniteLoading, IgniteInput, $scope, $modal });
 
         this.notebooks = [];
@@ -31,31 +40,53 @@ export class NotebooksListCtrl {
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
         const scanQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.scanQueriesPsaragraphsLength}}</div>`;
 
-        this.categories = [
-            { name: 'Name', visible: true, enableHiding: false },
-            { name: 'SQL Queries', visible: true, enableHiding: false },
-            { name: 'Scan Queries', visible: true, enableHiding: false }
-        ];
-
         this.columnDefs = [
-            { name: 'name', displayName: 'Notebook name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Queries', categoryDisplayName: 'SQL Queries', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false },
-            { name: 'scanQueryNum', displayName: 'Scan Queries', categoryDisplayName: 'Scan Queries', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false }
+            {
+                name: 'name',
+                displayName: this.$translate.instant('queries.notebooks.gridColumns.name.displayName'),
+                categoryDisplayName: this.$translate.instant('queries.notebooks.gridColumns.name.categoryDisplayName'),
+                field: 'name',
+                cellTemplate: notebookNameTemplate,
+                filter: { placeholder: this.$translate.instant('queries.notebooks.gridColumns.name.filterPlaceholder') }
+            },
+            {
+                name: 'sqlQueryNum',
+                displayName: this.$translate.instant('queries.notebooks.gridColumns.sqlQueries.displayName'),
+                categoryDisplayName: this.$translate.instant('queries.notebooks.gridColumns.sqlQueries.categoryDisplayName'),
+                field: 'sqlQueriesParagraphsLength',
+                cellTemplate: sqlQueryTemplate,
+                enableSorting: true, type: 'number',
+                minWidth: 150,
+                width: '10%',
+                enableFiltering: false
+            },
+            {
+                name: 'scanQueryNum',
+                displayName: this.$translate.instant('queries.notebooks.gridColumns.scanQueries.displayName'),
+                categoryDisplayName: this.$translate.instant('queries.notebooks.gridColumns.scanQueries.categoryDisplayName'),
+                field: 'scanQueriesParagraphsLength',
+                cellTemplate: scanQueryTemplate,
+                enableSorting: true,
+                type: 'number',
+                minWidth: 150,
+                width: '10%',
+                enableFiltering: false
+            }
         ];
 
         this.actionOptions = [
             {
-                action: 'Clone',
+                action: this.$translate.instant('queries.notebooks.actions.clone'),
                 click: this.cloneNotebook.bind(this),
                 available: true
             },
             {
-                action: 'Rename',
+                action: this.$translate.instant('queries.notebooks.actions.rename'),
                 click: this.renameNotebook.bind(this),
                 available: true
             },
             {
-                action: 'Delete',
+                action: this.$translate.instant('queries.notebooks.actions.delete'),
                 click: this.deleteNotebooks.bind(this),
                 available: true
             }
@@ -110,7 +141,10 @@ export class NotebooksListCtrl {
 
     async createNotebook() {
         try {
-            const newNotebookName = await this.IgniteInput.input('New query notebook', 'Notebook name');
+            const newNotebookName = await this.IgniteInput.input(
+                this.$translate.instant('queries.createNotebookDialog.title'),
+                this.$translate.instant('queries.createNotebookDialog.nameInput.title')
+            );
 
             this.IgniteLoading.start('notebooksLoading');
 
@@ -134,10 +168,14 @@ export class NotebooksListCtrl {
     async renameNotebook() {
         try {
             const currentNotebook = this.gridApi.selection.legacyGetSelectedRows()[0];
-            const newNotebookName = await this.IgniteInput.input('Rename notebook', 'Notebook name', currentNotebook.name);
+            const newNotebookName = await this.IgniteInput.input(
+                this.$translate.instant('queries.renameNotebookDialog.title'),
+                this.$translate.instant('queries.renameNotebookDialog.nameInput.title'),
+                currentNotebook.name
+            );
 
             if (this.getNotebooksNames().find((name) => newNotebookName === name))
-                throw Error(`Notebook with name "${newNotebookName}" already exists!`);
+                throw Error(this.$translate.instant('queries.notebookNameCollissionErrorMessage', {name: newNotebookName}));
 
             this.IgniteLoading.start('notebooksLoading');
 

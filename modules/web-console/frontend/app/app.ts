@@ -44,6 +44,7 @@ import servicesModule from './services';
 // endignite
 
 // Data
+import messagesEn from '../i18n/messages.en.json';
 import i18n from './data/i18n';
 
 // Directives.
@@ -303,6 +304,7 @@ export default angular
          * @param {import('@uirouter/angularjs').UrlRouterProvider} $urlRouterProvider
          */
         ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
+            $translateProvider.translations('en', messagesEn);
             $translateProvider.translations('en', i18n);
             $translateProvider.preferredLanguage('en');
 

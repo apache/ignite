@@ -17,10 +17,10 @@
     form.modal-content(
         name='$ctrl.form' novalidate
         ignite-loading='createUser'
-        ignite-loading-text='Creating user…'
+        ignite-loading-text='{{::$ctrl.loadingText}}'
     )
         .modal-header
-            h4.modal-title Create User
+            h4.modal-title(translate='admin.createUserDialog.title')
 
             button.close(type='button' aria-label='Close' ng-click='$ctrl.close()')
                 svg(ignite-icon="cross")
@@ -32,5 +32,11 @@
             )
         .modal-footer
             div
-                button.btn-ignite.btn-ignite--link-success(ng-click='$ctrl.close()') Cancel
-                button.btn-ignite.btn-ignite--success(ng-click='$ctrl.createUser()') Create user
+                button.btn-ignite.btn-ignite--link-success(
+                    ng-click='$ctrl.close()'
+                    translate='cancelButtonLabel'
+                )
+                button.btn-ignite.btn-ignite--success(
+                    ng-click='$ctrl.createUser()'
+                    translate='admin.createUserDialog.formActionButtonLabel'
+                )

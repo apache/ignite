@@ -16,14 +16,12 @@
 svg(
     ng-if='$ctrl.secured'
     ignite-icon='lockClosed'
-    bs-tooltip=''
-    data-title='Secured'
+    bs-tooltip='::{title: ("clusterSecurityIconComponent.titleSecured"|translate)}'
     data-placement='top'
 )
 svg(
     ng-if='!$ctrl.secured'
     ignite-icon='lockOpened'
-    bs-tooltip=''
-    data-title='Unsecured'
+    bs-tooltip='::{title: ("clusterSecurityIconComponent.titleUnsecured"|translate)}'
     data-placement='top'
 )

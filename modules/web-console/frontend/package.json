@@ -34,6 +34,7 @@
     "@angular/platform-browser-dynamic": "^8.0.0",
     "@angular/router": "^8.0.0",
     "@angular/upgrade": "^8.0.0",
+    "@ngx-translate/core": "^11.0.1",
     "@uirouter/angular": "^3.0.0",
     "@uirouter/angular-hybrid": "^7.0.0",
     "@uirouter/angularjs": "^1.0.22",

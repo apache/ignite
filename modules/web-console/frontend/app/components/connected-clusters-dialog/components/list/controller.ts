@@ -16,24 +16,25 @@
 
 import _ from 'lodash';
 
-import columnDefs from './column-defs';
+import {columnDefsFn} from './column-defs';
 
 export default class ConnectedClustersListCtrl {
-    static $inject = ['$scope', 'AgentManager'];
+    data: any;
+    gridOptions: uiGrid.IGridOptionsOf<this['data']>;
+    gridApi: uiGrid.IGridApiOf<this['data']>;
 
-    /**
-     * @param {ng.IScope} $scope
-     * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
-     */
-    constructor($scope, agentMgr) {
-        this.$scope = $scope;
-        this.agentMgr = agentMgr;
-    }
+    static $inject = ['$scope', 'AgentManager', '$translate'];
+
+    constructor(
+        private $scope: ng.IScope,
+        private agentMgr,
+        private $translate: ng.translate.ITranslateService
+    ) {}
 
     $onInit() {
         this.gridOptions = {
             data: _.orderBy(this.data, ['name'], ['asc']),
-            columnDefs,
+            columnDefs: columnDefsFn(this.$translate),
             columnVirtualizationThreshold: 30,
             rowHeight: 46,
             enableColumnMenus: false,

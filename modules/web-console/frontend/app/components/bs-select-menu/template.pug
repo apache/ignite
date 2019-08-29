@@ -27,7 +27,7 @@ ul.bs-select-menu(
             img.bssm-active-indicator.icon-left(
                 ng-src='{{ $ctrl.areAllSelected() ? "/images/checkbox-active.svg" : "/images/checkbox.svg" }}'
             )
-            | All
+            span(translate='bsSelectMenu.selectAllOptionLabel')
     li(role='presentation' ng-repeat='match in $matches')
         button.btn-ignite.bssm-item-button(
             type='button'

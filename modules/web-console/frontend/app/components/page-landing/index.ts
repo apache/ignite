@@ -15,6 +15,7 @@
  */
 
 import angular from 'angular';
+import {StateRegistry} from '@uirouter/angularjs';
 
 import baseTemplate from './public.pug';
 import template from './template.pug';
@@ -28,10 +29,10 @@ export default angular
     .component('pageLanding', {
         template
     })
-    .config(['$stateProvider', function($stateProvider) {
+    .run(['$stateRegistry', function($stateRegistry: StateRegistry) {
         // set up the states
-        $stateProvider
-        .state('landing', {
+        $stateRegistry.register({
+            name: 'landing',
             url: '/',
             views: {
                 '@': {

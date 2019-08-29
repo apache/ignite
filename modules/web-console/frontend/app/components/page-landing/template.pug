@@ -16,40 +16,40 @@
 section.intro-container-wrapper
     .container
         .col-lg-6.col-md-6.col-sm-6.col-xs-12.intro-content
-            h1  Web Console
-            h2 An Interactive Configuration Wizard and Management Tool for Apache™ Ignite®
-            p It provides an interactive configuration wizard which helps you create and download configuration files and code snippets for your Apache Ignite projects. Additionally, the tool allows you to automatically load SQL metadata from any RDBMS, run SQL queries on your in-memory cache, and view execution plans, in-memory schema, and streaming charts.
-            a#signup_show.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup') Sign Up
+            h1(translate='landing.intro.title')
+            h2(translate='landing.intro.subtitle')
+            p(translate='landing.intro.text')
+            a#signup_show.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup' translate='landing.intro.signUpButtonLabel')
         .col-lg-6.col-md-6.col-sm-6.col-xs-12
             img(src='/images/page-landing-ui-sample.png')
 section.features-container-wrapper
     .container.features-container
-        .section-title The Web Console allows you to:
+        .section-title(translate='landing.features.title')
         .row
             .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
                 .col-lg-2.col-md-2.col-sm-2.col-xs-2
                     i.fa.fa-sitemap
                 .col-lg-9.col-md-9.col-sm-9.col-xs-9
-                    h3 Configure Apache Ignite clusters and caches
-                    p The Web Console configuration wizard takes you through a step-by-step process that helps you define all the required configuration parameters. The system then generates a ready-to-use project with all the required config files.
+                    h3(translate='landing.features.configuration.title')
+                    p(translate='landing.features.configuration.description')
             .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
                 .col-lg-2.col-md-2.col-sm-2.col-xs-2
                     i.fa.fa-search
                 .col-lg-9.col-md-9.col-sm-9.col-xs-9
-                    h3 Run free-form SQL queries on #[br] Apache Ignite caches
-                    p By connecting the Web Console to your Apache Ignite cluster, you can execute SQL queries on your in-memory cache. You can also view the execution plan, in-memory schema, and streaming charts for your cluster.
+                    h3(translate='landing.features.sql.title')
+                    p(translate='landing.features.sql.description')
         .row
             .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
                 .col-lg-2.col-md-2.col-sm-2.col-xs-2
                     i.fa.fa-database
                 .col-lg-9.col-md-9.col-sm-9.col-xs-9
-                    h3 Import database schemas from #[br] virtually any RDBMS
-                    p To speed the creation of your configuration files, the Web Console allows you to automatically import the database schema from virtually any RDBMS including Oracle, SAP, MySQL, PostgreSQL, and many more.
+                    h3(translate='landing.features.schemaImport.title')
+                    p(translate='landing.features.schemaImport.description')
             .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
                 .col-lg-2.col-md-2.col-sm-2.col-xs-2
                     i.fa.fa-gears
                 .col-lg-9.col-md-9.col-sm-9.col-xs-9
-                    h3 Manage the Web Console users
-                    p The Web Console allows you to have accounts with different roles.
+                    h3(translate='landing.features.userManagement.title')
+                    p(translate='landing.features.userManagement.description')
         .align-center.text-center
-            a.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup') Get Started
+            a.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup' translate='landing.features.signUpButtonLabel')

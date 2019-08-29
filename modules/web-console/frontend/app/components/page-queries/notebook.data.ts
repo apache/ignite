@@ -74,9 +74,14 @@ const DEMO_NOTEBOOK = {
 };
 
 export default class NotebookData {
-    static $inject = ['Demo', '$http', '$q'];
+    static $inject = ['Demo', '$http', '$q', '$translate'];
 
-    constructor(private Demo: DemoService, private $http: ng.IHttpService, private $q: ng.IQService) {
+    constructor(
+        private Demo: DemoService,
+        private $http: ng.IHttpService,
+        private $q: ng.IQService,
+        private $translate: ng.translate.ITranslateService
+    ) {
         this.initLatch = null;
         this.notebooks = null;
     }
@@ -109,7 +114,7 @@ export default class NotebookData {
                 const notebook = this.demo ? this.notebooks[0] : _.find(this.notebooks, {id});
 
                 if (_.isNil(notebook))
-                    return this.$q.reject('Failed to load notebook.');
+                    return this.$q.reject(this.$translate.instant('queries.failedToLoadNotebookErrorMessage'));
 
                 return notebook;
             });
@@ -139,8 +144,12 @@ export default class NotebookData {
     }
 
     remove(notebook) {
-        if (this.demo)
-            return this.$q.reject(`Removing "${notebook.name}" notebook is not supported.`);
+        if (this.demo) {
+            return this.$q.reject(this.$translate.instant(
+                'queries.notebookRemovalNotSupportedInDemoModeErrorMessage',
+                {name: notebook.name}
+            ));
+        }
 
         const notebookId = notebook.id;
 

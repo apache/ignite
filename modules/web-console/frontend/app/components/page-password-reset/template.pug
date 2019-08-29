@@ -19,7 +19,7 @@ include /app/helpers/jade/mixins
 .main-content(ng-if='error')
     .text-center
         p {{::$ctrl.ui.error}}
-h3.public-page__title(ng-if-start='$ctrl.ui.token && !$ctrl.ui.error') Reset Password
+h3.public-page__title(ng-if-start='$ctrl.ui.token && !$ctrl.ui.error' translate='passwordReset.pageTitle')
 form.page-password-reset__grid(name='$ctrl.form' ng-init='reset_info.token = token' ng-if-end)
     +form-field__email({
         label: 'E-mail:',
@@ -32,7 +32,7 @@ form.page-password-reset__grid(name='$ctrl.form' ng-init='reset_info.token = tok
         model: '$ctrl.ui.password',
         name: '"password"',
         required: true,
-        placeholder: 'New password'
+        placeholder: '{{::"passwordReset.newPasswordInput.placeholder"|translate}}'
     })(
         ignite-auto-focus
         ignite-on-enter-focus-move='passwordConfirmInput'
@@ -42,18 +42,18 @@ form.page-password-reset__grid(name='$ctrl.form' ng-init='reset_info.token = tok
         model: 'confirm',
         name: '"passwordConfirm"',
         required: true,
-        placeholder: 'Confirm new password'
+        placeholder: '{{::"passwordReset.confirmNewPasswordInput.placeholder"|translate}}'
     })(
         ignite-on-enter-focus-move='resetForm.$valid && resetPassword(user_info)'
         ignite-match='$ctrl.ui.password'
     )
 
     footer.form-footer
-        a(ui-sref='default-state') Cancel
+        a(ui-sref='default-state' translate='passwordReset.cancelLinkLabel')
         button.btn-ignite.btn-ignite--primary(
             ng-disabled='$ctrl.form.$invalid'
             ng-click='$ctrl.resetPassword()'
         )
             svg.icon-left(ignite-icon='checkmark')
-            | Save Changes
+            span(translate='passwordReset.formActionButtonLabel')
 

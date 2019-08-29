@@ -15,13 +15,13 @@
  */
 
 import publicTemplate from '../../../views/public.pug';
+import {UIRouter} from '@uirouter/angularjs';
+import {IIgniteNg1StateDeclaration} from 'app/types';
 
-/**
- * @param {import("@uirouter/angularjs").UIRouter} $uiRouter
- */
-export function registerState($uiRouter) {
-    /** @type {import("app/types").IIgniteNg1StateDeclaration} */
-    const state = {
+registerState.$inject = ['$uiRouter', '$translate'];
+
+export function registerState($uiRouter: UIRouter, $translate: ng.translate.ITranslateService) {
+    const state: IIgniteNg1StateDeclaration = {
         name: 'forgotPassword',
         url: '/forgot-password',
         views: {
@@ -34,7 +34,7 @@ export function registerState($uiRouter) {
         },
         unsaved: true,
         tfMetaTags: {
-            title: 'Forgot Password'
+            title: $translate.instant('forgotPassword.documentTitle')
         },
         resolve: [
             {
@@ -52,5 +52,3 @@ export function registerState($uiRouter) {
 
     $uiRouter.stateRegistry.register(state);
 }
-
-registerState.$inject = ['$uiRouter'];

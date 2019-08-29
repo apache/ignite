@@ -20,11 +20,11 @@ export default componentFactory([
     {
         level: StatusLevel.GREEN,
         value: true,
-        label: 'Active'
+        label: 'connectedClustersDialog.status.active'
     },
     {
         level: StatusLevel.RED,
         value: false,
-        label: 'Not Active'
+        label: 'connectedClustersDialog.status.inactive'
     }
 ]);

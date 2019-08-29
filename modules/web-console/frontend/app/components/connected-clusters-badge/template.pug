@@ -14,4 +14,5 @@
     limitations under the License.
 
 button(type='button' ng-click='$ctrl.show()')
-    | My Connected Clusters: <span class='connected-cluster-badge__count'>{{ $ctrl.connectedClusters }}</span>
+    span(translate='connectedClustersBadgeComponent.message')
+    span.connected-cluster-badge__count {{ $ctrl.connectedClusters }}

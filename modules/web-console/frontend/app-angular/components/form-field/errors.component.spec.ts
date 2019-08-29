@@ -19,6 +19,8 @@ import {FormFieldErrors} from './errors.component';
 import {assert} from 'chai';
 import {TestBed, ComponentFixture, fakeAsync} from '@angular/core/testing';
 import {Component, NO_ERRORS_SCHEMA, ViewChild, ElementRef} from '@angular/core';
+import {TranslateService} from '@ngx-translate/core';
+import {of} from 'rxjs';
 
 suite('Angular form-field-errors component', () => {
     let fixture: ComponentFixture<HostComponent>;
@@ -55,6 +57,9 @@ suite('Angular form-field-errors component', () => {
                 FormFieldErrors,
                 HostComponent
             ],
+            providers: [
+                {provide: TranslateService, useValue: {get(val) {return of(val);}}}
+            ],
             schemas: [NO_ERRORS_SCHEMA]
         }).compileComponents();
 
@@ -76,9 +81,9 @@ suite('Angular form-field-errors component', () => {
 
     test('Validation message', () => {
         assert.equal(
-            'Value is required',
+            'validationMessages.required',
             fixture.debugElement.componentInstance.inline.nativeElement.textContent,
-            'It shows default message'
+            'It shows default message translation id'
         );
 
         assert.equal(
@@ -91,9 +96,9 @@ suite('Angular form-field-errors component', () => {
         fixture.detectChanges();
 
         assert.equal(
-            'Value is invalid: foo',
+            'validationMessages.unknown',
             fixture.debugElement.componentInstance.icon.nativeElement.textContent,
-            'It shows placeholder message'
+            'It shows placeholder message translation id'
         );
     });
 });

@@ -36,15 +36,17 @@ export class DialogAdminCreateUser {
     };
 
     serverError: string | null = null;
+    loadingText = this.$translate.instant('admin.createUserDialog.loadingText', null, null, null, null)
 
-    static $inject = ['User', 'IgniteAdminData', 'IgniteMessages', 'IgniteFormUtils', 'IgniteLoading'];
+    static $inject = ['User', 'IgniteAdminData', 'IgniteMessages', 'IgniteFormUtils', 'IgniteLoading', '$translate'];
 
     constructor(
         private User: UserService,
         private AdminData: IgniteAdminData,
         private IgniteMessages: ReturnType<typeof MessagesFactory>,
         private IgniteFormUtils: ReturnType<typeof FormUtilsFactoryFactory>,
-        private loading: ReturnType<typeof LoadingServiceFactory>
+        private loading: ReturnType<typeof LoadingServiceFactory>,
+        private $translate: ng.translate.ITranslateService
     ) {}
 
     canSubmitForm(form: DialogAdminCreateUser['form']) {
@@ -68,7 +70,7 @@ export class DialogAdminCreateUser {
         this.AdminData.registerUser(this.data)
             .then(() => {
                 this.User.created$.next(this.data);
-                this.IgniteMessages.showInfo(`User ${this.data.email} created`);
+                this.IgniteMessages.showInfo(this.$translate.instant('admin.createUserDialog.userCreatedSuccessNotification', {user: this.data}));
                 this.close({});
             })
             .catch((err) => {

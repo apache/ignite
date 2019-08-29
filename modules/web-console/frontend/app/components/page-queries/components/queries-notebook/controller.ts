@@ -71,7 +71,7 @@ class Paragraph {
     name: string;
     queryType: 'SCAN' | 'SQL_FIELDS';
 
-    constructor($animate, $timeout, JavaTypes, errorParser, paragraph) {
+    constructor($animate, $timeout, JavaTypes, errorParser, paragraph, private $translate: ng.translate.ITranslateService) {
         const self = this;
 
         self.id = 'paragraph-' + paragraphId++;
@@ -181,7 +181,7 @@ class Paragraph {
             }
 
             if (_.isEmpty(this.error.message) && nonEmpty(err.className)) {
-                this.error.message = 'Internal cluster error';
+                this.error.message = this.$translate.instant('queries.notebook.internalClusterErrorMessagePrefix');
 
                 if (nonEmpty(err.className))
                     this.error.message += ': ' + err.className;
@@ -290,12 +290,12 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['Demo', 'IgniteInput', '$scope', '$http', '$q', '$timeout', '$transitions', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
+    static $inject = ['Demo', 'IgniteInput', '$scope', '$http', '$q', '$timeout', '$transitions', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo', '$translate'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor(private Demo: DemoService, private IgniteInput: InputDialog, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
+    constructor(private Demo: DemoService, private IgniteInput: InputDialog, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo, private $translate: ng.translate.ITranslateService) {
         const $ctrl = this;
 
         this.CSV = CSV;
@@ -345,12 +345,14 @@ export class NotebookCtrl {
 
         $scope.modes = LegacyUtils.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
-        $scope.loadingText = this.Demo.enabled ? 'Demo grid is starting. Please wait...' : 'Loading query notebook screen...';
+        $scope.loadingText = this.Demo.enabled
+            ? $translate.instant('queries.notebook.loadingMessageWithDemoEnabled')
+            : $translate.instant('queries.notebook.loadingMessageWithDemoDisabled');
 
         $scope.timeUnit = [
-            {value: 1000, label: 'seconds', short: 's'},
-            {value: 60000, label: 'minutes', short: 'm'},
-            {value: 3600000, label: 'hours', short: 'h'}
+            {value: 1000, label: $translate.instant('scale.time.second.long'), short: $translate.instant('scale.time.second.short')},
+            {value: 60000, label: $translate.instant('scale.time.minute.long'), short: $translate.instant('scale.time.minute.short')},
+            {value: 3600000, label: $translate.instant('scale.time.hour.long'), short: $translate.instant('scale.time.hour.short')}
         ];
 
         $scope.metadata = [];
@@ -996,7 +998,7 @@ export class NotebookCtrl {
         };
 
         const _newParagraph = (paragraph) => {
-            return new Paragraph($animate, $timeout, JavaTypes, errorParser, paragraph);
+            return new Paragraph($animate, $timeout, JavaTypes, errorParser, paragraph, $translate);
         };
 
         Notebook.find($state.params.noteId)
@@ -1074,7 +1076,7 @@ export class NotebookCtrl {
             ActivitiesData.post({ group: 'sql', action: '/queries/add/query' });
 
             const paragraph = _newParagraph({
-                name: 'Query' + (sz === 0 ? '' : sz),
+                name: $translate.instant('queries.notebook.newQueryNamePrefix') + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
@@ -1103,7 +1105,7 @@ export class NotebookCtrl {
             ActivitiesData.post({ group: 'sql', action: '/queries/add/scan' });
 
             const paragraph = _newParagraph({
-                name: 'Scan' + (sz === 0 ? '' : sz),
+                name: $translate.instant('queries.notebook.newScanNamePrefix') + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
@@ -2015,7 +2017,7 @@ export class NotebookCtrl {
         // };
 
         $scope.clearResult = (paragraph) => {
-            Confirm.confirm('Are you sure you want to clear query result?')
+            Confirm.confirm($translate.instant('queries.notebook.clearQueryResultConfirmationMessage'))
                 .then(() => {
                     delete paragraph.resNodeId;
                     delete paragraph.queryId;
@@ -2078,9 +2080,9 @@ export class NotebookCtrl {
                 return;
 
             if (paragraph.loading)
-                return 'Waiting for server response';
+                return $translate.instant('queries.notebook.queryTooltip.waitingForResponse');
 
-            return 'Input text to ' + action;
+            return $translate.instant('queries.notebook.queryTooltip.actionPrefix') + action;
         };
 
         $scope.scanAvailable = function(paragraph) {
@@ -2092,9 +2094,9 @@ export class NotebookCtrl {
                 return;
 
             if (paragraph.loading)
-                return 'Waiting for server response';
+                return $translate.instant('queries.notebook.scanTooltip.waitingForResponse');
 
-            return 'Select cache to export scan results';
+            return $translate.instant('queries.notebook.scanTooltip.text');
         };
 
         $scope.clickableMetadata = function(node) {
@@ -2139,27 +2141,27 @@ export class NotebookCtrl {
                 const scope = $scope.$new();
 
                 if (paragraph.queryType === 'SCAN') {
-                    scope.title = 'SCAN query';
+                    scope.title = $translate.instant('queries.notebook.queryResultDialog.scan.title');
 
                     const filter = paragraph.queryArgs.filter;
 
                     if (_.isEmpty(filter))
-                        scope.content = [`SCAN query for cache: <b>${maskCacheName(paragraph.queryArgs.cacheName, true)}</b>`];
+                        scope.content = [$translate.instant('queries.notebook.queryResultDialog.scan.emptyFilterMessage', {name: maskCacheName(paragraph.queryArgs.cacheName, true)})];
                     else
-                        scope.content = [`SCAN query for cache: <b>${maskCacheName(paragraph.queryArgs.cacheName, true)}</b> with filter: <b>${filter}</b>`];
+                        scope.content = [$translate.instant('queries.notebook.queryResultDialog.scan.emptyFilterMessage', {name: maskCacheName(paragraph.queryArgs.cacheName, true), filter})];
                 }
                 else if (paragraph.queryArgs.query.startsWith('EXPLAIN ')) {
-                    scope.title = 'Explain query';
+                    scope.title = $translate.instant('queries.notebook.queryResultDialog.explain.title');
                     scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
                 else {
-                    scope.title = 'SQL query';
+                    scope.title = $translate.instant('queries.notebook.queryResultDialog.sqlQuery.title');
                     scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
 
                 // Attach duration and selected node info
-                scope.meta = `Duration: ${$filter('duration')(paragraph.duration)}.`;
-                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${id8(paragraph.resNodeId)}` : '';
+                scope.meta = $translate.instant('queries.notebook.queryResultDialog.duration', {duration: $filter('duration')(paragraph.duration)});
+                scope.meta += paragraph.localQueryMode ? $translate.instant('queries.notebook.queryResultDialog.nodeId', {id: id8(paragraph.resNodeId)}) : '';
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
@@ -2170,7 +2172,7 @@ export class NotebookCtrl {
             if (!_.isNil(paragraph)) {
                 const scope = $scope.$new();
 
-                scope.title = 'Error details';
+                scope.title = $translate.instant('queries.notebook.stackTraceDialog.title');
                 scope.content = [];
 
                 const tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
@@ -2209,7 +2211,7 @@ export class NotebookCtrl {
 
             if (this._hasRunningQueries(paragraphs)) {
                 try {
-                    return Confirm.confirm('You have running queries. Are you sure you want to cancel them?')
+                    return Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'))
                         .then(() => this._closeOpenedQueries(paragraphs));
                 }
                 catch (err) {
@@ -2252,7 +2254,7 @@ export class NotebookCtrl {
 
         if (this._hasRunningQueries(paragraphs)) {
             try {
-                await this.Confirm.confirm('You have running queries. Are you sure you want to cancel them?');
+                await this.Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'));
                 this._closeOpenedQueries(paragraphs);
 
                 return true;
@@ -2267,42 +2269,77 @@ export class NotebookCtrl {
 
     scanActions: QueryActions<Paragraph & {type: 'SCAN'}> = [
         {
-            text: 'Scan',
+            text: this.$translate.instant('queries.notebook.scanActions.scan'),
             click: (p) => this.$scope.scan(p),
             available: (p) => this.$scope.scanAvailable(p)
         },
         {
-            text: 'Scan on selected node',
+            text: this.$translate.instant('queries.notebook.scanActions.scanOnSelectedNode'),
             click: (p) => this.$scope.scan(p, true),
             available: (p) => this.$scope.scanAvailable(p)
         },
-        {text: 'Rename', click: (p) => this.renameParagraph(p), available: () => true},
-        {text: 'Remove', click: (p) => this.removeParagraph(p), available: () => true}
+        {
+            text: this.$translate.instant('queries.notebook.scanActions.rename'),
+            click: (p) => this.renameParagraph(p),
+            available: () => true
+        },
+        {
+            text: this.$translate.instant('queries.notebook.scanActions.remove'),
+            click: (p) => this.removeParagraph(p),
+            available: () => true
+        }
     ];
 
     queryActions: QueryActions<Paragraph & {type: 'SQL_FIELDS'}> = [
         {
-            text: 'Execute',
+            text: this.$translate.instant('queries.notebook.queryActions.execute.buttonLabel'),
             click: (p) => this.$scope.execute(p),
             available: (p) => this.$scope.queryAvailable(p)
         },
         {
-            text: 'Execute on selected node',
+            text: this.$translate.instant('queries.notebook.queryActions.executeOnSelectedNode.buttonLabel'),
             click: (p) => this.$scope.execute(p, true),
             available: (p) => this.$scope.queryAvailable(p)
         },
         {
-            text: 'Explain',
+            text: this.$translate.instant('queries.notebook.queryActions.explain.buttonLabel'),
             click: (p) => this.$scope.explain(p),
             available: (p) => this.$scope.queryAvailable(p)
         },
-        {text: 'Rename', click: (p) => this.renameParagraph(p), available: () => true},
-        {text: 'Remove', click: (p) => this.removeParagraph(p), available: () => true}
+        {
+            text: this.$translate.instant('queries.notebook.queryActions.rename.buttonLabel'),
+            click: (p) => this.renameParagraph(p),
+            available: () => true
+        },
+        {
+            text: this.$translate.instant('queries.notebook.queryActions.remove.buttonLabel'),
+            click: (p) => this.removeParagraph(p),
+            available: () => true
+        }
+    ];
+
+    exportActions = [
+        {
+            text: this.$translate.instant('queries.notebook.export.exportButtonLabel'),
+            click: 'exportCsv(paragraph)'
+        }, {
+            text: this.$translate.instant('queries.notebook.export.exportAllButtonLabel'),
+            click: 'exportCsvAll(paragraph)'
+        }, {
+            divider: true
+        }, {
+            text: this.$translate.instant('queries.notebook.export.copyToClipboardButtonLabel'),
+            click: 'exportCsvToClipBoard(paragraph)'
+        }
     ];
 
     async renameParagraph(paragraph: Paragraph) {
         try {
-            const newName = await this.IgniteInput.input('Rename Query', 'New query name:', paragraph.name);
+            const newName = await this.IgniteInput.input(
+                this.$translate.instant('queries.notebook.renameQueryDialog.title'),
+                this.$translate.instant('queries.notebook.renameQueryDialog.nameInput.title'),
+                paragraph.name
+            );
 
             if (paragraph.name !== newName) {
                 paragraph.name = newName;
@@ -2320,9 +2357,10 @@ export class NotebookCtrl {
 
     async removeParagraph(paragraph: Paragraph) {
         try {
-            const msg = (this._hasRunningQueries([paragraph])
-                ? 'Query is being executed. Are you sure you want to cancel and remove query: "'
-                : 'Are you sure you want to remove query: "') + paragraph.name + '"?';
+            const msg = this.$translate.instant('queries.notebook.removeQueryDialog.message', {
+                hasRunningQueries: this._hasRunningQueries([paragraph]),
+                name: paragraph.name
+            });
 
             await this.Confirm.confirm(msg);
 

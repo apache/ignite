@@ -16,30 +16,30 @@
 include /app/helpers/jade/mixins
 
 page-queries-slot(slot-name="'queriesTitle'")
-    h1 Queries
+    h1(translate='queries.notebooks.pageTitle')
 
 page-queries-slot(slot-name="'queriesButtons'")
     button#createNotebookBtn.btn-ignite.btn-ignite--primary(ng-click='$ctrl.createNotebook()' ng-if='!$ctrl.Demo.enabled')
         svg.icon-left(ignite-icon='plus')
-        | Create Notebook
+        span(translate='queries.notebooks.createNotebookButtonLabel')
 
 
 .queries-notebooks-list
     .panel--ignite
         header.header-with-selector
             div
-                span Notebooks
+                span(translate='queries.notebooks.gridTitle')
 
             div(ng-if="!$ctrl.Demo.enabled")
                 +ignite-form-field-bsdropdown({
-                    label: 'Actions',
+                    label: '{{::"actionsButtonLabel"|translate}}',
                     model: '$ctrl.action',
                     name: 'action',
                     disabled: '$ctrl.gridApi.selection.legacyGetSelectedRows().length === 0',
                     options: '$ctrl.actionOptions'
                 })
 
-        .panel-collapse(ignite-loading='notebooksLoading' ignite-loading-text='Loading notebooks...')
+        .panel-collapse(ignite-loading='notebooksLoading' ignite-loading-text='{{::"queries.notebooks.loadingMessage"|translate}}')
             ignite-grid-table(
                 items='$ctrl.notebooks'
                 column-defs='$ctrl.columnDefs'
@@ -49,7 +49,7 @@ page-queries-slot(slot-name="'queriesButtons'")
             )
 
             grid-no-data(grid-api='$ctrl.gridApi')
-                | You have no notebooks.
-                a.link-success(ng-click='$ctrl.createNotebook()') Create one?
+                span(translate='queries.notebooks.noData.message')
+                a.link-success(ng-click='$ctrl.createNotebook()' translate='queries.notebooks.noData.createEntityButtonLabel')
                 grid-no-data-filtered
-                    | Nothing to display. Check your filters.
+                    span(translate='queries.notebooks.noData.emptyFilterResultMessage')

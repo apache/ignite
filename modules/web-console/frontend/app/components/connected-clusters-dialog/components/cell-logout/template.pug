@@ -15,8 +15,7 @@
 
 button.btn-ignite.btn-ignite--link-dashed-secondary(
     ng-click='$event.stopPropagation(); $ctrl.logout()'
-    bs-tooltip=''
-    data-title='Click here to logout from cluster.'
+    bs-tooltip='::{title: ("connectedClustersDialog.logoutButtonTooltip"|translate)}'
     data-placement='top'
 )
     svg(ignite-icon='exit')

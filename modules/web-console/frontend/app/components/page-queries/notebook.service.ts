@@ -16,22 +16,21 @@
 
 import _ from 'lodash';
 import uuidv4 from 'uuid/v4';
+import {StateService} from '@uirouter/angularjs';
+import {default as ConfirmModalFactory} from 'app/services/Confirm.service';
+import {default as MessagesFactory} from 'app/services/Messages.service';
+import {default as NotebookData} from './notebook.data';
 
 export default class Notebook {
-    static $inject = ['$state', 'IgniteConfirm', 'IgniteMessages', 'IgniteNotebookData'];
+    static $inject = ['$state', 'IgniteConfirm', 'IgniteMessages', 'IgniteNotebookData', '$translate'];
 
-    /**
-     * @param {import('@uirouter/angularjs').StateService} $state
-     * @param {ReturnType<typeof import('app/services/Confirm.service').default>} confirmModal
-     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
-     * @param {import('./notebook.data').default} NotebookData
-     */
-    constructor($state, confirmModal, Messages, NotebookData) {
-        this.$state = $state;
-        this.confirmModal = confirmModal;
-        this.Messages = Messages;
-        this.NotebookData = NotebookData;
-    }
+    constructor(
+        private $state: StateService,
+        private confirmModal: ReturnType<typeof ConfirmModalFactory>,
+        private Messages: ReturnType<typeof MessagesFactory>,
+        private NotebookData: NotebookData,
+        private $translate: ng.translate.ITranslateService
+    ) {}
 
     read() {
         return this.NotebookData.read();
@@ -70,7 +69,7 @@ export default class Notebook {
     }
 
     remove(notebook) {
-        return this.confirmModal.confirm(`Are you sure you want to remove notebook: "${notebook.name}"?`)
+        return this.confirmModal.confirm(this.$translate.instant('queries.removeNotebookConfirmationMessage', {name: notebook.name}))
             .then(() => this.NotebookData.findIndex(notebook))
             .then((idx) => {
                 return this.NotebookData.remove(notebook)
@@ -83,7 +82,7 @@ export default class Notebook {
     }
 
     removeBatch(notebooks) {
-        return this.confirmModal.confirm(`Are you sure you want to remove ${notebooks.length} selected notebooks?`)
+        return this.confirmModal.confirm(this.$translate.instant('queries.removeNotebooksConfirmationMessage', {amount: notebooks.length}))
             .then(() => {
                 const deleteNotebooksPromises = notebooks.map((notebook) => this.NotebookData.remove(notebook));
 

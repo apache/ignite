@@ -21,24 +21,19 @@ import {tap, filter, combineLatest} from 'rxjs/operators';
 import {CancellationError} from 'app/errors/CancellationError';
 
 export default class {
-    static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages'];
+    clusters = [];
+    isDemo = this.agentMgr.isDemoMode();
+    _inProgressSubject = new BehaviorSubject(false);
 
-    /**
-     * @param agentMgr Agent manager.
-     * @param Confirm Confirmation service.
-     * @param Version Version check service.
-     * @param Messages Messages service.
-     */
-    constructor(agentMgr, Confirm, Version, Messages) {
-        this.agentMgr = agentMgr;
-        this.Confirm = Confirm;
-        this.Version = Version;
-        this.Messages = Messages;
+    static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages', '$translate'];
 
-        this.clusters = [];
-        this.isDemo = agentMgr.isDemoMode();
-        this._inProgressSubject = new BehaviorSubject(false);
-    }
+    constructor(
+        private agentMgr,
+        private Confirm,
+        private Version,
+        private Messages,
+        private $translate: ng.translate.ITranslateService
+    ) {}
 
     $onInit() {
         if (this.isDemo)
@@ -68,7 +63,7 @@ export default class {
             .then(() => this.cluster = item)
             .catch((err) => {
                 if (!(err instanceof CancellationError))
-                    this.Messages.showError('Failed to switch cluster: ', err);
+                    this.Messages.showError(this.$translate.instant('clusterSelectorComponent.failedToSwitchClusterErrorMessage'), err);
             });
     }
 
@@ -87,12 +82,12 @@ export default class {
                 .catch((err) => {
                     this._inProgressSubject.next(false);
 
-                    this.Messages.showError('Failed to toggle cluster state: ', err);
+                    this.Messages.showError(this.$translate.instant('clusterSelectorComponent.failedToToggleClusterStateErrorMessage'), err);
                 });
         };
 
         if (this.cluster.active) {
-            return this.Confirm.confirm('Are you sure you want to deactivate cluster?')
+            return this.Confirm.confirm(this.$translate.instant('clusterSelectorComponent.deactivateConfirmationMessage'))
                 .then(() => toggleClusterState());
         }
 

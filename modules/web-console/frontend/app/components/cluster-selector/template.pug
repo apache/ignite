@@ -17,13 +17,13 @@ include /app/helpers/jade/mixins
 
 button.btn-ignite.btn-ignite--success(
     data-ng-if='$ctrl.isDemo'
+    translate='clusterSelectorComponent.clusterIsInDemoMode'
 )
-    | Demo cluster
 
 button.btn-ignite.btn-ignite--primary(
     data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 0'
+    translate='clusterSelectorComponent.noClusters'
 )
-    | No clusters available
 
 button.btn-ignite.btn-ignite--primary(
     data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1'
@@ -41,7 +41,7 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
         aria-haspopup='true'
         aria-expanded='false'
     )
-        span(ng-if='!$ctrl.cluster') No clusters available
+        span(ng-if='!$ctrl.cluster' translate='clusterSelectorComponent.noClusters')
 
         span(ng-if='$ctrl.cluster')
             cluster-security-icon(secured='$ctrl.cluster.secured')
@@ -58,14 +58,15 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
 svg(
     ng-if='!$ctrl.isDemo'
     ignite-icon='info'
-    bs-tooltip=''
-    data-title='Multi-Cluster Support<br/>\
-        <a href="https://apacheignite-tools.readme.io/docs/multi-cluster-support" target="_blank">More info</a>'
+    bs-tooltip='::{title: ("clusterSelectorComponent.tooltip"|translate)}'
     data-placement='bottom'
 )
 
-.cluster-selector--state(ng-if='$ctrl.isChangeStateAvailable()')
-    | Cluster {{ $ctrl.cluster.active ? 'active' : 'inactive' }}
+.cluster-selector--state(
+    ng-if='$ctrl.isChangeStateAvailable()'
+    translate='clusterSelectorComponent.activationState'
+    translate-values='{active: $ctrl.cluster.active}'
+)
 
 +switcher()(
     ng-if='$ctrl.isChangeStateAvailable()'
