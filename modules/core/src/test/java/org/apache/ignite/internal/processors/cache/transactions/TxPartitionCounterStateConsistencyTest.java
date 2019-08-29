@@ -214,7 +214,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertFalse(backups.contains(prim));
 
-        long stop = U.currentTimeMillis() + 3 * 60_000;
+        long stop = U.currentTimeMillis() + 60_000;
 
         long seed = System.nanoTime();
 
@@ -226,7 +226,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             while (U.currentTimeMillis() < stop) {
-                doSleep(5_000);
+                doSleep(3_000);
 
                 Ignite restartNode = grid(1 + r.nextInt(backups.size()));
 
@@ -239,7 +239,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 try {
                     waitForTopology(SERVER_NODES);
 
-                    doSleep(15_000);
+                    doSleep(5000);
 
                     startGrid(name);
 
@@ -469,7 +469,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      */
     @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_NoOp() throws Exception {
-        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(s -> {}, s -> {});
+        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(s -> {
+        }, s -> {
+        });
     }
 
     /**
@@ -587,7 +589,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         });
 
-        doSleep(60_000);
+        doSleep(30_000);
 
         done.set(true);
 
