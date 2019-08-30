@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -46,7 +47,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Assert;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -228,6 +231,27 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         }
     }
 
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetTableTypes() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTableTypes();
+
+            assertTrue(rs.next());
+
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+
+            assertTrue(rs.next());
+
+            assertEquals("VIEW", rs.getString("TABLE_TYPE"));
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -282,12 +306,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetAllTables() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
-
-            ResultSet rs = meta.getTables(null, null, null, null);
-
-            Set<String> expectedTbls = new HashSet<>(Arrays.asList(
+        testGetTables(
+            new String[] {"TABLE"},
+            new HashSet<>(Arrays.asList(
                 "org.ORGANIZATION",
                 "pers.PERSON",
                 "dep.DEPARTMENT",
@@ -295,16 +316,51 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.Quoted",
                 "PUBLIC.TEST_DECIMAL_COLUMN",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION",
-                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META"));
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META"))
+        );
+    }
 
-            Set<String> actualTbls = new HashSet<>(expectedTbls.size());
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetAllView() throws Exception {
+        testGetTables(
+            new String[] {"VIEW"},
+            new HashSet<>(Arrays.asList(
+                "SYS.LOCAL_SQL_QUERY_HISTORY",
+                "SYS.NODES",
+                "SYS.SCHEMAS",
+                "SYS.CACHE_GROUPS",
+                "SYS.NODE_METRICS",
+                "SYS.BASELINE_NODES",
+                "SYS.INDEXES",
+                "SYS.LOCAL_CACHE_GROUPS_IO",
+                "SYS.LOCAL_SQL_RUNNING_QUERIES",
+                "SYS.NODE_ATTRIBUTES",
+                "SYS.CACHES",
+                "SYS.TABLES"
+            ))
+        );
+    }
 
-            while(rs.next()) {
+    /**
+     * @throws Exception If failed.
+     */
+    private void testGetTables(String[] tblTypes, Set<String> expTbls) throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTables(null, null, null, tblTypes);
+
+            Set<String> actualTbls = new HashSet<>(expTbls.size());
+
+            while (rs.next()) {
                 actualTbls.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME"));
             }
 
-            assert expectedTbls.equals(actualTbls) : "expectedTbls=" + expectedTbls +
+            assert expTbls.equals(actualTbls) : "expectedTbls=" + expTbls +
                 ", actualTbls" + actualTbls;
         }
     }
@@ -338,7 +394,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             while (rs.next()) {
                 String name = rs.getString("COLUMN_NAME");
 
-                assert names.remove(name);
+                assert names.remove(name) : "Unexpected column name " + name;
 
                 if ("NAME".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
@@ -432,47 +488,248 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             ResultSet rs = meta.getColumns(null, null, null, null);
 
-            Set<String> expectedCols = new HashSet<>(Arrays.asList(
-                "org.ORGANIZATION.ID.null",
-                "org.ORGANIZATION.NAME.null.42",
-                "pers.PERSON.ORGID.null",
-                "pers.PERSON.AGE.null",
-                "pers.PERSON.NAME.null",
-                "dep.DEPARTMENT.ID.null",
-                "dep.DEPARTMENT.NAME.null.43",
-                "PUBLIC.TEST.ID.null",
-                "PUBLIC.TEST.NAME.'default name'.50",
-                "PUBLIC.TEST.VAL.null.50",
-                "PUBLIC.TEST.AGE.21",
+            List<String> expectedCols = Arrays.asList(
                 "PUBLIC.Quoted.Id.null",
                 "PUBLIC.Quoted.Name.null.50",
+                "PUBLIC.TEST.ID.null",
+                "PUBLIC.TEST.NAME.'default name'.50",
+                "PUBLIC.TEST.AGE.21",
+                "PUBLIC.TEST.VAL.null.50",
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
                 "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.null",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8",
                 "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.ID.null",
                 "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DEC_COL.null.8",
-                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DATE_COL.null"
-            ));
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DATE_COL.null",
+                "dep.DEPARTMENT.ID.null",
+                "dep.DEPARTMENT.NAME.null.43",
+                "org.ORGANIZATION.ID.null",
+                "org.ORGANIZATION.NAME.null.42",
+                "pers.PERSON.NAME.null",
+                "pers.PERSON.AGE.null",
+                "pers.PERSON.ORGID.null"
+            );
 
-            Set<String> actualCols = new HashSet<>(expectedCols.size());
+            List<String> actualUserCols = new ArrayList<>(expectedCols.size());
+
+            List<String> actualSystemCols = new ArrayList<>();
 
             while(rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
 
                 int scale = rs.getInt("DECIMAL_DIGITS");
 
-                actualCols.add(rs.getString("TABLE_SCHEM") + '.'
+                String schemaName = rs.getString("TABLE_SCHEM");
+
+                String colDefinition = schemaName + '.'
                     + rs.getString("TABLE_NAME") + "."
                     + rs.getString("COLUMN_NAME") + "."
                     + rs.getString("COLUMN_DEF")
                     + (precision == 0 ? "" : ("." + precision))
-                    + (scale == 0 ? "" : ("." + scale))
-                );
+                    + (scale == 0 ? "" : ("." + scale));
+
+                if (!schemaName.equals(QueryUtils.SCHEMA_SYS))
+                    actualUserCols.add(colDefinition);
+                else
+                    actualSystemCols.add(colDefinition);
             }
 
-            assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
-                ", actualCols" + actualCols;
+            Assert.assertEquals(expectedCols, actualUserCols);
+
+            expectedCols = Arrays.asList(
+                "SYS.BASELINE_NODES.CONSISTENT_ID.null.2147483647",
+                "SYS.BASELINE_NODES.ONLINE.null.1",
+                "SYS.CACHES.CACHE_GROUP_ID.null.10",
+                "SYS.CACHES.CACHE_GROUP_NAME.null.2147483647",
+                "SYS.CACHES.CACHE_ID.null.10",
+                "SYS.CACHES.CACHE_NAME.null.2147483647",
+                "SYS.CACHES.CACHE_TYPE.null.2147483647",
+                "SYS.CACHES.CACHE_MODE.null.2147483647",
+                "SYS.CACHES.ATOMICITY_MODE.null.2147483647",
+                "SYS.CACHES.IS_ONHEAP_CACHE_ENABLED.null.1",
+                "SYS.CACHES.IS_COPY_ON_READ.null.1",
+                "SYS.CACHES.IS_LOAD_PREVIOUS_VALUE.null.1",
+                "SYS.CACHES.IS_READ_FROM_BACKUP.null.1",
+                "SYS.CACHES.PARTITION_LOSS_POLICY.null.2147483647",
+                "SYS.CACHES.NODE_FILTER.null.2147483647",
+                "SYS.CACHES.TOPOLOGY_VALIDATOR.null.2147483647",
+                "SYS.CACHES.IS_EAGER_TTL.null.1",
+                "SYS.CACHES.WRITE_SYNCHRONIZATION_MODE.null.2147483647",
+                "SYS.CACHES.IS_INVALIDATE.null.1",
+                "SYS.CACHES.IS_EVENTS_DISABLED.null.1",
+                "SYS.CACHES.IS_STATISTICS_ENABLED.null.1",
+                "SYS.CACHES.IS_MANAGEMENT_ENABLED.null.1",
+                "SYS.CACHES.BACKUPS.null.10",
+                "SYS.CACHES.AFFINITY.null.2147483647",
+                "SYS.CACHES.AFFINITY_MAPPER.null.2147483647",
+                "SYS.CACHES.REBALANCE_MODE.null.2147483647",
+                "SYS.CACHES.REBALANCE_BATCH_SIZE.null.10",
+                "SYS.CACHES.REBALANCE_TIMEOUT.null.19",
+                "SYS.CACHES.REBALANCE_DELAY.null.19",
+                "SYS.CACHES.REBALANCE_THROTTLE.null.19",
+                "SYS.CACHES.REBALANCE_BATCHES_PREFETCH_COUNT.null.19",
+                "SYS.CACHES.REBALANCE_ORDER.null.10",
+                "SYS.CACHES.EVICTION_FILTER.null.2147483647",
+                "SYS.CACHES.EVICTION_POLICY_FACTORY.null.2147483647",
+                "SYS.CACHES.IS_NEAR_CACHE_ENABLED.null.1",
+                "SYS.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null.2147483647",
+                "SYS.CACHES.NEAR_CACHE_START_SIZE.null.10",
+                "SYS.CACHES.DEFAULT_LOCK_TIMEOUT.null.19",
+                "SYS.CACHES.CACHE_INTERCEPTOR.null.2147483647",
+                "SYS.CACHES.CACHE_STORE_FACTORY.null.2147483647",
+                "SYS.CACHES.IS_STORE_KEEP_BINARY.null.1",
+                "SYS.CACHES.IS_READ_THROUGH.null.1",
+                "SYS.CACHES.IS_WRITE_THROUGH.null.1",
+                "SYS.CACHES.IS_WRITE_BEHIND_ENABLED.null.1",
+                "SYS.CACHES.WRITE_BEHIND_COALESCING.null.1",
+                "SYS.CACHES.WRITE_BEHIND_FLUSH_SIZE.null.10",
+                "SYS.CACHES.WRITE_BEHIND_FLUSH_FREQUENCY.null.19",
+                "SYS.CACHES.WRITE_BEHIND_FLUSH_THREAD_COUNT.null.10",
+                "SYS.CACHES.WRITE_BEHIND_FLUSH_BATCH_SIZE.null.10",
+                "SYS.CACHES.MAX_CONCURRENT_ASYNC_OPERATIONS.null.10",
+                "SYS.CACHES.CACHE_LOADER_FACTORY.null.2147483647",
+                "SYS.CACHES.CACHE_WRITER_FACTORY.null.2147483647",
+                "SYS.CACHES.EXPIRY_POLICY_FACTORY.null.2147483647",
+                "SYS.CACHES.IS_SQL_ESCAPE_ALL.null.1",
+                "SYS.CACHES.SQL_SCHEMA.null.2147483647",
+                "SYS.CACHES.SQL_INDEX_MAX_INLINE_SIZE.null.10",
+                "SYS.CACHES.IS_SQL_ONHEAP_CACHE_ENABLED.null.1",
+                "SYS.CACHES.SQL_ONHEAP_CACHE_MAX_SIZE.null.10",
+                "SYS.CACHES.QUERY_DETAILS_METRICS_SIZE.null.10",
+                "SYS.CACHES.QUERY_PARALLELISM.null.10",
+                "SYS.CACHES.MAX_QUERY_ITERATORS_COUNT.null.10",
+                "SYS.CACHES.DATA_REGION_NAME.null.2147483647",
+                "SYS.CACHE_GROUPS.CACHE_GROUP_ID.null.10",
+                "SYS.CACHE_GROUPS.CACHE_GROUP_NAME.null.2147483647",
+                "SYS.CACHE_GROUPS.IS_SHARED.null.1",
+                "SYS.CACHE_GROUPS.CACHE_COUNT.null.10",
+                "SYS.CACHE_GROUPS.CACHE_MODE.null.2147483647",
+                "SYS.CACHE_GROUPS.ATOMICITY_MODE.null.2147483647",
+                "SYS.CACHE_GROUPS.AFFINITY.null.2147483647",
+                "SYS.CACHE_GROUPS.PARTITIONS_COUNT.null.10",
+                "SYS.CACHE_GROUPS.NODE_FILTER.null.2147483647",
+                "SYS.CACHE_GROUPS.DATA_REGION_NAME.null.2147483647",
+                "SYS.CACHE_GROUPS.TOPOLOGY_VALIDATOR.null.2147483647",
+                "SYS.CACHE_GROUPS.PARTITION_LOSS_POLICY.null.2147483647",
+                "SYS.CACHE_GROUPS.REBALANCE_MODE.null.2147483647",
+                "SYS.CACHE_GROUPS.REBALANCE_DELAY.null.19",
+                "SYS.CACHE_GROUPS.REBALANCE_ORDER.null.10",
+                "SYS.CACHE_GROUPS.BACKUPS.null.10",
+                "SYS.INDEXES.CACHE_GROUP_ID.null.10",
+                "SYS.INDEXES.CACHE_GROUP_NAME.null.2147483647",
+                "SYS.INDEXES.CACHE_ID.null.10",
+                "SYS.INDEXES.CACHE_NAME.null.2147483647",
+                "SYS.INDEXES.SCHEMA_NAME.null.2147483647",
+                "SYS.INDEXES.TABLE_NAME.null.2147483647",
+                "SYS.INDEXES.INDEX_NAME.null.2147483647",
+                "SYS.INDEXES.INDEX_TYPE.null.2147483647",
+                "SYS.INDEXES.COLUMNS.null.2147483647",
+                "SYS.INDEXES.IS_PK.null.1",
+                "SYS.INDEXES.IS_UNIQUE.null.1",
+                "SYS.INDEXES.INLINE_SIZE.null.10",
+                "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_ID.null.10",
+                "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_NAME.null.2147483647",
+                "SYS.LOCAL_CACHE_GROUPS_IO.PHYSICAL_READS.null.19",
+                "SYS.LOCAL_CACHE_GROUPS_IO.LOGICAL_READS.null.19",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.SCHEMA_NAME.null.2147483647",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.SQL.null.2147483647",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.LOCAL.null.1",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.EXECUTIONS.null.19",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.FAILURES.null.19",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.DURATION_MIN.null.19",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.DURATION_MAX.null.19",
+                "SYS.LOCAL_SQL_QUERY_HISTORY.LAST_START_TIME.null.29.9",
+                "SYS.LOCAL_SQL_RUNNING_QUERIES.QUERY_ID.null.2147483647",
+                "SYS.LOCAL_SQL_RUNNING_QUERIES.SQL.null.2147483647",
+                "SYS.LOCAL_SQL_RUNNING_QUERIES.SCHEMA_NAME.null.2147483647",
+                "SYS.LOCAL_SQL_RUNNING_QUERIES.LOCAL.null.1",
+                "SYS.LOCAL_SQL_RUNNING_QUERIES.START_TIME.null.29.9",
+                "SYS.LOCAL_SQL_RUNNING_QUERIES.DURATION.null.19",
+                "SYS.NODES.NODE_ID.null.16",
+                "SYS.NODES.CONSISTENT_ID.null.2147483647",
+                "SYS.NODES.VERSION.null.2147483647",
+                "SYS.NODES.IS_CLIENT.null.1",
+                "SYS.NODES.IS_DAEMON.null.1",
+                "SYS.NODES.NODE_ORDER.null.10",
+                "SYS.NODES.ADDRESSES.null.2147483647",
+                "SYS.NODES.HOSTNAMES.null.2147483647",
+                "SYS.NODE_ATTRIBUTES.NODE_ID.null.16",
+                "SYS.NODE_ATTRIBUTES.NAME.null.2147483647",
+                "SYS.NODE_ATTRIBUTES.VALUE.null.2147483647",
+                "SYS.NODE_METRICS.NODE_ID.null.16",
+                "SYS.NODE_METRICS.LAST_UPDATE_TIME.null.29.9",
+                "SYS.NODE_METRICS.MAX_ACTIVE_JOBS.null.10",
+                "SYS.NODE_METRICS.CUR_ACTIVE_JOBS.null.10",
+                "SYS.NODE_METRICS.AVG_ACTIVE_JOBS.null.7",
+                "SYS.NODE_METRICS.MAX_WAITING_JOBS.null.10",
+                "SYS.NODE_METRICS.CUR_WAITING_JOBS.null.10",
+                "SYS.NODE_METRICS.AVG_WAITING_JOBS.null.7",
+                "SYS.NODE_METRICS.MAX_REJECTED_JOBS.null.10",
+                "SYS.NODE_METRICS.CUR_REJECTED_JOBS.null.10",
+                "SYS.NODE_METRICS.AVG_REJECTED_JOBS.null.7",
+                "SYS.NODE_METRICS.TOTAL_REJECTED_JOBS.null.10",
+                "SYS.NODE_METRICS.MAX_CANCELED_JOBS.null.10",
+                "SYS.NODE_METRICS.CUR_CANCELED_JOBS.null.10",
+                "SYS.NODE_METRICS.AVG_CANCELED_JOBS.null.7",
+                "SYS.NODE_METRICS.TOTAL_CANCELED_JOBS.null.10",
+                "SYS.NODE_METRICS.MAX_JOBS_WAIT_TIME.null.19",
+                "SYS.NODE_METRICS.CUR_JOBS_WAIT_TIME.null.19",
+                "SYS.NODE_METRICS.AVG_JOBS_WAIT_TIME.null.19",
+                "SYS.NODE_METRICS.MAX_JOBS_EXECUTE_TIME.null.19",
+                "SYS.NODE_METRICS.CUR_JOBS_EXECUTE_TIME.null.19",
+                "SYS.NODE_METRICS.AVG_JOBS_EXECUTE_TIME.null.19",
+                "SYS.NODE_METRICS.TOTAL_JOBS_EXECUTE_TIME.null.19",
+                "SYS.NODE_METRICS.TOTAL_EXECUTED_JOBS.null.10",
+                "SYS.NODE_METRICS.TOTAL_EXECUTED_TASKS.null.10",
+                "SYS.NODE_METRICS.TOTAL_BUSY_TIME.null.19",
+                "SYS.NODE_METRICS.TOTAL_IDLE_TIME.null.19",
+                "SYS.NODE_METRICS.CUR_IDLE_TIME.null.19",
+                "SYS.NODE_METRICS.BUSY_TIME_PERCENTAGE.null.7",
+                "SYS.NODE_METRICS.IDLE_TIME_PERCENTAGE.null.7",
+                "SYS.NODE_METRICS.TOTAL_CPU.null.10",
+                "SYS.NODE_METRICS.CUR_CPU_LOAD.null.17",
+                "SYS.NODE_METRICS.AVG_CPU_LOAD.null.17",
+                "SYS.NODE_METRICS.CUR_GC_CPU_LOAD.null.17",
+                "SYS.NODE_METRICS.HEAP_MEMORY_INIT.null.19",
+                "SYS.NODE_METRICS.HEAP_MEMORY_USED.null.19",
+                "SYS.NODE_METRICS.HEAP_MEMORY_COMMITED.null.19",
+                "SYS.NODE_METRICS.HEAP_MEMORY_MAX.null.19",
+                "SYS.NODE_METRICS.HEAP_MEMORY_TOTAL.null.19",
+                "SYS.NODE_METRICS.NONHEAP_MEMORY_INIT.null.19",
+                "SYS.NODE_METRICS.NONHEAP_MEMORY_USED.null.19",
+                "SYS.NODE_METRICS.NONHEAP_MEMORY_COMMITED.null.19",
+                "SYS.NODE_METRICS.NONHEAP_MEMORY_MAX.null.19",
+                "SYS.NODE_METRICS.NONHEAP_MEMORY_TOTAL.null.19",
+                "SYS.NODE_METRICS.UPTIME.null.19",
+                "SYS.NODE_METRICS.JVM_START_TIME.null.29.9",
+                "SYS.NODE_METRICS.NODE_START_TIME.null.29.9",
+                "SYS.NODE_METRICS.LAST_DATA_VERSION.null.19",
+                "SYS.NODE_METRICS.CUR_THREAD_COUNT.null.10",
+                "SYS.NODE_METRICS.MAX_THREAD_COUNT.null.10",
+                "SYS.NODE_METRICS.TOTAL_THREAD_COUNT.null.19",
+                "SYS.NODE_METRICS.CUR_DAEMON_THREAD_COUNT.null.10",
+                "SYS.NODE_METRICS.SENT_MESSAGES_COUNT.null.10",
+                "SYS.NODE_METRICS.SENT_BYTES_COUNT.null.19",
+                "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
+                "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
+                "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
+                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
+                "SYS.TABLES.CACHE_GROUP_ID.null.10",
+                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
+                "SYS.TABLES.CACHE_ID.null.10",
+                "SYS.TABLES.CACHE_NAME.null.2147483647",
+                "SYS.TABLES.SCHEMA_NAME.null.2147483647",
+                "SYS.TABLES.TABLE_NAME.null.2147483647",
+                "SYS.TABLES.AFFINITY_KEY_COLUMN.null.2147483647",
+                "SYS.TABLES.KEY_ALIAS.null.2147483647",
+                "SYS.TABLES.VALUE_ALIAS.null.2147483647",
+                "SYS.TABLES.KEY_TYPE_NAME.null.2147483647",
+                "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647"
+            );
+
+            Assert.assertEquals(expectedCols, actualSystemCols);
+
         }
     }
 

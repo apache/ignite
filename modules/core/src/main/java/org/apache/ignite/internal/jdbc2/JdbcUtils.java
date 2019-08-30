@@ -58,6 +58,12 @@ public class JdbcUtils {
     /** The only possible name for catalog. */
     public static final String CATALOG_NAME = "IGNITE";
 
+    /** Name of TABLE type. */
+    public static final String TYPE_TABLE = "TABLE";
+
+    /** Name of VIEW type. */
+    public static final String TYPE_VIEW = "VIEW";
+
     /**
      * Converts Java class name to type from {@link Types}.
      *
@@ -303,7 +309,7 @@ public class JdbcUtils {
         row.add(CATALOG_NAME);
         row.add(tblMeta.schemaName());
         row.add(tblMeta.tableName());
-        row.add("TABLE");
+        row.add(tblMeta.tableType());
         row.add(null);
         row.add(null);
         row.add(null);
