@@ -151,6 +151,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultiThrea
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultinodeCreateCacheTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerTimeoutTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerUpdateAfterLoadTest;
+import org.apache.ignite.internal.processors.datastreamer.MultipleDataStreamersOnClientTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
@@ -273,6 +274,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
         suite.addTestSuite(IgniteCacheManyAsyncOperationsTest.class);
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
+        suite.addTestSuite(MultipleDataStreamersOnClientTest.class);
+
         // TODO: ignite-4534
 //        suite.addTestSuite(GridCacheTtlManagerEvictionSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
