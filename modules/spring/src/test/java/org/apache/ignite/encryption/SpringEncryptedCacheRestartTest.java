@@ -76,7 +76,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         for (String cacheName : cacheNames) {
             IgniteInternalCache<Object, Object> enc = g.get1().cachex(cacheName);
 
-            assertNotNull(enc);
+            assertNotNull("Cache is null for " + cacheName, enc);
 
             int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
 

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import com.google.common.collect.Sets;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -81,6 +82,15 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     protected static final String ccfg3staticWithFilterName = "ccfg3staticWithFilter";
 
     /** */
+    protected static final String ccfg1staticTemplateName = "ccfg1staticTemplate";
+
+    /** */
+    protected static final String ccfg2staticTemplateName = "ccfg2staticTemplate";
+
+    /** */
+    protected static final String ccfg3staticTemplateName = "ccfg3staticTemplate";
+
+    /** */
     protected static final String ccfgDynamicName = "ccfgDynamic";
 
     /** */
@@ -106,6 +116,18 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     /** */
     protected final CacheConfiguration ccfg3staticWithFilter =
         new CacheConfiguration(ccfg3staticWithFilterName).setNodeFilter(new FilterNode(node1));
+
+    /** */
+    protected final CacheConfiguration ccfg1Template = new CacheConfiguration(ccfg1staticTemplateName + "*")
+        .setBackups(6);
+
+    /** */
+    protected final CacheConfiguration ccfg2Template = new CacheConfiguration(ccfg2staticTemplateName + "*")
+        .setBackups(6);
+
+    /** */
+    protected final CacheConfiguration ccfg3Template = new CacheConfiguration(ccfg3staticTemplateName + "*")
+        .setBackups(6);
 
     /** */
     protected final CacheConfiguration<Object, Object> ccfgDynamic = new CacheConfiguration<>(ccfgDynamicName);
@@ -205,13 +227,13 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
      */
     protected void startNodes(CountDownLatch activateLatch) throws Exception {
         IgniteConfiguration cfg1 = getConfiguration(node1)
-            .setCacheConfiguration(ccfg1static, ccfg1staticWithFilter);
+            .setCacheConfiguration(ccfg1static, ccfg1staticWithFilter, ccfg1Template);
 
         IgniteConfiguration cfg2 = getConfiguration(node2)
-            .setCacheConfiguration(ccfg2static, ccfg2staticWithFilter);
+            .setCacheConfiguration(ccfg2static, ccfg2staticWithFilter, ccfg2Template);
 
         IgniteConfiguration cfg3 = getConfiguration(nodeClient)
-            .setCacheConfiguration(ccfg3static, ccfg3staticWithFilter);
+            .setCacheConfiguration(ccfg3static, ccfg3staticWithFilter, ccfg3Template);
 
         if (activateLatch != null)
             cfg3.setDiscoverySpi(
@@ -315,6 +337,44 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         checkDescriptors(ig1, cachesToCheck);
         checkDescriptors(ig2, cachesToCheck);
         checkDescriptors(client, cachesToCheck);
+    }
+
+    /**
+     * Check cache creation from all available templates works.
+     */
+    protected void checkAllTemplates() {
+        IgniteEx ig1 = grid(node1);
+        IgniteEx ig2 = grid(node2);
+        IgniteEx client = grid(nodeClient);
+
+        checkTemplate(ig1, ccfg1staticTemplateName + "0");
+        checkTemplate(ig1, ccfg2staticTemplateName + "0");
+        checkTemplate(ig1, ccfg3staticTemplateName + "0");
+
+        checkTemplate(ig2, ccfg1staticTemplateName + "1");
+        checkTemplate(ig2, ccfg2staticTemplateName + "1");
+        checkTemplate(ig2, ccfg3staticTemplateName + "1");
+
+        checkTemplate(client, ccfg1staticTemplateName + "2");
+        checkTemplate(client, ccfg2staticTemplateName + "2");
+        checkTemplate(client, ccfg3staticTemplateName + "2");
+    }
+
+    /**
+     * Check cache creation from template works on given node.
+     *
+     * @param ignite Node.
+     * @param name Cache name matches with template.
+     */
+    protected void checkTemplate(IgniteEx ignite, String name) {
+        IgniteCache cache = ignite.getOrCreateCache(name);
+
+        assertNotNull(cache);
+
+        CacheConfiguration cfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
+
+        assertEquals(name, cfg.getName());
+        assertEquals(6, cfg.getBackups());
     }
 
     /**

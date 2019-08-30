@@ -631,6 +631,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         cfgCache = true;
 
+        // Start 2 grids and stop grid with idx = 1 should be merged.
         IgniteInternalFuture fut = startGridsAsync(srv0, 2, 2);
 
         stopGrid(1);
@@ -639,8 +640,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         checkCaches();
 
-        checkExchanges(srv0, 1, 2, 3, 5);
-        checkExchanges(ignite(2), 3, 5);
+        checkExchanges(srv0, 1, 2, 5);
+        checkExchanges(ignite(2), 5);
         checkExchanges(ignite(3), 5);
     }
 

@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectFailoverAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -122,6 +123,7 @@ public class IgniteClientReconnectCacheQueriesFailoverTest extends IgniteClientR
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-23121")
     public void testReconnectScanQuery() throws Exception {
         final Ignite client = grid(serverCount());
 

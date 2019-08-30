@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -391,58 +390,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         clientTxLatch.countDown();
 
         loadFut.get();
-    }
-
-     /**
-      * @throws Exception If failed.
-      */
-    @Test
-    public void testAffinityChangeOnClientConnectWithStaticallyConfiguredCaches() throws Exception {
-        Ignite ig = startGrids(2);
-
-        ig.cluster().active(true);
-
-        TestDiscoverySpi discoSpi = (TestDiscoverySpi)grid(1).context().discovery().getInjectedDiscoverySpi();
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        discoSpi.latch = latch;
-
-        startClient = true;
-
-        startClientCaches = true;
-
-        Ignite client = startGrid(2);
-
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-                AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
-                AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
-
-                return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
-            }, 10_000));
-
-        final IgniteCache<Integer, Integer> txCache = client.cache(PARTITIONED_TX_CLIENT_CACHE_NAME);
-
-        final AtomicBoolean updated = new AtomicBoolean();
-
-        GridTestUtils.runAsync(() -> {
-            for (int i = 0; i < 32; ++i)
-                txCache.put(i, i);
-
-            updated.set(true);
-        });
-
-        assertFalse(GridTestUtils.waitForCondition(updated::get, 5_000));
-
-        latch.countDown();
-
-        assertTrue(GridTestUtils.waitForCondition(updated::get, 5_000));
-
-        for (int i = 0; i < 32; ++i)
-            assertEquals(Integer.valueOf(i), txCache.get(i));
-
-        assertEquals("Expected major topology version is 3.",
-            3, grid(1).context().discovery().topologyVersionEx().topologyVersion());
     }
 
     /**

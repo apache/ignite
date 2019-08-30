@@ -610,10 +610,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean hasMvccCache = false;
 
-        for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
-            hasMvccCache |= grpDesc.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+            hasMvccCache |= grpCtx.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
 
-            String regionName = grpDesc.config().getDataRegionName();
+            String regionName = grpCtx.config().getDataRegionName();
 
             DataRegion region = regionName != null ? dataRegionMap.get(regionName) : dfltDataRegion;
 
@@ -621,17 +621,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             if (log.isInfoEnabled())
-                log.info("Page memory " + region.config().getName() + " for " + grpDesc + " has invalidated.");
+                log.info("Page memory " + region.config().getName()
+                    + " for " + grpCtx.cacheOrGroupName() + " has invalidated.");
 
-            int partitions = grpDesc.config().getAffinity().partitions();
+            int partitions = grpCtx.config().getAffinity().partitions();
 
             if (region.pageMemory() instanceof PageMemoryEx) {
                 PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
                 for (int partId = 0; partId < partitions; partId++)
-                    memEx.invalidate(grpDesc.groupId(), partId);
+                    memEx.invalidate(grpCtx.groupId(), partId);
 
-                memEx.invalidate(grpDesc.groupId(), PageIdAllocator.INDEX_PARTITION);
+                memEx.invalidate(grpCtx.groupId(), PageIdAllocator.INDEX_PARTITION);
             }
         }
 

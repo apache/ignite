@@ -16,10 +16,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect;
 
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import com.google.common.collect.Sets;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
@@ -105,6 +105,10 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         assertTrue(client.cluster().active());
 
         checkAllCaches();
+
+        checkTemplate(ig1, ccfg3staticTemplateName + "0");
+        checkTemplate(ig2, ccfg3staticTemplateName + "1");
+        checkTemplate(client, ccfg3staticTemplateName + "2");
     }
 
     /**
@@ -186,6 +190,10 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         assertTrue(client.cluster().active());
 
         checkAllCaches();
+
+        checkTemplate(ig1, ccfg3staticTemplateName + "0");
+        checkTemplate(ig2, ccfg3staticTemplateName + "1");
+        checkTemplate(client, ccfg3staticTemplateName + "2");
     }
 
     /**
@@ -248,6 +256,10 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         checkDescriptors(ig1, exp2);
         checkDescriptors(ig2, exp2);
         checkDescriptors(client, exp2);
+
+        checkTemplate(ig1, ccfg3staticTemplateName + "0");
+        checkTemplate(ig2, ccfg3staticTemplateName + "1");
+        checkTemplate(client, ccfg3staticTemplateName + "2");
     }
 
     /**
@@ -292,16 +304,23 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         assertTrue(ig2.cluster().active());
         assertTrue(client.cluster().active());
 
-        checkOnlySystemCaches(true);
+        checkOnlySystemCaches(false);
 
         client.createCache(ccfgDynamic);
 
         client.createCache(ccfgDynamicWithFilter);
 
-        Set<String> exp2 = Sets.newHashSet(ccfgDynamicName, ccfgDynamicWithFilterName);
+        Set<String> exp2 = Sets.newHashSet(ccfg3staticName,
+            ccfg3staticWithFilterName,
+            ccfgDynamicName,
+            ccfgDynamicWithFilterName);
 
         checkDescriptors(ig1, exp2);
         checkDescriptors(ig2, exp2);
         checkDescriptors(client, exp2);
+
+        checkTemplate(ig1, ccfg3staticTemplateName + "0");
+        checkTemplate(ig2, ccfg3staticTemplateName + "1");
+        checkTemplate(client, ccfg3staticTemplateName + "2");
     }
 }

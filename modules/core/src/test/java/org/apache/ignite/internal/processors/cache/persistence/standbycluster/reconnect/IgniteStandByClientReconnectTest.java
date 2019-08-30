@@ -104,6 +104,8 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
         checkDescriptors(client, allCacheNames);
 
         checkAllCaches();
+
+        checkAllTemplates();
     }
 
     /**
@@ -185,6 +187,8 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
         checkDescriptors(client, allCacheNames);
 
         checkAllCaches();
+
+        checkAllTemplates();
     }
 
     /**
@@ -243,6 +247,8 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
         checkDescriptors(client, allCacheNames);
 
         checkAllCaches();
+
+        checkAllTemplates();
     }
 
     /**
@@ -294,5 +300,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
         checkDescriptors(client, allCacheNames);
 
         checkAllCaches();
+
+        checkAllTemplates();
     }
 }

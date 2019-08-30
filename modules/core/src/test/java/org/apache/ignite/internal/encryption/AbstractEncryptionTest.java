@@ -43,7 +43,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.CIPHER_ALGO;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 
@@ -82,11 +81,12 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setMaxSize(10L * 1024 * 1024)
-                    .setPersistenceEnabled(true))
-            .setPageSize(4 * 1024)
-            .setWalMode(FSYNC);
+                    .setPersistenceEnabled(true)
+            );
 
         cfg.setDataStorageConfiguration(memCfg);
+
+        cfg.setConsistentId(name);
 
         return cfg;
     }

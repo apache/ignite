@@ -402,8 +402,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null || ctx.clientNode())
             return;
 
+        boolean active = ctx.state().clusterState().active();
+
         for (Map.Entry<Integer, byte[]> entry : nodeEncryptionKeys.newKeys.entrySet()) {
-            if (groupKey(entry.getKey()) == null) {
+            if (!active && groupKey(entry.getKey()) == null) {
                 U.quietAndInfo(log, "Store group key received from joining node [node=" +
                         data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
 

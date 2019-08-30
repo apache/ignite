@@ -152,7 +152,7 @@ public class ValidationOnNodeJoinUtils {
                 }
             }
 
-            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+            for (CacheDiscoveryInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
                     try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
                         GridCacheProcessor.authorizeCacheCreate(cacheInfo.cacheData().config(), ctx);

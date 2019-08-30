@@ -75,9 +75,6 @@ public class DynamicCacheDescriptor {
     private volatile CacheObjectContext objCtx;
 
     /** */
-    private boolean rcvdOnDiscovery;
-
-    /** */
     private AffinityTopologyVersion startTopVer;
 
     /** */
@@ -267,20 +264,6 @@ public class DynamicCacheDescriptor {
      */
     public void updatesAllowed(boolean updatesAllowed) {
         this.updatesAllowed = updatesAllowed;
-    }
-
-    /**
-     * @return {@code True} if received in discovery data.
-     */
-    boolean receivedOnDiscovery() {
-        return rcvdOnDiscovery;
-    }
-
-    /**
-     * @param rcvdOnDiscovery {@code True} if received in discovery data.
-     */
-    void receivedOnDiscovery(boolean rcvdOnDiscovery) {
-        this.rcvdOnDiscovery = rcvdOnDiscovery;
     }
 
     /**

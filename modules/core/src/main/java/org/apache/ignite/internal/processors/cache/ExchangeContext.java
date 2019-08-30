@@ -63,13 +63,9 @@ public class ExchangeContext {
             merge = false;
         }
         else {
-            boolean startCaches = fut.exchangeId().isJoined() &&
-                fut.sharedContext().cache().hasCachesReceivedFromJoin(fut.exchangeId().eventNode());
-
             fetchAffOnJoin = protocolVer == 1;
 
-            merge = !startCaches &&
-                protocolVer > 1 &&
+            merge = protocolVer > 1 &&
                 fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
         }
 

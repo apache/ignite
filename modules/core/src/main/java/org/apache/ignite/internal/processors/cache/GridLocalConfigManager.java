@@ -116,16 +116,13 @@ public class GridLocalConfigManager {
         if (ctx.isDaemon())
             return null;
 
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = new HashMap<>();
+        Map<String, CacheDiscoveryInfo> caches = new HashMap<>();
 
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates = new HashMap<>();
-
-        restoreCaches(caches, templates, ctx.config(), ctx.cache().context().pageStore());
+        restoreCaches(caches, ctx.config(), ctx.cache().context().pageStore());
 
         CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
             IgniteUuid.randomUuid(),
             caches,
-            templates,
             startAllCachesOnClientStart()
         );
 
@@ -143,13 +140,11 @@ public class GridLocalConfigManager {
 
     /**
      * @param caches Caches accumulator.
-     * @param templates Templates accumulator.
      * @param config Ignite configuration.
      * @param pageStoreManager Page store manager.
      */
     private void restoreCaches(
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
+        Map<String, CacheDiscoveryInfo> caches,
         IgniteConfiguration config,
         IgnitePageStoreManager pageStoreManager
     ) throws IgniteCheckedException {
@@ -163,7 +158,7 @@ public class GridLocalConfigManager {
             // Replace original configuration value.
             cfgs[i] = cfg;
 
-            addCacheFromConfiguration(cfg, false, caches, templates);
+            addCacheFromConfiguration(cfg, false, caches);
         }
 
         if (CU.isPersistenceEnabled(config) && pageStoreManager != null) {
@@ -230,7 +225,7 @@ public class GridLocalConfigManager {
      * @param isStaticallyConfigured Statically configured flag.
      */
     private void addStoredCache(
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
+        Map<String, CacheDiscoveryInfo> caches,
         StoredCacheData cacheData,
         String cacheName,
         CacheType cacheType,
@@ -244,22 +239,28 @@ public class GridLocalConfigManager {
                 stopSeq.addFirst(cacheName);
         }
 
-        caches.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(),
-            persistedBefore ? 1 : 0, isStaticallyConfigured));
+        caches.put(
+            cacheName, new CacheDiscoveryInfo(
+                IgniteUuid.randomUuid(),
+                cacheData,
+                cacheType,
+                cacheData.sql() ? CacheDiscoveryInfo.FLAG_SQL : 0,
+                persistedBefore ? CacheDiscoveryInfo.FLAG_PERSISTED_CONFIGURATION : 0,
+                isStaticallyConfigured ? CacheDiscoveryInfo.FLAG_STATICALLY_CONFIGURED : 0
+            )
+        );
     }
 
     /**
      * @param cfg Cache configuration.
      * @param sql SQL flag.
      * @param caches Caches map.
-     * @param templates Templates map.
      * @throws IgniteCheckedException If failed.
      */
     private void addCacheFromConfiguration(
         CacheConfiguration<?, ?> cfg,
         boolean sql,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates
+        Map<String, CacheDiscoveryInfo> caches
     ) throws IgniteCheckedException {
         String cacheName = cfg.getName();
 
@@ -284,7 +285,13 @@ public class GridLocalConfigManager {
         cfg = splitCfg.get1();
 
         if (GridCacheUtils.isCacheTemplateName(cacheName))
-            templates.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0, true));
+            caches.put(cacheName, new CacheDiscoveryInfo(
+                IgniteUuid.randomUuid(),
+                cacheData,
+                CacheType.USER,
+                CacheDiscoveryInfo.FLAG_STATICALLY_CONFIGURED,
+                CacheDiscoveryInfo.FLAG_TEMPLATE
+            ));
         else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +

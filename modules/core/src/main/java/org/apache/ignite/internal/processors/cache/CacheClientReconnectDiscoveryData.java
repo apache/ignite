@@ -18,9 +18,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Map;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Discovery data sent from client reconnecting to cluster.
@@ -29,160 +27,21 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final Map<Integer, CacheGroupInfo> clientCacheGrps;
-
-    /** */
-    private final Map<String, CacheInfo> clientCaches;
+    /** Cache name -> Cache info. */
+    private final Map<String, CacheDiscoveryInfo> clientCaches;
 
     /**
      * @param clientCaches Information about caches started on re-joining client node.
-     * @param clientCacheGrps Information about cach groups started on re-joining client node.
      */
-    CacheClientReconnectDiscoveryData(Map<Integer, CacheGroupInfo> clientCacheGrps,
-        Map<String, CacheInfo> clientCaches) {
-        this.clientCacheGrps = clientCacheGrps;
+    public CacheClientReconnectDiscoveryData(Map<String, CacheDiscoveryInfo> clientCaches) {
         this.clientCaches = clientCaches;
     }
 
     /**
      * @return Information about caches started on re-joining client node.
      */
-    Map<Integer, CacheGroupInfo> clientCacheGroups() {
-        return clientCacheGrps;
-    }
-
-    /**
-     * @return Information about caches started on re-joining client node.
-     */
-   public Map<String, CacheInfo> clientCaches() {
+    public Map<String, CacheDiscoveryInfo> clientCaches() {
         return clientCaches;
-    }
-
-    /**
-     *
-     */
-    static class CacheGroupInfo implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final CacheConfiguration ccfg;
-
-        /** */
-        private final IgniteUuid deploymentId;
-
-        /** Flags added for future usage. */
-        private final long flags;
-
-        /**
-         * @param ccfg Cache group configuration.
-         * @param deploymentId Cache group deployment ID.
-         * @param flags Flags (for future usage).
-         */
-        CacheGroupInfo(CacheConfiguration ccfg,
-            IgniteUuid deploymentId,
-            long flags) {
-            assert ccfg != null;
-            assert deploymentId != null;
-
-            this.ccfg = ccfg;
-            this.deploymentId = deploymentId;
-            this.flags = flags;
-        }
-
-        /**
-         * @return Cache group configuration.
-         */
-        CacheConfiguration config() {
-            return ccfg;
-        }
-
-        /**
-         * @return Cache group deployment ID.
-         */
-        IgniteUuid deploymentId() {
-            return deploymentId;
-        }
-    }
-
-    /**
-     *
-     */
-    static class CacheInfo implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final CacheConfiguration ccfg;
-
-        /** */
-        private final CacheType cacheType;
-
-        /** */
-        private final IgniteUuid deploymentId;
-
-        /** */
-        private final boolean nearCache;
-
-        /** Flags added for future usage. */
-        private final long flags;
-
-        /**
-         * @param ccfg Cache configuration.
-         * @param cacheType Cache type.
-         * @param deploymentId Cache deployment ID.
-         * @param nearCache Near cache flag.
-         * @param flags Flags (for future usage).
-         */
-        CacheInfo(CacheConfiguration ccfg,
-            CacheType cacheType,
-            IgniteUuid deploymentId,
-            boolean nearCache,
-            long flags) {
-            assert ccfg != null;
-            assert cacheType != null;
-            assert deploymentId != null;
-
-            this.ccfg = ccfg;
-            this.cacheType = cacheType;
-            this.deploymentId = deploymentId;
-            this.nearCache = nearCache;
-            this.flags = flags;
-        }
-
-        /**
-         * @return Cache configuration.
-         */
-        CacheConfiguration config() {
-            return ccfg;
-        }
-
-        /**
-         * @return Cache type.
-         */
-        CacheType cacheType() {
-            return cacheType;
-        }
-
-        /**
-         * @return Cache deployment ID.
-         */
-        IgniteUuid deploymentId() {
-            return deploymentId;
-        }
-
-        /**
-         * @return Near cache flag.
-         */
-        boolean nearCache() {
-            return nearCache;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(CacheInfo.class, this);
-        }
     }
 
     /** {@inheritDoc} */

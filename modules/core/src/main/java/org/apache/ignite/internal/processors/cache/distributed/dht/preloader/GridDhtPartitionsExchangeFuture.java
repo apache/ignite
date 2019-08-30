@@ -48,7 +48,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
@@ -76,15 +75,12 @@ import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerT
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
@@ -683,9 +679,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
             || !firstDiscoEvt0.eventNode().isClient()
-            || firstDiscoEvt0.eventNode().isLocal()
-            || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
-                cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
+            || firstDiscoEvt0.eventNode().isLocal();
     }
 
     /**
@@ -868,17 +862,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 initCoordinatorCaches(newCrd);
             }
             else {
-                if (firstDiscoEvt.type() == EVT_NODE_JOINED) {
-                    if (!firstDiscoEvt.eventNode().isLocal()) {
-                        Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(
-                            firstDiscoEvt.eventNode().id(),
-                            topVer);
-
-                        registerCachesFuture = cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
-                    }
-                    else
-                        registerCachesFuture = initCachesOnLocalJoin();
-                }
+                if (firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isLocal())
+                    registerCachesFuture = initCachesOnLocalJoin();
 
                 initCoordinatorCaches(newCrd);
 
@@ -1036,28 +1021,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!cctx.kernalContext().clientNode())
             cctx.cache().shutdownNotFinishedRecoveryCaches();
 
-        ensureClientCachesStarted();
-
         return cachesRegistrationFut;
-    }
-
-    /**
-     * Start client caches if absent.
-     */
-    private void ensureClientCachesStarted() {
-        GridCacheProcessor cacheProcessor = cctx.cache();
-
-        Set<String> cacheNames = new HashSet<>(cacheProcessor.cacheNames());
-
-        List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
-
-        for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
-            if (!cacheNames.contains(cCfg.getName()) && !GridCacheUtils.isCacheTemplateName(cCfg.getName()))
-                notStartedCacheConfigs.add(cCfg);
-        }
-
-        if (!notStartedCacheConfigs.isEmpty())
-            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
     }
 
     /**
@@ -1260,6 +1224,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     kctx.encryption().onDeActivate(kctx);
 
                     ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
+
+                    kctx.cache().cancelStartLocallyConfiguredCaches();
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
