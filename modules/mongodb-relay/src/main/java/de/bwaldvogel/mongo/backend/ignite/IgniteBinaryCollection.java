@@ -255,7 +255,13 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     
     public Document binaryObjectToDocument(Object key,BinaryObject obj){	    	
     	Document doc = new Document();	
-    	if(key!=null) doc.append(this.idField, key);
+    	if(key!=null) {
+    		if(key instanceof BinaryObject){
+				BinaryObject $arr = (BinaryObject)key;					
+				key = $arr.deserialize().toString();
+			}	
+    		doc.append(this.idField, key);
+    	}
 	    for(String field: obj.type().fieldNames()){	    	
 	    	String $key =  field;
 	    	Object $value = obj.field(field);
@@ -269,7 +275,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 				else if($value instanceof Map){
 					Map $arr = (Map)$value;
 					//-$value = new HashMap<String,Object>($arr);
-					$value = ($arr);
+					$value = new Document($arr);
 				}
 				if($value instanceof BinaryObject){
 					BinaryObject $arr = (BinaryObject)$value;					

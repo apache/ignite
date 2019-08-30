@@ -175,7 +175,7 @@ public class BsonEncoder {
             return BsonConstants.TYPE_BOOLEAN;
         } else if (value instanceof byte[]) {
             return BsonConstants.TYPE_DATA;
-        } else if (value instanceof Collection<?> || value instanceof String[]) {
+        } else if (value instanceof Collection<?> || value instanceof Object[]) {
             return BsonConstants.TYPE_ARRAY;
         } else if (value instanceof Instant || value instanceof Date) {
             return BsonConstants.TYPE_UTC_DATETIME;
@@ -197,8 +197,8 @@ public class BsonEncoder {
     }
 
     private static List<?> collectionToList(Object value) {
-        if (value instanceof String[]) {
-            return Arrays.asList((String[]) value);
+        if (value instanceof Object[]) {
+            return Arrays.asList((Object[]) value);
         } else if (value instanceof List<?>) {
             return (List<?>) value;
         } else {

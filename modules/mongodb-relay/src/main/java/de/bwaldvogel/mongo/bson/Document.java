@@ -15,20 +15,27 @@ public final class Document implements Map<String, Object>, Bson {
 
     private static final long serialVersionUID = 1L;
 
-    private final LinkedHashMap<String, Object> documentAsMap = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Object> documentAsMap;
 
     public Document() {
+    	documentAsMap = new LinkedHashMap<>();
     }
 
     public Document(String key, Object value) {
-        this();
+    	documentAsMap = new LinkedHashMap<>();
         append(key, value);
     }
 
-    public Document(Map<String, Object> map) {
-        this();
-        putAll(map);
+    public Document(final Map<String, Object> map) {
+    	if(map instanceof LinkedHashMap) {
+    		this.documentAsMap = (LinkedHashMap)map;
+    	}
+    	else {
+    		documentAsMap = new LinkedHashMap<>(map.size());
+    		putAll(map);
+    	}       
     }
+   
 
     public Document cloneDeeply() {
         return cloneDeeply(this);
