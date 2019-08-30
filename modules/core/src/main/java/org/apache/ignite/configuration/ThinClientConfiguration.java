@@ -21,6 +21,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Server-side thin-client configuration.
+ *
+ * This configuration related only to lightweight (thin) Ignite clients and not related to ODBC and JDBC clients.
  */
 public class ThinClientConfiguration {
     /** Default limit of active transactions count per connection. */
