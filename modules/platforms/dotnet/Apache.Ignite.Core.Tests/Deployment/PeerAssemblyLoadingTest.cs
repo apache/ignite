@@ -18,8 +18,10 @@ namespace Apache.Ignite.Core.Tests.Deployment
 {
     extern alias ExamplesDll;
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Deployment;
