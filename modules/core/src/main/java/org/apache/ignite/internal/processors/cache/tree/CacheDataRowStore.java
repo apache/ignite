@@ -50,9 +50,6 @@ public class CacheDataRowStore extends RowStore {
     /** */
     private final int partId;
 
-    /** */
-    private final CacheGroupContext grp;
-
     /**
      * @param grp Cache group.
      * @param freeList Free list.
@@ -62,7 +59,6 @@ public class CacheDataRowStore extends RowStore {
         super(grp, freeList);
 
         this.partId = partId;
-        this.grp = grp;
     }
 
     /**
