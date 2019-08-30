@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -359,16 +358,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-        if (cache == null) { // Possible, cache is not configured on node.
-            assert ccfg != null;
+        assert ccfg != null;
 
-            if (ccfg.getCacheMode() == CacheMode.LOCAL)
-                throw new CacheException("Impossible to load Local cache configured remotely.");
+        if (cache == null && ccfg.getCacheMode() == CacheMode.LOCAL)
+            throw new CacheException("Impossible to load Local cache configured remotely.");
 
-            ctx.grid().getOrCreateCache(ccfg);
-        }
-
-        ensureCacheStarted();
+        ctx.grid().getOrCreateCache(ccfg);
     }
 
     /**
@@ -1339,31 +1334,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             return;
 
         ctx.security().authorize(cacheName, perm, null);
-    }
-
-    /**
-     * Ensures that cache has been started and is ready to store streamed data.
-     */
-    private void ensureCacheStarted() {
-        DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
-
-        if (desc == null)
-            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
-
-        if (desc.startTopologyVersion() == null)
-            return;
-
-        IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange()
-            .affinityReadyFuture(desc.startTopologyVersion());
-
-        if (affReadyFut != null) {
-            try {
-                affReadyFut.get();
-            }
-            catch (IgniteCheckedException ex) {
-                throw new IgniteException(ex);
-            }
-        }
     }
 
     /**
