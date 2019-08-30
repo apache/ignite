@@ -120,7 +120,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
      */
     private Map<String, Measure> measures = new HashMap<>();
 
-    /** Histogram metrics intervals names. */
+    /** Cached histogram metrics intervals names. */
     private Map<T2<String, long[]>, String[]> histogramNames = new HashMap<>();
 
     /** Create histogram interval names. */
@@ -216,8 +216,15 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         long[] value = ((HistogramMetric)metric).value();
                         long[] bounds = ((HistogramMetric)metric).bounds();
 
-                        String[] intervalNames = histogramNames.computeIfAbsent(new T2<>(metric.name(), bounds),
-                            CREATE_INTERVAL_NAMES);
+                        T2<String, long[]> tuple = new T2<>(metric.name(), bounds);
+
+                        String[] intervalNames = histogramNames.get(tuple);
+
+                        if (intervalNames == null) {
+                            histogramNames.keySet().removeIf(t -> metric.name().equals(t.get1()));
+
+                            intervalNames = histogramNames.computeIfAbsent(tuple, CREATE_INTERVAL_NAMES);
+                        }
 
                         for (int i = 0; i < value.length; i++) {
                             String mName = intervalNames[i];
