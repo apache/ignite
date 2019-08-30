@@ -4922,6 +4922,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else {
                 CacheConfiguration cfg = new CacheConfiguration(ccfg);
 
+                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
+
+                // Cache configuration must be initialized before splitting.
+                initialize(cfg, cacheObjCtx);
+
                 req.deploymentId(IgniteUuid.randomUuid());
 
                 T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = backwardCompatibleSplitter().split(cfg);
@@ -4930,10 +4935,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 req.cacheConfigurationEnrichment(splitCfg.get2());
 
                 cfg = splitCfg.get1();
-
-                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
-
-                initialize(req.startCacheConfiguration(), cacheObjCtx);
 
                 if (restartId != null)
                     req.schema(new QuerySchema(qryEntities == null ? cfg.getQueryEntities() : qryEntities));

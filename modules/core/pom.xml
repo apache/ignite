@@ -400,6 +400,26 @@
 
             <dependencies>
                 <dependency>
+                    <groupId>org.mockito</groupId>
+                    <artifactId>mockito-core</artifactId>
+                    <version>${mockito.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <artifactId>hamcrest-core</artifactId>
+                            <groupId>org.hamcrest</groupId>
+                        </exclusion>
+                    </exclusions>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest-library</artifactId>
+                    <version>${hamcrest.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
                     <groupId>javax.cache</groupId>
                     <artifactId>cache-tests</artifactId>
                     <version>${javax.cache.tck.version}</version>
@@ -410,13 +430,6 @@
                     <artifactId>cache-tests</artifactId>
                     <classifier>tests</classifier>
                     <version>${javax.cache.tck.version}</version>
-                    <scope>test</scope>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.hamcrest</groupId>
-                    <artifactId>hamcrest-library</artifactId>
-                    <version>${hamcrest.version}</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
