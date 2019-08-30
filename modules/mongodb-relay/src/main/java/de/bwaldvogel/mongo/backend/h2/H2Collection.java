@@ -19,6 +19,7 @@ import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.exception.DuplicateKeyError;
 
 public class H2Collection extends AbstractMongoCollection<Object> {
 
@@ -63,7 +64,9 @@ public class H2Collection extends AbstractMongoCollection<Object> {
         } else {
             key = UUID.randomUUID();
         }
-
+        if(dataMap.containsKey(key)) {
+        	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
+        }
         Document previous = dataMap.put(Missing.ofNullable(key), document);
         Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
         return key;

@@ -35,6 +35,7 @@ import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.exception.DuplicateKeyError;
 
 public class IgniteCollection extends AbstractMongoCollection<Object> {
 
@@ -69,9 +70,11 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
         } else {
             key = UUID.randomUUID();
         }
-
-        Document previous = dataMap.getAndPut(Missing.ofNullable(key), document);
-        Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
+        if(dataMap.containsKey(key)) {
+        	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
+        }
+        dataMap.put(Missing.ofNullable(key), document);
+        //Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
         return key;
     }
 

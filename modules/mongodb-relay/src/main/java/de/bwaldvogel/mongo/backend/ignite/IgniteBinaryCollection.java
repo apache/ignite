@@ -35,6 +35,7 @@ import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.exception.DuplicateKeyError;
 
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
@@ -69,9 +70,12 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         } else {
             key = UUID.randomUUID();
         }
+        if(dataMap.containsKey(key)) {
+        	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
+        }
         BinaryObject obj = this.documentToBinaryObject(document);
-        BinaryObject previous = dataMap.getAndPut(Missing.ofNullable(key), obj);
-        Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
+        dataMap.put(Missing.ofNullable(key), obj);
+        //Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
         return key;
     }
 
@@ -83,7 +87,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     @Override
     protected Document getDocument(Object position) {
     	BinaryObject obj = dataMap.get(position);
-    	return this.binaryObjectToDocument(obj);
+    	return this.binaryObjectToDocument(position,obj);
     }
 
     @Override
@@ -153,7 +157,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
 	    for (Cache.Entry<Object, BinaryObject> entry: cursor) {	 	    	
-	    	Document document = this.binaryObjectToDocument(entry.getValue());
+	    	Document document = this.binaryObjectToDocument(entry.getKey(),entry.getValue());
 	    	if (documentMatchesQuery(document, query)) {
                 matchedDocuments.add(document);
             }
@@ -214,7 +218,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     		 
     	 QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
     	//Iterator<Cache.Entry<Object, Document>> it = cursor.iterator();
-    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getValue()), entry.getKey()));		
+    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getKey(),entry.getValue()), entry.getKey()));		
          
     }
     
@@ -249,9 +253,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 	    return bb.build();
 	}
     
-    public Document binaryObjectToDocument(BinaryObject obj){	    	
-    	Document doc = new Document();
-	
+    public Document binaryObjectToDocument(Object key,BinaryObject obj){	    	
+    	Document doc = new Document();	
+    	if(key!=null) doc.append(this.idField, key);
 	    for(String field: obj.type().fieldNames()){	    	
 	    	String $key =  field;
 	    	Object $value = obj.field(field);
@@ -268,9 +272,8 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 					$value = ($arr);
 				}
 				if($value instanceof BinaryObject){
-					BinaryObject $arr = (BinaryObject)$value;
-					//-$value = $arr.toArray();
-					$value = $arr.deserialize();
+					BinaryObject $arr = (BinaryObject)$value;					
+					$value = binaryObjectToDocument(null,$arr);
 				}				
 				doc.append($key, $value);
 				
@@ -280,6 +283,6 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 			}	    	
 	    }
 	    return doc;
-	}
+	}    
 
 }
