@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,6 +44,12 @@ public class DiscoveryDataClusterState implements Serializable {
 
     /** Flag indicating if the cluster in in active state. */
     private final boolean active;
+
+    /** Flag indicating if the cluster in read-only mode. */
+    private final boolean readOnly;
+
+    /** Read-only mode change time. Correctly work's only for enabling read-only mode. */
+    private final long readOnlyChangeTime;
 
     /** Current cluster baseline topology. */
     @Nullable private final BaselineTopology baselineTopology;
@@ -85,12 +92,17 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param active Current status.
      * @return State instance.
      */
-    static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
-        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null);
+    static DiscoveryDataClusterState createState(
+        boolean active,
+        boolean readOnly,
+        @Nullable BaselineTopology baselineTopology
+    ) {
+        return new DiscoveryDataClusterState(null, active, readOnly, baselineTopology, null, null, null);
     }
 
     /**
      * @param active New status.
+     * @param readOnly New read-only mode.
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
@@ -99,6 +111,7 @@ public class DiscoveryDataClusterState implements Serializable {
     static DiscoveryDataClusterState createTransitionState(
         DiscoveryDataClusterState prevState,
         boolean active,
+        boolean readOnly,
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
@@ -112,15 +125,18 @@ public class DiscoveryDataClusterState implements Serializable {
         return new DiscoveryDataClusterState(
             prevState,
             active,
+            readOnly,
             baselineTopology,
             transitionReqId,
             transitionTopVer,
-            transitionNodes);
+            transitionNodes
+        );
     }
 
     /**
      * @param prevState Previous state. May be non-null only for transitional states.
      * @param active New state.
+     * @param readOnly New read-only mode.
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
@@ -128,6 +144,7 @@ public class DiscoveryDataClusterState implements Serializable {
     private DiscoveryDataClusterState(
         DiscoveryDataClusterState prevState,
         boolean active,
+        boolean readOnly,
         @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
@@ -135,6 +152,8 @@ public class DiscoveryDataClusterState implements Serializable {
     ) {
         this.prevState = prevState;
         this.active = active;
+        this.readOnly = readOnly;
+        this.readOnlyChangeTime = U.currentTimeMillis();
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
@@ -186,6 +205,20 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     public boolean active() {
         return active;
+    }
+
+    /**
+     * @return Read only mode enabled flag.
+     */
+    public boolean readOnly() {
+        return readOnly;
+    }
+
+    /**
+     * @return Change time read-only mode.
+     */
+    public long readOnlyModeChangeTime() {
+        return readOnlyChangeTime;
     }
 
     /**
@@ -277,13 +310,13 @@ public class DiscoveryDataClusterState implements Serializable {
             new DiscoveryDataClusterState(
                 null,
                 active,
+                readOnly,
                 baselineTopology,
                 null,
                 null,
                 null
             ) :
-            prevState != null ? prevState :
-                    DiscoveryDataClusterState.createState(false, null);
+            prevState != null ? prevState : createState(false, false, null);
     }
 
     /** {@inheritDoc} */

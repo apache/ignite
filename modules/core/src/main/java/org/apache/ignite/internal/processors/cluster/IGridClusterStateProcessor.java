@@ -45,6 +45,16 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     IgniteFuture<Boolean> publicApiActiveStateAsync(boolean waitForTransition);
 
     /**
+     * @return Grid read only mode to be used on public API.
+     */
+    boolean publicApiReadOnlyMode();
+
+    /**
+     * @return Time change of read only mode to be used on public API.
+     */
+    long readOnlyModeStateChangeTime();
+
+    /**
      * @param discoCache Discovery data cache.
      * @return If transition is in progress returns future which is completed when transition finishes.
      */
@@ -88,6 +98,8 @@ public interface IGridClusterStateProcessor extends GridProcessor {
 
     /**
      * @param activate New cluster state.
+     * @param baselineNodes New baseline nodes.
+     * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
      */
     IgniteInternalFuture<?> changeGlobalState(
@@ -95,6 +107,26 @@ public interface IGridClusterStateProcessor extends GridProcessor {
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     );
+
+    /**
+     * @param activate New cluster state.
+     * @param readOnly Enable read-only mode.
+     * @param baselineNodes New baseline nodes.
+     * @param forceChangeBaselineTopology Force change baseline topology.
+     * @return State change future.
+     */
+    IgniteInternalFuture<?> changeGlobalState(
+        boolean activate,
+        boolean readOnly,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology
+    );
+
+    /**
+     * @param readOnly Enable/disable read-only mode.
+     * @return State change future.
+     */
+    IgniteInternalFuture<?> changeGlobalState(boolean readOnly);
 
     /**
      * @param errs Errors.

@@ -52,7 +52,13 @@ public enum CommandList {
     ROLLING_UPGRADE("--rolling-upgrade", new RollingUpgradeCommand()),
 
     /** */
-    CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand());
+    CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand()),
+
+    /** */
+    READ_ONLY_ENABLE("--read-only-on", new ClusterReadOnlyModeEnableCommand()),
+
+    /** */
+    READ_ONLY_DISABLE("--read-only-off", new ClusterReadOnlyModeDisableCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

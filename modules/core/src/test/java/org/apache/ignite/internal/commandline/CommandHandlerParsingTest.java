@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -37,16 +36,18 @@ import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
-import org.junit.Test;
-import org.junit.Rule;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.jetbrains.annotations.Nullable;
 import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -56,9 +57,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -85,7 +86,7 @@ public class CommandHandlerParsingTest {
             int expectedCheckThrough = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                 CACHE.text(),
                 VALIDATE_INDEXES.text(),
                 "cache1, cache2",
@@ -114,7 +115,7 @@ public class CommandHandlerParsingTest {
             int expectedParam = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                     CACHE.text(),
                     VALIDATE_INDEXES.text(),
                     nodeId.toString(),
@@ -137,35 +138,11 @@ public class CommandHandlerParsingTest {
             e.printStackTrace();
         }
 
-        try {
-            parseArgs(
-                Arrays.asList(
-                    CACHE.text(),
-                    VALIDATE_INDEXES.text(),
-                    CHECK_FIRST.toString(),
-                    "0"
-                )
-            );
-
-            fail("Expected exception hasn't been thrown");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            parseArgs(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
-
-            fail("Expected exception hasn't been thrown");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        assertParseArgsThrows("Value for '--check-first' property should be positive.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_FIRST.toString(), "0");
+        assertParseArgsThrows("Numeric value for '--check-through' parameter expected.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString());
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
@@ -188,26 +165,23 @@ public class CommandHandlerParsingTest {
 
             FindAndDeleteGarbage.Arguments arg = (FindAndDeleteGarbage.Arguments)subcommand.subcommand().arg();
 
-            if (list.contains(nodeId)) {
+            if (list.contains(nodeId))
                 assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeId().toString());
-            }
-            else {
+            else
                 assertNull(arg.nodeId());
-            }
 
             assertEquals(list.contains(delete), arg.delete());
 
-            if (list.contains(groups)) {
+            if (list.contains(groups))
                 assertEquals(3, arg.groups().size());
-            }
-            else {
+            else
                 assertNull(arg.groups());
-            }
         }
     }
 
+    /** */
     private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
-        List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
+        List<List<T2<String, Boolean>>> lists = generateAllCombinations(asList(optional), (x) -> x.get2());
 
         ArrayList<List<String>> res = new ArrayList<>();
 
@@ -229,6 +203,7 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
+    /** */
     private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
         List<List<T>> res = new ArrayList<>();
 
@@ -243,13 +218,12 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-
+    /** */
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 
-        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1))) {
+        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1)))
             return;
-        }
 
         if (source.size() == 1) {
             ArrayList<T> list = new ArrayList<>(res);
@@ -283,14 +257,7 @@ public class CommandHandlerParsingTest {
             if (skipCommand(cmd))
                 continue; // --cache, --wal, --rolling-upgrade and --change-tag commands require its own specific arguments.
 
-            try {
-                parseArgs(asList("--truststore"));
-
-                fail("expected exception: Expected truststore");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+            assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
             ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
                 "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
@@ -327,23 +294,8 @@ public class CommandHandlerParsingTest {
             if (skipCommand(cmd))
                 continue; // --cache, --wal, --rolling-upgrade and --change-tag commands requires its own specific arguments.
 
-            try {
-                parseArgs(asList("--user"));
-
-                fail("expected exception: Expected user name");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--password"));
-
-                fail("expected exception: Expected password");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+            assertParseArgsThrows("Expected user name", "--user");
+            assertParseArgsThrows("Expected password", "--password");
 
             ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
@@ -358,7 +310,7 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateWalActions() {
-        ConnectionAndSslParameters args = parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
+        ConnectionAndSslParameters args = parseArgs(asList(WAL.text(), WAL_PRINT));
 
         assertEquals(WAL.command(), args.command());
 
@@ -368,7 +320,7 @@ public class CommandHandlerParsingTest {
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
-        args = parseArgs(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
+        args = parseArgs(asList(WAL.text(), WAL_DELETE, nodes));
 
         arg = ((WalCommands)args.command()).arg();
 
@@ -376,23 +328,11 @@ public class CommandHandlerParsingTest {
 
         assertEquals(nodes, arg.get2());
 
-        try {
-            parseArgs(Collections.singletonList(WAL.text()));
+        assertParseArgsThrows("Expected arguments for " + WAL.text(), WAL.text());
 
-            fail("expected exception: invalid arguments for --wal command");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        String rnd = UUID.randomUUID().toString();
 
-        try {
-            parseArgs(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
-
-            fail("expected exception: invalid arguments for --wal command");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        assertParseArgsThrows("Unexpected action "  + rnd + " for " + WAL.text(), WAL.text(), rnd);
     }
 
     /**
@@ -401,26 +341,25 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAutoConfirmationFlag() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd != CommandList.DEACTIVATE
-                && cmd != CommandList.BASELINE
-                && cmd != CommandList.TX)
+            if (cmd.command().confirmationPrompt() == null)
                 continue;
 
-            ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
+            ConnectionAndSslParameters args;
 
-            assertEquals(cmd.command(), args.command());
-            assertEquals(DFLT_HOST, args.host());
-            assertEquals(DFLT_PORT, args.port());
-            assertFalse(args.autoConfirmation());
+                if (cmd == CLUSTER_CHANGE_TAG)
+                    args = parseArgs(asList(cmd.text(), "test_tag"));
+                else
+                    args = parseArgs(asList(cmd.text()));
+
+            checkCommonParametersCorrectlyParsed(cmd, args, false);
 
             switch (cmd) {
-                case DEACTIVATE: {
+                case DEACTIVATE:
+                case READ_ONLY_DISABLE:
+                case READ_ONLY_ENABLE: {
                     args = parseArgs(asList(cmd.text(), "--yes"));
 
-                    assertEquals(cmd.command(), args.command());
-                    assertEquals(DFLT_HOST, args.host());
-                    assertEquals(DFLT_PORT, args.port());
-                    assertTrue(args.autoConfirmation());
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                     break;
                 }
@@ -428,15 +367,12 @@ public class CommandHandlerParsingTest {
                     for (String baselineAct : asList("add", "remove", "set")) {
                         args = parseArgs(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
 
-                        assertEquals(cmd.command(), args.command());
-                        assertEquals(DFLT_HOST, args.host());
-                        assertEquals(DFLT_PORT, args.port());
-                        assertTrue(args.autoConfirmation());
+                        checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
                         assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(Arrays.asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        assertEquals(new HashSet<>(asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
                     }
 
                     break;
@@ -445,19 +381,43 @@ public class CommandHandlerParsingTest {
                 case TX: {
                     args = parseArgs(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
-                    assertEquals(cmd.command(), args.command());
-                    assertEquals(DFLT_HOST, args.host());
-                    assertEquals(DFLT_PORT, args.port());
-                    assertTrue(args.autoConfirmation());
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                     VisorTxTaskArg txTaskArg = ((TxCommands)args.command()).arg();
 
                     assertEquals("xid1", txTaskArg.getXid());
                     assertEquals(10_000, txTaskArg.getMinDuration().longValue());
                     assertEquals(VisorTxOperation.KILL, txTaskArg.getOperation());
+
+                    break;
                 }
+
+                case CLUSTER_CHANGE_TAG: {
+                    args = parseArgs(asList(cmd.text(), "test_tag", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
+
+                    assertEquals("test_tag", ((ClusterChangeTagCommand)args.command()).arg());
+
+                    break;
+                }
+
+                default:
+                    fail("Unknown command: " + cmd);
             }
         }
+    }
+
+    /** */
+    private void checkCommonParametersCorrectlyParsed(
+        CommandList cmd,
+        ConnectionAndSslParameters args,
+        boolean autoConfirm
+    ) {
+        assertEquals(cmd.command(), args.command());
+        assertEquals(DFLT_HOST, args.host());
+        assertEquals(DFLT_PORT, args.port());
+        assertEquals(autoConfirm, args.autoConfirmation());
     }
 
     /**
@@ -485,32 +445,9 @@ public class CommandHandlerParsingTest {
             assertEquals(5000, args.pingInterval());
             assertEquals(40000, args.pingTimeout());
 
-            try {
-                parseArgs(asList("--port", "wrong-port", cmd.text()));
-
-                fail("expected exception: Invalid value for port:");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--ping-interval", "-10", cmd.text()));
-
-                fail("expected exception: Ping interval must be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--ping-timeout", "-20", cmd.text()));
-
-                fail("expected exception: Ping timeout must be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+            assertParseArgsThrows("Invalid value for port: wrong-port", "--port", "wrong-port", cmd.text());
+            assertParseArgsThrows("Invalid value for ping interval: -10", "--ping-interval", "-10", cmd.text());
+            assertParseArgsThrows("Invalid value for ping timeout: -20", "--ping-timeout", "-20", cmd.text());
         }
     }
 
@@ -523,61 +460,13 @@ public class CommandHandlerParsingTest {
 
         parseArgs(asList("--tx"));
 
-        try {
-            parseArgs(asList("--tx", "minDuration"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minDuration", "-1"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minSize"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minSize", "-1"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "label"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "label", "tx123["));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "servers", "nodes", "1,2,3"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
+        assertParseArgsThrows("Expecting --min-duration", "--tx", "--min-duration");
+        assertParseArgsThrows("Invalid value for --min-duration: -1", "--tx", "--min-duration", "-1");
+        assertParseArgsThrows("Expecting --min-size", "--tx", "--min-size");
+        assertParseArgsThrows("Invalid value for --min-size: -1", "--tx", "--min-size", "-1");
+        assertParseArgsThrows("--label", "--tx", "--label");
+        assertParseArgsThrows("Illegal regex syntax", "--tx", "--label", "tx123[");
+        assertParseArgsThrows("Projection can't be used together with list of consistent ids.", "--tx", "--servers", "--nodes", "1,2,3");
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
@@ -605,7 +494,7 @@ public class CommandHandlerParsingTest {
         arg = ((TxCommands)args.command()).arg();
 
         assertNull(arg.getProjection());
-        assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+        assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
     }
 
     /** */
@@ -666,5 +555,15 @@ public class CommandHandlerParsingTest {
         result.addHandler(CommandHandler.setupStreamHandler());
 
         return result;
+    }
+
+    /**
+     * Checks that parse arguments fails with {@link IllegalArgumentException} and {@code failMsg} message.
+     *
+     * @param failMsg Exception message (optional).
+     * @param args Incoming arguments.
+     */
+    private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
     }
 }
