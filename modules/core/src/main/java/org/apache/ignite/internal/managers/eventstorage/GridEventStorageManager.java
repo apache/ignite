@@ -571,13 +571,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public boolean isAllUserRecordable(int[] types) {
         assert types != null;
 
-        boolean[] userRecordableEvts0 = userRecordableEvts;
-
         for (int type : types) {
-            if (type < 0 || type >= len)
-                throw new IllegalArgumentException("Invalid event type: " + type);
-
-            if (!userRecordableEvts0[type])
+            if (!isUserRecordable(type))
                 return false;
         }
 
