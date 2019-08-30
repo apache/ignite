@@ -85,7 +85,13 @@ public enum IgniteFeatures {
     /**
      * A mode when data nodes throttle update rate regarding to DR sender load
      */
-    DR_DATA_NODE_SMART_THROTTLING(19);
+    DR_DATA_NODE_SMART_THROTTLING(19),
+
+    /**
+     * Support enabling DR events from  Web Console.
+     */
+    WC_DR_EVENTS(20)
+    ;
 
     /**
      * Unique feature identifier.
