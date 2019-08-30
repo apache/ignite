@@ -80,15 +80,15 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
             new String[][] {new String[] {"a", "b", "c"}, new String[] {"c", "b", "a"}, new String[] {"a", "b", "c"}},
             new Object[][] {
                 new String[][] {
-                    new String[] {"a", "b", "c"},
-                    new String[] {"a", "b", "c"},
-                    new String[] {"a", "b", "c"}
+                    new String[] {"a", "b", null},
+                    new String[] {"a", null, "c"},
+                    new String[] {null, "b", "c"}
                 },
-                new String[] {"c", "b", "a"},
+                new String[] {null, null, null},
                 new String[][] {
-                    new String[] {"a", "b", "c"},
-                    new String[] {"a", "b", "c"},
-                    new String[] {"a", "b", "c"}
+                    new String[] {"a", "b", null},
+                    new String[] {"a", null, "c"},
+                    new String[] {null, "b", "c"}
                 }}
         );
     }
