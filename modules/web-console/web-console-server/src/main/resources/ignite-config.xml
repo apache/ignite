@@ -21,9 +21,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-
-
-        <property name="consistentId" value="we-console-data"/>
+        <property name="consistentId" value="web-console-data"/>
         <property name="metricsLogFrequency" value="0"/>
         <property name="queryThreadPoolSize" value="16"/>
         <property name="failureDetectionTimeout" value="10000"/>
@@ -46,7 +44,7 @@
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="persistenceEnabled" value="true"/>
-
+                        <!-- Set region size, because default size is 20% of physical memory available on current machine. -->
                         <property name="maxSize" value="#{256 * 1024 * 1024}"/>
                     </bean>
                 </property>
@@ -55,6 +53,9 @@
 
                 <!-- Disabling WAL archiving. -->
                 <property name="walArchivePath" value="db/wal"/>
+
+                <!-- Web Console must survive power loss. -->
+                <property name="walMode" value="FSYNC"/>
             </bean>
         </property>
 
