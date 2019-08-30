@@ -44,21 +44,26 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="org.apache.ignite" level="WARN">
-            <AppenderRef ref="CONSOLE"/>
+        <Logger name="org.eclipse.jetty" level="WARN"/>
+
+        <Logger name="org.apache.ignite.internal" level="ERROR">
+            <AppenderRef ref="CONSOLE_ERR"/>
         </Logger>
 
-        <Logger name="org.apache.ignite" level="INFO" additivity="false">
+        <Logger name="org.apache.ignite.internal" level="INFO" additivity="false">
             <AppenderRef ref="FILE"/>
         </Logger>
 
-        <Logger name="org.springframework" level="WARN"/>
-        <Logger name="org.eclipse.jetty" level="WARN"/>
-
         <Logger name="org.gridgain.console.web.controller.OverrideRequestMappingConfiguration$OverrideRequestMappingHandlerMapping" level="WARN"/>
-        <Logger name="springfox.documentation.spring.web" level="WARN"/>
 
-        <Logger name="org.springframework.boot" level="ERROR" additivity="false"/>
+        <Logger name="org.springframework" level="WARN"/>
+
+        <Logger name="org.springframework" level="INFO" additivity="false">
+            <AppenderRef ref="FILE"/>
+        </Logger>
+
+        <Logger name="org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter" level="OFF"/>
+        <Logger name="springfox.documentation.spring.web" level="WARN"/>
 
         <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>
