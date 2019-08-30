@@ -158,7 +158,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         while (!evtDeq.isEmpty()) {
             CacheConsistencyViolationEvent evt = evtDeq.remove();
 
-            fixed.putAll(evt.getFixedEntries()); // Optimistic and read commited transactions produce per key fixes.
+            fixed.putAll(evt.getRepairedEntries()); // Optimistic and read committed transactions produce per key fixes.
         }
 
         int misses = 0;
