@@ -1623,7 +1623,7 @@ namespace ignite
                 R res;
                 ProcessorHolder procHolder(processor, arg);
 
-                impl::In2Operation<K, ProcessorHolder> inOp(key, procHolder);
+                impl::InCacheInvokeOperation<K, ProcessorHolder> inOp(key, procHolder);
                 impl::Out1Operation<R> outOp(res);
 
                 impl.Get()->Invoke(inOp, outOp, err);

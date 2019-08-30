@@ -253,6 +253,40 @@ namespace ignite
         };
 
         /**
+         * Cache Invoke input operation.
+         */
+        template<typename T1, typename T2>
+        class InCacheInvokeOperation : public InputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param val1 First value.
+             * @param val2 Second value.
+             */
+            InCacheInvokeOperation(const T1& val1, const T2& val2) : val1(val1), val2(val2)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
+            {
+                writer.WriteTopObject<T1>(val1);
+                writer.WriteInt64(0);
+                writer.WriteTopObject<T2>(val2);
+            }
+        private:
+            /** First value. */
+            const T1& val1;
+
+            /** Second value. */
+            const T2& val2;
+
+            IGNITE_NO_COPY_ASSIGNMENT(InCacheInvokeOperation)
+        };
+
+        /**
          * Input iterator operation.
          */
         template<typename K, typename V, typename Iter>
