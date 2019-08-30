@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
@@ -151,10 +152,9 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultiThrea
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultinodeCreateCacheTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerTimeoutTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerUpdateAfterLoadTest;
+import org.apache.ignite.internal.processors.datastreamer.MultipleDataStreamersOnClientTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
-
-import java.util.Set;
 
 /**
  * Test suite.
@@ -263,6 +263,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(DataStreamerImplSelfTest.class);
         suite.addTestSuite(DataStreamerTimeoutTest.class);
         suite.addTestSuite(DataStreamerClientReconnectAfterClusterRestartTest.class);
+        suite.addTestSuite(MultipleDataStreamersOnClientTest.class);
         GridTestUtils.addTestIfNeeded(suite, GridCacheEntryMemorySizeSelfTest.class, ignoredTests);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
         suite.addTestSuite(GridCacheObjectToStringSelfTest.class);
