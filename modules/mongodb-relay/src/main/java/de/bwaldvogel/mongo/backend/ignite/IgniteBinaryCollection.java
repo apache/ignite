@@ -2,6 +2,7 @@ package de.bwaldvogel.mongo.backend.ignite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,10 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.stream.StreamVisitor;
 import org.slf4j.Logger;
@@ -224,8 +227,18 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     
     public BinaryObject documentToBinaryObject(Document obj){	
     	Ignite ignite = Ignition.ignite();
-    	String typeName = obj.getOrDefault("_class", this.getCollectionName()).toString();
-		BinaryObjectBuilder bb = ignite.binary().builder(typeName);
+    	
+    	Object typeName = obj.get("_class");
+    	
+    	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
+    	if(!cfg.getQueryEntities().isEmpty()) {
+    		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
+    		typeName = qeit.next().getValueType();    		
+    	}
+    	if(typeName==null) {
+    		typeName = dataMap.getName();
+    	}
+		BinaryObjectBuilder bb = ignite.binary().builder(typeName.toString());
 		Set<Map.Entry<String,Object>> ents = obj.entrySet();
 	    for(Map.Entry<String,Object> ent: ents){	    	
 	    	String $key =  ent.getKey();
@@ -237,10 +250,15 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 					//-$value = $arr.toArray();
 					$value = ($arr);
 				}
+				else if($value instanceof Document){
+					Document $arr = (Document)$value;
+					//-$value = new HashMap<String,Object>($arr);
+					$value = ($arr.asMap());
+				}
 				else if($value instanceof Map){
 					Map $arr = (Map)$value;
-					//-$value = new HashMap<String,Object>($arr);
-					$value = ($arr);
+					//$value = new HashMap($arr);
+					//$value = ($arr);
 				}
 				Object bValue = ignite.binary().toBinary($value);
 				bb.setField($key, bValue);

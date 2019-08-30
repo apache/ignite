@@ -202,4 +202,7 @@ public final class Document implements Map<String, Object>, Bson {
         }
     }
 
+    public LinkedHashMap asMap() {
+    	return this.documentAsMap;
+    }
 }
