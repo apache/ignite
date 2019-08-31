@@ -25,6 +25,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_TABLE;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+
 /**
  * JDBC table metadata.
  */
@@ -35,11 +38,14 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     /** Table name. */
     private String tblName;
 
+    /** Table type. */
+    private String tblType;
+
     /**
      * Default constructor is used for deserialization.
      */
     JdbcTableMeta() {
-        // No-op.
+        tblType = TYPE_TABLE;
     }
 
     /**
@@ -50,6 +56,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     JdbcTableMeta(String schemaName, String tblName, String tblType) {
         this.schemaName = schemaName;
         this.tblName = tblName;
+        this.tblType = tblType;
     }
 
     /**
@@ -66,11 +73,21 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
         return tblName;
     }
 
+    /**
+     * @return Table type.
+     */
+    public String tableType() {
+        return tblType;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeString(schemaName);
         writer.writeString(tblName);
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeString(tblType);
     }
 
     /** {@inheritDoc} */
@@ -78,11 +95,9 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         schemaName = reader.readString();
         tblName = reader.readString();
-    }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(JdbcTableMeta.class, this);
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            tblType = reader.readString();
     }
 
     /** {@inheritDoc} */
@@ -101,5 +116,10 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(schemaName, tblName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcTableMeta.class, this);
     }
 }
