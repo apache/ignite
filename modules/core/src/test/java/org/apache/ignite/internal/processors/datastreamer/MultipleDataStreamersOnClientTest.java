@@ -54,13 +54,13 @@ public class MultipleDataStreamersOnClientTest extends GridCommonAbstractTest {
     private static final String TEST_CACHE_NAME = "multiple-datastreamers-on-client";
 
     /** Latch indicates that a test cache is starting on client. */
-    private final static CountDownLatch CACHE_START_LATCH = new CountDownLatch(1);
+    private static final CountDownLatch CACHE_START_LATCH = new CountDownLatch(1);
 
     /** Latch that allows to continue cache starting. */
-    private final static CountDownLatch CONTINUE_LATCH = new CountDownLatch(1);
+    private static final CountDownLatch CONTINUE_LATCH = new CountDownLatch(1);
 
     /** Default timeout for an operation. */
-    private final static int TIMEOUT = 5;
+    private static final int TIMEOUT = 5;
 
     /** Boolean parameters indicates that a node should be started in client mode. */
     private boolean clientMode;
