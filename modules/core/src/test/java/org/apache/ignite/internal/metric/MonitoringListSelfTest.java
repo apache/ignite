@@ -33,6 +33,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -40,6 +41,7 @@ import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
+import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.spi.metric.list.view.TransactionView;
@@ -58,6 +60,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
+import static org.apache.ignite.spi.metric.list.view.ClusterNodeView.toStringSafe;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -324,6 +327,48 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             assertTrue(res);
         }
+    }
+
+    @Test
+    /** */
+    public void testNodes() throws Exception {
+        try(IgniteEx g1 = startGrid(0)) {
+            MonitoringList<UUID, ClusterNodeView> nodes =
+                g1.context().metric().list("nodes", "Cluster nodes", ClusterNodeView.class);
+
+            assertEquals(1, nodes.size());
+
+            checkNodeView(nodes.get(g1.localNode().id()), g1.localNode(), true);
+
+            try(IgniteEx g2 = startGrid(1)) {
+                awaitPartitionMapExchange();
+
+                assertEquals(2, nodes.size());
+
+                checkNodeView(nodes.get(g2.localNode().id()), g2.localNode(), false);
+
+                MonitoringList<UUID, ClusterNodeView> nodes2 =
+                    g2.context().metric().list("nodes", "Cluster nodes", ClusterNodeView.class);
+
+                assertEquals(2, nodes2.size());
+
+                checkNodeView(nodes2.get(g1.localNode().id()), g1.localNode(), false);
+                checkNodeView(nodes2.get(g2.localNode().id()), g2.localNode(), true);
+            }
+        }
+    }
+
+    /** */
+    private void checkNodeView(ClusterNodeView n, ClusterNode loc, boolean isLocal) {
+        assertEquals(loc.id(), n.id());
+        assertEquals(loc.consistentId().toString(), n.consistentId());
+        assertEquals(toStringSafe(loc.addresses()), n.addresses());
+        assertEquals(toStringSafe(loc.hostNames()), n.hostNames());
+        assertEquals(loc.order(), n.order());
+        assertEquals(loc.version(), n.version());
+        assertEquals(isLocal, n.isLocal());
+        assertEquals(loc.isDaemon(), n.isDaemon());
+        assertEquals(loc.isClient(), n.isClient());
     }
 
     /** */

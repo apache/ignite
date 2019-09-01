@@ -226,6 +226,7 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;

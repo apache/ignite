@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.metric.list.view;
 
+import java.util.Date;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
@@ -42,7 +43,7 @@ public interface QueryView extends MonitoringRow<Long> {
     public String schemaName();
 
     @Order(4)
-    public long startTime();
+    public Date startTime();
 
     @Order(5)
     public long duration();

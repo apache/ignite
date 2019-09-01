@@ -37,6 +37,16 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
 import org.h2.value.Value;
+import org.h2.value.ValueBoolean;
+import org.h2.value.ValueByte;
+import org.h2.value.ValueDecimal;
+import org.h2.value.ValueDouble;
+import org.h2.value.ValueFloat;
+import org.h2.value.ValueInt;
+import org.h2.value.ValueLong;
+import org.h2.value.ValueShort;
+import org.h2.value.ValueString;
+import org.h2.value.ValueTimestamp;
 
 /**
  * System view to export monitoring list data.
@@ -66,48 +76,72 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
             @Override public Row next() {
                 R row = rows.next();
 
-                Object[] data = new Object[mlist.walker().count()];
+                Value[] data = new Value[mlist.walker().count()];
 
                 mlist.walker().visitAllWithValues(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
                             clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
                             clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
-                            data[idx] = Objects.toString(val);
-                        else
-                            data[idx] = val;
+                            data[idx] = ValueString.get(Objects.toString(val));
+                        else if (clazz.isAssignableFrom(BigDecimal.class))
+                            data[idx] = ValueDecimal.get((BigDecimal)val);
+                        else if (clazz.isAssignableFrom(BigInteger.class))
+                            data[idx] = ValueDecimal.get(new BigDecimal((BigInteger)val));
+                        else if (clazz.isAssignableFrom(Date.class))
+                            data[idx] = ValueTimestamp.fromMillis(((Date)val).getTime());
+                        else if (clazz.isAssignableFrom(Boolean.class))
+                            data[idx] = ValueBoolean.get((Boolean)val);
+                        else if (clazz.isAssignableFrom(Byte.class))
+                            data[idx] = ValueByte.get((Byte)val);
+                        else if (clazz.isAssignableFrom(Character.class))
+                            data[idx] = ValueString.get(Objects.toString(val));
+                        else if (clazz.isAssignableFrom(Short.class))
+                            data[idx] = ValueShort.get((Short)val);
+                        else if (clazz.isAssignableFrom(Integer.class))
+                            data[idx] = ValueInt.get((Integer)val);
+                        else if (clazz.isAssignableFrom(Long.class))
+                            data[idx] = ValueLong.get((Long)val);
+                        else if (clazz.isAssignableFrom(Float.class))
+                            data[idx] = ValueFloat.get((Float)val);
+                        else if (clazz.isAssignableFrom(Double.class))
+                            data[idx] = ValueDouble.get((Double)val);
+                        else {
+                            throw new IllegalStateException
+                                ("Unsupported type [rowClass=" + mlist.rowClass().getName() + ",col=" + name);
+                        }
                     }
 
                     @Override public void acceptBoolean(int idx, String name, boolean val) {
-                        data[idx] = val;
+                        data[idx] = ValueBoolean.get(val);
                     }
 
                     @Override public void acceptChar(int idx, String name, char val) {
-                        data[idx] = val;
+                        data[idx] = ValueString.get(Character.toString(val));
                     }
 
                     @Override public void acceptByte(int idx, String name, byte val) {
-                        data[idx] = val;
+                        data[idx] = ValueByte.get(val);
                     }
 
                     @Override public void acceptShort(int idx, String name, short val) {
-                        data[idx] = val;
+                        data[idx] = ValueShort.get(val);
                     }
 
                     @Override public void acceptInt(int idx, String name, int val) {
-                        data[idx] = val;
+                        data[idx] = ValueInt.get(val);
                     }
 
                     @Override public void acceptLong(int idx, String name, long val) {
-                        data[idx] = val;
+                        data[idx] = ValueLong.get(val);
                     }
 
                     @Override public void acceptFloat(int idx, String name, float val) {
-                        data[idx] = val;
+                        data[idx] = ValueFloat.get(val);
                     }
 
                     @Override public void acceptDouble(int idx, String name, double val) {
-                        data[idx] = val;
+                        data[idx] = ValueDouble.get(val);
                     }
                 });
 
@@ -138,7 +172,7 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
                 else if (clazz.isAssignableFrom(BigInteger.class))
                     type = Value.DECIMAL;
                 else if (clazz.isAssignableFrom(Date.class))
-                    type = Value.DATE;
+                    type = Value.TIMESTAMP;
                 else if (clazz.isAssignableFrom(Boolean.class))
                     type = Value.BOOLEAN;
                 else if (clazz.isAssignableFrom(Byte.class))
@@ -204,6 +238,8 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
      * @return SQL compatible name.
      */
     private static String sqlName(String name) {
-        return name.replaceAll('\\' + MetricUtils.SEPARATOR, "_").toUpperCase();
+        return name
+            .replaceAll("([A-Z])", "_$1")
+            .replaceAll('\\' + MetricUtils.SEPARATOR, "_").toUpperCase();
     }
 }

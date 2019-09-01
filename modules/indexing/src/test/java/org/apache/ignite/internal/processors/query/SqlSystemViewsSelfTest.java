@@ -463,8 +463,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.put(100,"200");
 
-        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
-            systemSchemaName() + ".LOCAL_SQL_RUNNING_QUERIES";
+        String sql = "SELECT QUERY, ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
+            monitoringSchemaName() + ".QUERY_SQL";
 
         FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
 
@@ -489,8 +489,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertTrue((Boolean)res0.get(3));
 
-        String id0 = (String)res0.get(1);
-        String id1 = (String)res1.get(1);
+        Long id0 = (Long)res0.get(1);
+        Long id1 = (Long)res1.get(1);
 
         assertNotEquals(id0, id1);
 
@@ -881,6 +881,11 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(1, res.size());
 
         assertEquals("node2", res.get(0).get(0));
+    }
+
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setMetricExporterSpi(new SqlViewExporterSpi());
     }
 
     /** {@inheritDoc} */

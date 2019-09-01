@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,7 +43,7 @@ public class GridRunningQueryInfo implements QueryView {
     private final String schemaName;
 
     /** */
-    private final long startTime;
+    private final Date startTime;
 
     /** */
     private final GridQueryCancel cancel;
@@ -83,7 +84,7 @@ public class GridRunningQueryInfo implements QueryView {
         this.qry = qry;
         this.qryType = qryType;
         this.schemaName = schemaName;
-        this.startTime = startTime;
+        this.startTime = new Date(startTime);
         this.cancel = cancel;
         this.loc = loc;
     }
@@ -131,12 +132,12 @@ public class GridRunningQueryInfo implements QueryView {
     /**
      * @return Query start time.
      */
-    @Override public long startTime() {
+    @Override public Date startTime() {
         return startTime;
     }
 
     @Override public long duration() {
-        return U.currentTimeMillis() - startTime;
+        return U.currentTimeMillis() - startTime.getTime();
     }
 
     /**
@@ -145,7 +146,7 @@ public class GridRunningQueryInfo implements QueryView {
      * @return {@code true} if this query should be considered as long running query.
      */
     public boolean longQuery(long curTime, long duration) {
-        return curTime - startTime > duration;
+        return curTime - startTime.getTime() > duration;
     }
 
     /**

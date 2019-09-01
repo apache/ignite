@@ -91,7 +91,7 @@ public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<VisorRu
 
             for (GridRunningQueryInfo qry : queries)
                 res.add(new VisorRunningQuery(qry.id(), qry.query(), qry.queryType(), qry.schemaName(),
-                    qry.startTime(), curTime - qry.startTime(),
+                    qry.startTime().getTime(), curTime - qry.startTime().getTime(),
                     qry.cancelable(), qry.local()));
 
             return res;

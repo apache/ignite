@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric.list.walker;
 
+import java.util.Date;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
 import org.apache.ignite.spi.metric.list.view.QueryView;
@@ -30,7 +31,7 @@ public class QueryViewWalker implements MonitoringRowAttributeWalker<QueryView> 
         v.accept(1, "query", String.class);
         v.accept(2, "queryType", GridCacheQueryType.class);
         v.accept(3, "originNodeId", String.class);
-        v.acceptLong(4, "startTime");
+        v.accept(4, "startTime", Date.class);
         v.acceptLong(5, "duration");
         v.acceptBoolean(6, "failed");
         v.accept(7, "globalQueryId", String.class);
@@ -44,7 +45,7 @@ public class QueryViewWalker implements MonitoringRowAttributeWalker<QueryView> 
         v.accept(1, "query", String.class, row.query());
         v.accept(2, "queryType", GridCacheQueryType.class, row.queryType());
         v.accept(3, "originNodeId", String.class, row.originNodeId());
-        v.acceptLong(4, "startTime", row.startTime());
+        v.accept(4, "startTime", Date.class, row.startTime());
         v.acceptLong(5, "duration", row.duration());
         v.acceptBoolean(6, "failed", row.failed());
         v.accept(7, "globalQueryId", String.class, row.globalQueryId());

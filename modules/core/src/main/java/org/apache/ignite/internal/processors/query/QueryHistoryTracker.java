@@ -58,7 +58,7 @@ public class QueryHistoryTracker {
         String qry = runningQryInfo.query();
         String schema = runningQryInfo.schemaName();
         boolean loc = runningQryInfo.local();
-        long startTime = runningQryInfo.startTime();
+        long startTime = runningQryInfo.startTime().getTime();
         long duration = System.currentTimeMillis() - startTime;
         boolean failed = runningQryInfo.failed();
 

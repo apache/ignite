@@ -127,6 +127,8 @@ import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
@@ -272,9 +274,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node compatibility consistent ID. */
     private Serializable consistentId;
 
+    private MonitoringList<UUID, ClusterNodeView> nodes;
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
+
+        nodes = ctx.metric().list("nodes", "Cluster nodes", ClusterNodeView.class);
     }
 
     /** {@inheritDoc} */
@@ -558,26 +564,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (skipMessage(type, customMsg))
                     return;
 
+                updateNodeMonitoring(type, node, topSnapshot);
+
                 final ClusterNode locNode = localNode();
 
                 if (snapshots != null)
                     topHist = snapshots;
 
-                boolean verChanged;
+                boolean verChanged = false;
 
-                if (type == EVT_NODE_METRICS_UPDATED)
-                    verChanged = false;
-                else {
-                    if (type != EVT_NODE_SEGMENTED &&
-                        type != EVT_CLIENT_NODE_DISCONNECTED &&
-                        type != EVT_CLIENT_NODE_RECONNECTED &&
-                        type != EVT_DISCOVERY_CUSTOM_EVT) {
-                        minorTopVer = 0;
+                if (type != EVT_NODE_METRICS_UPDATED &&
+                    type != EVT_NODE_SEGMENTED &&
+                    type != EVT_CLIENT_NODE_DISCONNECTED &&
+                    type != EVT_CLIENT_NODE_RECONNECTED &&
+                    type != EVT_DISCOVERY_CUSTOM_EVT) {
+                    minorTopVer = 0;
 
-                        verChanged = true;
-                    }
-                    else
-                        verChanged = false;
+                    verChanged = true;
                 }
 
                 if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT) {
@@ -956,6 +959,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    /**
+     * @param type Event type.
+     * @param node Node.
+     * @param topSnapshot
+     */
+    private void updateNodeMonitoring(int type, ClusterNode node, Collection<ClusterNode> topSnapshot) {
+        if (node.isLocal() && type == EVT_NODE_JOINED && !F.isEmpty(topSnapshot)) {
+            for (ClusterNode n : topSnapshot)
+                nodes.add(n.id(), new ClusterNodeView(n));
+        }
+        else if (type == EVT_NODE_FAILED ||
+            type == EVT_NODE_LEFT ||
+            type == EVT_CLIENT_NODE_DISCONNECTED) {
+            nodes.remove(node.id());
+        } else if (type == EVT_NODE_JOINED ||
+            type == EVT_CLIENT_NODE_RECONNECTED) {
+            nodes.add(node.id(), new ClusterNodeView(node));
+        }
     }
 
     /**
