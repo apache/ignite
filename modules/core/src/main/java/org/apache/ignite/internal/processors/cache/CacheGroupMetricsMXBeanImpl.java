@@ -359,4 +359,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     @Override public long getTotalAllocatedSize() {
         return getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
     }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexBuildCountPartitionsLeft() {
+        return ctx.metrics0().getIndexBuildCountPartitionsLeft();
+    }
 }

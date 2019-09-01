@@ -228,6 +228,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
         finally {
             part.release();
+
+            if (cctx.group().metrics0() != null)
+                cctx.group().metrics0().decrementIndexBuildCountPartitionsLeft();
         }
     }
 
@@ -327,6 +330,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 U.error(log, "Error during parallel index create/rebuild.", e);
 
                 stop = true;
+
+                if (cctx.group().metrics0() != null)
+                    cctx.group().metrics0().setIndexBuildCountPartitionsLeft(0);
             }
             finally {
                 fut.onDone(err);

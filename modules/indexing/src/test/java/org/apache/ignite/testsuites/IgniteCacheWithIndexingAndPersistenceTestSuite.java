@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanWithIndexTest;
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
@@ -38,6 +39,7 @@ public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridCommandHandlerIndexingTest.class);
         suite.addTestSuite(GridCommandHandlerIndexingClusterByClassTest.class);
         suite.addTestSuite(StartCachesInParallelTest.class);
+        suite.addTestSuite(CacheGroupMetricsMBeanWithIndexTest.class);
 
         return suite;
     }
