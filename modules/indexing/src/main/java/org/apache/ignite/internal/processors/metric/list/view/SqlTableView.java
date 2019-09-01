@@ -44,17 +44,17 @@ public interface SqlTableView extends MonitoringRow<String> {
     public String tableName();
 
     /** */
-    public String affKeyCol();
+    public String affinityKeyColumn();
 
     /** */
     public String keyAlias();
 
     /** */
-    public String valAlias();
+    public String valueAlias();
 
     /** */
     public String keyTypeName();
 
     /** */
-    public String valTypeName();
+    public String valueTypeName();
 }

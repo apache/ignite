@@ -101,7 +101,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
                 assertEquals("PUBLIC", v.schemaName());
                 assertEquals("ID", v.keyAlias());
                 assertEquals(Long.class.getName(), v.keyTypeName());
-                assertEquals("MyType", v.valTypeName());
+                assertEquals("MyType", v.valueTypeName());
             });
 
             assertTrue(found[0]);

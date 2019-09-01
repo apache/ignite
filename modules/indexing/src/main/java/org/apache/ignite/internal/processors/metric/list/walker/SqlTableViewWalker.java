@@ -28,14 +28,14 @@ public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTable
         v.accept(0, "tableName", String.class);
         v.accept(1, "schemaName", String.class);
         v.accept(2, "cacheName", String.class);
-        v.accept(3, "affKeyCol", String.class);
+        v.accept(3, "affinityKeyColumn", String.class);
         v.acceptInt(4, "cacheGroupId");
         v.accept(5, "cacheGroupName", String.class);
         v.acceptInt(6, "cacheId");
         v.accept(7, "keyAlias", String.class);
         v.accept(8, "keyTypeName", String.class);
-        v.accept(9, "valAlias", String.class);
-        v.accept(10, "valTypeName", String.class);
+        v.accept(9, "valueAlias", String.class);
+        v.accept(10, "valueTypeName", String.class);
     }
 
     /** {@inheritDoc} */
@@ -43,14 +43,14 @@ public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTable
         v.accept(0, "tableName", String.class, row.tableName());
         v.accept(1, "schemaName", String.class, row.schemaName());
         v.accept(2, "cacheName", String.class, row.cacheName());
-        v.accept(3, "affKeyCol", String.class, row.affKeyCol());
+        v.accept(3, "affinityKeyColumn", String.class, row.affinityKeyColumn());
         v.acceptInt(4, "cacheGroupId", row.cacheGroupId());
         v.accept(5, "cacheGroupName", String.class, row.cacheGroupName());
         v.acceptInt(6, "cacheId", row.cacheId());
         v.accept(7, "keyAlias", String.class, row.keyAlias());
         v.accept(8, "keyTypeName", String.class, row.keyTypeName());
-        v.accept(9, "valAlias", String.class, row.valAlias());
-        v.accept(10, "valTypeName", String.class, row.valTypeName());
+        v.accept(9, "valueAlias", String.class, row.valueAlias());
+        v.accept(10, "valueTypeName", String.class, row.valueTypeName());
     }
 
     /** {@inheritDoc} */

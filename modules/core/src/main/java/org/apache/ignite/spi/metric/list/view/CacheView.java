@@ -45,13 +45,13 @@ public class CacheView implements MonitoringRow<String> {
     }
 
     /** */
-    public int groupId() {
+    public int cacheGroupId() {
         return cache.groupId();
     }
 
     /** */
     @Order(5)
-    public String groupName() {
+    public String cacheGroupName() {
         return cache.groupDescriptor().cacheOrGroupName();
     }
 
@@ -223,12 +223,12 @@ public class CacheView implements MonitoringRow<String> {
     }
 
     /** */
-    public boolean nearCacheEnabled() {
+    public boolean isNearCacheEnabled() {
         return cache.cacheConfiguration().getNearConfiguration() != null;
     }
 
     /** */
-    public String nearEvictionPolicyFactory() {
+    public String nearCacheEvictionPolicyFactory() {
         if (cache.cacheConfiguration().getNearConfiguration() == null)
             return null;
 
@@ -236,7 +236,7 @@ public class CacheView implements MonitoringRow<String> {
     }
 
     /** */
-    public long nearStartSize() {
+    public int nearCacheStartSize() {
         if (cache.cacheConfiguration().getNearConfiguration() == null)
             return 0;
 

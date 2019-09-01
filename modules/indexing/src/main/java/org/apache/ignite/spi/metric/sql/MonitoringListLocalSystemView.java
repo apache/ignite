@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
@@ -44,6 +45,7 @@ import org.h2.value.ValueDouble;
 import org.h2.value.ValueFloat;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
+import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
@@ -80,7 +82,9 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
 
                 mlist.walker().visitAllWithValues(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
-                        if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
+                        if (val == null)
+                            data[idx] = ValueNull.INSTANCE;
+                        else if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
                             clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
                             clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
                             data[idx] = ValueString.get(Objects.toString(val));
@@ -231,6 +235,11 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
         });
 
         return cols;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSchemaName() {
+        return QueryUtils.SCHEMA_MONITORING;
     }
 
     /**

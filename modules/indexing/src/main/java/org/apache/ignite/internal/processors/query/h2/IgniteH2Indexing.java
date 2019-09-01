@@ -208,6 +208,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_MONITORING;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
@@ -249,22 +251,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Node ID. */
     private UUID nodeId;
 
-    /** */
+    /**
+     *
+     */
     private Marshaller marshaller;
 
-    /** */
+    /**
+     *
+     */
     private GridMapQueryExecutor mapQryExec;
 
-    /** */
+    /**
+     *
+     */
     private GridReduceQueryExecutor rdcQryExec;
 
-    /** */
+    /**
+     *
+     */
     private GridSpinBusyLock busyLock;
 
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
 
-    /** */
+    /**
+     *
+     */
     protected volatile GridKernalContext ctx;
 
     /** Query context registry. */
@@ -282,10 +294,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Query history tracker. */
     private volatile QueryHistoryTracker qryHistTracker;
 
-    /** */
+    /**
+     *
+     */
     private MonitoringList<Long, QueryView> sqlQryMonList;
 
-    /** */
+    /**
+     *
+     */
     private MonitoringList<Long, QueryView> textQryMonList;
 
     /** Unique id for queries on single node. */
@@ -294,7 +310,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Parser. */
     private QueryParser parser;
 
-    /** */
+    /**
+     *
+     */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
         @Override public void apply(IgniteInternalFuture<?> fut) {
             try {
@@ -350,7 +368,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery qry)
-        throws IgniteSQLException{
+        throws IgniteSQLException {
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         if (parsed.remainingQuery() != null)
@@ -376,7 +394,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow,  prevRowAvailable);
+        tbl.table().update(row, prevRow, prevRowAvailable);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -418,7 +436,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists)
-        throws IgniteCheckedException{
+        throws IgniteCheckedException {
         schemaMgr.dropIndex(schemaName, idxName, ifExists);
     }
 
@@ -944,7 +962,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     + e.getMessage());
             }
 
-            throw  e;
+            throw e;
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);
@@ -1227,7 +1245,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (roEx != null) {
                 throw new IgniteSQLException(
                     "Failed to execute DML statement. Cluster in read-only mode [stmt=" + qryDesc.sql() +
-                    ", params=" + Arrays.deepToString(qryParams.arguments()) + "]",
+                        ", params=" + Arrays.deepToString(qryParams.arguments()) + "]",
                     IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
                     e
                 );
@@ -1312,7 +1330,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cursor.fieldsMeta(select.meta());
 
-            cursor.partitionResult(select.twoStepQuery() != null ? select.twoStepQuery().derivedPartitions(): null);
+            cursor.partitionResult(select.twoStepQuery() != null ? select.twoStepQuery().derivedPartitions() : null);
 
             return singletonList(cursor);
         }
@@ -1368,7 +1386,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         cursor.fieldsMeta(select.meta());
 
-        cursor.partitionResult(select.twoStepQuery() != null ? select.twoStepQuery().derivedPartitions(): null);
+        cursor.partitionResult(select.twoStepQuery() != null ? select.twoStepQuery().derivedPartitions() : null);
 
         return cursor;
     }
@@ -1459,7 +1477,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param timeout Timeout.
      * @return Query results cursor.
      */
-    private Iterable<List<?>> lockSelectedRows(Iterable<List<?>> cur, GridCacheContext cctx, int pageSize, long timeout) {
+    private Iterable<List<?>> lockSelectedRows(Iterable<List<?>> cur, GridCacheContext cctx, int pageSize,
+        long timeout) {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(ctx);
@@ -1820,7 +1839,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> schemasNames(){
+    @Override public Set<String> schemasNames() {
         return schemaMgr.schemaNames();
     }
 
@@ -1860,11 +1879,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .forEach(infos::add);
         }
 
-        if ((allTypes || types.contains(TableType.VIEW.name()))
-            && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+        if ((allTypes || types.contains(TableType.VIEW.name())) &&
+            (matches(SCHEMA_SYS, schemaNamePtrn) || matches(SCHEMA_MONITORING, schemaNamePtrn))) {
             schemaMgr.systemViews().stream()
-                .filter(t -> matches(t.getTableName(), tblNamePtrn))
-                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, v.getTableName(), TableType.VIEW.name()))
+                .filter(t -> matches(t.getTableName(), tblNamePtrn) && matches(t.getSchemaName(), schemaNamePtrn))
+                .map(v -> new TableInformation(v.getSchemaName(), v.getTableName(), TableType.VIEW.name()))
                 .forEach(infos::add);
         }
 
@@ -1880,44 +1899,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr.dataTables().stream()
             .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
             .filter(t -> matches(t.getName(), tblNamePtrn))
-            .flatMap(
-                tbl -> {
-                    IndexColumn affCol = tbl.getAffinityKeyColumn();
+            .flatMap(tbl -> {
+                IndexColumn affCol = tbl.getAffinityKeyColumn();
 
-                    return Stream.of(tbl.getColumns())
-                        .filter(Column::getVisible)
-                        .filter(c -> matches(c.getName(), colNamePtrn))
-                        .map(c -> {
-                            GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
+                return Stream.of(tbl.getColumns())
+                    .filter(Column::getVisible)
+                    .filter(c -> matches(c.getName(), colNamePtrn))
+                    .map(c -> {
+                        GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
 
-                            boolean isAff = affCol != null && c.getColumnId() == affCol.column.getColumnId();
+                        boolean isAff = affCol != null && c.getColumnId() == affCol.column.getColumnId();
 
-                            return new ColumnInformation(
-                                c.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1,
-                                tbl.getSchema().getName(),
-                                tbl.getName(),
-                                c.getName(),
-                                prop.type(),
-                                c.isNullable(),
-                                prop.defaultValue(),
-                                prop.precision(),
-                                prop.scale(),
-                                isAff);
-                        });
-                }
-            ).forEach(infos::add);
+                        return new ColumnInformation(
+                            c.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1,
+                            tbl.getSchema().getName(),
+                            tbl.getName(),
+                            c.getName(),
+                            prop.type(),
+                            c.isNullable(),
+                            prop.defaultValue(),
+                            prop.precision(),
+                            prop.scale(),
+                            isAff);
+                    });
+            }).forEach(infos::add);
 
         // Gather information about system views.
-        if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+        if (matches(SCHEMA_SYS, schemaNamePtrn) || matches(SCHEMA_MONITORING, schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
-                .filter(v -> matches(v.getTableName(), tblNamePtrn))
+                .filter(v -> matches(v.getTableName(), tblNamePtrn) && matches(v.getSchemaName(), schemaNamePtrn))
                 .flatMap(
                     view ->
                         Stream.of(view.getColumns())
                             .filter(c -> matches(c.getName(), colNamePtrn))
                             .map(c -> new ColumnInformation(
                                 c.getColumnId() + 1,
-                                QueryUtils.SCHEMA_SYS,
+                                view.getSchemaName(),
                                 view.getTableName(),
                                 c.getName(),
                                 IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
@@ -1933,7 +1950,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException{
+    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException {
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         return parsed.isDml() && parsed.dml().streamable() && parsed.remainingQuery() == null;
@@ -1946,7 +1963,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
-        assert cctx.group().persistenceEnabled(): cctx;
+        assert cctx.group().persistenceEnabled() : cctx;
 
         markIndexRebuild(cctx.name(), true);
     }
@@ -2498,7 +2515,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param readyVer Ready topology version.
-     *
      * @return {@code true} If pending distributed exchange exists because server topology is changed.
      */
     public boolean serverTopologyChanged(AffinityTopologyVersion readyVer) {
@@ -2670,7 +2686,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         ress.add(res);
                     }
-                    catch (Exception e ) {
+                    catch (Exception e) {
                         SQLException sqlEx = QueryUtils.toSqlException(e);
 
                         batchException = DmlUtils.chainException(batchException, sqlEx);
@@ -3070,7 +3086,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-            if(sqlEx != null)
+            if (sqlEx != null)
                 throw sqlEx;
 
             Exception ex = IgniteUtils.convertExceptionNoWrap(e);

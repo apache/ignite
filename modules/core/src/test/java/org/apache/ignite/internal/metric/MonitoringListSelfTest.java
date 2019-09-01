@@ -105,7 +105,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals("ignite-sys, grp-1, grp-2", 3, F.size(grps.iterator(), alwaysTrue()));
 
             for (CacheGroupView row : grps)
-                grpNames.remove(row.groupName());
+                grpNames.remove(row.cacheGroupName());
 
             assertTrue(grpNames.toString(), grpNames.isEmpty());
         }
@@ -365,7 +365,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         assertEquals(toStringSafe(loc.addresses()), n.addresses());
         assertEquals(toStringSafe(loc.hostNames()), n.hostNames());
         assertEquals(loc.order(), n.order());
-        assertEquals(loc.version(), n.version());
+        assertEquals(loc.version().toString(), n.version());
         assertEquals(isLocal, n.isLocal());
         assertEquals(loc.isDaemon(), n.isDaemon());
         assertEquals(loc.isClient(), n.isClient());

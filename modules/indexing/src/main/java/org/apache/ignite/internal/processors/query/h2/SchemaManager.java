@@ -41,7 +41,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
@@ -56,9 +55,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroups;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
@@ -156,7 +153,6 @@ public class SchemaManager {
      * @param view System view.
      */
     public void createSystemView(String schema, SqlSystemView view) {
-
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
@@ -174,7 +170,7 @@ public class SchemaManager {
             try (Connection c = connMgr.connectionNoCache(schema)) {
                 SqlSystemTableEngine.registerView(c, view);
 
-                    systemViews.add(view);
+                systemViews.add(view);
             }
         }
         catch (IgniteCheckedException | SQLException e) {
@@ -201,11 +197,8 @@ public class SchemaManager {
         views.add(new SqlSystemViewNodeAttributes(ctx));
         views.add(new SqlSystemViewBaselineNodes(ctx));
         views.add(new SqlSystemViewNodeMetrics(ctx));
-        views.add(new SqlSystemViewCaches(ctx));
-        views.add(new SqlSystemViewCacheGroups(ctx));
         views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
         views.add(new SqlSystemViewQueryHistoryMetrics(ctx));
-        views.add(new SqlSystemViewTables(ctx));
 
         return views;
     }

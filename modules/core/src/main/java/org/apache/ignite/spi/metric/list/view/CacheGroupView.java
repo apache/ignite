@@ -49,18 +49,18 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
-    public int groupId() {
+    public int cacheGroupId() {
         return grp.groupId();
     }
 
     /** */
     @Order()
-    public String groupName() {
+    public String cacheGroupName() {
         return grp.cacheOrGroupName();
     }
 
     /** */
-    public boolean sharedGroup() {
+    public boolean isShared() {
         return grp.sharedGroup();
     }
 
@@ -88,7 +88,7 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** */
-    public Integer partitions() {
+    public Integer partitionsCount() {
         return ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null;
     }
 

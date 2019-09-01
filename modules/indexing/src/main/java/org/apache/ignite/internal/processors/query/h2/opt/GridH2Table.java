@@ -471,7 +471,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
     }
 
     /** {@inheritDoc} */
-    @Override public String affKeyCol() {
+    @Override public String affinityKeyColumn() {
         IndexColumn affCol = getAffinityKeyColumn();
 
         if (affCol == null)
@@ -490,7 +490,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
     }
 
     /** {@inheritDoc} */
-    @Override public String valAlias() {
+    @Override public String valueAlias() {
         return rowDescriptor().type().valueFieldAlias();
     }
 
@@ -500,7 +500,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
     }
 
     /** {@inheritDoc} */
-    @Override public String valTypeName() {
+    @Override public String valueTypeName() {
         return rowDescriptor().type().valueTypeName();
     }
 

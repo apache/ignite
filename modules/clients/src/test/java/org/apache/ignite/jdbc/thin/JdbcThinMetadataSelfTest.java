@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -48,8 +47,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
 import org.junit.Assert;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -61,6 +60,9 @@ import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_MONITORING;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 
 /**
  * Metadata tests.
@@ -71,7 +73,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
+        return super.getConfiguration(igniteInstanceName)
+            .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
+            .setMetricExporterSpi(new SqlViewExporterSpi());
     }
 
     /**
@@ -325,18 +329,25 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         testGetTables(
             new String[] {"VIEW"},
             new HashSet<>(Arrays.asList(
+                "MONITORING.TRANSACTIONS",
+                "MONITORING.METRICS",
+                "MONITORING.SERVICES",
+                "MONITORING.QUERY_TEXT",
+                "MONITORING.QUERY_SQL",
+                "MONITORING.QUERY_CONTINUOUS",
+                "MONITORING.SQL_SCHEMAS",
+                "MONITORING.SQL_TABLES",
+                "MONITORING.SQL_INDEXES",
+                "MONITORING.CACHE_GROUPS",
+                "MONITORING.CLIENT_CONNECTIONS",
+                "MONITORING.NODES",
+                "MONITORING.CACHES",
                 "SYS.LOCAL_SQL_QUERY_HISTORY",
                 "SYS.NODES",
-                "SYS.SCHEMAS",
-                "SYS.CACHE_GROUPS",
                 "SYS.NODE_METRICS",
                 "SYS.BASELINE_NODES",
-                "SYS.INDEXES",
                 "SYS.LOCAL_CACHE_GROUPS_IO",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES",
-                "SYS.NODE_ATTRIBUTES",
-                "SYS.CACHES",
-                "SYS.TABLES"
+                "SYS.NODE_ATTRIBUTES"
             ))
         );
     }
@@ -485,7 +496,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             ResultSet rs = meta.getColumns(null, null, null, null);
 
-            List<String> expectedCols = Arrays.asList(
+            Set<String> expectedCols = new HashSet<>(Arrays.asList(
                 "PUBLIC.Quoted.Id.null",
                 "PUBLIC.Quoted.Name.null.50",
                 "PUBLIC.TEST.ID.null",
@@ -506,11 +517,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "pers.PERSON.NAME.null",
                 "pers.PERSON.AGE.null",
                 "pers.PERSON.ORGID.null"
-            );
+            ));
 
-            List<String> actualUserCols = new ArrayList<>(expectedCols.size());
+            Set<String> actualUserCols = new HashSet<>(expectedCols.size());
 
-            List<String> actualSystemCols = new ArrayList<>();
+            Set<String> actualSystemCols = new HashSet<>();
 
             while(rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
@@ -526,7 +537,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     + (precision == 0 ? "" : ("." + precision))
                     + (scale == 0 ? "" : ("." + scale));
 
-                if (!schemaName.equals(QueryUtils.SCHEMA_SYS))
+                if (!schemaName.equals(SCHEMA_SYS) && !schemaName.equals(SCHEMA_MONITORING))
                     actualUserCols.add(colDefinition);
                 else
                     actualSystemCols.add(colDefinition);
@@ -534,97 +545,98 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Assert.assertEquals(expectedCols, actualUserCols);
 
-            expectedCols = Arrays.asList(
+            expectedCols = new HashSet<>(Arrays.asList(
                 "SYS.BASELINE_NODES.CONSISTENT_ID.null.2147483647",
                 "SYS.BASELINE_NODES.ONLINE.null.1",
-                "SYS.CACHES.CACHE_GROUP_ID.null.10",
-                "SYS.CACHES.CACHE_GROUP_NAME.null.2147483647",
-                "SYS.CACHES.CACHE_ID.null.10",
-                "SYS.CACHES.CACHE_NAME.null.2147483647",
-                "SYS.CACHES.CACHE_TYPE.null.2147483647",
-                "SYS.CACHES.CACHE_MODE.null.2147483647",
-                "SYS.CACHES.ATOMICITY_MODE.null.2147483647",
-                "SYS.CACHES.IS_ONHEAP_CACHE_ENABLED.null.1",
-                "SYS.CACHES.IS_COPY_ON_READ.null.1",
-                "SYS.CACHES.IS_LOAD_PREVIOUS_VALUE.null.1",
-                "SYS.CACHES.IS_READ_FROM_BACKUP.null.1",
-                "SYS.CACHES.PARTITION_LOSS_POLICY.null.2147483647",
-                "SYS.CACHES.NODE_FILTER.null.2147483647",
-                "SYS.CACHES.TOPOLOGY_VALIDATOR.null.2147483647",
-                "SYS.CACHES.IS_EAGER_TTL.null.1",
-                "SYS.CACHES.WRITE_SYNCHRONIZATION_MODE.null.2147483647",
-                "SYS.CACHES.IS_INVALIDATE.null.1",
-                "SYS.CACHES.IS_EVENTS_DISABLED.null.1",
-                "SYS.CACHES.IS_STATISTICS_ENABLED.null.1",
-                "SYS.CACHES.IS_MANAGEMENT_ENABLED.null.1",
-                "SYS.CACHES.BACKUPS.null.10",
-                "SYS.CACHES.AFFINITY.null.2147483647",
-                "SYS.CACHES.AFFINITY_MAPPER.null.2147483647",
-                "SYS.CACHES.REBALANCE_MODE.null.2147483647",
-                "SYS.CACHES.REBALANCE_BATCH_SIZE.null.10",
-                "SYS.CACHES.REBALANCE_TIMEOUT.null.19",
-                "SYS.CACHES.REBALANCE_DELAY.null.19",
-                "SYS.CACHES.REBALANCE_THROTTLE.null.19",
-                "SYS.CACHES.REBALANCE_BATCHES_PREFETCH_COUNT.null.19",
-                "SYS.CACHES.REBALANCE_ORDER.null.10",
-                "SYS.CACHES.EVICTION_FILTER.null.2147483647",
-                "SYS.CACHES.EVICTION_POLICY_FACTORY.null.2147483647",
-                "SYS.CACHES.IS_NEAR_CACHE_ENABLED.null.1",
-                "SYS.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null.2147483647",
-                "SYS.CACHES.NEAR_CACHE_START_SIZE.null.10",
-                "SYS.CACHES.DEFAULT_LOCK_TIMEOUT.null.19",
-                "SYS.CACHES.CACHE_INTERCEPTOR.null.2147483647",
-                "SYS.CACHES.CACHE_STORE_FACTORY.null.2147483647",
-                "SYS.CACHES.IS_STORE_KEEP_BINARY.null.1",
-                "SYS.CACHES.IS_READ_THROUGH.null.1",
-                "SYS.CACHES.IS_WRITE_THROUGH.null.1",
-                "SYS.CACHES.IS_WRITE_BEHIND_ENABLED.null.1",
-                "SYS.CACHES.WRITE_BEHIND_COALESCING.null.1",
-                "SYS.CACHES.WRITE_BEHIND_FLUSH_SIZE.null.10",
-                "SYS.CACHES.WRITE_BEHIND_FLUSH_FREQUENCY.null.19",
-                "SYS.CACHES.WRITE_BEHIND_FLUSH_THREAD_COUNT.null.10",
-                "SYS.CACHES.WRITE_BEHIND_FLUSH_BATCH_SIZE.null.10",
-                "SYS.CACHES.MAX_CONCURRENT_ASYNC_OPERATIONS.null.10",
-                "SYS.CACHES.CACHE_LOADER_FACTORY.null.2147483647",
-                "SYS.CACHES.CACHE_WRITER_FACTORY.null.2147483647",
-                "SYS.CACHES.EXPIRY_POLICY_FACTORY.null.2147483647",
-                "SYS.CACHES.IS_SQL_ESCAPE_ALL.null.1",
-                "SYS.CACHES.SQL_SCHEMA.null.2147483647",
-                "SYS.CACHES.SQL_INDEX_MAX_INLINE_SIZE.null.10",
-                "SYS.CACHES.IS_SQL_ONHEAP_CACHE_ENABLED.null.1",
-                "SYS.CACHES.SQL_ONHEAP_CACHE_MAX_SIZE.null.10",
-                "SYS.CACHES.QUERY_DETAILS_METRICS_SIZE.null.10",
-                "SYS.CACHES.QUERY_PARALLELISM.null.10",
-                "SYS.CACHES.MAX_QUERY_ITERATORS_COUNT.null.10",
-                "SYS.CACHES.DATA_REGION_NAME.null.2147483647",
-                "SYS.CACHE_GROUPS.CACHE_GROUP_ID.null.10",
-                "SYS.CACHE_GROUPS.CACHE_GROUP_NAME.null.2147483647",
-                "SYS.CACHE_GROUPS.IS_SHARED.null.1",
-                "SYS.CACHE_GROUPS.CACHE_COUNT.null.10",
-                "SYS.CACHE_GROUPS.CACHE_MODE.null.2147483647",
-                "SYS.CACHE_GROUPS.ATOMICITY_MODE.null.2147483647",
-                "SYS.CACHE_GROUPS.AFFINITY.null.2147483647",
-                "SYS.CACHE_GROUPS.PARTITIONS_COUNT.null.10",
-                "SYS.CACHE_GROUPS.NODE_FILTER.null.2147483647",
-                "SYS.CACHE_GROUPS.DATA_REGION_NAME.null.2147483647",
-                "SYS.CACHE_GROUPS.TOPOLOGY_VALIDATOR.null.2147483647",
-                "SYS.CACHE_GROUPS.PARTITION_LOSS_POLICY.null.2147483647",
-                "SYS.CACHE_GROUPS.REBALANCE_MODE.null.2147483647",
-                "SYS.CACHE_GROUPS.REBALANCE_DELAY.null.19",
-                "SYS.CACHE_GROUPS.REBALANCE_ORDER.null.10",
-                "SYS.CACHE_GROUPS.BACKUPS.null.10",
-                "SYS.INDEXES.CACHE_GROUP_ID.null.10",
-                "SYS.INDEXES.CACHE_GROUP_NAME.null.2147483647",
-                "SYS.INDEXES.CACHE_ID.null.10",
-                "SYS.INDEXES.CACHE_NAME.null.2147483647",
-                "SYS.INDEXES.SCHEMA_NAME.null.2147483647",
-                "SYS.INDEXES.TABLE_NAME.null.2147483647",
-                "SYS.INDEXES.INDEX_NAME.null.2147483647",
-                "SYS.INDEXES.INDEX_TYPE.null.2147483647",
-                "SYS.INDEXES.COLUMNS.null.2147483647",
-                "SYS.INDEXES.IS_PK.null.1",
-                "SYS.INDEXES.IS_UNIQUE.null.1",
-                "SYS.INDEXES.INLINE_SIZE.null.10",
+                "MONITORING.CACHES.CACHE_GROUP_ID.null.10",
+                "MONITORING.CACHES.CACHE_GROUP_NAME.null.2147483647",
+                "MONITORING.CACHES.CACHE_ID.null.10",
+                "MONITORING.CACHES.CACHE_NAME.null.2147483647",
+                "MONITORING.CACHES.CACHE_TYPE.null.2147483647",
+                "MONITORING.CACHES.CACHE_MODE.null.2147483647",
+                "MONITORING.CACHES.ATOMICITY_MODE.null.2147483647",
+                "MONITORING.CACHES.IS_ONHEAP_CACHE_ENABLED.null.1",
+                "MONITORING.CACHES.IS_COPY_ON_READ.null.1",
+                "MONITORING.CACHES.IS_LOAD_PREVIOUS_VALUE.null.1",
+                "MONITORING.CACHES.IS_READ_FROM_BACKUP.null.1",
+                "MONITORING.CACHES.PARTITION_LOSS_POLICY.null.2147483647",
+                "MONITORING.CACHES.NODE_FILTER.null.2147483647",
+                "MONITORING.CACHES.TOPOLOGY_VALIDATOR.null.2147483647",
+                "MONITORING.CACHES.IS_EAGER_TTL.null.1",
+                "MONITORING.CACHES.WRITE_SYNCHRONIZATION_MODE.null.2147483647",
+                "MONITORING.CACHES.IS_INVALIDATE.null.1",
+                "MONITORING.CACHES.IS_EVENTS_DISABLED.null.1",
+                "MONITORING.CACHES.IS_STATISTICS_ENABLED.null.1",
+                "MONITORING.CACHES.IS_MANAGEMENT_ENABLED.null.1",
+                "MONITORING.CACHES.BACKUPS.null.10",
+                "MONITORING.CACHES.AFFINITY.null.2147483647",
+                "MONITORING.CACHES.AFFINITY_MAPPER.null.2147483647",
+                "MONITORING.CACHES.REBALANCE_MODE.null.2147483647",
+                "MONITORING.CACHES.REBALANCE_BATCH_SIZE.null.10",
+                "MONITORING.CACHES.REBALANCE_TIMEOUT.null.19",
+                "MONITORING.CACHES.REBALANCE_DELAY.null.19",
+                "MONITORING.CACHES.REBALANCE_THROTTLE.null.19",
+                "MONITORING.CACHES.REBALANCE_BATCHES_PREFETCH_COUNT.null.19",
+                "MONITORING.CACHES.REBALANCE_ORDER.null.10",
+                "MONITORING.CACHES.EVICTION_FILTER.null.2147483647",
+                "MONITORING.CACHES.EVICTION_POLICY_FACTORY.null.2147483647",
+                "MONITORING.CACHES.IS_NEAR_CACHE_ENABLED.null.1",
+                "MONITORING.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null.2147483647",
+                "MONITORING.CACHES.NEAR_CACHE_START_SIZE.null.10",
+                "MONITORING.CACHES.DEFAULT_LOCK_TIMEOUT.null.19",
+                "MONITORING.CACHES.INTERCEPTOR.null.2147483647",
+                "MONITORING.CACHES.CACHE_STORE_FACTORY.null.2147483647",
+                "MONITORING.CACHES.IS_STORE_KEEP_BINARY.null.1",
+                "MONITORING.CACHES.IS_READ_THROUGH.null.1",
+                "MONITORING.CACHES.IS_WRITE_THROUGH.null.1",
+                "MONITORING.CACHES.IS_WRITE_BEHIND_ENABLED.null.1",
+                "MONITORING.CACHES.WRITE_BEHIND_COALESCING.null.1",
+                "MONITORING.CACHES.WRITE_BEHIND_FLUSH_SIZE.null.10",
+                "MONITORING.CACHES.WRITE_BEHIND_FLUSH_FREQUENCY.null.19",
+                "MONITORING.CACHES.WRITE_BEHIND_FLUSH_THREAD_COUNT.null.10",
+                "MONITORING.CACHES.WRITE_BEHIND_BATCH_SIZE.null.10",
+                "MONITORING.CACHES.MAX_CONCURRENT_ASYNC_OPERATIONS.null.10",
+                "MONITORING.CACHES.CACHE_LOADER_FACTORY.null.2147483647",
+                "MONITORING.CACHES.CACHE_WRITER_FACTORY.null.2147483647",
+                "MONITORING.CACHES.EXPIRY_POLICY_FACTORY.null.2147483647",
+                "MONITORING.CACHES.IS_SQL_ESCAPE_ALL.null.1",
+                "MONITORING.CACHES.IS_ENCRYPTION_ENABLED.null.1",
+                "MONITORING.CACHES.SQL_SCHEMA.null.2147483647",
+                "MONITORING.CACHES.SQL_INDEX_MAX_INLINE_SIZE.null.10",
+                "MONITORING.CACHES.IS_SQL_ONHEAP_CACHE_ENABLED.null.1",
+                "MONITORING.CACHES.SQL_ONHEAP_CACHE_MAX_SIZE.null.10",
+                "MONITORING.CACHES.QUERY_DETAIL_METRICS_SIZE.null.10",
+                "MONITORING.CACHES.QUERY_PARALLELISM.null.10",
+                "MONITORING.CACHES.MAX_QUERY_ITERATORS_COUNT.null.10",
+                "MONITORING.CACHES.DATA_REGION_NAME.null.2147483647",
+                "MONITORING.CACHE_GROUPS.CACHE_GROUP_ID.null.10",
+                "MONITORING.CACHE_GROUPS.CACHE_GROUP_NAME.null.2147483647",
+                "MONITORING.CACHE_GROUPS.IS_SHARED.null.1",
+                "MONITORING.CACHE_GROUPS.CACHE_COUNT.null.10",
+                "MONITORING.CACHE_GROUPS.CACHE_MODE.null.2147483647",
+                "MONITORING.CACHE_GROUPS.ATOMICITY_MODE.null.2147483647",
+                "MONITORING.CACHE_GROUPS.AFFINITY.null.2147483647",
+                "MONITORING.CACHE_GROUPS.PARTITIONS_COUNT.null.10",
+                "MONITORING.CACHE_GROUPS.NODE_FILTER.null.2147483647",
+                "MONITORING.CACHE_GROUPS.DATA_REGION_NAME.null.2147483647",
+                "MONITORING.CACHE_GROUPS.TOPOLOGY_VALIDATOR.null.2147483647",
+                "MONITORING.CACHE_GROUPS.PARTITION_LOSS_POLICY.null.2147483647",
+                "MONITORING.CACHE_GROUPS.REBALANCE_MODE.null.2147483647",
+                "MONITORING.CACHE_GROUPS.REBALANCE_DELAY.null.19",
+                "MONITORING.CACHE_GROUPS.REBALANCE_ORDER.null.10",
+                "MONITORING.CACHE_GROUPS.BACKUPS.null.10",
+                "MONITORING.SQL_INDEXES.CACHE_GROUP_ID.null.10",
+                "MONITORING.SQL_INDEXES.CACHE_GROUP_NAME.null.2147483647",
+                "MONITORING.SQL_INDEXES.CACHE_ID.null.10",
+                "MONITORING.SQL_INDEXES.CACHE_NAME.null.2147483647",
+                "MONITORING.SQL_INDEXES.SCHEMA_NAME.null.2147483647",
+                "MONITORING.SQL_INDEXES.TABLE_NAME.null.2147483647",
+                "MONITORING.SQL_INDEXES.INDEX_NAME.null.2147483647",
+                "MONITORING.SQL_INDEXES.INDEX_TYPE.null.2147483647",
+                "MONITORING.SQL_INDEXES.COLUMNS.null.2147483647",
+                "MONITORING.SQL_INDEXES.IS_PK.null.1",
+                "MONITORING.SQL_INDEXES.IS_UNIQUE.null.1",
+                "MONITORING.SQL_INDEXES.INLINE_SIZE.null.10",
                 "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_ID.null.10",
                 "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.LOCAL_CACHE_GROUPS_IO.PHYSICAL_READS.null.19",
@@ -637,12 +649,16 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.LOCAL_SQL_QUERY_HISTORY.DURATION_MIN.null.19",
                 "SYS.LOCAL_SQL_QUERY_HISTORY.DURATION_MAX.null.19",
                 "SYS.LOCAL_SQL_QUERY_HISTORY.LAST_START_TIME.null.26.6",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.QUERY_ID.null.2147483647",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.SQL.null.2147483647",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.SCHEMA_NAME.null.2147483647",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.LOCAL.null.1",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.START_TIME.null.26.6",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.DURATION.null.19",
+                "MONITORING.QUERY_SQL.GLOBAL_QUERY_ID.null.2147483647",
+                "MONITORING.QUERY_SQL.QUERY.null.2147483647",
+                "MONITORING.QUERY_SQL.SCHEMA_NAME.null.2147483647",
+                "MONITORING.QUERY_SQL.LOCAL.null.1",
+                "MONITORING.QUERY_SQL.START_TIME.null.26.6",
+                "MONITORING.QUERY_SQL.DURATION.null.19",
+                "MONITORING.QUERY_SQL.ID.null.19",
+                "MONITORING.QUERY_SQL.QUERY_TYPE.null.2147483647",
+                "MONITORING.QUERY_SQL.ORIGIN_NODE_ID.null.2147483647",
+                "MONITORING.QUERY_SQL.FAILED.null.1",
                 "SYS.NODES.NODE_ID.null.2147483647",
                 "SYS.NODES.CONSISTENT_ID.null.2147483647",
                 "SYS.NODES.VERSION.null.2147483647",
@@ -711,21 +727,97 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
                 "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
                 "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
-                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
-                "SYS.TABLES.CACHE_GROUP_ID.null.10",
-                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
-                "SYS.TABLES.CACHE_ID.null.10",
-                "SYS.TABLES.CACHE_NAME.null.2147483647",
-                "SYS.TABLES.SCHEMA_NAME.null.2147483647",
-                "SYS.TABLES.TABLE_NAME.null.2147483647",
-                "SYS.TABLES.AFFINITY_KEY_COLUMN.null.2147483647",
-                "SYS.TABLES.KEY_ALIAS.null.2147483647",
-                "SYS.TABLES.VALUE_ALIAS.null.2147483647",
-                "SYS.TABLES.KEY_TYPE_NAME.null.2147483647",
-                "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647"
-            );
-            Assert.assertEquals(expectedCols, actualSystemCols);
+                "MONITORING.SQL_SCHEMAS.NAME.null.2147483647",
+                "MONITORING.SQL_SCHEMAS.PREDEFINED.null.1",
+                "MONITORING.SQL_TABLES.CACHE_GROUP_ID.null.10",
+                "MONITORING.SQL_TABLES.CACHE_GROUP_NAME.null.2147483647",
+                "MONITORING.SQL_TABLES.CACHE_ID.null.10",
+                "MONITORING.SQL_TABLES.CACHE_NAME.null.2147483647",
+                "MONITORING.SQL_TABLES.SCHEMA_NAME.null.2147483647",
+                "MONITORING.SQL_TABLES.TABLE_NAME.null.2147483647",
+                "MONITORING.SQL_TABLES.AFFINITY_KEY_COLUMN.null.2147483647",
+                "MONITORING.SQL_TABLES.KEY_ALIAS.null.2147483647",
+                "MONITORING.SQL_TABLES.VALUE_ALIAS.null.2147483647",
+                "MONITORING.SQL_TABLES.KEY_TYPE_NAME.null.2147483647",
+                "MONITORING.SQL_TABLES.VALUE_TYPE_NAME.null.2147483647",
+                "MONITORING.CLIENT_CONNECTIONS.CONNECTION_ID.null.19",
+                "MONITORING.CLIENT_CONNECTIONS.LOCAL_ADDRESS.null.2147483647",
+                "MONITORING.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
+                "MONITORING.CLIENT_CONNECTIONS.TYPE.null.2147483647",
+                "MONITORING.CLIENT_CONNECTIONS.USER.null.2147483647",
+                "MONITORING.CLIENT_CONNECTIONS.VERSION.null.2147483647",
+                "MONITORING.METRICS.NAME.null.2147483647",
+                "MONITORING.METRICS.VALUE.null.2147483647",
+                "MONITORING.METRICS.DESCRIPTION.null.2147483647",
+                "MONITORING.NODES.ID.null.2147483647",
+                "MONITORING.NODES.CONSISTENT_ID.null.2147483647",
+                "MONITORING.NODES.ADDRESSES.null.2147483647",
+                "MONITORING.NODES.HOST_NAMES.null.2147483647",
+                "MONITORING.NODES.ORDER.null.19",
+                "MONITORING.NODES.IS_CLIENT.null.1",
+                "MONITORING.NODES.IS_DAEMON.null.1",
+                "MONITORING.NODES.IS_LOCAL.null.1",
+                "MONITORING.NODES.VERSION.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.CACHE_NAME.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.LOCAL_LISTENER.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.REMOTE_FILTER.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.REMOTE_TRANSFORMER.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.LOCAL_TRANSFORMED_LISTENER.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.LAST_SEND_TIME.null.19",
+                "MONITORING.QUERY_CONTINUOUS.AUTO_UNSUBSCRIBE.null.1",
+                "MONITORING.QUERY_CONTINUOUS.BUFFER_SIZE.null.10",
+                "MONITORING.QUERY_CONTINUOUS.DELAYED_REGISTER.null.1",
+                "MONITORING.QUERY_CONTINUOUS.INTERVAL.null.19",
+                "MONITORING.QUERY_CONTINUOUS.IS_EVENTS.null.1",
+                "MONITORING.QUERY_CONTINUOUS.IS_MESSAGING.null.1",
+                "MONITORING.QUERY_CONTINUOUS.IS_QUERY.null.1",
+                "MONITORING.QUERY_CONTINUOUS.KEEP_BINARY.null.1",
+                "MONITORING.QUERY_CONTINUOUS.NODE_ID.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.NOTIFY_EXISTING.null.1",
+                "MONITORING.QUERY_CONTINUOUS.OLD_VALUE_REQUIRED.null.1",
+                "MONITORING.QUERY_CONTINUOUS.TOPIC.null.2147483647",
+                "MONITORING.QUERY_TEXT.ID.null.19",
+                "MONITORING.QUERY_TEXT.QUERY.null.2147483647",
+                "MONITORING.QUERY_TEXT.QUERY_TYPE.null.2147483647",
+                "MONITORING.QUERY_TEXT.ORIGIN_NODE_ID.null.2147483647",
+                "MONITORING.QUERY_TEXT.START_TIME.null.26.6",
+                "MONITORING.QUERY_TEXT.DURATION.null.19",
+                "MONITORING.QUERY_TEXT.FAILED.null.1",
+                "MONITORING.QUERY_TEXT.GLOBAL_QUERY_ID.null.2147483647",
+                "MONITORING.QUERY_TEXT.LOCAL.null.1",
+                "MONITORING.QUERY_TEXT.SCHEMA_NAME.null.2147483647",
+                "MONITORING.SERVICES.ID.null.2147483647",
+                "MONITORING.SERVICES.NAME.null.2147483647",
+                "MONITORING.SERVICES.SERVICE_CLASS.null.2147483647",
+                "MONITORING.SERVICES.CACHE_NAME.null.2147483647",
+                "MONITORING.SERVICES.ORIGIN_NODE_ID.null.2147483647",
+                "MONITORING.SERVICES.TOTAL_COUNT.null.10",
+                "MONITORING.SERVICES.MAX_PER_NODE_COUNT.null.10",
+                "MONITORING.SERVICES.AFFINITY_KEY_VALUE.null.2147483647",
+                "MONITORING.SERVICES.NODE_FILTER.null.2147483647",
+                "MONITORING.SERVICES.STATICALLY_CONFIGURED.null.1",
+                "MONITORING.TRANSACTIONS.NODE_ID.null.2147483647",
+                "MONITORING.TRANSACTIONS.STATE.null.2147483647",
+                "MONITORING.TRANSACTIONS.XID.null.2147483647",
+                "MONITORING.TRANSACTIONS.LABEL.null.2147483647",
+                "MONITORING.TRANSACTIONS.START_TIME.null.19",
+                "MONITORING.TRANSACTIONS.ISOLATION.null.2147483647",
+                "MONITORING.TRANSACTIONS.CONCURRENCY.null.2147483647",
+                "MONITORING.TRANSACTIONS.COLOCATED.null.1",
+                "MONITORING.TRANSACTIONS.DHT.null.1",
+                "MONITORING.TRANSACTIONS.IMPLICIT.null.1",
+                "MONITORING.TRANSACTIONS.IMPLICIT_SINGLE.null.1",
+                "MONITORING.TRANSACTIONS.INTERNAL.null.1",
+                "MONITORING.TRANSACTIONS.LOCAL.null.1",
+                "MONITORING.TRANSACTIONS.NEAR.null.1",
+                "MONITORING.TRANSACTIONS.ONE_PHASE_COMMIT.null.1",
+                "MONITORING.TRANSACTIONS.SUBJECT_ID.null.2147483647",
+                "MONITORING.TRANSACTIONS.SYSTEM.null.1",
+                "MONITORING.TRANSACTIONS.THREAD_ID.null.19",
+                "MONITORING.TRANSACTIONS.TIMEOUT.null.19"
+            ));
 
+            Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }
 
@@ -990,8 +1082,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("SYS", "PUBLIC", "pers",
-                "org", "dep", "PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList(SCHEMA_SYS, SCHEMA_MONITORING, DFLT_SCHEMA,
+                "pers", "org", "dep", "PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
 
             Set<String> schemas = new HashSet<>();
 
