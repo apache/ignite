@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -124,7 +125,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         int r0 = 0;
         int r1 = 0;
 
-        for (int i =0; i<KEY_CNT; i++) {
+        for (int i =0; i< KEY_CNT; i++) {
             if (cursorIter0.hasNext()) {
                 r0++;
 
@@ -154,7 +155,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         int r0 = 0;
         int r1 = 0;
 
-        for (int i =0; i<KEY_CNT; i++) {
+        for (int i =0; i < KEY_CNT; i++) {
             if (cursorIter0.hasNext()) {
                 r0++;
 
@@ -170,6 +171,33 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         assertTrue(r0 < KEY_CNT);
         assertEquals(KEY_CNT, r1);
+    }
+
+    /** */
+    public void testParallelLocalQueries() throws Exception {
+        startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
+            .setLocal(true)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setPageSize(1), false).iterator();
+
+        AtomicInteger part = new AtomicInteger();
+
+        it.forEachRemaining((r) -> {
+            List<?> innerRes = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
+                .setLocal(true)
+                .setLazy(true)
+                .setSchema("TEST")
+                .setPartitions(part.getAndIncrement()), false).getAll();
+
+            assertEquals(1, innerRes.size());
+        });
+
+        assertTrue(part.get() < KEY_CNT);
     }
 
     /**
