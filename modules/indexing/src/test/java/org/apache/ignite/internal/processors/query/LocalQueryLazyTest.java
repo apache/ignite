@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -198,6 +199,29 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         });
 
         assertTrue(part.get() < KEY_CNT);
+    }
+
+    /** */
+    public void testRetryLocalQueryByDDL() throws Exception {
+        startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        final Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
+            .setLocal(true)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setPageSize(1), false).iterator();
+
+        it.next();
+
+        distributedSql(grid(), "CREATE INDEX IDX_VAL ON TEST(val)");
+
+        GridTestUtils.assertThrows(log, () -> {
+            it.next();
+
+            return null;
+        }, QueryRetryException.class, "Table was modified concurrently (please retry the query)");
     }
 
     /**
