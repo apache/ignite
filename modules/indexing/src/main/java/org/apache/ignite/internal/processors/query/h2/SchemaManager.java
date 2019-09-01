@@ -41,6 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNode
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewQueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
@@ -91,6 +93,9 @@ public class SchemaManager {
 
     /** */
     private final MonitoringList<String, SqlTableView> tblsMonList;
+
+    /** System VIEW collection. */
+    private final Set<SqlSystemView> systemViews = new GridConcurrentHashSet<>();
 
     /** Mutex to synchronize schema operations. */
     private final Object schemaMux = new Object();
@@ -168,6 +173,8 @@ public class SchemaManager {
 
             try (Connection c = connMgr.connectionNoCache(schema)) {
                 SqlSystemTableEngine.registerView(c, view);
+
+                    systemViews.add(view);
             }
         }
         catch (IgniteCheckedException | SQLException e) {
@@ -198,6 +205,9 @@ public class SchemaManager {
         views.add(new SqlSystemViewCacheGroups(ctx));
         views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
         views.add(new SqlSystemViewQueryHistoryMetrics(ctx));
+        views.add(new SqlSystemViewTables(ctx));
+        views.add(new SqlSystemViewIndexes(ctx, this));
+        views.add(new SqlSystemViewSchemas(ctx, this));
 
         return views;
     }
@@ -451,7 +461,6 @@ public class SchemaManager {
      * Get schemas names.
      *
      * @return Schemas names.
-     * @deprecated Use monitoringList instead.
      */
     public Set<String> schemaNames(){
         return new HashSet<>(schemas.keySet());
@@ -752,6 +761,13 @@ public class SchemaManager {
      */
     public Collection<GridH2Table> dataTables() {
         return dataTables.values();
+    }
+
+    /**
+     * @return all known system views.
+     */
+    public Collection<SqlSystemView> systemViews() {
+        return Collections.unmodifiableSet(systemViews);
     }
 
     /**

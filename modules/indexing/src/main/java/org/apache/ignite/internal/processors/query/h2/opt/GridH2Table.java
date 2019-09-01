@@ -356,6 +356,17 @@ public class GridH2Table extends TableBase implements SqlTableView {
     }
 
     /**
+     * @return Explicit affinity key column or {@code null} if not available (skip _KEY column or it's alias).
+     */
+    @Nullable public IndexColumn getExplicitAffinityKeyColumn() {
+        // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
+        if (affKeyCol == null || affKeyColIsKey)
+            return null;
+
+        return affKeyCol;
+    }
+
+    /**
      * Check whether passed column can be used for partition pruning.
      *
      * @param col Column.

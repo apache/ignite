@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     public class CacheConfiguration : IBinaryRawWriteAwareEx<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
-        public const int DefaultRebalanceThreadPoolSize = 2;
+        public const int DefaultRebalanceThreadPoolSize = 4;
 
         /// <summary> Default rebalance timeout.</summary>
         public static readonly TimeSpan DefaultRebalanceTimeout = TimeSpan.FromMilliseconds(10000);
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const int DefaultRebalanceOrder = 0;
 
         /// <summary> Default value for <see cref="RebalanceBatchesPrefetchCount"/>. </summary>
-        public const long DefaultRebalanceBatchesPrefetchCount = 2;
+        public const long DefaultRebalanceBatchesPrefetchCount = 3;
 
         /// <summary> Default value for <see cref="MaxQueryIteratorsCount"/>. </summary>
         public const int DefaultMaxQueryIteratorsCount = 1024;

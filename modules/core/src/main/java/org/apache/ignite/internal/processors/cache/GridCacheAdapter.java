@@ -5050,7 +5050,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Checks and repairs entries across the topology.
+     * Checks the given {@code keys} and repairs entries across the topology if needed.
+     *
+     * @param keys Keys.
+     * @param opCtx Operation context.
+     * @param skipVals Skip values flag.
+     * @return Compound future that represents a result of repair action.
      */
     protected IgniteInternalFuture<Void> repairAsync(
         Collection<? extends K> keys,
@@ -5067,7 +5072,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Checks and repairs entry across the topology.
+     * Checks the given {@code key} and repairs entry across the topology if needed.
+     *
+     * @param key Key.
+     * @param opCtx Operation context.
+     * @param skipVals Skip values flag.
+     * @return Recover future.
      */
     protected IgniteInternalFuture<Void> repairAsync(
         final K key,
