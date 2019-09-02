@@ -72,7 +72,10 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     private final AtomicLong cntr = new AtomicLong();
 
     /** HWM. */
-    private final AtomicLong reserveCntr = new AtomicLong();
+    protected final AtomicLong reserveCntr = new AtomicLong();
+
+    /** */
+    private boolean first = true;
 
     /**
      * Initial counter points to last sequential update after WAL recovery.
@@ -84,7 +87,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         cntr.set(initUpdCntr);
 
-        initCntr = initUpdCntr;
+        reserveCntr.set(initCntr = initUpdCntr);
 
         queue = fromBytes(cntrUpdData);
     }
@@ -117,24 +120,36 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
+        // Reserved update counter is updated only on exchange.
+        long cur = get();
+
+        // Always set reserved counter equal to max known counter.
+        long max = Math.max(val, cur);
+
+        if (reserveCntr.get() < max)
+            reserveCntr.set(max);
+
+        // Outdated counter (txs are possible before current topology future is finished if primary is not changed).
+        if (val < cur)
+            return;
+
         // Absolute counter should be not less than last applied update.
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
-        if (!gaps().isEmpty() && val < highestAppliedCounter())
+        if (val < highestAppliedCounter())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
-
-        long cur = cntr.get();
-
-        // Reserved update counter is updated only on exchange or in non-tx mode.
-        reserveCntr.set(Math.max(cur, val));
-
-        if (val <= cur)
-            return;
 
         cntr.set(val);
 
-        if (!queue.isEmpty())
-            queue.clear();
+        /** If some holes are present at this point, thar means some update were missed on recovery and will be restored
+         * during rebalance. All gaps are safe to "forget".
+         * Should only do it for first PME (later missed updates on node left are reset in {@link #finalizeUpdateCounters}. */
+        if (first) {
+            if (!queue.isEmpty())
+                queue.clear();
+
+            first = false;
+        }
     }
 
     /** {@inheritDoc} */
@@ -214,6 +229,9 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         update(start, delta);
 
         initCntr = get();
+
+        if (reserveCntr.get() < initCntr)
+            reserveCntr.set(initCntr);
     }
 
     /** */
@@ -258,11 +276,13 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
             item = poll();
         }
 
+        reserveCntr.set(get());
+
         return gaps;
     }
 
     /** {@inheritDoc} */
-    @Override public long reserve(long delta) {
+    @Override public synchronized long reserve(long delta) {
         long cntr = get();
 
         long reserved = reserveCntr.getAndAdd(delta);
