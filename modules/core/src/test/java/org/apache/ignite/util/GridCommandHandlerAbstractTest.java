@@ -30,7 +30,10 @@ import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -46,30 +49,39 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static java.lang.Boolean.TRUE;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Arrays.asList;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.testframework.GridTestUtils.cleanIdleVerifyLogFiles;
 
 /**
- *
+ * Common abstract class for testing {@link CommandHandler}.
+ * I advise you to look at the heirs classes:
+ * {@link GridCommandHandlerClusterPerMethodAbstractTest}
+ * {@link GridCommandHandlerClusterByClassAbstractTest}
  */
-public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
+    /** */
+    protected static final String CLIENT_NODE_NAME_PREFIX = "client";
+
     /** Option is used for auto confirmation. */
     protected static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** System out. */
-    protected PrintStream sysOut;
+    protected static PrintStream sysOut;
 
     /**
      * Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test.
      * Will be as well passed as a handler output for an anonymous logger in the test.
      */
-    protected ByteArrayOutputStream testOut;
+    protected static ByteArrayOutputStream testOut;
 
     /** Atomic configuration. */
     protected AtomicConfiguration atomicConfiguration;
@@ -78,59 +90,41 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     protected DataRegionConfiguration dataRegionConfiguration;
 
     /** Checkpoint frequency. */
-    protected long checkpointFreq;
+    protected long checkpointFreq = DFLT_CHECKPOINT_FREQ;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        withSystemPropertyByClass(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, TRUE.toString());
+
+        testOut = new ByteArrayOutputStream(16 * 1024);
+        sysOut = System.out;
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        GridTestUtils.cleanIdleVerifyLogFiles();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-
-        cleanPersistenceDir();
-
-        stopAllGrids();
-
-        sysOut = System.out;
-
-        testOut = new ByteArrayOutputStream(16 * 1024);
-
-        checkpointFreq = DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
-    }
-
-    /**
-     * @return True if system out was already injected on test initialization.
-     */
-    protected boolean isSystemOutAlreadyInjected() {
-        return false;
+        cleanIdleVerifyLogFiles();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         log.info("----------------------------------------");
-
-        if (testOut != null)
-            System.out.println(testOut.toString());
-
-        testOut = null;
 
         System.setOut(sysOut);
 
-        stopAllGrids();
+        log.info(testOut.toString());
 
-        cleanPersistenceDir();
+        testOut.reset();
+    }
 
-        // Delete idle-verify dump files.
-        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()), this::idleVerifyRes)) {
-            for (Path path : files)
-                delete(path);
-        }
-
-        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
+        return "gridCommandHandlerTest";
     }
 
     /**
@@ -146,7 +140,7 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private boolean idleVerifyRes(Path p) {
+    protected boolean idleVerifyRes(Path p) {
         return p.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX);
     }
 
@@ -176,12 +170,24 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
+        cfg.setClientMode(igniteInstanceName.startsWith(CLIENT_NODE_NAME_PREFIX));
 
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
+
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()), this::idleVerifyRes)) {
+            for (Path path : files)
+                delete(path);
+        }
+    }
+
     /**
+     * Before command executed {@link #testOut} reset.
+     *
      * @param args Arguments.
      * @return Result of execution.
      */
@@ -190,6 +196,8 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Before command executed {@link #testOut} reset.
+     *
      * @param args Arguments.
      * @return Result of execution
      */
@@ -198,6 +206,8 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Before command executed {@link #testOut} reset.
+     *
      * @param hnd Handler.
      * @param args Arguments.
      * @return Result of execution
@@ -206,10 +216,14 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         return execute(hnd, new ArrayList<>(asList(args)));
     }
 
-    /** */
+    /**
+     * Before command executed {@link #testOut} reset.
+     */
     protected int execute(CommandHandler hnd, List<String> args) {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
+
+        testOut.reset();
 
         int exitCode = hnd.execute(args);
 
@@ -277,5 +291,41 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
             if (!txs.isEmpty())
                 fail("Some transaction are not finished");
         }
+    }
+
+    /**
+     * Creates default cache and preload some data entries.
+     * <br/>
+     * <table class="doctable">
+     * <th>Cache parameter</th>
+     * <th>Value</th>
+     * <tr>
+     *     <td>Name</td>
+     *     <td>{@link #DEFAULT_CACHE_NAME}</td>
+     * </tr>
+     * <tr>
+     *     <td>Affinity</td>
+     *     <td>{@link RendezvousAffinityFunction} with exclNeighbors = false, parts = 32</td>
+     * </tr>
+     * <tr>
+     *     <td>Number of backup</td>
+     *     <td>1</td>
+     * </tr>
+     *
+     * </table>
+     *
+     * @param ignite Ignite.
+     * @param countEntries Count of entries.
+     */
+    protected void createCacheAndPreload(Ignite ignite, int countEntries) {
+        assert nonNull(ignite);
+
+        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1));
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+        for (int i = 0; i < countEntries; i++)
+            cache.put(i, i);
     }
 }
