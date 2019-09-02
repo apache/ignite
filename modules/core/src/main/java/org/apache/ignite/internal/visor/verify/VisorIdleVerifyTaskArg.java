@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,10 @@ import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.NotNull;
+
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.DEFAULT;
 
 /**
  * Arguments for task {@link VisorIdleVerifyTask}.
@@ -46,7 +50,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     private boolean skipZeros;
 
     /** Cache kind. */
-    private CacheFilterEnum cacheFilterEnum;
+    private CacheFilterEnum cacheFilterEnum = DEFAULT;
 
     /**
      * Default constructor.
@@ -59,7 +63,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
      * @param caches Caches.
      * @param excludeCaches Exclude caches or group.
      * @param skipZeros Skip zeros partitions.
-     * @param cacheFilterEnum Cache kind.
+     * @param cacheFilterEnum Cache kind, require non null.
      * @param checkCrc Check CRC sum on stored pages on disk.
      */
     public VisorIdleVerifyTaskArg(
@@ -69,11 +73,13 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         CacheFilterEnum cacheFilterEnum,
         boolean checkCrc
     ) {
+        assert nonNull(cacheFilterEnum) : "Cache filter can't be null";
+
         this.caches = caches;
         this.excludeCaches = excludeCaches;
         this.skipZeros = skipZeros;
-        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
         this.checkCrc = checkCrc;
+        this.cacheFilterEnum = cacheFilterEnum;
     }
 
     /**
@@ -81,15 +87,14 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
      * @param checkCrc Check CRC sum on stored pages on disk.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches, boolean checkCrc) {
-        this.caches = caches;
-        this.checkCrc = checkCrc;
+        this(caches, null, false, DEFAULT, false);
     }
 
     /**
      * @param caches Caches.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches) {
-        this.caches = caches;
+        this(caches, null, false, DEFAULT, false);
     }
 
     /** */
@@ -160,9 +165,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
             if (protoVer >= V4) {
                 skipZeros = in.readBoolean();
 
-                CacheFilterEnum cfe = CacheFilterEnum.fromOrdinal(in.readByte());
-
-                cacheFilterEnum = (cfe == null ? CacheFilterEnum.DEFAULT : cfe);
+                cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
             }
         }
     }
@@ -191,13 +194,15 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /** */
     protected void cacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
-        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
+        assert nonNull(cacheFilterEnum);
+
+        this.cacheFilterEnum = cacheFilterEnum;
     }
 
     /**
      * @return Kind fo cache.
      */
-    public CacheFilterEnum cacheFilterEnum() {
+    @NotNull public CacheFilterEnum cacheFilterEnum() {
         return cacheFilterEnum;
     }
 
