@@ -28,29 +28,25 @@ public class ClientConnectionViewWalker implements MonitoringRowAttributeWalker<
     @Override public void visitAll(AttributeVisitor v) {
         v.acceptLong(0, "connectionId");
         v.accept(1, "localAddress", InetSocketAddress.class);
-        v.accept(2, "monitoringRowId", Object.class);
-        v.accept(3, "monitoringRowId", Long.class);
-        v.accept(4, "remoteAddress", InetSocketAddress.class);
-        v.accept(5, "type", String.class);
-        v.accept(6, "user", String.class);
-        v.accept(7, "version", String.class);
+        v.accept(2, "remoteAddress", InetSocketAddress.class);
+        v.accept(3, "type", String.class);
+        v.accept(4, "user", String.class);
+        v.accept(5, "version", String.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(ClientConnectionView row, AttributeWithValueVisitor v) {
         v.acceptLong(0, "connectionId", row.connectionId());
         v.accept(1, "localAddress", InetSocketAddress.class, row.localAddress());
-        v.accept(2, "monitoringRowId", Object.class, row.monitoringRowId());
-        v.accept(3, "monitoringRowId", Long.class, row.monitoringRowId());
-        v.accept(4, "remoteAddress", InetSocketAddress.class, row.remoteAddress());
-        v.accept(5, "type", String.class, row.type());
-        v.accept(6, "user", String.class, row.user());
-        v.accept(7, "version", String.class, row.version());
+        v.accept(2, "remoteAddress", InetSocketAddress.class, row.remoteAddress());
+        v.accept(3, "type", String.class, row.type());
+        v.accept(4, "user", String.class, row.user());
+        v.accept(5, "version", String.class, row.version());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 8;
+        return 6;
     }
 }
 

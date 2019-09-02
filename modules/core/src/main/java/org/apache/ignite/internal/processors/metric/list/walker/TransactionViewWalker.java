@@ -43,14 +43,12 @@ public class TransactionViewWalker implements MonitoringRowAttributeWalker<Trans
         v.acceptBoolean(10, "implicitSingle");
         v.acceptBoolean(11, "internal");
         v.acceptBoolean(12, "local");
-        v.accept(13, "monitoringRowId", Object.class);
-        v.accept(14, "monitoringRowId", IgniteUuid.class);
-        v.acceptBoolean(15, "near");
-        v.acceptBoolean(16, "onePhaseCommit");
-        v.accept(17, "subjectId", UUID.class);
-        v.acceptBoolean(18, "system");
-        v.acceptLong(19, "threadId");
-        v.acceptLong(20, "timeout");
+        v.acceptBoolean(13, "near");
+        v.acceptBoolean(14, "onePhaseCommit");
+        v.accept(15, "subjectId", UUID.class);
+        v.acceptBoolean(16, "system");
+        v.acceptLong(17, "threadId");
+        v.acceptLong(18, "timeout");
     }
 
     /** {@inheritDoc} */
@@ -68,19 +66,17 @@ public class TransactionViewWalker implements MonitoringRowAttributeWalker<Trans
         v.acceptBoolean(10, "implicitSingle", row.implicitSingle());
         v.acceptBoolean(11, "internal", row.internal());
         v.acceptBoolean(12, "local", row.local());
-        v.accept(13, "monitoringRowId", Object.class, row.monitoringRowId());
-        v.accept(14, "monitoringRowId", IgniteUuid.class, row.monitoringRowId());
-        v.acceptBoolean(15, "near", row.near());
-        v.acceptBoolean(16, "onePhaseCommit", row.onePhaseCommit());
-        v.accept(17, "subjectId", UUID.class, row.subjectId());
-        v.acceptBoolean(18, "system", row.system());
-        v.acceptLong(19, "threadId", row.threadId());
-        v.acceptLong(20, "timeout", row.timeout());
+        v.acceptBoolean(13, "near", row.near());
+        v.acceptBoolean(14, "onePhaseCommit", row.onePhaseCommit());
+        v.accept(15, "subjectId", UUID.class, row.subjectId());
+        v.acceptBoolean(16, "system", row.system());
+        v.acceptLong(17, "threadId", row.threadId());
+        v.acceptLong(18, "timeout", row.timeout());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 21;
+        return 19;
     }
 }
 

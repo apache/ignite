@@ -35,10 +35,8 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
         v.acceptInt(5, "totalCount");
         v.acceptInt(6, "maxPerNodeCount");
         v.accept(7, "affinityKeyValue", String.class);
-        v.accept(8, "monitoringRowId", Object.class);
-        v.accept(9, "monitoringRowId", IgniteUuid.class);
-        v.accept(10, "nodeFilter", Class.class);
-        v.acceptBoolean(11, "staticallyConfigured");
+        v.accept(8, "nodeFilter", Class.class);
+        v.acceptBoolean(9, "staticallyConfigured");
     }
 
     /** {@inheritDoc} */
@@ -51,15 +49,13 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
         v.acceptInt(5, "totalCount", row.totalCount());
         v.acceptInt(6, "maxPerNodeCount", row.maxPerNodeCount());
         v.accept(7, "affinityKeyValue", String.class, row.affinityKeyValue());
-        v.accept(8, "monitoringRowId", Object.class, row.monitoringRowId());
-        v.accept(9, "monitoringRowId", IgniteUuid.class, row.monitoringRowId());
-        v.accept(10, "nodeFilter", Class.class, row.nodeFilter());
-        v.acceptBoolean(11, "staticallyConfigured", row.staticallyConfigured());
+        v.accept(8, "nodeFilter", Class.class, row.nodeFilter());
+        v.acceptBoolean(9, "staticallyConfigured", row.staticallyConfigured());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 12;
+        return 10;
     }
 }
 

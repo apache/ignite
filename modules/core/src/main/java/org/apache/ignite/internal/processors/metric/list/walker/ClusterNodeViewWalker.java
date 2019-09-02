@@ -34,9 +34,7 @@ public class ClusterNodeViewWalker implements MonitoringRowAttributeWalker<Clust
         v.acceptBoolean(5, "isClient");
         v.acceptBoolean(6, "isDaemon");
         v.acceptBoolean(7, "isLocal");
-        v.accept(8, "monitoringRowId", UUID.class);
-        v.accept(9, "monitoringRowId", Object.class);
-        v.accept(10, "version", String.class);
+        v.accept(8, "version", String.class);
     }
 
     /** {@inheritDoc} */
@@ -49,14 +47,12 @@ public class ClusterNodeViewWalker implements MonitoringRowAttributeWalker<Clust
         v.acceptBoolean(5, "isClient", row.isClient());
         v.acceptBoolean(6, "isDaemon", row.isDaemon());
         v.acceptBoolean(7, "isLocal", row.isLocal());
-        v.accept(8, "monitoringRowId", UUID.class, row.monitoringRowId());
-        v.accept(9, "monitoringRowId", Object.class, row.monitoringRowId());
-        v.accept(10, "version", String.class, row.version());
+        v.accept(8, "version", String.class, row.version());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 11;
+        return 9;
     }
 }
 

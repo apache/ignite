@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.metric.list;
 
-import org.apache.ignite.spi.metric.list.MonitoringRow;
-
 /**
  *
  */

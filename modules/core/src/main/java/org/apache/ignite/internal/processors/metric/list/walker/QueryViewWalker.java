@@ -36,9 +36,7 @@ public class QueryViewWalker implements MonitoringRowAttributeWalker<QueryView> 
         v.acceptBoolean(6, "failed");
         v.accept(7, "globalQueryId", String.class);
         v.acceptBoolean(8, "local");
-        v.accept(9, "monitoringRowId", Object.class);
-        v.accept(10, "monitoringRowId", Long.class);
-        v.accept(11, "schemaName", String.class);
+        v.accept(9, "schemaName", String.class);
     }
 
     /** {@inheritDoc} */
@@ -52,14 +50,12 @@ public class QueryViewWalker implements MonitoringRowAttributeWalker<QueryView> 
         v.acceptBoolean(6, "failed", row.failed());
         v.accept(7, "globalQueryId", String.class, row.globalQueryId());
         v.acceptBoolean(8, "local", row.local());
-        v.accept(9, "monitoringRowId", Object.class, row.monitoringRowId());
-        v.accept(10, "monitoringRowId", Long.class, row.monitoringRowId());
-        v.accept(11, "schemaName", String.class, row.schemaName());
+        v.accept(9, "schemaName", String.class, row.schemaName());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 12;
+        return 10;
     }
 }
 

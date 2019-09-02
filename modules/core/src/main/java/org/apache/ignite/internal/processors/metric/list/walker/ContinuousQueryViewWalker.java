@@ -40,13 +40,11 @@ public class ContinuousQueryViewWalker implements MonitoringRowAttributeWalker<C
         v.acceptBoolean(11, "isMessaging");
         v.acceptBoolean(12, "isQuery");
         v.acceptBoolean(13, "keepBinary");
-        v.accept(14, "monitoringRowId", Object.class);
-        v.accept(15, "monitoringRowId", UUID.class);
-        v.accept(16, "nodeId", UUID.class);
-        v.acceptBoolean(17, "notifyExisting");
-        v.acceptBoolean(18, "oldValueRequired");
-        v.accept(19, "routineId", UUID.class);
-        v.accept(20, "topic", String.class);
+        v.accept(14, "nodeId", UUID.class);
+        v.acceptBoolean(15, "notifyExisting");
+        v.acceptBoolean(16, "oldValueRequired");
+        v.accept(17, "routineId", UUID.class);
+        v.accept(18, "topic", String.class);
     }
 
     /** {@inheritDoc} */
@@ -65,18 +63,16 @@ public class ContinuousQueryViewWalker implements MonitoringRowAttributeWalker<C
         v.acceptBoolean(11, "isMessaging", row.isMessaging());
         v.acceptBoolean(12, "isQuery", row.isQuery());
         v.acceptBoolean(13, "keepBinary", row.keepBinary());
-        v.accept(14, "monitoringRowId", Object.class, row.monitoringRowId());
-        v.accept(15, "monitoringRowId", UUID.class, row.monitoringRowId());
-        v.accept(16, "nodeId", UUID.class, row.nodeId());
-        v.acceptBoolean(17, "notifyExisting", row.notifyExisting());
-        v.acceptBoolean(18, "oldValueRequired", row.oldValueRequired());
-        v.accept(19, "routineId", UUID.class, row.routineId());
-        v.accept(20, "topic", String.class, row.topic());
+        v.accept(14, "nodeId", UUID.class, row.nodeId());
+        v.acceptBoolean(15, "notifyExisting", row.notifyExisting());
+        v.acceptBoolean(16, "oldValueRequired", row.oldValueRequired());
+        v.accept(17, "routineId", UUID.class, row.routineId());
+        v.accept(18, "topic", String.class, row.topic());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 21;
+        return 19;
     }
 }
 

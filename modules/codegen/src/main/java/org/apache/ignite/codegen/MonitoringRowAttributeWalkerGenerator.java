@@ -59,7 +59,7 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.TAB;
 public class MonitoringRowAttributeWalkerGenerator {
     /** */
     private static final Set<String> SYSTEM_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
-        "getClass"));
+        "getClass", "monitoringRowId"));
 
     public static final String WALKER_PACKAGE = "org.apache.ignite.internal.processors.metric.list.walker";
 

@@ -35,10 +35,8 @@ public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTable
         v.accept(7, "identifierString", String.class);
         v.accept(8, "keyAlias", String.class);
         v.accept(9, "keyTypeName", String.class);
-        v.accept(10, "monitoringRowId", Object.class);
-        v.accept(11, "monitoringRowId", String.class);
-        v.accept(12, "valueAlias", String.class);
-        v.accept(13, "valueTypeName", String.class);
+        v.accept(10, "valueAlias", String.class);
+        v.accept(11, "valueTypeName", String.class);
     }
 
     /** {@inheritDoc} */
@@ -53,15 +51,13 @@ public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTable
         v.accept(7, "identifierString", String.class, row.identifierString());
         v.accept(8, "keyAlias", String.class, row.keyAlias());
         v.accept(9, "keyTypeName", String.class, row.keyTypeName());
-        v.accept(10, "monitoringRowId", Object.class, row.monitoringRowId());
-        v.accept(11, "monitoringRowId", String.class, row.monitoringRowId());
-        v.accept(12, "valueAlias", String.class, row.valueAlias());
-        v.accept(13, "valueTypeName", String.class, row.valueTypeName());
+        v.accept(10, "valueAlias", String.class, row.valueAlias());
+        v.accept(11, "valueTypeName", String.class, row.valueTypeName());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 14;
+        return 12;
     }
 }
 
