@@ -35,7 +35,7 @@ fixture('Help menu')
 test.page(resolveUrl('/'))('Help menu items', async(t) => {
     const links = [
         {label: 'Documentation', href: 'https://docs.gridgain.com/docs/web-console'},
-        {label: 'Forms', href: 'https://forums.gridgain.com/home'},
+        {label: 'Forums', href: 'https://forums.gridgain.com/home'},
         {label: 'Support', href: 'https://gridgain.freshdesk.com/support/login'},
         {label: 'Webinars', href: 'https://www.gridgain.com/resources/webinars'},
         {label: 'Whitepapers', href: 'https://www.gridgain.com/resources/literature/white-papers'}
