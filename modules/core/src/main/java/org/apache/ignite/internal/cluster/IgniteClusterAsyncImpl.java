@@ -351,6 +351,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     @Override public boolean enableWal(String cacheName) throws IgniteException {
         return cluster.enableWal(cacheName);
     }
+
     /** {@inheritDoc} */
     @Override public boolean disableWal(String cacheName) throws IgniteException {
         return cluster.disableWal(cacheName);
@@ -412,5 +413,15 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(cluster);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readOnly() {
+        return cluster.readOnly();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readOnly(boolean readOnly) throws IgniteException {
+        cluster.readOnly(readOnly);
     }
 }

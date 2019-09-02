@@ -17,10 +17,11 @@
 
 package org.apache.ignite.examples.ml.regression.logistic.bagged;
 
+import java.io.IOException;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.bagging.BaggedModel;
 import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
@@ -38,9 +39,6 @@ import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
-import java.io.FileNotFoundException;
-import java.util.Arrays;
-
 /**
  * This example shows how bagging technique may be applied to arbitrary trainer.
  * As an example (a bit synthetic) logistic regression is considered.
@@ -56,7 +54,7 @@ import java.util.Arrays;
  */
 public class BaggedLogisticRegressionSGDTrainerExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model over partitioned dataset usage example started.");
         // Start ignite grid.
@@ -95,15 +93,15 @@ public class BaggedLogisticRegressionSGDTrainerExample {
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
                     .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>().score(
-                    baggedTrainer,
-                    new Accuracy<>(),
-                    ignite,
-                    dataCache,
-                    CompositionUtils.asFeatureExtractor(vectorizer),
-                    CompositionUtils.asLabelExtractor(vectorizer),
-                    3
-                );
+                double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>()
+                    .withIgnite(ignite)
+                    .withUpstreamCache(dataCache)
+                    .withTrainer(baggedTrainer)
+                    .withMetric(new Accuracy<>())
+                    .withPreprocessor(vectorizer)
+                    .withAmountOfFolds(3)
+                    .isRunningOnPipeline(false)
+                    .scoreByFolds();
 
                 System.out.println(">>> ---------------------------------");
 
@@ -111,8 +109,11 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
                 System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

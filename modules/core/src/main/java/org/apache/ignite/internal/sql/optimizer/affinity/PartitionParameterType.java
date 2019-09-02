@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Partition argument type.
  */
@@ -49,5 +51,18 @@ public enum PartitionParameterType {
     DECIMAL,
 
     /** UUID. */
-    UUID
+    UUID;
+
+    /** Enumerated values. */
+    private static final PartitionParameterType[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static PartitionParameterType fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

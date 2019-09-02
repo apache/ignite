@@ -17,13 +17,12 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
@@ -34,8 +33,6 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model based on  based on
@@ -54,7 +51,7 @@ import java.io.FileNotFoundException;
  */
 public class LinearRegressionSGDTrainerExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over sparse distributed matrix API usage example started.");
         // Start ignite grid.
@@ -79,15 +76,12 @@ public class LinearRegressionSGDTrainerExample {
 
                 LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-                final IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
                 System.out.println(">>> Linear regression model: " + mdl);
 
                 double rmse = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    featureExtractor,
-                    lbExtractor,
+                    vectorizer,
                     new RegressionMetrics()
                 );
 
@@ -98,6 +92,8 @@ public class LinearRegressionSGDTrainerExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

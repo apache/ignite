@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.clustering;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,7 +52,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class CustomersClusterizationExample {
     /** Runs example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
@@ -76,18 +76,20 @@ public class CustomersClusterizationExample {
                     // Splits dataset to train and test samples with 80/20 proportion.
                     TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.8);
 
-                    KMeansModel model = trainer.fit(
+                    KMeansModel mdl = trainer.fit(
                         ignite, dataCache,
                         split.getTrainFilter(),
                         vectorizer
                     );
 
-                    double entropy = computeMeanEntropy(dataCache, split.getTestFilter(), vectorizer, model);
+                    double entropy = computeMeanEntropy(dataCache, split.getTestFilter(), vectorizer, mdl);
                     System.out.println(String.format(">> Clusters mean entropy [%d clusters]: %.2f", amountOfClusters, entropy));
                 }
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

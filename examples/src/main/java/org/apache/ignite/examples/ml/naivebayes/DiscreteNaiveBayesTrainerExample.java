@@ -17,10 +17,10 @@
 
 package org.apache.ignite.examples.ml.naivebayes;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -29,8 +29,6 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes">
@@ -49,8 +47,7 @@ import java.io.FileNotFoundException;
  */
 public class DiscreteNaiveBayesTrainerExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
-        System.out.println();
+    public static void main(String[] args) throws IOException {
         System.out.println(">>> Discrete naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
@@ -75,16 +72,18 @@ public class DiscreteNaiveBayesTrainerExample {
                 double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    CompositionUtils.asFeatureExtractor(vectorizer),
-                    CompositionUtils.asLabelExtractor(vectorizer)
+                    vectorizer
                 ).accuracy();
 
                 System.out.println("\n>>> Accuracy " + accuracy);
 
                 System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

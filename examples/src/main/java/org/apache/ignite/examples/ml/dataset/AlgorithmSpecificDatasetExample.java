@@ -18,23 +18,27 @@
 package org.apache.ignite.examples.ml.dataset;
 
 import com.github.fommil.netlib.BLAS;
+import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.dataset.model.Person;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-
-import java.io.Serializable;
-import java.util.Arrays;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Example that shows how to implement your own algorithm (<a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient</a>
@@ -68,36 +72,39 @@ public class AlgorithmSpecificDatasetExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Algorithm Specific Dataset example started.");
 
-            IgniteCache<Integer, Person> persons = null;
+            IgniteCache<Integer, Vector> persons = null;
             try {
                 persons = createCache(ignite);
 
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
+
+                IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+
+                //NOTE: This class is part of Developer API and all lambdas should be loaded on server manually.
+                Preprocessor<Integer, Vector> preprocessor = new PatchedPreprocessor<>(func, vectorizer);
                 // Creates a algorithm specific dataset to perform linear regression. Here we define the way features and
                 // labels are extracted, and partition data and context are created.
-                SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext, ? extends Serializable> builder =
-                    new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
-                        (k, v) -> VectorUtils.of(v.getAge()),
-                        (k, v) -> new double[] {v.getSalary()}
-                    )));
+                SimpleLabeledDatasetDataBuilder<Integer, Vector, AlgorithmSpecificPartitionContext> builder =
+                    new SimpleLabeledDatasetDataBuilder<>(preprocessor);
+
+                IgniteBiFunction<SimpleLabeledDatasetData, AlgorithmSpecificPartitionContext, SimpleLabeledDatasetData> builderFun = (data, ctx) -> {
+                    double[] features = data.getFeatures();
+                    int rows = data.getRows();
+
+                    // Makes a copy of features to supplement it by columns with values equal to 1.0.
+                    double[] a = new double[features.length + rows];
+                    Arrays.fill(a, 1.0);
+
+                    System.arraycopy(features, 0, a, rows, features.length);
+
+                    return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
+                };
 
                 try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                     ignite,
                     persons,
                     (env, upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
-                    builder.andThen((data, ctx) -> {
-                        double[] features = data.getFeatures();
-                        int rows = data.getRows();
-
-                        // Makes a copy of features to supplement it by columns with values equal to 1.0.
-                        double[] a = new double[features.length + rows];
-
-                        for (int i = 0; i < rows; i++)
-                            a[i] = 1.0;
-
-                        System.arraycopy(features, 0, a, rows, features.length);
-
-                        return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
-                    })
+                    builder.andThen(builderFun)
                 ).wrap(AlgorithmSpecificDataset::new)) {
                     // Trains linear regression model using gradient descent.
                     double[] linearRegressionMdl = new double[2];
@@ -116,10 +123,11 @@ public class AlgorithmSpecificDatasetExample {
                 }
 
                 System.out.println(">>> Algorithm Specific Dataset example completed.");
-            }
-            finally {
+            } finally {
                 persons.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 
@@ -200,18 +208,18 @@ public class AlgorithmSpecificDatasetExample {
     }
 
     /** */
-    private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
-        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+    private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
+        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
 
-        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+        IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new Person("Mike", 1, 1));
-        persons.put(2, new Person("John", 2, 2));
-        persons.put(3, new Person("George", 3, 3));
-        persons.put(4, new Person("Karl", 4, 4));
+        persons.put(1, new DenseVector(new Serializable[]{"Mike", 42, 10000}));
+        persons.put(2, new DenseVector(new Serializable[]{"John", 32, 64000}));
+        persons.put(3, new DenseVector(new Serializable[]{"George", 53, 120000}));
+        persons.put(4, new DenseVector(new Serializable[]{"Karl", 24, 70000}));
 
         return persons;
     }

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Util classes used in {@link org.apache.ignite.tensorflow} package.
  */
+
 package org.apache.ignite.tensorflow.util;

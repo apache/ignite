@@ -17,15 +17,14 @@
 
 package org.apache.ignite.examples.ml.selection.cv;
 
+import java.util.Arrays;
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
@@ -34,9 +33,6 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassi
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Run <a href="https://en.wikipedia.org/wiki/Decision_tree">decision tree</a> classification with
@@ -80,20 +76,19 @@ public class CrossValidationExample {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
                 LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
+
                 CrossValidation<DecisionTreeNode, Double, Integer, LabeledVector<Double>> scoreCalculator
                     = new CrossValidation<>();
 
-                IgniteBiFunction<Integer, LabeledVector<Double>, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-                IgniteBiFunction<Integer, LabeledVector<Double>, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
-                double[] accuracyScores = scoreCalculator.score(
-                    trainer,
-                    new Accuracy<>(),
-                    ignite,
-                    trainingSet,
-                    featureExtractor,
-                    lbExtractor,
-                    4
-                );
+                double[] accuracyScores = scoreCalculator
+                    .withIgnite(ignite)
+                    .withUpstreamCache(trainingSet)
+                    .withTrainer(trainer)
+                    .withMetric(new Accuracy<>())
+                    .withPreprocessor(vectorizer)
+                    .withAmountOfFolds(4)
+                    .isRunningOnPipeline(false)
+                    .scoreByFolds();
 
                 System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
 
@@ -102,15 +97,9 @@ public class CrossValidationExample {
                     .withPositiveClsLb(1.0)
                     .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
 
-                double[] balancedAccuracyScores = scoreCalculator.score(
-                    trainer,
-                    metrics,
-                    ignite,
-                    trainingSet,
-                    featureExtractor,
-                    lbExtractor,
-                    4
-                );
+                double[] balancedAccuracyScores = scoreCalculator
+                    .withMetric(metrics)
+                    .scoreByFolds();
 
                 System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
@@ -118,6 +107,8 @@ public class CrossValidationExample {
             } finally {
                 trainingSet.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 

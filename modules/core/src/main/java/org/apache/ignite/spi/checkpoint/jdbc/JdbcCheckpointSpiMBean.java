@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.checkpoint.jdbc;
 
-
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 

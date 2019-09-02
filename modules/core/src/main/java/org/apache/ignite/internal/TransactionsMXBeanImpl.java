@@ -76,7 +76,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
                 sortOrder = VisorTxSortOrder.valueOf(order.toUpperCase());
 
             VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
-                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder);
+                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder, null);
 
             Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
                 new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));

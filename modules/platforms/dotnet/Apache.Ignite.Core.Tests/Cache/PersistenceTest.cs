@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -249,27 +250,29 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
                 Assert.AreEqual("Changing BaselineTopology on inactive cluster is not allowed.", ex.Message);
 
-                // Set with version.
                 cluster.SetActive(true);
-                cluster.SetBaselineTopology(2);
 
-                var res = cluster.GetBaselineTopology();
-                CollectionAssert.AreEquivalent(new[] {"node1", "node2"}, res.Select(x => x.ConsistentId));
+                // Can not set baseline with offline node.
+                ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
+                Assert.AreEqual("Check arguments. Node with consistent ID [node2] not found in server nodes.",
+                    ex.Message);
 
                 cluster.SetBaselineTopology(1);
                 Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
 
-                // Set with nodes.
-                cluster.SetBaselineTopology(res);
-                
-                res = cluster.GetBaselineTopology();
-                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+                // Set with node.
+                cluster.SetBaselineTopology(cluster.GetBaselineTopology());
+
+                var res = cluster.GetBaselineTopology();
+                CollectionAssert.AreEquivalent(new[] { "node1"}, res.Select(x => x.ConsistentId));
 
                 cluster.SetBaselineTopology(cluster.GetTopology(1));
                 Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
 
-                // Set to two nodes.
-                cluster.SetBaselineTopology(cluster.GetTopology(2));
+                // Can not set baseline with offline node.
+                ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(cluster.GetTopology(2)));
+                Assert.AreEqual("Check arguments. Node with consistent ID [node2] not found in server nodes.",
+                  ex.Message);
             }
 
             // Check auto activation on cluster restart.
@@ -278,9 +281,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cluster = ignite.GetCluster();
                 Assert.IsTrue(cluster.IsActive());
-                
+
                 var res = cluster.GetBaselineTopology();
-                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+                CollectionAssert.AreEquivalent(new[] { "node1"}, res.Select(x => x.ConsistentId));
             }
 
             Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", null);
@@ -320,6 +323,42 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 ex = Assert.Throws<IgniteException>(() => cluster.EnableWal("bar"));
                 Assert.AreEqual("Cache doesn't exist: bar", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Test the configuration of IsBaselineAutoAdjustEnabled flag
+        /// </summary>
+        [Test]
+        public void TestBaselineTopologyAutoAdjustEnabledDisabled()
+        {
+            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            {
+                ICluster cluster = ignite.GetCluster();
+                cluster.SetActive(true);
+
+                bool isEnabled = cluster.IsBaselineAutoAdjustEnabled();
+                cluster.SetBaselineAutoAdjustEnabledFlag(!isEnabled);
+
+                Assert.AreNotEqual(isEnabled, cluster.IsBaselineAutoAdjustEnabled());
+            }
+        }
+
+        /// <summary>
+        /// Test the configuration of BaselineAutoAdjustTimeout property
+        /// </summary>
+        [Test]
+        public void TestBaselineTopologyAutoAdjustTimeoutWriteRead()
+        {
+            const long newTimeout = 333000;
+            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            {
+                ICluster cluster = ignite.GetCluster();
+                cluster.SetActive(true);
+
+                cluster.SetBaselineAutoAdjustTimeout(newTimeout);
+
+                Assert.AreEqual(newTimeout, cluster.GetBaselineAutoAdjustTimeout());
             }
         }
 

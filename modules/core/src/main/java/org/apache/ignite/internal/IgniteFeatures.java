@@ -36,14 +36,41 @@ public enum IgniteFeatures {
     /** Cache metrics v2 support. */
     CACHE_METRICS_V2(1),
 
-    /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(2),
-
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
     /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4);
+    DIFFERENT_REBALANCE_POOL_SIZE(4),
+
+    /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
+    SPLITTED_CACHE_CONFIGURATIONS(5),
+
+    /**
+     * Support of providing thread dump of thread that started transaction. Used for dumping
+     * long running transactions.
+     */
+    TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6),
+
+    /** Displaying versbose transaction information: --info option of --tx control script command. */
+    TX_INFO_COMMAND(7),
+
+    /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
+    FIND_AND_DELETE_GARBAGE_COMMAND(8),
+    
+    /** Support of cluster read-only mode. */
+    CLUSTER_READ_ONLY_MODE(9),
+
+    /** Support of suspend/resume operations for pessimistic transactions. */
+    SUSPEND_RESUME_PESSIMISTIC_TX(10),
+
+    /** Distributed metastorage. */
+    DISTRIBUTED_METASTORAGE(11),
+
+    /** The node can communicate with others via socket channel. */
+    CHANNEL_COMMUNICATION(12),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14);
 
     /**
      * Unique feature identifier.
@@ -68,6 +95,7 @@ public enum IgniteFeatures {
      * Checks that feature supported by node.
      *
      * @param clusterNode Cluster node to check.
+     * @param feature Feature to check.
      * @return {@code True} if feature is declared to be supported by remote node.
      */
     public static boolean nodeSupports(ClusterNode clusterNode, IgniteFeatures feature) {
@@ -76,18 +104,29 @@ public enum IgniteFeatures {
         if (features == null)
             return false;
 
+        return nodeSupports(features, feature);
+    }
+
+    /**
+     * Checks that feature supported by node.
+     *
+     * @param featuresAttrBytes Byte array value of supported features node attribute.
+     * @param feature Feature to check.
+     * @return {@code True} if feature is declared to be supported by remote node.
+     */
+    public static boolean nodeSupports(byte[] featuresAttrBytes, IgniteFeatures feature) {
         int featureId = feature.getFeatureId();
 
         // Same as "BitSet.valueOf(features).get(featureId)"
 
         int byteIdx = featureId >>> 3;
 
-        if (byteIdx >= features.length)
+        if (byteIdx >= featuresAttrBytes.length)
             return false;
 
         int bitIdx = featureId & 0x7;
 
-        return (features[byteIdx] & (1 << bitIdx)) != 0;
+        return (featuresAttrBytes[byteIdx] & (1 << bitIdx)) != 0;
     }
 
     /**

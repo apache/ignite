@@ -22,9 +22,9 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Trainer of the maxabsscaling preprocessor.
@@ -32,12 +32,12 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
+public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /** {@inheritDoc} */
     @Override public MaxAbsScalerPreprocessor<K, V> fit(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        Preprocessor<K, V> basePreprocessor) {
         try (Dataset<EmptyContext, MaxAbsScalerPartitionData> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
@@ -46,7 +46,7 @@ public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vec
 
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
-                    Vector row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+                    LabeledVector row = basePreprocessor.apply(entity.getKey(), entity.getValue());
 
                     if (maxAbs == null) {
                         maxAbs = new double[row.size()];

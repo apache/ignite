@@ -1426,6 +1426,7 @@ export default class IgniteConfigurationGenerator {
                     loadBalancingSpi.boolProperty('perTask');
 
                     break;
+
                 case 'Adaptive':
                     loadBalancingSpi = new Bean('org.apache.ignite.spi.loadbalancing.adaptive.AdaptiveLoadBalancingSpi', 'loadBalancingSpiAdaptive', spi.Adaptive);
 
@@ -1438,6 +1439,7 @@ export default class IgniteConfigurationGenerator {
                             probeBean.boolProperty('useAverage');
 
                             break;
+
                         case 'CPU':
                             probeBean = new Bean('org.apache.ignite.spi.loadbalancing.adaptive.AdaptiveCpuLoadProbe', 'cpuProbe', spi.Adaptive.loadProbe.CPU, clusterDflts.loadBalancingSpi.Adaptive.loadProbe.CPU);
 
@@ -1446,12 +1448,14 @@ export default class IgniteConfigurationGenerator {
                                 .intProperty('processorCoefficient');
 
                             break;
+
                         case 'ProcessingTime':
                             probeBean = new Bean('org.apache.ignite.spi.loadbalancing.adaptive.AdaptiveProcessingTimeLoadProbe', 'timeProbe', spi.Adaptive.loadProbe.ProcessingTime, clusterDflts.loadBalancingSpi.Adaptive.loadProbe.ProcessingTime);
 
                             probeBean.boolProperty('useAverage');
 
                             break;
+
                         case 'Custom':
                             const className = _.get(spi, 'Adaptive.loadProbe.Custom.className');
 
@@ -1459,6 +1463,7 @@ export default class IgniteConfigurationGenerator {
                                 probeBean = new Bean(className, 'probe', spi.Adaptive.loadProbe.Job.Custom);
 
                             break;
+
                         default:
                             // No-op.
                     }
@@ -1467,6 +1472,7 @@ export default class IgniteConfigurationGenerator {
                         loadBalancingSpi.beanProperty('loadProbe', probeBean);
 
                     break;
+
                 case 'WeightedRandom':
                     loadBalancingSpi = new Bean('org.apache.ignite.spi.loadbalancing.weightedrandom.WeightedRandomLoadBalancingSpi', 'loadBalancingSpiRandom', spi.WeightedRandom, clusterDflts.loadBalancingSpi.WeightedRandom);
 
@@ -1474,13 +1480,15 @@ export default class IgniteConfigurationGenerator {
                         .boolProperty('useWeights');
 
                     break;
-                case 'Custom':
-                    const className = _.get(spi, 'Custom.className');
 
-                    if (className)
-                        loadBalancingSpi = new Bean(className, 'loadBalancingSpiCustom', spi.Custom);
+                case 'Custom':
+                    const cusClassName = _.get(spi, 'Custom.className');
+
+                    if (cusClassName)
+                        loadBalancingSpi = new Bean(cusClassName, 'loadBalancingSpiCustom', spi.Custom);
 
                     break;
+
                 default:
                     // No-op.
             }
@@ -2816,7 +2824,7 @@ export default class IgniteConfigurationGenerator {
                 bean = new Bean('org.apache.ignite.hadoop.util.ChainedUserNameMapper', 'mameMapper', mapper.Chained);
 
                 bean.arrayProperty('mappers', 'mappers',
-                    _.map(_.get(mapper, 'Chained.mappers'), IgniteConfigurationGenerator._userNameMapperBean),
+                    _.filter(_.map(_.get(mapper, 'Chained.mappers'), IgniteConfigurationGenerator._userNameMapperBean), (m) => m),
                     'org.apache.ignite.hadoop.util.UserNameMapper');
 
                 break;
@@ -2872,7 +2880,7 @@ export default class IgniteConfigurationGenerator {
                     break;
 
                 case 'Custom':
-                    if (_get(secondFs, 'Custom.className'))
+                    if (_.get(secondFs, 'Custom.className'))
                         factoryBean = new Bean(secondFs.Custom.className, 'fac', null);
 
                     break;

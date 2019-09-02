@@ -24,7 +24,6 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
@@ -64,18 +63,18 @@ public class RegressionEvaluatorTest extends TrainerTest {
         data.put(13, VectorUtils.of(69331, 115.7, 518173, 4806, 2572, 127852, 1961));
         data.put(14, VectorUtils.of(70551, 116.9, 554894, 4007, 2827, 130081, 1962));
 
-        KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+        KNNRegressionTrainer trainer = new KNNRegressionTrainer()
+            .withK(3)
+            .withDistanceMeasure(new EuclideanDistance());
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
         KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
-        ).withK(3)
-            .withDistanceMeasure(new EuclideanDistance());
+            vectorizer
+        );
 
-        double score = Evaluator.evaluate(data, mdl, featureExtractor, lbExtractor,
+        double score = Evaluator.evaluate(data, mdl, vectorizer,
             new RegressionMetrics()
                 .withMetric(RegressionMetricValues::rss)
         );
@@ -105,23 +104,22 @@ public class RegressionEvaluatorTest extends TrainerTest {
         data.put(13, VectorUtils.of(69331, 115.7, 518173, 4806, 2572, 127852, 1961));
         data.put(14, VectorUtils.of(70551, 116.9, 554894, 4007, 2827, 130081, 1962));
 
-        KNNRegressionTrainer trainer = new KNNRegressionTrainer();
-
+        KNNRegressionTrainer trainer = new KNNRegressionTrainer()
+            .withK(3)
+            .withDistanceMeasure(new EuclideanDistance());
 
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.5);
 
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
             data,
             split.getTestFilter(),
             parts,
-            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
-        ).withK(3)
-            .withDistanceMeasure(new EuclideanDistance());
+            vectorizer
+        );
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
-        double score = Evaluator.evaluate(data, split.getTrainFilter(), mdl, featureExtractor, lbExtractor,
+        double score = Evaluator.evaluate(data, split.getTrainFilter(), mdl, vectorizer,
             new RegressionMetrics()
                 .withMetric(RegressionMetricValues::rss)
         );

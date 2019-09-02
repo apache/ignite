@@ -17,20 +17,18 @@
 
 package org.apache.ignite.ml.composition.combinators.sequential;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Sequential composition of trainers.
@@ -85,13 +83,13 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
+    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor) {
 
-        IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, extractor);
+        IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, preprocessor);
         IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, mdl1);
 
-        IgniteModel<O1, O2> mdl2 = tr2.fit(datasetBuilder, extractor.map(mapping));
+        IgniteModel<O1, O2> mdl2 = tr2.fit(datasetBuilder, preprocessor.map(mapping));
 
         return new ModelsSequentialComposition<>(mdl1, mdl2);
     }
@@ -128,29 +126,30 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     /**
      * This method is never called, instead of constructing logic of update from
      * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
-     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Vectorizer)}
+     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Preprocessor)}
      * in this class we explicitly override update method.
      *
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V, C extends Serializable> ModelsSequentialComposition<I, O1, O2> updateModel(
+    @Override protected <K, V> ModelsSequentialComposition<I, O1, O2> updateModel(
         ModelsSequentialComposition<I, O1, O2> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
+        Preprocessor<K, V> preprocessor) {
         // Never called.
         throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> ModelsSequentialComposition<I, O1, O2> update(
+    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> update(
         ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
+        Preprocessor<K, V> preprocessor) {
 
-        IgniteModel<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, extractor);
+        IgniteModel<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, preprocessor);
         IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, firstUpdated);
 
-        IgniteModel<O1, O2> secondUpdated = tr2.update(mdl.secondModel(), datasetBuilder, extractor.map(mapping));
+        IgniteModel<O1, O2> secondUpdated = tr2.update(mdl.secondModel(), datasetBuilder, preprocessor.map(mapping)
+        );
 
         return new ModelsSequentialComposition<>(firstUpdated, secondUpdated);
     }
@@ -210,8 +209,8 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V, C extends Serializable> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
-            Vectorizer<K, V, C, L> extractor) {
+        @Override public <K, V> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
+            Preprocessor<K, V> preprocessor) {
 
             int i = 0;
             IgniteModel<I, O> currMdl = null;
@@ -220,7 +219,8 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
             List<IgniteModel<I, O>> mdls = new ArrayList<>();
 
             while (!shouldStop.apply(i, currMdl)) {
-                currMdl = tr.fit(datasetBuilder, extractor.map(mapping));
+                currMdl = tr.fit(datasetBuilder, preprocessor.map(mapping)
+                );
                 mdls.add(currMdl);
                 if (shouldStop.apply(i, currMdl))
                     break;

@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
@@ -59,6 +59,9 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
  * H2 tree index implementation.
  */
 public class H2Tree extends BPlusTree<H2Row, H2Row> {
+    /** */
+    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -105,7 +108,8 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     private final H2RowCache rowCache;
 
     /** How often real invocation of inline size calculation will be skipped. */
-    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
+    private final int inlineSizeThrottleThreshold =
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, 1_000);
 
     /** Counter of inline size calculation for throttling real invocations. */
     private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
@@ -171,7 +175,17 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         IgniteLogger log,
         IoStatisticsHolder stats
     ) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
+        super(
+            name,
+            grpId,
+            pageMem,
+            wal,
+            globalRmvId,
+            metaPageId,
+            reuseList,
+            failureProcessor,
+            null
+        );
 
         this.cctx = cctx;
         this.table = table;
@@ -510,7 +524,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
         inlineSizeCalculationCntr.set(++invokeCnt);
 
-        boolean throttle = invokeCnt % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+        boolean throttle = invokeCnt % inlineSizeThrottleThreshold != 0;
 
         if (throttle)
             return;

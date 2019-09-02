@@ -17,9 +17,8 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
@@ -27,12 +26,10 @@ import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-
-import java.io.Serializable;
-import java.util.Arrays;
 
 /**
  * Trainer of the linear regression model based on LSQR algorithm.
@@ -41,33 +38,37 @@ import java.util.Arrays;
  */
 public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+                                                      Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
+    /**
+     * @param lb Label.
+     */
     private static LabeledVector<double[]> extendLabeledVector(LabeledVector<Double> lb) {
-        double[] featuresArray = new double[lb.features().size() + 1];
-        System.arraycopy(lb.features().asArray(), 0, featuresArray, 0, lb.features().size());
-        featuresArray[featuresArray.length - 1] = 1.0;
+        double[] featuresArr = new double[lb.features().size() + 1];
+        System.arraycopy(lb.features().asArray(), 0, featuresArr, 0, lb.features().size());
+        featuresArr[featuresArr.length - 1] = 1.0;
 
-        Vector features = VectorUtils.of(featuresArray);
+        Vector features = VectorUtils.of(featuresArr);
         double[] lbl = new double[] {lb.label()};
         return features.labeled(lbl);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> LinearRegressionModel updateModel(LinearRegressionModel mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+                                                                 DatasetBuilder<K, V> datasetBuilder,
+                                                                 Preprocessor<K, V> extractor) {
 
         LSQRResult res;
 
-        FeatureLabelExtractor<K, V, double[]> vectorizer = extractor.andThen(LinearRegressionLSQRTrainer::extendLabeledVector);
+        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
+
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder, envBuilder,
-            new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(vectorizer)))) {
+            new SimpleLabeledDatasetDataBuilder<>(patchedPreprocessor))) {
 
             double[] x0 = null;
             if (mdl != null) {

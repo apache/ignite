@@ -18,4 +18,5 @@
 /**
  * Root GA package (GA Grid)
  */
+
 package org.apache.ignite.ml.genetic;

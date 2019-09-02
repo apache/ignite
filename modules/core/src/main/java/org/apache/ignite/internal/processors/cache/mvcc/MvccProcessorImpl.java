@@ -308,7 +308,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             String errMsg = "Failed to add node to topology. MVCC is enabled on the cluster, but " +
                 "the node doesn't support MVCC [nodeId=" + node.id() + ']';
 
-            return new IgniteNodeValidationResult(node.id(), errMsg, errMsg);
+            return new IgniteNodeValidationResult(node.id(), errMsg);
         }
 
         return null;
@@ -404,7 +404,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         //noinspection ConstantConditions
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 0,
-            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
+            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics().totalAllocatedPages());
     }
 
     /** {@inheritDoc} */
@@ -965,6 +965,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         cfg.setInitialSize(dscfg.getSystemRegionInitialSize());
         cfg.setMaxSize(dscfg.getSystemRegionMaxSize());
         cfg.setPersistenceEnabled(CU.isPersistenceEnabled(dscfg));
+        cfg.setLazyMemoryAllocation(false);
+
         return cfg;
     }
 
@@ -1818,6 +1820,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private static class RecoveryBallotBox {
         /** */
         private List<UUID> voters;
+
         /** */
         private final Set<UUID> ballots = new HashSet<>();
 
@@ -1920,6 +1923,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private static class LockFuture extends GridFutureAdapter<Void> implements Waiter, Runnable {
         /** */
         private final byte plc;
+
         /** */
         private final MvccVersion waitingTxVer;
 
@@ -2443,6 +2447,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private static class ActiveTx {
         /** */
         private final long tracking;
+
         /** */
         private final UUID nearNodeId;
 

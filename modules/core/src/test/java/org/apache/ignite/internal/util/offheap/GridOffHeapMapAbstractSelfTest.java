@@ -173,7 +173,6 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         for (int i = 0; i < 10; i++)
             kv.put(string(), string());
 
-
         for (Map.Entry<String, String> e : kv.entrySet()) {
             String key = e.getKey();
             String val = e.getValue();

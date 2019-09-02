@@ -29,9 +29,11 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
@@ -90,8 +92,12 @@ public final class IgniteSystemProperties {
     /**
      * If this system property is set to {@code false} - no checks for new versions will
      * be performed by Ignite. By default, Ignite periodically checks for the new
-     * version and prints out the message into the log if new version of Ignite is
+     * version and prints out the message into the log if a new version of Ignite is
      * available for download.
+     *
+     * Update notifier enabled flag is a cluster-wide value and determined according to the local setting
+     * during the start of the first node in the cluster. The chosen value will survive the first node shutdown
+     * and will override the property value on all newly joining nodes.
      */
     public static final String IGNITE_UPDATE_NOTIFIER = "IGNITE_UPDATE_NOTIFIER";
 
@@ -290,7 +296,10 @@ public final class IgniteSystemProperties {
      * System property to override default job metrics processor property defining
      * concurrency level for structure holding job metrics snapshots.
      * Default value is {@code 64}.
+     *
+     * @deprecated Use {@link GridMetricManager} instead.
      */
+    @Deprecated
     public static final String IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL = "IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL";
 
     /**
@@ -799,8 +808,10 @@ public final class IgniteSystemProperties {
     /** Max amount of remembered errors for {@link GridLogThrottle}. */
     public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
 
-    /** If this property is set, {@link DataStorageConfiguration#writeThrottlingEnabled} will be overridden to true
-     * independent of initial value in configuration. */
+    /**
+     * If this property is set, {@link DataStorageConfiguration#setWriteThrottlingEnabled(boolean)}
+     * will be overridden to {@code true} regardless the initial value in the configuration.
+     */
     public static final String IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED = "IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED";
 
     /**
@@ -889,6 +900,7 @@ public final class IgniteSystemProperties {
      * Default is {@code false}.
      */
     public static final String IGNITE_DISABLE_ONHEAP_CACHE = "IGNITE_DISABLE_ONHEAP_CACHE";
+
     /**
      * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
      * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
@@ -908,17 +920,24 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
+     * Threshold time (in millis) to print warning to log if waiting for next wal segment took longer than the threshold.
+     *
+     * Default value is 1000 ms.
+     */
+    public static final String IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = "IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT";
+
+    /**
      * Count of WAL compressor worker threads. Default value is 4.
      */
     public static final String IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT = "IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT";
 
     /**
      * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
-     * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
+     * nodes if it is possible and {@link CacheConfiguration#isReadFromBackup()} is {@code true}.
      *
      * Default is {@code true}.
      *
-     * @see CacheConfiguration#readFromBackup
+     * @see CacheConfiguration#isReadFromBackup()
      */
     public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
 
@@ -1035,9 +1054,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
 
     /**
-     * System property to override {@link CacheConfiguration#rebalanceThrottle} configuration property for all caches.
+     * System property to override {@link CacheConfiguration#getRebalanceThrottle} configuration property for all caches.
      * {@code 0} by default, which means that override is disabled.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
      */
+    @Deprecated
     public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
 
     /**
@@ -1145,6 +1166,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
+     * Flag to enable triggering failure handler for node if unrecoverable partition inconsistency is
+     * discovered during partition update counters exchange.
+     */
+    public static final String IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY =
+        "IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY";
+
+    /**
      * Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.
      */
     public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
@@ -1176,6 +1204,53 @@ public final class IgniteSystemProperties {
      * owner thread.
      */
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
+
+    /**
+     * Page lock tracker type.
+     * -1 - Disable lock tracking.
+     *  1 - HEAP_STACK
+     *  2 - HEAP_LOG
+     *  3 - OFF_HEAP_STACK
+     *  4 - OFF_HEAP_LOG
+     *
+     * Default is 2 - HEAP_LOG.
+     */
+    public static final String IGNITE_PAGE_LOCK_TRACKER_TYPE = "IGNITE_PAGE_LOCK_TRACKER_TYPE";
+
+    /**
+     * Capacity in pages for storing in page lock tracker strucuture.
+     *
+     * Default is 512 pages.
+     */
+    public static final String IGNITE_PAGE_LOCK_TRACKER_CAPACITY = "IGNITE_PAGE_LOCK_TRACKER_CAPACITY";
+
+    /**
+     * Page lock tracker thread for checking hangs threads interval.
+     *
+     * Default is 60_000 ms.
+     */
+    public static final String IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL = "IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL";
+
+    /**
+     * Enables threads locks dumping on critical node failure.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DUMP_PAGE_LOCK_ON_FAILURE = "IGNITE_DUMP_PAGE_LOCK_ON_FAILURE";
+
+    /**
+     * Scan the classpath on startup and log all the files containing in it.
+     */
+    public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
+
+    /**
+     * Index rebuilding parallelism level. It sets a number of threads will be used for index rebuilding.
+     * Zero value means default should be used.
+     * Default value is calculated as <code>CPU count / 4</code> with upper limit of <code>4</code>.
+     * <p>
+     * Note: Number of threads is bounded within the range from <code>1</code> up to <code>CPU count</code>.
+     */
+    public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
     /**
      * Enforces singleton.
@@ -1276,7 +1351,7 @@ public final class IgniteSystemProperties {
     public static boolean getBoolean(String name, boolean dflt) {
         String val = getString(name);
 
-        return val == null ? dflt : Boolean.valueOf(val);
+        return val == null ? dflt : Boolean.parseBoolean(val);
     }
 
     /**

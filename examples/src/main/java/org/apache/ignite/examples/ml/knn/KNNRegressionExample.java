@@ -17,23 +17,21 @@
 
 package org.apache.ignite.examples.ml.knn;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
+import org.apache.ignite.ml.knn.utils.indices.SpatialIndexType;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
@@ -52,7 +50,7 @@ import java.io.FileNotFoundException;
  */
 public class KNNRegressionExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> kNN regression over cached dataset usage example started.");
         // Start ignite grid.
@@ -63,21 +61,21 @@ public class KNNRegressionExample {
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
 
-                KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+                KNNRegressionTrainer trainer = new KNNRegressionTrainer()
+                    .withK(5)
+                    .withDistanceMeasure(new ManhattanDistance())
+                    .withIdxType(SpatialIndexType.BALL_TREE)
+                    .withWeighted(true);
 
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
                     .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer)
-                    .withK(5)
-                    .withDistanceMeasure(new ManhattanDistance())
-                    .withStrategy(NNStrategy.WEIGHTED);
+                KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer);
 
                 double rmse = Evaluator.evaluate(
                     dataCache,
                     knnMdl,
-                    CompositionUtils.asFeatureExtractor(vectorizer),
-                    CompositionUtils.asLabelExtractor(vectorizer),
+                    vectorizer,
                     new RegressionMetrics()
                 );
 
@@ -85,6 +83,8 @@ public class KNNRegressionExample {
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

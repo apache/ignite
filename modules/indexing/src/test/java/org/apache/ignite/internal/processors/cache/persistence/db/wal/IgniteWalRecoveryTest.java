@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -56,6 +55,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -84,9 +86,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -101,6 +104,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -164,7 +168,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     private long checkpointFrequency = DFLT_CHECKPOINT_FREQ;
-    ;
+
+    /** WAL page snapshots records compression method. */
+    protected DiskPageCompression walPageCompression;
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -214,6 +220,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             dbCfg.setWalSegmentSize(walSegmentSize);
 
         dbCfg.setWalSegments(walSegments);
+
+        dbCfg.setWalPageCompression(walPageCompression);
 
         dbCfg.setCheckpointFrequency(checkpointFrequency);
 
@@ -629,14 +637,14 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("cache-" + i);
 
                 // We can get 'too many open files' with default number of partitions.
-                ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+                ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
                 IgniteCache<Object, Object> cache = ignite.getOrCreateCache(ccfg);
 
                 cache.put(i, i);
             }
 
-            final long endTime = System.currentTimeMillis() + 30_000;
+            final long endTime = System.currentTimeMillis() + SF.applyLB(30_000, 5_000);
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() {
@@ -659,6 +667,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             fut.get();
+
+            ignite.context().cache().context().database().wakeupForCheckpoint("final-test-checkpoint").get();
         }
         finally {
             customFailureDetectionTimeout = prevFDTimeout;
@@ -671,7 +681,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private void checkWalRolloverMultithreaded() throws Exception {
         walSegmentSize = 2 * 1024 * 1024;
 
-        final long endTime = System.currentTimeMillis() + 60 * 1000;
+        final long endTime = System.currentTimeMillis() + SF.apply(50 * 1000);
 
         IgniteEx ignite = startGrid(1);
 
@@ -683,7 +693,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             @Override public Void call() {
                 Random rnd = ThreadLocalRandom.current();
 
-                while (U.currentTimeMillis() < endTime)
+                while (System.currentTimeMillis() < endTime)
                     cache.put(rnd.nextInt(50_000), rnd.nextInt());
 
                 return null;
@@ -1359,6 +1369,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         ByteBuffer buf = ByteBuffer.allocateDirect(pageSize);
 
+        buf.order(ByteOrder.nativeOrder());
+
         // Now check that deltas can be correctly applied.
         try (WALIterator it = sharedCtx.wal().replay(ptr)) {
             while (it.hasNext()) {
@@ -1369,7 +1381,28 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 if (rec instanceof PageSnapshot) {
                     PageSnapshot page = (PageSnapshot)rec;
 
-                    rolledPages.put(page.fullPageId(), page.pageData());
+                    CacheGroupContext gctx = sharedCtx.cache().cacheGroup(page.groupId());
+
+                    int realPageSize = gctx == null ? pageSize
+                        : gctx.dataRegion().pageMemory().realPageSize(page.groupId());
+
+                    byte[] pageData = page.pageData();
+
+                    if (pageData.length < realPageSize) {
+                        buf.clear();
+                        buf.put(pageData);
+                        buf.flip();
+
+                        sharedCtx.kernalContext().compress().decompressPage(buf, realPageSize);
+
+                        pageData = new byte[realPageSize];
+
+                        buf.position(0);
+
+                        buf.get(pageData);
+                    }
+
+                    rolledPages.put(page.fullPageId(), pageData);
                 }
                 else if (rec instanceof PageDeltaRecord) {
                     PageDeltaRecord delta = (PageDeltaRecord)rec;
@@ -1386,16 +1419,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                     assertNotNull("Missing page snapshot [page=" + fullId + ", delta=" + delta + ']', pageData);
 
-                    buf.order(ByteOrder.nativeOrder());
-
-                    buf.position(0);
+                    buf.clear();
                     buf.put(pageData);
-                    buf.position(0);
+                    buf.flip();
 
                     delta.applyDelta(sharedCtx.database().dataRegion(null).pageMemory(),
                         GridUnsafe.bufferAddress(buf));
-
-                    buf.position(0);
 
                     buf.get(pageData);
                 }
@@ -1405,6 +1434,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         info("Done apply...");
 
         PageMemoryEx pageMem = (PageMemoryEx)db.dataRegion(null).pageMemory();
+
+        ByteBuffer bufWal = ByteBuffer.allocateDirect(pageSize);
 
         for (Map.Entry<FullPageId, byte[]> entry : rolledPages.entrySet()) {
             FullPageId fullId = entry.getKey();
@@ -1421,12 +1452,30 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     try {
                         byte[] data = entry.getValue();
 
-                        for (int i = 0; i < data.length; i++) {
-                            if (fullId.pageId() == TrackingPageIO.VERSIONS.latest().trackingPageFor(fullId.pageId(), db.pageSize()))
-                                continue; // Skip tracking pages.
+                        if (fullId.pageId() == TrackingPageIO.VERSIONS.latest().trackingPageFor(fullId.pageId(), db.pageSize()))
+                            continue; // Skip tracking pages.
 
-                            assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
+                        // Compaction/restoring page can left some trash in unused space, so we need to compare
+                        // compacted pages in case of compaction is used.
+                        if (walPageCompression != null && PageIO.getPageIO(bufPtr) instanceof CompactablePageIO) {
+                            CompactablePageIO pageIO = PageIO.getPageIO(bufPtr);
+
+                            buf.clear();
+                            bufWal.clear();
+
+                            int realPageSize = data.length;
+
+                            pageIO.compactPage(GridUnsafe.wrapPointer(bufPtr, realPageSize), buf, realPageSize);
+                            pageIO.compactPage(ByteBuffer.wrap(data), bufWal, realPageSize);
+
+                            bufPtr = GridUnsafe.bufferAddress(buf);
+                            data = new byte[bufWal.limit()];
+                            bufWal.rewind();
+                            bufWal.get(data);
                         }
+
+                        for (int i = 0; i < data.length; i++)
+                            assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
                     }
                     finally {
                         pageMem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, false, true);

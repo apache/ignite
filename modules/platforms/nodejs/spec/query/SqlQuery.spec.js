@@ -45,7 +45,7 @@ describe('sql query test suite >', () => {
                 igniteClient = TestingHelper.igniteClient;
                 await testSuiteCleanup(done);
                 await igniteClient.getOrCreateCache(
-                    CACHE_NAME, 
+                    CACHE_NAME,
                     new CacheConfiguration().
                         setQueryEntities(
                             new QueryEntity().

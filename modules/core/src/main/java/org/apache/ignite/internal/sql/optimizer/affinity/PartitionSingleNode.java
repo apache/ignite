@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Node with a single partition.
@@ -71,6 +70,15 @@ public abstract class PartitionSingleNode implements PartitionNode {
     }
 
     /**
+     * @return Cache name. Should be used only on server side.
+     */
+    @Override public String cacheName() {
+        assert tbl != null;
+
+        return tbl.cacheName();
+    }
+
+    /**
      * @return Partition for constant node, index for argument node.
      */
     public abstract int value();
@@ -87,7 +95,9 @@ public abstract class PartitionSingleNode implements PartitionNode {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + tbl.alias().hashCode();
+
+        if (tbl != null)
+            hash = 31 * hash + tbl.alias().hashCode();
 
         return hash;
     }

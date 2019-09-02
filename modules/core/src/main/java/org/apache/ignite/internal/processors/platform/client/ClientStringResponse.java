@@ -39,8 +39,8 @@ public class ClientStringResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriterEx writer) {
-        super.encode(writer);
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        super.encode(ctx, writer);
 
         writer.writeString(val);
     }

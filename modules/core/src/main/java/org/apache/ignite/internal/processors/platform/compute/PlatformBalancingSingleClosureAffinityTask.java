@@ -27,6 +27,7 @@ import org.apache.ignite.compute.ComputeTaskNoResultCache;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,7 +55,7 @@ public class PlatformBalancingSingleClosureAffinityTask extends PlatformAbstract
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert job != null : "Job null-check must be performed in native platform.";
 

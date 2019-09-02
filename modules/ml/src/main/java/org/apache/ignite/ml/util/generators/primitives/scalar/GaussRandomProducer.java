@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 public class GaussRandomProducer extends RandomProducerWithGenerator {
     /** Mean. */
     private final double mean;
+
     /** Variance. */
     private final double variance;
 

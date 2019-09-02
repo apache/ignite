@@ -38,7 +38,7 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
     @Test
     public void testConvergenceChecking() {
         LocalDatasetBuilder<Integer, LabeledVector<Double>> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
-        ConvergenceChecker<Integer, LabeledVector<Double>, Integer> checker = createChecker(
+        ConvergenceChecker<Integer, LabeledVector<Double>> checker = createChecker(
             new MeanAbsValueConvergenceCheckerFactory(0.1), datasetBuilder);
 
         double error = checker.computeError(VectorUtils.of(1, 2), 4.0, notConvergedMdl);
@@ -64,7 +64,7 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
     public void testConvergenceCheckingWithAnomaliesInData() {
         data.put(666, VectorUtils.of(10, 11).labeled(100000.0));
         LocalDatasetBuilder<Integer, LabeledVector<Double>> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
-        ConvergenceChecker<Integer, LabeledVector<Double>, Integer> checker = createChecker(
+        ConvergenceChecker<Integer, LabeledVector<Double>> checker = createChecker(
             new MeanAbsValueConvergenceCheckerFactory(0.1), datasetBuilder);
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(

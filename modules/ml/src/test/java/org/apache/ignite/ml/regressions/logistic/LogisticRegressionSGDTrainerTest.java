@@ -17,19 +17,18 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests for {@link LogisticRegressionSGDTrainer}.
@@ -53,7 +52,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
             .withBatchSize(14)
             .withSeed(123L);
 
-        LogisticRegressionModel mdl = trainer.fit(cacheMock, parts, new ArraysVectorizer<Integer>().labeled(0));
+        LogisticRegressionModel mdl = trainer.fit(cacheMock, parts, new DoubleArrayVectorizer<Integer>().labeled(0));
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
@@ -78,10 +77,10 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         LogisticRegressionModel originalMdl = trainer.fit(
             cacheMock,
             parts,
-            new ArraysVectorizer<Integer>().labeled(0)
+            new DoubleArrayVectorizer<Integer>().labeled(0)
         );
 
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         LogisticRegressionModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,

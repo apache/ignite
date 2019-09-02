@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -48,7 +48,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class BostonHousePricesPredictionExample {
     /** Runs example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
@@ -67,7 +67,7 @@ public class BostonHousePricesPredictionExample {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.8);
 
                 System.out.println(">>> Start traininig.");
-                LinearRegressionModel model = trainer.fit(
+                LinearRegressionModel mdl = trainer.fit(
                     ignite, dataCache,
                     split.getTrainFilter(),
                     vectorizer
@@ -75,28 +75,33 @@ public class BostonHousePricesPredictionExample {
 
                 System.out.println(">>> Perform scoring.");
                 double score = Evaluator.evaluate(
-                    dataCache, split.getTestFilter(),
-                    model, vectorizer,
+                    dataCache,
+                    split.getTestFilter(),
+                    mdl,
+                    vectorizer,
                     new RegressionMetrics().withMetric(RegressionMetricValues::r2)
                 );
 
-                System.out.println(">>> Model: " + toString(model));
+                System.out.println(">>> Model: " + toString(mdl));
                 System.out.println(">>> R^2 score: " + score);
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 
     /**
      * Prepare pretty string for model.
-     * @param model Model.
+     * @param mdl Model.
      * @return String representation of model.
      */
-    private static String toString(LinearRegressionModel model) {
+    private static String toString(LinearRegressionModel mdl) {
         BiFunction<Integer, Double, String> formatter = (idx, val) -> String.format("%.2f*f%d", val, idx);
 
-        Vector weights = model.getWeights();
+        Vector weights = mdl.getWeights();
         StringBuilder sb = new StringBuilder(formatter.apply(0, weights.get(0)));
 
         for (int fid = 1; fid < weights.size(); fid++) {
@@ -105,7 +110,7 @@ public class BostonHousePricesPredictionExample {
                 .append(formatter.apply(fid, Math.abs(w)));
         }
 
-        double intercept = model.getIntercept();
+        double intercept = mdl.getIntercept();
         sb.append(" ").append(intercept > 0 ? "+" : "-").append(" ")
             .append(String.format("%.2f", Math.abs(intercept)));
         return sb.toString();

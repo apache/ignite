@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -131,31 +132,42 @@ public class SchemaManager {
     }
 
     /**
-     * Create system views.
+     * Registers new system view.
+     *
+     * @param schema Schema to create view in.
+     * @param view System view.
      */
-    private void createSystemViews() throws IgniteCheckedException {
+    public void createSystemView(String schema, SqlSystemView view) {
+
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
             log.info("SQL system views will not be created because they are disabled (see " +
-                    IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
+                IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
 
             return;
         }
 
         try {
             synchronized (schemaMux) {
-                createSchema(QueryUtils.SCHEMA_SYS, true);
+                createSchema(schema, true);
             }
 
-            try (Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS)) {
-                for (SqlSystemView view : systemViews(ctx))
-                    SqlSystemTableEngine.registerView(c, view);
+            try (Connection c = connMgr.connectionNoCache(schema)) {
+                SqlSystemTableEngine.registerView(c, view);
             }
         }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to register system view.", e);
+        catch (IgniteCheckedException | SQLException e) {
+            throw new IgniteException("Failed to register system view.", e);
         }
+    }
+
+    /**
+     * Create system views.
+     */
+    private void createSystemViews() throws IgniteCheckedException {
+        for (SqlSystemView view : systemViews(ctx))
+            createSystemView(QueryUtils.SCHEMA_SYS, view);
     }
 
     /**
@@ -603,6 +615,12 @@ public class SchemaManager {
     public void dropIndex(final String schemaName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
+
+        GridH2Table tbl = dataTableForIndex(schemaName, idxName);
+
+        assert tbl != null;
+
+        tbl.setRemoveIndexOnDestroy(true);
 
         connMgr.executeStatement(schemaName, sql);
     }

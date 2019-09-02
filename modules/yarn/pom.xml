@@ -100,6 +100,31 @@
     <build>
         <plugins>
             <plugin>
+                <!-- Copy ignite.properties from core module since it is not available as dependency. -->
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                         <id>copy-resources</id>
+                         <phase>validate</phase>
+                         <goals>
+                             <goal>copy-resources</goal>
+                         </goals>
+                         <configuration>
+                             <outputDirectory>src/main/resources</outputDirectory>
+                             <resources>
+                                 <resource>
+                                     <directory>../core/src/main/resources</directory>
+                                     <includes>
+                                         <include>ignite.properties</include>
+                                     </includes>
+                                 </resource>
+                             </resources>
+                         </configuration>
+                    </execution>
+               </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4.1</version>
                 <configuration>

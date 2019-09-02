@@ -17,17 +17,15 @@
 
 package org.apache.ignite.util;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -40,11 +38,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -54,25 +54,22 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.Command;
-import org.apache.ignite.internal.commandline.CommandArgFactory;
+import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -87,13 +84,14 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -104,29 +102,36 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.SystemPropertiesRule;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
-import static java.nio.file.Files.delete;
-import static java.nio.file.Files.newDirectoryStream;
+import static java.io.File.separatorChar;
 import static java.util.Arrays.asList;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -135,126 +140,57 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Command line handler test.
  */
-public class GridCommandHandlerTest extends GridCommonAbstractTest {
-    /** System out. */
-    protected PrintStream sysOut;
+public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
-    /** Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test. */
-    protected ByteArrayOutputStream testOut;
+    /** */
+    @Rule public final TestRule methodRule = new SystemPropertiesRule();
 
-    /** Option is used for auto confirmation. */
-    private static final String CMD_AUTO_CONFIRMATION = "--yes";
+    /** */
+    private File defaultDiagnosticDir;
 
-    /** Atomic configuration. */
-    private AtomicConfiguration atomicConfiguration;
-
-    /** Additional data region configuration. */
-    private DataRegionConfiguration dataRegionConfiguration;
-
-    /**
-     * @return Folder in work directory.
-     * @throws IgniteCheckedException If failed to resolve folder name.
-     */
-    protected File folder(String folder) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), folder, false);
-    }
+    /** */
+    private File customDiagnosticDir;
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        GridTestUtils.cleanIdleVerifyLogFiles();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-
-        cleanPersistenceDir();
-
-        stopAllGrids();
-
-        sysOut = System.out;
-
-        testOut = new ByteArrayOutputStream(1024 * 1024);
+    @Override public String getTestIgniteInstanceName() {
+        return "gridCommandHandlerTest";
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        super.afterTest();
 
-        cleanPersistenceDir();
+        cleanDiagnosticDir();
+    }
 
-        // Delete idle-verify dump files.
-        try (DirectoryStream<Path> files = newDirectoryStream(
-            Paths.get(U.defaultWorkDirectory()),
-            entry -> entry.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX)
-        )
-        ) {
-            for (Path path : files)
-                delete(path);
-        }
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+        cleanDiagnosticDir();
 
-        System.setOut(sysOut);
-
-        log.info("----------------------------------------");
-        if (testOut != null)
-            System.out.println(testOut.toString());
+        initDiagnosticDir();
     }
 
     /**
-     *
+     * @throws IgniteCheckedException If failed.
      */
-    protected void injectTestSystemOut() {
-        System.setOut(new PrintStream(testOut));
+    private void initDiagnosticDir() throws IgniteCheckedException {
+        defaultDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + DEFAULT_TARGET_FOLDER + separatorChar);
+
+        customDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + "diagnostic_test_dir" + separatorChar);
     }
 
-    /** {@inheritDoc} */
-    @Override public String getTestIgniteInstanceName() {
-        return "bltTest";
+    /**
+     * Clean diagnostic directories.
+     */
+    private void cleanDiagnosticDir() {
+        U.delete(defaultDiagnosticDir);
+        U.delete(customDiagnosticDir);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (atomicConfiguration != null)
-            cfg.setAtomicConfiguration(atomicConfiguration);
-
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(50L * 1024 * 1024));
-
-        if (dataRegionConfiguration != null)
-            memCfg.setDataRegionConfigurations(dataRegionConfiguration);
-
-        cfg.setDataStorageConfiguration(memCfg);
-
-        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-        dsCfg.setWalMode(WALMode.LOG_ONLY);
-        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-
-        cfg.setConsistentId(igniteInstanceName);
-
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
-        return cfg;
-    }
 
     /**
      * Test activation works via control.sh
@@ -270,53 +206,29 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--activate"));
 
         assertTrue(ignite.cluster().active());
+        assertFalse(ignite.cluster().readOnly());
     }
 
     /**
-     * @param args Arguments.
-     * @return Result of execution.
+     * Test enabling/disabling read-only mode works via control.sh
+     *
+     * @throws Exception If failed.
      */
-    protected int execute(String... args) {
-        return execute(new ArrayList<>(asList(args)));
-    }
+    @Test
+    public void testReadOnlyEnableDisable() throws Exception {
+        Ignite ignite = startGrids(1);
 
-    /**
-     * @param args Arguments.
-     * @return Result of execution
-     */
-    protected int execute(List<String> args) {
-        if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0))) {
-            // Add force to avoid interactive confirmation.
-            args.add(CMD_AUTO_CONFIRMATION);
-        }
+        ignite.cluster().active(true);
 
-        return new CommandHandler().execute(args);
-    }
+        assertFalse(ignite.cluster().readOnly());
 
-    /**
-     * @param hnd Handler.
-     * @param args Arguments.
-     * @return Result of execution
-     */
-    protected int execute(CommandHandler hnd, ArrayList<String> args) {
-        // Add force to avoid interactive confirmation
-        args.add(CMD_AUTO_CONFIRMATION);
+        assertEquals(EXIT_CODE_OK, execute("--read-only-on"));
 
-        return hnd.execute(args);
-    }
+        assertTrue(ignite.cluster().readOnly());
 
-    /**
-     * @param hnd Handler.
-     * @param args Arguments.
-     * @return Result of execution
-     */
-    protected int execute(CommandHandler hnd, String... args) {
-        ArrayList<String> args0 = new ArrayList<>(asList(args));
+        assertEquals(EXIT_CODE_OK, execute("--read-only-off"));
 
-        // Add force to avoid interactive confirmation
-        args0.add(CMD_AUTO_CONFIRMATION);
-
-        return hnd.execute(args0);
+        assertFalse(ignite.cluster().readOnly());
     }
 
     /**
@@ -348,13 +260,35 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testState() throws Exception {
         Ignite ignite = startGrids(1);
 
+        injectTestSystemOut();
+
         assertFalse(ignite.cluster().active());
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is inactive"));
+
+        testOut.reset();
+
         ignite.cluster().active(true);
 
+        assertTrue(ignite.cluster().active());
+
         assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is active"));
+
+        testOut.reset();
+
+        ignite.cluster().readOnly(true);
+
+        awaitPartitionMapExchange();
+
+        assertTrue(ignite.cluster().readOnly());
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is active (read-only)"));
     }
 
     /**
@@ -433,6 +367,42 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Very basic tests for running the command in different enviroment which other command are running in.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFindAndDeleteGarbage() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        ignite.createCaches(Arrays.asList(
+            new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
+            new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+
+        assertContains(log, testOut.toString(), "garbage not found");
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            ignite(0).localNode().id().toString(), "--port", "11212"));
+
+        assertContains(log, testOut.toString(), "garbage not found");
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            "groupGarbage", "--port", "11212"));
+
+        assertContains(log, testOut.toString(), "garbage not found");
+    }
+
+    /**
      * @return utility information about coordinator
      */
     private String findCrdInfo() {
@@ -452,18 +422,18 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Local node consistent ID.
      */
     private String consistentIds(Ignite... ignites) {
-        String res = "";
+        StringBuilder res = new StringBuilder();
 
         for (Ignite ignite : ignites) {
             String consistentId = ignite.cluster().localNode().consistentId().toString();
 
-            if (!F.isEmpty(res))
-                res += ", ";
+            if (res.length() != 0)
+                res.append(", ");
 
-            res += consistentId;
+            res.append(consistentId);
         }
 
-        return res;
+        return res.toString();
     }
 
     /**
@@ -478,6 +448,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add", "non-existent-id"));
 
         Ignite other = startGrid(2);
 
@@ -541,7 +515,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "remove", offlineNodeConsId));
 
-        assertTrue(testOut.toString().contains("Changing BaselineTopology on inactive cluster is not allowed."));
+        assertContains(log, testOut.toString(), "Changing BaselineTopology on inactive cluster is not allowed.");
     }
 
     /**
@@ -733,7 +707,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch);
+        IgniteInternalFuture<?> fut = startTransactions("testActiveTransactions", lockLatch, unlockLatch, true);
 
         U.awaitQuiet(lockLatch);
 
@@ -868,7 +842,137 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        checkFutures();
+        checkUserFutures();
+    }
+
+    /**
+     * Smoke test for --tx --info command.
+     */
+    @Test
+    public void testTransactionInfo() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(5);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
+
+        for (Ignite ig : G.allGrids())
+            assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = startTransactions("testTransactionInfo", lockLatch, unlockLatch, false);
+
+        try {
+            U.awaitQuiet(lockLatch);
+
+            doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+
+            Set<GridCacheVersion> nearXids = new HashSet<>();
+
+            for (int i = 0; i < 5; i++) {
+                IgniteEx grid = grid(i);
+
+                IgniteTxManager tm = grid.context().cache().context().tm();
+
+                for (IgniteInternalTx tx : tm.activeTransactions())
+                    nearXids.add(tx.nearXidVersion());
+            }
+
+            injectTestSystemOut();
+
+            for (GridCacheVersion nearXid : nearXids)
+                assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+            String out = testOut.toString();
+
+            for (GridCacheVersion nearXid : nearXids)
+                assertContains(log, out, nearXid.toString());
+        }
+        finally {
+            unlockLatch.countDown();
+
+            fut.get();
+        }
+    }
+
+    /**
+     * Smoke test for historical mode of --tx --info command.
+     */
+    @Test
+    public void testTransactionHistoryInfo() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(2);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
+
+        for (Ignite ig : G.allGrids())
+            assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = startTransactions("testTransactionHistoryInfo", lockLatch, unlockLatch, false);
+
+        U.awaitQuiet(lockLatch);
+
+        doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+
+        Set<GridCacheVersion> nearXids = new HashSet<>();
+
+        for (int i = 0; i < 2; i++) {
+            IgniteEx grid = grid(i);
+
+            IgniteTxManager tm = grid.context().cache().context().tm();
+
+            for (IgniteInternalTx tx : tm.activeTransactions())
+                nearXids.add(tx.nearXidVersion());
+        }
+
+        unlockLatch.countDown();
+
+        fut.get();
+
+        doSleep(3000); // Should be more than enough for all transactions to disappear from contexts after finish.
+
+        injectTestSystemOut();
+
+        boolean commitMatched = false;
+        boolean rollbackMatched = false;
+
+        for (GridCacheVersion nearXid : nearXids) {
+            assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+            String out = testOut.toString();
+
+            testOut.reset();
+
+            assertContains(log, out, "Transaction was found in completed versions history of the following nodes:");
+
+            if (out.contains(TransactionState.COMMITTED.name())) {
+                commitMatched = true;
+
+                assertNotContains(log, out, TransactionState.ROLLED_BACK.name());
+            }
+
+            if (out.contains(TransactionState.ROLLED_BACK.name())) {
+                rollbackMatched = true;
+
+                assertNotContains(log, out, TransactionState.COMMITTED.name());
+            }
+
+        }
+
+        assertTrue(commitMatched);
+        assertTrue(rollbackMatched);
     }
 
     /**
@@ -926,7 +1030,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 assertEquals(tx0.xid(), info.getXid());
 
             assertEquals(1, map.size());
-        }, "--tx", "--kill");
+        }, "--tx", "--xid", tx0.xid().toString(), "--kill");
 
         tx0.finishFuture().get();
 
@@ -938,7 +1042,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         nearFinFut.get();
 
-        checkFutures();
+        checkUserFutures();
     }
 
     /**
@@ -988,6 +1092,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             }
         });
 
+        Set<IgniteUuid> xidSet = new GridConcurrentHashSet<>();
+
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 int id = idx.getAndIncrement();
@@ -995,6 +1101,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 Ignite client = clients[id];
 
                 try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 1)) {
+                    xidSet.add(tx.xid());
+
                     IgniteCache<Long, Long> cache = client.cache(DEFAULT_CACHE_NAME);
 
                     if (id != 0)
@@ -1037,8 +1145,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 if (m instanceof GridDhtTxFinishRequest) {
                     GridDhtTxFinishRequest r = (GridDhtTxFinishRequest)m;
 
-                    if (r.nearNodeId().equals(clients[0].cluster().localNode().id()))
-                        return false;
+                    return !r.nearNodeId().equals(clients[0].cluster().localNode().id());
                 }
 
                 return true;
@@ -1084,8 +1191,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 VisorTxTaskResult res = map.get(grid.localNode());
 
+                List<VisorTxInfo> infos = res.getInfos()
+                    .stream()
+                    .filter(info -> xidSet.contains(info.getNearXid()))
+                    .collect(Collectors.toList());
+
                 // Validate queue length on backups.
-                assertEquals(clients.length, res.getInfos().size());
+                assertEquals(clients.length, infos.size());
             }
         }, "--tx");
 
@@ -1115,7 +1227,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(tc - 1, cur.longValue());
 
-        checkFutures();
+        checkUserFutures();
     }
 
     /**
@@ -1135,16 +1247,24 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-        assertTrue(testOut.toString().contains("Changing BaselineTopology on inactive cluster is not allowed."));
+        assertContains(log, testOut.toString(), "Changing BaselineTopology on inactive cluster is not allowed.");
 
         consistentIDs =
             getTestIgniteInstanceName(1) + ", " +
                 getTestIgniteInstanceName(2) + "," +
                 getTestIgniteInstanceName(3);
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add", consistentIDs));
 
-        assertTrue(testOut.toString().contains("Node not found for consistent ID: bltTest2"));
+        String testOutStr = testOut.toString();
+
+        // Ignite instase 1 can be logged only in arguments list.
+        boolean isInstanse1Found = Arrays.stream(testOutStr.split("\n"))
+                                        .filter(s -> s.contains("Arguments:"))
+                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+
+        assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
+        assertFalse(testOutStr, isInstanse1Found);
     }
 
     /**
@@ -1157,13 +1277,21 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String output = testOut.toString();
 
-        for (CacheCommand cmd : CacheCommand.values()) {
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
             if (cmd != HELP) {
-                assertTrue(cmd.text(), output.contains(cmd.toString()));
+                assertContains(log, output, cmd.toString());
 
-                for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                    assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+                Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
 
+                if (args != null)
+                    for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                        assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+
+            }
+            else {
+                assertContains(log, output, CommandHandler.UTILITY_NAME);
+
+                assertNotContains(log, output, "control.sh");
             }
         }
     }
@@ -1174,9 +1302,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
-        for (CacheCommand cmd : CacheCommand.values()) {
-            for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
+            Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+
+            if (args != null)
+                for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1188,8 +1319,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--help"));
 
-        for (Command cmd : Command.values())
-            assertTrue(cmd.text(), testOut.toString().contains(cmd.toString()));
+        String testOutStr = testOut.toString();
+
+        for (CommandList cmd : CommandList.values())
+            assertContains(log, testOutStr, cmd.toString());
+
+        assertContains(log, testOutStr, "Control utility script");
+        assertContains(log, testOutStr, CommandHandler.UTILITY_NAME);
+
+        assertNotContains(log, testOutStr, "Control.sh");
     }
 
     /**
@@ -1207,7 +1345,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(testOut.toString(), "no conflicts have been found");
+        assertContains(log, testOut.toString(), "no conflicts have been found");
 
         HashSet<Integer> clearKeys = new HashSet<>(asList(1, 2, 3, 4, 5, 6));
 
@@ -1215,7 +1353,35 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(testOut.toString(), "conflict partitions");
+        assertContains(log, testOut.toString(), "conflict partitions");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyNodeFilter() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        UUID lastNodeId = ignite.localNode().id();
+
+        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setNodeFilter(node -> !node.id().equals(lastNodeId))
+            .setBackups(1));
+
+        try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 100; i++)
+                streamer.addData(i, i);
+        }
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", DEFAULT_CACHE_NAME));
+
+        assertContains(log, testOut.toString(), "no conflicts have been found");
     }
 
     /**
@@ -1235,7 +1401,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertTrue(testOut.toString().contains("no conflicts have been found"));
+        assertContains(log, testOut.toString(), "no conflicts have been found");
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -1245,7 +1411,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertTrue(testOut.toString().contains("found 2 conflict partitions"));
+        assertContains(log, testOut.toString(), "found 2 conflict partitions");
     }
 
     /**
@@ -1274,9 +1440,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String zeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, found " + emptyPartId + " partitions"));
-        assertTrue(zeroUpdateCntrs.contains("1 partitions was skipped"));
-        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+        assertContains(log, zeroUpdateCntrs, "idle_verify check has finished, found " + emptyPartId + " partitions");
+        assertContains(log, zeroUpdateCntrs, "1 partitions was skipped");
+        assertContains(log, zeroUpdateCntrs, "idle_verify check has finished, no conflicts have been found.");
 
         assertSort(emptyPartId, zeroUpdateCntrs);
 
@@ -1296,9 +1462,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String nonZeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, found " + 31 + " partitions"));
-        assertTrue(nonZeroUpdateCntrs.contains("1 partitions was skipped"));
-        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+        assertContains(log, nonZeroUpdateCntrs, "idle_verify check has finished, found " + 31 + " partitions");
+        assertContains(log, nonZeroUpdateCntrs, "1 partitions was skipped");
+        assertContains(log, nonZeroUpdateCntrs, "idle_verify check has finished, no conflicts have been found.");
 
         assertSort(31, zeroUpdateCntrs);
 
@@ -1338,10 +1504,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithZeros.contains("idle_verify check has finished, found " + parts + " partitions"));
-            assertTrue(dumpWithZeros.contains("Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]"));
-            assertTrue(dumpWithZeros.contains("updateCntr=0, size=0, partHash=0"));
-            assertTrue(dumpWithZeros.contains("no conflicts have been found"));
+            assertContains(log, dumpWithZeros, "idle_verify check has finished, found " + parts + " partitions");
+            assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
+            assertContains(log, dumpWithZeros, "updateCntr=0, size=0, partHash=0");
+            assertContains(log, dumpWithZeros, "no conflicts have been found");
 
             assertSort(parts, dumpWithZeros);
         }
@@ -1349,13 +1515,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithoutZeros.contains("idle_verify check has finished, found " + keysCount + " partitions"));
-            assertTrue(dumpWithoutZeros.contains((parts - keysCount) + " partitions was skipped"));
-            assertTrue(dumpWithoutZeros.contains("Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId="));
+            assertContains(log, dumpWithoutZeros, "idle_verify check has finished, found " + keysCount + " partitions");
+            assertContains(log, dumpWithoutZeros, (parts - keysCount) + " partitions was skipped");
+            assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
 
-            assertFalse(dumpWithoutZeros.contains("updateCntr=0, size=0, partHash=0"));
+            assertNotContains(log, dumpWithoutZeros, "updateCntr=0, size=0, partHash=0");
 
-            assertTrue(dumpWithoutZeros.contains("no conflicts have been found"));
+            assertContains(log, dumpWithoutZeros, "no conflicts have been found");
 
             assertSort(keysCount, dumpWithoutZeros);
         }
@@ -1369,75 +1535,74 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception if failed
      */
     @Test
-    public void testCacheIdleVerifyMultipleCacheFilterOptions()
-            throws Exception {
+    public void testCacheIdleVerifyMultipleCacheFilterOptions() throws Exception {
         IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setGroupName("shared_grp")
-                .setBackups(1)
-                .setName(DEFAULT_CACHE_NAME));
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setGroupName("shared_grp")
-                .setBackups(1)
-                .setName(DEFAULT_CACHE_NAME + "_second"));
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "_second"));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 64))
-                .setBackups(1)
-                .setName(DEFAULT_CACHE_NAME + "_third"));
+            .setAffinity(new RendezvousAffinityFunction(false, 64))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "_third"));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 128))
-                .setBackups(1)
-                .setName("wrong_cache"));
+            .setAffinity(new RendezvousAffinityFunction(false, 128))
+            .setBackups(1)
+            .setName("wrong_cache"));
 
         injectTestSystemOut();
 
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished",
-            "idle_verify task was executed with the following args: --cache-filter SYSTEM --exclude-caches wrong.* ",
+            "idle_verify check has finished, found",
+            "idle_verify task was executed with the following args: caches=[], excluded=[wrong.*], cacheFilter=[SYSTEM]",
             "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 96 partitions",
+            "idle_verify check has finished, found",
             null,
-            "--cache", "idle_verify", "--dump", ".*", "--exclude-caches", "wrong.*"
+            "--cache", "idle_verify", "--dump", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 32 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "USER"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "There are no caches matching given filter options.",
+            "There are no caches matching given filter options",
             null,
             "--cache", "idle_verify", "--exclude-caches", ".*"
         );
@@ -1451,14 +1616,75 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             true,
             "idle_verify check has finished, no conflicts have been found.",
             null,
-            "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*"
+            "--cache", "idle_verify", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, no conflicts have been found.",
             null,
-            "--cache", "idle_verify", "--dump", ".*", "--cache-filter", "PERSISTENT"
+            "--cache", "idle_verify", "--dump", "--cache-filter", "PERSISTENT"
         );
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
+            true,
+            "There are no caches matching given filter options.",
+            null,
+            "--cache", "idle_verify", "--cache-filter", "NOT_PERSISTENT"
+        );
+    }
+
+    /** */
+    @Test
+    public void testIdleVerifyCheckCrcFailsOnNotIdleCluster() throws Exception {
+        checkpointFreq = 100L;
+
+        IgniteEx node = startGrids(2);
+
+        node.cluster().active(true);
+
+        IgniteCache cache = node.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME)
+        );
+
+        AtomicBoolean stopFlag = new AtomicBoolean();
+
+        Thread loadThread = new Thread(() -> {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            while (!stopFlag.get()) {
+                cache.put(rnd.nextInt(), rnd.nextInt());
+
+                if (Thread.interrupted())
+                    break;
+            }
+        });
+
+        try {
+            loadThread.start();
+
+            doSleep(checkpointFreq);
+
+            injectTestSystemOut();
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--check-crc"));
+        }
+        finally {
+            stopFlag.set(true);
+
+            loadThread.join();
+        }
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "idle_verify failed");
+        assertContains(log, out, "See log for additional information.");
+
+        String logFileName = (out.split("See log for additional information. ")[1]).split(".txt")[0];
+
+        String logFile = new String(Files.readAllBytes(new File(logFileName + ".txt").toPath()));
+
+        assertContains(log, logFile, "Checkpoint with dirty pages started! Cluster not idle!");
     }
 
     /**
@@ -1482,13 +1708,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         int exitCode = execute(args);
 
-        assertEquals(exitOk, EXIT_CODE_OK == exitCode);
+        assertEquals(testOut.toString(), exitOk, EXIT_CODE_OK == exitCode);
 
         if (exitCode == EXIT_CODE_OK) {
             Matcher fileNameMatcher = dumpFileNameMatcher();
 
             if (fileNameMatcher.find()) {
-                assertTrue(argsSet.contains("--dump"));
+                assertContains(log, argsSet, "--dump");
 
                 Path filePath = Paths.get(fileNameMatcher.group(1));
 
@@ -1496,36 +1722,18 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 Files.delete(filePath);
 
-                assertContains(dump, outputExp);
+                assertContains(log, dump, outputExp);
 
                 if (cmdExp != null)
-                    assertContains(dump, cmdExp);
+                    assertContains(log, dump, cmdExp);
             }
             else {
-                assertFalse(argsSet.contains("--dump"));
+                assertNotContains(log, argsSet, "--dump");
 
-                assertContains(testOut.toString(), outputExp);
+                assertContains(log, testOut.toString(), outputExp);
             }
         } else
-            assertContains(testOut.toString(), outputExp);
-    }
-
-    /**
-     * Checks that string {@param str} contains substring {@param substr}. Logs both strings
-     * and throws {@link java.lang.AssertionError}, if not.
-     *
-     * @param str string
-     * @param substr substring
-     */
-    private void assertContains(String str, String substr) {
-        try {
-            assertTrue(str.contains(substr));
-        } catch (AssertionError e) {
-            log.warning(String.format("String does not contain substring: '%s':", substr));
-            log.warning("String:");
-            log.warning(str);
-            throw e;
-        }
+            assertContains(log, testOut.toString(), outputExp);
     }
 
     /**
@@ -1566,14 +1774,33 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        corruptingAndCheckDefaultCache(ignite, "ALL");
+        corruptingAndCheckDefaultCache(ignite, "USER", true);
+    }
+
+    /**
+     * Tests that idle verify print partitions info while launched without dump option.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyForCorruptedData() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        createCacheAndPreload(ignite, 100);
+
+        injectTestSystemOut();
+
+        corruptingAndCheckDefaultCache(ignite, "USER", false);
     }
 
     /**
      * @param ignite Ignite.
      * @param cacheFilter cacheFilter.
+     * @param dump Whether idle_verify should be launched with dump option or not.
      */
-    private void corruptingAndCheckDefaultCache(IgniteEx ignite, String cacheFilter) throws IOException {
+    private void corruptingAndCheckDefaultCache(IgniteEx ignite, String cacheFilter, boolean dump) throws IOException {
         injectTestSystemOut();
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
@@ -1582,19 +1809,28 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx, cacheCtx.config().getAffinity().partitions() / 2, false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cache-filter", cacheFilter));
+        String resReport = null;
 
-        Matcher fileNameMatcher = dumpFileNameMatcher();
+        if (dump) {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cache-filter", cacheFilter));
 
-        if (fileNameMatcher.find()) {
-            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+            Matcher fileNameMatcher = dumpFileNameMatcher();
 
-            log.info(dumpWithConflicts);
+            if (fileNameMatcher.find()) {
+                resReport = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]"));
+                log.info(resReport);
+            }
+            else
+                fail("Should be found dump with conflicts");
         }
-        else
-            fail("Should be found dump with conflicts");
+        else {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cache-filter", cacheFilter));
+
+            resReport = testOut.toString();
+        }
+
+        assertContains(log, resReport, "found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]");
     }
 
     /**
@@ -1619,9 +1855,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
-        });
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump")));
 
         TestRecordingCommunicationSpi.spi(unstable).waitForBlocked();
 
@@ -1692,8 +1927,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String out = testOut.toString();
 
-        assertTrue(out.contains("idle_verify failed on 1 node."));
-        assertTrue(out.contains("See log for additional information."));
+        assertContains(log, out, "idle_verify failed on 1 node.");
+        assertContains(log, out, "See log for additional information.");
     }
 
     /** */
@@ -1712,8 +1947,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String outputStr = testOut.toString();
 
-        assertTrue(outputStr.contains("idle_verify failed on 1 node."));
-        assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+        assertContains(log, outputStr, "idle_verify failed on 1 node.");
+        assertContains(log, outputStr, "idle_verify check has finished, no conflicts have been found.");
     }
 
     /** */
@@ -1755,6 +1990,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
+        forceCheckpoint();
+
         awaitPartitionMapExchange();
 
         injectTestSystemOut();
@@ -1790,9 +2027,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:"));
+            assertContains(log, dumpWithConflicts, "Idle verify failed on nodes:");
 
-            assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId));
+            assertContains(log, dumpWithConflicts, "Node ID: " + unstableNodeId);
         }
         else
             fail("Should be found dump with conflicts");
@@ -1811,7 +2048,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false, parts))
             .setBackups(2);
 
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -1852,8 +2089,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("found 4 conflict partitions: [counterConflicts=2, " +
-                "hashConflicts=2]"));
+            assertContains(
+                log,
+                dumpWithConflicts,
+                "found 4 conflict partitions: [counterConflicts=2, hashConflicts=2]"
+            );
         }
         else
             fail("Should be found dump with conflicts");
@@ -1866,13 +2106,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
         createCacheAndPreload(ignite, 100);
 
-        corruptingAndCheckDefaultCache(ignite, "PERSISTENT");
+        corruptingAndCheckDefaultCache(ignite, "PERSISTENT", true);
     }
 
     /**
@@ -1887,7 +2127,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         dataRegionConfiguration = new DataRegionConfiguration()
             .setName("none-persistence-region");
 
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -1919,8 +2159,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("found 1 conflict partitions: [counterConflicts=0, " +
-                "hashConflicts=1]"));
+            assertContains(
+                log,
+                dumpWithConflicts,
+                "found 1 conflict partitions: [counterConflicts=0, hashConflicts=1]"
+            );
         }
         else
             fail("Should be found dump with conflicts");
@@ -1933,7 +2176,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpExcludedCacheGrp() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -1960,7 +2203,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("idle_verify check has finished, found 0 partitions"));
+            assertContains(log, dumpWithConflicts, "There are no caches matching given filter options");
         }
         else
             fail("Should be found dump with conflicts");
@@ -1973,7 +2216,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpExcludedCaches() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -2006,9 +2249,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("idle_verify check has finished, found 32 partitions"));
-            assertTrue(dumpWithConflicts.contains("default_third"));
-            assertTrue(!dumpWithConflicts.contains("shared_grp"));
+            assertContains(log, dumpWithConflicts, "idle_verify check has finished, found 32 partitions");
+            assertContains(log, dumpWithConflicts, "default_third");
+            assertNotContains(log, dumpWithConflicts, "shared_grp");
         }
         else
             fail("Should be found dump with conflicts");
@@ -2023,12 +2266,24 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         return fileNamePattern.matcher(testOut.toString());
     }
 
+    /** */
+    @Test
+    public void testPrintTimestampAtEndsOfExecution() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute());
+
+        String testOutStr = testOut.toString();
+
+        assertContains(log, testOutStr, "Control utility has completed execution at: ");
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testCacheIdleVerifyMovingParts() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -2047,7 +2302,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(testOut.toString(), "no conflicts have been found");
+        assertContains(log, testOut.toString(), "no conflicts have been found");
 
         startGrid(2);
 
@@ -2055,7 +2310,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(testOut.toString(), "MOVING partitions");
+        assertContains(log, testOut.toString(), "MOVING partitions");
     }
 
     /**
@@ -2120,11 +2375,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             l2.countDown();
 
-            assertTrue(testOut.toString().contains("TxEntry"));
-            assertTrue(testOut.toString().contains("op=READ"));
-            assertTrue(testOut.toString().contains("op=CREATE"));
-            assertTrue(testOut.toString().contains("id=" + ignite(0).cluster().localNode().id()));
-            assertTrue(testOut.toString().contains("id=" + ignite(1).cluster().localNode().id()));
+            String out = testOut.toString();
+
+            assertContains(log, out, "TxEntry");
+            assertContains(log, out, "op=READ");
+            assertContains(log, out, "op=CREATE");
+            assertContains(log, out, "id=" + ignite(0).cluster().localNode().id());
+            assertContains(log, out, "id=" + ignite(1).cluster().localNode().id());
         }
         finally {
             svc.shutdown();
@@ -2153,8 +2410,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "--seq"));
 
-        assertTrue(testOut.toString().contains("testSeq"));
-        assertTrue(testOut.toString().contains("testSeq2"));
+        String out = testOut.toString();
+
+        assertContains(log, out, "testSeq");
+        assertContains(log, out, "testSeq2");
     }
 
     /**
@@ -2179,7 +2438,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "--groups"));
 
-        assertTrue(testOut.toString().contains("G100"));
+        assertContains(log, testOut.toString(), "G100");
     }
 
     /**
@@ -2203,10 +2462,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*"));
 
-        assertTrue(testOut.toString().contains("cacheName=" + DEFAULT_CACHE_NAME));
-        assertTrue(testOut.toString().contains("prim=32"));
-        assertTrue(testOut.toString().contains("mapped=32"));
-        assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
+        String out = testOut.toString();
+
+        assertContains(log, out, "cacheName=" + DEFAULT_CACHE_NAME);
+        assertContains(log, out, "prim=32");
+        assertContains(log, out, "mapped=32");
+        assertContains(log, out, "affCls=RendezvousAffinityFunction");
     }
 
     /** */
@@ -2302,17 +2563,17 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         if (outputFormat == null || SINGLE_LINE.text().equals(outputFormat)) {
             for (int i = 0; i < cachesCnt; i++)
-                assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME + i));
+                assertContains(log, outStr, "name=" + DEFAULT_CACHE_NAME + i);
 
-            assertTrue(outStr.contains("partitions=32"));
-            assertTrue(outStr.contains("function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
+            assertContains(log, outStr, "partitions=32");
+            assertContains(log, outStr, "function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction");
         }
         else if (MULTI_LINE.text().equals(outputFormat)) {
             for (int i = 0; i < cachesCnt; i++)
-                assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + i + "']"));
+                assertContains(log, outStr, "[cache = '" + DEFAULT_CACHE_NAME + i + "']");
 
-            assertTrue(outStr.contains("Affinity Partitions: 32"));
-            assertTrue(outStr.contains("Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
+            assertContains(log, outStr, "Affinity Partitions: 32");
+            assertContains(log, outStr, "Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction");
         }
         else
             fail("Unknown output format: " + outputFormat);
@@ -2334,33 +2595,34 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         // Run distribution for all node and all cache
         assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null"));
 
-        String log = testOut.toString();
+        String out = testOut.toString();
 
         // Result include info by cache "default"
-        assertTrue(log.contains("[next group: id=1544803905, name=default]"));
+        assertContains(log ,out, "[next group: id=1544803905, name=default]");
 
         // Result include info by cache "ignite-sys-cache"
-        assertTrue(log.contains("[next group: id=-2100569601, name=ignite-sys-cache]"));
+        assertContains(log ,out, "[next group: id=-2100569601, name=ignite-sys-cache]");
 
         // Run distribution for all node and all cache and include additional user attribute
         assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "--user-attributes", "ZONE,CELL,DC"));
 
-        log = testOut.toString();
+        out = testOut.toString();
 
-        // Find last row
-        int lastRowIndex = log.lastIndexOf('\n');
+        List<String> outLines = Arrays.stream(out.split("\n"))
+                                .map(String::trim)
+                                .collect(Collectors.toList());
 
-        assertTrue(lastRowIndex > 0);
+        int firstIndex = outLines.indexOf("[next group: id=1544803905, name=default]");
+        int lastIndex  = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
 
-        // Last row is empty, but the previous line contains data
-        lastRowIndex = log.lastIndexOf('\n', lastRowIndex - 1);
+        String dataLine = outLines.get(firstIndex + 1);
+        String userArrtDataLine = outLines.get(lastIndex + 1);
 
-        assertTrue(lastRowIndex > 0);
+        long commaNum = dataLine.chars().filter(i -> i == ',').count();
+        long userArrtCommaNum = userArrtDataLine.chars().filter(i -> i == ',').count();
 
-        String lastRow = log.substring(lastRowIndex);
-
-        // Since 3 user attributes have been added, the total number of columns in response should be 12 (separators 11)
-        assertEquals(11, lastRow.split(",").length);
+        // Check that number of columns increased by 3
+        assertEquals(3, userArrtCommaNum - commaNum);
     }
 
     /**
@@ -2378,12 +2640,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "reset_lost_partitions", "ignite-sys-cache,default"));
 
-        final String log = testOut.toString();
+        final String out = testOut.toString();
 
-        assertTrue(log.contains("Reset LOST-partitions performed successfully. Cache group (name = 'ignite-sys-cache'"));
+        assertContains(log, out, "Reset LOST-partitions performed successfully. Cache group (name = 'ignite-sys-cache'");
 
-        assertTrue(log.contains("Reset LOST-partitions performed successfully. Cache group (name = 'default'"));
-
+        assertContains(log, out, "Reset LOST-partitions performed successfully. Cache group (name = 'default'");
     }
 
     /**
@@ -2431,18 +2692,22 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "print"));
 
-        for (String id : nodes)
-            assertTrue(testOut.toString().contains(id));
+        String out = testOut.toString();
 
-        assertTrue(!testOut.toString().contains("error"));
+        for (String id : nodes)
+            assertContains(log, out, id);
+
+        assertNotContains(log, out, "error");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "print", nodes.get(0)));
 
-        assertTrue(!testOut.toString().contains(nodes.get(1)));
+        out = testOut.toString();
 
-        assertTrue(!testOut.toString().contains("error"));
+        assertNotContains(log, out, nodes.get(1));
+
+        assertNotContains(log, out, "error");
     }
 
     /**
@@ -2465,26 +2730,185 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
 
-        for (String id : nodes)
-            assertTrue(testOut.toString().contains(id));
+        String out = testOut.toString();
 
-        assertTrue(!testOut.toString().contains("error"));
+        for (String id : nodes)
+            assertContains(log, out, id);
+
+        assertNotContains(log, out, "error");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "delete", nodes.get(0)));
 
-        assertTrue(!testOut.toString().contains(nodes.get(1)));
+        out = testOut.toString();
 
-        assertTrue(!testOut.toString().contains("error"));
+        assertNotContains(log, out, nodes.get(1));
+
+        assertNotContains(log, out, "error");
     }
 
     /**
-     * @param lockLatch Lock latch.
-     * @param unlockLatch Unlock latch.
+     * Verify that in case of setting baseline topology with offline node among others
+     * {@link IgniteException} is thrown.
+     *
+     * @throws Exception If failed.
      */
-    private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch,
-        CountDownLatch unlockLatch) throws Exception {
+    @Test
+    @SuppressWarnings("unchecked")
+    public void setConsistenceIdsWithOfflineBaselineNode() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        ignite(0).createCache(defaultCacheConfiguration().setNodeFilter(
+            (IgnitePredicate<ClusterNode>)node -> node.attribute("some-attr") != null));
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+            execute("--baseline", "set", "non-existing-node-id ," + consistentIds(ignite)));
+    }
+
+    /**
+     * Test execution of --diagnostic command.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testDiagnosticPageLocksTracker() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        Collection<ClusterNode> nodes = ignite.cluster().nodes();
+
+        List<ClusterNode> nodes0 = new ArrayList<>(nodes);
+
+        ClusterNode node0 = nodes0.get(0);
+        ClusterNode node1 = nodes0.get(1);
+        ClusterNode node2 = nodes0.get(2);
+        ClusterNode node3 = nodes0.get(3);
+
+        ignite.cluster().active(true);
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic")
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "help")
+        );
+
+        // Dump locks only on connected node to default path.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump")
+        );
+
+        // Check file dump in default path.
+        checkNumberFiles(defaultDiagnosticDir, 1);
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log")
+        );
+
+        // Dump locks only on connected node to specific path.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump", "--path", customDiagnosticDir.getAbsolutePath())
+        );
+
+        // Check file dump in specific path.
+        checkNumberFiles(customDiagnosticDir, 1);
+
+        // Dump locks only all nodes.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump", "--all")
+        );
+
+        // Current cluster 4 nodes -> 4 files + 1 from previous operation.
+        checkNumberFiles(defaultDiagnosticDir, 5);
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log", "--all")
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--path", customDiagnosticDir.getAbsolutePath(), "--all")
+        );
+
+        // Current cluster 4 nodes -> 4 files + 1 from previous operation.
+        checkNumberFiles(customDiagnosticDir, 5);
+
+        // Dump locks only 2 nodes use nodeIds as arg.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--nodes", node0.id().toString() + "," + node2.id().toString())
+        );
+
+        // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
+        checkNumberFiles(defaultDiagnosticDir, 7);
+
+        // Dump locks only for 2 nodes use constIds as arg.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--nodes", node0.consistentId().toString() + "," + node2.consistentId().toString())
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log",
+                "--nodes", node1.id().toString() + "," + node3.id().toString())
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--diagnostic", "pageLocks", "dump",
+                "--path", customDiagnosticDir.getAbsolutePath(),
+                "--nodes", node1.consistentId().toString() + "," + node3.consistentId().toString())
+        );
+
+        // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
+        checkNumberFiles(customDiagnosticDir, 7);
+    }
+
+    /**
+     * @param dir Directory.
+     * @param numberFiles Number of files.
+     */
+    private void checkNumberFiles(File dir, int numberFiles) {
+        File[] files = dir.listFiles((d, name) -> name.startsWith(ToFileDumpProcessor.PREFIX_NAME));
+
+        assertEquals(numberFiles, files.length);
+
+        for (int i = 0; i < files.length; i++)
+            assertTrue(files[i].length() > 0);
+    }
+
+    /**
+     * Starts several long transactions in order to test --tx command. Transactions will last until unlock latch is
+     * released: first transaction will wait for unlock latch directly, some others will wait for key lock acquisition.
+     *
+     * @param lockLatch Lock latch. Will be released inside body of the first transaction.
+     * @param unlockLatch Unlock latch. Should be released externally. First transaction won't be finished until unlock
+     * latch is released.
+     * @param topChangeBeforeUnlock <code>true</code> should be passed if cluster topology is expected to change between
+     * method call and unlock latch release. Commit of the first transaction will be asserted to fail in such case.
+     * @return Future to be completed after finish of all started transactions.
+     */
+    private IgniteInternalFuture<?> startTransactions(
+        String testName,
+        CountDownLatch lockLatch,
+        CountDownLatch unlockLatch,
+        boolean topChangeBeforeUnlock
+    ) throws Exception {
         IgniteEx client = grid("client");
 
         AtomicInteger idx = new AtomicInteger();
@@ -2504,11 +2928,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                             tx.commit();
 
-                            fail("Commit must fail");
+                            if (topChangeBeforeUnlock)
+                                fail("Commit must fail");
                         }
                         catch (Exception e) {
-                            // No-op.
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            if (topChangeBeforeUnlock)
+                                assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            else
+                                throw e;
                         }
 
                         break;
@@ -2546,14 +2973,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                         break;
                 }
             }
-        }, 4, "tx-thread");
+        }, 4, "tx-thread-" + testName);
     }
 
     /** */
     private static class IncrementClosure implements EntryProcessor<Long, Long, Void> {
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<Long, Long> entry,
-            Object... arguments) throws EntryProcessorException {
+        @Override public Void process(
+            MutableEntry<Long, Long> entry,
+            Object... arguments
+        ) throws EntryProcessorException {
             entry.setValue(entry.exists() ? entry.getValue() + 1 : 0);
 
             return null;
@@ -2614,5 +3043,37 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Don't show wal commands by --help in case
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testHideWalInHelpWhenDisableExperimentalCommand() {
+        injectTestSystemOut();
+
+        execute("--help");
+
+        assertNotContains(log, testOut.toString(), WAL.text());
+    }
+
+    /**
+     * Wal commands should ignored and print warning in case
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     * */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testWalCommandsInCaseDisableExperimentalCommand() {
+        injectTestSystemOut();
+
+        String warning = String.format("For use experimental command add %s=true to JVM_OPTS in %s",
+            IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME);
+
+        Stream.of("print", "delete")
+            .peek(c -> testOut.reset())
+            .peek(c -> assertEquals(EXIT_CODE_OK, execute(WAL.text(), c)))
+            .forEach(c -> assertContains(log, testOut.toString(), warning));
     }
 }

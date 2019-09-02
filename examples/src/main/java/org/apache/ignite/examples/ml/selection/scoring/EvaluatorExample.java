@@ -17,13 +17,12 @@
 
 package org.apache.ignite.examples.ml.selection.scoring;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
@@ -31,8 +30,6 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run SVM classification trainer ({@link SVMLinearClassificationTrainer}) over distributed dataset.
@@ -50,7 +47,7 @@ import java.io.FileNotFoundException;
  */
 public class EvaluatorExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> kNN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -68,13 +65,10 @@ public class EvaluatorExample {
 
                 SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-                IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
                 double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    featureExtractor,
-                    lbExtractor,
+                    vectorizer,
                     new Accuracy<>()
                 );
 
@@ -83,14 +77,15 @@ public class EvaluatorExample {
                 double f1Score = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    featureExtractor,
-                    lbExtractor
+                    vectorizer
                 ).f1Score();
 
                 System.out.println("\n>>> F1-Score " + f1Score);
             } finally {
                 dataCache.destroy();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

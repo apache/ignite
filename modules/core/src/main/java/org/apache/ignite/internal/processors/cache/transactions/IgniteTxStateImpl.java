@@ -24,8 +24,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -122,6 +124,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @Override public void awaitLastFuture(GridCacheSharedContext cctx) {
         for (int i = 0; i < activeCacheIds.size(); i++) {
             int cacheId = activeCacheIds.get(i);
+
+            if (cctx.cacheContext(cacheId) == null)
+                throw new IgniteException("Cache is stopped, id=" + cacheId);
 
             cctx.cacheContext(cacheId).cache().awaitLastFut();
         }
@@ -394,6 +399,8 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
+            assert cacheCtx != null : "cacheCtx == null, cacheId=" + cacheId;
+
             onTxEnd(cacheCtx, tx, commit);
         }
     }
@@ -477,6 +484,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public synchronized void addEntry(IgniteTxEntry entry) {
         txMap.put(entry.txKey(), entry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void removeEntry(IgniteTxKey key) {
+        txMap.remove(key);
     }
 
     /** {@inheritDoc} */
