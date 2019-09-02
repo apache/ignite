@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.metric;
 
 import java.lang.management.ManagementFactory;
+import java.util.Optional;
 import java.util.Set;
 import javax.management.DynamicMBean;
+import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
@@ -38,7 +40,9 @@ import org.junit.Test;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -95,6 +99,20 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(res.contains(metricName("memory", "heap", "used")));
         assertTrue(res.contains(metricName("memory", "nonheap", "committed")));
         assertTrue(res.contains(metricName("memory", "nonheap", "max")));
+
+        Optional<MBeanAttributeInfo> cpuLoad = stream(sysMBean.getMBeanInfo().getAttributes())
+            .filter(a -> a.getName().equals(CPU_LOAD))
+            .findFirst();
+
+        assertTrue(cpuLoad.isPresent());
+        assertEquals(CPU_LOAD_DESCRIPTION, cpuLoad.get().getDescription());
+
+        Optional<MBeanAttributeInfo> gcCpuLoad = stream(sysMBean.getMBeanInfo().getAttributes())
+            .filter(a -> a.getName().equals(GC_CPU_LOAD))
+            .findFirst();
+
+        assertTrue(gcCpuLoad.isPresent());
+        assertEquals(GC_CPU_LOAD_DESCRIPTION, gcCpuLoad.get().getDescription());
     }
 
     /** */

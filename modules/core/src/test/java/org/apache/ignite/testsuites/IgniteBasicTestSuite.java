@@ -45,6 +45,7 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
 import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
@@ -87,7 +88,8 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
-import org.apache.ignite.internal.util.BitSetIntSetTest;
+import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
+import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -196,6 +198,7 @@ import org.junit.runners.Suite;
     DataRegionMetricsSelfTest.class,
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,
+    ImmutableIntSetTest.class,
 
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,
@@ -248,7 +251,9 @@ import org.junit.runners.Suite;
 
     ClassPathContentLoggingTest.class,
 
-    IncompleteDeserializationExceptionTest.class
+    IncompleteDeserializationExceptionTest.class,
+
+    GridIoManagerFileTransmissionSelfTest.class
 })
 public class IgniteBasicTestSuite {
 }
