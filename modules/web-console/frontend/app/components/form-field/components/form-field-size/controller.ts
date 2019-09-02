@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import get from 'lodash/get';
 import {IInputErrorNotifier} from '../../../../types';
 
@@ -76,7 +77,16 @@ export default class PCFormFieldSizeController<T> implements IInputErrorNotifier
         if (!this.min) this.min = 0;
         if (!this.sizesMenu) this.setDefaultSizeType();
         this.$element.addClass('form-field');
-        this.ngModel.$render = () => this.assignValue(this.ngModel.$viewValue);
+        this.ngModel.$render = () => {
+            const rawValue = this.ngModel.$viewValue;
+
+            if (rawValue) {
+                this._sizeScale = _.findLast(this.sizesMenu,
+                    (val) => val.value <= rawValue && Number.isInteger(rawValue / val.value));
+            }
+
+            this.assignValue(rawValue);
+        };
     }
 
     $postLink() {

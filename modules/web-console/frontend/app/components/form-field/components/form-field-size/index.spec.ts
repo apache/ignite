@@ -48,6 +48,7 @@ suite('form-field-size', () => {
         $compile(el)($scope);
         $scope.$digest();
         const ctrl = $scope.ctrl;
+        assert.equal(ctrl.sizeScale.label, 'sec', 'Sec should be detected as default field measure');
         ctrl.sizeScale = {label: 'hour', value: 60 * 60};
         $scope.$digest();
         assert.equal($scope.model, 60 * 60, 'Model value is recalculated on measure switch');
