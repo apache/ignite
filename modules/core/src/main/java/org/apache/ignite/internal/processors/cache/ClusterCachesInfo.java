@@ -981,7 +981,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
-        cachesMonitoring.add(ccfg.getName(), new CacheView(startDesc));
+        cachesMonitoring.add(new CacheView(startDesc));
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1417,7 +1417,7 @@ class ClusterCachesInfo {
             String cacheName = cacheData.cacheConfiguration().getName();
 
             registeredCaches.put(cacheName, desc);
-            cachesMonitoring.add(cacheName, new CacheView(desc));
+            cachesMonitoring.add(new CacheView(desc));
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1516,7 +1516,7 @@ class ClusterCachesInfo {
             }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
-            cachesGrpMonitoring.add(grpDesc.groupId(), new CacheGroupView(grpDesc));
+            cachesGrpMonitoring.add(new CacheGroupView(grpDesc));
 
             assert old == null : old;
 
@@ -2050,7 +2050,7 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
-        cachesMonitoring.add(cfg.getName(), new CacheView(desc));
+        cachesMonitoring.add(new CacheView(desc));
 
         assert old == null : old;
     }
@@ -2197,7 +2197,7 @@ class ClusterCachesInfo {
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
-        cachesGrpMonitoring.add(grpDesc.groupId(), new CacheGroupView(grpDesc));
+        cachesGrpMonitoring.add(new CacheGroupView(grpDesc));
 
         assert old == null : old;
 

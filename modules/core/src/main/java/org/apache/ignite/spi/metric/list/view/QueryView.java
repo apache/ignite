@@ -26,6 +26,11 @@ import org.apache.ignite.spi.metric.list.MonitoringRow;
  *
  */
 public interface QueryView extends MonitoringRow<Long> {
+    /** {@inheritDoc} */
+    @Override default Long monitoringRowId() {
+        return id();
+    }
+
     @Order(3)
     public String originNodeId();
 

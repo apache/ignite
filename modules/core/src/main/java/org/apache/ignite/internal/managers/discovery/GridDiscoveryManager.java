@@ -969,7 +969,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private void updateNodeMonitoring(int type, ClusterNode node, Collection<ClusterNode> topSnapshot) {
         if (node.isLocal() && type == EVT_NODE_JOINED && !F.isEmpty(topSnapshot)) {
             for (ClusterNode n : topSnapshot)
-                nodes.add(n.id(), new ClusterNodeView(n));
+                nodes.add(new ClusterNodeView(n));
         }
         else if (type == EVT_NODE_FAILED ||
             type == EVT_NODE_LEFT ||
@@ -977,7 +977,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             nodes.remove(node.id());
         } else if (type == EVT_NODE_JOINED ||
             type == EVT_CLIENT_NODE_RECONNECTED) {
-            nodes.add(node.id(), new ClusterNodeView(node));
+            nodes.add(new ClusterNodeView(node));
         }
     }
 

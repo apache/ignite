@@ -88,21 +88,19 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     }
 
     /**
-     * @param id Id of the row.
      * @param row Row.
      */
-    public void add(Id id, R row) {
-        data.put(id, row);
+    public void add(R row) {
+        data.put(row.monitoringRowId(), row);
 
         notifyListeners(row, rowCreationLsnrs, log);
     }
 
     /**
-     * @param id Id of the row.
      * @param row Row.
      */
-    public void addIfAbsent(Id id, R row) {
-        MonitoringRow<Id> old = data.putIfAbsent(id, row);
+    public void addIfAbsent(R row) {
+        MonitoringRow<Id> old = data.putIfAbsent(row.monitoringRowId(), row);
 
         if (old != null)
             return;

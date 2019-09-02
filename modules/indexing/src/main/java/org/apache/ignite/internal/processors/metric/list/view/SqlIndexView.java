@@ -50,6 +50,11 @@ public class SqlIndexView implements MonitoringRow<String> {
         this.inlineSz = inlineSz;
     }
 
+    /** {@inheritDoc} */
+    @Override public String monitoringRowId() {
+        return indexName();
+    }
+
     /** */
     public int cacheGroupId() {
         return tbl.cacheInfo().groupId();

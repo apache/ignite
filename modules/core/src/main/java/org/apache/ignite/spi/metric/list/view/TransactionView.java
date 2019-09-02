@@ -27,6 +27,11 @@ import org.apache.ignite.transactions.TransactionState;
 
 /** */
 public interface TransactionView extends MonitoringRow<IgniteUuid> {
+    /** {@inheritDoc} */
+    @Override default IgniteUuid monitoringRowId() {
+        return xid();
+    }
+
     /** */
     @Order
     public UUID nodeId();

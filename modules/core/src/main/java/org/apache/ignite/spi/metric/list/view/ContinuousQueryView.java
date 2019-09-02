@@ -37,18 +37,32 @@ public class ContinuousQueryView implements MonitoringRow<UUID> {
     /** */
     private final GridContinuousHandler hnd;
 
+    private final UUID routineId;
+
     /** */
-    public ContinuousQueryView(RemoteRoutineInfo rmtQry) {
+    public ContinuousQueryView(RemoteRoutineInfo rmtQry, UUID routineId) {
         this.locQry = null;
         this.rmtQry = rmtQry;
         this.hnd = rmtQry.handler();
+        this.routineId = routineId;
     }
 
     /** */
-    public ContinuousQueryView(LocalRoutineInfo locQry) {
+    public ContinuousQueryView(LocalRoutineInfo locQry, UUID routineId) {
         this.locQry = locQry;
         this.rmtQry = null;
         this.hnd = locQry.handler();
+        this.routineId = routineId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID monitoringRowId() {
+        return routineId;
+    }
+
+    /** */
+    public UUID routineId() {
+        return routineId;
     }
 
     /** */

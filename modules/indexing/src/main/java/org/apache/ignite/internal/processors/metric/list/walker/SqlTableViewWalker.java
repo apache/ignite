@@ -32,10 +32,13 @@ public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTable
         v.acceptInt(4, "cacheGroupId");
         v.accept(5, "cacheGroupName", String.class);
         v.acceptInt(6, "cacheId");
-        v.accept(7, "keyAlias", String.class);
-        v.accept(8, "keyTypeName", String.class);
-        v.accept(9, "valueAlias", String.class);
-        v.accept(10, "valueTypeName", String.class);
+        v.accept(7, "identifierString", String.class);
+        v.accept(8, "keyAlias", String.class);
+        v.accept(9, "keyTypeName", String.class);
+        v.accept(10, "monitoringRowId", Object.class);
+        v.accept(11, "monitoringRowId", String.class);
+        v.accept(12, "valueAlias", String.class);
+        v.accept(13, "valueTypeName", String.class);
     }
 
     /** {@inheritDoc} */
@@ -47,15 +50,18 @@ public class SqlTableViewWalker implements MonitoringRowAttributeWalker<SqlTable
         v.acceptInt(4, "cacheGroupId", row.cacheGroupId());
         v.accept(5, "cacheGroupName", String.class, row.cacheGroupName());
         v.acceptInt(6, "cacheId", row.cacheId());
-        v.accept(7, "keyAlias", String.class, row.keyAlias());
-        v.accept(8, "keyTypeName", String.class, row.keyTypeName());
-        v.accept(9, "valueAlias", String.class, row.valueAlias());
-        v.accept(10, "valueTypeName", String.class, row.valueTypeName());
+        v.accept(7, "identifierString", String.class, row.identifierString());
+        v.accept(8, "keyAlias", String.class, row.keyAlias());
+        v.accept(9, "keyTypeName", String.class, row.keyTypeName());
+        v.accept(10, "monitoringRowId", Object.class, row.monitoringRowId());
+        v.accept(11, "monitoringRowId", String.class, row.monitoringRowId());
+        v.accept(12, "valueAlias", String.class, row.valueAlias());
+        v.accept(13, "valueTypeName", String.class, row.valueTypeName());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 11;
+        return 14;
     }
 }
 

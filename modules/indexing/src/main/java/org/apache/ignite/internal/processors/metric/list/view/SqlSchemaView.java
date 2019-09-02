@@ -36,6 +36,11 @@ public class SqlSchemaView implements MonitoringRow<String> {
         this.predefined = predefined;
     }
 
+    /** {@inheritDoc} */
+    @Override public String monitoringRowId() {
+        return name();
+    }
+
     /** */
     public String name() {
         return name;

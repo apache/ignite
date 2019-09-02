@@ -48,6 +48,11 @@ public class CacheGroupView implements MonitoringRow<Integer> {
         this.ccfg = grp.config();
     }
 
+    /** {@inheritDoc} */
+    @Override public Integer monitoringRowId() {
+        return cacheGroupId();
+    }
+
     /** */
     public int cacheGroupId() {
         return grp.groupId();

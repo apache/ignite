@@ -22,4 +22,5 @@ package org.apache.ignite.spi.metric.list;
  * Idenitified by the instance of {@code Id}.
  */
 public interface MonitoringRow<Id> {
+    public Id monitoringRowId();
 }

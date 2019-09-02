@@ -44,6 +44,11 @@ public class CacheView implements MonitoringRow<String> {
         this.cache = cache;
     }
 
+    /** {@inheritDoc} */
+    @Override public String monitoringRowId() {
+        return cacheName();
+    }
+
     /** */
     public int cacheGroupId() {
         return cache.groupId();

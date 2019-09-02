@@ -38,13 +38,15 @@ public class CacheGroupViewWalker implements MonitoringRowAttributeWalker<CacheG
         v.accept(6, "backups", Integer.class);
         v.acceptInt(7, "cacheGroupId");
         v.acceptBoolean(8, "isShared");
-        v.accept(9, "nodeFilter", String.class);
-        v.accept(10, "partitionLossPolicy", PartitionLossPolicy.class);
-        v.accept(11, "partitionsCount", Integer.class);
-        v.acceptLong(12, "rebalanceDelay");
-        v.accept(13, "rebalanceMode", CacheRebalanceMode.class);
-        v.acceptInt(14, "rebalanceOrder");
-        v.accept(15, "topologyValidator", String.class);
+        v.accept(9, "monitoringRowId", Object.class);
+        v.accept(10, "monitoringRowId", Integer.class);
+        v.accept(11, "nodeFilter", String.class);
+        v.accept(12, "partitionLossPolicy", PartitionLossPolicy.class);
+        v.accept(13, "partitionsCount", Integer.class);
+        v.acceptLong(14, "rebalanceDelay");
+        v.accept(15, "rebalanceMode", CacheRebalanceMode.class);
+        v.acceptInt(16, "rebalanceOrder");
+        v.accept(17, "topologyValidator", String.class);
     }
 
     /** {@inheritDoc} */
@@ -58,18 +60,20 @@ public class CacheGroupViewWalker implements MonitoringRowAttributeWalker<CacheG
         v.accept(6, "backups", Integer.class, row.backups());
         v.acceptInt(7, "cacheGroupId", row.cacheGroupId());
         v.acceptBoolean(8, "isShared", row.isShared());
-        v.accept(9, "nodeFilter", String.class, row.nodeFilter());
-        v.accept(10, "partitionLossPolicy", PartitionLossPolicy.class, row.partitionLossPolicy());
-        v.accept(11, "partitionsCount", Integer.class, row.partitionsCount());
-        v.acceptLong(12, "rebalanceDelay", row.rebalanceDelay());
-        v.accept(13, "rebalanceMode", CacheRebalanceMode.class, row.rebalanceMode());
-        v.acceptInt(14, "rebalanceOrder", row.rebalanceOrder());
-        v.accept(15, "topologyValidator", String.class, row.topologyValidator());
+        v.accept(9, "monitoringRowId", Object.class, row.monitoringRowId());
+        v.accept(10, "monitoringRowId", Integer.class, row.monitoringRowId());
+        v.accept(11, "nodeFilter", String.class, row.nodeFilter());
+        v.accept(12, "partitionLossPolicy", PartitionLossPolicy.class, row.partitionLossPolicy());
+        v.accept(13, "partitionsCount", Integer.class, row.partitionsCount());
+        v.acceptLong(14, "rebalanceDelay", row.rebalanceDelay());
+        v.accept(15, "rebalanceMode", CacheRebalanceMode.class, row.rebalanceMode());
+        v.acceptInt(16, "rebalanceOrder", row.rebalanceOrder());
+        v.accept(17, "topologyValidator", String.class, row.topologyValidator());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 16;
+        return 18;
     }
 }
 

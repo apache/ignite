@@ -512,7 +512,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl != null && tbl.luceneIndex() != null) {
             long qryId = qryIdGen.incrementAndGet();
 
-            textQryMonList.add(qryId, new GridRunningQueryInfo(
+            textQryMonList.add(new GridRunningQueryInfo(
                 qryId,
                 ctx.localNodeId(),
                 qry,
@@ -727,7 +727,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final Object[] args) throws IgniteCheckedException {
         long qryId = qryIdGen.incrementAndGet();
 
-        sqlQryMonList.add(qryId, new GridRunningQueryInfo(
+        sqlQryMonList.add(new GridRunningQueryInfo(
             qryId,
             ctx.localNodeId(),
             qry,
@@ -1542,7 +1542,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private long registerRunningQuery(QueryDescriptor qryDesc, GridQueryCancel cancel) {
         long qryId = qryIdGen.incrementAndGet();
 
-        sqlQryMonList.add(qryId, new GridRunningQueryInfo(
+        sqlQryMonList.add(new GridRunningQueryInfo(
             qryId,
             ctx.localNodeId(),
             qryDesc.sql(),

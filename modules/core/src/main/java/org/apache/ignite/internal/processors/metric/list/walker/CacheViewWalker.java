@@ -69,29 +69,31 @@ public class CacheViewWalker implements MonitoringRowAttributeWalker<CacheView> 
         v.acceptBoolean(35, "isWriteThrough");
         v.acceptInt(36, "maxConcurrentAsyncOperations");
         v.acceptInt(37, "maxQueryIteratorsCount");
-        v.accept(38, "nearCacheEvictionPolicyFactory", String.class);
-        v.acceptInt(39, "nearCacheStartSize");
-        v.accept(40, "nodeFilter", String.class);
-        v.accept(41, "partitionLossPolicy", PartitionLossPolicy.class);
-        v.acceptInt(42, "queryDetailMetricsSize");
-        v.acceptInt(43, "queryParallelism");
-        v.acceptInt(44, "rebalanceBatchSize");
-        v.acceptLong(45, "rebalanceBatchesPrefetchCount");
-        v.acceptLong(46, "rebalanceDelay");
-        v.accept(47, "rebalanceMode", CacheRebalanceMode.class);
-        v.acceptInt(48, "rebalanceOrder");
-        v.acceptLong(49, "rebalanceThrottle");
-        v.acceptLong(50, "rebalanceTimeout");
-        v.acceptInt(51, "sqlIndexMaxInlineSize");
-        v.acceptInt(52, "sqlOnheapCacheMaxSize");
-        v.accept(53, "sqlSchema", String.class);
-        v.accept(54, "topologyValidator", String.class);
-        v.acceptInt(55, "writeBehindBatchSize");
-        v.acceptBoolean(56, "writeBehindCoalescing");
-        v.acceptLong(57, "writeBehindFlushFrequency");
-        v.acceptInt(58, "writeBehindFlushSize");
-        v.acceptInt(59, "writeBehindFlushThreadCount");
-        v.accept(60, "writeSynchronizationMode", CacheWriteSynchronizationMode.class);
+        v.accept(38, "monitoringRowId", Object.class);
+        v.accept(39, "monitoringRowId", String.class);
+        v.accept(40, "nearCacheEvictionPolicyFactory", String.class);
+        v.acceptInt(41, "nearCacheStartSize");
+        v.accept(42, "nodeFilter", String.class);
+        v.accept(43, "partitionLossPolicy", PartitionLossPolicy.class);
+        v.acceptInt(44, "queryDetailMetricsSize");
+        v.acceptInt(45, "queryParallelism");
+        v.acceptInt(46, "rebalanceBatchSize");
+        v.acceptLong(47, "rebalanceBatchesPrefetchCount");
+        v.acceptLong(48, "rebalanceDelay");
+        v.accept(49, "rebalanceMode", CacheRebalanceMode.class);
+        v.acceptInt(50, "rebalanceOrder");
+        v.acceptLong(51, "rebalanceThrottle");
+        v.acceptLong(52, "rebalanceTimeout");
+        v.acceptInt(53, "sqlIndexMaxInlineSize");
+        v.acceptInt(54, "sqlOnheapCacheMaxSize");
+        v.accept(55, "sqlSchema", String.class);
+        v.accept(56, "topologyValidator", String.class);
+        v.acceptInt(57, "writeBehindBatchSize");
+        v.acceptBoolean(58, "writeBehindCoalescing");
+        v.acceptLong(59, "writeBehindFlushFrequency");
+        v.acceptInt(60, "writeBehindFlushSize");
+        v.acceptInt(61, "writeBehindFlushThreadCount");
+        v.accept(62, "writeSynchronizationMode", CacheWriteSynchronizationMode.class);
     }
 
     /** {@inheritDoc} */
@@ -134,34 +136,36 @@ public class CacheViewWalker implements MonitoringRowAttributeWalker<CacheView> 
         v.acceptBoolean(35, "isWriteThrough", row.isWriteThrough());
         v.acceptInt(36, "maxConcurrentAsyncOperations", row.maxConcurrentAsyncOperations());
         v.acceptInt(37, "maxQueryIteratorsCount", row.maxQueryIteratorsCount());
-        v.accept(38, "nearCacheEvictionPolicyFactory", String.class, row.nearCacheEvictionPolicyFactory());
-        v.acceptInt(39, "nearCacheStartSize", row.nearCacheStartSize());
-        v.accept(40, "nodeFilter", String.class, row.nodeFilter());
-        v.accept(41, "partitionLossPolicy", PartitionLossPolicy.class, row.partitionLossPolicy());
-        v.acceptInt(42, "queryDetailMetricsSize", row.queryDetailMetricsSize());
-        v.acceptInt(43, "queryParallelism", row.queryParallelism());
-        v.acceptInt(44, "rebalanceBatchSize", row.rebalanceBatchSize());
-        v.acceptLong(45, "rebalanceBatchesPrefetchCount", row.rebalanceBatchesPrefetchCount());
-        v.acceptLong(46, "rebalanceDelay", row.rebalanceDelay());
-        v.accept(47, "rebalanceMode", CacheRebalanceMode.class, row.rebalanceMode());
-        v.acceptInt(48, "rebalanceOrder", row.rebalanceOrder());
-        v.acceptLong(49, "rebalanceThrottle", row.rebalanceThrottle());
-        v.acceptLong(50, "rebalanceTimeout", row.rebalanceTimeout());
-        v.acceptInt(51, "sqlIndexMaxInlineSize", row.sqlIndexMaxInlineSize());
-        v.acceptInt(52, "sqlOnheapCacheMaxSize", row.sqlOnheapCacheMaxSize());
-        v.accept(53, "sqlSchema", String.class, row.sqlSchema());
-        v.accept(54, "topologyValidator", String.class, row.topologyValidator());
-        v.acceptInt(55, "writeBehindBatchSize", row.writeBehindBatchSize());
-        v.acceptBoolean(56, "writeBehindCoalescing", row.writeBehindCoalescing());
-        v.acceptLong(57, "writeBehindFlushFrequency", row.writeBehindFlushFrequency());
-        v.acceptInt(58, "writeBehindFlushSize", row.writeBehindFlushSize());
-        v.acceptInt(59, "writeBehindFlushThreadCount", row.writeBehindFlushThreadCount());
-        v.accept(60, "writeSynchronizationMode", CacheWriteSynchronizationMode.class, row.writeSynchronizationMode());
+        v.accept(38, "monitoringRowId", Object.class, row.monitoringRowId());
+        v.accept(39, "monitoringRowId", String.class, row.monitoringRowId());
+        v.accept(40, "nearCacheEvictionPolicyFactory", String.class, row.nearCacheEvictionPolicyFactory());
+        v.acceptInt(41, "nearCacheStartSize", row.nearCacheStartSize());
+        v.accept(42, "nodeFilter", String.class, row.nodeFilter());
+        v.accept(43, "partitionLossPolicy", PartitionLossPolicy.class, row.partitionLossPolicy());
+        v.acceptInt(44, "queryDetailMetricsSize", row.queryDetailMetricsSize());
+        v.acceptInt(45, "queryParallelism", row.queryParallelism());
+        v.acceptInt(46, "rebalanceBatchSize", row.rebalanceBatchSize());
+        v.acceptLong(47, "rebalanceBatchesPrefetchCount", row.rebalanceBatchesPrefetchCount());
+        v.acceptLong(48, "rebalanceDelay", row.rebalanceDelay());
+        v.accept(49, "rebalanceMode", CacheRebalanceMode.class, row.rebalanceMode());
+        v.acceptInt(50, "rebalanceOrder", row.rebalanceOrder());
+        v.acceptLong(51, "rebalanceThrottle", row.rebalanceThrottle());
+        v.acceptLong(52, "rebalanceTimeout", row.rebalanceTimeout());
+        v.acceptInt(53, "sqlIndexMaxInlineSize", row.sqlIndexMaxInlineSize());
+        v.acceptInt(54, "sqlOnheapCacheMaxSize", row.sqlOnheapCacheMaxSize());
+        v.accept(55, "sqlSchema", String.class, row.sqlSchema());
+        v.accept(56, "topologyValidator", String.class, row.topologyValidator());
+        v.acceptInt(57, "writeBehindBatchSize", row.writeBehindBatchSize());
+        v.acceptBoolean(58, "writeBehindCoalescing", row.writeBehindCoalescing());
+        v.acceptLong(59, "writeBehindFlushFrequency", row.writeBehindFlushFrequency());
+        v.acceptInt(60, "writeBehindFlushSize", row.writeBehindFlushSize());
+        v.acceptInt(61, "writeBehindFlushThreadCount", row.writeBehindFlushThreadCount());
+        v.accept(62, "writeSynchronizationMode", CacheWriteSynchronizationMode.class, row.writeSynchronizationMode());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 61;
+        return 63;
     }
 }
 

@@ -177,7 +177,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler.start();
 
-        monList.add(connectionId(), this);
+        monList.add(this);
     }
 
     /** {@inheritDoc} */

@@ -687,7 +687,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Transaction created: " + tx);
 
-        txMonList.add(tx.xid(), tx);
+        txMonList.add(tx);
 
         return tx;
     }

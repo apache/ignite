@@ -127,7 +127,7 @@ public class SchemaManager {
     public void start(String[] schemaNames) throws IgniteCheckedException {
         // Register PUBLIC schema which is always present.
         schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, true));
-        schMonList.add(QueryUtils.DFLT_SCHEMA, new SqlSchemaView(QueryUtils.DFLT_SCHEMA, true));
+        schMonList.add(new SqlSchemaView(QueryUtils.DFLT_SCHEMA, true));
 
         // Create system views.
         createSystemViews();
@@ -275,7 +275,7 @@ public class SchemaManager {
             if (dataTables.putIfAbsent(h2tbl.identifier(), h2tbl) != null)
                 throw new IllegalStateException("Table already exists: " + h2tbl.identifierString());
 
-            tblsMonList.add(h2tbl.identifierString(), h2tbl);
+            tblsMonList.add(h2tbl);
         }
         catch (SQLException e) {
             connMgr.onSqlException(conn);
@@ -362,7 +362,7 @@ public class SchemaManager {
         if (oldSchema == null) {
             createSchema0(schemaName);
 
-            schMonList.add(schemaName, new SqlSchemaView(schemaName, predefined));
+            schMonList.add(new SqlSchemaView(schemaName, predefined));
         } else
             schema = oldSchema;
 

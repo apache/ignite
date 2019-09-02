@@ -677,10 +677,8 @@ public class GridH2Table extends TableBase implements SqlTableView {
         return identifier;
     }
 
-    /**
-     * @return Table identifier as string.
-     */
-    public String identifierString() {
+    /** {@inheritDoc} */
+    @Override public String identifierString() {
         return identifierStr;
     }
 
@@ -1657,7 +1655,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
         if (idx instanceof H2TreeIndexBase)
             inlineSz = ((H2TreeIndexBase)idx).inlineSize();
 
-        idxMonList.add(idxId, new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
+        idxMonList.add(new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
     }
 
     private H2IndexType type(Index idx) {

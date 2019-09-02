@@ -22,6 +22,11 @@ import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
 public interface ClientConnectionView extends MonitoringRow<Long> {
+    /** {@inheritDoc} */
+    @Override default Long monitoringRowId() {
+        return connectionId();
+    }
+
     /** */
     public long connectionId();
 

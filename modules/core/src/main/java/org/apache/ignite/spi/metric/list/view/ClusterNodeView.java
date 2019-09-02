@@ -39,6 +39,11 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
         this.n = n;
     }
 
+    /** {@inheritDoc} */
+    @Override public UUID monitoringRowId() {
+        return id();
+    }
+
     /** */
     @Order
     public UUID id() {

@@ -579,7 +579,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     LocalRoutineInfo old = locInfos.putIfAbsent(item.routineId, info);
 
                     if (old == null)
-                        cqMonList.add(item.routineId, new ContinuousQueryView(info));
+                        cqMonList.add(new ContinuousQueryView(info, item.routineId));
                 }
             }
 
@@ -803,7 +803,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         locInfos.put(routineId, routineInfo);
-        cqMonList.add(routineId, new ContinuousQueryView(routineInfo));
+        cqMonList.add(new ContinuousQueryView(routineInfo, routineId));
 
         registerMessageListener(hnd);
 
@@ -877,7 +877,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         // Register routine locally.
         locInfos.put(routineId, info);
-        cqMonList.add(routineId, new ContinuousQueryView(info));
+        cqMonList.add(new ContinuousQueryView(info, routineId));
 
         if (locOnly) {
             try {
@@ -1475,7 +1475,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     // Register routine locally.
                     locInfos.putIfAbsent(routineId, info);
-                    cqMonList.add(routineId, new ContinuousQueryView(info));
+                    cqMonList.add(new ContinuousQueryView(info, routineId));
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1777,7 +1777,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 doRegister = !stopped.remove(routineId) && rmtInfos.putIfAbsent(routineId, info) == null;
 
                 if (doRegister)
-                    cqMonList.addIfAbsent(routineId, new ContinuousQueryView(info));
+                    cqMonList.addIfAbsent(new ContinuousQueryView(info, routineId));
             }
             finally {
                 stopLock.unlock();

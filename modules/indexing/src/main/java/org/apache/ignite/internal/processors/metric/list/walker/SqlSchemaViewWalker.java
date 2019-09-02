@@ -25,19 +25,23 @@ public class SqlSchemaViewWalker implements MonitoringRowAttributeWalker<SqlSche
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "name", String.class);
-        v.acceptBoolean(1, "predefined");
+        v.accept(0, "monitoringRowId", String.class);
+        v.accept(1, "monitoringRowId", Object.class);
+        v.accept(2, "name", String.class);
+        v.acceptBoolean(3, "predefined");
     }
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(SqlSchemaView row, AttributeWithValueVisitor v) {
-        v.accept(0, "name", String.class, row.name());
-        v.acceptBoolean(1, "predefined", row.predefined());
+        v.accept(0, "monitoringRowId", String.class, row.monitoringRowId());
+        v.accept(1, "monitoringRowId", Object.class, row.monitoringRowId());
+        v.accept(2, "name", String.class, row.name());
+        v.acceptBoolean(3, "predefined", row.predefined());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 2;
+        return 4;
     }
 }
 

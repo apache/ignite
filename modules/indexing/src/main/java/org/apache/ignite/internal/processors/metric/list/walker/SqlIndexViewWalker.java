@@ -38,6 +38,8 @@ public class SqlIndexViewWalker implements MonitoringRowAttributeWalker<SqlIndex
         v.accept(9, "inlineSize", Integer.class);
         v.acceptBoolean(10, "isPk");
         v.acceptBoolean(11, "isUnique");
+        v.accept(12, "monitoringRowId", Object.class);
+        v.accept(13, "monitoringRowId", String.class);
     }
 
     /** {@inheritDoc} */
@@ -54,11 +56,13 @@ public class SqlIndexViewWalker implements MonitoringRowAttributeWalker<SqlIndex
         v.accept(9, "inlineSize", Integer.class, row.inlineSize());
         v.acceptBoolean(10, "isPk", row.isPk());
         v.acceptBoolean(11, "isUnique", row.isUnique());
+        v.accept(12, "monitoringRowId", Object.class, row.monitoringRowId());
+        v.accept(13, "monitoringRowId", String.class, row.monitoringRowId());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 12;
+        return 14;
     }
 }
 

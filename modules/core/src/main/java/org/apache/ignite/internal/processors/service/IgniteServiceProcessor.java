@@ -343,7 +343,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         for (ServiceInfo desc : clusterData.registeredServices()) {
             registeredServices.put(desc.serviceId(), desc);
-            serviceMonitoringList.add(desc.serviceId(), desc);
+            serviceMonitoringList.add(desc);
         }
     }
 
@@ -378,7 +378,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             if (oldDesc == null) {
                 registeredServices.put(desc.serviceId(), desc);
-                serviceMonitoringList.add(desc.serviceId(), desc);
+                serviceMonitoringList.add(desc);
 
                 continue;
             }
@@ -1508,7 +1508,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             staticServicesInfo.forEach(desc -> {
                 registeredServices.put(desc.serviceId(), desc);
-                serviceMonitoringList.add(desc.serviceId(), desc);
+                serviceMonitoringList.add(desc);
             });
         }
 
@@ -1612,7 +1612,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
                             registeredServices.put(reqSrvcId, desc);
-                            serviceMonitoringList.add(desc.serviceId(), desc);
+                            serviceMonitoringList.add(desc);
 
                             toDeploy.put(reqSrvcId, desc);
                         }

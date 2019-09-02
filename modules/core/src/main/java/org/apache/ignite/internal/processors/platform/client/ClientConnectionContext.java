@@ -146,7 +146,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         parser = new ClientMessageParser(this, ver);
 
-        monList.add(connectionId(), this);
+        monList.add(this);
     }
 
     /** {@inheritDoc} */

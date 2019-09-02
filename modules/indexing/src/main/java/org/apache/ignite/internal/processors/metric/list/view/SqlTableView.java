@@ -22,6 +22,11 @@ import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /** */
 public interface SqlTableView extends MonitoringRow<String> {
+    /** {@inheritDoc} */
+    @Override default String monitoringRowId() {
+        return identifierString();
+    }
+
     /** */
     public int cacheGroupId();
 
@@ -42,6 +47,11 @@ public interface SqlTableView extends MonitoringRow<String> {
     /** */
     @Order
     public String tableName();
+
+    /**
+     * @return Table identifier as string.
+     */
+    public String identifierString();
 
     /** */
     public String affinityKeyColumn();
