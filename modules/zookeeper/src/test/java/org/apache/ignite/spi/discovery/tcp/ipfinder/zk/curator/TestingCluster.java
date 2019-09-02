@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.QuorumConfigBuilder;
 import org.apache.zookeeper.ZooKeeper;
@@ -35,16 +34,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer.ZK_SECURE_CLIENT_PORT;
+
 /**
  * Manages an internally running ensemble of ZooKeeper servers. FOR TESTING PURPOSES ONLY.
  * This class is a copy of {{org.apache.curator.test.TestingCluster}},
  * but have very small change, that allow to run testing cluster with ZooKeeper 2.4.13 ver.
  */
 public class TestingCluster implements Closeable {
-    static {
-        ByteCodeRewrite.apply();
-    }
-
     /** Servers. */
     private final List<TestingZooKeeperServer> servers;
 
@@ -130,6 +127,29 @@ public class TestingCluster implements Closeable {
 
             str.append(spec.getConnectString());
         }
+        return str.toString();
+    }
+
+    /**
+     * Returns the connection string to pass to the ZooKeeper constructor
+     *
+     * @return connection string
+     */
+    public String getSslConnectString() {
+        StringBuilder str = new StringBuilder();
+
+        for (InstanceSpec spec : getInstances()) {
+            if (str.length() > 0)
+                str.append(",");
+
+            Object secClientPort = spec.getCustomProperties().get(ZK_SECURE_CLIENT_PORT);
+
+            if (secClientPort == null)
+                throw new IllegalArgumentException("Security client port is not configured. [spec=" + spec + ']');
+
+            str.append(spec.getHostname()).append(":").append(secClientPort);
+        }
+
         return str.toString();
     }
 

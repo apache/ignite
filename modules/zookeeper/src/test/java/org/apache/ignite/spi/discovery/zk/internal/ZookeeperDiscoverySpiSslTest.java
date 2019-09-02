@@ -19,74 +19,69 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.nio.file.Paths;
 import java.util.function.Function;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer.SECURITY_CLIENT_PORT;
-import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTestBase.waitForZkClusterReady;
-
 /**
- *
+ * Base class for Zookeeper SPI discovery tests in this package. It is intended to provide common overrides for
+ * superclass methods to be shared by all subclasses.
  */
-public class ZookeeperDiscoverySslTest extends GridCommonAbstractTest {
+public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiTestBase {
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
 
     /** Resource path. */
     private static final Function<String, String> rsrcPath = rsrc -> Paths.get(
-            IGNITE_HOME == null ? "." : IGNITE_HOME,
-            "modules",
-            "core",
-            "src",
-            "test",
-            "resources",
-            rsrc
+        IGNITE_HOME == null ? "." : IGNITE_HOME,
+        "modules",
+        "core",
+        "src",
+        "test",
+        "resources",
+        rsrc
     ).toString();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override protected void beforeTest() throws Exception {
+        sslEnabled = true;
 
-        ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
-
-        spi.setZkConnectionString("localhost:2281");
-
-        cfg.setDiscoverySpi(spi);
-
-        return cfg;
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testSsl() throws Exception {
         setupSystemProperties();
 
-        try (TestingCluster zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(1)) {
-            zkCluster.start();
-
-            waitForZkClusterReady(zkCluster);
-
-            System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
-
-            IgniteEx ignite = startGrids(2);
-
-            assertEquals(2, ignite.cluster().topologyVersion());
-        }
-        finally {
-            clearSystemProperties();
-        }
+        super.beforeTest();
     }
 
     /**
-     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testIgniteSsl() throws Exception {
+        System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
+
+        IgniteEx ignite = startGrids(2);
+
+        assertEquals(2, ignite.cluster().topologyVersion());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testIgniteNoSsl() throws Exception {
+        sslEnabled = false;
+
+        System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
+
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> startGrids(2),
+            IgniteCheckedException.class,
+            "Failed to start SPI: ZookeeperDiscoverySpi");
+    }
+
+    /**
+     * Setup system properties.
      */
     private void setupSystemProperties() {
         System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
@@ -96,11 +91,10 @@ public class ZookeeperDiscoverySslTest extends GridCommonAbstractTest {
         System.setProperty("zookeeper.ssl.trustStore.location", rsrcPath.apply("/trust.jks"));
         System.setProperty("zookeeper.ssl.trustStore.password", "123456");
         System.setProperty("zookeeper.ssl.hostnameVerification", "false");
-        System.setProperty(SECURITY_CLIENT_PORT, "2281");
     }
 
     /**
-     *
+     * Cleanup system properties.
      */
     private void clearSystemProperties() {
         System.setProperty("zookeeper.clientCnxnSocket", "");
@@ -111,6 +105,5 @@ public class ZookeeperDiscoverySslTest extends GridCommonAbstractTest {
         System.setProperty("zookeeper.ssl.trustStore.location", "");
         System.setProperty("zookeeper.ssl.trustStore.password", "");
         System.setProperty("zookeeper.ssl.hostnameVerification", "");
-        System.setProperty(SECURITY_CLIENT_PORT, "");
     }
 }
