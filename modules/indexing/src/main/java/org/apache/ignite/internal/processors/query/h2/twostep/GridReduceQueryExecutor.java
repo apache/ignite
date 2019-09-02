@@ -866,7 +866,7 @@ public class GridReduceQueryExecutor {
                                 cancel,
                                 qryInfo);
 
-                            resIter = new H2FieldsIterator(res, null, log, h2, qryInfo, false, qry.pageSize(), null);
+                            resIter = new H2FieldsIterator(res, null, log, h2, qryInfo, false, 1, null);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
