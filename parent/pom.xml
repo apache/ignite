@@ -484,11 +484,6 @@
                                 <packages>org.apache.ignite.ml*</packages>
                             </group>
                         </groups>
-                        <header>
-                            <![CDATA[
-                                    Ignite - In-Memory Data Fabric
-                                ]]>
-                        </header>
                         <bottom>
                             <![CDATA[
                                     <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
