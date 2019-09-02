@@ -302,7 +302,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
      */
     protected abstract T createRow();
 
-    /** {@inheritDoc} */
+    /** */
     public void onClose() throws IgniteCheckedException {
         if (data == null)
             // Nothing to close.
