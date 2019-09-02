@@ -413,9 +413,10 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     }
 
     @Test
+    @Repeat(10)
     public void testScanQueryFallbackOnSerialShutdown() {
         cacheMode = CacheMode.PARTITIONED;
-        backups = 0;
+        backups = 1;
         commSpiFactory = new TestLocalCommunicationSpiFactory();
 
         try {
@@ -423,17 +424,25 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
+            int part = anyLocalPartition(cache.context());
+
             List<Ignite> servers = G.allGrids();
-            for (Ignite g : servers) {
-                int part = anyLocalPartition(cache.context());
+            Map<Integer, Integer> map = entries.get(part);
 
-                QueryCursor<Cache.Entry<Integer, Integer>> qry =
-                        cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
-
-                doTestScanQuery(qry, part);
-
-                stopGrid(g.name(), true, false);
+            for (int i = 0; i < servers.size()-1; ++i) {
+                Ignite g = servers.get(i);
+                try (QueryCursor<Cache.Entry<Integer, Integer>> cursor =
+                             cache.query(new ScanQuery<Integer, Integer>().setPartition(part))) {
+                    int recordCount = 0;
+                    stopGrid(g.name(), true, false);
+                    for (Cache.Entry<Integer, Integer> e : cursor) {
+                        assertEquals(map.get(e.getKey()), e.getValue());
+                        recordCount++;
+                    }
+                    assertEquals("Invalid number of entries for partition: " + part, map.size(), recordCount);
+                }
             }
+
 
         } catch (Exception e) {
             Assert.fail(e.getMessage());
