@@ -128,9 +128,9 @@ public class AgentsService extends AbstractSocketHandler {
 
             case CLUSTER_TOPOLOGY:
                 try {
-                    Collection<TopologySnapshot> tops = fromJson(
+                    Set<TopologySnapshot> tops = fromJson(
                         evt.getPayload(),
-                        new TypeReference<Collection<TopologySnapshot>>() {}
+                        new TypeReference<Set<TopologySnapshot>>() {}
                     );
 
                     processTopologyUpdate(ses, tops);
@@ -165,8 +165,6 @@ public class AgentsService extends AbstractSocketHandler {
 
         Set<TopologySnapshot> oldTops = clustersRepo.get(desc.getClusterIds());
 
-        boolean clustersChanged = oldTops.size() != tops.size();
-
         for (TopologySnapshot newTop : tops) {
             String clusterId = newTop.getId();
 
@@ -186,9 +184,7 @@ public class AgentsService extends AbstractSocketHandler {
             if (F.isEmpty(newTop.getName()))
                 newTop.setName("Cluster " + newTop.getId().substring(0, 8).toUpperCase());
 
-            TopologySnapshot oldTop = updateTopology(desc.getAccIds(), newTop);
-
-            clustersChanged = clustersChanged || newTop.changed(oldTop);
+            updateTopology(desc.getAccIds(), newTop);
         }
 
         desc.setClusterIds(mapToSet(tops, TopologySnapshot::getId));
@@ -200,7 +196,7 @@ public class AgentsService extends AbstractSocketHandler {
         if (!leftClusterIds.isEmpty())
             tryCleanupIndexes(desc.getAccIds(), leftClusterIds);
 
-        if (clustersChanged)
+        if (!oldTops.equals(tops))
             sendAgentStats(desc.getAccIds());
     }
 

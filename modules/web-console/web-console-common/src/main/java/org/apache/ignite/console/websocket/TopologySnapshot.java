@@ -16,11 +16,15 @@
 
 package org.apache.ignite.console.websocket;
 
+import java.util.Base64;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
@@ -29,21 +33,29 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.console.utils.Utils.attribute;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.sortAddresses;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.splitAddresses;
-import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 /**
  * Topology snapshot POJO.
  */
 public class TopologySnapshot {
     /** Optional Ignite cluster ID. */
-    public static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
+    private static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
+
+    /** Optional GridGain plugin attribute. */
+    private static final String GRIDGAIN_PLUGIN = "plugins.gg.node";
+    
+    /** Optional GridGain Ultimate plugin attribute. */
+    private static final String ULTIMATE_CLUSTER = "plugins.gg.ultimate";
 
     /**
      * Cluster ID.
@@ -71,6 +83,16 @@ public class TopologySnapshot {
     private boolean demo;
 
     /**
+     * GridGain plugin flag.
+     */
+    private boolean gridgain;
+
+    /**
+     * GridGain ultimate plugin flag.
+     */
+    private boolean ultimate;
+
+    /**
      * Cluster version.
      */
     private String clusterVer;
@@ -80,6 +102,9 @@ public class TopologySnapshot {
      */
     private Map<UUID, NodeBean> nodes;
 
+    /** Feature set that is supported by nodes. */
+    private byte[] supportedFeatures;
+
     /** */
     private final long creationTime = U.currentTimeMillis();
 
@@ -87,7 +112,7 @@ public class TopologySnapshot {
      * Default constructor for serialization.
      */
     public TopologySnapshot() {
-        // No-op.
+        nodes = Collections.emptyMap();
     }
 
     /**
@@ -96,43 +121,17 @@ public class TopologySnapshot {
      * @param nodes Nodes.
      */
     public TopologySnapshot(Collection<GridClientNodeBean> nodes) {
-        int sz = nodes.size();
+        Collection<GridClientNodeBean> srvs = forServers(nodes);
 
-        this.nodes = U.newHashMap(sz);
-        active = false;
-        secured = false;
+        id = firstNonNullAttribute(srvs, IGNITE_CLUSTER_ID);
+        name = firstNonNullAttribute(srvs, IGNITE_CLUSTER_NAME);
+        gridgain = allHasAttribute(srvs, GRIDGAIN_PLUGIN, true);
+        ultimate = allHasAttribute(srvs, ULTIMATE_CLUSTER, true);
 
-        IgniteProductVersion minNodeVer = null;
+        supportedFeatures = supportedFeatures(nodes);
+        clusterVer = clusterVersion(nodes);
 
-        for (GridClientNodeBean node : nodes) {
-            UUID nid = node.getNodeId();
-
-            Map<String, Object> attrs = node.getAttributes();
-
-            if (F.isEmpty(id))
-                id = attribute(attrs, IGNITE_CLUSTER_ID);
-
-            if (F.isEmpty(name))
-                name = attribute(attrs, IGNITE_CLUSTER_NAME);
-
-            String nodeVerAttr = attribute(attrs, ATTR_BUILD_VER);
-            IgniteProductVersion nodeVer = fromString(nodeVerAttr);
-
-            if (minNodeVer == null || minNodeVer.compareTo(nodeVer) > 0) {
-                minNodeVer = nodeVer;
-                clusterVer = nodeVerAttr;
-            }
-
-            Boolean client = attribute(attrs, ATTR_CLIENT_MODE);
-
-            Collection<String> nodeAddrs = client
-                ? splitAddresses(attribute(attrs, ATTR_IPS))
-                : node.getTcpAddresses();
-
-            String firstIP = F.first(sortAddresses(nodeAddrs));
-
-            this.nodes.put(nid, new NodeBean(client, firstIP));
-        }
+        this.nodes = nodeMap(nodes);
     }
 
     /**
@@ -227,17 +226,119 @@ public class TopologySnapshot {
     }
 
     /**
-     * @param nodes Cluster nodes.
+     * @return value of gridgain
      */
-    public void setNodes(Map<UUID, NodeBean> nodes) {
-        this.nodes = nodes;
+    public boolean isGridgain() {
+        return gridgain;
+    }
+
+    /**
+     * @return value of ultimate
+     */
+    public boolean isUltimate() {
+        return ultimate;
+    }
+
+    /**
+     * @param nodes Cluster nodes.
+     * @return Cluster nodes map.
+     */
+    private Map<UUID, NodeBean> nodeMap(Collection<GridClientNodeBean> nodes) {
+        return nodes.stream()
+            .collect(Collectors.toMap(GridClientNodeBean::getNodeId, (node) -> {
+                Map<String, Object> attrs = node.getAttributes();
+
+                Boolean client = attribute(attrs, ATTR_CLIENT_MODE);
+
+                Collection<String> nodeAddrs = client
+                    ? splitAddresses(attribute(attrs, ATTR_IPS))
+                    : node.getTcpAddresses();
+
+                String firstIP = F.first(sortAddresses(nodeAddrs));
+
+                return new NodeBean(client, firstIP);
+            }));
     }
 
     /**
      * @return Cluster nodes IDs.
      */
-    public Collection<UUID> nids() {
+    public Set<UUID> nids() {
         return nodes.keySet();
+    }
+
+    /**
+     * @return Features supported by the current grid.
+     */
+    public byte[] getSupportedFeatures() {
+        return supportedFeatures;
+    }
+
+    /**
+     * @param nodes Cluster nodes.
+     * @return Features supported by the current grid.
+     */
+    private byte[] supportedFeatures(Collection<GridClientNodeBean> nodes) {
+        if (F.isEmpty(nodes))
+            return new byte[0];
+
+        return nodes.stream()
+            .map(n -> attribute(n.getAttributes(), ATTR_IGNITE_FEATURES))
+            .filter(Objects::nonNull)
+            .map(f -> BitSet.valueOf(Base64.getDecoder().decode(f.toString())))
+            .collect(BitSet::new, (acc, f) -> {
+                if (acc.isEmpty())
+                    acc.or(f);
+                else
+                    acc.and(f);
+            }, BitSet::and).toByteArray();
+    }
+
+    /**
+     * @param nodes Cluster nodes.
+     * @param key Attribute name.
+     * @return First non null value of attribute.
+     */
+    private String firstNonNullAttribute(Collection<GridClientNodeBean> nodes, String key) {
+        return nodes.stream()
+            .map(n -> n.getAttributes().get(key))
+            .filter(Objects::nonNull)
+            .findFirst()
+            .map(Object::toString)
+            .orElse(null);
+    }
+
+    /**
+     * @param nodes Cluster nodes.
+     * @param key Attribute name.
+     * @param val Target attribute value.
+     * @return First non null value of attribute.
+     */
+    private boolean allHasAttribute(Collection<GridClientNodeBean> nodes, String key, Object val) {
+        return nodes.stream()
+            .allMatch(n -> val.equals(n.getAttributes().get(key)));
+    }
+
+    /**
+     * @param nodes Cluster nodes.
+     * @return All server nodes.
+     */
+    private Collection<GridClientNodeBean> forServers(Collection<GridClientNodeBean> nodes) {
+        return nodes.stream()
+            .filter(n -> !(Boolean)n.getAttributes().get(ATTR_CLIENT_MODE))
+            .collect(toList());
+    }
+
+    /**
+     * @param nodes Nodes.
+     */
+    private String clusterVersion(Collection<GridClientNodeBean> nodes) {
+        return nodes.stream()
+            .map(n -> n.getAttributes().get(ATTR_BUILD_VER))
+            .filter(Objects::nonNull)
+            .map(Object::toString)
+            .min(comparing(IgniteProductVersion::fromString))
+            .orElse(null);
     }
 
     /**
@@ -249,23 +350,6 @@ public class TopologySnapshot {
     }
 
     /**
-     * @param other Other topology.
-     * @return {@code true} in case if current topology changed.
-     */
-    public boolean changed(TopologySnapshot other) {
-        if (other == null)
-            return true;
-
-        if (!id.equals(other.getId()))
-            return true;
-
-        if (!Objects.equals(nids(), other.nids()))
-            return true;
-
-        return active != other.active;
-    }
-
-    /**
      * Returns true if the snapshot is expired.
      *
      * @param maxInactiveInterval The maximum inactive interval.
@@ -273,6 +357,32 @@ public class TopologySnapshot {
      */
     public boolean isExpired(long maxInactiveInterval) {
         return U.currentTimeMillis() - maxInactiveInterval >= creationTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        TopologySnapshot snapshot = (TopologySnapshot)o;
+
+        return id.equals(snapshot.id) &&
+            nids().equals(snapshot.nids()) &&
+            active == snapshot.active &&
+            Objects.equals(name, snapshot.name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(id, nids(), active, name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TopologySnapshot.class, this);
     }
 
     /**
@@ -309,10 +419,5 @@ public class TopologySnapshot {
         public String getAddress() {
             return addr;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TopologySnapshot.class, this);
     }
 }

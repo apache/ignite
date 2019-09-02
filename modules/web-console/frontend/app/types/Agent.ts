@@ -22,7 +22,10 @@ export type ClusterStats = {
 	clients: {[id: string]: boolean},
 	clusterVersion: string,
 	active: boolean,
-	secured: false
+	secured: false,
+	gridgain: boolean,
+	ultimate: boolean,
+	supportedFeatures: string
 }
 
 export type AgentsStatResponse = {
@@ -69,3 +72,17 @@ export type VisorQueryResult =
 export type QuerySqlX2Response = VisorQueryResult
 
 export type QueryFetchFirstPageResult = VisorQueryResult
+
+export enum IgniteFeatures {
+	INDEXING = 15,
+	WC_DR_EVENTS = 20,
+	WC_ROLLING_UPGRADE_STATUS = 21,
+	WC_SNAPSHOT_CHAIN_MODE = 22,
+	WC_BASELINE_AUTO_ADJUSTMENT = 23
+}
+
+export type WebSocketResponse = {
+	requestId: any,
+	eventType: string,
+	payload: any
+}

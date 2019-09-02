@@ -98,6 +98,15 @@ public class ClustersRepository {
     /**
      * Get latest topology for clusters
      *
+     * @param clusterId Cluster ID.
+     */
+    public TopologySnapshot get(String clusterId) {
+        return txMgr.doInTransaction(() -> clusters.get(clusterId));
+    }
+
+    /**
+     * Get latest topology for clusters
+     *
      * @param clusterIds Cluster ids.
      */
     public Set<TopologySnapshot> get(Set<String> clusterIds) {

@@ -16,24 +16,26 @@
 
 package org.apache.ignite.console.agent.handlers;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.websocket.TopologySnapshot;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
+import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
+import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static java.util.stream.Collectors.toMap;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
-import static org.apache.ignite.console.demo.AgentClusterDemo.SRV_NODE_NAME;
-import static org.apache.ignite.console.websocket.TopologySnapshot.IGNITE_CLUSTER_ID;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.sortAddresses;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
 
 /**
  * API to transfer topology from demo cluster to Web Console.
@@ -42,14 +44,14 @@ public class DemoClusterHandler extends AbstractClusterHandler{
     /** Demo cluster ID. */
     static final String DEMO_CLUSTER_ID = UUID.randomUUID().toString();
 
+    /** Demo cluster name. */
+    private static final String DEMO_CLUSTER_NAME = "demo-cluster";
+
     /**
      * @param cfg Config.
      */
     DemoClusterHandler(AgentConfiguration cfg) {
         super(cfg, null);
-
-        System.setProperty(IGNITE_CLUSTER_ID, DEMO_CLUSTER_ID);
-        System.setProperty(IGNITE_CLUSTER_NAME, "demo-cluster");
     }
 
     /** {@inheritDoc} */
@@ -74,31 +76,48 @@ public class DemoClusterHandler extends AbstractClusterHandler{
         if (cfg.disableDemo())
             return null;
 
-        TopologySnapshot top = new TopologySnapshot();
-
-        top.setId(System.getProperty(IGNITE_CLUSTER_ID));
-        top.setName(System.getProperty(IGNITE_CLUSTER_NAME));
-        top.setClusterVersion(VER_STR);
-        top.setSecured(false);
-        top.setDemo(true);
+        TopologySnapshot top;
 
         if (AgentClusterDemo.getDemoUrl() != null) {
-            Ignite ignite = Ignition.ignite(SRV_NODE_NAME + 0);
+            IgniteEx ignite = (IgniteEx)F.first(Ignition.allGrids());
+
+            Collection<GridClientNodeBean> nodes = collectNodes(ignite.context());
+
+            top = new TopologySnapshot(nodes);
 
             top.setActive(ignite.cluster().active());
-            top.setNodes(
-                ignite.cluster().nodes().stream()
-                    .collect(toMap(
-                        ClusterNode::id,
-                        n -> new TopologySnapshot.NodeBean(n.isClient(), F.first(sortAddresses(n.addresses())))
-                    ))
-            );
         }
         else {
-            top.setActive(false);
-            top.setNodes(Collections.emptyMap());
+            top = new TopologySnapshot();
+            
+            top.setClusterVersion(VER_STR);
         }
 
+        top.setId(DEMO_CLUSTER_ID);
+        top.setName(DEMO_CLUSTER_NAME);
+        top.setDemo(true);
+
         return top;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    private Collection<GridClientNodeBean> collectNodes(GridKernalContext ctx) {
+        try {
+            GridTopologyCommandHandler hnd = new GridTopologyCommandHandler(ctx);
+
+            GridRestTopologyRequest req = new GridRestTopologyRequest();
+
+            req.command(TOPOLOGY);
+            req.includeAttributes(true);
+
+            GridRestResponse res = hnd.handleAsync(req).getUninterruptibly();
+
+            return (Collection<GridClientNodeBean>)res.getResponse();
+        }
+        catch (IgniteCheckedException e) {
+            return Collections.emptyList();
+        }
     }
 }

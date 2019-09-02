@@ -137,7 +137,7 @@ public class BrowsersService extends AbstractSocketHandler {
      * @param key Key.
      * @param evt Event.
      */
-    protected void sendToAgent(AgentKey key, WebSocketRequest evt) {
+    public void sendToAgent(AgentKey key, WebSocketRequest evt) {
         ignite.message(ignite.cluster().forLocal())
             .send(SEND_TO_AGENT, new AgentRequest(ignite.cluster().localNode().id(), key, evt));
     }
@@ -360,7 +360,7 @@ public class BrowsersService extends AbstractSocketHandler {
     /**
      * @param evt Event.
      */
-    protected void sendResponseToBrowser(WebSocketEvent evt) {
+    public void sendResponseToBrowser(WebSocketEvent evt) {
         WebSocketSession ses = locRequests.remove(evt.getRequestId());
 
         if (ses == null) {
