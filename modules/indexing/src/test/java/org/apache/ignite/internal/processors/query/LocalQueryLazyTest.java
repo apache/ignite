@@ -180,25 +180,33 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
+        SqlFieldsQuery qry0 = new SqlFieldsQuery(
+            "SELECT A.ID, B.ID FROM TEST AS A " +
+                "JOIN (SELECT ID FROM TEST) AS B")
             .setLocal(true)
             .setLazy(true)
             .setSchema("TEST")
-            .setPageSize(1), false).iterator();
+            .setPageSize(1);
 
-        AtomicInteger part = new AtomicInteger();
+        int sizeExpected = grid().context().query().querySqlFields(qry0, false).getAll().size();
+
+        Iterator<List<?>> it = grid().context().query().querySqlFields(qry0, false).iterator();
+
+        final AtomicInteger sizeWithOthedQry = new AtomicInteger();
 
         it.forEachRemaining((r) -> {
+            sizeWithOthedQry.getAndIncrement();
+
             List<?> innerRes = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
                 .setLocal(true)
                 .setLazy(true)
                 .setSchema("TEST")
-                .setPartitions(part.getAndIncrement()), false).getAll();
+                .setPartitions(1), false).getAll();
 
             assertEquals(1, innerRes.size());
         });
 
-        assertTrue(part.get() < KEY_CNT);
+        assertEquals(sizeExpected, sizeWithOthedQry.get());
     }
 
     /** */
