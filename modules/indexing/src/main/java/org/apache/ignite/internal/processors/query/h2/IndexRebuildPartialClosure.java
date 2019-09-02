@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -36,17 +37,32 @@ public class IndexRebuildPartialClosure implements SchemaIndexCacheVisitorClosur
     /** Indexes. */
     private final Map<GridH2Table, Collection<GridH2IndexBase>> tblIdxs = new IdentityHashMap<>();
 
+    /** Cache context. */
+    private GridCacheContext cctx;
+
+    /**
+     * Constructor.
+     *
+     * @param cctx Cache context.
+     */
+    public IndexRebuildPartialClosure(GridCacheContext cctx) {
+        this.cctx = cctx;
+    }
+
     /** {@inheritDoc} */
     @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
         assert hasIndexes();
 
         for (Map.Entry<GridH2Table, Collection<GridH2IndexBase>> tblIdxEntry : tblIdxs.entrySet()) {
-            GridH2Table tbl = tblIdxEntry.getKey();
+            if (cctx.kernalContext().query().belongsToTable(cctx, tblIdxEntry.getKey().cacheName(),
+                tblIdxEntry.getKey().getName(), row.key(), row.value())) {
+                GridH2Table tbl = tblIdxEntry.getKey();
 
-            GridH2Row row0 = tbl.rowDescriptor().createRow(row);
+                GridH2Row row0 = tbl.rowDescriptor().createRow(row);
 
-            for (GridH2IndexBase idx : tblIdxEntry.getValue())
-                idx.putx(row0);
+                for (GridH2IndexBase idx : tblIdxEntry.getValue())
+                    idx.putx(row0);
+            }
         }
     }
 
