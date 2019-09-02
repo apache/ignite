@@ -1389,39 +1389,14 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
             add(fut); // Append new future.
 
-            IgniteInternalFuture<?> txSync = null;
+            try {
+                if (log.isDebugEnabled())
+                    log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-            if (inTx())
-                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
-
-            if (txSync == null || txSync.isDone()) {
-                try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
-                    cctx.io().send(node, req, cctx.ioPolicy());
-                }
-                catch (ClusterTopologyCheckedException ex) {
-                    fut.onResult(ex);
-                }
+                cctx.io().send(node, req, cctx.ioPolicy());
             }
-            else {
-                txSync.listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> t) {
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
-                            cctx.io().send(node, req, cctx.ioPolicy());
-                        }
-                        catch (ClusterTopologyCheckedException ex) {
-                            fut.onResult(ex);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onError(e);
-                        }
-                    }
-                });
+            catch (ClusterTopologyCheckedException ex) {
+                fut.onResult(ex);
             }
         }
     }

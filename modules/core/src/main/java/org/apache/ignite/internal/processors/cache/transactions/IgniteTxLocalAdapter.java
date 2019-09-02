@@ -1172,7 +1172,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 GridCacheEntryEx cached = txEntry.cached();
 
                 try {
-                    assert cached.detached() || cached.lockedByThread(threadId) || isRollbackOnly() :
+                    assert cached.detached() || cached.lockedLocally(xidVersion()) || isRollbackOnly() :
                         "Transaction lock is not acquired [entry=" + cached + ", tx=" + this +
                             ", nodeId=" + cctx.localNodeId() + ", threadId=" + threadId + ']';
 
@@ -1554,7 +1554,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 else if (explicitCand.dhtLocal())
                     locCand = cctx.localNodeId().equals(explicitCand.otherNodeId());
 
-                if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx() && locCand) {
+                if (!explicitVer.equals(xidVer) && explicitCand.isHeldByThread(threadId) && !explicitCand.tx() && locCand) {
                     txEntry.explicitVersion(explicitVer);
 
                     if (explicitVer.isLess(minVer))

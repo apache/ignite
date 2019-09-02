@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Metric
-{
-    using System.Diagnostics.CodeAnalysis;
+package org.apache.ignite.internal.util.collection;
 
-    /// <summary>
-    /// MetricExporter SPI.
-    /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IMetricExporterSpi
-    {
-        // No-op.
+/**
+ * Base scenarios for read-write map.
+ */
+public class IntRWHashMapTest extends AbstractBaseIntMapTest {
+    /** {@inheritDoc} */
+    @Override protected IntMap<String> instantiateMap() {
+        return new IntRWHashMap<>();
     }
 }

@@ -711,7 +711,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore
+        boolean fromStore,
+        CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert false;
 
