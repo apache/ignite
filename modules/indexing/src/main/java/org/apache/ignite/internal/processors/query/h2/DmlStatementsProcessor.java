@@ -419,7 +419,7 @@ public class DmlStatementsProcessor {
                     if (!F.isEmpty(plan.selectQuery())) {
                         GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
                             plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                            null, false, false, 0, null);
+                            null, false, false, 0, null, 0);
 
                         it = res.iterator();
                     }
@@ -521,7 +521,7 @@ public class DmlStatementsProcessor {
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.isLazy(),
-                fieldsQry.getTimeout(), cancel);
+                fieldsQry.getTimeout(), cancel, fieldsQry.getPageSize());
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

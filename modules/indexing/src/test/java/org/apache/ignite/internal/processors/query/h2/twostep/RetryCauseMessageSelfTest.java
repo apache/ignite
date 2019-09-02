@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -81,6 +82,9 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
      * Failed to reserve partitions for query (cache is not found on local node)
      */
     public void testSynthCacheWasNotFoundMessage() {
+        if (isLazyEnabledByDefault())
+            return;
+
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
         GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
@@ -167,6 +171,9 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
      * Failed to reserve partitions for query (partition of REPLICATED cache is not in OWNING state)
      */
     public void testReplicatedCacheReserveFailureMessage() {
+        if (isLazyEnabledByDefault())
+            return;
+
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
         final GridKernalContext ctx = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "ctx");
@@ -215,6 +222,9 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
      * Failed to reserve partitions for query (partition of PARTITIONED cache cannot be reserved)
      */
     public void testPartitionedCacheReserveFailureMessage() {
+        if (isLazyEnabledByDefault())
+            return;
+
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
         final GridKernalContext ctx = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "ctx");
@@ -348,6 +358,13 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         JoinSqlTestHelper.populateDataIntoOrg(orgCache);
 
         JoinSqlTestHelper.populateDataIntoPerson(personCache);
+    }
+
+    /**
+     *
+     */
+    public boolean isLazyEnabledByDefault() {
+        return new SqlFieldsQuery("").isLazy();
     }
 
     /** {@inheritDoc} */
