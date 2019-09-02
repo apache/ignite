@@ -19,11 +19,13 @@ package org.apache.ignite.spi.discovery;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -31,6 +33,7 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -38,7 +41,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Checks that client will not process previous cluster events after reconnect.
  */
-public class IgniteClientReconnectEventHandling extends GridCommonAbstractTest {
+public class IgniteClientReconnectEventHandlingTest extends GridCommonAbstractTest {
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -46,7 +49,10 @@ public class IgniteClientReconnectEventHandling extends GridCommonAbstractTest {
     private final CountDownLatch reconnect = new CountDownLatch(1);
 
     /** */
-    private static final int RECONNECT_DALAY = 100;
+    private final ConcurrentLinkedQueue<Event> evtQueue = new ConcurrentLinkedQueue<>();
+
+    /** */
+    private static final int RECONNECT_DELAY = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,7 +62,7 @@ public class IgniteClientReconnectEventHandling extends GridCommonAbstractTest {
 
         // For optimization test duration.
         if (discoSpi instanceof TcpDiscoverySpi)
-            ((TcpDiscoverySpi)discoSpi).setReconnectDelay(RECONNECT_DALAY);
+            ((TcpDiscoverySpi)discoSpi).setReconnectDelay(RECONNECT_DELAY);
 
         if (igniteInstanceName.contains("client")) {
             cfg.setClientMode(true);
@@ -87,15 +93,21 @@ public class IgniteClientReconnectEventHandling extends GridCommonAbstractTest {
                 }
             }, new int[] {EVT_CLIENT_NODE_RECONNECTED});
 
+            lsnrs.put(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    evtQueue.add(evt);
+
+                    return true;
+                }
+            }, EVTS_ALL);
+
             cfg.setLocalEventListeners(lsnrs);
         }
 
         return cfg;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
     public void testClientReconnect() throws Exception {
         startGrid(0);
@@ -115,23 +127,32 @@ public class IgniteClientReconnectEventHandling extends GridCommonAbstractTest {
 
         assertTrue(client.context().clientDisconnected());
 
+        IgniteFuture<?> fut = client.cluster().clientReconnectFuture();
+
+        fut.listen(f -> evtQueue.clear());
+
         // Starts a new cluster.
         startGrid(0);
 
         // The client shouldn't connect to the new cluster until processed previous cluster events.
-        U.sleep(RECONNECT_DALAY * 2);
+        U.sleep(RECONNECT_DELAY * 2);
 
         assertTrue(client.context().clientDisconnected());
 
         // Continue processing events from the previous cluster.
         latch.countDown();
 
-        client.cluster().clientReconnectFuture().get();
+        fut.get();
 
         assertTrue(!client.context().clientDisconnected());
 
         assertTrue("Failed to wait for client reconnect event.", reconnect.await(10, SECONDS));
 
         awaitPartitionMapExchange();
+
+        assertEquals("Only reconnect event should be processed after the client reconnects to cluster.",
+            1, evtQueue.size());
+
+        assertEquals(EVT_CLIENT_NODE_RECONNECTED, evtQueue.poll().type());
     }
 }
