@@ -764,7 +764,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
-        final boolean lazy, final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        final boolean lazy, final int timeout, final GridQueryCancel cancel, final int pageSize) throws IgniteCheckedException {
         final Connection conn = connMgr.connectionForThread().connection(schemaName);
 
         H2Utils.setupConnection(conn, false, enforceJoinOrder, lazy);
@@ -815,15 +815,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                // TODO: HOT FIX: must be fixed by GG-21372
-                // assert GridH2QueryContext.get() == null;
-                if (GridH2QueryContext.get() != null) {
-                    log.warning("Query context is reset for local query. The result may be invalid " +
-                        "if the explicit partitions are specified. [oldQctx=" + GridH2QueryContext.get() + ']');
-
-                    GridH2QueryContext.clearThreadLocal();
-                }
-
                 GridH2QueryContext.set(ctx);
 
                 GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
@@ -836,7 +827,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel, qryInfo);
 
-                    return new H2FieldsIterator(rs, detachedConn, log, IgniteH2Indexing.this, qryInfo);
+                    return new H2FieldsIterator(
+                        rs,
+                        detachedConn,
+                        log,
+                        IgniteH2Indexing.this,
+                        qryInfo,
+                        lazy,
+                        pageSize,
+                        ctx);
                 }
                 catch (IgniteCheckedException | RuntimeException | Error e) {
                     detachedConn.recycle();
@@ -844,8 +843,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw e;
                 }
                 finally {
-                    if (!lazy)
-                        GridH2QueryContext.clearThreadLocal();
+                    GridH2QueryContext.clearThreadLocal();
 
                     runs.remove(run.id());
                 }
@@ -1084,7 +1082,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object[] args = qry.getArgs();
 
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, F.asList(args), filter,
-            qry.isEnforceJoinOrder(), qry.isLazy(), qry.getTimeout(), cancel);
+            qry.isEnforceJoinOrder(), qry.isLazy(), qry.getTimeout(), cancel, qry.getPageSize());
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
             @SuppressWarnings("NullableProblems")
@@ -1672,18 +1670,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new ParsingResult(prepared, newQry, remainingSql, twoStepQry, cachedQryKey, meta);
         }
 
-
-        // The part executed in user thread. In case user open few iterators ThreadLocal context will be invalid.
-        // To prevent it we keep old context and restore after.
-        GridH2QueryContext oldCtx = GridH2QueryContext.get();
-
-        if (oldCtx != null) {
-            GridH2QueryContext.clearThreadLocal();
-
-            log.debug("Query context is not empty. Single thread is shared between few queries." +
-                " Saving query context for switching between queries. [oldCtx=" + oldCtx + ']');
-        }
-
         try {
             GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
                 .distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins())));
@@ -1705,10 +1691,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             GridH2QueryContext.clearThreadLocal();
-
-            if(oldCtx != null)
-                GridH2QueryContext.set(oldCtx);
-
         }
     }
 

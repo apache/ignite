@@ -20,14 +20,23 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.api.ErrorCode;
+import org.h2.engine.Session;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
@@ -35,7 +44,7 @@ import org.h2.value.Value;
 /**
  * Iterator over result set.
  */
-public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
+public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> implements GridCloseableIterator<T> {
     /** */
     private static final Field RESULT_FIELD;
 
@@ -63,24 +72,66 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     private ResultSet data;
 
     /** */
-    protected final Object[] row;
+    protected Object[] row;
+
+    /** */
+    private List<Object[]> page;
 
     /** */
     private boolean hasRow;
+
+    /** Page size. */
+    private final int pageSize;
+
+    /** Column count. */
+    private final int colCnt;
+
+    /** Page row iterator. */
+    private Iterator<Object[]> rowIter;
+
+    /** Current H2 session. */
+    private final Session ses;
+
+    /** Lazy flag. */
+    private final boolean lazy;
+
+    /** Closed. */
+    private boolean closed;
+
+    /** Canceled. */
+    private boolean canceled;
+
+    /** Query context. */
+    private final GridH2QueryContext qctx;
 
     /** Fetch size interceptor. */
     final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
 
     /**
      * @param data Data array.
-     * @param log Logger.
-     * @param h2 Indexing H2.
-     * @param qryInfo Query info.
+     * @param pageSize Page size.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data, IgniteLogger log, IgniteH2Indexing h2,
-        H2QueryInfo qryInfo) throws IgniteCheckedException {
+    protected H2ResultSetIterator(
+        ResultSet data,
+        IgniteLogger log,
+        IgniteH2Indexing h2,
+        H2QueryInfo qryInfo,
+        boolean lazy,
+        int pageSize,
+        GridH2QueryContext qctx) throws IgniteCheckedException {
+        assert !lazy || qctx != null : "Empty context for lazy mode";
+        assert !lazy || pageSize > 0 : "Invalid page size for lazy mode pageSize=" + pageSize;
+
         this.data = data;
+        this.lazy = lazy;
+
+        if (!lazy)
+            this.pageSize = 1;
+        else
+            this.pageSize = pageSize;
+
+        this.qctx = qctx;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -91,79 +142,159 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
         if (data != null) {
             try {
-                row = new Object[data.getMetaData().getColumnCount()];
+                colCnt = data.getMetaData().getColumnCount();
+
+                ses = H2Utils.session(data.getStatement().getConnection());
+
+                page = new ArrayList<>(pageSize);
             }
             catch (SQLException e) {
                 throw new IgniteCheckedException(e);
             }
         }
-        else
+        else {
+            colCnt = 0;
+            page = null;
             row = null;
-
-        assert log != null;
-        assert h2 != null;
-        assert qryInfo != null;
+            ses = null;
+        }
 
         fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
     }
 
     /**
-     * @return {@code true} If next row was fetched successfully.
+     * @return {@code true} if the next page is available.
+     * @throws IgniteCheckedException On cancel.
      */
-    private boolean fetchNext() {
-        if (data == null)
-            return false;
+    private boolean fetchPage() throws IgniteCheckedException {
+        if (lazy) {
+            lockTables();
+
+            GridH2QueryContext.set(qctx);
+        }
 
         try {
-            if (!data.next()){
-                onClose();
+            if (lazy)
+                GridH2Table.checkTablesVersions(ses);
+
+            page.clear();
+
+            try {
+                if (data.isClosed())
+                    return false;
+            }
+            catch (SQLException e) {
+                if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                    throw new QueryCancelledException();
+
+                throw new IgniteSQLException(e);
+            }
+
+            for (int i = 0; i < pageSize; ++i) {
+                try {
+                    if (!data.next())
+                        break;
+
+                    row = new Object[colCnt];
+
+                    readRow();
+
+                    page.add(row);
+                }
+                catch (SQLException e) {
+                    if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                        throw new QueryCancelledException();
+
+                    throw new IgniteSQLException(e);
+                }
+            }
+
+            if (F.isEmpty(page)) {
+                rowIter = null;
 
                 return false;
             }
-
-            if (res != null) {
-                Value[] values = res.currentRow();
-
-                for (int c = 0; c < row.length; c++) {
-                    Value val = values[c];
-
-                    if (val instanceof GridH2ValueCacheObject) {
-                        GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)values[c];
-
-                        row[c] = valCacheObj.getObject(true);
-                    }
-                    else
-                        row[c] = val.getObject();
-                }
-            }
             else {
-                for (int c = 0; c < row.length; c++)
-                    row[c] = data.getObject(c + 1);
-            }
+                rowIter = page.iterator();
 
-            fetchSizeInterceptor.checkOnFetchNext();
+                return true;
+            }
+        }
+        finally {
+            if (lazy) {
+                GridH2QueryContext.clearThreadLocal();
+
+                unlockTables();
+            }
+        }
+    }
+
+    /**
+     * @throws SQLException On error.
+     */
+    private void readRow() throws SQLException {
+        if (res != null) {
+            Value[] values = res.currentRow();
+
+            for (int c = 0; c < row.length; c++) {
+                Value val = values[c];
+
+                if (val instanceof GridH2ValueCacheObject) {
+                    GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)values[c];
+
+                    row[c] = valCacheObj.getObject(true);
+                }
+                else
+                    row[c] = val.getObject();
+            }
+        }
+        else {
+            for (int c = 0; c < row.length; c++)
+                row[c] = data.getObject(c + 1);
+        }
+
+        fetchSizeInterceptor.checkOnFetchNext();
+    }
+
+    /** */
+    public void lockTables() {
+        if (ses.isLazyQueryExecution() && !isClosed())
+            GridH2Table.readLockTables(ses);
+    }
+
+    /** */
+    public void unlockTables() {
+        if (ses != null && ses.isLazyQueryExecution())
+            GridH2Table.unlockTables(ses);
+    }
+
+    /**
+     * @return {@code true} If next row was fetched successfully.
+     * @throws IgniteCheckedException On error.
+     */
+    private synchronized boolean fetchNext() throws IgniteCheckedException {
+        if (page == null)
+            throw new QueryCancelledException();
+
+        if (rowIter != null && rowIter.hasNext()) {
+            row = rowIter.next();
 
             return true;
         }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
+
+        if (!fetchPage()) {
+            closeInternal();
+
+            return false;
         }
-    }
 
-    /** {@inheritDoc} */
-    @Override public boolean onHasNext() {
-        return hasRow || (hasRow = fetchNext());
-    }
+        if (rowIter != null && rowIter.hasNext()) {
+            row = rowIter.next();
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
-    @Override public T onNext() {
-        if (!hasNext())
-            throw new NoSuchElementException();
-
-        hasRow = false;
-
-        return createRow();
+            return true;
+        }
+        else
+            return false;
     }
 
     /**
@@ -172,22 +303,81 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     protected abstract T createRow();
 
     /** {@inheritDoc} */
-    @Override public void onRemove() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onClose(){
+    public void onClose() throws IgniteCheckedException {
         if (data == null)
             // Nothing to close.
             return;
 
         fetchSizeInterceptor.checkOnFetchNext();
 
-        U.closeQuiet(data);
+        lockTables();
 
-        res = null;
-        data = null;
+        try {
+            data.close();
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+        finally {
+            res = null;
+            data = null;
+            page = null;
+
+            unlockTables();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void close() throws IgniteCheckedException {
+        if (closed)
+            return;
+
+        canceled = true;
+
+        closeInternal();
+    }
+
+    /**
+     * @throws IgniteCheckedException On error.
+     */
+    private synchronized void closeInternal() throws IgniteCheckedException {
+        if (closed)
+            return;
+
+        closed = true;
+
+        onClose();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isClosed() {
+        return closed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized boolean hasNextX() throws IgniteCheckedException {
+        if (canceled)
+            throw new QueryCancelledException();
+
+        if (closed)
+            return false;
+
+        return hasRow || (hasRow = fetchNext());
+    }
+
+    /** {@inheritDoc} */
+    @Override public T nextX() throws IgniteCheckedException {
+        if (!hasNextX())
+            throw new NoSuchElementException();
+
+        hasRow = false;
+
+        return createRow();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeX() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
