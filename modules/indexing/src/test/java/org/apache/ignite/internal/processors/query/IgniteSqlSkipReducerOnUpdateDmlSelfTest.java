@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecut
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -264,12 +265,17 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
 
         final IgniteCache cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() {
-                return cache.query(new SqlFieldsQueryEx("UPDATE Person SET name = Fail(name)", false)
-                    .setSkipReducerOnUpdate(true));
-            }
-        }, CacheException.class, "Failed to execute SQL query");
+        try {
+            cache.query(new SqlFieldsQueryEx("UPDATE Person SET name = Fail(name)", false)
+                .setSkipReducerOnUpdate(true));
+
+            fail("Exception must be thrown");
+        }
+        catch (CacheException e) {
+            if (!e.getMessage().contains("Failed to execute SQL query")
+                && !e.getMessage().contains("Failed to run update. Update failed. Exception calling user-defined function"))
+                throw e;
+        }
     }
 
     /**

@@ -15,34 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.cache.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.sql.ResultSet;
+import org.apache.ignite.IgniteException;
 
 /**
- * Special key/value iterator based on database result set.
+ * The exception is thrown if a query must be retried because database schema or topology are changed.
  */
-public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<K, V>> {
+public class QueryRetryException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param data Data array.
-     * @throws IgniteCheckedException If failed.
+     * @param tableName Table name.
      */
-    protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
-        super(data, null, null, null);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteBiTuple<K, V> createRow() {
-        K key = (K)row[0];
-        V val = (V)row[1];
-
-        return new IgniteBiTuple<>(key, val);
+    public QueryRetryException(String tableName) {
+        super("Table was modified concurrently (please retry the query): " + tableName);
     }
 }

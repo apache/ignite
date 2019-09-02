@@ -32,6 +32,7 @@ import org.apache.ignite.internal.visor.VisorCacheRebalanceCollectorTaskSelfTest
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
+import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.jetbrains.annotations.Nullable;
@@ -67,6 +68,7 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(CheckpointReadLockFailureTest.class);
 
         suite.addTestSuite(GridCommandHandlerTest.class);
+        suite.addTestSuite(GridCommandHandlerClusterByClassTest.class);
         suite.addTestSuite(GridCommandHandlerSslTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
         suite.addTestSuite(PluginNodeValidationTest.class);
