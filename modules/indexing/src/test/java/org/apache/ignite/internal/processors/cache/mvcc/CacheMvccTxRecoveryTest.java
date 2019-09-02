@@ -511,7 +511,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testTxRecoveryWithLostFullMassageOnJoiningBackupNode() throws Exception {
+    public void testTxRecoveryWithLostFullMessageOnJoiningBackupNode() throws Exception {
         CountDownLatch success = new CountDownLatch(1);
 
         int joiningBackupNodeId = 2;

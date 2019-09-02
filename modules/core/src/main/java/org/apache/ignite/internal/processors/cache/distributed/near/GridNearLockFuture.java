@@ -934,7 +934,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 markInitialized();
             }
             else {
-                // TODO FIXME https://ggsystems.atlassian.net/browse/GG-23288
                 fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
