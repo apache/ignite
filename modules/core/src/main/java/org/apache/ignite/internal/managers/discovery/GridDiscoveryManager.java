@@ -272,14 +272,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node compatibility consistent ID. */
     private Serializable consistentId;
 
-    /**
-     * Future to wait for client disconnect event before an attempt to reconnect.
-     *
-     * Otherwise, we can continue process events from the previous cluster topology when the client already connected to
-     * a new topology.
-     */
-    private volatile GridFutureAdapter disconnectEvtFut;
-
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -802,7 +794,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             Collections.singleton(locNode))
                     ));
 
-                    disconnectEvtFut = new GridFutureAdapter();
+                    discoWrk.disconnectEvtFut = new GridFutureAdapter();
                 }
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
                     assert locNode.isClient() : locNode;
@@ -844,14 +836,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (stateFinishMsg != null)
                     discoWrk.addEvent(EVT_DISCOVERY_CUSTOM_EVT, nextTopVer, node, discoCache, topSnapshot, stateFinishMsg);
 
-                if (type == EVT_CLIENT_NODE_DISCONNECTED) {
-                    try {
-                        disconnectEvtFut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException("Failed to wait for handling disconnect event.", e);
-                    }
-                }
+                if (type == EVT_CLIENT_NODE_DISCONNECTED)
+                    discoWrk.awaitDisconnectEvent();
             }
         });
 
@@ -2687,6 +2673,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private boolean nodeSegFired;
 
         /**
+         * Future to wait for client disconnect event before an attempt to reconnect.
+         *
+         * Otherwise, we can continue process events from the previous cluster topology when the client already connected to
+         * a new topology.
+         */
+        private volatile GridFutureAdapter disconnectEvtFut;
+
+        /**
          *
          */
         private DiscoveryWorker() {
@@ -2996,6 +2990,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 default:
                     assert segPlc == NOOP : "Unsupported segmentation policy value: " + segPlc;
+            }
+        }
+
+        /** Awaits client disconnect event. */
+        private void awaitDisconnectEvent() {
+            try {
+                disconnectEvtFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for handling disconnect event.", e);
             }
         }
 
