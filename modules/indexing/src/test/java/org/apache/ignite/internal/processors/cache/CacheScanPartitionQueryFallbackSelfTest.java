@@ -413,7 +413,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     }
 
     @Test
-    @Repeat(10)
     public void testScanQueryFallbackOnSerialShutdown() {
         cacheMode = CacheMode.PARTITIONED;
         backups = 1;
