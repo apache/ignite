@@ -214,7 +214,7 @@ import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelf
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridIndexFullRebuildTest;
+import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullifyOnEndSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
@@ -509,7 +509,7 @@ import org.junit.runners.Suite;
     SqlSystemViewsSelfTest.class,
 
     GridIndexRebuildSelfTest.class,
-    GridIndexFullRebuildTest.class,
+    GridIndexRebuildTest.class,
 
     SqlTransactionCommandsWithMvccDisabledSelfTest.class,
 
