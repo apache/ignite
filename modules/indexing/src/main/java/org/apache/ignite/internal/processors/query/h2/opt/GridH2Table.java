@@ -467,7 +467,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
 
     /** {@inheritDoc} */
     @Override public String tableName() {
-        return getName();
+        return identifier.table();
     }
 
     /** {@inheritDoc} */
@@ -1645,7 +1645,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
         H2IndexType type = type(idx);
 
         if (type == null) {
-            U.debug(log, "Unknown index type [idxId=" + idxId + ']');
+            U.debug(log, "Unknown index type [idxName=" + idx.getName() + ",tblName=" + identifierStr + "]");
 
             return;
         }

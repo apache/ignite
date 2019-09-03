@@ -242,6 +242,16 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
         return QueryUtils.SCHEMA_MONITORING;
     }
 
+    /** {@inheritDoc} */
+    @Override public long getRowCount() {
+        return mlist.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean canGetRowCount() {
+        return true;
+    }
+
     /**
      * @param name Name to convert
      * @return SQL compatible name.

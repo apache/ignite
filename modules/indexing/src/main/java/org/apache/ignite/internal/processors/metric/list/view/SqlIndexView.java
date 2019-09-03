@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.index.Index;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /** */
 public class SqlIndexView implements MonitoringRow<String> {
     /** */
@@ -52,7 +54,7 @@ public class SqlIndexView implements MonitoringRow<String> {
 
     /** {@inheritDoc} */
     @Override public String monitoringRowId() {
-        return indexName();
+        return metricName(tbl.identifierString(), indexName());
     }
 
     /** */
@@ -79,13 +81,13 @@ public class SqlIndexView implements MonitoringRow<String> {
     /** */
     @Order(3)
     public String schemaName() {
-        return idx.getSchema().getName();
+        return tbl.schemaName();
     }
 
     /** */
     @Order(4)
     public String tableName() {
-        return idx.getTable().getName();
+        return tbl.identifier().table();
     }
 
     /** */

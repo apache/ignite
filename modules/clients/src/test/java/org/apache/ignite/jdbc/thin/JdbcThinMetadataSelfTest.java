@@ -342,6 +342,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "MONITORING.CLIENT_CONNECTIONS",
                 "MONITORING.NODES",
                 "MONITORING.CACHES",
+                "MONITORING.TASKS",
                 "SYS.LOCAL_SQL_QUERY_HISTORY",
                 "SYS.NODES",
                 "SYS.NODE_METRICS",
@@ -786,7 +787,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "MONITORING.QUERY_TEXT.GLOBAL_QUERY_ID.null.2147483647",
                 "MONITORING.QUERY_TEXT.LOCAL.null.1",
                 "MONITORING.QUERY_TEXT.SCHEMA_NAME.null.2147483647",
-                "MONITORING.SERVICES.ID.null.2147483647",
+                "MONITORING.SERVICES.SERVICE_ID.null.2147483647",
                 "MONITORING.SERVICES.NAME.null.2147483647",
                 "MONITORING.SERVICES.SERVICE_CLASS.null.2147483647",
                 "MONITORING.SERVICES.CACHE_NAME.null.2147483647",
@@ -814,7 +815,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "MONITORING.TRANSACTIONS.SUBJECT_ID.null.2147483647",
                 "MONITORING.TRANSACTIONS.SYSTEM.null.1",
                 "MONITORING.TRANSACTIONS.THREAD_ID.null.19",
-                "MONITORING.TRANSACTIONS.TIMEOUT.null.19"
+                "MONITORING.TRANSACTIONS.TIMEOUT.null.19",
+                "MONITORING.SQL_TABLES.IDENTIFIER_STRING.null.2147483647",
+                "MONITORING.TASKS.AFFINITY_CACHE_NAME.null.2147483647",
+                "MONITORING.TASKS.INTERNAL.null.1",
+                "MONITORING.TASKS.END_TIME.null.19",
+                "MONITORING.TASKS.START_TIME.null.19",
+                "MONITORING.TASKS.USER_VERSION.null.2147483647",
+                "MONITORING.QUERY_CONTINUOUS.ROUTINE_ID.null.2147483647",
+                "MONITORING.TASKS.TASK_NAME.null.2147483647",
+                "MONITORING.TASKS.TASK_NODE_ID.null.2147483647",
+                "MONITORING.TASKS.JOB_ID.null.2147483647",
+                "MONITORING.SERVICES.SERVICE_ID.null.2147483647",
+                "MONITORING.TASKS.AFFINITY_PARTITION_ID.null.10",
+                "MONITORING.TASKS.TASK_CLASS_NAME.null.2147483647",
+                "MONITORING.TASKS.EXEC_NAME.null.2147483647"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);

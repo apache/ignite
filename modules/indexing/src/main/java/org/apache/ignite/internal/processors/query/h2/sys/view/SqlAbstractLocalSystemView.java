@@ -154,20 +154,4 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
         else
             return ValueTimestamp.fromMillis(millis);
     }
-
-    /**
-     * Get node's filter string representation.
-     *
-     * @param ccfg Cache configuration.
-     *
-     * @return String representation of node filter.
-     */
-    @Nullable public static String nodeFilter(CacheConfiguration<?, ?> ccfg) {
-        IgnitePredicate<ClusterNode> nodeFilter = ccfg.getNodeFilter();
-
-        if (nodeFilter instanceof CacheConfiguration.IgniteAllNodesPredicate)
-            nodeFilter = null;
-
-        return toStringSafe(nodeFilter);
-    }
 }
