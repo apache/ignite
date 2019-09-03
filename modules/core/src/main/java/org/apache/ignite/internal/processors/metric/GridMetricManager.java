@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.metric.list.walker.CacheGroupViewWa
 import org.apache.ignite.internal.processors.metric.list.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ClusterNodeViewWalker;
+import org.apache.ignite.internal.processors.metric.list.walker.ComputTaskViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ContinuousQueryViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.QueryViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ServiceViewWalker;
@@ -64,6 +65,7 @@ import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
 import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
+import org.apache.ignite.spi.metric.list.view.ComputTaskView;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.spi.metric.list.view.QueryView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
@@ -272,6 +274,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
         registerWalker(ServiceView.class, new ServiceViewWalker());
         registerWalker(TransactionView.class, new TransactionViewWalker());
         registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
+        registerWalker(ComputTaskView.class, new ComputTaskViewWalker());
     }
 
     /** {@inheritDoc} */

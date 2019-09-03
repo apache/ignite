@@ -43,6 +43,7 @@ import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
 import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
+import org.apache.ignite.spi.metric.list.view.ComputTaskView;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.spi.metric.list.view.QueryView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
@@ -77,6 +78,7 @@ public class MonitoringRowAttributeWalkerGenerator {
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClusterNodeView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ComputTaskView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlIndexView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);

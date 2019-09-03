@@ -42,6 +42,7 @@ import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
 import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
+import org.apache.ignite.spi.metric.list.view.ComputTaskView;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.spi.metric.list.view.TransactionView;
@@ -355,6 +356,37 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                 checkNodeView(nodes2.get(g1.localNode().id()), g1.localNode(), false);
                 checkNodeView(nodes2.get(g2.localNode().id()), g2.localNode(), true);
             }
+        }
+    }
+
+    @Test
+    /** */
+    public void testComputeBroadcast() throws Exception {
+        try(IgniteEx g1 = startGrid(0)) {
+            MonitoringList<IgniteUuid, ComputTaskView> tasks =
+                g1.context().metric().list("tasks", "Cluster nodes", ComputTaskView.class);
+
+            for (int i=0; i<5; i++)
+                g1.compute().broadcast(() -> {
+                    try {
+                        Thread.sleep(3_000L);
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+            assertEquals(5, tasks.size());
+
+            ComputTaskView t = tasks.iterator().next();
+
+            assertFalse(t.internal());
+            assertNull(t.affinityCacheName());
+            assertEquals(-1, t.affinityPartitionId());
+            assertTrue(t.taskClassName().startsWith(getClass().getName()));
+            assertTrue(t.taskName().startsWith(getClass().getName()));
+            assertEquals(g1.localNode().id(), t.taskNodeId());
+            assertEquals(0, t.userVersion());
         }
     }
 

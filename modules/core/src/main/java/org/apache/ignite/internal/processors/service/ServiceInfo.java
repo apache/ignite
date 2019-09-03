@@ -109,18 +109,13 @@ public class ServiceInfo implements ServiceDescriptor, ServiceView {
      *
      * @return Service id.
      */
-    public IgniteUuid serviceId() {
+    @Override public IgniteUuid serviceId() {
         return srvcId;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return cfg.getName();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return null;
     }
 
     /** {@inheritDoc} */

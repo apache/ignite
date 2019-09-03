@@ -26,7 +26,7 @@ import org.apache.ignite.spi.metric.list.MonitoringRow;
 public interface ServiceView extends MonitoringRow<IgniteUuid> {
     /** {@inheritDoc} */
     @Override default IgniteUuid monitoringRowId() {
-        return id();
+        return serviceId();
     }
 
     /** */
@@ -35,7 +35,7 @@ public interface ServiceView extends MonitoringRow<IgniteUuid> {
 
     /** */
     @Order
-    public IgniteUuid id();
+    public IgniteUuid serviceId();
 
     /** */
     @Order(2)

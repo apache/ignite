@@ -27,7 +27,7 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "id", IgniteUuid.class);
+        v.accept(0, "serviceId", IgniteUuid.class);
         v.accept(1, "name", String.class);
         v.accept(2, "serviceClass", Class.class);
         v.accept(3, "cacheName", String.class);
@@ -41,7 +41,7 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
 
     /** {@inheritDoc} */
     @Override public void visitAllWithValues(ServiceView row, AttributeWithValueVisitor v) {
-        v.accept(0, "id", IgniteUuid.class, row.id());
+        v.accept(0, "serviceId", IgniteUuid.class, row.serviceId());
         v.accept(1, "name", String.class, row.name());
         v.accept(2, "serviceClass", Class.class, row.serviceClass());
         v.accept(3, "cacheName", String.class, row.cacheName());

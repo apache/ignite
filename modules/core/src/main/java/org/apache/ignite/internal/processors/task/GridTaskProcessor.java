@@ -80,6 +80,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.view.ComputTaskView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
@@ -119,6 +121,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private final ConcurrentMap<IgniteUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();
 
     /** */
+    private final MonitoringList<IgniteUuid, ComputTaskView> mlist;
+
+    /** */
     private boolean stopping;
 
     /** */
@@ -155,6 +160,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
+
+        mlist = ctx.metric().list("tasks", "Running compute tasks", ComputTaskView.class);
     }
 
     /** {@inheritDoc} */
@@ -774,6 +781,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     subjId);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
+                mlist.add(new ComputTaskView(taskWorker));
+
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
@@ -806,6 +815,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                         }
                         catch (RejectedExecutionException e) {
                             tasks.remove(sesId);
+                            mlist.remove(sesId);
 
                             release(dep);
 
@@ -1309,6 +1319,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             }
 
             boolean rmv = tasks.remove(worker.getTaskSessionId(), worker);
+            mlist.remove(worker.getTaskSessionId());
 
             assert rmv;
 

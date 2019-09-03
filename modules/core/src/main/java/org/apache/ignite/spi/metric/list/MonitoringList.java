@@ -64,7 +64,7 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     public MonitoringList(String name, String description, Class<R> rowClass, MonitoringRowAttributeWalker<R> walker,
         IgniteLogger log) {
         assert rowClass != null;
-        assert walker != null;
+        assert walker != null : "Please, add walker class via GridMetricManager#registerWalker";
 
         this.name = name;
         this.description = description;
