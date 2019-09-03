@@ -33,7 +33,7 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.events.EventType.EVTS_ALL;
+import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -99,7 +99,7 @@ public class IgniteClientReconnectEventHandlingTest extends GridCommonAbstractTe
 
                     return true;
                 }
-            }, EVTS_ALL);
+            }, EVTS_DISCOVERY);
 
             cfg.setLocalEventListeners(lsnrs);
         }
