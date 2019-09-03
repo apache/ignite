@@ -590,9 +590,11 @@ public class SchemaManager {
 
         try {
             // Populate index with existing cache data.
-            final GridH2RowDescriptor rowDesc = h2Tbl.rowDescriptor();
+            IndexRebuildPartialClosure idxBuild = new IndexRebuildPartialClosure(h2Tbl.cacheContext());
 
-            cacheVisitor.visit(new IndexBuildClosure(rowDesc, h2Idx));
+            idxBuild.addIndex(h2Tbl, h2Idx);
+
+            cacheVisitor.visit(idxBuild);
 
             // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
             // prepared statements are re-built.

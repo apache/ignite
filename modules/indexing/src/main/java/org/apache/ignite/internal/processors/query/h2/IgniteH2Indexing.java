@@ -1954,7 +1954,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             // Otherwise iterate over tables looking for missing indexes.
-            IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure();
+            IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure(cctx);
 
             for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cctx.name())) {
                 assert tblDesc.table() != null;
