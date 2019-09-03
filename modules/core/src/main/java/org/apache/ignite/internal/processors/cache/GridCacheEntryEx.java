@@ -16,13 +16,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteUuid;
@@ -1001,12 +1000,11 @@ public interface GridCacheEntryEx {
     /**
      * Update index from within entry lock, passing key, value, and expiration time to provided closure.
      *
-     * @param filter Row filter.
      * @param clo Closure to apply to key, value, and expiration time.
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
+    public void updateIndex(SchemaIndexCacheVisitorClosure clo)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

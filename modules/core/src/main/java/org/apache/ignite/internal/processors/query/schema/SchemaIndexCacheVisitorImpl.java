@@ -56,9 +56,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Cache context. */
     private final GridCacheContext cctx;
 
-    /** Row filter. */
-    private final SchemaIndexCacheFilter rowFilter;
-
     /** Cancellation token. */
     private final SchemaIndexOperationCancellationToken cancel;
 
@@ -82,20 +79,18 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      *  @param cctx Cache context.
      */
     public SchemaIndexCacheVisitorImpl(GridCacheContext cctx) {
-        this(cctx, null, null, 0);
+        this(cctx, null, 0);
     }
 
     /**
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param rowFilter Row filter.
      * @param cancel Cancellation token.
      * @param parallelism Degree of parallelism.
      */
-    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, SchemaIndexCacheFilter rowFilter,
-        SchemaIndexOperationCancellationToken cancel, int parallelism) {
-        this.rowFilter = rowFilter;
+    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, SchemaIndexOperationCancellationToken cancel,
+        int parallelism) {
         this.cancel = cancel;
 
         if (parallelism > 0)
@@ -250,7 +245,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    entry.updateIndex(rowFilter, clo);
+                    entry.updateIndex(clo);
                 }
                 finally {
                     entry.touch();
