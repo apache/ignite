@@ -2673,8 +2673,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /**
          * Future to wait for client disconnect event before an attempt to reconnect.
          *
-         * Otherwise, we can continue process events from the previous cluster topology when the client already connected to
-         * a new topology.
+         * Otherwise, we can continue process events from the previous cluster topology when the client already
+         * connected to a new topology.
          */
         private volatile GridFutureAdapter disconnectEvtFut;
 
