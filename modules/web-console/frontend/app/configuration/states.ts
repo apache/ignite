@@ -41,7 +41,6 @@ function registerStates($stateProvider) {
     // Setup the states.
     $stateProvider
     .state('base.configuration', {
-        abstract: true,
         permission: 'configuration',
         url: '/configuration',
         onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
@@ -52,7 +51,8 @@ function registerStates($stateProvider) {
         },
         resolvePolicy: {
             async: 'NOWAIT'
-        }
+        },
+        redirectTo: 'base.configuration.overview'
     })
     .state('base.configuration.overview', {
         url: '/overview',
