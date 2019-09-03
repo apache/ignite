@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
+import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -74,7 +76,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -89,7 +90,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
-import static org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer.ZK_SECURE_CLIENT_PORT;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
 import static org.apache.zookeeper.client.ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
@@ -98,6 +98,9 @@ import static org.apache.zookeeper.client.ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_S
  * superclass methods to be shared by all subclasses.
  */
 class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
+    /** Zookeeper secure client port property name. */
+    public static final String ZK_SECURE_CLIENT_PORT = "secureClientPort";
+
     /** */
     protected UUID nodeId;
 
@@ -426,7 +429,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             assert zkCluster != null;
 
             if (sslEnabled)
-                zkSpi.setZkConnectionString(zkCluster.getSslConnectString());
+                zkSpi.setZkConnectionString(getSslConnectString());
             else
                 zkSpi.setZkConnectionString(zkCluster.getConnectString());
 
@@ -555,6 +558,29 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
 
         return cfg;
+    }
+
+    /**
+     * Returns the connection string to pass to the ZooKeeper constructor
+     *
+     * @return connection string
+     */
+    protected String getSslConnectString() {
+        StringBuilder str = new StringBuilder();
+
+        for (InstanceSpec spec : zkCluster.getInstances()) {
+            if (str.length() > 0)
+                str.append(",");
+
+            Object secClientPort = spec.getCustomProperties().get(ZK_SECURE_CLIENT_PORT);
+
+            if (secClientPort == null)
+                throw new IllegalArgumentException("Security client port is not configured. [spec=" + spec + ']');
+
+            str.append(spec.getHostname()).append(":").append(secClientPort);
+        }
+
+        return str.toString();
     }
 
     /**

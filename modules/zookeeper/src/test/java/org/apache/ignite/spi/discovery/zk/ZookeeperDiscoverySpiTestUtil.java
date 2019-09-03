@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.curator.test.InstanceSpec;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
