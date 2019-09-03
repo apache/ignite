@@ -17,11 +17,6 @@
 
 package org.apache.ignite;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -33,6 +28,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.junit.Test;
+
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -169,7 +166,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     }
 
     /**
-     * Check mapKeyToNode, mapKeyToPrimaryAndBackups methods.
+     * Check mapKeyToNode, mapKeyToPrimaryAndBackupsList methods.
      *
      * @param testAff Affinity1.
      * @param aff Affinity2.
@@ -178,12 +175,12 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
         for (int i = 0; i < 10000; i++) {
             assertEquals(testAff.mapKeyToNode(i).id(), aff.mapKeyToNode(i).id());
 
-            checkEqualCollection(testAff.mapKeyToPrimaryAndBackups(i), aff.mapKeyToPrimaryAndBackups(i));
+            checkEqualCollection(testAff.mapKeyToPrimaryAndBackupsList(i), aff.mapKeyToPrimaryAndBackupsList(i));
         }
     }
 
     /**
-     * Check mapPartitionToPrimaryAndBackups and mapPartitionToNode methods.
+     * Check mapPartitionToPrimaryAndBackupsListList and mapPartitionToNode methods.
      *
      * @param testAff Affinity1.
      * @param aff Affinity2.
@@ -194,8 +191,8 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
         for (int part = 0; part < aff.partitions(); ++part) {
             assertEquals(testAff.mapPartitionToNode(part).id(), aff.mapPartitionToNode(part).id());
 
-            checkEqualCollection(testAff.mapPartitionToPrimaryAndBackups(part),
-                aff.mapPartitionToPrimaryAndBackups(part));
+            checkEqualCollection(testAff.mapPartitionToPrimaryAndBackupsList(part),
+                aff.mapPartitionToPrimaryAndBackupsList(part));
         }
     }
 

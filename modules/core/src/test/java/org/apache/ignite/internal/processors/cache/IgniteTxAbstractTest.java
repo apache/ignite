@@ -159,7 +159,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         int part = aff.partition(key);
 
                         debug("Key affinity [key=" + key + ", partition=" + part + ", affinity=" +
-                            U.toShortString(ignite(gridIdx).affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(part)) + ']');
+                            U.toShortString(ignite(gridIdx).affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackupsList(part)) + ']');
                     }
 
                     String val = Integer.toString(key);
@@ -270,7 +270,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         int part = aff.partition(key);
 
                         debug("Key affinity [key=" + key + ", partition=" + part + ", affinity=" +
-                            U.toShortString(ignite(gridIdx).affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(part)) + ']');
+                            U.toShortString(ignite(gridIdx).affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackupsList(part)) + ']');
                     }
 
                     String val = Integer.toString(key);

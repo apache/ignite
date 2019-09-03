@@ -130,7 +130,7 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
 
                     for (int k = 0; k < ENTRIES_COUNT; k++)
                         assertEquals("Failed to read [g=" + g + ", part=" + ig.affinity(DEFAULT_CACHE_NAME).partition(k) +
-                                ", nodes=" + ig.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(k) + ']',
+                                ", nodes=" + ig.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(k) + ']',
                             k, ig.cache(DEFAULT_CACHE_NAME).get(k));
                 }
             }

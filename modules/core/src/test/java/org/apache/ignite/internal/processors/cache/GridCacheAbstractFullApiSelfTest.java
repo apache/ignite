@@ -477,7 +477,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         int globalSize = 0;
 
         for (String key : map.keySet())
-            globalSize += affinity(jcache()).mapKeyToPrimaryAndBackups(key).size();
+            globalSize += affinity(jcache()).mapKeyToPrimaryAndBackupsList(key).size();
 
         for (int i = 0; i < gridCount(); i++)
             assertEquals(globalSize, jcache(i).size(ALL));
@@ -3272,7 +3272,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);
 
-                if (grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
+                if (grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key).contains(grid(g).localNode()))
                     assertEquals((Integer)i, peek(jcache(g), key));
                 else
                     assertNull(peek(jcache(g), key));
@@ -3307,7 +3307,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);
 
-                if (grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
+                if (grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key).contains(grid(g).localNode()))
                     assertEquals((Integer)i, peek(jcache(g), key));
                 else
                     assertNull(peek(jcache(g), key));
@@ -5241,7 +5241,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             boolean found = primaryIgnite(key).cache(DEFAULT_CACHE_NAME).localPeek(key) != null;
 
             if (keyToRmv.equals(key)) {
-                Collection<ClusterNode> nodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+                Collection<ClusterNode> nodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
                 for (int j = 0; j < gridCount(); ++j) {
                     if (nodes.contains(grid(j).localNode()) && grid(j) != primaryIgnite(key))
@@ -6730,7 +6730,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 GridCacheEntryEx entry = ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
-                if (ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(((IgniteKernal)ignite).localNode())) {
+                if (ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key).contains(((IgniteKernal)ignite).localNode())) {
                     assertNotNull(entry);
                     assertTrue(entry.deleted());
                 }

@@ -70,7 +70,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
         final InternalKey key = new InternalKey(0); // Hangs on the first remote put.
 
         // Make key belongs to remote node.
-        while (affinity(jcache).mapKeyToPrimaryAndBackups(key).iterator().next().isLocal())
+        while (affinity(jcache).mapKeyToPrimaryAndBackupsList(key).iterator().next().isLocal())
             key.key++;
 
         // Put bytes array(!), for integer numbers it works correctly.

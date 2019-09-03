@@ -2515,7 +2515,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     assert aff.partitions() > 0;
 
                     for (int p = 0; p > aff.partitions(); p++) {
-                        Collection<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackups(p);
+                        Collection<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackupsList(p);
 
                         assertTrue(partNodes.isEmpty());
                     }
@@ -2656,7 +2656,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                         for (int p = 0; p < ideal.size(); p++) {
                             List<ClusterNode> exp = ideal.get(p);
-                            Collection<ClusterNode> partNodes = cacheAff.mapPartitionToPrimaryAndBackups(p);
+                            Collection<ClusterNode> partNodes = cacheAff.mapPartitionToPrimaryAndBackupsList(p);
 
                             assertEqualsCollections(exp, partNodes);
                         }

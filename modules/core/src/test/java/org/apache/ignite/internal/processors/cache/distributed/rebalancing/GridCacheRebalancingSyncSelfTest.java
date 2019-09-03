@@ -431,7 +431,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                             "], node=" + g0.name() + " cache=" + c.getName(), res);
 
                         Collection<ClusterNode> affNodes =
-                            g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(loc.id());
+                            g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackupsList(loc.id());
 
                         assertTrue(affNodes.contains(g0.localNode()));
                     }

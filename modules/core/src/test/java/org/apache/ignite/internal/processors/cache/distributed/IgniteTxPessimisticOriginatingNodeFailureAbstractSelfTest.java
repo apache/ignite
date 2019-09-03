@@ -183,7 +183,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(grid(1).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key));
 
             nodes.remove(txNode);
 
@@ -353,7 +353,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(affinity(cache).mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(affinity(cache).mapKeyToPrimaryAndBackupsList(key));
 
             nodes.remove(primaryNode);
 

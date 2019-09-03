@@ -1659,7 +1659,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         Affinity<Integer> aff = allGrids.get(0).affinity(DEFAULT_CACHE_NAME);
 
-        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackupsList(key);
 
         for (Ignite ignite : allGrids) {
             if (!nodes.contains(ignite.cluster().localNode()))
@@ -1724,7 +1724,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         Affinity<Object> aff = ignite.affinity(cacheName);
 
-        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackupsList(key);
 
         assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes + ']', nodes.size() > 1);
 
@@ -1749,7 +1749,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         Affinity<Object> aff = ignite.affinity(cacheName);
 
-        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackupsList(key);
 
         assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes + ']', nodes.size() > 1);
 

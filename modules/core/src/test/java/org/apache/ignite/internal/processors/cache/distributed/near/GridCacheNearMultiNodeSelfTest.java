@@ -226,7 +226,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             assert part != null;
 
-            Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(part);
+            Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackupsList(part);
 
             ClusterNode primary = F.first(nodes);
 
@@ -297,7 +297,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Primary node for the key.
      */
     @Nullable private Collection<Ignite> backupGrids(Integer key) {
-        Collection<ClusterNode> nodes = affinity(0).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> nodes = affinity(0).mapKeyToPrimaryAndBackupsList(key);
 
         Collection<ClusterNode> backups = CU.backups(nodes);
 
@@ -662,7 +662,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         String val = Integer.toString(key);
 
-        Collection<ClusterNode> affNodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> affNodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         info("Affinity for key [nodeId=" + U.nodeIds(affNodes) + ", key=" + key + ']');
 

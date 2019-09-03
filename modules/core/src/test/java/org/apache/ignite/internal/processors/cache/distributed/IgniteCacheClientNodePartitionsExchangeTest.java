@@ -451,7 +451,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
             assertEquals(aff0.partitions(), aff.partitions());
 
             for (int part = 0; part < aff.partitions(); part++)
-                assertEquals(aff0.mapPartitionToPrimaryAndBackups(part), aff.mapPartitionToPrimaryAndBackups(part));
+                assertEquals(aff0.mapPartitionToPrimaryAndBackupsList(part), aff.mapPartitionToPrimaryAndBackupsList(part));
         }
 
         for (Ignite ignite : nodes) {

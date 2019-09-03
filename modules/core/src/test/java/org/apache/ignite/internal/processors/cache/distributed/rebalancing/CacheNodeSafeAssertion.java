@@ -68,7 +68,7 @@ public class CacheNodeSafeAssertion implements Assertion {
         for (int x = 0; x < partCnt; ++x) {
             // Results are returned with the primary node first and backups after. We want to ensure that there is at
             // least one backup on a different host.
-            Collection<ClusterNode> results = affinity.mapPartitionToPrimaryAndBackups(x);
+            Collection<ClusterNode> results = affinity.mapPartitionToPrimaryAndBackupsList(x);
 
             Iterator<ClusterNode> nodes = results.iterator();
 

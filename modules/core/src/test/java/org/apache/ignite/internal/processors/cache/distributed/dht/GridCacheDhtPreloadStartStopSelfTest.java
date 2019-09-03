@@ -212,7 +212,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             Affinity<Integer> aff = affinity(c1);
 
             for (int i = 0; i < keyCnt; i++) {
-                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.cluster().localNode())) {
+                if (aff.mapPartitionToPrimaryAndBackupsList(aff.partition(i)).contains(g1.cluster().localNode())) {
                     GridDhtPartitionTopology top = dht.topology();
 
                     for (GridDhtLocalPartition p : top.localPartitions())
@@ -246,7 +246,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         Ignite ignite = c.unwrap(Ignite.class);
 
         for (int i = 0; i < cnt; i++) {
-            if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(ignite.cluster().localNode())) {
+            if (aff.mapPartitionToPrimaryAndBackupsList(aff.partition(i)).contains(ignite.cluster().localNode())) {
                 String val = sync ? c.localPeek(i, CachePeekMode.ONHEAP) : c.get(i);
 
                 assertEquals("Key check failed [igniteInstanceName=" + ignite.name() + ", cache=" + c.getName() +

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
@@ -41,12 +38,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Partitioned affinity test.
@@ -97,7 +96,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @return Nodes.
      */
     private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
-        return aff.mapKeyToPrimaryAndBackups(key);
+        return aff.mapKeyToPrimaryAndBackupsList(key);
     }
 
     /** @throws Exception If failed. */

@@ -82,7 +82,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
             for (int i = 0; i < ENTRY_CNT; i++) {
                 GridCacheQueueHeaderKey internalKey = new GridCacheQueueHeaderKey("queue" + i);
 
-                Collection<ClusterNode> nodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(internalKey);
+                Collection<ClusterNode> nodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(internalKey);
 
                 for (ClusterNode n : nodes) {
                     Ignite g = findGridForNodeId(n.id());

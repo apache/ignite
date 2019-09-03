@@ -17,11 +17,13 @@
 
 package org.apache.ignite.cache.affinity;
 
-import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Provides affinity information to detect which node is primary and which nodes are
@@ -180,6 +182,9 @@ public interface Affinity<K> {
     @Nullable public ClusterNode mapKeyToNode(K key);
 
     /**
+     *
+     * @deprecated Use Affinity#mapKeyToPrimaryAndBackups(java.lang.Object) instead
+     *
      * Gets primary and backup nodes for the key. Note that primary node is always
      * first in the returned collection.
      *
@@ -188,7 +193,19 @@ public interface Affinity<K> {
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
      */
+    @Deprecated
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
+
+    /**
+     * Gets primary and backup nodes for the key. Primary node is always
+     * first in the returned list.
+     *
+     * @param key Key to get affinity nodes for.
+     * @return List of primary and backup nodes for the key with primary node
+     *      always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
+     */
+    public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key);
 
     /**
      * Gets primary node for the given partition.
@@ -215,6 +232,7 @@ public interface Affinity<K> {
     public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts);
 
     /**
+     * @deprecated Use Affinity#mapPartitionToPrimaryAndBackupsList(int) instead
      * Gets primary and backup nodes for partition. Note that primary node is always
      * first in the returned collection.
      *
@@ -223,5 +241,17 @@ public interface Affinity<K> {
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
      */
+    @Deprecated
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
+
+    /**
+     * Gets primary and backup nodes for partition. Note that primary node is always
+     * first in the returned list.
+     *
+     * @param part Partition to get affinity nodes for.
+     * @return List of primary and backup nodes for partition with primary node
+     *      always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
+     */
+    public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part);
 }

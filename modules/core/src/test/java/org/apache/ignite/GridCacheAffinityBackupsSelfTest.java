@@ -17,9 +17,6 @@
 
 package org.apache.ignite;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -27,6 +24,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.UUID;
 
 /**
  * Tests affinity function with different number of backups.
@@ -77,7 +78,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
             Collection<UUID> members = new HashSet<>();
 
             for (int i = 0; i < 10000; i++) {
-                Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
+                Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackupsList(i);
 
                 assertEquals(backups + 1, nodes.size());
 

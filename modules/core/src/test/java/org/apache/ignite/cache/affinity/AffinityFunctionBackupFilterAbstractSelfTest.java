@@ -183,7 +183,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < partCnt; i++) {
-            Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
+            Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackupsList(i);
 
             assertEquals(2, nodes.size());
 
@@ -243,7 +243,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < partCnt; i++) {
-            Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
+            Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackupsList(i);
 
             assertEquals(expectedNodesForEachPartition(), nodes.size());
 

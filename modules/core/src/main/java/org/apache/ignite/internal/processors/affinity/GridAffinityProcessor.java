@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -46,12 +36,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -70,6 +55,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -1050,8 +1038,27 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        /** {@inheritDoc} */
+        /** @deprecated Use mapKeyToPrimaryAndBackupsList instead */
+        @Deprecated
         @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
+            ctx.gateway().readLock();
+
+            try {
+                AffinityInfo aff = cache();
+
+                return aff.assignment().get(GridAffinityProcessor.this.partition(cacheName, key, aff));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
             ctx.gateway().readLock();
 
             try {
@@ -1106,8 +1113,25 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        /** {@inheritDoc} */
+        /** @deprecated use mapPartitionToPrimaryAndBackupsList instead */
+        @Deprecated
         @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().assignment().get(part);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
             ctx.gateway().readLock();
 
             try {

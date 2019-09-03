@@ -3335,7 +3335,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);
 
-                if (grid(0).affinity(cacheName()).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
+                if (grid(0).affinity(cacheName()).mapKeyToPrimaryAndBackupsList(key).contains(grid(g).localNode()))
                     assertEquals(i, jcache(g).localPeek(key));
                 else
                     assertNull(jcache(g).localPeek(key));
@@ -5265,7 +5265,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             boolean found = primaryIgnite(key).cache(cacheName()).localPeek(key) != null;
 
             if (keyToRmv.equals(key)) {
-                Collection<ClusterNode> nodes = grid(0).affinity(cacheName()).mapKeyToPrimaryAndBackups(key);
+                Collection<ClusterNode> nodes = grid(0).affinity(cacheName()).mapKeyToPrimaryAndBackupsList(key);
 
                 for (int j = 0; j < gridCount(); ++j) {
                     if (nodes.contains(grid(j).localNode()) && grid(j) != primaryIgnite(key))
@@ -6616,7 +6616,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 GridCacheEntryEx entry = ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
-                if (ignite.affinity(cacheName).mapKeyToPrimaryAndBackups(key).contains(((IgniteKernal)ignite).localNode())) {
+                if (ignite.affinity(cacheName).mapKeyToPrimaryAndBackupsList(key).contains(((IgniteKernal)ignite).localNode())) {
                     assertNotNull(entry);
                     assertTrue(entry.deleted());
                 }

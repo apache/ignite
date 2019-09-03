@@ -285,7 +285,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             info("Finished waiting for all exchange futures...");
 
             for (int i = 0; i < keyCnt; i++) {
-                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
+                if (aff.mapPartitionToPrimaryAndBackupsList(aff.partition(i)).contains(last.cluster().localNode())) {
                     GridDhtPartitionTopology top = dht.topology();
 
                     for (GridDhtLocalPartition p : top.localPartitions()) {
@@ -536,7 +536,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             Affinity<Integer> aff = affinity(lastCache);
 
             for (int i = 0; i < keyCnt; i++) {
-                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
+                if (aff.mapPartitionToPrimaryAndBackupsList(aff.partition(i)).contains(last.cluster().localNode())) {
                     GridDhtPartitionTopology top = dht.topology();
 
                     for (GridDhtLocalPartition p : top.localPartitions()) {
@@ -587,7 +587,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++) {
             Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
-            Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(i));
+            Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackupsList(aff.partition(i));
 
             assert !affNodes.isEmpty();
 

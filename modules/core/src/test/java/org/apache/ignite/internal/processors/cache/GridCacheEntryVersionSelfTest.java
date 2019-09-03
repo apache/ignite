@@ -98,7 +98,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
 
             for (Integer key : map.keySet()) {
                 info("Affinity nodes [key=" + key + ", nodes=" +
-                    F.viewReadOnly(grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key), F.node2id()) + ']');
+                    F.viewReadOnly(grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key), F.node2id()) + ']');
             }
 
             grid(0).cache(DEFAULT_CACHE_NAME).putAll(map);

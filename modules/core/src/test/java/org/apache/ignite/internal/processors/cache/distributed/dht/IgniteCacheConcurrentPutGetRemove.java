@@ -124,7 +124,7 @@ public class IgniteCacheConcurrentPutGetRemove extends GridCommonAbstractTest {
                 Affinity aff = ignite(0).affinity(ccfg.getName());
 
                 for (int k = 0; k < KEYS; k++) {
-                    Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(k);
+                    Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackupsList(k);
 
                     Object expVal = grid(nodes.iterator().next()).cache(ccfg.getName()).get(k);
 

@@ -111,13 +111,13 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
         for (int i = 0 ; i < 100; i++) {
             TestObject1 obj1 = new TestObject1(i, i + 1);
 
-            assertEquals(aff1.mapKeyToPrimaryAndBackups(obj1),
-                aff0.mapKeyToPrimaryAndBackups(obj1));
+            assertEquals(aff1.mapKeyToPrimaryAndBackupsList(obj1),
+                aff0.mapKeyToPrimaryAndBackupsList(obj1));
 
             TestObject2 obj2 = new TestObject2(i, i + 1);
 
-            assertEquals(aff1.mapKeyToPrimaryAndBackups(obj2),
-                aff0.mapKeyToPrimaryAndBackups(obj2));
+            assertEquals(aff1.mapKeyToPrimaryAndBackupsList(obj2),
+                aff0.mapKeyToPrimaryAndBackupsList(obj2));
         }
 
         Collection<BinaryType> meta1 = ignite1.binary().types();

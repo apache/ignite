@@ -163,7 +163,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         int key = 0;
 
         while (true) {
-            Collection<ClusterNode> affNodes = affinity(cache1).mapKeyToPrimaryAndBackups(key);
+            Collection<ClusterNode> affNodes = affinity(cache1).mapKeyToPrimaryAndBackupsList(key);
 
             assert !F.isEmpty(affNodes);
 

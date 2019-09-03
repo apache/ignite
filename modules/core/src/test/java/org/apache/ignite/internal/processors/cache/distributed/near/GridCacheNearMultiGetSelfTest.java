@@ -268,7 +268,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
 
                 if (isTestDebug())
                     info("Key affinity [key=" + key + ", partition=" + part + ", affinity=" +
-                        U.toShortString(aff.mapKeyToPrimaryAndBackups(key)) + ']');
+                        U.toShortString(aff.mapKeyToPrimaryAndBackupsList(key)) + ']');
             }
 
             for (int i = 0; i < GET_CNT; i++) {

@@ -128,7 +128,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                if (ignite(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(locNode)) {
+                if (ignite(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key).contains(locNode)) {
                     info("Node is reported as affinity node for key [key=" + key + ", nodeId=" + locNode.id() + ']');
 
                     assertEquals((Integer)i, cache0.localPeek(key));
@@ -190,7 +190,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                if (ignite(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
+                if (ignite(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key).contains(grid(g).localNode())) {
                     info("Node is reported as affinity node for key [key=" + key + ", nodeId=" + locNode.id() + ']');
 
                     assertEquals((Integer)i, cache0.localPeek(key));

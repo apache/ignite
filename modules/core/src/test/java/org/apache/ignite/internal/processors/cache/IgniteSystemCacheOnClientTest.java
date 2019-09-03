@@ -52,7 +52,7 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
 
         GridCacheAdapter utilityCache = ((IgniteKernal)ignite(0)).internalCache(CU.UTILITY_CACHE_NAME);
 
-        Collection<ClusterNode> affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackups(1);
+        Collection<ClusterNode> affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackupsList(1);
 
         assertEquals(1, affNodes.size());
         assertTrue(affNodes.contains(ignite(0).cluster().localNode()));

@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.affinity;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -37,6 +31,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.*;
 
 /**
  * Affinity interface implementation.
@@ -218,7 +214,8 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         return res;
     }
 
-    /** {@inheritDoc} */
+    /** @deprecated Use mapKeyToPrimaryAndBackupsList(K) instead */
+    @Deprecated
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
         A.notNull(key, "key");
 
@@ -226,7 +223,26 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
+        A.notNull(key, "key");
+
+        return cctx.affinity().nodesByPartition(partition(key), topologyVersion());
+    }
+
+    @Deprecated
+    /**
+     * @deprecated Use GridCacheAffinityImpl#mapPartitionToPrimaryAndBackupsList(int) instead
+     */
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
+        A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
+
+        return cctx.affinity().nodesByPartition(part, topologyVersion());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
         return cctx.affinity().nodesByPartition(part, topologyVersion());

@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityKey;
@@ -38,6 +34,11 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -95,7 +96,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             Integer mainKey = 0;
 
             ClusterNode priNode = ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(mainKey);
-            ClusterNode backupNode = F.first(F.view(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(mainKey),
+            ClusterNode backupNode = F.first(F.view(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(mainKey),
                 F.notIn(F.asList(priNode))));
             ClusterNode otherNode = F.first(ignite.cluster().forPredicate(F.notIn(F.asList(priNode, backupNode))).nodes());
 
