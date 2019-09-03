@@ -138,6 +138,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTestAsync.cs" Link="Services\ServicesTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\EnvVar.cs" Link="Common\EnvVar.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Ssl\SslConfigurationTest.cs" Link="Common\SslConfigurationTest.cs" />
   </ItemGroup>
 
