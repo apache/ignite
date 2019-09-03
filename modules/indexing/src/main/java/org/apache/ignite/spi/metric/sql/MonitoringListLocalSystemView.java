@@ -84,9 +84,11 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;
+                        else if (clazz.isAssignableFrom(Class.class))
+                            data[idx] = ValueString.get(((Class)val).getName());
                         else if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
                             clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
-                            clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
+                            clazz.isAssignableFrom(InetSocketAddress.class))
                             data[idx] = ValueString.get(Objects.toString(val));
                         else if (clazz.isAssignableFrom(BigDecimal.class))
                             data[idx] = ValueDecimal.get((BigDecimal)val);

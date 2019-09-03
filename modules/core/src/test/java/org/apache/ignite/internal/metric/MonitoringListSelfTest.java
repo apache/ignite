@@ -195,19 +195,6 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
     @Test
     /** */
-    public void testComputeClosures() throws Exception {
-        try(IgniteEx g0 = startGrid(0)) {
-            for (int i=0; i<10; i++) {
-                g0.compute().run(() -> { });
-            }
-
-            MonitoringList<UUID, ContinuousQueryView> computeRunnable =
-                g0.context().metric().list(metricName("compute", "runnables"), "???", ContinuousQueryView.class);
-        }
-    }
-
-    @Test
-    /** */
     public void testClientsConnections() throws Exception {
         try(IgniteEx g0 = startGrid(0)) {
             String host = g0.configuration().getClientConnectorConfiguration().getHost();
@@ -367,7 +354,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                 g1.context().metric().list("tasks", "Cluster nodes", ComputTaskView.class);
 
             for (int i=0; i<5; i++)
-                g1.compute().broadcast(() -> {
+                g1.compute().broadcastAsync(() -> {
                     try {
                         Thread.sleep(3_000L);
                     }
@@ -386,7 +373,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertTrue(t.taskClassName().startsWith(getClass().getName()));
             assertTrue(t.taskName().startsWith(getClass().getName()));
             assertEquals(g1.localNode().id(), t.taskNodeId());
-            assertEquals(0, t.userVersion());
+            assertEquals("0", t.userVersion());
         }
     }
 
