@@ -129,7 +129,7 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
 
                         firstPackLatch.countDown();
 
-                        readOnlyEnabled.await(5, TimeUnit.SECONDS);
+                        assertTrue(cacheName, readOnlyEnabled.await(60, TimeUnit.SECONDS));
 
                         doLoad(streamer, 100, 1000000, manualFlush);
 
@@ -148,13 +148,13 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
                 }));
             }
 
-            firstPackLatch.await(5, TimeUnit.SECONDS);
+            assertTrue(firstPackLatch.await(60, TimeUnit.SECONDS));
 
             changeClusterReadOnlyMode(true);
 
             readOnlyEnabled.countDown();
 
-            finishLatch.await(5, TimeUnit.SECONDS);
+            assertTrue(finishLatch.await(60, TimeUnit.SECONDS));
 
             assertEquals("exceptions: " + eMap, cacheNames().size(), eMap.size());
 
@@ -181,7 +181,7 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
             IgniteInternalFuture<?> fut = futs.get(cacheName);
 
             try {
-                fut.get(5, TimeUnit.SECONDS);
+                fut.get(15, TimeUnit.SECONDS);
             }
             catch (Exception e) {
                 log.error("Failed to get future " + cacheName, e);
