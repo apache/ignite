@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests
             // Run test in new process because JVM is initialized only once.
             const string envVar = "ConsoleRedirectTest.TestDisabledRedirect";
 
-            if (Environment.GetEnvironmentVariable(envVar) == "true")
+            if (Environment.GetEnvironmentVariable(envVar) == bool.TrueString)
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(false));
                 Assert.IsTrue(cfg.RedirectJavaConsoleOutput);
@@ -132,14 +132,16 @@ namespace Apache.Ignite.Core.Tests
 
                 using (Ignition.Start(cfg))
                 {
-                    Assert.AreEqual("", _errSb.ToString());
-                    Assert.AreEqual("", _outSb.ToString());
+                    Assert.AreEqual(string.Empty, _errSb.ToString());
+                    Assert.AreEqual(string.Empty, _outSb.ToString());
                 }
             }
             else
             {
-                Environment.SetEnvironmentVariable(envVar, "true");
-                TestUtils.RunTestInNewProcess(GetType().FullName, "TestDisabledRedirect");
+                using (EnvVar.Set(envVar, bool.TrueString))
+                {
+                    TestUtils.RunTestInNewProcess(GetType().FullName, "TestDisabledRedirect");
+                }
             }
         }
 

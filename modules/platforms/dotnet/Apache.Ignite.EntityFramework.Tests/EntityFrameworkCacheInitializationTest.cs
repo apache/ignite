@@ -44,59 +44,60 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestConfigurationAndStartup()
         {
-            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+            using (EnvVar.Set("IGNITE_NATIVE_TEST_CLASSPATH", bool.TrueString))
+            {
+                Assert.IsNull(Ignition.TryGetIgnite());
 
-            Assert.IsNull(Ignition.TryGetIgnite());
+                // Test default config (picks up app.config section).
+                CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheNamePrefix, new IgniteDbConfiguration());
 
-            // Test default config (picks up app.config section).
-            CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheNamePrefix, new IgniteDbConfiguration());
+                // Specific config section.
+                CheckCacheAndStop("myGrid2", "cacheName2",
+                    new IgniteDbConfiguration("igniteConfiguration2", "cacheName2", null));
 
-            // Specific config section.
-            CheckCacheAndStop("myGrid2", "cacheName2",
-                new IgniteDbConfiguration("igniteConfiguration2", "cacheName2", null));
+                // Specific config section, nonexistent cache.
+                CheckCacheAndStop("myGrid2", "newCache",
+                    new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
 
-            // Specific config section, nonexistent cache.
-            CheckCacheAndStop("myGrid2", "newCache",
-                new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
+                // In-code configuration.
+                CheckCacheAndStop("myGrid3", "myCache",
+                    new IgniteDbConfiguration(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                        {
+                            IgniteInstanceName = "myGrid3"
+                        }, new CacheConfiguration("myCache_metadata")
+                        {
+                            CacheMode = CacheMode.Replicated,
+                            AtomicityMode = CacheAtomicityMode.Transactional
+                        },
+                        new CacheConfiguration("myCache_data") {CacheMode = CacheMode.Replicated}, null),
+                    CacheMode.Replicated);
 
-            // In-code configuration.
-            CheckCacheAndStop("myGrid3", "myCache",
-                new IgniteDbConfiguration(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                // Existing instance.
+                var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+                CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite,
+                    new CacheConfiguration("123_metadata")
                     {
-                        IgniteInstanceName = "myGrid3"
-                    }, new CacheConfiguration("myCache_metadata")
-                    {
-                        CacheMode = CacheMode.Replicated,
+                        Backups = 1,
                         AtomicityMode = CacheAtomicityMode.Transactional
                     },
-                    new CacheConfiguration("myCache_data") {CacheMode = CacheMode.Replicated}, null),
-                CacheMode.Replicated);
+                    new CacheConfiguration("123_data"), null));
 
-            // Existing instance.
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite,
-                new CacheConfiguration("123_metadata")
-                {
-                    Backups = 1,
-                    AtomicityMode = CacheAtomicityMode.Transactional
-                },
-                new CacheConfiguration("123_data"), null));
+                // Non-tx meta cache.
+                var ex = Assert.Throws<IgniteException>(() => CheckCacheAndStop(null, "123",
+                    new IgniteDbConfiguration(TestUtils.GetTestConfiguration(),
+                        new CacheConfiguration("123_metadata"),
+                        new CacheConfiguration("123_data"), null)));
 
-            // Non-tx meta cache.
-            var ex = Assert.Throws<IgniteException>(() => CheckCacheAndStop(null, "123",
-                new IgniteDbConfiguration(TestUtils.GetTestConfiguration(), 
-                    new CacheConfiguration("123_metadata"),
-                    new CacheConfiguration("123_data"), null)));
+                Assert.AreEqual("EntityFramework meta cache should be Transactional.", ex.Message);
 
-            Assert.AreEqual("EntityFramework meta cache should be Transactional.", ex.Message);
+                // Same cache names.
+                var ex2 = Assert.Throws<ArgumentException>(() => CheckCacheAndStop(null, "abc",
+                    new IgniteDbConfiguration(TestUtils.GetTestConfiguration(),
+                        new CacheConfiguration("abc"),
+                        new CacheConfiguration("abc"), null)));
 
-            // Same cache names.
-            var ex2 = Assert.Throws<ArgumentException>(() => CheckCacheAndStop(null, "abc",
-                new IgniteDbConfiguration(TestUtils.GetTestConfiguration(),
-                    new CacheConfiguration("abc"),
-                    new CacheConfiguration("abc"), null)));
-
-            Assert.IsTrue(ex2.Message.Contains("Meta and Data cache can't have the same name."));
+                Assert.IsTrue(ex2.Message.Contains("Meta and Data cache can't have the same name."));
+            }
         }
 
         /// <summary>

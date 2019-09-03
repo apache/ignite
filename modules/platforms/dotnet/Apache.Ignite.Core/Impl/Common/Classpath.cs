@@ -87,7 +87,9 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void AppendHomeClasspath(string ggHome, bool forceTestClasspath, StringBuilder cpStr)
         {
             // Append test directories (if needed) first, because otherwise build *.jar will be picked first.
-            if (forceTestClasspath || "true".Equals(Environment.GetEnvironmentVariable(EnvIgniteNativeTestClasspath)))
+            if (forceTestClasspath || bool.TrueString.Equals(
+                    Environment.GetEnvironmentVariable(EnvIgniteNativeTestClasspath),
+                    StringComparison.OrdinalIgnoreCase))
             {
                 AppendTestClasses(Path.Combine(ggHome, "examples"), cpStr);
                 AppendTestClasses(Path.Combine(ggHome, "modules"), cpStr);

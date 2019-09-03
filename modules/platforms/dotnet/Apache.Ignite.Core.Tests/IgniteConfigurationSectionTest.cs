@@ -16,7 +16,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using System;
     using System.Configuration;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
@@ -46,29 +45,30 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestIgniteStart()
         {
-            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
-
-            using (var ignite = Ignition.StartFromApplicationConfiguration(Ignition.ConfigurationSectionName))
+            using (EnvVar.Set(Classpath.EnvIgniteNativeTestClasspath, bool.TrueString))
             {
-                Assert.AreEqual("myGrid1", ignite.Name);
-                Assert.IsNotNull(ignite.GetCache<int, int>("cacheName"));
-            }
+                using (var ignite = Ignition.StartFromApplicationConfiguration(Ignition.ConfigurationSectionName))
+                {
+                    Assert.AreEqual("myGrid1", ignite.Name);
+                    Assert.IsNotNull(ignite.GetCache<int, int>("cacheName"));
+                }
 
-            using (var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration2"))
-            {
-                Assert.AreEqual("myGrid2", ignite.Name);
-                Assert.IsNotNull(ignite.GetCache<int, int>("cacheName2"));
-            }
+                using (var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration2"))
+                {
+                    Assert.AreEqual("myGrid2", ignite.Name);
+                    Assert.IsNotNull(ignite.GetCache<int, int>("cacheName2"));
+                }
 
-            using (var ignite = Ignition.StartFromApplicationConfiguration())
-            {
-                Assert.AreEqual("myGrid1", ignite.Name);
-            }
+                using (var ignite = Ignition.StartFromApplicationConfiguration())
+                {
+                    Assert.AreEqual("myGrid1", ignite.Name);
+                }
 
-            using (var ignite = Ignition.StartFromApplicationConfiguration(
-                "igniteConfiguration3", "custom_app.config"))
-            {
-                Assert.AreEqual("myGrid3", ignite.Name);
+                using (var ignite = Ignition.StartFromApplicationConfiguration(
+                    "igniteConfiguration3", "custom_app.config"))
+                {
+                    Assert.AreEqual("myGrid3", ignite.Name);
+                }
             }
         }
 

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Configuration;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.Examples.Compute;
     using Apache.Ignite.Examples.Datagrid;
@@ -66,6 +67,9 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         /** */
         private IDisposable _changedConfig;
+
+        /** */
+        private IDisposable _changedEnvVar;
 
         /** */
         private bool _remoteNodeStarted;
@@ -192,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+            _changedEnvVar = EnvVar.Set(Classpath.EnvIgniteNativeTestClasspath, bool.TrueString);
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
 
@@ -220,6 +224,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             IgniteProcess.KillAll();
 
             File.Delete(_configPath);
+
+            _changedEnvVar.Dispose();
         }
 
         /// <summary>
