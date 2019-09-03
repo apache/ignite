@@ -101,7 +101,6 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         catch (JMException e) {
             log.error("MBean for monitoring list '" + mlist.name() + "' can't be created.", e);
         }
-
     }
 
     /**

@@ -194,6 +194,9 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
 
     /** {@inheritDoc} */
     @Override public Object getAttribute(String attribute) {
+        if (attribute.equals("MBeanInfo"))
+            return getMBeanInfo();
+
         if (attribute.equals(LIST)) {
             TabularDataSupport rows = new TabularDataSupport(listType);
 
@@ -217,7 +220,6 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
             catch (OpenDataException e) {
                 throw new IgniteException(e);
             }
-
 
             return rows;
         }
@@ -244,8 +246,10 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
         @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
             if (clazz.isEnum())
                 data.put(name, ((Enum)val).name());
+            else if (clazz.isAssignableFrom(Class.class))
+                data.put(name, ((Class<?>)val).getName());
             else if (clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
-                clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
+                clazz.isAssignableFrom(InetSocketAddress.class))
                 data.put(name, val == null ? "null" : val.toString());
             else
                 data.put(name, val);

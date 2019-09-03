@@ -148,18 +148,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(expVals, vals);
     }
 
-    /*
-        "MONITORING.TRANSACTIONS"
-        "MONITORING.QUERY_TEXT",
-        "MONITORING.QUERY_CONTINUOUS",
-        "MONITORING.QUERY_SQL",
-        "MONITORING.NODES",
-        "MONITORING.CLIENT_CONNECTIONS"
-        "MONITORING.SQL_TABLES",
-        "MONITORING.SQL_SCHEMAS,
-        "MONITORING.SQL_INDEXES",
-    */
-
     @Test
     /** */
     public void testCachesList() throws Exception {
