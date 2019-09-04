@@ -38,7 +38,7 @@ test('Unknown email', async(t) => {
     await t
         .typeText(page.email.control, 'nonexisting@example.com', {replace: true})
         .click(page.remindPasswordButton)
-        .expect(errorNotification.withText('Account with email does not exists: nonexisting@example.com').exists).ok('Shows global error notification')
+        .expect(errorNotification.withText('Account with email does not exist: nonexisting@example.com').exists).ok('Shows global error notification')
         .expect(page.email.getError('server').exists).ok('Marks input as server-invalid');
 });
 
