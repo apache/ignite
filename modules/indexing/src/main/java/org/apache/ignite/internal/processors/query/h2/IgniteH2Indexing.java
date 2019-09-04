@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.list.walker.SqlIndexViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.SqlSchemaViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.SqlTableViewWalker;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
@@ -251,32 +252,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Node ID. */
     private UUID nodeId;
 
-    /**
-     *
-     */
+    /** */
     private Marshaller marshaller;
 
-    /**
-     *
-     */
+    /** */
     private GridMapQueryExecutor mapQryExec;
 
-    /**
-     *
-     */
+    /** */
     private GridReduceQueryExecutor rdcQryExec;
 
-    /**
-     *
-     */
+    /** */
     private GridSpinBusyLock busyLock;
 
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
 
-    /**
-     *
-     */
+    /** */
     protected volatile GridKernalContext ctx;
 
     /** Query context registry. */
@@ -295,12 +286,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private volatile QueryHistoryTracker qryHistTracker;
 
     /**
+     * SQL query monitoring list.
      *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
      */
     private MonitoringList<Long, QueryView> sqlQryMonList;
 
     /**
+     * Text query monitoring list.
      *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
      */
     private MonitoringList<Long, QueryView> textQryMonList;
 
@@ -310,9 +307,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Parser. */
     private QueryParser parser;
 
-    /**
-     *
-     */
+    /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
         @Override public void apply(IgniteInternalFuture<?> fut) {
             try {

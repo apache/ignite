@@ -18,82 +18,187 @@
 package org.apache.ignite.spi.metric.list;
 
 /**
- *
+ * Utility class for quick iteration over {@link MonitoringRow} properties.
  */
 public interface MonitoringRowAttributeWalker<R extends MonitoringRow<?>> {
-    /**
-     * @return
-     */
+    /** @return Count of a row properties. */
     public int count();
 
     /**
-     * @param visitor
+     * Calls visitor for each {@link MonitoringRow} attribute.
+     *
+     * @param visitor Attribute visitor.
      */
     public void visitAll(AttributeVisitor visitor);
 
     /**
-     * @param row
-     * @param visitor
+     * Calls visitor for each {@link MonitoringRow} attribute.
+     * Value of the attribute also provided.
+     *
+     * @param row Row to iterate.
+     * @param visitor Attribute visitor.
      */
     public void visitAllWithValues(R row, AttributeWithValueVisitor visitor);
 
-    /** */
+    /** Attribute visitor. */
     public interface AttributeVisitor {
-        /** */
+        /**
+         * Visit some object property.
+         * @param idx Index.
+         * @param name Name.
+         * @param clazz Value class.
+         * @param <T> Value type.
+         */
         public <T> void accept(int idx, String name, Class<T> clazz);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code boolean} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptBoolean(int idx, String name);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code char} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptChar(int idx, String name);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code byte} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptByte(int idx, String name);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code short} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptShort(int idx, String name);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code int} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptInt(int idx, String name);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code long} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptLong(int idx, String name);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code float} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptFloat(int idx, String name);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code double} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         */
         public void acceptDouble(int idx, String name);
     }
 
-    /** */
+    /** Attribute visitor. */
     public interface AttributeWithValueVisitor {
-        /** */
+        /**
+         * Visit attribute. Attribute value is object.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param clazz Class.
+         * @param val Value.
+         * @param <T> Value type.
+         */
         public <T> void accept(int idx, String name, Class<T> clazz, T val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code boolean} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptBoolean(int idx, String name, boolean val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code char} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptChar(int idx, String name, char val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code byte} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptByte(int idx, String name, byte val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code short} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptShort(int idx, String name, short val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code int} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptInt(int idx, String name, int val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code long} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptLong(int idx, String name, long val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code float} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptFloat(int idx, String name, float val);
 
-        /** */
+        /**
+         * Visit attribute. Attribute value is {@code double} primitive.
+         *
+         * @param idx Index.
+         * @param name Name.
+         * @param val Value.
+         */
         public void acceptDouble(int idx, String name, double val);
     }
 }

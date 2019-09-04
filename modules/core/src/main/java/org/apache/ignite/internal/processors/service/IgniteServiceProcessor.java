@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -126,8 +128,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> registeredServices = new ConcurrentHashMap<>();
 
-    /** */
-    private final MonitoringList<IgniteUuid, ServiceView> serviceMonitoringList;
+    /**
+     * Services monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
+    private final MonitoringList<IgniteUuid, ServiceView> svcsMonList;
 
     /**
      * Collection of services information that were processed by deployment worker. <b>It is updated from deployment
@@ -191,7 +198,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        serviceMonitoringList = ctx.metric().list("services", "Services", ServiceView.class);
+        svcsMonList = ctx.metric().list("services", "Services", ServiceView.class);
     }
 
     /** {@inheritDoc} */
@@ -271,7 +278,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         cancelDeployedServices();
 
         registeredServices.clear();
-        serviceMonitoringList.clear();
+        svcsMonList.clear();
 
         // If user requests sent to network but not received back to handle in deployment manager.
         Stream.concat(depFuts.values().stream(), undepFuts.values().stream()).forEach(fut -> {
@@ -343,7 +350,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         for (ServiceInfo desc : clusterData.registeredServices()) {
             registeredServices.put(desc.serviceId(), desc);
-            serviceMonitoringList.add(desc);
+            svcsMonList.add(desc);
         }
     }
 
@@ -378,7 +385,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             if (oldDesc == null) {
                 registeredServices.put(desc.serviceId(), desc);
-                serviceMonitoringList.add(desc);
+                svcsMonList.add(desc);
 
                 continue;
             }
@@ -1508,7 +1515,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             staticServicesInfo.forEach(desc -> {
                 registeredServices.put(desc.serviceId(), desc);
-                serviceMonitoringList.add(desc);
+                svcsMonList.add(desc);
             });
         }
 
@@ -1612,7 +1619,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
                             registeredServices.put(reqSrvcId, desc);
-                            serviceMonitoringList.add(desc);
+                            svcsMonList.add(desc);
 
                             toDeploy.put(reqSrvcId, desc);
                         }
@@ -1646,7 +1653,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
             else if (req instanceof ServiceUndeploymentRequest) {
                 ServiceInfo rmv = registeredServices.remove(reqSrvcId);
-                serviceMonitoringList.remove(reqSrvcId);
+                svcsMonList.remove(reqSrvcId);
 
                 assert oldDesc == rmv : "Concurrent map modification.";
 
@@ -1698,7 +1705,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     if (desc.cacheName().equals(chReq.cacheName())) {
                         toUndeploy.put(desc.serviceId(), desc);
 
-                        serviceMonitoringList.remove(desc.serviceId());
+                        svcsMonList.remove(desc.serviceId());
 
                         return true;
                     }

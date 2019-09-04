@@ -18,53 +18,54 @@
 package org.apache.ignite.internal.processors.metric.list.view;
 
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
-/** */
+/**
+ * Sql table representation for a {@link MonitoringList}.
+ */
 public interface SqlTableView extends MonitoringRow<String> {
     /** {@inheritDoc} */
     @Override default String monitoringRowId() {
         return identifierString();
     }
 
-    /** */
+    /** @return Cache group id. */
     public int cacheGroupId();
 
-    /** */
+    /** @return Cache group name. */
     public String cacheGroupName();
 
-    /** */
+    /** @return Cache id. */
     public int cacheId();
 
-    /** */
+    /** @return Cache name. */
     @Order(2)
     public String cacheName();
 
-    /** */
+    /** @return Schema name. */
     @Order(1)
     public String schemaName();
 
-    /** */
+    /** @return Table name. */
     @Order
     public String tableName();
 
-    /**
-     * @return Table identifier as string.
-     */
+    /** @return Table identifier as string. */
     public String identifierString();
 
-    /** */
+    /** @return Affinity key column. */
     public String affinityKeyColumn();
 
-    /** */
+    /** @return Key alias. */
     public String keyAlias();
 
-    /** */
+    /** @return Value alias. */
     public String valueAlias();
 
-    /** */
+    /** @return Key type name. */
     public String keyTypeName();
 
-    /** */
+    /** @return Value type name. */
     public String valueTypeName();
 }

@@ -24,9 +24,12 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RemoteRoutineInfo;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
-/** */
+/**
+ * Continuous query representation for a {@link MonitoringList}.
+ */
 public class ContinuousQueryView implements MonitoringRow<UUID> {
     /** */
     private final RemoteRoutineInfo rmtQry;

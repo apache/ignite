@@ -17,10 +17,18 @@
 
 package org.apache.ignite.spi.metric.list;
 
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
+
 /**
- * Monitoring list row.
- * Idenitified by the instance of {@code Id}.
+ * Monitoring list row base interface.
+ * Each row idenitified by the instance of {@code Id}.
+ *
+ * @see MonitoringList
+ * @see GridMetricManager
+ * @see ReadOnlyMonitoringListRegistry
  */
 public interface MonitoringRow<Id> {
+    /** @return Unique idenitifier of the row in the list. */
     public Id monitoringRowId();
 }

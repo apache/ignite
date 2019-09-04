@@ -20,10 +20,11 @@ package org.apache.ignite.spi.metric.list.view;
 import java.util.Date;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 /**
- *
+ * Query representation for a {@link MonitoringList}.
  */
 public interface QueryView extends MonitoringRow<Long> {
     /** {@inheritDoc} */
@@ -31,29 +32,38 @@ public interface QueryView extends MonitoringRow<Long> {
         return id();
     }
 
+    /** @return Origin query node. */
     @Order(3)
     public String originNodeId();
 
+    /** @return Query ID. */
     @Order
     public Long id();
 
     public String globalQueryId();
 
+    /** @return Query text. */
     @Order(1)
     public String query();
 
+    /** @return Query type. */
     @Order(2)
     public GridCacheQueryType queryType();
 
+    /** @return Schema name. */
     public String schemaName();
 
+    /** @return Query start time. */
     @Order(4)
     public Date startTime();
 
+    /** @return Query duration. */
     @Order(5)
     public long duration();
 
+    /** @return {@code True} if query is local. */
     public boolean local();
 
+    /** @return {@code True} if query failed. */
     public boolean failed();
 }

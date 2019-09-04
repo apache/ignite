@@ -210,7 +210,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler.start();
 
-        monList.add(this);
+        connMonList.add(this);
     }
 
     /** {@inheritDoc} */
@@ -229,7 +229,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         super.onDisconnected();
 
-        monList.add(this);
+        connMonList.remove(connectionId());
     }
 
     /**

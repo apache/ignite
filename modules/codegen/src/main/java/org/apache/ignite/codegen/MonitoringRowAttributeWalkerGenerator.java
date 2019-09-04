@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.spi.metric.jmx.MonitoringListMBean;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
@@ -43,29 +44,35 @@ import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
 import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
-import org.apache.ignite.spi.metric.list.view.ComputTaskView;
+import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.spi.metric.list.view.QueryView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.spi.metric.list.view.TransactionView;
+import org.apache.ignite.spi.metric.sql.MonitoringListLocalSystemView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
 import static org.apache.ignite.codegen.MessageCodeGenerator.TAB;
 
 /**
- * Generator of {@link MonitoringRowAttributeWalker}.
- * This code used in {@link MonitoringList}.
+ * Application for code generation of {@link MonitoringRowAttributeWalker}.
+ * Usage: simply run main method from Ignite source folder(using IDE or other way).
+ * Generated code used in {@link MonitoringList}.
+ *
+ * @see MonitoringListMBean
+ * @see MonitoringListLocalSystemView
  */
 public class MonitoringRowAttributeWalkerGenerator {
-    /** */
-    private static final Set<String> SYSTEM_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
+    /** Methods that should be excluded from specific {@link MonitoringRowAttributeWalker}. */
+    private static final Set<String> SYS_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
         "getClass", "monitoringRowId"));
 
+    /** Package for {@link MonitoringRowAttributeWalker} implementations. */
     public static final String WALKER_PACKAGE = "org.apache.ignite.internal.processors.metric.list.walker";
 
     /**
-     * @throws Exception
+     * @throws Exception If generation failed.
      */
     public static void main(String[] args) throws Exception {
         MonitoringRowAttributeWalkerGenerator gen = new MonitoringRowAttributeWalkerGenerator();
@@ -78,7 +85,7 @@ public class MonitoringRowAttributeWalkerGenerator {
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClusterNodeView.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ComputTaskView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlIndexView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
@@ -86,10 +93,12 @@ public class MonitoringRowAttributeWalkerGenerator {
     }
 
     /**
-     * @param clazz
-     * @param srcRoot
-     * @param <T>
-     * @throws IOException
+     * Generates {@link MonitoringRowAttributeWalker} implementation and write it to the file.
+     *
+     * @param clazz Class to geneare {@link MonitoringRowAttributeWalker} for.
+     * @param srcRoot Source root folder.
+     * @param <T> type of the {@link MonitoringRow}.
+     * @throws IOException If generation failed.
      */
     private <T extends MonitoringRow<?>> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
         File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
@@ -100,15 +109,19 @@ public class MonitoringRowAttributeWalkerGenerator {
         walkerClass.createNewFile();
 
         try (FileWriter writer = new FileWriter(walkerClass)) {
-        for (String line : code)
-            writer.write(line + '\n');
+            for (String line : code) {
+                writer.write(line);
+                writer.write('\n');
+            }
         }
     }
 
     /**
-     * @param clazz
-     * @param <T>
-     * @return
+     * Generates {@link MonitoringRowAttributeWalker} implementation.
+     *
+     * @param clazz Class to geneare {@link MonitoringRowAttributeWalker} for.
+     * @param <T> type of the {@link MonitoringRow}.
+     * @return Java source code of the {@link MonitoringRowAttributeWalker} implementation.
      */
     private <T extends MonitoringRow<?>> Collection<String> generate(Class<T> clazz) {
         final List<String> code = new ArrayList<>();
@@ -122,7 +135,12 @@ public class MonitoringRowAttributeWalkerGenerator {
         code.add("package " + WALKER_PACKAGE + ";");
         code.add("");
         code.add("");
-        code.add("/** */");
+        code.add("/**");
+        code.add(" * Generated by {@code " + MonitoringRowAttributeWalkerGenerator.class.getName() + "}.");
+        code.add(" * {@link " + simpleName + "} attributes walker.");
+        code.add(" * ");
+        code.add(" * @see " + simpleName);
+        code.add(" */");
         code.add("public class " + simpleName + "Walker implements MonitoringRowAttributeWalker<" + simpleName + "> {");
         code.add("");
         code.add(TAB + "/** {@inheritDoc} */");
@@ -214,6 +232,11 @@ public class MonitoringRowAttributeWalkerGenerator {
         return code;
     }
 
+    /**
+     * Adds Apache License Header to the source code.
+     *
+     * @param code Source code.
+     */
     private void addLicenseHeader(List<String> code) {
         List<String> lic = new ArrayList<>();
 
@@ -239,6 +262,8 @@ public class MonitoringRowAttributeWalkerGenerator {
     }
 
     /**
+     * Iterates each method of the {@code clazz} and call consume {@code c} for it.
+     *
      * @param c Method consumer.
      */
     private void forEachMethod(Class<?> clazz, ObjIntConsumer<Method> c) {
@@ -253,7 +278,7 @@ public class MonitoringRowAttributeWalkerGenerator {
             if (Modifier.isStatic(m.getModifiers()))
                 continue;
 
-            if (SYSTEM_METHODS.contains(m.getName()))
+            if (SYS_METHODS.contains(m.getName()))
                 continue;
 
             Class<?> retClazz = m.getReturnType();

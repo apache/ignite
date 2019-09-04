@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -127,6 +128,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
 import org.apache.ignite.thread.IgniteThread;
@@ -274,6 +276,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node compatibility consistent ID. */
     private Serializable consistentId;
 
+    /**
+     * Nodes monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private MonitoringList<UUID, ClusterNodeView> nodes;
 
     /** @param ctx Context. */
@@ -962,9 +970,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Updates nodes monitoring list.
+     *
      * @param type Event type.
      * @param node Node.
-     * @param topSnapshot
+     * @param topSnapshot Topology snapshot.
      */
     private void updateNodeMonitoring(int type, ClusterNode node, Collection<ClusterNode> topSnapshot) {
         if (node.isLocal() && type == EVT_NODE_JOINED && !F.isEmpty(topSnapshot)) {

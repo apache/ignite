@@ -70,6 +70,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
@@ -123,7 +125,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Remote infos. */
     private final ConcurrentMap<UUID, RemoteRoutineInfo> rmtInfos = new ConcurrentHashMap<>();
 
-    /** */
+    /**
+     * Continuous query monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private final MonitoringList<UUID, ContinuousQueryView> cqMonList;
 
     /** Start futures. */
@@ -174,7 +181,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     public GridContinuousProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        cqMonList = ctx.metric().list(metricName("query", "continuous"), "Continuous queries", ContinuousQueryView.class);
+        cqMonList = ctx.metric().list(metricName("query", "continuous"), "Continuous queries",
+            ContinuousQueryView.class);
     }
 
     /** {@inheritDoc} */
@@ -2129,17 +2137,25 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return hnd;
         }
 
-        /** */
-        public int bufferSize() { return bufSize; }
+        /** @return Buffer size. */
+        public int bufferSize() {
+            return bufSize;
+        }
 
-        /** */
-        public long interval() { return interval; }
+        /** @return Notify interval. */
+        public long interval() {
+            return interval;
+        }
 
-        /** */
-        public boolean autoUnsubscribe() { return autoUnsubscribe; }
+        /** @return Auto unsubscribe flag value. */
+        public boolean autoUnsubscribe() {
+            return autoUnsubscribe;
+        }
 
-        /** */
-        public UUID nodeId() { return nodeId; }
+        /** @return Source node id. */
+        public UUID nodeId() {
+            return nodeId;
+        }
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -2201,26 +2217,34 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             batch = hnd.createBatch();
         }
 
-        /** */
+        /** @return Master node id. */
         public UUID nodeId() { return nodeId; }
 
-        /** */
+        /** @return Handler. */
         public GridContinuousHandler handler() { return hnd; }
 
-        /** */
+        /** @return Buffer size. */
         public int bufferSize() { return bufSize; }
 
-        /** */
-        public long interval() { return interval; }
+        /** @return Notify interval. */
+        public long interval() {
+            return interval;
+        }
 
-        /** */
-        public boolean autoUnsubscribe() { return autoUnsubscribe; }
+        /** @return Auto unsubscribe flag value. */
+        public boolean autoUnsubscribe() {
+            return autoUnsubscribe;
+        }
 
-        /** */
-        public long lastSendTime() { return lastSndTime; }
+        /** @return Last send time. */
+        public long lastSendTime() {
+            return lastSndTime;
+        }
 
-        /** */
-        public boolean delayedRegister() { return delayedRegister; }
+        /** @return Delayed register flag. */
+        public boolean delayedRegister() {
+            return delayedRegister;
+        }
 
         /**
          * Marks info to be registered when cache is started.

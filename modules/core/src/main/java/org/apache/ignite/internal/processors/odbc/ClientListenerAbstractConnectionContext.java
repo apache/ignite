@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
@@ -60,8 +62,13 @@ public abstract class ClientListenerAbstractConnectionContext
     /** Authorization context. */
     protected AuthorizationContext authCtx;
 
-    /** Monitoring list. */
-    protected final MonitoringList<Long, ClientConnectionView> monList;
+    /**
+     * Client connections monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
+    protected final MonitoringList<Long, ClientConnectionView> connMonList;
 
     /**
      * Constructor.
@@ -74,7 +81,7 @@ public abstract class ClientListenerAbstractConnectionContext
         this.ctx = ctx;
         this.connId = connId;
         this.ses = ses;
-        this.monList = ctx.metric().list(metricName("client", "connections"), "Client connections",
+        this.connMonList = ctx.metric().list(metricName("client", "connections"), "Client connections",
             ClientConnectionView.class);
     }
 
@@ -174,9 +181,7 @@ public abstract class ClientListenerAbstractConnectionContext
         return ver == null ? null : ver.asString();
     }
 
-    /**
-     * @return Currently used protocol version.
-     */
+    /** @return Currently used protocol version. */
     public ClientListenerProtocolVersion clientVersion() {
         return ver;
     }

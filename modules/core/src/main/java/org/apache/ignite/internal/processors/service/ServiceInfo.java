@@ -97,18 +97,12 @@ public class ServiceInfo implements ServiceDescriptor, ServiceView {
         return cfg;
     }
 
-    /**
-     * @return {@code true} if statically configured.
-     */
+    /** {@inheritDoc} */
     @Override public boolean staticallyConfigured() {
         return staticCfg;
     }
 
-    /**
-     * Rerurns services id.
-     *
-     * @return Service id.
-     */
+    /** {@inheritDoc} */
     @Override public IgniteUuid serviceId() {
         return srvcId;
     }

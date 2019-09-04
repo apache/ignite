@@ -28,11 +28,14 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
-/** */
+/**
+ * Cache group representation for the {@link MonitoringList}.
+ */
 public class CacheGroupView implements MonitoringRow<Integer> {
     /** Cache group. */
     private CacheGroupDescriptor grp;
@@ -53,56 +56,59 @@ public class CacheGroupView implements MonitoringRow<Integer> {
         return cacheGroupId();
     }
 
-    /** */
+    /** @return Cache group id. */
     public int cacheGroupId() {
         return grp.groupId();
     }
 
-    /** */
+    /** @return Cache group name. */
     @Order()
     public String cacheGroupName() {
         return grp.cacheOrGroupName();
     }
 
-    /** */
+    /** @return {@code True} if group shared, {@code false} otherwise. */
     public boolean isShared() {
         return grp.sharedGroup();
     }
 
-    /** */
+    /** @return Cache count. */
     @Order(1)
     public int cacheCount() {
         return F.size(grp.caches());
     }
 
-    /** */
+    /** @return Cache mode. */
     @Order(3)
     public CacheMode cacheMode() {
         return ccfg.getCacheMode();
     }
 
-    /** */
+    /** @return Atomicity mode. */
     @Order(4)
     public CacheAtomicityMode atomicityMode() {
         return ccfg.getAtomicityMode();
     }
 
-    /** */
+    /** @return Affinity string representation. */
     public String affinity() {
         return ccfg.getAffinity() != null ? toStringSafe(ccfg.getAffinity()) : null;
     }
 
-    /** */
+    /** @return Partitions count. */
     public Integer partitionsCount() {
         return ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null;
     }
 
-    /** */
+    /** @return Node filter string representation. */
     public String nodeFilter() {
         return nodeFilter(ccfg);
     }
 
-    /** */
+    /**
+     * @param ccfg Cache configuration.
+     * @return Node filter string representation.
+     */
     public static String nodeFilter(CacheConfiguration<?, ?> ccfg) {
         IgnitePredicate<ClusterNode> nodeFilter = ccfg.getNodeFilter();
 
@@ -112,40 +118,40 @@ public class CacheGroupView implements MonitoringRow<Integer> {
         return toStringSafe(nodeFilter);
     }
 
-    /** */
+    /** @return Data region name. */
     @Order(2)
     public String dataRegionName() {
         return ccfg.getDataRegionName();
     }
 
-    /** */
+    /** @return Topology validator. */
     public String topologyValidator() {
         TopologyValidator validator = ccfg.getTopologyValidator();
 
         return validator == null ? null : toStringSafe(validator);
     }
 
-    /** */
+    /** @return Partition loss policy. */
     public PartitionLossPolicy partitionLossPolicy() {
         return ccfg.getPartitionLossPolicy();
     }
 
-    /** */
+    /** @return Cache rebalance mode. */
     public CacheRebalanceMode rebalanceMode() {
         return ccfg.getRebalanceMode();
     }
 
-    /** */
+    /** @return Rebalance delay. */
     public long rebalanceDelay() {
         return ccfg.getRebalanceDelay();
     }
 
-    /** */
+    /** @return Rebalance order. */
     public int rebalanceOrder() {
         return ccfg.getRebalanceOrder();
     }
 
-    /** */
+    /** @return Backups count. */
     public Integer backups() {
         return ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups();
     }

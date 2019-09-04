@@ -24,10 +24,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Cluster node representation for a {@link MonitoringList}.
+ */
 public class ClusterNodeView implements MonitoringRow<UUID> {
     /** */
     private final ClusterNode n;

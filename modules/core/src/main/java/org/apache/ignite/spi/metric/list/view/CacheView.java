@@ -28,11 +28,14 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
-/** */
+/**
+ * Cache representation for a {@link MonitoringList}.
+ */
 public class CacheView implements MonitoringRow<String> {
     /** */
     private DynamicCacheDescriptor cache;

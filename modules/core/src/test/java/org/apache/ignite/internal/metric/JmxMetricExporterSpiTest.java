@@ -184,8 +184,8 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(44L, bean2.getAttribute("test3"));
     }
 
-    @Test
     /** */
+    @Test
     public void testCachesList() throws Exception {
         Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
 
@@ -205,8 +205,8 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(cacheNames.toString(), cacheNames.isEmpty());
     }
 
-    @Test
     /** */
+    @Test
     public void testCacheGroupsList() throws Exception {
         Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
 
@@ -226,8 +226,8 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(grpNames.toString(), grpNames.isEmpty());
     }
 
-    @Test
     /** */
+    @Test
     public void testServices() throws Exception {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
@@ -248,8 +248,8 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(DummyService.class.getName(), sview.get("serviceClass"));
     }
 
-    @Test
     /** */
+    @Test
     public void testComputeBroadcast() throws Exception {
         for (int i = 0; i < 5; i++) {
             ignite.compute().broadcastAsync(() -> {
@@ -277,8 +277,8 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals("0", t.get("userVersion"));
     }
 
-    @Test
     /** */
+    @Test
     public void testTransactions() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));

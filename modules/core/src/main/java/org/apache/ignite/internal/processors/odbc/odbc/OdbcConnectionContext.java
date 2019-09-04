@@ -177,7 +177,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler.start();
 
-        monList.add(this);
+        connMonList.add(this);
     }
 
     /** {@inheritDoc} */
@@ -196,7 +196,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         super.onDisconnected();
 
-        monList.remove(connectionId());
+        connMonList.remove(connectionId());
     }
 
     /** {@inheritDoc} */

@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.metric.list.view;
 
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
-/** */
+/**
+ * Sql schema representation for a {@link MonitoringList}.
+ */
 public class SqlSchemaView implements MonitoringRow<String> {
-    /** */
+    /** Schema name */
     private String name;
 
-    /** */
+    /** {@code True} if schema is predefined, {@code false} otherwise. */
     private boolean predefined;
 
     /**
@@ -41,12 +44,12 @@ public class SqlSchemaView implements MonitoringRow<String> {
         return name();
     }
 
-    /** */
+    /** @return Schema name. */
     public String name() {
         return name;
     }
 
-    /** */
+    /** @return {@code True} if schema is predefined, {@code false} otherwise. */
     public boolean predefined() {
         return predefined;
     }

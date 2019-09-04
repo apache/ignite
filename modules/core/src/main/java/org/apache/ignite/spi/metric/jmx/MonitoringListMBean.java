@@ -37,6 +37,7 @@ import javax.management.openmbean.SimpleType;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.lang.IgniteUuid;
@@ -44,7 +45,10 @@ import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeV
 import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
+ * JMX bean to expose specific {@link MonitoringList} data.
  *
+ * @see JmxMetricExporterSpi
+ * @see GridMetricManager
  */
 public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOnlyDynamicMBean {
     /** List attribute.  */
@@ -114,43 +118,36 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
             @Override public void acceptBoolean(int idx, String name) {
                 fields[idx] = name;
                 types[idx] = SimpleType.BOOLEAN;
-
             }
 
             @Override public void acceptChar(int idx, String name) {
                 fields[idx] = name;
                 types[idx] = SimpleType.CHARACTER;
-
             }
 
             @Override public void acceptByte(int idx, String name) {
                 fields[idx] = name;
                 types[idx] = SimpleType.BYTE;
-
             }
 
             @Override public void acceptShort(int idx, String name) {
                 fields[idx] = name;
                 types[idx] = SimpleType.SHORT;
-
             }
 
             @Override public void acceptInt(int idx, String name) {
                 fields[idx] = name;
                 types[idx] = SimpleType.INTEGER;
-
             }
 
             @Override public void acceptLong(int idx, String name) {
                 fields[idx] = name;
                 types[idx] = SimpleType.LONG;
-
             }
 
             @Override public void acceptFloat(int idx, String name) {
                 fields[idx] = name;
                 types[idx] = SimpleType.FLOAT;
-
             }
 
             @Override public void acceptDouble(int idx, String name) {
@@ -232,12 +229,18 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
         return info;
     }
 
-    /** */
+    /**
+     * Fullfill {@code data} Map for specific {@link MonitoringRow}.
+     */
     private static class AttributeToMapVisitor implements AttributeWithValueVisitor {
         /** Map to store data. */
         private Map<String, Object> data;
 
-        /** */
+        /**
+         * Sets map.
+         *
+         * @param data Map to fill.
+         */
         public void data(Map<String, Object> data) {
             this.data = data;
         }

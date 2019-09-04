@@ -63,7 +63,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         OpenCensusMetricExporterSpi ocSpi = new OpenCensusMetricExporterSpi();
 
-        ocSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+        ocSpi.setMetricExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
         ocSpi.setPeriod(EXPORT_TIMEOUT);
         ocSpi.setSendConsistentId(true);
         ocSpi.setSendInstanceName(true);
@@ -90,12 +90,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         stopAllGrids(true);
 
         cleanPersistenceDir();
-    }
-
-    /** */
-    @Test
-    public void testMetrics() throws Exception {
-
     }
 
     /** */

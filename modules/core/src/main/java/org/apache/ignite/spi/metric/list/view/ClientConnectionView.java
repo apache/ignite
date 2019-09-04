@@ -18,9 +18,12 @@
 package org.apache.ignite.spi.metric.list.view;
 
 import java.net.InetSocketAddress;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
-/** */
+/**
+ * Client connection representation for a {@link MonitoringList}.
+ */
 public interface ClientConnectionView extends MonitoringRow<Long> {
     /** {@inheritDoc} */
     @Override default Long monitoringRowId() {

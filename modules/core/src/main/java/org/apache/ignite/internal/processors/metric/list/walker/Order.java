@@ -21,9 +21,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
 
 /**
+ * Annotation to set walk order for a {@link MonitoringRowAttributeWalker}.
+ * Walker traverse attributes from low to high value.
  *
+ * @see MonitoringRowAttributeWalker
+ * @see CacheViewWalker
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

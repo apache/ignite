@@ -20,12 +20,15 @@ package org.apache.ignite.spi.metric.list.view;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 
-/** */
+/**
+ * Transaction representation for a {@link MonitoringList}.
+ */
 public interface TransactionView extends MonitoringRow<IgniteUuid> {
     /** {@inheritDoc} */
     @Override default IgniteUuid monitoringRowId() {

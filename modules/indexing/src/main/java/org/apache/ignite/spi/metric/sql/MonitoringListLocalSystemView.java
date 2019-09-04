@@ -54,6 +54,7 @@ import org.h2.value.ValueTimestamp;
  * System view to export monitoring list data.
  */
 public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> extends SqlAbstractLocalSystemView {
+    /** Monitoring list for export. */
     private final MonitoringList<Id, R> mlist;
 
     /**

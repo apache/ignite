@@ -77,6 +77,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinished
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.view.TransactionView;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -187,7 +189,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Deadlock detection futures. */
     private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap<>();
 
-    /** */
+    /**
+     * Transactions monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private MonitoringList<IgniteUuid, TransactionView> txMonList;
 
     /** TX handler. */
@@ -316,7 +323,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
 
-        this.txMonList = cctx.kernalContext().metric().list("transactions", "Transactions", TransactionView.class);
+        this.txMonList = cctx.kernalContext().metric().list("transactions", "Running transactions",
+            TransactionView.class);
     }
 
     /** {@inheritDoc} */

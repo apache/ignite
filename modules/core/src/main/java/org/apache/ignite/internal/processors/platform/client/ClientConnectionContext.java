@@ -146,7 +146,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         parser = new ClientMessageParser(this, ver);
 
-        monList.add(this);
+        connMonList.add(this);
     }
 
     /** {@inheritDoc} */
@@ -165,7 +165,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         super.onDisconnected();
 
-        monList.remove(connectionId());
+        connMonList.remove(connectionId());
     }
 
     /**

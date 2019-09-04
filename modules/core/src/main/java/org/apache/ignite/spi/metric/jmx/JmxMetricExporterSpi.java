@@ -137,7 +137,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
                 log.debug("MetricGroup JMX bean created. " + mbean);
         }
         catch (JMException e) {
-            log.error("MBean for metric registryc '" + mreg.name() + "' can't be created.", e);
+            log.error("MBean for metric registry '" + mreg.name() + "' can't be created.", e);
         }
     }
 

@@ -28,7 +28,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
-/** */
+/**
+ * Class to store data for monitoring some internal Ignite objects.
+ *
+ * @param <Id> Type of the row identificator.
+ * @param <R> Type of the row.
+ */
 public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable<R> {
     /** Name of the list. */
     private final String name;
@@ -45,13 +50,17 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     /** Data of the list. */
     private final ConcurrentHashMap<Id, R> data = new ConcurrentHashMap<>();
 
-    /** */
+    /** Row creation listeners. */
     private volatile List<Consumer<R>> rowCreationLsnrs;
 
-    /** */
+    /** Row remove listeners. */
     private volatile List<Consumer<R>> rowRemoveLsnrs;
 
-    /** */
+    /**
+     * Row attribute walker.
+     *
+     * @see org.apache.ignite.codegen.MonitoringRowAttributeWalkerGenerator
+     */
     private final MonitoringRowAttributeWalker<R> walker;
 
     /**
@@ -73,21 +82,19 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
         this.walker = walker;
     }
 
-    /**
-     * @return Helper for exporters.
-     */
+    /** @return Helper for exporters. */
     public MonitoringRowAttributeWalker<R> walker() {
         return walker;
     }
 
-    /**
-     * @return Class of the row.
-     */
+    /** @return Class of the row. */
     public Class<R> rowClass() {
         return rowClass;
     }
 
     /**
+     * Adds row to the list.
+     *
      * @param row Row.
      */
     public void add(R row) {
@@ -97,6 +104,8 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     }
 
     /**
+     * Adds row to the list if not exists.
+     *
      * @param row Row.
      */
     public void addIfAbsent(R row) {
@@ -109,6 +118,8 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
     }
 
     /**
+     * Removes row from the list.
+     *
      * @param id Id of the row.
      * @return Removed row.
      */
@@ -123,21 +134,20 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
         return rmv;
     }
 
-    /** */
+    /**
+     * @param id Idenitificator of the row.
+     * @return Row if exists, null otherwise.
+     */
     @Nullable public R get(Id id) {
         return data.get(id);
     }
 
-    /**
-     * @return List name.
-     */
+    /** @return List name. */
     public String name() {
         return name;
     }
 
-    /**
-     * @return List description.
-     */
+    /** @return List description. */
     public String description() {
         return description;
     }
@@ -147,17 +157,17 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
         return data.values().iterator();
     }
 
-    /** */
+    /** Clears list data. */
     public void clear() {
         data.clear();
     }
 
-    /** */
+    /** @return Size of the list. */
     public int size() {
         return data.size();
     }
 
-    /** */
+    /** Adds row creation listener. */
     public synchronized void addRowCreationListener(Consumer<R> lsnr) {
         if (rowCreationLsnrs == null)
             rowCreationLsnrs = new CopyOnWriteArrayList<>();
@@ -165,12 +175,11 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
         rowCreationLsnrs.add(lsnr);
     }
 
-    /** */
+    /** Adds row remove listener. */
     public synchronized void addRowRemoveListener(Consumer<R> lsnr) {
         if (rowRemoveLsnrs == null)
             rowRemoveLsnrs = new CopyOnWriteArrayList<>();
 
         rowRemoveLsnrs.add(lsnr);
     }
-
 }

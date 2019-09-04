@@ -42,7 +42,7 @@ import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
 import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
-import org.apache.ignite.spi.metric.list.view.ComputTaskView;
+import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.spi.metric.list.view.TransactionView;
@@ -71,8 +71,8 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** */
 public class MonitoringListSelfTest extends GridCommonAbstractTest {
-    @Test
     /** */
+    @Test
     public void testCachesList() throws Exception {
         try (IgniteEx g = startGrid()) {
             Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
@@ -91,8 +91,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testCacheGroupsList() throws Exception {
         try(IgniteEx g = startGrid()) {
             Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
@@ -112,8 +112,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testServices() throws Exception {
         try(IgniteEx g = startGrid()) {
             ServiceConfiguration srvcCfg = new ServiceConfiguration();
@@ -137,8 +137,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testContinuousQuery() throws Exception {
         try(IgniteEx g0 = startGrid(0); IgniteEx g1 = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = g0.createCache("cache-1");
@@ -193,8 +193,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testClientsConnections() throws Exception {
         try(IgniteEx g0 = startGrid(0)) {
             String host = g0.configuration().getClientConnectorConfiguration().getHost();
@@ -238,8 +238,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testTransactions() throws Exception {
         try(IgniteEx g = startGrid(0)) {
             IgniteCache<Integer, Integer> cache = g.createCache(new CacheConfiguration<Integer, Integer>("c")
@@ -317,8 +317,8 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testNodes() throws Exception {
         try(IgniteEx g1 = startGrid(0)) {
             MonitoringList<UUID, ClusterNodeView> nodes =
@@ -346,12 +346,12 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testComputeBroadcast() throws Exception {
         try(IgniteEx g1 = startGrid(0)) {
-            MonitoringList<IgniteUuid, ComputTaskView> tasks =
-                g1.context().metric().list("tasks", "Cluster nodes", ComputTaskView.class);
+            MonitoringList<IgniteUuid, ComputeTaskView> tasks =
+                g1.context().metric().list("tasks", "Cluster nodes", ComputeTaskView.class);
 
             for (int i=0; i<5; i++)
                 g1.compute().broadcastAsync(() -> {
@@ -365,7 +365,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             assertEquals(5, tasks.size());
 
-            ComputTaskView t = tasks.iterator().next();
+            ComputeTaskView t = tasks.iterator().next();
 
             assertFalse(t.internal());
             assertNull(t.affinityCacheName());

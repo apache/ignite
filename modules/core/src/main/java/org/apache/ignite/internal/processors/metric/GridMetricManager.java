@@ -65,7 +65,7 @@ import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ClientConnectionView;
 import org.apache.ignite.spi.metric.list.view.ClusterNodeView;
-import org.apache.ignite.spi.metric.list.view.ComputTaskView;
+import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.apache.ignite.spi.metric.list.view.ContinuousQueryView;
 import org.apache.ignite.spi.metric.list.view.QueryView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
@@ -80,13 +80,14 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
- * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
+ * This manager should provide {@link ReadOnlyMetricRegistry} and {@link ReadOnlyMonitoringListRegistry}
+ * for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
  * @see MetricRegistry
+ * @see MonitoringList
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
-    implements ReadOnlyMetricRegistry {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -202,8 +203,34 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
+    /** Metrics registry. */
+    private final ReadOnlyMetricRegistry metricsRegistry = new ReadOnlyMetricRegistry() {
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<MetricRegistry> iterator() {
+            return registries.values().iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
+            metricRegCreationLsnrs.add(lsnr);
+        }
+    };
+
+    /** Registered lists. */
+    private final ConcurrentHashMap<String, MonitoringList<?, ?>> lists = new ConcurrentHashMap<>();
+
     /** Lists registry. */
-    private ConcurrentHashMap<String, MonitoringList<?, ?>> lists = new ConcurrentHashMap<>();
+    private final ReadOnlyMonitoringListRegistry listRegistry = new ReadOnlyMonitoringListRegistry() {
+        /** {@inheritDoc} */
+        @Override public void addListCreationListener(Consumer<MonitoringList> lsnr) {
+            listCreationLsnrs.add(lsnr);
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<MonitoringList<?, ?>> iterator() {
+            return lists.values().iterator();
+        }
+    };
 
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
@@ -226,6 +253,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
+    /** Registered walkers for list row. */
     private final Map<Class<?>, MonitoringRowAttributeWalker<?>> walkers = new HashMap<>();
 
     /**
@@ -274,7 +302,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
         registerWalker(ServiceView.class, new ServiceViewWalker());
         registerWalker(TransactionView.class, new TransactionViewWalker());
         registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
-        registerWalker(ComputTaskView.class, new ComputTaskViewWalker());
+        registerWalker(ComputeTaskView.class, new ComputTaskViewWalker());
+
     }
 
     /** {@inheritDoc} */
@@ -285,19 +314,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         for (MetricExporterSpi spi : getSpis()) {
-            spi.setMetricRegistry(this);
-
-            spi.setMonitoringListRegistry(new ReadOnlyMonitoringListRegistry() {
-                /** {@inheritDoc} */
-                @Override public void addListCreationListener(Consumer<MonitoringList> lsnr) {
-                    listCreationLsnrs.add(lsnr);
-                }
-
-                /** {@inheritDoc} */
-                @NotNull @Override public Iterator<MonitoringList<?, ?>> iterator() {
-                    return lists.values().iterator();
-                }
-            });
+            spi.setMetricRegistry(metricsRegistry);
+            spi.setMonitoringListRegistry(listRegistry);
         }
 
         startSpi();
@@ -309,6 +327,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
 
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
+    }
+
+    /** @return Metric registry. */
+    public ReadOnlyMetricRegistry metricRegistry() {
+        return metricsRegistry;
     }
 
     /**
@@ -328,11 +351,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
     }
 
     /**
-     * Gets or creates monitoring list.
+     * Gets or creates {@link MonitoringList}.
      *
      * @param name Name of the list.
      * @param description Description.
      * @param rowClazz Class of the row.
+     * @param <Id> Type of the row identificator.
+     * @param <R> Type of the row.
      * @return Monitoring list.
      */
     public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, String description,
@@ -349,16 +374,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
 
     public <R extends MonitoringRow<?>> void registerWalker(Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
         walkers.put(rowClass, walker);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<MetricRegistry> iterator() {
-        return registries.values().iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
-        metricRegCreationLsnrs.add(lsnr);
     }
 
     /**

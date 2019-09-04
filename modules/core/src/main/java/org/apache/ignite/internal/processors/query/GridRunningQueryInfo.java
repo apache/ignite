@@ -89,53 +89,42 @@ public class GridRunningQueryInfo implements QueryView {
         this.loc = loc;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public String originNodeId() {
         return nodeId.toString();
     }
 
-    /**
-     * @return Query ID.
-     */
+    /** {@inheritDoc} */
     @Override public Long id() {
         return id;
     }
 
-    /**
-     * @return Global query ID.
-     */
+    /** {@inheritDoc} */
     @Override public String globalQueryId() {
         return QueryUtils.globalQueryId(nodeId, id);
     }
 
-    /**
-     * @return Query text.
-     */
+    /** {@inheritDoc} */
     @Override public String query() {
         return qry;
     }
 
-    /**
-     * @return Query type.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheQueryType queryType() {
         return qryType;
     }
 
-    /**
-     * @return Schema name.
-     */
+    /** {@inheritDoc} */
     @Override public String schemaName() {
         return schemaName;
     }
 
-    /**
-     * @return Query start time.
-     */
+    /** {@inheritDoc} */
     @Override public Date startTime() {
         return startTime;
     }
 
+    /** {@inheritDoc} */
     @Override public long duration() {
         return U.currentTimeMillis() - startTime.getTime();
     }
@@ -171,18 +160,16 @@ public class GridRunningQueryInfo implements QueryView {
         return cancel != null;
     }
 
-    /**
-     * @return {@code true} if query is local.
-     */
+    /** {@inheritDoc} */
     @Override public boolean local() {
         return loc;
     }
 
-    /** */
+    /** Sets {@code failed} flag value. */
     public void failed(boolean failed) {
         this.failed = failed;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean failed() { return failed; }
 }

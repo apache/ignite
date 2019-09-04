@@ -20,9 +20,12 @@ package org.apache.ignite.spi.metric.list.view;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 
-/** */
+/**
+ * Service representation for a {@link MonitoringList}.
+ */
 public interface ServiceView extends MonitoringRow<IgniteUuid> {
     /** {@inheritDoc} */
     @Override default IgniteUuid monitoringRowId() {
@@ -33,7 +36,7 @@ public interface ServiceView extends MonitoringRow<IgniteUuid> {
     @Order(1)
     public String name();
 
-    /** */
+    /** @return Service id. */
     @Order
     public IgniteUuid serviceId();
 
@@ -59,7 +62,7 @@ public interface ServiceView extends MonitoringRow<IgniteUuid> {
     /** */
     public Class<?> nodeFilter();
 
-    /** */
+    /** @return {@code True} if statically configured. */
     public boolean staticallyConfigured();
 
     /** */

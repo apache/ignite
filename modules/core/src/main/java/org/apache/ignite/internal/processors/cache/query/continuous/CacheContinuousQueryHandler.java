@@ -260,13 +260,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.notifyExisting = notifyExisting;
     }
 
-    /** */
+    /** @return {@code True} if handler should obtain existing entries,{@code false} otherwise. */
     public boolean notifyExisting() { return notifyExisting; }
 
-    /** */
+    /** @return {@code True} if old value required for handler, {@code false} otherwise. */
     public boolean oldValueRequired() { return oldValRequired; }
 
-    /** */
+    /** @return Local listener. */
     public CacheEntryUpdatedListener<K, V> localListener() { return locLsnr; }
 
     /**
@@ -276,6 +276,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.locOnly = locOnly;
     }
 
+    /** @return {@code True} if handler are local only, {@code false} otherwise. */
     public boolean localOnly() {
         return locOnly;
     }

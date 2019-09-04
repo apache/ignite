@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metric.list.view;
 
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
@@ -26,7 +27,9 @@ import org.h2.index.Index;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
-/** */
+/**
+ * Sql index representation for a {@link MonitoringList}.
+ */
 public class SqlIndexView implements MonitoringRow<String> {
     /** */
     private final Index idx;

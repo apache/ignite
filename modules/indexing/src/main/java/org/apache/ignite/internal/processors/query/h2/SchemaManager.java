@@ -41,6 +41,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
@@ -85,10 +87,20 @@ public class SchemaManager {
     /** Data tables. */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
 
-    /** */
+    /**
+     * SQL schemas monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private final MonitoringList<String, SqlSchemaView> schMonList;
 
-    /** */
+    /**
+     * SQL tables monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private final MonitoringList<String, SqlTableView> tblsMonList;
 
     /** System VIEW collection. */

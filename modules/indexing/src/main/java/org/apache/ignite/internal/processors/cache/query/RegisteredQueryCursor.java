@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.util.typedef.X;
@@ -38,7 +40,12 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /** */
     private final AtomicBoolean unregistered = new AtomicBoolean(false);
 
-    /** */
+    /**
+     * SQL query monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private MonitoringList<Long, QueryView> sqlQryMonList;
 
     /** */
@@ -63,6 +70,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         this.qryId = qryId;
     }
 
+    /** {@inheritDoc} */
     @Override protected Iterator<T> iter() {
         try {
             return super.iter();

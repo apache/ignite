@@ -11553,6 +11553,8 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Notifies provided {@code lsnrs} with the value {@code t}.
+     *
      * @param t Consumed object.
      * @param lsnrs Listeners.
      * @param <T> Type of consumed object.

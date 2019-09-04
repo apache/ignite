@@ -21,6 +21,8 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
@@ -47,7 +49,12 @@ public class BulkLoadProcessor implements AutoCloseable {
     /** Becomes true after {@link #close()} method is called. */
     private boolean isClosed;
 
-    /** */
+    /**
+     * SQL query monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private final MonitoringList<Long, QueryView> sqlQryMonList;
 
     /** Query id. */
@@ -60,7 +67,7 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the
      *     key+value entry to add to the cache.
      * @param outputStreamer Streamer that puts actual key/value into the cache.
-     * @param runningQryMgr Running query manager.
+     * @param sqlQryMonList SQL query monitoring list.
      * @param qryId Running query id.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,

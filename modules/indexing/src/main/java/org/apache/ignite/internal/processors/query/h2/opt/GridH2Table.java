@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlTableView;
@@ -135,7 +137,12 @@ public class GridH2Table extends TableBase implements SqlTableView {
     /** */
     private final ReentrantReadWriteLock lock;
 
-    /** */
+    /**
+     * SQL indexes monitoring list.
+     *
+     * @see ReadOnlyMonitoringListRegistry
+     * @see GridMetricManager
+     */
     private MonitoringList<String, SqlIndexView> idxMonList;
 
     /** */
