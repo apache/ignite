@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Iterator;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -33,10 +26,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import java.sql.*;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  */
@@ -213,6 +211,25 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
             checkSameResult(s, c, "select a.b, b.a, c.c from a.a, b.b, c.c where " +
                 i + " = b.c and a.c = b.c and b.b = c.b order by a.b, b.a, c.c");
         }
+    }
+
+    @Test
+    public void testManyTables() {
+        Ignite ignite = ignite(0);
+        IgniteCache cache = ignite.createCache("person");
+        cache.query(new SqlFieldsQuery("CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));"));
+        cache.query(new SqlFieldsQuery("INSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');"));
+
+        cache.query(new SqlFieldsQuery("SELECT *\n" +
+                "FROM PERSON P1\n" +
+                "JOIN PERSON P2 ON P1.ID = P2.ID\n" +
+                "JOIN PERSON P3 ON P1.ID = P3.ID\n" +
+                "JOIN PERSON P4 ON P1.ID = P4.ID\n" +
+                "JOIN PERSON P5 ON P1.ID = P5.ID\n" +
+                "JOIN PERSON P6 ON P1.ID = P6.ID\n" +
+                "JOIN PERSON P7 ON P1.ID = P7.ID\n" +
+                "JOIN PERSON P8 ON P1.ID = P8.ID").setDistributedJoins(true).setEnforceJoinOrder(false));
+
     }
 
     /** {@inheritDoc} */
