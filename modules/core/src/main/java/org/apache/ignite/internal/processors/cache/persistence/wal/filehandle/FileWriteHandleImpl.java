@@ -319,9 +319,10 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
             return;
         }
 
-        assert ptr.index() == getSegmentId();
+        assert ptr.index() == getSegmentId() : "ptr=" + ptr + " segmetntId=" + getSegmentId();
+        assert ptr.length() > 0 : "ptr=" + ptr;
 
-        walWriter.flushBuffer(ptr.fileOffset());
+        walWriter.flushBuffer(ptr.fileOffset() + ptr.length());
     }
 
     /**
