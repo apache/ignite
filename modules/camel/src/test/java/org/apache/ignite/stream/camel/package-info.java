@@ -18,4 +18,5 @@
 /**
  * Contains implementation of Camel Streamer.
  */
+
 package org.apache.ignite.stream.camel;

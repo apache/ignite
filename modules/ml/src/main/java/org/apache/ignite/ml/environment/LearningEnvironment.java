@@ -60,4 +60,11 @@ public interface LearningEnvironment {
      * @return Partition.
      */
     public int partition();
+
+    /**
+     * Returns partition data time-to-live in seconds (-1 for an infinite lifetime).
+     *
+     * @return Partition data time-to-live in seconds (-1 for an infinite lifetime).
+     */
+    public long dataTtl();
 }

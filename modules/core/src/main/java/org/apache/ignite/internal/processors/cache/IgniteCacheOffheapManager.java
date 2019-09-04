@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
@@ -29,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -47,6 +50,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -504,6 +508,17 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * Store entries.
+     *
+     * @param partId Partition number.
+     * @param infos Entry infos.
+     * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
+
+    /**
      * Clears offheap entries.
      *
      * @param cctx Cache context.
@@ -596,11 +611,6 @@ public interface IgniteCacheOffheapManager {
          * @return Partition ID.
          */
         int partId();
-
-        /**
-         * @return Store name.
-         */
-        String name();
 
         /**
          * @param cacheId Cache ID.
@@ -698,6 +708,16 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+
+        /**
+         * Insert rows into page memory.
+         *
+         * @param rows Rows.
+         * @param initPred Applied to all rows. Each row that not matches the predicate is removed.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void insertRows(Collection<DataRowCacheAware> rows,
+            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

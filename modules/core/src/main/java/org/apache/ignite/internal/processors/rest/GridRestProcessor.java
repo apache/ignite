@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeReadOnlyModeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
@@ -93,6 +94,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIE
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_ARGUMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
@@ -338,31 +340,38 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 catch (Exception e) {
                     failed = true;
 
-                    if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
-                        LT.error(log, e, "Failed to handle request: " + req.command());
+                    if (X.hasCause(e, IllegalArgumentException.class)) {
+                        IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
-
-                    // Prepare error message:
-                    SB sb = new SB(256);
-
-                    sb.a("Failed to handle request: [req=").a(req.command());
-
-                    if (req instanceof GridRestTaskRequest) {
-                        GridRestTaskRequest tskReq = (GridRestTaskRequest)req;
-
-                        sb.a(", taskName=").a(tskReq.taskName())
-                            .a(", params=").a(tskReq.params());
+                        res = new GridRestResponse(STATUS_ILLEGAL_ARGUMENT, iae.getMessage());
                     }
+                    else {
+                        if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
+                            LT.error(log, e, "Failed to handle request: " + req.command());
 
-                    sb.a(", err=")
-                        .a(e.getMessage() != null ? e.getMessage() : e.getClass().getName())
-                        .a(", trace=")
-                        .a(getErrorMessage(e))
-                        .a(']');
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
 
-                    res = new GridRestResponse(STATUS_FAILED, sb.toString());
+                        // Prepare error message:
+                        SB sb = new SB(256);
+
+                        sb.a("Failed to handle request: [req=").a(req.command());
+
+                        if (req instanceof GridRestTaskRequest) {
+                            GridRestTaskRequest tskReq = (GridRestTaskRequest)req;
+
+                            sb.a(", taskName=").a(tskReq.taskName())
+                                .a(", params=").a(tskReq.params());
+                        }
+
+                        sb.a(", err=")
+                            .a(e.getMessage() != null ? e.getMessage() : e.getClass().getName())
+                            .a(", trace=")
+                            .a(getErrorMessage(e))
+                            .a(']');
+
+                        res = new GridRestResponse(STATUS_FAILED, sb.toString());
+                    }
                 }
 
                 assert res != null;
@@ -534,6 +543,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridChangeStateCommandHandler(ctx));
+            addHandler(new GridChangeReadOnlyModeCommandHandler(ctx));
             addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));
             addHandler(new GridBaselineCommandHandler(ctx));

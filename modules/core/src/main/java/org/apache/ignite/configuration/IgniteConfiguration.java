@@ -77,6 +77,7 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -154,13 +155,13 @@ public class IgniteConfiguration {
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default limit of threads used for rebalance. */
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 4;
 
     /** Default rebalance message timeout in milliseconds (value is {@code 10000}). */
     public static final long DFLT_REBALANCE_TIMEOUT = 10000;
 
-    /** Default rebalance batches prefetch count (value is {@code 2}). */
-    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 2;
+    /** Default rebalance batches prefetch count (value is {@code 3}). */
+    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 3;
 
     /** Time to wait between rebalance messages in milliseconds to avoid overloading CPU (value is {@code 0}). */
     public static final long DFLT_REBALANCE_THROTTLE = 0;
@@ -396,6 +397,9 @@ public class IgniteConfiguration {
     /** Encryption SPI. */
     private EncryptionSpi encryptionSpi;
 
+    /** Metric exporter SPI. */
+    private MetricExporterSpi[] metricExporterSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -585,6 +589,7 @@ public class IgniteConfiguration {
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
+        metricExporterSpi = cfg.getMetricExporterSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -2326,6 +2331,28 @@ public class IgniteConfiguration {
      */
     public EncryptionSpi getEncryptionSpi() {
         return encryptionSpi;
+    }
+
+    /**
+     * Sets fully configured instances of {@link MetricExporterSpi}.
+     *
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @see IgniteConfiguration#getMetricExporterSpi()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
+        this.metricExporterSpi = metricExporterSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured monitoring SPI implementations.
+     *
+     * @return Metric exporter SPI implementations.
+     */
+    public MetricExporterSpi[] getMetricExporterSpi() {
+        return metricExporterSpi;
     }
 
     /**

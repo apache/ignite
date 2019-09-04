@@ -60,6 +60,7 @@
         <commons.codec.version>1.11</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
+        <commons.io.version>2.6</commons.io.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>2.9.1</curator.version>
         <easymock.version>3.4</easymock.version>
@@ -89,7 +90,7 @@
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
-        <jnr.posix.version>3.0.46</jnr.posix.version>
+        <jnr.posix.version>3.0.50</jnr.posix.version>
         <jotm.version>2.2.3</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
@@ -137,6 +138,8 @@
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.13</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
+        <opencensus.version>0.22.0</opencensus.version>
+
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
@@ -526,6 +529,10 @@
                             <group>
                                 <title>Ignite Web Console</title>
                                 <packages>org.apache.ignite.console*</packages>
+                            </group>
+                            <group>
+                                <title>Metric SPI</title>
+                                <packages>org.apache.ignite.spi.metric*</packages>
                             </group>
                         </groups>
                         <header>
@@ -942,6 +949,7 @@
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/maven-metadata-local.xml</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</exclude>
+                                        <exclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->

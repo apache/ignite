@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
@@ -55,9 +54,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
     /** Start future (always completed by default). */
     private final IgniteInternalFuture finFut;
-
-    /** Preload predicate. */
-    protected IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /**
      * @param grp Cache group.
@@ -100,16 +96,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
-        this.preloadPred = preloadPred;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePredicate<GridCacheEntryInfo> preloadPredicate() {
-        return preloadPred;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Object> startFuture() {
         return finFut;
     }
@@ -125,12 +111,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void unwindUndeploys() {
-        grp.unwindUndeploys();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void handleSupplyMessage(int idx, UUID id, GridDhtPartitionSupplyMessage s) {
+    @Override public void handleSupplyMessage(UUID id, GridDhtPartitionSupplyMessage s) {
         // No-op.
     }
 

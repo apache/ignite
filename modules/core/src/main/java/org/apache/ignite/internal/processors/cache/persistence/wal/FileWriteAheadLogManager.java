@@ -135,6 +135,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
@@ -233,6 +234,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
             IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT, 4);
+
+    /**
+     * Threshold time to print warning to log if awaiting for next wal segment took too long (exceeded this threshold).
+     */
+    private static final long THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT =
+        IgniteSystemProperties.getLong(IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT, 1000L);
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -614,9 +621,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         try {
             fileHandleManager.onDeactivate();
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd, e);
+        }
 
-            segmentAware.interrupt();
+        segmentAware.interrupt();
 
+        try {
             if (archiver != null)
                 archiver.shutdown();
 
@@ -626,8 +638,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (decompressor != null)
                 decompressor.shutdown();
         }
-        catch (Exception e) {
-            U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd, e);
+        catch (IgniteInterruptedCheckedException e) {
+            U.error(log, "Failed to gracefully shutdown WAL components, thread was interrupted.", e);
         }
     }
 
@@ -1560,8 +1572,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return new File(walWorkDir, FileDescriptor.fileName(curIdx + 1));
         }
 
+        long absNextIdxStartTime = System.nanoTime();
+
         // Signal to archiver that we are done with the segment and it can be archived.
         long absNextIdx = archiver0.nextAbsoluteSegmentIndex();
+
+        long absNextIdxWaitTime = U.nanosToMillis(System.nanoTime() - absNextIdxStartTime);
+
+        if (absNextIdxWaitTime > THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT) {
+            log.warning(
+                String.format("Waiting for next wal segment was too long " +
+                        "[waitingTime=%s, curIdx=%s, absNextIdx=%s, walSegments=%s]",
+                    absNextIdxWaitTime,
+                    curIdx,
+                    absNextIdx,
+                    dsCfg.getWalSegments())
+            );
+        }
 
         long segmentIdx = absNextIdx % dsCfg.getWalSegments();
 

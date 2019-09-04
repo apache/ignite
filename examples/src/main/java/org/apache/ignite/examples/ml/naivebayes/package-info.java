@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * ML naive Bayes classificator examples.
  */
+
 package org.apache.ignite.examples.ml.naivebayes;

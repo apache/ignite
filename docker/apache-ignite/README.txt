@@ -9,7 +9,7 @@ Build image
 
 2) Goto Apache Ignite's Docker module directory
 
-        cd modules/docker
+        cd docker/apache-ignite
 
 3) Copy Apache Ignite's binary archive to Docker module directory
 

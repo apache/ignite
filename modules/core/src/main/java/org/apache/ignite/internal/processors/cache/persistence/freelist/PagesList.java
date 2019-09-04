@@ -45,8 +45,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -140,9 +141,10 @@ public abstract class PagesList extends DataStructure {
         PageMemory pageMem,
         int buckets,
         IgniteWriteAheadLogManager wal,
-        long metaPageId
+        long metaPageId,
+        PageLockListener lockLsnr
     ) {
-        super(cacheId, pageMem, wal);
+        super(cacheId, null, pageMem, wal, lockLsnr);
 
         this.name = name;
         this.buckets = buckets;

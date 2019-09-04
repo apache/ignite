@@ -61,6 +61,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
@@ -2136,6 +2139,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects
      * @param skipStore Skip store flag.
+     * @param readRepair Read Repair flag.
      * @return Future for this get.
      */
     @SuppressWarnings("unchecked")
@@ -2148,6 +2152,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean keepCacheObjects,
         final boolean skipStore,
         final boolean recovery,
+        final boolean readRepair,
         final boolean needVer) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -2192,6 +2197,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     keepCacheObjects,
                     skipStore,
                     recovery,
+                    readRepair,
                     needVer);
             }
             catch (IgniteCheckedException e) {
@@ -2357,11 +2363,71 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 keepCacheObjects,
                                 skipStore,
                                 recovery,
+                                readRepair,
                                 needVer,
                                 expiryPlc0);
                         }
 
-                        return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
+                        if (readRepair) {
+                            return new GridNearReadRepairFuture(
+                                topVer != null ? topVer : topologyVersion(),
+                                cacheCtx,
+                                keys,
+                                !skipStore,
+                                taskName,
+                                deserializeBinary,
+                                recovery,
+                                cacheCtx.cache().expiryPolicy(expiryPlc0),
+                                GridNearTxLocal.this)
+                                .chain((fut) -> {
+                                        try {
+                                            // For every fixed entry.
+                                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                                                EntryGetResult getRes = entry.getValue();
+
+                                                enlistWrite(
+                                                    cacheCtx,
+                                                    entryTopVer,
+                                                    entry.getKey(),
+                                                    getRes.value(),
+                                                    expiryPlc0,
+                                                    null,
+                                                    null,
+                                                    false,
+                                                    false,
+                                                    null,
+                                                    null,
+                                                    skipStore,
+                                                    false,
+                                                    !deserializeBinary,
+                                                    recovery,
+                                                    null);
+
+                                                // Rewriting fixed, initially filled by explicit lock operation.
+                                                cacheCtx.addResult(retMap,
+                                                    entry.getKey(),
+                                                    getRes.value(),
+                                                    skipVals,
+                                                    keepCacheObjects,
+                                                    deserializeBinary,
+                                                    false,
+                                                    getRes,
+                                                    getRes.version(),
+                                                    0,
+                                                    0,
+                                                    needVer);
+                                            }
+
+                                            return Collections.emptyMap();
+                                        }
+                                        catch (Exception e) {
+                                            throw new GridClosureException(e);
+                                        }
+                                    }
+                                );
+                        }
+
+                        return new GridFinishedFuture<>(Collections.emptyMap());
                     }
                 };
 
@@ -2433,6 +2499,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         keepCacheObjects,
                         skipStore,
                         recovery,
+                        readRepair,
                         needVer,
                         expiryPlc);
                 }
@@ -2476,6 +2543,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean keepCacheObjects,
         boolean skipStore,
         boolean recovery,
+        boolean readRepair,
         final boolean needVer
     ) throws IgniteCheckedException {
         assert !F.isEmpty(keys);
@@ -2647,7 +2715,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         GridCacheVersion readVer = null;
                         EntryGetResult getRes = null;
 
-                        if (!pessimistic() || readCommitted() && !skipVals) {
+                        if ((!pessimistic() || (readCommitted() && !skipVals)) && !readRepair) {
                             IgniteCacheExpiryPolicy accessPlc =
                                 optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
@@ -2863,6 +2931,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             needReadVer,
             keepBinary,
             recovery,
+            false,
             expiryPlc,
             c);
     }
@@ -2957,6 +3026,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} version is required for loaded values.
      * @param c Closure to be applied for loaded values.
+     * @param readRepair Read Repair flag.
      * @param expiryPlc Expiry policy.
      * @return Future with {@code True} value if loading took place.
      */
@@ -2970,6 +3040,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean needVer,
         boolean keepBinary,
         boolean recovery,
+        boolean readRepair,
         final ExpiryPolicy expiryPlc,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
@@ -3004,6 +3075,42 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             });
         }
         else if (cacheCtx.isColocated()) {
+            if (readRepair) {
+                return new GridNearReadRepairCheckOnlyFuture(
+                    cacheCtx,
+                    keys,
+                    readThrough,
+                    taskName,
+                    false,
+                    recovery,
+                    expiryPlc0,
+                    skipVals,
+                    needVer,
+                    true,
+                    this)
+                    .multi()
+                    .chain((fut) -> {
+                        try {
+                            Map<Object, Object> map = fut.get();
+
+                            processLoaded(map, keys, needVer, c);
+
+                            return null;
+                        }
+                        catch (IgniteConsistencyViolationException e) {
+                            for (KeyCacheObject key : keys)
+                                txState().removeEntry(cacheCtx.txKey(key)); // Will be recreated after repair.
+
+                            throw new GridClosureException(e);
+                        }
+                        catch (Exception e) {
+                            setRollbackOnly();
+
+                            throw new GridClosureException(e);
+                        }
+                    });
+            }
+
             if (keys.size() == 1) {
                 final KeyCacheObject key = F.first(keys);
 
@@ -3233,6 +3340,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture<>();
         }
         catch (IgniteCheckedException e) {
+            setRollbackOnly();
+
             return new GridFinishedFuture<>(e);
         }
     }
@@ -3476,9 +3585,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Suspend near local tx: " + this);
 
-        if (pessimistic())
-            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
-
         if (threadId() != Thread.currentThread().getId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
@@ -3508,9 +3614,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private void resume(boolean checkTimeout, long threadId) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Resume near local tx: " + this);
-
-        if (pessimistic())
-            throw new UnsupportedOperationException("Resume is not supported for pessimistic transactions.");
 
         synchronized (this) {
             checkValid(checkTimeout);
@@ -4481,18 +4584,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param topVer New topology version.
+     * @param reset {@code True} if need to reset tx state.
      */
-    public void onRemap(AffinityTopologyVersion topVer) {
+    public void onRemap(AffinityTopologyVersion topVer, boolean reset) {
         assert cctx.kernalContext().clientNode();
 
-        mapped = false;
-        nearLocallyMapped = false;
-        colocatedLocallyMapped = false;
-        txNodes = null;
-        onePhaseCommit = false;
-        nearMap.clear();
-        dhtMap.clear();
-        mappings.clear();
+        if (reset) {
+            mapped = false;
+            nearLocallyMapped = false;
+            colocatedLocallyMapped = false;
+            txNodes = null;
+            onePhaseCommit = false;
+            nearMap.clear();
+            dhtMap.clear();
+            mappings.clear();
+        }
 
         synchronized (this) {
             this.topVer = topVer;
@@ -4556,6 +4662,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
+     * @param readRepair Read Repair flag.
      * @param expiryPlc Expiry policy.
      * @return Loaded key-value pairs.
      */
@@ -4569,6 +4676,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean keepCacheObjects,
         final boolean skipStore,
         final boolean recovery,
+        final boolean readRepair,
         final boolean needVer,
         final ExpiryPolicy expiryPlc
     ) {
@@ -4580,11 +4688,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         return new GridEmbeddedFuture<>(
             new C2<Void, Exception, Map<K, V>>() {
                 @Override public Map<K, V> apply(Void v, Exception e) {
-                    if (e != null) {
-                        setRollbackOnly();
-
+                    if (e != null)
                         throw new GridClosureException(e);
-                    }
 
                     if (isRollbackOnly()) {
                         if (timedOut())
@@ -4608,6 +4713,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 needReadVer,
                 !deserializeBinary,
                 recovery,
+                readRepair,
                 expiryPlc,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
