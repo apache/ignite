@@ -17,11 +17,16 @@
 package org.apache.ignite.console.agent;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.security.ProtectionDomain;
+import java.security.UnrecoverableKeyException;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.List;
@@ -32,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,6 +50,8 @@ import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
+
+import javax.crypto.SecretKey;
 
 import static java.net.Proxy.NO_PROXY;
 import static java.net.Proxy.Type.SOCKS;
@@ -323,5 +331,37 @@ public class AgentUtils {
      */
     public static List<String> trim(List<String> lst) {
         return F.isEmpty(lst) ? lst : lst.stream().map(String::trim).collect(toList());
+    }
+
+    /**
+     * @param name Name.
+     * @param keyStorePath Key store path.
+     * @param keyStorePwd Key store password.
+     */
+    public static String getPasswordFromKeyStore(String name, String keyStorePath, String keyStorePwd) {
+        if (F.isEmpty(keyStorePath))
+            throw new IgniteException("Empty path to key store with passwords");
+
+        try {
+            KeyStore ks = KeyStore.getInstance("PKCS12");
+            try (FileInputStream fis = new FileInputStream(keyStorePath)) {
+                ks.load(fis, keyStorePwd.toCharArray());
+                SecretKey secretKey = (SecretKey) ks.getKey(name, keyStorePwd.toCharArray());
+
+                if (secretKey == null)
+                    throw new IgniteException(String.format("Failed to find password in key store: [name=%s, keyStorePath=%s]", name, keyStorePath));
+
+                return new String(secretKey.getEncoded());
+            }
+        }
+        catch (IOException e) {
+            if (e.getCause() instanceof UnrecoverableKeyException)
+                throw new IgniteException("Failed to read password from key store, please check key store password", e);
+
+            throw new IgniteException("Failed to open passwords key store: " + keyStorePath, e);
+        }
+        catch (GeneralSecurityException e) {
+            throw new IgniteException("Failed to read password from key store", e);
+        }
     }
 }

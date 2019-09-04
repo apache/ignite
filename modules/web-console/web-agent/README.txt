@@ -31,12 +31,30 @@ Configuration file:
     server-key-store-password
     server-trust-store
     server-trust-store-password
+    passwords-key-store
     cipher-suites
 
   Example configuration file:
     tokens=1a2b3c4d5f,2j1s134d12
     server-uri=https://console.example.com
     node-uri=http://10.0.0.1:8080,http://10.0.0.2:8080
+
+Passwords encryption:
+  There several passwords in Web Agent, for example for the SSL connectors. By default, passwords passed as simple text.
+  For security reasons encrypted passwords can be used.
+
+  How to encrypt passwords:
+    1. Run "passwords-key-store-generator.{bat|sh}" and follow instructions.
+
+    2. Add path to key store with passwords to "default.properties" or pass as "ignite-web-console-agent.{bat|sh}" argument.
+      Example for "default.properties":
+        ...
+          passwords-key-store=/path/to/key/store/passwords.p12
+        ...
+
+      Example for ignite-web-console-agent.{bat|sh}:
+        Linux/Mac OS: ./ignite-web-console-agent.sh --passwords-key-store /path/to/key/store/passwords.p12
+        Windows: ignite-web-console-agent.bat --passwords-key-store /path/to/key/store/passwords.p12
 
 Security tokens:
   1) By default security token of current user will be included into "default.properties" inside downloaded "ignite-web-console-agent-x.x.x.zip".
@@ -85,6 +103,10 @@ Options:
     Path to trust store that will be used to connect to Web server
   -stsp, --server-trust-store-password
     Optional password for server trust store
+  -pks, --passwords-key-store
+    Path to key store that keeps encrypted passwords
+  -pksp, --passwords-key-store-password
+    Password for passwords key store
   -cs, --cipher-suites
      Optional comma-separated list of SSL cipher suites to be used to connect
      to server and cluster

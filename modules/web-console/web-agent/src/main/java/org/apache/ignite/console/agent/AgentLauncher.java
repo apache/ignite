@@ -27,6 +27,7 @@ import java.util.Scanner;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import org.apache.ignite.console.agent.handlers.WebSocketRouter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -63,7 +64,7 @@ public class AgentLauncher {
      * @param args Launcher args.
      * @return Agent configuration;
      */
-    private static AgentConfiguration parseArgs(String[] args) {
+     static AgentConfiguration parseArgs(String[] args) {
         log.info("Starting Apache Ignite Web Console Agent...");
 
         AgentConfiguration cfg = new AgentConfiguration();
@@ -146,6 +147,14 @@ public class AgentLauncher {
             String tokens = String.valueOf(readPassword("Enter security tokens separated by comma: "));
 
             cfg.tokens(new ArrayList<>(Arrays.asList(tokens.trim().split(","))));
+        }
+
+        if (!F.isEmpty(cfg.passwordsStore()) && F.isEmpty(cfg.passwordsStorePassword())) {
+            System.out.println("The passwords key store path is specified, but password is empty!");
+
+            String pwd = String.valueOf(readPassword("Enter password for key store: "));
+
+            cfg.passwordsStorePassword(pwd);
         }
 
         List<String> nodeURIs = cfg.nodeURIs();

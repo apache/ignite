@@ -74,8 +74,10 @@ checkJava() {
         fi
 
         JAVA_HOME=
+        KEYTOOL=
     else
         JAVA=${JAVA_HOME}/bin/java
+        KEYTOOL=${JAVA_HOME}/bin/keytool
     fi
 
     #
