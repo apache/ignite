@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -45,6 +45,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -136,6 +138,8 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PA
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
+import static org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler.IGNITE_CLUSTER_ID;
+import static org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler.IGNITE_CLUSTER_NAME;
 
 /**
  * Tests for Jetty REST protocol.
@@ -1499,10 +1503,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testNode() throws Exception {
+        IgniteEx ignite = grid(0);
+        String nid = ignite.localNode().id().toString();
+
         String ret = content(null, GridRestCommand.NODE,
             "attr", "true",
             "mtr", "true",
-            "id", grid(0).localNode().id().toString()
+            "id", nid
         );
 
         info("Topology command result: " + ret);
@@ -1512,11 +1519,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertTrue(res.get("attributes").isObject());
         assertTrue(res.get("metrics").isObject());
 
+        JsonNode attrs = res.get("attributes");
+        IgniteClusterEx cluster = ignite.cluster();
+
+        assertEquals(cluster.id().toString(), attrs.get(IGNITE_CLUSTER_ID).asText());
+        assertEquals(cluster.tag(), attrs.get(IGNITE_CLUSTER_NAME).asText());
+
         JsonNode caches = res.get("caches");
 
         assertTrue(caches.isArray());
         assertFalse(caches.isNull());
-        assertEquals(grid(0).context().cache().publicCaches().size(), caches.size());
+        assertEquals(ignite.context().cache().publicCaches().size(), caches.size());
 
         ret = content(null, GridRestCommand.NODE,
             "attr", "false",
@@ -1546,7 +1559,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         // Check that caches not included.
         ret = content(null, GridRestCommand.NODE,
-            "id", grid(0).localNode().id().toString(),
+            "id", nid,
             "attr", "false",
             "mtr", "false",
             "caches", "false"

@@ -26,12 +26,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
@@ -66,6 +69,12 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOG
  * Command handler for API requests.
  */
 public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
+    /** Optional Ignite cluster ID. */
+    public static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
+    
+    /** Optional Ignite cluster name. */
+    public static final String IGNITE_CLUSTER_NAME = IgniteSystemProperties.IGNITE_CLUSTER_NAME;
+
     /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(TOPOLOGY, NODE);
 
@@ -314,6 +323,11 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                       i.remove();
                 }
             }
+
+            IgniteClusterEx cluster = ctx.grid().cluster();
+
+            attrs.put(IGNITE_CLUSTER_ID, cluster.id());
+            attrs.put(IGNITE_CLUSTER_NAME, cluster.tag());
 
             nodeBean.setAttributes(attrs);
         }
