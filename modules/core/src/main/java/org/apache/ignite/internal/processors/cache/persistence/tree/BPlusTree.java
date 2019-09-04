@@ -5941,21 +5941,4 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         if (failureProcessor != null)
             failureProcessor.process(new FailureContext(failureType, e));
     }
-
-    /**
-     * Creates a formatted message even if "toString" of optioanl parameters failed.
-     *
-     * @param msg Detailed error message.
-     * @param rows Optional parameters.
-     * @return New instance of {@link CorruptedTreeException}.
-     */
-    private String formatMsg(String msg, Object... rows) {
-        try {
-            return String.format(msg, rows);
-        }
-        catch (Throwable ignored) {
-            // Failed to create string representation of optional parameters.
-            return msg + " <failed to create rows string representation>";
-        }
-    }
 }
