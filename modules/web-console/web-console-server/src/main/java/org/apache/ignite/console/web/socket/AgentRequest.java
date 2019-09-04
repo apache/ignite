@@ -21,7 +21,7 @@ import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Event to agent.
+ * Wrapper for websocket request.
  */
 public class AgentRequest {
     /** Source nid. */
@@ -58,7 +58,7 @@ public class AgentRequest {
     }
 
     /**
-     * @return value of event.
+     * @return Event.
      */
     public WebSocketRequest getEvent() {
         return evt;

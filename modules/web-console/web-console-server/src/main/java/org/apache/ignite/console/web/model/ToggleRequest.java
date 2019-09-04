@@ -27,7 +27,7 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class ToggleRequest {
     /** Email. */
-    @ApiModelProperty(value = "User id.", required = true)
+    @ApiModelProperty(value = "User ID.", required = true)
     @NotNull
     @NotEmpty
     private UUID id;

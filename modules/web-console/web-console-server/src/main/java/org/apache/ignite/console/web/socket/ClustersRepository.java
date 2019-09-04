@@ -60,7 +60,7 @@ public class ClustersRepository {
     private CacheHolder<String, TopologySnapshot> clusters;
 
     /** */
-    private OneToManyIndex<UserKey, ClusterSession> clusterIdsByBrowser;
+    private OneToManyIndex<UserKey, ClusterSession> clusterIdsByUser;
 
     /**
      * @param ignite Ignite.
@@ -73,7 +73,7 @@ public class ClustersRepository {
 
         this.txMgr.registerStarter(() -> {
             clusters = new CacheHolder<>(ignite, "wc_clusters");
-            clusterIdsByBrowser = new OneToManyIndex<>(ignite, "wc_clusters_idx");
+            clusterIdsByUser = new OneToManyIndex<>(ignite, "wc_clusters_idx");
 
             cleanupClusterIndex();
         });
@@ -86,13 +86,34 @@ public class ClustersRepository {
      */
     public Set<TopologySnapshot> get(UserKey user) {
         return txMgr.doInTransaction(() ->
-            Optional.ofNullable(clusterIdsByBrowser.get(user))
+            Optional.ofNullable(clusterIdsByUser.get(user))
                 .orElseGet(Collections::emptySet).stream()
                 .map(ClusterSession::getClusterId)
                 .distinct()
-                .map(this.clusters::get)
+                .map(clusters::get)
                 .collect(toSet())
         );
+    }
+
+    /**
+     * @param users Users.
+     * @return Collection of cluster IDs.
+     */
+    public Set<String> clusters(Set<UserKey> users) {
+        return txMgr.doInTransaction(() ->
+            clusterIdsByUser
+                .getAll(users)
+                .stream()
+                .map(ClusterSession::getClusterId)
+                .collect(toSet()));
+    }
+
+    /**
+     * @param users Users.
+     * @return Collection of topologies.
+     */
+    public Collection<TopologySnapshot> topologies(Set<UserKey> users) {
+        return txMgr.doInTransaction(() -> clusters.cache().getAll(clusters(users)).values());
     }
 
     /**
@@ -114,13 +135,13 @@ public class ClustersRepository {
     }
 
     /**
-     * Find cluster with same topology and get it's cluster id.
+     * Find cluster with same topology and get it's cluster ID.
      * 
      * @param top Topology.
      */
     public String findClusterId(TopologySnapshot top) {
         return txMgr.doInTransaction(() ->
-            stream(this.clusters.cache().spliterator(), false)
+            stream(clusters.cache().spliterator(), false)
                 .filter(e -> e.getValue().sameNodes(top))
                 .map(Cache.Entry::getKey)
                 .findFirst()
@@ -129,7 +150,7 @@ public class ClustersRepository {
     }
 
     /**
-     * Save topology in cache
+     * Save topology in cache.
      *
      * @param accIds Account ids.
      * @param top Topology.
@@ -141,17 +162,17 @@ public class ClustersRepository {
             ClusterSession clusterSes = new ClusterSession(nid, top.getId());
 
             for (UUID accId : accIds)
-                clusterIdsByBrowser.add(new UserKey(accId, top.isDemo()), clusterSes);
+                clusterIdsByUser.add(new UserKey(accId, top.isDemo()), clusterSes);
 
             return clusters.getAndPut(top.getId(), top);
         });
     }
 
     /**
-     * Remove cluster from local backend
+     * Remove cluster from local backend.
      *
-     * @param accId Acc id.
-     * @param clusterId Cluster id.
+     * @param accId Account ID.
+     * @param clusterId Cluster ID.
      */
     public void remove(UUID accId, String clusterId) {
         UUID nid = ignite.cluster().localNode().id();
@@ -161,17 +182,17 @@ public class ClustersRepository {
         txMgr.doInTransaction(() -> {
             boolean demo = clusters.get(clusterId).isDemo();
 
-            clusterIdsByBrowser.remove(new UserKey(accId, demo), clusterSes);
+            clusterIdsByUser.remove(new UserKey(accId, demo), clusterSes);
         });
     }
 
     /**
      * Has demo for account
      *
-     * @param accId Account id.
+     * @param accId Account ID.
      */
     public boolean hasDemo(UUID accId) {
-        return !F.isEmpty(clusterIdsByBrowser.get(new UserKey(accId, true)));
+        return !F.isEmpty(clusterIdsByUser.get(new UserKey(accId, true)));
     }
 
     /**
@@ -180,7 +201,7 @@ public class ClustersRepository {
     void cleanupClusterIndex() {
         Collection<UUID> nids = U.nodeIds(ignite.cluster().nodes());
 
-        stream(clusterIdsByBrowser.cache().spliterator(), false)
+        stream(clusterIdsByUser.cache().spliterator(), false)
             .peek(entry -> {
                 Set<ClusterSession> activeClusters =
                     entry.getValue().stream().filter(cluster -> nids.contains(cluster.getNid())).collect(toSet());
@@ -188,16 +209,16 @@ public class ClustersRepository {
                 entry.getValue().removeAll(activeClusters);
             })
             .filter(entry -> !entry.getValue().isEmpty())
-            .forEach(entry -> clusterIdsByBrowser.removeAll(entry.getKey(), entry.getValue()));
+            .forEach(entry -> clusterIdsByUser.removeAll(entry.getKey(), entry.getValue()));
     }
 
     /**
-     * Periodically cleanup expired cluster topology.
+     * Periodically cleanup expired cluster topologies.
      */
     @Scheduled(initialDelay = 0, fixedRate = 60_000)
     public void cleanupClusterHistory() {
         txMgr.doInTransaction(() -> {
-            Set<String> clusterIds = stream(this.clusters.cache().spliterator(), false)
+            Set<String> clusterIds = stream(clusters.cache().spliterator(), false)
                 .filter(entry -> entry.getValue().isExpired(DEFAULT_CLUSTER_CLEANUP))
                 .map(Cache.Entry::getKey)
                 .collect(toSet());
@@ -205,7 +226,7 @@ public class ClustersRepository {
             if (!F.isEmpty(clusterIds)) {
                 clusters.cache().removeAll(clusterIds);
 
-                log.debug("Failed to receive topology update for clusters: " + clusterIds);
+                log.debug("Cleared topology for clusters: {}", clusterIds);
             }
         });
     }

@@ -23,15 +23,15 @@ import java.util.UUID;
  * Connected cluster descriptor.
  */
 public class ClusterSession {
-    /** Backend node id. */
+    /** Backend node ID. */
     private final UUID nid;
     
-    /** Cluster id. */
+    /** Cluster ID. */
     private final String clusterId;
 
     /**
-     * @param nid Backend node id.
-     * @param clusterId Cluster id.
+     * @param nid Backend node ID.
+     * @param clusterId Cluster ID.
      */
     public ClusterSession(UUID nid, String clusterId) {
         this.nid = nid;
@@ -39,14 +39,14 @@ public class ClusterSession {
     }
 
     /**
-     * @return value of backend node id.
+     * @return value of backend node ID.
      */
     public UUID getNid() {
         return nid;
     }
 
     /**
-     * @return value of cluster id.
+     * @return value of cluster ID.
      */
     public String getClusterId() {
         return clusterId;

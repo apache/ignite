@@ -41,6 +41,7 @@ public class RestResult {
     /**
      * @param status REST http code.
      * @param error The field contains description of error if server could not handle the request.
+     * @param sesTok The field contains session token.
      * @param data The field contains result of command.
      */
     @JsonCreator

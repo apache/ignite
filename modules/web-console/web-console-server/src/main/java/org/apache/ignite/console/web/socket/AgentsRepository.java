@@ -77,10 +77,10 @@ public class AgentsRepository {
     }
 
     /**
-     * Add cluster to local backend
+     * Add cluster to local backend.
      *
-     * @param accIds Account ids.
-     * @param clusterId Cluster id.
+     * @param accIds Account IDs.
+     * @param clusterId Cluster ID.
      */
     public void addCluster(Set<UUID> accIds, String clusterId) {
         UUID nid = ignite.cluster().localNode().id();
@@ -103,16 +103,16 @@ public class AgentsRepository {
      * Remove agent from backend
      *
      * @param key Agent key.
-     * @param nid Node id.
+     * @param nid Node ID.
      */
     public void remove(AgentKey key, UUID nid) {
-        this.txMgr.doInTransaction(() -> backendByAgent.remove(key, nid));
+        txMgr.doInTransaction(() -> backendByAgent.remove(key, nid));
     }
 
     /**
      * Has agent for account
      *
-     * @param accId Account id.
+     * @param accId Account ID.
      */
     boolean hasAgent(UUID accId) {
         return txMgr.doInTransaction(() -> !backendByAgent.get(new AgentKey(accId)).isEmpty());

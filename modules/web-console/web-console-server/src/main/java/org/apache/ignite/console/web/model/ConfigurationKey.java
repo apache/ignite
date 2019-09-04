@@ -23,14 +23,14 @@ import java.util.UUID;
  * Key for configurations.
  */
 public class ConfigurationKey {
-    /** Account id. */
+    /** Account ID. */
     private UUID accId;
     
     /** Demo. */
     private boolean demo;
 
     /**
-     * @param accId Acc id.
+     * @param accId Account ID.
      * @param demo Demo.
      */
     public ConfigurationKey(UUID accId, boolean demo) {
@@ -39,7 +39,7 @@ public class ConfigurationKey {
     }
 
     /**
-     * @return value of accId
+     * @return value of account ID.
      */
     public UUID getAccId() {
         return accId;

@@ -64,7 +64,7 @@ public class NotebooksService {
 
     /**
      * @param accId Account ID.
-     * @param notebookId Notebook id.
+     * @param notebookId Notebook ID.
      */
     public void delete(UUID accId, UUID notebookId) {
         notebooksRepo.delete(accId, notebookId);

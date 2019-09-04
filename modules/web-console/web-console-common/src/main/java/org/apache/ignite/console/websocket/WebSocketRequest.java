@@ -77,7 +77,7 @@ public class WebSocketRequest implements WebSocketEvent<String> {
      * @param payload Payload.
      */
     public WebSocketResponse response(Object payload) {
-        return new WebSocketResponse(this.reqId, evtType, payload);
+        return new WebSocketResponse(reqId, evtType, payload);
     }
 
     /**

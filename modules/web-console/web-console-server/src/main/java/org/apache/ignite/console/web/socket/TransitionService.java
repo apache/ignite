@@ -24,18 +24,20 @@ import org.apache.ignite.console.dto.Announcement;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.websocket.WebSocketEvent;
+import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import static org.apache.ignite.console.websocket.WebSocketEvents.ADMIN_ANNOUNCEMENT;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 
 /**
- * Service for transition request/response between backend.
+ * Service for transition request/response between backends.
  */
 @Service
 public class TransitionService {
@@ -43,13 +45,13 @@ public class TransitionService {
     private static final Logger log = LoggerFactory.getLogger(TransitionService.class);
 
     /** */
-    static final String SEND_TO_AGENT = "SEND_TO_AGENT";
+    private static final String SEND_TO_AGENT = "SEND_TO_AGENT";
 
     /** */
-    static final String SEND_RESPONSE = "SEND_RESPONSE";
+    private static final String SEND_RESPONSE = "SEND_RESPONSE";
 
     /** */
-    public static final String SEND_TO_USER_BROWSER = "SEND_TO_USER_BROWSER";
+    private static final String SEND_TO_USER_BROWSER = "SEND_TO_USER_BROWSER";
 
     /** */
     private static final String SEND_ANNOUNCEMENT = "SEND_ANNOUNCEMENT";
@@ -80,8 +82,8 @@ public class TransitionService {
         Ignite ignite,
         AgentsRepository agentsRepo,
         ClustersRepository clustersRepo,
-        AgentsService agentsSrvc,
-        BrowsersService browsersSrvc
+        @Lazy AgentsService agentsSrvc,
+        @Lazy BrowsersService browsersSrvc
     ) {
         this.ignite = ignite;
         this.agentsRepo = agentsRepo;
@@ -162,7 +164,13 @@ public class TransitionService {
 
         ignite.message().localListen(SEND_RESPONSE, new MessagingListenActor<WebSocketEvent>() {
             @Override protected void receive(UUID nodeId, WebSocketEvent evt) {
-                browsersSrvc.sendResponseToBrowser(evt);
+                boolean processed = browsersSrvc.processResponse(evt);
+
+                if (!processed)
+                    processed = agentsSrvc.processResponse(evt);
+
+                if (!processed)
+                    log.warn("Event was not processed: " + evt);
             }
         });
 
@@ -184,5 +192,30 @@ public class TransitionService {
      */
     public void broadcastAnnouncement(Announcement ann) {
         ignite.message().send(SEND_ANNOUNCEMENT, new WebSocketResponse(ADMIN_ANNOUNCEMENT, ann));
+    }
+
+    /**
+     * @param key Key.
+     * @param evt Event.
+     */
+    public void sendToAgent(AgentKey key, WebSocketRequest evt) {
+        ignite.message(ignite.cluster().forLocal())
+            .send(SEND_TO_AGENT, new AgentRequest(ignite.cluster().localNode().id(), key, evt));
+    }
+
+    /**
+     * @param userKey User key.
+     * @param evt Event to send.
+     */
+    public void sendToBrowser(UserKey userKey, WebSocketResponse evt) {
+        ignite.message().send(SEND_TO_USER_BROWSER, new UserEvent(userKey, evt));
+    }
+
+    /**
+     * @param nid Node ID.
+     * @param evt Event to send.
+     */
+    public void sendResponse(UUID nid, WebSocketRequest evt) {
+        ignite.message(ignite.cluster().forNodeId(nid)).send(SEND_RESPONSE, evt);
     }
 }

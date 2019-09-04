@@ -23,15 +23,15 @@ import java.util.UUID;
  * Connected agent key.
  */
 public class AgentKey {
-    /** Account id. */
+    /** Account ID. */
     private final UUID accId;
 
-    /** Cluster id. */
+    /** Cluster ID. */
     private final String clusterId;
 
     /**
-     * @param accId Account id.
-     * @param clusterId Cluster id.
+     * @param accId Account ID.
+     * @param clusterId Cluster ID.
      */
     public AgentKey(UUID accId, String clusterId) {
         this.accId = accId;
@@ -39,21 +39,28 @@ public class AgentKey {
     }
 
     /**
-     * @param accId Account id.
+     * @param accId Account ID.
      */
     public AgentKey(UUID accId) {
         this(accId, null);
     }
 
     /**
-     * @return value of account id.
+     * @param clusterId Cluster ID.
+     */
+    public AgentKey(String clusterId) {
+        this(null, clusterId);
+    }
+
+    /**
+     * @return value of account ID.
      */
     public UUID getAccId() {
         return accId;
     }
 
     /**
-     * @return value of cluster id.
+     * @return value of cluster ID.
      */
     public String getClusterId() {
         return clusterId;

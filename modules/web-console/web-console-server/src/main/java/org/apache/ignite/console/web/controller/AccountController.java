@@ -96,7 +96,7 @@ public class AccountController {
     /**
      * Save and auth user.
      *
-     * @param accId Account id.
+     * @param accId Account ID.
      * @param changes Changes to apply to user.
      */
     public Account saveAndAuth(UUID accId, ChangeUserRequest changes) {

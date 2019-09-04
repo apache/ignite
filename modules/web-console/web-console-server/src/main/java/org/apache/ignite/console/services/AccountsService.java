@@ -204,7 +204,7 @@ public class AccountsService implements UserDetailsService {
     /**
      * Reset activation token for account
      *
-     * @param accId Account id.
+     * @param accId Account ID.
      */
     public void activateAccount(UUID accId) {
         txMgr.doInTransaction(() -> {

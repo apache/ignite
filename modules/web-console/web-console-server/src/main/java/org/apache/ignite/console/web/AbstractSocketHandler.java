@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.websocket.WebSocketEvent;
@@ -51,16 +50,6 @@ public abstract class AbstractSocketHandler extends TextWebSocketHandler {
 
     /** Messages accessor. */
     protected WebConsoleMessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
-
-    /** */
-    protected Ignite ignite;
-
-    /**
-     * @param ignite Ignite.
-     */
-    protected AbstractSocketHandler(Ignite ignite) {
-        this.ignite = ignite;
-    }
 
     /**
      * @param ws Websocket session.

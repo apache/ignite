@@ -26,7 +26,7 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class UserDetailsResponse extends UserResponse {
     /** ID */
-    @ApiModelProperty(value = "User id.")
+    @ApiModelProperty(value = "User ID.")
     @NotNull
     @NotEmpty
     private UUID id;

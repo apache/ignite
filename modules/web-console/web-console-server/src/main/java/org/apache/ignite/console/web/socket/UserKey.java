@@ -23,15 +23,15 @@ import java.util.UUID;
  * User session key.
  */
 public class UserKey {
-    /** Account id. */
+    /** Account ID. */
     private final UUID accId;
 
     /** Demo flag. */
     private final boolean demo;
 
     /**
-     * @param accId Account id.
-     * @param demo demo flag.
+     * @param accId Account ID.
+     * @param demo Demo flag.
      */
     public UserKey(UUID accId, boolean demo) {
         this.accId = accId;
@@ -39,7 +39,7 @@ public class UserKey {
     }
 
     /**
-     * @return value of account id.
+     * @return value of account ID.
      */
     public UUID getAccId() {
         return accId;

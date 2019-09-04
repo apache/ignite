@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.repositories.AccountsRepository;
@@ -50,8 +49,6 @@ import org.springframework.web.socket.WebSocketSession;
 import static org.apache.ignite.console.utils.Utils.entriesToMap;
 import static org.apache.ignite.console.utils.Utils.entry;
 import static org.apache.ignite.console.utils.Utils.fromJson;
-import static org.apache.ignite.console.web.socket.TransitionService.SEND_RESPONSE;
-import static org.apache.ignite.console.web.socket.TransitionService.SEND_TO_USER_BROWSER;
 import static org.apache.ignite.console.websocket.AgentHandshakeRequest.SUPPORTED_VERS;
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENT_HANDSHAKE;
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENT_REVOKE_TOKEN;
@@ -59,7 +56,7 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.AGENT_STATUS;
 import static org.apache.ignite.console.websocket.WebSocketEvents.CLUSTER_TOPOLOGY;
 
 /**
- * Agents web sockets handler.
+ * Agents service.
  */
 @Service
 public class AgentsService extends AbstractSocketHandler {
@@ -67,29 +64,38 @@ public class AgentsService extends AbstractSocketHandler {
     private static final Logger log = LoggerFactory.getLogger(AgentsService.class);
 
     /** */
-    protected AccountsRepository accRepo;
+    protected final AccountsRepository accRepo;
 
     /** */
-    protected ClustersRepository clustersRepo;
+    protected final ClustersRepository clustersRepo;
     
     /** */
-    private AgentsRepository agentsRepo;
+    private final AgentsRepository agentsRepo;
 
     /** */
-    private final Map<WebSocketSession, AgentSession> locAgents;
+    protected final TransitionService transitionSrvc;
+
+    /** */
+    protected final Map<WebSocketSession, AgentSession> locAgents;
     
     /** */
     private final Map<String, UUID> srcOfRequests;
 
     /**
      * @param accRepo Repository to work with accounts.
+     * @param agentsRepo Repositories to work with agents.
+     * @param clustersRepo Repositories to work with clusters.
      */
-    public AgentsService(Ignite ignite, AccountsRepository accRepo, AgentsRepository agentsRepo, ClustersRepository clustersRepo) {
-        super(ignite);
-
+    public AgentsService(
+        AccountsRepository accRepo,
+        AgentsRepository agentsRepo,
+        ClustersRepository clustersRepo,
+        TransitionService transitionSrvc
+    ) {
         this.accRepo = accRepo;
         this.agentsRepo = agentsRepo;
         this.clustersRepo = clustersRepo;
+        this.transitionSrvc = transitionSrvc;
 
         locAgents = new ConcurrentLinkedHashMap<>();
         srcOfRequests = new ConcurrentHashMap<>();
@@ -145,7 +151,10 @@ public class AgentsService extends AbstractSocketHandler {
                 try {
                     UUID nid = srcOfRequests.remove(evt.getRequestId());
 
-                    ignite.message(ignite.cluster().forNodeId(nid)).send(SEND_RESPONSE, evt);
+                    if (nid != null)
+                        transitionSrvc.sendResponse(nid, evt);
+                    else
+                        log.warn("Detected response with duplicated or unexpected ID: " + evt);
                 }
                 catch (ClusterGroupEmptyException ignored) {
                     // No-op.
@@ -201,6 +210,14 @@ public class AgentsService extends AbstractSocketHandler {
     }
 
     /**
+     * @param evt Response to process.
+     * @return {@code true} If response processed.
+     */
+    protected boolean processResponse(WebSocketEvent evt) {
+        return false;
+    }
+
+    /**
      * @param acc Account.
      * @param oldTok Token to revoke.
      */
@@ -253,8 +270,7 @@ public class AgentsService extends AbstractSocketHandler {
 
         WebSocketEvent evt = req.getEvent();
 
-        if (log.isDebugEnabled())
-            log.debug("Found local agent session [session=" + ses + ", event=" + evt + "]");
+        log.debug("Found local agent session [session={}, event={}]", ses, evt);
 
         sendMessage(ses, evt);
 
@@ -350,21 +366,26 @@ public class AgentsService extends AbstractSocketHandler {
         return locAgents.entrySet().stream()
             .filter((e) -> {
                 Set<UUID> accIds = e.getValue().getAccIds();
-
-                if (F.isEmpty(key.getClusterId()))
-                    return accIds.contains(key.getAccId());
-
                 Set<String> clusterIds = e.getValue().getClusterIds();
 
-                return accIds.contains(key.getAccId()) && clusterIds.contains(key.getClusterId());
+                UUID accId = key.getAccId();
+                String clusterId = key.getClusterId();
+
+                if (F.isEmpty(clusterId))
+                    return accIds.contains(accId);
+
+                if (accId == null)
+                    return clusterIds.contains(clusterId);
+
+                return accIds.contains(accId) && clusterIds.contains(clusterId);
             })
             .findFirst()
             .map(Map.Entry::getKey);
     }
 
     /**
-     * @param accIds Account ids.
-     * @param demo is demo stats.
+     * @param accIds Account IDs.
+     * @param demo Is demo cluster.
      */
     private void sendAgentStats(Set<UUID> accIds, boolean demo) {
         for (UUID accId : accIds) {
@@ -372,7 +393,7 @@ public class AgentsService extends AbstractSocketHandler {
             WebSocketResponse stats = collectAgentStats(key);
 
             try {
-                ignite.message().send(SEND_TO_USER_BROWSER, new UserEvent(key, stats));
+                transitionSrvc.sendToBrowser(key, stats);
             }
             catch (Throwable e) {
                 log.error("Failed to send connected clusters to browsers", e);

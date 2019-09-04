@@ -53,21 +53,21 @@ public class AgentSession {
     }
 
     /**
-     * @return Acc ids.
+     * @return Account IDs.
      */
     public Set<UUID> getAccIds() {
         return accIds;
     }
 
     /**
-     * @return Cluster id.
+     * @return Cluster IDs.
      */
     public Set<String> getClusterIds() {
         return clusterIds;
     }
 
     /**
-     * @param clusterIds Cluster ids.
+     * @param clusterIds Cluster IDs.
      */
     public void setClusterIds(Set<String> clusterIds) {
         this.clusterIds = clusterIds;
