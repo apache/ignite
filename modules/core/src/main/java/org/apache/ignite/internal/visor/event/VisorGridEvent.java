@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -72,8 +73,15 @@ public class VisorGridEvent extends VisorDataTransferObject {
      * @param msg Event message.
      * @param shortDisplay Shortened version of {@code toString()} result.
      */
-    public VisorGridEvent(int typeId, IgniteUuid id, String name, UUID nid, long ts, @Nullable String msg,
-        String shortDisplay) {
+    public VisorGridEvent(
+        int typeId,
+        IgniteUuid id,
+        String name,
+        UUID nid,
+        long ts,
+        @Nullable String msg,
+        String shortDisplay
+    ) {
         this.typeId = typeId;
         this.id = id;
         this.name = name;
@@ -81,6 +89,13 @@ public class VisorGridEvent extends VisorDataTransferObject {
         this.ts = ts;
         this.msg = msg;
         this.shortDisplay = shortDisplay;
+    }
+
+    /**
+     * @param evt Event to wrap.
+     */
+    public VisorGridEvent(Event evt) {
+        this(evt.type(), evt.id(), evt.name(), evt.node().id(), evt.timestamp(), evt.message(), evt.shortDisplay());
     }
 
     /**

@@ -98,8 +98,8 @@ public class VisorTaskUtils {
     /** Throttle count for lost events. */
     private static final int EVENTS_LOST_THROTTLE = 10;
 
-    /** Period to grab events. */
-    private static final int EVENTS_COLLECT_TIME_WINDOW = 10 * 60 * 1000;
+    /** Maximum of events count to collect from node. */
+    private static final int MAX_EVTS_CNT = 200;
 
     /** Empty buffer for file block. */
     private static final byte[] EMPTY_FILE_BUF = new byte[0];
@@ -118,7 +118,6 @@ public class VisorTaskUtils {
 
     /** */
     public static final int REBALANCE_COMPLETE = 1;
-
 
     /** */
     private static final int DFLT_BUFFER_SIZE = 4096;
@@ -419,8 +418,8 @@ public class VisorTaskUtils {
      * Checks for explicit events configuration.
      *
      * @param ignite Grid instance.
-     * @param evts Event types.
-     * @return {@code true} if all task events explicitly specified in configuration.
+     * @param evts Event types to check.
+     * @return {@code true} if all specified events explicitly specified in configuration.
      */
     public static boolean checkExplicitEvents(Ignite ignite, int[] evts) {
         int[] curEvts = ignite.configuration().getIncludeEventTypes();
@@ -454,7 +453,7 @@ public class VisorTaskUtils {
      * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
      * @param evtMapper Closure to map grid events to Visor data transfer objects.
-     * @return Collections of node events
+     * @return Collections of node events.
      */
     public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         boolean all, IgniteClosure<Event, VisorGridEvent> evtMapper) {
@@ -475,10 +474,15 @@ public class VisorTaskUtils {
      * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
      * @param evtTypes Event types to collect.
      * @param evtMapper Closure to map grid events to Visor data transfer objects.
-     * @return Collections of node events
+     * @return Collections of node events.
      */
-    public static List<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
-        int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
+    public static List<VisorGridEvent> collectEvents(
+        Ignite ignite,
+        String evtOrderKey,
+        String evtThrottleCntrKey,
+        int[] evtTypes,
+        IgniteClosure<Event, VisorGridEvent> evtMapper
+    ) {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
 
@@ -496,9 +500,6 @@ public class VisorTaskUtils {
          * to make sure we are not grabbing GBs of data accidentally.
          */
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
-            /** Maximum of events count to collect from node. */
-            private static final int MAX_EVTS_CNT = 200;
-
             /** Collected events count. */
             private int cnt;
 
@@ -513,7 +514,7 @@ public class VisorTaskUtils {
         };
 
         Collection<Event> evts = ignite.configuration().getEventStorageSpi() instanceof NoopEventStorageSpi
-            ? Collections.<Event>emptyList()
+            ? Collections.emptyList()
             : ignite.events().localQuery(p, evtTypes);
 
         // Update latest order in node local, if not empty.
@@ -621,7 +622,7 @@ public class VisorTaskUtils {
             }
         );
 
-        Collections.sort(files, LAST_MODIFIED);
+        files.sort(LAST_MODIFIED);
 
         return files;
     }
@@ -1155,7 +1156,7 @@ public class VisorTaskUtils {
                 int len = octets.length;
 
                 for (int i = 0; i < len; i++) {
-                    long oct = F.isEmpty(octets[i]) ? 0 : Long.valueOf( octets[i]);
+                    long oct = F.isEmpty(octets[i]) ? 0 : Long.valueOf(octets[i]);
                     long pow = Double.valueOf(Math.pow(256, octets.length - 1 - i)).longValue();
 
                     bits = bits.add(BigDecimal.valueOf(oct * pow));
