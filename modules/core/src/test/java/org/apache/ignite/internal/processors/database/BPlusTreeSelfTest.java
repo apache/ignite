@@ -2743,6 +2743,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             super(
                 "test",
                 cacheId,
+                null,
                 pageMem,
                 null,
                 new AtomicLong(),
