@@ -17,9 +17,6 @@
 
 package org.apache.ignite.igfs;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -29,6 +26,10 @@ import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 
 /**
  * Tests fragmentizer work.
@@ -248,19 +249,16 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
 
         igfs.clear();
 
-        GridTestUtils.retryAssert(log, 50, 100, new CA() {
-            @Override public void apply() {
-                for (int i = 0; i < NODE_CNT; i++) {
-                    IgniteEx g = grid(i);
+        for (int i = 0; i < NODE_CNT; i++) {
+            IgniteEx g = grid(i);
 
-                    GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(
-                        g.igfsx("igfs").configuration().getDataCacheConfiguration().getName());
+            GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(
+                    g.igfsx("igfs").configuration().getDataCacheConfiguration().getName());
 
-                    assertTrue("Data cache is not empty [keys=" + cache.keySet() +
-                        ", node=" + g.localNode().id() + ']', cache.isEmpty());
-                }
-            }
-        });
+            boolean isCacheEmpty = GridTestUtils.waitForCondition(() -> cache.isEmpty(), 5000);
+            assertTrue("Data cache is not empty [keys=" + cache.keySet() +
+                    ", node=" + g.localNode().id() + ']', isCacheEmpty);
+        }
     }
 
     /**

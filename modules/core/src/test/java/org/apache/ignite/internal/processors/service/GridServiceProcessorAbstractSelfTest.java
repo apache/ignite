@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -47,6 +42,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests for {@link GridAffinityProcessor}.
@@ -293,20 +294,15 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
-        GridTestUtils.retryAssert(log, 50, 200, new CA() {
-            @Override public void apply() {
-                int cnt = 0;
+        AtomicInteger cnt = new AtomicInteger(0);
 
-                for (int i = 0; i < nodeCount(); i++) {
-                    Collection<DummyService> svcs = grid(i).services().services(name);
+        for (int i = 0; i < nodeCount(); i++) {
+            Collection<DummyService> svcs = grid(i).services().services(name);
 
-                    if (svcs != null)
-                        cnt += svcs.size();
-                }
-
-                assertEquals(nodeCount() * 2, cnt);
-            }
-        });
+            if (svcs != null)
+                cnt.addAndGet(svcs.size());
+        }
+        assertTrue(GridTestUtils.waitForCondition(() -> cnt.get() == nodeCount() * 2, 10000));
     }
 
     /**

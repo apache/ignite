@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,10 +28,11 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.TouchedExpiryPolicy;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * TTL manager self test.
@@ -108,16 +107,13 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
 
             U.sleep(1100);
 
-            GridTestUtils.retryAssert(log, 10, 100, new CAX() {
-                @Override public void applyx() {
-                    // Check that no more entries left in the map.
-                    assertNull(g.cache(DEFAULT_CACHE_NAME).get(key));
+            GridTestUtils.waitForCondition(() ->
+                    g.cache(DEFAULT_CACHE_NAME).get(key) == null // Check that no more entries left in the map.
+                    && (g.internalCache(DEFAULT_CACHE_NAME).context().deferredDelete()
+                        || g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(
+                                g.internalCache(DEFAULT_CACHE_NAME).context(), g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)) == null)
 
-                    if (!g.internalCache(DEFAULT_CACHE_NAME).context().deferredDelete())
-                        assertNull(g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(g.internalCache(DEFAULT_CACHE_NAME).context(),
-                            g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)));
-                }
-            });
+                    , 1000);
         }
         finally {
             stopAllGrids();

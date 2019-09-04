@@ -440,8 +440,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         if (caches.length < 2)
             return;
 
-        GridTestUtils.retryAssert(log, 50, 500, new CAX() {
-            @Override public void applyx() {
+        assert GridTestUtils.waitForCondition(() -> {
                 info("Checking partition maps.");
 
                 for (int i = 0; i < caches.length; i++)
@@ -452,7 +451,10 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
                 for (int i = 1; i < caches.length; i++) {
                     GridDhtPartitionFullMap cmp = caches[i].topology().partitionMap(true);
 
-                    assert orig.keySet().equals(cmp.keySet());
+                    if(!orig.keySet().equals(cmp.keySet())) {
+                        info("Cache[0] key set is not equal to cache[1] key set, rerun");
+                        return false;
+                    }
 
                     for (Map.Entry<UUID, GridDhtPartitionMap> entry : orig.entrySet()) {
                         UUID nodeId = entry.getKey();
@@ -461,22 +463,28 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                         GridDhtPartitionMap cmpMap = cmp.get(nodeId);
 
-                        assert cmpMap != null;
-
-                        assert nodeMap.keySet().equals(cmpMap.keySet());
+                        if (cmpMap == null || !nodeMap.keySet().equals(cmpMap.keySet())) {
+                            info("Cache key set is not equal to nodeMap key set, rerun");
+                            return false;
+                        }
 
                         for (Map.Entry<Integer, GridDhtPartitionState> nodeEntry : nodeMap.entrySet()) {
                             GridDhtPartitionState state = cmpMap.get(nodeEntry.getKey());
 
-                            assert state != null;
-                            assert state != GridDhtPartitionState.EVICTED;
-                            assert !strict || state == GridDhtPartitionState.OWNING : "Invalid partition state: " + state;
-                            assert state == nodeEntry.getValue();
+                            boolean isOk =
+                                state != null
+                                && state != GridDhtPartitionState.EVICTED
+                                && (!strict || state == GridDhtPartitionState.OWNING)
+                                && state == nodeEntry.getValue();
+                            if (!isOk) {
+                                info("Entry state is invalid, rerun");
+                                return false;
+                            }
                         }
                     }
                 }
-            }
-        });
+                return true;
+            }, 25000);
 
     }
 }
