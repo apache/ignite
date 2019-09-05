@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubqueryS
 import org.apache.ignite.internal.processors.query.oom.LocalQueryMemoryTrackerSelfTest;
 import org.apache.ignite.internal.processors.query.oom.LocalQueryMemoryTrackerWithQueryParallelismSelfTest;
 import org.apache.ignite.internal.processors.query.oom.QueryMemoryTrackerSelfTest;
+import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -164,7 +165,9 @@ import org.junit.runners.Suite;
     GridCachePartitionedTxMultiNodeSelfTest.class,
     GridCacheReplicatedTxMultiNodeBasicTest.class,
 
-    SqlPartOfComplexPkLookupTest.class
+    SqlPartOfComplexPkLookupTest.class,
+
+    SqlDataTypesCoverageTests.class
 })
 public class IgniteBinaryCacheQueryTestSuite2 {
 }
