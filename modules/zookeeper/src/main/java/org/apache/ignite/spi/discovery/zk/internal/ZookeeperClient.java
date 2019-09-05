@@ -76,7 +76,7 @@ public class ZookeeperClient implements Watcher {
     private final IgniteLogger log;
 
     /** */
-    private ConnectionState state = ConnectionState.Disconnected;
+    private ConnectionState state = ConnectionState.DISCONNECTED;
 
     /** */
     private long connLossTimeout;
@@ -150,7 +150,7 @@ public class ZookeeperClient implements Watcher {
         }
 
         synchronized (stateMux) {
-            if (connStartTime == this.connStartTime && state == ConnectionState.Disconnected)
+            if (connStartTime == this.connStartTime && state == ConnectionState.DISCONNECTED)
                 scheduleConnectionCheck();
         }
     }
@@ -167,7 +167,7 @@ public class ZookeeperClient implements Watcher {
      */
     boolean connected() {
         synchronized (stateMux) {
-            return state == ConnectionState.Connected;
+            return state == ConnectionState.CONNECTED;
         }
     }
 
@@ -194,7 +194,7 @@ public class ZookeeperClient implements Watcher {
             ConnectionState newState;
 
             synchronized (stateMux) {
-                if (state == ConnectionState.Lost) {
+                if (state == ConnectionState.LOST) {
                     U.warn(log, "Received event after connection was lost [evtState=" + evt.getState() + "]");
 
                     return;
@@ -215,26 +215,26 @@ public class ZookeeperClient implements Watcher {
                         break;
 
                     case Disconnected:
-                        newState = ConnectionState.Disconnected;
+                        newState = ConnectionState.DISCONNECTED;
 
                         break;
 
                     case SyncConnected:
-                        newState = ConnectionState.Connected;
+                        newState = ConnectionState.CONNECTED;
 
                         break;
 
                     case Expired:
-                        U.warn(log, "Session expired, changing state to Lost");
+                        U.warn(log, "Session expired, changing state to LOST");
 
-                        newState = ConnectionState.Lost;
+                        newState = ConnectionState.LOST;
 
                         break;
 
                     default:
                         U.error(log, "Unexpected state for ZooKeeper client, close connection: " + zkState);
 
-                        newState = ConnectionState.Lost;
+                        newState = ConnectionState.LOST;
                 }
 
                 if (newState != state) {
@@ -243,29 +243,29 @@ public class ZookeeperClient implements Watcher {
 
                     state = newState;
 
-                    if (newState == ConnectionState.Disconnected) {
+                    if (newState == ConnectionState.DISCONNECTED) {
                         connStartTime = System.currentTimeMillis();
 
                         scheduleConnectionCheck();
                     }
-                    else if (newState == ConnectionState.Connected) {
+                    else if (newState == ConnectionState.CONNECTED) {
                         retryCount.set(0);
 
                         stateMux.notifyAll();
                     }
                     else
-                        assert state == ConnectionState.Lost : state;
+                        assert state == ConnectionState.LOST : state;
                 }
                 else
                     return;
             }
 
-            if (newState == ConnectionState.Lost) {
+            if (newState == ConnectionState.LOST) {
                 closeClient();
 
                 notifyConnectionLost();
             }
-            else if (newState == ConnectionState.Connected) {
+            else if (newState == ConnectionState.CONNECTED) {
                 for (ZkAsyncOperation op : retryQ)
                     op.execute();
             }
@@ -276,7 +276,7 @@ public class ZookeeperClient implements Watcher {
      *
      */
     private void notifyConnectionLost() {
-        if (!closing && state == ConnectionState.Lost && connLostC != null)
+        if (!closing && state == ConnectionState.LOST && connLostC != null)
             connLostC.run();
 
         connTimer.cancel();
@@ -851,7 +851,7 @@ public class ZookeeperClient implements Watcher {
 
             U.warn(log, "Failed to execute ZooKeeper operation [err=" + e + ", state=" + state + ']');
 
-            if (state == ConnectionState.Lost) {
+            if (state == ConnectionState.LOST) {
                 U.error(log, "Operation failed with unexpected error, connection lost: " + e, e);
 
                 throw new ZookeeperClientFailedException(e);
@@ -862,8 +862,8 @@ public class ZookeeperClient implements Watcher {
             if (retry) {
                 long remainingTime;
 
-                if (state == ConnectionState.Connected && connStartTime == prevConnStartTime) {
-                    state = ConnectionState.Disconnected;
+                if (state == ConnectionState.CONNECTED && connStartTime == prevConnStartTime) {
+                    state = ConnectionState.DISCONNECTED;
 
                     connStartTime = System.currentTimeMillis();
 
@@ -872,12 +872,12 @@ public class ZookeeperClient implements Watcher {
                 else {
                     assert connStartTime != 0;
 
-                    assert state == ConnectionState.Disconnected : state;
+                    assert state == ConnectionState.DISCONNECTED : state;
 
                     remainingTime = connLossTimeout - (System.currentTimeMillis() - connStartTime);
 
                     if (remainingTime <= 0) {
-                        state = ConnectionState.Lost;
+                        state = ConnectionState.LOST;
 
                         U.warn(log, "Failed to establish ZooKeeper connection, close client " +
                             "[timeout=" + connLossTimeout + ']');
@@ -905,7 +905,7 @@ public class ZookeeperClient implements Watcher {
             else {
                 U.error(log, "Operation failed with unexpected error, close ZooKeeper client: " + e, e);
 
-                state = ConnectionState.Lost;
+                state = ConnectionState.LOST;
 
                 err = new ZookeeperClientFailedException(e);
             }
@@ -960,7 +960,7 @@ public class ZookeeperClient implements Watcher {
      *
      */
     private void scheduleConnectionCheck() {
-        assert state == ConnectionState.Disconnected : state;
+        assert state == ConnectionState.DISCONNECTED : state;
 
         connTimer.schedule(new ConnectionTimeoutTask(connStartTime), connLossTimeout);
     }
@@ -1298,10 +1298,10 @@ public class ZookeeperClient implements Watcher {
                 if (closing)
                     return;
 
-                if (state == ConnectionState.Disconnected &&
+                if (state == ConnectionState.DISCONNECTED &&
                     ZookeeperClient.this.connStartTime == connectStartTime) {
 
-                    state = ConnectionState.Lost;
+                    state = ConnectionState.LOST;
 
                     U.warn(log, "Failed to establish ZooKeeper connection, close client " +
                         "[timeout=" + connLossTimeout + ']');
@@ -1323,10 +1323,10 @@ public class ZookeeperClient implements Watcher {
      */
     private enum ConnectionState {
         /** */
-        Connected,
+        CONNECTED,
         /** */
-        Disconnected,
+        DISCONNECTED,
         /** */
-        Lost
+        LOST
     }
 }
