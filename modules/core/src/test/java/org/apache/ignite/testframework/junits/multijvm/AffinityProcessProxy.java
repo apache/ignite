@@ -17,6 +17,9 @@
 
 package org.apache.ignite.testframework.junits.multijvm;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -24,11 +27,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Proxy class for affinity at another JVM.
  */

@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -28,11 +34,11 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
-import java.util.*;
-
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CachePeekMode.*;
+import static org.apache.ignite.cache.CachePeekMode.BACKUP;
+import static org.apache.ignite.cache.CachePeekMode.NEAR;
+import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
