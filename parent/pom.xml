@@ -234,6 +234,40 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+                <exclusions>
+                    <exclusion>
+                        <!-- This dependency is not available in some JDKs.-->
+                        <groupId>jdk.tools</groupId>
+                        <artifactId>jdk.tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-common</artifactId>
+                <exclusions>
+                    <exclusion>
+                        <!-- This dependency is not available in some JDKs.-->
+                        <groupId>jdk.tools</groupId>
+                        <artifactId>jdk.tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-common</artifactId>
+                <type>test-jar</type>
+                <exclusions>
+                    <exclusion>
+                        <!-- This dependency is not available in some JDKs.-->
+                        <groupId>jdk.tools</groupId>
+                        <artifactId>jdk.tools</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -1094,35 +1128,6 @@
                     </plugin>
                 </plugins>
             </build>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <type>test-jar</type>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-
         </profile>
 
         <profile>
@@ -1157,6 +1162,24 @@
                     <scope>system</scope>
                     <version>${java.version}</version>
                     <systemPath>${java.home}/../Classes/classes.jar</systemPath>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>tools.jar-j9</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/lib/tools.jar</exists>
+                </file>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <scope>system</scope>
+                    <version>${java.version}</version>
+                    <systemPath>${java.home}/lib/tools.jar</systemPath>
                 </dependency>
             </dependencies>
         </profile>
