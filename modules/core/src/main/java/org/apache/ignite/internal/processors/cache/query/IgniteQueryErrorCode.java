@@ -100,6 +100,9 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
+    /** Attempt to INSERT, UPDATE or DELETE value on read-only cluster. */
+    public static final int CLUSTER_READ_ONLY_MODE_ENABLED = 4011;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
@@ -150,6 +153,9 @@ public final class IgniteQueryErrorCode {
             case UNEXPECTED_ELEMENT_TYPE:
             case KEY_UPDATE:
                 return SqlStateCode.PARSING_EXCEPTION;
+
+            case CLUSTER_READ_ONLY_MODE_ENABLED:
+                return SqlStateCode.CLUSTER_READ_ONLY_MODE_ENABLED;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

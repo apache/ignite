@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.client;
 
 /**
- *  Interface for manage state of grid cluster.
+ *  Interface for manage state of grid cluster and obtain information about it: ID and tag.
  */
 public interface GridClientClusterState {
     /**
@@ -30,4 +30,18 @@ public interface GridClientClusterState {
      * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
      */
     public boolean active() throws GridClientException;
+
+    /**
+     * @return {@code True} if the cluster is in read-only mode and {@code False} otherwise.
+     * @throws GridClientException If request current cluster read-only mode failed.
+     */
+    public boolean readOnly() throws GridClientException;
+
+    /**
+     * Enable or disable Ignite grid read-only mode.
+     *
+     * @param readOnly If {@code True} enable read-only mode. If {@code False} disable read-only mode.
+     * @throws GridClientException If change of read-only mode is failed.
+     */
+    public void readOnly(boolean readOnly) throws GridClientException;
 }

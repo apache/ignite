@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
  namespace Apache.Ignite.Core.Tests.ApiParity
 {
     using Apache.Ignite.Core.Cluster;
@@ -40,7 +40,8 @@
         {
             "enableStatistics",  // IGNITE-7276
             "setTxTimeoutOnPartitionMapExchange", // IGNITE-8075
-            "clearStatistics"  // IGNITE-9017
+            "clearStatistics"  // IGNITE-9017,
+            "readOnly"            // GG-23363
         };
 
         /// <summary>

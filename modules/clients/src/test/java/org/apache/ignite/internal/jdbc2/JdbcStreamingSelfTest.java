@@ -20,19 +20,21 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -169,20 +171,47 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    public void testStreamedInsertFailsOnReadOnlyMode() throws Exception {
+        try (Connection conn = createStreamedConnection(true)) {
+            populateData(conn, 0, 1);
+
+            grid(0).cluster().readOnly(true);
+
+            try {
+                assertTrue(grid(0).cluster().readOnly());
+
+                try (Connection ordinalCon = createOrdinaryConnection()) {
+                    assertEquals(1, countPersons(ordinalCon));
+
+                    try {
+                        populateData(conn, 1, 100);
+
+                        fail("Insert should be failed!");
+                    }
+                    catch (Exception e) {
+                        log.error("Insert failed", e);
+
+                        assertTrue("Wrong exception", X.hasCause(e, IgniteClusterReadOnlyException.class));
+                    }
+
+                    assertEquals("Insert should be failed", 1, countPersons(ordinalCon));
+                }
+            }
+            finally {
+                grid(0).cluster().readOnly(false);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
     public void testStreamedInsert() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(false)) {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") " +
-                "values (?, ?)")) {
-                for (int i = 1; i <= 100; i++) {
-                    stmt.setInt(1, i);
-                    stmt.setString(2, nameForId(i));
-
-                    stmt.executeUpdate();
-                }
-            }
+            populateData(conn, 1, 100);
         }
 
         U.sleep(500);
@@ -204,15 +233,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
             put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(false)) {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") " +
-                "values (?, ?)")) {
-                for (int i = 1; i <= 100; i++) {
-                    stmt.setInt(1, i);
-                    stmt.setString(2, nameForId(i));
-
-                    stmt.executeUpdate();
-                }
-            }
+            populateData(conn, 1, 100);
         }
 
         U.sleep(500);
@@ -234,15 +255,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
             put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(true)) {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") " +
-                "values (?, ?)")) {
-                for (int i = 1; i <= 100; i++) {
-                    stmt.setInt(1, i);
-                    stmt.setString(2, nameForId(i));
-
-                    stmt.executeUpdate();
-                }
-            }
+            populateData(conn, 1, 100);
         }
 
         U.sleep(500);
@@ -326,5 +339,39 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         assertTrue(String.valueOf(o), o instanceof BinaryObject);
 
         return ((BinaryObject)o).field("name");
+    }
+
+    /**
+     * Populates data to the table.
+     *
+     * @param conn Connection.
+     * @param from First person id.
+     * @param count Number of persons.
+     * @throws SQLException If something goes wrong.
+     */
+    private void populateData(Connection conn, int from, int count) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") values (?, ?)")) {
+            for (int i = from; i < from + count; i++) {
+                stmt.setInt(1, i);
+                stmt.setString(2, nameForId(i));
+
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * @param conn Connection.
+     * @return Size of PUBLIC.Person table.
+     * @throws SQLException If something goes wrong.
+     */
+    private long countPersons(Connection conn) throws SQLException {
+        try (Statement selectStmt = conn.createStatement()) {
+            try (ResultSet rs = selectStmt.executeQuery("select count(*) from PUBLIC.Person")) {
+                assertTrue("Result set is empty!", rs.next());
+
+                return rs.getLong(1);
+            }
+        }
     }
 }

@@ -49,7 +49,13 @@ public enum CommandList {
     WAL("--wal", new WalCommands()),
 
     /** */
-    DIAGNOSTIC("--diagnostic", new DiagnosticCommand());
+    DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
+
+    /** */
+    READ_ONLY_ENABLE("--read-only-on", new ClusterReadOnlyModeEnableCommand()),
+
+    /** */
+    READ_ONLY_DISABLE("--read-only-off", new ClusterReadOnlyModeDisableCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
