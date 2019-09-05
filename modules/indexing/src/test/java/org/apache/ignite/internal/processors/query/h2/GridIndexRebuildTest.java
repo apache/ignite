@@ -52,7 +52,6 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -141,7 +140,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
      * checke indexes by "validate indexes" task.
      */
     @SuppressWarnings("unchecked")
-    @Test
     public void testFullIndexRebuild() throws Exception {
 
         long start = System.currentTimeMillis();
@@ -244,7 +242,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
      * indexes" task.
      */
     @SuppressWarnings("unchecked")
-    @Test
     public void testPartialIndexRebuild() throws Exception {
         LogListener lsnr = LogListener
             .matches("B+Tree is corrupted")
