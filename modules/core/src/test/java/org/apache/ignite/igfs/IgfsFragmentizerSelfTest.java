@@ -17,6 +17,9 @@
 
 package org.apache.ignite.igfs;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -25,10 +28,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 
 /**
  * Tests fragmentizer work.

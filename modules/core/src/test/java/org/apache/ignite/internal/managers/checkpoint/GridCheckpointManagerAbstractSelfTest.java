@@ -17,9 +17,22 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CheckpointEvent;
@@ -41,18 +54,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hsqldb.jdbc.jdbcDataSource;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.compute.ComputeTaskSessionScope.GLOBAL_SCOPE;
 import static org.apache.ignite.compute.ComputeTaskSessionScope.SESSION_SCOPE;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_LOADED;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_REMOVED;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_SAVED;
 
 /**
  *
