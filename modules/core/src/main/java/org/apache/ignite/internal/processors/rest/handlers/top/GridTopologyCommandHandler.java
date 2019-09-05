@@ -144,12 +144,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                         node = null;
                 }
                 else
-                    node = F.find(ctx.discovery().allNodes(), null, new P1<ClusterNode>() {
-                        @Override
-                        public boolean apply(ClusterNode n) {
-                            return containsIp(n.addresses(), ip);
-                        }
-                    });
+                    node = F.find(ctx.discovery().allNodes(), null, (P1<ClusterNode>)n -> containsIp(n.addresses(), ip));
 
                 if (node != null)
                     res.setResponse(createNodeBean(node, mtr, attr, caches));

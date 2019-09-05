@@ -121,11 +121,6 @@ if [ -z "$JVM_OPTS" ] ; then
 fi
 
 #
-# Disable update notifier.
-#
-JVM_OPTS="-DIGNITE_UPDATE_NOTIFIER=false ${JVM_OPTS}"
-
-#
 # Set 'file.encoding' to UTF-8 default if not specified otherwise
 #
 case "${JVM_OPTS:-}" in

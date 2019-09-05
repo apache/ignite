@@ -54,6 +54,8 @@
             <AppenderRef ref="FILE"/>
         </Logger>
 
+        <Logger name="org.apache.ignite.spi.checkpoint.noop" level="ERROR"/>
+
         <Logger name="org.gridgain.console.web.controller.OverrideRequestMappingConfiguration$OverrideRequestMappingHandlerMapping" level="WARN"/>
 
         <Logger name="org.springframework" level="WARN"/>
