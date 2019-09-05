@@ -156,7 +156,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
             }
         });
 
-        fields[cnt] = "ROW_ID";
+        fields[cnt] = "monitoringRowId";
         types[cnt] = SimpleType.INTEGER;
 
         try {
@@ -181,7 +181,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
                 mlist.rowClass().getName(),
                 mlist.description(),
                 rowType,
-                new String[] {"ROW_ID"}
+                new String[] {"monitoringRowId"}
             );
         }
         catch (OpenDataException e) {
@@ -191,7 +191,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
 
     /** {@inheritDoc} */
     @Override public Object getAttribute(String attribute) {
-        if (attribute.equals("MBeanInfo"))
+        if ("MBeanInfo".equals(attribute))
             return getMBeanInfo();
 
         if (attribute.equals(LIST)) {
@@ -209,7 +209,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
 
                     mlist.walker().visitAllWithValues(row, visitor);
 
-                    data.put("ROW_ID", idx++);
+                    data.put("monitoringRowId", idx++);
 
                     rows.put(new CompositeDataSupport(rowType, data));
                 }

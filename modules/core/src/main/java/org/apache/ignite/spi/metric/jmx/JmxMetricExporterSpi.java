@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
 import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
+import static org.apache.ignite.spi.metric.jmx.MonitoringListMBean.LIST;
 
 /**
  * This SPI implementation exports metrics as JMX beans.
@@ -91,7 +92,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
                 igniteInstanceName,
-                "list",
+                LIST,
                 mlist.name(),
                 mlBean,
                 MonitoringListMBean.class);
@@ -112,7 +113,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
      * @param mlist Monitoring list.
      */
     private void unregister(MonitoringList<?,?> mlist) {
-        unregister("list", mlist.name());
+        unregister(LIST, mlist.name());
     }
 
     /**

@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.metric.jmx.MonitoringListMBean;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
@@ -65,6 +64,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.spi.metric.jmx.MonitoringListMBean.LIST;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -189,13 +189,13 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         mmgr.list("test", "description", CacheView.class);
 
-        DynamicMBean listBean = mbean("list", "test");
+        DynamicMBean listBean = mbean(LIST, "test");
 
         assertNotNull(listBean);
 
         mmgr.removeList("test");
 
-        assertThrowsWithCause(() -> mbean("list", "test"), IgniteException.class);
+        assertThrowsWithCause(() -> mbean(LIST, "test"), IgniteException.class);
     }
 
     /** */
@@ -403,13 +403,13 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     public TabularDataSupport monitoringList(String name) {
         try {
-            DynamicMBean caches = mbean("list", name);
+            DynamicMBean caches = mbean(LIST, name);
 
             MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
 
             assertEquals(1, attrs.length);
 
-            return (TabularDataSupport)caches.getAttribute(MonitoringListMBean.LIST);
+            return (TabularDataSupport)caches.getAttribute(LIST);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
