@@ -18,6 +18,7 @@ package org.apache.ignite.marshaller;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -265,6 +266,6 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         assert fileContent != null && fileContent.length > 0;
 
-        assertEquals(expected, new String(fileContent));
+        assertEquals(expected, new String(fileContent, StandardCharsets.UTF_8));
     }
 }
