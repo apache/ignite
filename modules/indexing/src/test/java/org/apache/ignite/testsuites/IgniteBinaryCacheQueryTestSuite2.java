@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetry
 import org.apache.ignite.internal.processors.query.h2.twostep.NoneOrSinglePartitionsQueryOptimizationsTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
+import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -177,6 +178,9 @@ import org.junit.runners.Suite;
     GridCachePartitionedTxMultiNodeSelfTest.class,
     GridCacheReplicatedTxMultiNodeBasicTest.class,
 
+    SqlPartOfComplexPkLookupTest.class,
+
+    SqlDataTypesCoverageTests.class,
     SqlPartOfComplexPkLookupTest.class,
 
     IgniteCacheLocalQueryDefaultTimeoutSelfTest.class,
