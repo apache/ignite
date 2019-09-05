@@ -68,7 +68,7 @@ public class CacheView implements MonitoringRow<String> {
 
     /** @see DynamicCacheDescriptor#cacheId() */
     @Order(1)
-    public Integer cacheId() {
+    public int cacheId() {
         return cache.cacheId();
     }
 
@@ -168,10 +168,9 @@ public class CacheView implements MonitoringRow<String> {
         return cache.cacheConfiguration().isEncryptionEnabled();
     }
 
-    /** @see CacheConfiguration#getCacheMode()  */
-    public Integer backups() {
-        return cache.cacheConfiguration().getCacheMode() == CacheMode.REPLICATED ?
-            null : cache.cacheConfiguration().getBackups();
+    /** @see CacheConfiguration#getBackups() */
+    public int backups() {
+        return cache.cacheConfiguration().getBackups();
     }
 
     /** @see CacheConfiguration#getAffinity() */

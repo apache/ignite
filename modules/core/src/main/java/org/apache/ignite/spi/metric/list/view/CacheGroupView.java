@@ -96,8 +96,8 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** @return Partitions count. */
-    public Integer partitionsCount() {
-        return ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null;
+    public int partitionsCount() {
+        return ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : -1;
     }
 
     /** @return Node filter string representation. */
@@ -152,7 +152,7 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     }
 
     /** @return Backups count. */
-    public Integer backups() {
-        return ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups();
+    public int backups() {
+        return ccfg.getBackups();
     }
 }
