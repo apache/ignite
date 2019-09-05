@@ -51,10 +51,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_D
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_SYSTEM_TIME_HISTOGRAM;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_SYSTEM_TIME;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_USER_TIME;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_USER_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_SYSTEM_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_TOTAL_SYSTEM_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_TOTAL_USER_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_USER_TIME_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 
 /**

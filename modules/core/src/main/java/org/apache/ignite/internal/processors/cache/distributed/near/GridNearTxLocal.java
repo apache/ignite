@@ -226,9 +226,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private IgniteTxManager.TxDumpsThrottling txDumpsThrottling;
 
     /** */
-    private IgniteTxManager txManager;
-
-    /** */
     @GridToStringExclude
     private TransactionProxyImpl proxy;
 
@@ -275,7 +272,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param lb Label.
      * @param tracingEnabled {@code true} if the transaction should be traced.
      * @param txDumpsThrottling Log throttling information.
-     * @param txManager Transaction manager.
      */
     public GridNearTxLocal(
         GridCacheSharedContext ctx,
@@ -293,8 +289,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         int taskNameHash,
         @Nullable String lb,
         boolean tracingEnabled,
-        IgniteTxManager.TxDumpsThrottling txDumpsThrottling,
-        IgniteTxManager txManager
+        IgniteTxManager.TxDumpsThrottling txDumpsThrottling
     ) {
         super(
             ctx,
@@ -320,8 +315,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         this.mvccOp = mvccOp;
 
         this.txDumpsThrottling = txDumpsThrottling;
-
-        this.txManager = txManager;
 
         initResult();
 
@@ -3834,7 +3827,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             //in some cases totalTimeMillis can be less than systemTimeMillis, as they are calculated with different precision
             long userTimeMillis = Math.max(totalTimeMillis - systemTimeMillis, 0);
 
-            txManager.writeNearTxMetrics(systemTimeMillis, userTimeMillis);
+            cctx.txMetrics().onNearTxComplete(systemTimeMillis, userTimeMillis);
 
             boolean willBeSkipped = txDumpsThrottling == null || txDumpsThrottling.skipCurrent();
 
