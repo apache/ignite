@@ -123,6 +123,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TXS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TXS_MON_LIST_DESC;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -323,8 +325,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
 
-        this.txMonList = cctx.kernalContext().metric().list("transactions", "Running transactions",
-            TransactionView.class);
+        this.txMonList = cctx.kernalContext().metric().list(TXS_MON_LIST, TXS_MON_LIST_DESC, TransactionView.class);
     }
 
     /** {@inheritDoc} */

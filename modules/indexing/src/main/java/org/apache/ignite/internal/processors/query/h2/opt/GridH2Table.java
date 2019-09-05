@@ -86,6 +86,8 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_IDXS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_IDXS_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
@@ -260,7 +262,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
 
         GridKernalContext ctx = cacheInfo.kernalContext();
 
-        idxMonList = ctx.metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
+        idxMonList = ctx.metric().list(SQL_IDXS_MON_LIST, SQL_IDXS_MON_LIST_DESC, SqlIndexView.class);
 
         for (Index idx : idxs)
             addToMonitoring(idx);

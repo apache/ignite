@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.metric.list.view.SqlIndexView;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
@@ -35,6 +36,12 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.execute;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_IDXS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_IDXS_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_TBLS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_TBLS_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
@@ -60,7 +67,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     public void testSchemas() throws Exception {
         try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
             MonitoringList<String, SqlSchemaView> schemasMonList =
-                g.context().metric().list(metricName("sql", "schemas"), "SQL schemas", SqlSchemaView.class);
+                g.context().metric().list(SQL_SCHEMA_MON_LIST, SQL_SCHEMA_MON_LIST_DESC, SqlSchemaView.class);
 
             Set<String> schemaFromMon = new HashSet<>();
 
@@ -75,7 +82,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     public void testTables() throws Exception {
         try (IgniteEx g = startGrid()) {
             MonitoringList<String, SqlTableView> tblsMonList =
-                g.context().metric().list(metricName("sql", "tables"), "SQL tables", SqlTableView.class);
+                g.context().metric().list(SQL_TBLS_MON_LIST, SQL_TBLS_MON_LIST_DESC, SqlTableView.class);
 
             assertEquals(0, tblsMonList.size());
 
@@ -113,7 +120,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     public void testIndexes() throws Exception {
         try (IgniteEx g = startGrid()) {
             MonitoringList<String, SqlIndexView> idxMonList =
-                g.context().metric().list(metricName("sql", "indexes"), "SQL indexes", SqlIndexView.class);
+                g.context().metric().list(SQL_IDXS_MON_LIST, SQL_IDXS_MON_LIST_DESC, SqlIndexView.class);
 
             assertEquals(0, idxMonList.size());
 

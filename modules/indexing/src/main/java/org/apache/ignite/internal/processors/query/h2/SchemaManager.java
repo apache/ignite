@@ -69,7 +69,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_TBLS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_TBLS_MON_LIST_DESC;
 
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
@@ -125,8 +128,8 @@ public class SchemaManager {
         this.ctx = ctx;
         this.connMgr = connMgr;
 
-        this.schMonList = ctx.metric().list(metricName("sql", "schemas"), "SQL schemas", SqlSchemaView.class);
-        this.tblsMonList = ctx.metric().list(metricName("sql", "tables"), "SQL tables", SqlTableView.class);
+        this.schMonList = ctx.metric().list(SQL_SCHEMA_MON_LIST, SQL_SCHEMA_MON_LIST_DESC, SqlSchemaView.class);
+        this.tblsMonList = ctx.metric().list(SQL_TBLS_MON_LIST, SQL_TBLS_MON_LIST_DESC, SqlTableView.class);
 
         log = ctx.log(SchemaManager.class);
     }

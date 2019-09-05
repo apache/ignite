@@ -36,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.UUID;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLI_CONN_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLI_CONN_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
@@ -81,8 +83,7 @@ public abstract class ClientListenerAbstractConnectionContext
         this.ctx = ctx;
         this.connId = connId;
         this.ses = ses;
-        this.connMonList = ctx.metric().list(metricName("client", "connections"), "Client connections",
-            ClientConnectionView.class);
+        this.connMonList = ctx.metric().list(CLI_CONN_MON_LIST, CLI_CONN_MON_LIST_DESC, ClientConnectionView.class);
     }
 
     /**

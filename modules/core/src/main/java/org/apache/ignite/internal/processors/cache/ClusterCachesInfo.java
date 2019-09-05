@@ -82,6 +82,10 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST_DESC;
 
 /**
  * Logic related to cache discovery data processing.
@@ -166,8 +170,8 @@ class ClusterCachesInfo {
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        cachesMonList = ctx.metric().list("caches", "Caches", CacheView.class);
-        cachesGrpMonList = ctx.metric().list("cacheGroups", "Cache groups", CacheGroupView.class);
+        cachesMonList = ctx.metric().list(CACHES_MON_LIST, CACHES_MON_LIST_DESC, CacheView.class);
+        cachesGrpMonList = ctx.metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC, CacheGroupView.class);
 
         log = ctx.log(getClass());
     }

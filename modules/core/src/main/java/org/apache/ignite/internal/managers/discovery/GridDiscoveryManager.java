@@ -165,6 +165,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMP
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.NODES_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.NODES_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -288,7 +290,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
 
-        nodes = ctx.metric().list("nodes", "Cluster nodes", ClusterNodeView.class);
+        nodes = ctx.metric().list(NODES_MON_LIST, NODES_MON_LIST_DESC, ClusterNodeView.class);
     }
 
     /** {@inheritDoc} */

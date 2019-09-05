@@ -94,6 +94,8 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST_DESC;
 
 /**
  * Ignite service processor.
@@ -198,7 +200,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        svcsMonList = ctx.metric().list("services", "Services", ServiceView.class);
+        svcsMonList = ctx.metric().list(SVCS_MON_LIST, SVCS_MON_LIST_DESC, ServiceView.class);
     }
 
     /** {@inheritDoc} */

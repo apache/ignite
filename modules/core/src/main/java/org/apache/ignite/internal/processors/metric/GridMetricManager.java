@@ -185,6 +185,84 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Histogram of blocking PME durations metric name. */
     public static final String PME_OPS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
 
+    /** */
+    public static final String NODES_MON_LIST = "nodes";
+
+    /** */
+    public static final String NODES_MON_LIST_DESC = "Cluster nodes";
+
+    /** */
+    public static final String CACHES_MON_LIST = "caches";
+
+    /** */
+    public static final String CACHE_GRPS_MON_LIST = "cacheGroups";
+
+    /** */
+    public static final String CACHES_MON_LIST_DESC = "Caches";
+
+    /** */
+    public static final String CACHE_GRPS_MON_LIST_DESC = "Cache groups";
+
+    /** */
+    public static final String TXS_MON_LIST = "transactions";
+
+    /** */
+    public static final String TXS_MON_LIST_DESC = "Running transactions";
+
+    /** */
+    public static final String CQ_MON_LIST = metricName("query", "continuous");
+
+    /** */
+    public static final String CQ_MON_LIST_DESC = "Continuous queries";
+
+    /** */
+    public static final String CLI_CONN_MON_LIST = metricName("client", "connections");
+
+    /** */
+    public static final String CLI_CONN_MON_LIST_DESC = "Client connections";
+
+    /** */
+    public static final String SVCS_MON_LIST = "services";
+
+    /** */
+    public static final String SVCS_MON_LIST_DESC = "Services";
+
+    /** */
+    public static final String TASKS_MON_LIST = "tasks";
+
+    /** */
+    public static final String TASKS_MON_LIST_DESC = "Running compute tasks";
+
+    /** */
+    public static final String SQL_QRY_MON_LIST = metricName("query", "sql");
+
+    /** */
+    public static final String SQL_QRY_MON_LIST_DESC = "SQL queries";
+
+    /** */
+    public static final String TEXT_QRY_MON_LIST = metricName("query", "text");
+
+    /** */
+    public static final String TEXT_QRY_MON_LIST_DESC = "Text queries";
+
+    /** */
+    public static final String SQL_SCHEMA_MON_LIST = metricName("sql", "schemas");
+
+    /** */
+    public static final String SQL_SCHEMA_MON_LIST_DESC = "SQL schemas";
+
+    /** */
+    public static final String SQL_TBLS_MON_LIST = metricName("sql", "tables");
+
+    /** */
+    public static final String SQL_TBLS_MON_LIST_DESC = "SQL tables";
+
+    /** */
+    public static final String SQL_IDXS_MON_LIST = metricName("sql", "indexes");
+
+    /** */
+    public static final String SQL_IDXS_MON_LIST_DESC = "SQL indexes";
+
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
@@ -222,7 +300,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Lists registry. */
     private final ReadOnlyMonitoringListRegistry listRegistry = new ReadOnlyMonitoringListRegistry() {
         /** {@inheritDoc} */
-        @Override public void addListCreationListener(Consumer<MonitoringList> lsnr) {
+        @Override public void addListCreationListener(Consumer<MonitoringList<?, ?>> lsnr) {
             listCreationLsnrs.add(lsnr);
         }
 
@@ -236,7 +314,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** List creation listeners. */
-    private final List<Consumer<MonitoringList>> listCreationLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<MonitoringList<?, ?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;

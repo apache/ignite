@@ -127,7 +127,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_QRY_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_QRY_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
@@ -297,7 +298,7 @@ public class CommandProcessor {
         String err = null;
 
         GridRunningQueryInfo runningQryInfo =
-            ctx.metric().list(metricName("query", "sql"), "SQL queries", GridRunningQueryInfo.class).get(qryId);
+            ctx.metric().list(SQL_QRY_MON_LIST, SQL_QRY_MON_LIST_DESC, GridRunningQueryInfo.class).get(qryId);
 
         if (runningQryInfo == null)
             err = "Query with provided ID doesn't exist " +
@@ -1288,7 +1289,7 @@ public class CommandProcessor {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            ctx.metric().list(metricName("query", "sql"), "SQL queries", QueryView.class), qryId);
+            ctx.metric().list(SQL_QRY_MON_LIST, SQL_QRY_MON_LIST_DESC, QueryView.class), qryId);
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 

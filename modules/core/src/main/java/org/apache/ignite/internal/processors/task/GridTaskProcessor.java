@@ -95,6 +95,8 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
@@ -168,7 +170,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
-        taskMonList = ctx.metric().list("tasks", "Running compute tasks", ComputeTaskView.class);
+        taskMonList = ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC, ComputeTaskView.class);
     }
 
     /** {@inheritDoc} */

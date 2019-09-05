@@ -208,7 +208,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_QRY_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_QRY_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TEXT_QRY_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TEXT_QRY_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_MONITORING;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
@@ -2116,8 +2119,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         mmgr.registerWalker(SqlTableView.class, new SqlTableViewWalker());
         mmgr.registerWalker(SqlIndexView.class, new SqlIndexViewWalker());
 
-        sqlQryMonList = mmgr.list(metricName("query", "sql"), "SQL queries", QueryView.class);
-        textQryMonList = mmgr.list(metricName("query", "text"), "Text queries", QueryView.class);
+        sqlQryMonList = mmgr.list(SQL_QRY_MON_LIST, SQL_QRY_MON_LIST_DESC, QueryView.class);
+        textQryMonList = mmgr.list(TEXT_QRY_MON_LIST, TEXT_QRY_MON_LIST_DESC, QueryView.class);
 
         partReservationMgr = new PartitionReservationManager(ctx);
 
