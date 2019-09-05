@@ -158,10 +158,12 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
     }
 
     /**
+     * Extract column array for specific {@link MonitoringList}.
      *
      * @param mlist Monitoring list.
      * @param <R> Row type.
-     * @return SQL column list for {@code rowClass}.
+     * @return SQL column array for {@code rowClass}.
+     * @see MonitoringList#rowClass()
      */
     private static <Id, R extends MonitoringRow<Id>> Column[] columnsList(MonitoringList<Id, R> mlist) {
         Column[] cols = new Column[mlist.walker().count()];
@@ -256,7 +258,13 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
     }
 
     /**
-     * @param name Name to convert
+     * Build SQL-like name from Java code style name.
+     * Some examples:
+     *
+     * cacheName -> CACHE_NAME.
+     * affinitiKeyName -> AFFINITY_KEY_NAME.
+     *
+     * @param name Name to convert.
      * @return SQL compatible name.
      */
     private static String sqlName(String name) {

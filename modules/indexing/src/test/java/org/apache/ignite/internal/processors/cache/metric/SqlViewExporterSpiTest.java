@@ -148,8 +148,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(expVals, vals);
     }
 
-    @Test
     /** */
+    @Test
     public void testCachesList() throws Exception {
         Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
 
@@ -166,8 +166,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(cacheNames.toString(), cacheNames.isEmpty());
     }
 
-    @Test
     /** */
+    @Test
     public void testCacheGroupsList() throws Exception {
         Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
 
@@ -184,8 +184,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(grpNames.toString(), grpNames.isEmpty());
     }
 
-    @Test
     /** */
+    @Test
     public void testComputeBroadcast() throws Exception {
         for (int i = 0; i < 5; i++) {
             ignite.compute().broadcastAsync(() -> {
@@ -222,8 +222,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals("0", t.get(6));
     }
 
-    @Test
     /** */
+    @Test
     public void testServices() throws Exception {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
@@ -256,8 +256,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(srvcCfg.getMaxPerNodeCount(), sview.get(4));
     }
 
-    @Test
     /** */
+    @Test
     public void testContinuousQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
 
@@ -279,8 +279,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(1, qrys.size());
     }
 
-    @Test
     /** */
+    @Test
     public void testClientsConnections() throws Exception {
         String host = ignite.configuration().getClientConnectorConfiguration().getHost();
 
@@ -302,8 +302,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testTransactions() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
@@ -346,16 +346,16 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testNodes() throws Exception {
         List<List<?>> nodes = execute(ignite, "SELECT * FROM MONITORING.NODES");
 
         assertEquals(1, nodes.size());
     }
 
-    @Test
     /** */
+    @Test
     public void testSchemas() throws Exception {
         try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
             MonitoringList<String, SqlSchemaView> schemasMonList =
@@ -369,8 +369,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testTables() throws Exception {
         execute(ignite, "CREATE TABLE t1(id LONG PRIMARY KEY, NAME VARCHAR) " +
             "WITH \"CACHE_NAME=c1, CACHE_GROUP=g1, VALUE_TYPE=MyType \"");
@@ -382,8 +382,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(3, tbls.size());
     }
 
-    @Test
     /** */
+    @Test
     public void testIndexes() throws Exception {
         execute(ignite, "CREATE TABLE t1(id LONG PRIMARY KEY, NAME VARCHAR) WITH \"CACHE_NAME=c1, CACHE_GROUP=g1\"");
         execute(ignite, "CREATE INDEX name_idx ON t1(name);");

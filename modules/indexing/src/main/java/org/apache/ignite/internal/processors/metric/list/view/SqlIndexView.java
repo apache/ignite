@@ -31,19 +31,19 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * Sql index representation for a {@link MonitoringList}.
  */
 public class SqlIndexView implements MonitoringRow<String> {
-    /** */
+    /** Index. */
     private final Index idx;
 
-    /** */
+    /** Table. */
     private final GridH2Table tbl;
 
-    /** */
+    /** Index type. */
     private final H2IndexType type;
 
-    /** */
+    /** Inline size. */
     private final Integer inlineSz;
 
-    /** */
+    /** Cache group name. */
     private String cacheGrpName;
 
     /** */
@@ -60,52 +60,52 @@ public class SqlIndexView implements MonitoringRow<String> {
         return metricName(tbl.identifierString(), indexName());
     }
 
-    /** */
+    /** @return Cache group id. */
     public int cacheGroupId() {
         return tbl.cacheInfo().groupId();
     }
 
-    /** */
+    /** @return Cache group name. */
     public String cacheGroupName() {
         return cacheGrpName;
     }
 
-    /** */
+    /** @return Cache id. */
     public int cacheId() {
         return tbl.cacheId();
     }
 
-    /** */
+    /** @return Cache name. */
     @Order(5)
     public String cacheName() {
         return tbl.cacheName();
     }
 
-    /** */
+    /** @return Schema name. */
     @Order(3)
     public String schemaName() {
         return tbl.schemaName();
     }
 
-    /** */
+    /** @return Table name. */
     @Order(4)
     public String tableName() {
         return tbl.identifier().table();
     }
 
-    /** */
+    /** @return Index name. */
     @Order()
     public String indexName() {
         return idx.getName();
     }
 
-    /** */
+    /** @return Index type. */
     @Order(1)
     public H2IndexType indexType() {
         return type;
     }
 
-    /** */
+    /** @return Indexed columns. */
     @Order(2)
     public String columns() {
         switch (type) {
@@ -124,17 +124,17 @@ public class SqlIndexView implements MonitoringRow<String> {
         }
     }
 
-    /** */
+    /** @return {@code True} if primary key index, {@code false} otherwise. */
     public boolean isPk() {
         return idx.getIndexType().isPrimaryKey();
     }
 
-    /** */
+    /** @return {@code True} if unique index, {@code false} otherwise. */
     public boolean isUnique() {
         return idx.getIndexType().isUnique();
     }
 
-    /** */
+    /** @return Inline size. */
     public Integer inlineSize() {
         return inlineSz;
     }

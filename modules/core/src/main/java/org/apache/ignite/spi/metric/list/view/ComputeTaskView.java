@@ -27,70 +27,72 @@ import org.apache.ignite.spi.metric.list.MonitoringRow;
  * Compute task representation for a {@link MonitoringList}.
  */
 public class ComputeTaskView implements MonitoringRow<IgniteUuid> {
-    /** */
+    /** Worker for task. */
     private final GridTaskWorker worker;
 
-    /** */
+    /**
+     * @param worker Worker for task.
+     */
     public ComputeTaskView(GridTaskWorker worker) {
         this.worker = worker;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public IgniteUuid monitoringRowId() {
         return worker.getSession().getId();
     }
 
-    /** */
+    /** @return {@code True} if task is internal. */
     public boolean internal() {
         return worker.isInternal();
     }
 
-    /** */
+    /** @return Task name. */
     public String taskName() {
         return worker.getSession().getTaskName();
     }
 
-    /** */
+    /** @return Task class name. */
     public String taskClassName() {
         return worker.getSession().getTaskClassName();
     }
 
-    /** */
+    /** @return Start time. */
     public long startTime() {
         return worker.getSession().getStartTime();
     }
 
-    /** */
+    /** @return End time. */
     public long endTime() {
         return worker.getSession().getEndTime();
     }
 
-    /** */
+    /** @return Task node id. */
     public UUID taskNodeId() {
         return worker.getSession().getTaskNodeId();
     }
 
-    /** */
+    /** @return Executor name. */
     public String execName() {
         return worker.getSession().executorName();
     }
 
-    /** */
+    /** @return Affinity cache name. */
     public String affinityCacheName() {
         return worker.affCacheName();
     }
 
-    /** */
+    /** @return Affinity partition id. */
     public int affinityPartitionId() {
         return worker.affPartId();
     }
 
-    /** */
+    /** @return Job id. */
     public IgniteUuid jobId() {
         return worker.getSession().getJobId();
     }
 
-    /** */
+    /** @return User provided version. */
     public String userVersion() {
         return worker.getSession().getUserVersion();
     }

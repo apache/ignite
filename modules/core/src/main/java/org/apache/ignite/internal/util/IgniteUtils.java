@@ -7064,6 +7064,27 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param objs Collection of objects.
+     * @return String representation.
+     */
+    @Nullable public static String toStringSafe(@Nullable Collection<String> objs) {
+        if (GridFunc.isEmpty(objs))
+            return null;
+        else {
+            StringBuilder str = new StringBuilder();
+
+            Iterator<String> iObj = objs.iterator();
+
+            str.append(iObj.next());
+
+            while(iObj.hasNext())
+                str.append(',').append(' ').append(iObj.next());
+
+            return str.toString();
+        }
+    }
+
+    /**
      * Converts collection of integers into array.
      *
      * @param c Collection of integers.

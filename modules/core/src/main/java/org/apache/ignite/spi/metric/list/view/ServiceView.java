@@ -32,7 +32,7 @@ public interface ServiceView extends MonitoringRow<IgniteUuid> {
         return serviceId();
     }
 
-    /** */
+    /** @return Service name. */
     @Order(1)
     public String name();
 
@@ -40,32 +40,32 @@ public interface ServiceView extends MonitoringRow<IgniteUuid> {
     @Order
     public IgniteUuid serviceId();
 
-    /** */
+    /** @return Service class. */
     @Order(2)
     public Class<?> serviceClass();
 
-    /** */
+    /** @return Total count of service instances. */
     @Order(5)
     public int totalCount();
 
-    /** */
+    /** @return Maximum instance count per node. */
     @Order(6)
     public int maxPerNodeCount();
 
-    /** */
+    /** @return Cache name. */
     @Order(3)
     public String cacheName();
 
-    /** */
+    /** @return Affininty key value. */
     public String affinityKeyValue();
 
-    /** */
+    /** @return Node filter. */
     public Class<?> nodeFilter();
 
     /** @return {@code True} if statically configured. */
     public boolean staticallyConfigured();
 
-    /** */
+    /** @return Origin node id. */
     @Order(4)
     public UUID originNodeId();
 }

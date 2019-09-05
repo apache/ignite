@@ -18,10 +18,15 @@
 package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 
 /**
  * Read only monitoring list registry.
+ *
+ * @see GridMetricManager
+ * @see MonitoringList
+ * @see MetricExporterSpi
  */
 public interface ReadOnlyMonitoringListRegistry extends Iterable<MonitoringList<?, ?>> {
     /**

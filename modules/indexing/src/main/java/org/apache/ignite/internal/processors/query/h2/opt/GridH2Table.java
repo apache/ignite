@@ -1642,6 +1642,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
     }
 
     /**
+     * Adds index to the monitoring list.
      * @param idx Index to monitor.
      */
     private void addToMonitoring(Index idx) {
@@ -1665,6 +1666,10 @@ public class GridH2Table extends TableBase implements SqlTableView {
         idxMonList.add(new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
     }
 
+    /**
+     * @param idx Index.
+     * @return Index type.
+     */
     private H2IndexType type(Index idx) {
         if (idx instanceof H2TreeIndexBase) {
             return H2IndexType.BTREE;

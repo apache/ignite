@@ -55,8 +55,8 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    @Test
     /** */
+    @Test
     public void testSchemas() throws Exception {
         try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
             MonitoringList<String, SqlSchemaView> schemasMonList =
@@ -70,8 +70,8 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testTables() throws Exception {
         try (IgniteEx g = startGrid()) {
             MonitoringList<String, SqlTableView> tblsMonList =
@@ -108,8 +108,8 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    @Test
     /** */
+    @Test
     public void testIndexes() throws Exception {
         try (IgniteEx g = startGrid()) {
             MonitoringList<String, SqlIndexView> idxMonList =

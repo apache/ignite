@@ -30,21 +30,21 @@ public interface ClientConnectionView extends MonitoringRow<Long> {
         return connectionId();
     }
 
-    /** */
+    /** @return Connection id. */
     public long connectionId();
 
-    /** */
+    /** @return Connection type. */
     public String type();
 
-    /** */
+    /** @return Connection local address. */
     public InetSocketAddress localAddress();
 
-    /** */
+    /** @return Connection remote address. */
     public InetSocketAddress remoteAddress();
 
-    /** */
+    /** @return User name. */
     public String user();
 
-    /** */
+    /** @return Protocol version. */
     public String version();
 }

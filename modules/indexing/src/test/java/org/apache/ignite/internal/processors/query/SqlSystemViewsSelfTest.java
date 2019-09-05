@@ -102,16 +102,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         cleanPersistenceDir();
     }
 
-    /**
-     * @return System schema name.
-     */
+    /** @return System schema name. */
     protected String systemSchemaName() {
         return "SYS";
     }
 
-    /**
-     * @return Monitoring schema name.
-     */
+    /** @return Monitoring schema name. */
     protected String monitoringSchemaName() {
         return "MONITORING";
     }
@@ -896,6 +892,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals("node2", res.get(0).get(0));
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setMetricExporterSpi(new SqlViewExporterSpi());

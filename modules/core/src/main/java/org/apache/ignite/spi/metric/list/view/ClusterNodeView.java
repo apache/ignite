@@ -28,11 +28,13 @@ import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+
 /**
  * Cluster node representation for a {@link MonitoringList}.
  */
 public class ClusterNodeView implements MonitoringRow<UUID> {
-    /** */
+    /** Cluster node. */
     private final ClusterNode n;
 
     /**
@@ -47,74 +49,80 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
         return id();
     }
 
-    /** */
+    /**
+     * @return Node id.
+     * @see ClusterNode#id()
+     */
     @Order
     public UUID id() {
         return n.id();
     }
 
-    /** */
+    /**
+     * @return Node consistend id.
+     * @see ClusterNode#consistentId()
+     */
     @Order(1)
     public String consistentId() {
-        return IgniteUtils.toStringSafe(n.consistentId());
+        return toStringSafe(n.consistentId());
     }
 
-    /** */
+    /**
+     * @return Addresses.
+     * @see ClusterNode#addresses()
+     * */
     @Order(2)
     public String addresses() {
         return toStringSafe(n.addresses());
     }
 
-    /** */
+    /**
+     * @return Addresses string.
+     * @see ClusterNode#hostNames()
+     */
     @Order(3)
     public String hostNames() {
         return toStringSafe(n.hostNames());
     }
 
-    /** */
+    /**
+     * @return Topology order.
+     * @see ClusterNode#order()
+     */
     @Order(4)
     public long order() {
         return n.order();
     }
 
-    /** */
+    /**
+     * @return Version.
+     * @see ClusterNode#version()
+     */
     public String version() {
         return n.version().toString();
     }
 
-    /** */
+    /**
+     * @return {@code True} if node local.
+     * @see ClusterNode#isLocal()
+     */
     public boolean isLocal() {
         return n.isLocal();
     }
 
-    /** */
+    /**
+     * @return {@code True} if node is daemon.
+     * @see ClusterNode#isDaemon()
+     */
     public boolean isDaemon() {
         return n.isDaemon();
     }
 
-    /** */
+    /**
+     * @return {@code True} if node is client.
+     * @see ClusterNode#isClient() ()
+     */
     public boolean isClient() {
         return n.isClient();
-    }
-
-    /**
-     * @param objs Collection of objects.
-     * @return String representation
-     */
-    @Nullable public static String toStringSafe(@Nullable Collection<String> objs) {
-        if (GridFunc.isEmpty(objs))
-            return null;
-        else {
-            StringBuilder str = new StringBuilder();
-
-            Iterator<String> iObj = objs.iterator();
-
-            str.append(iObj.next());
-
-            while(iObj.hasNext())
-                str.append(',').append(' ').append(iObj.next());
-
-            return str.toString();
-        }
     }
 }

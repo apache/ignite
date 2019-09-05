@@ -853,7 +853,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Session ses = session(conn);
 
-        ses.setQueryTimeout(Math.max(timeoutMillis, 0));
+        if (timeoutMillis > 0)
+            ses.setQueryTimeout(timeoutMillis);
+        else
+            ses.setQueryTimeout(0);
 
         try {
             return stmt.executeQuery();
@@ -1240,7 +1243,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (roEx != null) {
                 throw new IgniteSQLException(
                     "Failed to execute DML statement. Cluster in read-only mode [stmt=" + qryDesc.sql() +
-                        ", params=" + Arrays.deepToString(qryParams.arguments()) + "]",
+                    ", params=" + Arrays.deepToString(qryParams.arguments()) + "]",
                     IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
                     e
                 );
@@ -1472,8 +1475,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param timeout Timeout.
      * @return Query results cursor.
      */
-    private Iterable<List<?>> lockSelectedRows(Iterable<List<?>> cur, GridCacheContext cctx, int pageSize,
-        long timeout) {
+    private Iterable<List<?>> lockSelectedRows(Iterable<List<?>> cur, GridCacheContext cctx, int pageSize, long timeout) {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(ctx);
@@ -1894,30 +1896,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr.dataTables().stream()
             .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
             .filter(t -> matches(t.getName(), tblNamePtrn))
-            .flatMap(tbl -> {
-                IndexColumn affCol = tbl.getAffinityKeyColumn();
+            .flatMap(
+                tbl -> {
+                    IndexColumn affCol = tbl.getAffinityKeyColumn();
 
-                return Stream.of(tbl.getColumns())
-                    .filter(Column::getVisible)
-                    .filter(c -> matches(c.getName(), colNamePtrn))
-                    .map(c -> {
-                        GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
+                    return Stream.of(tbl.getColumns())
+                        .filter(Column::getVisible)
+                        .filter(c -> matches(c.getName(), colNamePtrn))
+                        .map(c -> {
+                            GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
 
-                        boolean isAff = affCol != null && c.getColumnId() == affCol.column.getColumnId();
+                            boolean isAff = affCol != null && c.getColumnId() == affCol.column.getColumnId();
 
-                        return new ColumnInformation(
-                            c.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1,
-                            tbl.getSchema().getName(),
-                            tbl.getName(),
-                            c.getName(),
-                            prop.type(),
-                            c.isNullable(),
-                            prop.defaultValue(),
-                            prop.precision(),
-                            prop.scale(),
-                            isAff);
-                    });
-            }).forEach(infos::add);
+                            return new ColumnInformation(
+                                c.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1,
+                                tbl.getSchema().getName(),
+                                tbl.getName(),
+                                c.getName(),
+                                prop.type(),
+                                c.isNullable(),
+                                prop.defaultValue(),
+                                prop.precision(),
+                                prop.scale(),
+                                isAff);
+                        });
+                }
+            ).forEach(infos::add);
 
         // Gather information about system views.
         if (matches(SCHEMA_SYS, schemaNamePtrn) || matches(SCHEMA_MONITORING, schemaNamePtrn)) {
@@ -2511,6 +2515,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param readyVer Ready topology version.
+     *
      * @return {@code true} If pending distributed exchange exists because server topology is changed.
      */
     public boolean serverTopologyChanged(AffinityTopologyVersion readyVer) {

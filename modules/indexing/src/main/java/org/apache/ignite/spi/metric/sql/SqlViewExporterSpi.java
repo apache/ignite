@@ -72,6 +72,8 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /**
+     * Registers list as SQL View.
+     *
      * @param mlist Monitoring list
      */
     private void register(MonitoringList<?,?> mlist) {
