@@ -131,6 +131,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Long.MAX_VALUE;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -2728,9 +2729,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 return;
             }
 
-            assert ptr.index() == getSegmentId();
+            assert ptr.index() == getSegmentId() : "Pointer segment idx is not equals to current write segment idx. " +
+                "ptr=" + ptr + " segmetntId=" + getSegmentId();
 
-            walWriter.flushBuffer(ptr.fileOffset());
+            walWriter.flushBuffer(ptr.fileOffset() + ptr.length());
         }
 
         /**
@@ -3390,7 +3392,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             }
                         }
                         else {
-                            unparkWaiters(Long.MAX_VALUE);
+                            unparkWaiters(MAX_VALUE);
 
                             return;
                         }
@@ -3421,7 +3423,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                             err = e;
 
-                            unparkWaiters(Long.MAX_VALUE);
+                            unparkWaiters(MAX_VALUE);
 
                             return;
                         }
@@ -3455,7 +3457,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         finally {
                             seg.release();
 
-                            long p = pos <= UNCONDITIONAL_FLUSH || err != null ? Long.MAX_VALUE : currentHandle().written;
+                            boolean unparkAll = (pos == UNCONDITIONAL_FLUSH || pos == FILE_CLOSE) || err != null;
+
+                            long p = unparkAll ? MAX_VALUE : currentHandle().written;
 
                             unparkWaiters(p);
                         }
@@ -3468,7 +3472,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             finally {
                 this.err = err;
 
-                unparkWaiters(Long.MAX_VALUE);
+                unparkWaiters(MAX_VALUE);
 
                 if (err == null && !isCancelled)
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
