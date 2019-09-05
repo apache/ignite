@@ -29,7 +29,7 @@ import org.apache.ignite.lang.IgniteClosure;
  */
 public class SandboxAwareIgniteClosure<E, R> implements IgniteClosure<E, R> {
     /** */
-    private static final long serialVersionUID = -7040271779139978769L;
+    private static final long serialVersionUID = 0L;
 
     /** */
     private final IgniteSecurity security;

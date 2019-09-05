@@ -24,12 +24,12 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.AccessControlException;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
@@ -38,22 +38,25 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * This test shows that an user-defined code with a privileged block cannot execute a secure-sensitive operation.
  */
-public class DoPrivilegedOnRemoteNodeTest extends AbstractSecurityTest {
+public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
     /** */
-    private static final String CALLABLE_SRC =
+    private static final String CALLABLE_DO_PRIVELEGED_SRC =
+        "import java.security.AccessController;\n" +
+            "import java.security.PrivilegedAction;\n" +
             "import org.apache.ignite.lang.IgniteCallable;\n" +
             "\n" +
-            "public class TestIgniteCallable implements IgniteCallable<Integer> {\n" +
-            "        public Integer call() throws Exception {\n" +
-            "            return 1;\n" +
-            "        }\n" +
-        "}";
+            "public class TestDoPrivilegedIgniteCallable implements IgniteCallable<String> {\n" +
+            "    public String call() throws Exception {\n" +
+            "        return AccessController.doPrivileged(\n" +
+            "            (PrivilegedAction<String>)() -> System.getProperty(\"java.home\")\n" +
+            "        );\n" +
+            "    }\n" +
+            "}";
 
     /** */
     private Path srcTmpDir;
@@ -79,25 +82,21 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSecurityTest {
     /** */
     @Test
     public void test() throws Exception {
-        Ignite srv = startGrid("srv", ALLOW_ALL, false);
+        Ignite srv = startGrid("srv", ALLOW_ALL,  false);
 
-        Ignite clnt = startGrid("clnt", ALLOW_ALL, true);
+        Ignite clnt = startGrid("clnt", ALLOW_ALL,  true);
 
         srv.cluster().active(true);
 
         IgniteCompute compute = clnt.compute(clnt.cluster().forRemotes());
 
-        Integer val = compute.call(callable("TestIgniteCallable", CALLABLE_SRC));
-
-        assertThat(val, is(1));
-
-        /*assertThrowsWithCause(
-            () -> compute.broadcast(runnable("TestDoPrivilegedIgniteRunnable", RUNNABLE_DO_PRIVELEGED_SRC)),
-            AccessControlException.class);*/
+        assertThrowsWithCause(
+            () -> compute.broadcast(callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC)),
+            AccessControlException.class);
     }
 
     /** */
-    IgniteCallable<Integer> callable(String clsName, String src) {
+    IgniteCallable<String> callable(String clsName, String src) {
         try {
             Files.createDirectories(srcTmpDir);
 
@@ -115,7 +114,7 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSecurityTest {
 
             Class<?> cls = clsLdr.loadClass(clsName);
 
-            return (IgniteCallable<Integer>)cls.newInstance();
+            return (IgniteCallable<String>)cls.newInstance();
         }
         catch (Exception e) {
             throw new RuntimeException(e);

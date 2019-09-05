@@ -29,22 +29,22 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 public class SandboxAwareIgniteBiPredicate<K, V> implements IgniteBiPredicate<K, V> {
     /** */
-    private static final long serialVersionUID = 1234751431315974061L;
+    private static final long serialVersionUID = 0L;
 
     /** */
     private final IgniteSecurity security;
 
     /** */
-    private final IgniteBiPredicate<K, V> ogiginal;
+    private final IgniteBiPredicate<K, V> original;
 
     /** */
-    public SandboxAwareIgniteBiPredicate(IgniteSecurity security, IgniteBiPredicate<K, V> ogiginal) {
+    public SandboxAwareIgniteBiPredicate(IgniteSecurity security, IgniteBiPredicate<K, V> original) {
         this.security = Objects.requireNonNull(security, "Security cannot be null.");
-        this.ogiginal = Objects.requireNonNull(ogiginal, "Original cannot be null.");
+        this.original = Objects.requireNonNull(original, "Original cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean apply(K k, V v) {
-        return security.execute(() -> ogiginal.apply(k, v));
+        return security.execute(() -> original.apply(k, v));
     }
 }

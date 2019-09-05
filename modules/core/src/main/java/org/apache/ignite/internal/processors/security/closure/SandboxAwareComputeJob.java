@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
  */
 public class SandboxAwareComputeJob implements ComputeJob {
     /** */
-    private static final long serialVersionUID = 7510836970476698602L;
+    private static final long serialVersionUID = 0L;
 
     /** */
     private final IgniteSecurity security;

@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
-import org.apache.ignite.internal.processors.security.sandbox.NewVersionOldTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -61,8 +60,7 @@ import org.junit.runners.Suite;
     CacheSandboxTest.class,
     DataStreamerSandboxTest.class,
     ComputeSandboxTest.class,
-    DoPrivilegedOnRemoteNodeTest.class,
-    NewVersionOldTest.class
+    DoPrivilegedOnRemoteNodeTest.class
 })
 public class SecurityTestSuite {
 }

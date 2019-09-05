@@ -33,7 +33,7 @@ import org.apache.ignite.stream.StreamReceiver;
  */
 public class SandboxAwareStreamReceiver<K, V> implements StreamReceiver<K, V> {
     /** */
-    private static final long serialVersionUID = 3783092194186094866L;
+    private static final long serialVersionUID = 0L;
 
     /** */
     private final IgniteSecurity security;

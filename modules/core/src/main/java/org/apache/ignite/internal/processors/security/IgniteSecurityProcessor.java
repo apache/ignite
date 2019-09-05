@@ -24,13 +24,11 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.security.auth.Subject;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -189,17 +187,12 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
         assert secCtx != null;
 
-        final Subject subject = new Subject(true,
-            Collections.singleton(new IgnitePrincipal(secCtx.subject().login().toString())),
-            Collections.emptySet(), Collections.emptySet()
-        );
-
         final AccessControlContext acc = AccessController.doPrivileged(
             new PrivilegedAction<AccessControlContext>() {
                 @Override public AccessControlContext run() {
                     return new AccessControlContext
                         (new AccessControlContext(NULL_PD_ARRAY),
-                            new IgniteSubjectDomainCombiner(subject, secCtx.subject().securityManagerPermissions()));
+                            new IgniteDomainCombiner(secCtx.subject().securityManagerPermissions()));
                 }
             });
 

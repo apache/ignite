@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.lang.ref.WeakReference;
+import java.security.DomainCombiner;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.util.WeakHashMap;
-import javax.security.auth.Subject;
-import javax.security.auth.SubjectDomainCombiner;
 
 /**
  * A {@code IgniteSubjectDomainCombainer} updates ProtectionDomains with passed {@code Permissions}.
  */
-public class IgniteSubjectDomainCombiner extends SubjectDomainCombiner {
+public class IgniteDomainCombiner implements DomainCombiner {
     /** */
     private final WeakKeyValueMap<ProtectionDomain, ProtectionDomain> cachedPDs = new WeakKeyValueMap<>();
 
@@ -35,9 +34,7 @@ public class IgniteSubjectDomainCombiner extends SubjectDomainCombiner {
     private final Permissions perms;
 
     /** */
-    public IgniteSubjectDomainCombiner(Subject subject, Permissions perms) {
-        super(subject);
-
+    public IgniteDomainCombiner(Permissions perms) {
         this.perms = perms;
     }
 
