@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1606,7 +1608,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /**
          * @param partId Partition.
-         * @param exists {@code True} if store for this index exists.
+         * @param exists {@code True} if store exists.
          */
         private GridCacheDataStore(int partId, boolean exists) {
             this.partId = partId;
@@ -1642,6 +1644,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /**
+         * @param checkExists If {@code true} data store won't be initialized if it doesn't exists
+         * (has non empty data file). This is an optimization for lazy store initialization on writes.
+         *
          * @return Store delegate.
          * @throws IgniteCheckedException If failed.
          */
@@ -1684,7 +1689,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         freeListName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
-                        null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated(),
@@ -2211,11 +2215,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateInitialCounter(long start, long delta) {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
-                if (delegate0 == null)
-                    throw new IllegalStateException("Should be never called.");
-
+                // Partition may not exists before recovery starts in case of recovering counters from RollbackRecord.
                 delegate0.updateInitialCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
@@ -2380,6 +2382,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             return delegate.createRow(cctx, key, val, ver, expireTime, oldRow);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void insertRows(Collection<DataRowCacheAware> rows,
+            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            ctx.database().checkpointReadLock();
+
+            try {
+                delegate.insertRows(rows, initPred);
+            } finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
 
         /** {@inheritDoc} */

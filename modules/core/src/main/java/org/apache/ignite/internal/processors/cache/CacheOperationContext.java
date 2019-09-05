@@ -50,7 +50,7 @@ public class CacheOperationContext implements Serializable {
     /** */
     private final boolean recovery;
 
-    /** */
+    /** Read-repair flag. */
     private final boolean readRepair;
 
     /** Client ID which operates over this projection. */
@@ -89,7 +89,7 @@ public class CacheOperationContext implements Serializable {
      * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
-     * @param readRepair Read Repair.
+     * @param readRepair Read-repair flag.
      */
     public CacheOperationContext(
         boolean skipStore,

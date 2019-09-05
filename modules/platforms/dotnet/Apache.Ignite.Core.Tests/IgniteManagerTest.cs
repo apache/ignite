@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using System;
     using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
@@ -34,11 +33,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestIgniteHome()
         {
-            var env = Environment.GetEnvironmentVariable(IgniteHome.EnvIgniteHome);
-
-            Environment.SetEnvironmentVariable(IgniteHome.EnvIgniteHome, null);
-
-            try
+            using (EnvVar.Set(IgniteHome.EnvIgniteHome, null))
             {
                 var home = IgniteHome.Resolve(null);
                 Assert.IsTrue(Directory.Exists(home));
@@ -48,11 +43,6 @@ namespace Apache.Ignite.Core.Tests
                 var ex = Assert.Throws<IgniteException>(() => IgniteHome.Resolve(new IgniteConfiguration(cfg)));
                 Assert.AreEqual(string.Format(
                     "IgniteConfiguration.IgniteHome is not valid: '{0}'", cfg.IgniteHome), ex.Message);
-            }
-            finally
-            {
-                // Restore
-                Environment.SetEnvironmentVariable(IgniteHome.EnvIgniteHome, env);
             }
         }
     }

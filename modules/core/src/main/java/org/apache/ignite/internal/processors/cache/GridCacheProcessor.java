@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -607,6 +606,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
 
         ctx.coordinators().preProcessCacheConfiguration(cfg);
+        ctx.igfsHelper().preProcessCacheConfiguration(cfg);
     }
 
     /**
@@ -2692,6 +2692,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             for (ExchangeActions.CacheActionData action: cachesToStopByGrp.getValue()) {
                                 stopGateway(action.request());
 
+                                context().tm().rollbackTransactionsForStoppingCache(action.descriptor().cacheId());
+
                                 sharedCtx.database().checkpointReadLock();
 
                                 try {
@@ -2761,28 +2763,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grpToStop Cache group to stop.
      */
     private void removeOffheapListenerAfterCheckpoint(List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop) {
-        CheckpointFuture checkpointFut;
-        do {
-            do {
-                checkpointFut = sharedCtx.database().forceCheckpoint("caches stop");
-            }
-            while (checkpointFut != null && checkpointFut.started());
-
-            if (checkpointFut != null)
-                checkpointFut.finishFuture().listen((fut) -> removeOffheapCheckpointListener(grpToStop));
+        try {
+            sharedCtx.database().waitForCheckpoint(
+                "caches stop", (fut) -> removeOffheapCheckpointListener(grpToStop)
+            );
         }
-        while (checkpointFut != null && checkpointFut.finishFuture().isDone());
-
-        if (checkpointFut != null) {
-            try {
-                checkpointFut.finishFuture().get();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-            }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
         }
-        else
-            removeOffheapCheckpointListener(grpToStop);
     }
 
     /**
@@ -2830,37 +2818,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ((GridServiceProcessor)ctx.service()).updateUtilityCache();
         }
 
-        rollbackCoveredTx(exchActions);
-
         if (err == null)
             processCacheStopRequestOnExchangeDone(exchActions);
-    }
-
-    /**
-     * Rollback tx covered by stopped caches.
-     *
-     * @param exchActions Change requests.
-     */
-    private void rollbackCoveredTx(ExchangeActions exchActions) {
-        if (!exchActions.cacheGroupsToStop().isEmpty() || !exchActions.cacheStopRequests().isEmpty()) {
-            Set<Integer> cachesToStop = new HashSet<>();
-
-            for (ExchangeActions.CacheGroupActionData act : exchActions.cacheGroupsToStop()) {
-                @Nullable CacheGroupContext grpCtx = context().cache().cacheGroup(act.descriptor().groupId());
-
-                if (grpCtx != null && grpCtx.sharedGroup())
-                    cachesToStop.addAll(grpCtx.cacheIds());
-            }
-
-            for (ExchangeActions.CacheActionData act : exchActions.cacheStopRequests())
-                cachesToStop.add(act.descriptor().cacheId());
-
-            if (!cachesToStop.isEmpty()) {
-                IgniteTxManager tm = context().tm();
-
-                tm.rollbackTransactionsForCaches(cachesToStop);
-            }
-        }
     }
 
     /**

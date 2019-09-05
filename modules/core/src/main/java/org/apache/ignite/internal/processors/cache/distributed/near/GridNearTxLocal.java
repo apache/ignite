@@ -4760,18 +4760,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param topVer New topology version.
+     * @param reset {@code True} if need to reset tx state.
      */
-    public void onRemap(AffinityTopologyVersion topVer) {
+    public void onRemap(AffinityTopologyVersion topVer, boolean reset) {
         assert cctx.kernalContext().clientNode();
 
-        mapped = false;
-        nearLocallyMapped = false;
-        colocatedLocallyMapped = false;
-        txNodes = null;
-        onePhaseCommit = false;
-        nearMap.clear();
-        dhtMap.clear();
-        mappings.clear();
+        if (reset) {
+            mapped = false;
+            nearLocallyMapped = false;
+            colocatedLocallyMapped = false;
+            txNodes = null;
+            onePhaseCommit = false;
+            nearMap.clear();
+            dhtMap.clear();
+            mappings.clear();
+        }
 
         synchronized (this) {
             this.topVer = topVer;
