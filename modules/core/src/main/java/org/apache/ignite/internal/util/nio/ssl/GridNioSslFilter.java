@@ -215,18 +215,16 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
-        GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
-
         try {
-            if (sslMeta == null)
-                return;
-
-            GridNioSslHandler hnd = sslHandler(ses);
-
             GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
             if (fut != null)
                 fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed)."));
+
+            if (ses.meta(SSL_META.ordinal()) == null)
+                return;
+
+            GridNioSslHandler hnd = sslHandler(ses);
 
             hnd.shutdown();
         }
