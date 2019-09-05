@@ -2364,6 +2364,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         BPlusTree<H2Row, H2Row> tree = new BPlusTree<H2Row, H2Row>(
             indexName,
             grpId,
+            grpName,
             pageMemory,
             ctx.cache().context().wal(),
             removeId,
