@@ -54,11 +54,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_SYSTEM_TIME_HISTOGRAM;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TIME_BUCKETS;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_SYSTEM_TIME;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_TOTAL_USER_TIME;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.METRIC_USER_TIME_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -238,8 +233,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
-
-        registerTransactionMetrics();
     }
 
     /** {@inheritDoc} */
@@ -532,25 +525,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         catch (RuntimeException ignored) {
             return -1;
         }
-    }
-
-    /** */
-    private void registerTransactionMetrics() {
-        MetricRegistry reg = registry(TX_METRICS);
-
-        reg.longAdderMetric(METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node.");
-        reg.longAdderMetric(METRIC_TOTAL_USER_TIME, "Total transactions user time on node.");
-
-        reg.histogram(
-            METRIC_SYSTEM_TIME_HISTOGRAM,
-            METRIC_TIME_BUCKETS,
-            "Transactions system times on node represented as histogram."
-        );
-        reg.histogram(
-            METRIC_USER_TIME_HISTOGRAM,
-            METRIC_TIME_BUCKETS,
-            "Transactions user times on node represented as histogram."
-        );
     }
 
     /** */
