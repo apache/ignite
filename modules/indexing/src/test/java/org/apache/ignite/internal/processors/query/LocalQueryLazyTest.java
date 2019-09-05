@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -124,7 +126,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         int r0 = 0;
         int r1 = 0;
 
-        for (int i =0; i<KEY_CNT; i++) {
+        for (int i =0; i< KEY_CNT; i++) {
             if (cursorIter0.hasNext()) {
                 r0++;
 
@@ -154,7 +156,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         int r0 = 0;
         int r1 = 0;
 
-        for (int i =0; i<KEY_CNT; i++) {
+        for (int i =0; i < KEY_CNT; i++) {
             if (cursorIter0.hasNext()) {
                 r0++;
 
@@ -170,6 +172,64 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         assertTrue(r0 < KEY_CNT);
         assertEquals(KEY_CNT, r1);
+    }
+
+    /** */
+    public void testParallelLocalQueries() throws Exception {
+        startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        SqlFieldsQuery qry0 = new SqlFieldsQuery(
+            "SELECT A.ID, B.ID FROM TEST AS A " +
+                "JOIN (SELECT ID FROM TEST) AS B")
+            .setLocal(true)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setPageSize(1);
+
+        int sizeExpected = grid().context().query().querySqlFields(qry0, false).getAll().size();
+
+        Iterator<List<?>> it = grid().context().query().querySqlFields(qry0, false).iterator();
+
+        final AtomicInteger sizeWithOthedQry = new AtomicInteger();
+
+        it.forEachRemaining((r) -> {
+            sizeWithOthedQry.getAndIncrement();
+
+            List<?> innerRes = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
+                .setLocal(true)
+                .setLazy(true)
+                .setSchema("TEST")
+                .setPartitions(1), false).getAll();
+
+            assertEquals(1, innerRes.size());
+        });
+
+        assertEquals(sizeExpected, sizeWithOthedQry.get());
+    }
+
+    /** */
+    public void testRetryLocalQueryByDDL() throws Exception {
+        startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        final Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
+            .setLocal(true)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setPageSize(1), false).iterator();
+
+        it.next();
+
+        distributedSql(grid(), "CREATE INDEX IDX_VAL ON TEST(val)");
+
+        GridTestUtils.assertThrows(log, () -> {
+            it.next();
+
+            return null;
+        }, QueryRetryException.class, "Table was modified concurrently (please retry the query)");
     }
 
     /**

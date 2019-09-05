@@ -47,10 +47,14 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @param qryInfo Query info.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data,
+    public H2FieldsIterator(
+        ResultSet data,
         ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn,
-        IgniteLogger log, IgniteH2Indexing h2, H2QueryInfo qryInfo) throws IgniteCheckedException {
-        super(data, log, h2, qryInfo);
+        IgniteLogger log, IgniteH2Indexing h2, H2QueryInfo qryInfo,
+        boolean lazy,
+        int pageSize,
+        GridH2QueryContext qctx) throws IgniteCheckedException {
+        super(data, log, h2, qryInfo, lazy, pageSize, qctx);
 
         this.detachedConn = detachedConn;
         this.lazy = qryInfo.lazy();
@@ -66,7 +70,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() {
+    @Override public void onClose() throws IgniteCheckedException {
         try {
             super.onClose();
         }
