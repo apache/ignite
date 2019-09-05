@@ -64,8 +64,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Cac
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -856,20 +856,27 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
-        assert ctx.database() instanceof GridCacheDatabaseSharedManager
-            : "Destroying cache data store when persistence is not enabled: " + ctx.database();
-
-        int partId = store.partId();
-
+    @Override public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
         ctx.database().checkpointReadLock();
 
         try {
-            saveStoreMetadata(store, null, true, false);
+            super.destroyCacheDataStore(store);
         }
         finally {
             ctx.database().checkpointReadUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
+        assert ctx.database() instanceof GridCacheDatabaseSharedManager
+            : "Destroying cache data store when persistence is not enabled: " + ctx.database();
+
+        assert ctx.database().checkpointLockIsHeldByThread();
+
+        int partId = store.partId();
+
+        saveStoreMetadata(store, null, true, false);
 
         ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId);
     }
