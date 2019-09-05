@@ -221,14 +221,14 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         cache.query(new SqlFieldsQuery("INSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');"));
 
         cache.query(new SqlFieldsQuery("SELECT *\n" +
-                "FROM PERSON P1\n" +
-                "JOIN PERSON P2 ON P1.ID = P2.ID\n" +
-                "JOIN PERSON P3 ON P1.ID = P3.ID\n" +
-                "JOIN PERSON P4 ON P1.ID = P4.ID\n" +
-                "JOIN PERSON P5 ON P1.ID = P5.ID\n" +
-                "JOIN PERSON P6 ON P1.ID = P6.ID\n" +
-                "JOIN PERSON P7 ON P1.ID = P7.ID\n" +
-                "JOIN PERSON P8 ON P1.ID = P8.ID").setDistributedJoins(true).setEnforceJoinOrder(false));
+            "FROM PERSON P1\n" +
+            "JOIN PERSON P2 ON P1.ID = P2.ID\n" +
+            "JOIN PERSON P3 ON P1.ID = P3.ID\n" +
+            "JOIN PERSON P4 ON P1.ID = P4.ID\n" +
+            "JOIN PERSON P5 ON P1.ID = P5.ID\n" +
+            "JOIN PERSON P6 ON P1.ID = P6.ID\n" +
+            "JOIN PERSON P7 ON P1.ID = P7.ID\n" +
+            "JOIN PERSON P8 ON P1.ID = P8.ID").setDistributedJoins(true).setEnforceJoinOrder(false));
 
     }
 
