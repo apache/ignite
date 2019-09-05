@@ -53,6 +53,12 @@ public class SqlSystemTableEngine implements TableEngine {
         }
     }
 
+    public static synchronized void unregisterView(Connection conn, SqlSystemView rmv) throws SQLException {
+        try (Statement s = conn.createStatement()) {
+            s.execute(rmv.getDropSQL());
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public Table createTable(CreateTableData data) {
         return new SystemViewH2Adapter(data, curView);

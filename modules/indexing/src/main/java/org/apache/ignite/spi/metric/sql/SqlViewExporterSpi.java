@@ -69,12 +69,33 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         mlreg.forEach(this::register);
         mlreg.addListCreationListener(this::register);
+        mlreg.addListRemoveListener(this::unregister);
+    }
+
+    /**
+     * Removes list SQL view.
+     *
+     * @param mlist Monitoring list.
+     */
+    private void unregister(MonitoringList<?,?> mlist) {
+        if (mlistFilter != null && !mlistFilter.test(mlist)) {
+            if (log.isDebugEnabled())
+                U.debug(log, "Monitoring list filtered and will not be unregistered.[name=" + mlist.name() + ']');
+
+            return;
+        }
+
+        GridKernalContext ctx = ((IgniteEx)ignite()).context();
+
+        MonitoringListLocalSystemView<?, ?> view = new MonitoringListLocalSystemView<>(ctx, mlist);
+
+        mgr.removeSystemView(view.getSchemaName(), view.getTableName());
     }
 
     /**
      * Registers list as SQL View.
      *
-     * @param mlist Monitoring list
+     * @param mlist Monitoring list.
      */
     private void register(MonitoringList<?,?> mlist) {
         if (mlistFilter != null && !mlistFilter.test(mlist)) {
@@ -88,8 +109,9 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        mgr.createSystemView(QueryUtils.SCHEMA_MONITORING, new MonitoringListLocalSystemView<>(ctx, mlist));
+        MonitoringListLocalSystemView<?, ?> view = new MonitoringListLocalSystemView<>(ctx, mlist);
 
+        mgr.createSystemView(view.getSchemaName(), view);
     }
 
     /** {@inheritDoc} */

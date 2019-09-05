@@ -292,6 +292,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
             metricRegCreationLsnrs.add(lsnr);
         }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr) {
+            metricRegRemoveLsnrs.add(lsnr);
+        }
     };
 
     /** Registered lists. */
@@ -305,6 +310,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         }
 
         /** {@inheritDoc} */
+        @Override public void addListRemoveListener(Consumer<MonitoringList<?, ?>> lsnr) {
+            listRemoveLsnrs.add(lsnr);
+        }
+
+        /** {@inheritDoc} */
         @NotNull @Override public Iterator<MonitoringList<?, ?>> iterator() {
             return lists.values().iterator();
         }
@@ -313,8 +323,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
+    /** Metric registry remove listeners. */
+    private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
+
     /** List creation listeners. */
     private final List<Consumer<MonitoringList<?, ?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** List remove listeners. */
+    private final List<Consumer<MonitoringList<?, ?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -460,7 +476,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param regName Registry name.
      */
     public void removeMetricRegistry(String regName) {
-        registries.remove(regName);
+        MetricRegistry rmv = registries.remove(regName);
+
+        if (rmv != null)
+            notifyListeners(rmv, metricRegRemoveLsnrs, log);
+    }
+
+    public void removeList(String listName) {
+        MonitoringList<?, ?> rmv = lists.remove(listName);
+
+        if (rmv != null)
+            notifyListeners(rmv, listRemoveLsnrs, log);
+
     }
 
     /**

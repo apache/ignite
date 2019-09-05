@@ -44,11 +44,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.MonitoringListMBean;
+import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.transactions.Transaction;
@@ -56,6 +58,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
@@ -161,6 +164,38 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         for (String metricName : res)
             assertNotNull(metricName, dataRegionMBean.getAttribute(metricName));
+    }
+
+    /** */
+    @Test
+    public void testUnregisterRemovedRegistry() throws Exception {
+        String n = "cache-for-remove";
+
+        IgniteCache c = ignite.createCache(n);
+
+        DynamicMBean cacheBean = mbean(CACHE_METRICS, n);
+
+        assertNotNull(cacheBean);
+
+        ignite.destroyCache(n);
+
+        assertThrowsWithCause(() -> mbean(CACHE_METRICS, n), IgniteException.class);
+    }
+
+    /** */
+    @Test
+    public void testListRemove() throws Exception {
+        GridMetricManager mmgr = ignite.context().metric();
+
+        mmgr.list("test", "description", CacheView.class);
+
+        DynamicMBean listBean = mbean("list", "test");
+
+        assertNotNull(listBean);
+
+        mmgr.removeList("test");
+
+        assertThrowsWithCause(() -> mbean("list", "test"), IgniteException.class);
     }
 
     /** */

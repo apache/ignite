@@ -35,4 +35,11 @@ public interface ReadOnlyMonitoringListRegistry extends Iterable<MonitoringList<
      * @param lsnr Listener.
      */
     public void addListCreationListener(Consumer<MonitoringList<?, ?>> lsnr);
+
+    /**
+     * Adds listener of list remove events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addListRemoveListener(Consumer<MonitoringList<?, ?>> lsnr);
 }

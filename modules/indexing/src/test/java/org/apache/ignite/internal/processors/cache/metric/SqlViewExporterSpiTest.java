@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.metric;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,11 +44,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.list.view.SqlSchemaView;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -57,6 +60,7 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST_DESC;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -107,6 +111,22 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         stopAllGrids(true);
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testListRemove() throws Exception {
+        GridMetricManager mmgr = ignite.context().metric();
+
+        MonitoringList<String, CacheView> list = mmgr.list("test", "description", CacheView.class);
+
+        List<List<?>> rows = execute(ignite, "SELECT * FROM MONITORING.TEST");
+
+        assertTrue(rows.isEmpty());
+
+        mmgr.removeList("test");
+
+        assertThrowsWithCause(() -> execute(ignite, "SELECT * FROM MONITORING.TEST"), SQLException.class);
     }
 
     /** */

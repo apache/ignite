@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import javax.management.JMException;
 import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -36,6 +37,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
+import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 
 /**
  * This SPI implementation exports metrics as JMX beans.
@@ -59,12 +61,13 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         mreg.forEach(this::register);
-
         mlreg.forEach(this::register);
 
         mreg.addMetricRegistryCreationListener(this::register);
+        mreg.addMetricRegistryRemoveListener(this::unregister);
 
         mlreg.addListCreationListener(this::register);
+        mlreg.addListRemoveListener(this::unregister);
     }
 
     /**
@@ -101,6 +104,15 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         catch (JMException e) {
             log.error("MBean for monitoring list '" + mlist.name() + "' can't be created.", e);
         }
+    }
+
+    /**
+     * Unregister JMX bean for specific monitoring list.
+     *
+     * @param mlist Monitoring list.
+     */
+    private void unregister(MonitoringList<?,?> mlist) {
+        unregister("list", mlist.name());
     }
 
     /**
@@ -141,6 +153,36 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         }
     }
 
+    /**
+     * Unregister JMX bean for specific metric registry.
+     *
+     * @param mreg Metric registry.
+     */
+    private void unregister(MetricRegistry mreg) {
+        MetricUtils.MetricName n = parse(mreg.name());
+
+        unregister(n.root(), n.subName());
+    }
+
+    /**
+     * @param grp MBean group.
+     * @param name MBean name.
+     */
+    private void unregister(String grp, String name) {
+        try {
+            ObjectName mbeanName = makeMBeanName(igniteInstanceName, grp, name);
+
+            boolean rmv = mBeans.remove(mbeanName);
+
+            assert rmv;
+
+            unregBean(ignite, mbeanName);
+        }
+        catch (MalformedObjectNameException e) {
+            log.error("MBean for metric registry '" + grp + ',' + name + "' can't be unregistered.", e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         Ignite ignite = ignite();
@@ -148,18 +190,21 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         if (ignite == null)
             return;
 
+        for (ObjectName bean : mBeans)
+            unregBean(ignite, bean);
+    }
+
+    private void unregBean(Ignite ignite, ObjectName bean) {
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
-        for (ObjectName bean : mBeans) {
-            try {
-                jmx.unregisterMBean(bean);
+        try {
+            jmx.unregisterMBean(bean);
 
-                if (log.isDebugEnabled())
-                    log.debug("Unregistered SPI MBean: " + bean);
-            }
-            catch (JMException e) {
-                log.error("Failed to unregister SPI MBean: " + bean, e);
-            }
+            if (log.isDebugEnabled())
+                log.debug("Unregistered SPI MBean: " + bean);
+        }
+        catch (JMException e) {
+            log.error("Failed to unregister SPI MBean: " + bean, e);
         }
     }
 
@@ -181,6 +226,5 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     /** {@inheritDoc} */
     @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
         this.monListFilter = filter;
-
     }
 }

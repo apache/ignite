@@ -82,6 +82,11 @@ public interface SqlSystemView {
     public String getCreateSQL();
 
     /**
+     * Gets SQL script for droping table.
+     */
+    public String getDropSQL();
+
+    /**
      * @return {@code True} if view is distributed.
      */
     public boolean isDistributed();

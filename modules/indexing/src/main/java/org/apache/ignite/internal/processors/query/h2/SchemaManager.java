@@ -194,6 +194,36 @@ public class SchemaManager {
     }
 
     /**
+     * Removes system view.
+     *
+     * @param schema Schema.
+     * @param name View name.
+     */
+    public void removeSystemView(String schema, String name) {
+        SqlSystemView rmv = null;
+
+        for (SqlSystemView view : systemViews) {
+            if (view.getSchemaName().equals(schema) && view.getTableName().equals(name)) {
+                rmv = view;
+
+                break;
+            }
+        }
+
+        if (rmv == null)
+            return;
+
+        try (Connection c = connMgr.connectionNoCache(schema)) {
+            SqlSystemTableEngine.unregisterView(c, rmv);
+
+            systemViews.remove(rmv);
+        }
+        catch (SQLException e) {
+            throw new IgniteException("Failed to remove system view.", e);
+        }
+    }
+
+    /**
      * Create system views.
      */
     private void createSystemViews() throws IgniteCheckedException {
