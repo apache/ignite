@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
@@ -46,6 +47,8 @@ public class GridCacheContextInfo<K, V> {
     /** Full cache context. Can be {@code null} in case a cache is not started. */
     @Nullable private volatile GridCacheContext cctx;
 
+    private final GridKernalContext kctx;
+
     /**
      * Constructor of full cache context.
      *
@@ -61,20 +64,24 @@ public class GridCacheContextInfo<K, V> {
         this.clientCache = clientCache;
 
         this.cctx = cctx;
+        this.kctx = cctx.kernalContext();
     }
 
     /**
      * Constructor of not started cache context.
      *
      * @param cacheDesc Cache descriptor.
+     * @param kctx Kernal context.
      */
-    public GridCacheContextInfo(DynamicCacheDescriptor cacheDesc) {
+    public GridCacheContextInfo(DynamicCacheDescriptor cacheDesc, GridKernalContext kctx) {
         config = cacheDesc.cacheConfiguration();
         dynamicDeploymentId = cacheDesc.deploymentId();
         groupId = cacheDesc.groupId();
         cacheId = CU.cacheId(config.getName());
 
         clientCache = true;
+
+        this.kctx = kctx;
     }
 
     /**
@@ -162,5 +169,12 @@ public class GridCacheContextInfo<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "GridCacheContextInfo: " + name() + " " + (isCacheContextInited() ? "started" : "not started");
+    }
+
+    /**
+     * @return Kernal context.
+     */
+    public GridKernalContext kernalContext() {
+        return kctx;
     }
 }

@@ -21,19 +21,22 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Service's information container.
  */
-public class ServiceInfo implements ServiceDescriptor {
+public class ServiceInfo implements ServiceDescriptor, ServiceView {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -94,19 +97,13 @@ public class ServiceInfo implements ServiceDescriptor {
         return cfg;
     }
 
-    /**
-     * @return {@code true} if statically configured.
-     */
-    public boolean staticallyConfigured() {
+    /** {@inheritDoc} */
+    @Override public boolean staticallyConfigured() {
         return staticCfg;
     }
 
-    /**
-     * Rerurns services id.
-     *
-     * @return Service id.
-     */
-    public IgniteUuid serviceId() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid serviceId() {
         return srvcId;
     }
 
@@ -116,7 +113,6 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Class<? extends Service> serviceClass() {
         if (cfg instanceof LazyServiceConfiguration) {
             String clsName = ((LazyServiceConfiguration)cfg).serviceClassName();
@@ -148,7 +144,20 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @Override public String affinityKeyValue() {
+        Object affKey = cfg.getAffinityKey();
+
+        return affKey == null ? null : affKey.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> nodeFilter() {
+        IgnitePredicate<ClusterNode> filter = cfg.getNodeFilter();
+
+        return filter == null ? null : filter.getClass();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <K> K affinityKey() {
         return (K)cfg.getAffinityKey();
     }

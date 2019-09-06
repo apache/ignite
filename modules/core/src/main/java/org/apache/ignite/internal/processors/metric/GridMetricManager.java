@@ -25,6 +25,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,12 +42,24 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.list.walker.CacheGroupViewWalker;
+import org.apache.ignite.internal.processors.metric.list.walker.CacheViewWalker;
+import org.apache.ignite.internal.processors.metric.list.walker.ComputTaskViewWalker;
+import org.apache.ignite.internal.processors.metric.list.walker.ServiceViewWalker;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
+import org.apache.ignite.spi.metric.list.view.CacheGroupView;
+import org.apache.ignite.spi.metric.list.view.CacheView;
+import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
+import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,14 +67,17 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
- * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
+ * This manager should provide {@link ReadOnlyMetricRegistry} and {@link ReadOnlyMonitoringListRegistry}
+ * for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
  * @see MetricRegistry
+ * @see MonitoringList
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -159,6 +175,54 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Histogram of blocking PME durations metric name. */
     public static final String PME_OPS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
 
+    /** */
+    public static final String NODES_MON_LIST = "nodes";
+
+    /** */
+    public static final String NODES_MON_LIST_DESC = "Cluster nodes";
+
+    /** */
+    public static final String CACHES_MON_LIST = "caches";
+
+    /** */
+    public static final String CACHE_GRPS_MON_LIST = "cacheGroups";
+
+    /** */
+    public static final String CACHES_MON_LIST_DESC = "Caches";
+
+    /** */
+    public static final String CACHE_GRPS_MON_LIST_DESC = "Cache groups";
+
+    /** */
+    public static final String TXS_MON_LIST = "transactions";
+
+    /** */
+    public static final String TXS_MON_LIST_DESC = "Running transactions";
+
+    /** */
+    public static final String CQ_MON_LIST = metricName("query", "continuous");
+
+    /** */
+    public static final String CQ_MON_LIST_DESC = "Continuous queries";
+
+    /** */
+    public static final String CLI_CONN_MON_LIST = metricName("client", "connections");
+
+    /** */
+    public static final String CLI_CONN_MON_LIST_DESC = "Client connections";
+
+    /** */
+    public static final String SVCS_MON_LIST = "services";
+
+    /** */
+    public static final String SVCS_MON_LIST_DESC = "Services";
+
+    /** */
+    public static final String TASKS_MON_LIST = "tasks";
+
+    /** */
+    public static final String TASKS_MON_LIST_DESC = "Running compute tasks";
+
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
@@ -177,8 +241,56 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
+    /** Metrics registry. */
+    private final ReadOnlyMetricRegistry metricsRegistry = new ReadOnlyMetricRegistry() {
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<MetricRegistry> iterator() {
+            return registries.values().iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
+            metricRegCreationLsnrs.add(lsnr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr) {
+            metricRegRemoveLsnrs.add(lsnr);
+        }
+    };
+
+    /** Registered lists. */
+    private final ConcurrentHashMap<String, MonitoringList<?, ?>> lists = new ConcurrentHashMap<>();
+
+    /** Lists registry. */
+    private final ReadOnlyMonitoringListRegistry listRegistry = new ReadOnlyMonitoringListRegistry() {
+        /** {@inheritDoc} */
+        @Override public void addListCreationListener(Consumer<MonitoringList<?, ?>> lsnr) {
+            listCreationLsnrs.add(lsnr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addListRemoveListener(Consumer<MonitoringList<?, ?>> lsnr) {
+            listRemoveLsnrs.add(lsnr);
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<MonitoringList<?, ?>> iterator() {
+            return lists.values().iterator();
+        }
+    };
+
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** Metric registry remove listeners. */
+    private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
+
+    /** List creation listeners. */
+    private final List<Consumer<MonitoringList<?, ?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** List remove listeners. */
+    private final List<Consumer<MonitoringList<?, ?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -194,6 +306,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
+
+    /** Registered walkers for list row. */
+    private final Map<Class<?>, MonitoringRowAttributeWalker<?>> walkers = new HashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -232,6 +347,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
+
+        registerWalker(CacheGroupView.class, new CacheGroupViewWalker());
+        registerWalker(CacheView.class, new CacheViewWalker());
+        registerWalker(ServiceView.class, new ServiceViewWalker());
+        registerWalker(ComputeTaskView.class, new ComputTaskViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -241,8 +361,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        for (MetricExporterSpi spi : getSpis())
-            spi.setMetricRegistry(this);
+        for (MetricExporterSpi spi : getSpis()) {
+            spi.setMetricRegistry(metricsRegistry);
+            spi.setMonitoringListRegistry(listRegistry);
+        }
 
         startSpi();
     }
@@ -255,6 +377,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         U.closeQuiet(metricsUpdateTask);
     }
 
+    /** @return Metric registry. */
+    public ReadOnlyMetricRegistry metricRegistry() {
+        return metricsRegistry;
+    }
+
     /**
      * Gets or creates metric registry.
      *
@@ -265,45 +392,56 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         return registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name, log);
 
-            notifyListeners(mreg, metricRegCreationLsnrs);
+            notifyListeners(mreg, metricRegCreationLsnrs, log);
 
             return mreg;
         });
     }
 
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<MetricRegistry> iterator() {
-        return registries.values().iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
-        metricRegCreationLsnrs.add(lsnr);
-    }
-
     /**
-     * Removes group.
+     * Gets or creates {@link MonitoringList}.
      *
-     * @param grpName Group name.
+     * @param name Name of the list.
+     * @param description Description.
+     * @param rowClazz Class of the row.
+     * @param <Id> Type of the row identificator.
+     * @param <R> Type of the row.
+     * @return Monitoring list.
      */
-    public void remove(String grpName) {
-        registries.remove(grpName);
+    public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, String description,
+        Class<R> rowClazz) {
+        return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
+            MonitoringList<Id, R> list = new MonitoringList<>(name, description, rowClazz,
+                (MonitoringRowAttributeWalker<R>)walkers.get(rowClazz), log);
+
+            notifyListeners(list, listCreationLsnrs, log);
+
+            return list;
+        });
+    }
+
+    public <R extends MonitoringRow<?>> void registerWalker(Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
+        walkers.put(rowClass, walker);
     }
 
     /**
-     * @param t Consumed object.
-     * @param lsnrs Listeners.
-     * @param <T> Type of consumed object.
+     * Removes registry.
+     *
+     * @param regName Registry name.
      */
-    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
-        for (Consumer<T> lsnr : lsnrs) {
-            try {
-                lsnr.accept(t);
-            }
-            catch (Exception e) {
-                U.warn(log, "Metric listener error", e);
-            }
-        }
+    public void removeMetricRegistry(String regName) {
+        MetricRegistry rmv = registries.remove(regName);
+
+        if (rmv != null)
+            notifyListeners(rmv, metricRegRemoveLsnrs, log);
+    }
+
+    public void removeList(String listName) {
+        MonitoringList<?, ?> rmv = lists.remove(listName);
+
+        if (rmv != null)
+            notifyListeners(rmv, listRemoveLsnrs, log);
+
     }
 
     /**
