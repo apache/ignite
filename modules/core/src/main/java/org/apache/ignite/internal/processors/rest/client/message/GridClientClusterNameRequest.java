@@ -15,21 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
-
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+package org.apache.ignite.internal.processors.rest.client.message;
 
 /**
- * Checkpoint futures.
+ *
  */
-public interface CheckpointFuture {
-    /**
-     * @return Begin future.
-     */
-    public GridFutureAdapter beginFuture();
-
-    /**
-     * @return Finish future.
-     */
-    public GridFutureAdapter<Object> finishFuture();
+public class GridClientClusterNameRequest extends GridClientAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
 }

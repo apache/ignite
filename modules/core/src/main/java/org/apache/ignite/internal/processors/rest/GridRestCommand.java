@@ -178,6 +178,9 @@ public enum GridRestCommand {
     CLUSTER_READ_ONLY_DISABLE("readonlydisable"),
 
     /** */
+    CLUSTER_NAME("clustername"),
+
+    /** */
     AUTHENTICATE("authenticate"),
 
     /** */

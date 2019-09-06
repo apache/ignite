@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.rest.request;
 
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Checkpoint futures.
+ * Grid command request of log file.
  */
-public interface CheckpointFuture {
+public class GridRestClusterNameRequest extends GridRestRequest {
     /**
-     * @return Begin future.
+     * Constructor.
      */
-    public GridFutureAdapter beginFuture();
+    public GridRestClusterNameRequest() {
+        command(GridRestCommand.CLUSTER_NAME);
+    }
 
-    /**
-     * @return Finish future.
-     */
-    public GridFutureAdapter<Object> finishFuture();
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestClusterNameRequest.class, this, super.toString());
+    }
 }
