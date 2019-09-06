@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestBaselineRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
@@ -77,6 +78,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_G
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_NAME;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
@@ -759,6 +761,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                     restReq0.active(false);
 
                 restReq = restReq0;
+
+                break;
+            }
+
+            case CLUSTER_NAME: {
+                restReq = new GridRestClusterNameRequest();
 
                 break;
             }
