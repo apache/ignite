@@ -253,7 +253,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
                 }
             }
 
-            assertTrue("Index not found: " + idxName, res.size() > 0);
+            assertTrue("Index not found: " + idxName, !res.isEmpty());
 
             assertEquals(Arrays.asList(fields), res);
         }
