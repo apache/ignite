@@ -91,7 +91,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true);
 
@@ -102,7 +101,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setName(CACHE3)
             .setCacheMode(CacheMode.PARTITIONED)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true)
             .setRebalanceDelay(REBALANCE_DELAY);
@@ -271,11 +269,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             }
         }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        waitForCondition(new PA() {
+        assertTrue(waitForCondition(new PA() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getRebalancingStartTime() != -1L;
             }
-        }, 5_000);
+        }, 5_000));
 
         CacheMetrics metrics = ig2.cache(CACHE1).localMetrics();
 
@@ -323,11 +321,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-        waitForCondition(new PA() {
+        assertTrue(waitForCondition(new PA() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime() != -1L;
             }
-        }, 5_000L);
+        }, 5_000L));
 
         long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 
@@ -343,11 +341,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 //        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
 //            finishRebalanceLatch.await(timeLeft + 10_000L, TimeUnit.MILLISECONDS));
 
-        waitForCondition(new GridAbsPredicate() {
+        assertTrue(waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
             }
-        }, timeLeft + 12_000L);
+        }, timeLeft + 12_000L));
 
         log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
                 ", Time to rebalance=" + (finishTime - startTime) +
