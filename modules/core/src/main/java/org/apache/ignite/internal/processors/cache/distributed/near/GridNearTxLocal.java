@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,6 +30,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -74,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyRollbackOnlyImpl;
@@ -85,6 +90,7 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -139,6 +145,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final ThreadLocal<SimpleDateFormat> TIME_FORMAT =
+        ThreadLocal.withInitial(() -> new SimpleDateFormat("HH:mm:ss.SSS"));
+
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> PREP_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
@@ -182,6 +192,40 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     private boolean trackTimeout;
+
+    /**
+     * Counts how much time this transaction has spent on system calls, in nanoseconds.
+     */
+    private final AtomicLong systemTime = new AtomicLong(0);
+
+    /**
+     * Stores the nano time value when current system time has started, or <code>0</code> if no system section
+     * is running currently.
+     */
+    private final AtomicLong systemStartTime = new AtomicLong(0);
+
+    /**
+     * Stores the nano time value when prepare step has started, or <code>0</code> if no prepare step
+     * has started yet.
+     */
+    private final AtomicLong prepareStartTime = new AtomicLong(0);
+
+    /**
+     * Stores prepare step duration, or <code>0</code> if it has not finished yet.
+     */
+    private final AtomicLong prepareTime = new AtomicLong(0);
+
+    /**
+     * Stores the nano time value when commit or rollback step has started, or <code>0</code> if it
+     * has not started yet.
+     */
+    private final AtomicLong commitOrRollbackStartTime = new AtomicLong(0);
+
+    /** Stores commit or rollback step duration, or <code>0</code> if it has not finished yet. */
+    private final AtomicLong commitOrRollbackTime = new AtomicLong(0);
+
+    /** */
+    private IgniteTxManager.TxDumpsThrottling txDumpsThrottling;
 
     /** */
     @GridToStringExclude
@@ -228,6 +272,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param lb Label.
+     * @param txDumpsThrottling Log throttling information.
      */
     public GridNearTxLocal(
         GridCacheSharedContext ctx,
@@ -243,7 +288,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        @Nullable String lb
+        @Nullable String lb,
+        IgniteTxManager.TxDumpsThrottling txDumpsThrottling
     ) {
         super(
             ctx,
@@ -267,6 +313,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
         this.mvccOp = mvccOp;
+
+        this.txDumpsThrottling = txDumpsThrottling;
 
         initResult();
 
@@ -3847,9 +3895,130 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Returns current amount of time that transaction has spent on system activities (acquiring locks, commiting,
+     * rolling back, etc.)
+     *
+     * @return Amount of time in milliseconds.
+     */
+    public long systemTimeCurrent() {
+        long systemTime0 = systemTime.get();
+
+        long systemStartTime0 = systemStartTime.get();
+
+        long t = systemStartTime0 == 0 ? 0 : (System.nanoTime() - systemStartTime0);
+
+        return U.nanosToMillis(systemTime0 + t);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean state(TransactionState state) {
+        boolean res = super.state(state);
+
+        if (state == COMMITTED || state == ROLLED_BACK) {
+            leaveSystemSection();
+
+            //if commitOrRollbackTime != 0 it means that we already have written metrics and dumped it in log at least once
+            if (!commitOrRollbackTime.compareAndSet(0, System.nanoTime() - commitOrRollbackStartTime.get()))
+                return res;
+
+            long systemTimeMillis = U.nanosToMillis(this.systemTime.get());
+            long totalTimeMillis = System.currentTimeMillis() - startTime();
+
+            //in some cases totalTimeMillis can be less than systemTimeMillis, as they are calculated with different precision
+            long userTimeMillis = Math.max(totalTimeMillis - systemTimeMillis, 0);
+
+            cctx.txMetrics().onNearTxComplete(systemTimeMillis, userTimeMillis);
+
+            boolean willBeSkipped = txDumpsThrottling == null || txDumpsThrottling.skipCurrent();
+
+            if (!willBeSkipped) {
+                long transactionTimeDumpThreshold = cctx.tm().longTransactionTimeDumpThreshold();
+
+                double transactionTimeDumpSamplesCoefficient = cctx.tm().transactionTimeDumpSamplesCoefficient();
+
+                boolean isLong = transactionTimeDumpThreshold > 0 && totalTimeMillis > transactionTimeDumpThreshold;
+
+                boolean randomlyChosen = transactionTimeDumpSamplesCoefficient > 0.0
+                    && ThreadLocalRandom.current().nextDouble() <= transactionTimeDumpSamplesCoefficient;
+
+                if (randomlyChosen || isLong) {
+                    String txDump = completedTransactionDump(state, systemTimeMillis, userTimeMillis, isLong);
+
+                    if (isLong)
+                        log.warning(txDump);
+                    else
+                        log.info(txDump);
+
+                    txDumpsThrottling.dump();
+                }
+            }
+            else if (txDumpsThrottling != null)
+                txDumpsThrottling.skip();
+        }
+
+        return res;
+    }
+
+    /**
+     * Builds dump string for completed transaction.
+     *
+     * @param state Transaction state.
+     * @param systemTimeMillis System time in milliseconds.
+     * @param userTimeMillis User time in milliseconds.
+     * @param isLong Whether the dumped transaction is long running or not.
+     * @return Dump string.
+     */
+    private String completedTransactionDump(
+        TransactionState state,
+        long systemTimeMillis,
+        long userTimeMillis,
+        boolean isLong
+    ) {
+        long cacheOperationsTimeMillis =
+            U.nanosToMillis(systemTime.get() - prepareTime.get() - commitOrRollbackTime.get());
+
+        GridStringBuilder warning = new GridStringBuilder(isLong ? "Long transaction time dump " : "Transaction time dump ")
+            .a("[startTime=")
+            .a(TIME_FORMAT.get().format(new Date(startTime)))
+            .a(", totalTime=")
+            .a(systemTimeMillis + userTimeMillis)
+            .a(", systemTime=")
+            .a(systemTimeMillis)
+            .a(", userTime=")
+            .a(userTimeMillis)
+            .a(", cacheOperationsTime=")
+            .a(cacheOperationsTimeMillis);
+
+        if (state == COMMITTED) {
+            warning
+                .a(", prepareTime=")
+                .a(timeMillis(prepareTime))
+                .a(", commitTime=")
+                .a(timeMillis(commitOrRollbackTime));
+        }
+        else {
+            warning
+                .a(", rollbackTime=")
+                .a(timeMillis(commitOrRollbackTime));
+        }
+
+        warning
+            .a(", tx=")
+            .a(this)
+            .a("]");
+
+        return warning.toString();
+    }
+
+    /**
      * @return Tx prepare future.
      */
     public IgniteInternalFuture<?> prepareNearTxLocal() {
+        enterSystemSection();
+
+        //we assume that prepare start time should be set only once for the transaction
+        prepareStartTime.compareAndSet(0, System.nanoTime());
+
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut;
 
         if (fut == null) {
@@ -3948,6 +4117,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
+                    //these values should not be changed after set once
+                    prepareTime.compareAndSet(0, System.nanoTime() - prepareStartTime.get());
+
+                    commitOrRollbackStartTime.compareAndSet(0, System.nanoTime());
+
                     try {
                         // Make sure that here are no exceptions.
                         f.get();
@@ -4009,6 +4183,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean onTimeout) {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
+
+        enterSystemSection();
 
         if (!onTimeout && trackTimeout)
             removeTimeoutHandler();
@@ -4959,6 +5135,30 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (log.isDebugEnabled())
                 log.debug("Skip rollback tx on timeout: " + this);
         }
+    }
+
+    /** */
+    private long timeMillis(AtomicLong atomicNanoTime) {
+        return U.nanosToMillis(atomicNanoTime.get());
+    }
+
+    /**
+     * Enters the section when system time for this transaction is counted.
+     */
+    public void enterSystemSection() {
+        //setting systemStartTime only if it equals 0, otherwise it means that we are already in system section
+        //and sould do nothing.
+        systemStartTime.compareAndSet(0, System.nanoTime());
+    }
+
+    /**
+     * Leaves the section when system time for this transaction is counted.
+     */
+    public void leaveSystemSection() {
+        long systemStartTime0 = systemStartTime.getAndSet(0);
+
+        if (systemStartTime0 > 0)
+            systemTime.addAndGet(System.nanoTime() - systemStartTime0);
     }
 
     /**

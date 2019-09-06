@@ -123,7 +123,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testSysJmxMetrics() throws Exception {
-        DynamicMBean sysMBean = mbean(null, SYS_METRICS);
+        DynamicMBean sysMBean = metricSet(ignite.name(), null, SYS_METRICS);
 
         Set<String> res = stream(sysMBean.getMBeanInfo().getAttributes())
             .map(MBeanFeatureInfo::getName)
@@ -154,7 +154,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testDataRegionJmxMetrics() throws Exception {
-        DynamicMBean dataRegionMBean = mbean("io", "dataregion.default");
+        DynamicMBean dataRegionMBean = metricSet(ignite.name(), "io", "dataregion.default");
 
         Set<String> res = stream(dataRegionMBean.getMBeanInfo().getAttributes())
             .map(MBeanFeatureInfo::getName)
@@ -205,16 +205,16 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         assertThrowsWithCause(new RunnableX() {
             @Override public void runx() throws Exception {
-                mbean("filtered", "metric");
+                metricSet(ignite.name(), "filtered", "metric");
             }
         }, IgniteException.class);
 
-        DynamicMBean bean1 = mbean("other", "prefix");
+        DynamicMBean bean1 = metricSet(ignite.name(), "other", "prefix");
 
         assertEquals(42L, bean1.getAttribute("test"));
         assertEquals(43L, bean1.getAttribute("test2"));
 
-        DynamicMBean bean2 = mbean("other", "prefix2");
+        DynamicMBean bean2 = metricSet(ignite.name(), "other", "prefix2");
 
         assertEquals(44L, bean2.getAttribute("test3"));
     }
