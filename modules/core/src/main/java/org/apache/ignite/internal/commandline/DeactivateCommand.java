@@ -29,14 +29,24 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  * Command to deactivate cluster.
  */
 public class DeactivateCommand implements Command<Void> {
+    /** Cluster name. */
+    private String clusterName;
+
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         Command.usage(logger, "Deactivate cluster:", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
+    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+        try (GridClient client = Command.startClient(clientCfg)) {
+            clusterName = client.state().clusterName();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return "Warning: the command will deactivate a cluster.";
+        return "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
     }
 
     /**

@@ -73,6 +73,16 @@ public interface Command<T> {
     public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception;
 
     /**
+     * Prepares confirmation for the command.
+     *
+     * @param clientCfg Thin client configuration.
+     * @throws Exception If error occur.
+     */
+    default void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception{
+        //no-op
+    }
+
+    /**
      * @return Message text to show user for. If null it means that confirmation is not needed.
      */
     public default String confirmationPrompt() {

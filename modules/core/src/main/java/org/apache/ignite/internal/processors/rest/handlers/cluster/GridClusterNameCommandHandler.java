@@ -22,27 +22,24 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
-import org.apache.ignite.internal.processors.rest.request.GridRestReadOnlyChangeModeRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_READ_ONLY_MODE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_DISABLE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_ENABLE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_NAME;
 
 /**
  *
  */
-public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandlerAdapter {
+public class GridClusterNameCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
-    private static final Collection<GridRestCommand> COMMANDS =
-        U.sealList(CLUSTER_CURRENT_READ_ONLY_MODE, CLUSTER_READ_ONLY_DISABLE, CLUSTER_READ_ONLY_ENABLE);
+    private static final Collection<GridRestCommand> COMMANDS = U.sealList(CLUSTER_NAME);
 
     /**
      * @param ctx Context.
      */
-    public GridChangeReadOnlyModeCommandHandler(GridKernalContext ctx) {
+    public GridClusterNameCommandHandler(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -53,31 +50,14 @@ public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandler
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restReq) {
-        GridRestReadOnlyChangeModeRequest req = (GridRestReadOnlyChangeModeRequest)restReq;
+        assert restReq instanceof GridRestClusterNameRequest : restReq;
 
         final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 
         final GridRestResponse res = new GridRestResponse();
 
         try {
-            switch (req.command()) {
-                case CLUSTER_CURRENT_READ_ONLY_MODE:
-                    res.setResponse(ctx.grid().cluster().readOnly());
-
-                    break;
-
-                default:
-                    if (req.readOnly())
-                        U.log(log, "Received enable read-only mode request from client node with ID: " + req.clientId());
-                    else
-                        U.log(log, "Received disable read-only mode request from client node with ID: " + req.clientId());
-
-                    ctx.grid().cluster().readOnly(req.readOnly());
-
-                    res.setResponse(req.command().key() + " done");
-
-                    break;
-            }
+            res.setResponse(ctx.cluster().clusterName());
 
             fut.onDone(res);
         }

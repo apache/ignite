@@ -64,6 +64,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -97,14 +98,17 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.io.File.separatorChar;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_ILLEGAL_STATE_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -251,6 +255,80 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--deactivate"));
 
         assertFalse(ignite.cluster().active());
+    }
+
+    /**
+     * Test the deactivation command on the active and no cluster with checking
+     * the cluster name(which is set through the system property) in
+     * confirmation.
+     *
+     * @throws Exception If failed.
+     * */
+    @Test
+    @WithSystemProperty(key = IGNITE_CLUSTER_NAME, value = "TEST_CLUSTER_NAME")
+    public void testDeactivateWithCheckClusterNameInConfirmationBySystemProperty() throws Exception {
+        IgniteEx igniteEx = startGrid(0);
+        assertFalse(igniteEx.cluster().active());
+
+        deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(igniteEx, "TEST_CLUSTER_NAME");
+    }
+
+    /**
+     * Test the deactivation command on the active and no cluster with checking
+     * the cluster name(default) in confirmation.
+     *
+     * @throws Exception If failed.
+     * */
+    @Test
+    public void testDeactivateWithCheckClusterNameInConfirmationByDefault() throws Exception {
+        IgniteEx igniteEx = startGrid(0);
+        assertFalse(igniteEx.cluster().active());
+
+        deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
+            igniteEx,
+            igniteEx.context().cache().utilityCache().context().dynamicDeploymentId().toString()
+        );
+    }
+
+    /**
+     * Deactivating the cluster(active and not) with checking the cluster name
+     * in the confirmation.
+     *
+     * @param igniteEx Node.
+     * @param clusterName Cluster name to check in the confirmation message.
+     * */
+    private void deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
+        IgniteEx igniteEx,
+        String clusterName
+    ) {
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+
+        igniteEx.cluster().active(true);
+        assertTrue(igniteEx.cluster().active());
+
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+    }
+
+    /**
+     * Deactivating the cluster with checking the cluster name in the
+     * confirmation.
+     *
+     * @param igniteEx Node.
+     * @param clusterName Cluster name to check in the confirmation message.
+     * */
+    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String clusterName) {
+        autoConfirmation = false;
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute(DEACTIVATE.text()));
+        assertFalse(igniteEx.cluster().active());
+
+        assertContains(
+            log,
+            testOut.toString(),
+            "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
+        );
     }
 
     /**

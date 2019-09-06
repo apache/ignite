@@ -107,4 +107,9 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     @Override public String tag() throws GridClientException {
         return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().tag();
     }
+
+    /** {@inheritDoc} */
+    @Override public String clusterName() throws GridClientException {
+        return withReconnectHandling(GridClientConnection::clusterName).get();
+    }
 }
