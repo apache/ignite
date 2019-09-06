@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.rest.handlers;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
  * Abstract command handler.
@@ -50,5 +52,22 @@ public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHa
      */
     protected static String missingParameter(String param) {
         return "Failed to find mandatory parameter in request: " + param;
+    }
+
+    /**
+     * Converts exception to string representation for error in response.
+     *
+     * @param e Exception.
+     * @return String representation of exception for error in response.
+     */
+    protected static String errorMessage(Exception e) {
+        SB sb = new SB();
+
+        sb.a(e.getMessage()).a("\n").a("suppressed: \n");
+
+        for (Throwable t : X.getSuppressedList(e))
+            sb.a(t.getMessage()).a("\n");
+
+        return sb.toString();
     }
 }
