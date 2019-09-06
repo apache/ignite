@@ -258,7 +258,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         GridMetricManager mmgr = ignite.context().metric();
 
-        Stream<MetricRegistry> grpsStream = StreamSupport.stream(mmgr.spliterator(), false)
+        Stream<MetricRegistry> grpsStream = StreamSupport.stream(mmgr.metricRegistry().spliterator(), false)
                 .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
 
         return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))

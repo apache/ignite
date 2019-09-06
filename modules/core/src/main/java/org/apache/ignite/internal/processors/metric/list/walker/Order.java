@@ -15,27 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric;
+package org.apache.ignite.internal.processors.metric.list.walker;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
 
 /**
- * Read only metric registry.
+ * Annotation to set walk order for a {@link MonitoringRowAttributeWalker}.
+ * Walker traverse attributes from low to high value.
+ *
+ * @see MonitoringRowAttributeWalker
+ * @see CacheViewWalker
  */
-public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
-    /**
-     * Adds listener of metrics group creation events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
-
-    /**
-     * Adds listener of metric remove events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr);
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Order {
+    public int value() default 0;
 }

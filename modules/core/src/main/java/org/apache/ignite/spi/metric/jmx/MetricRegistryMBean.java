@@ -20,9 +20,6 @@ package org.apache.ignite.spi.metric.jmx;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.management.Attribute;
-import javax.management.AttributeList;
-import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -37,7 +34,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 /**
  * MBean for exporting values of metric registry.
  */
-public class MetricRegistryMBean implements DynamicMBean {
+public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
     /** Metric registry. */
     MetricRegistry mreg;
 
@@ -114,36 +111,5 @@ public class MetricRegistryMBean implements DynamicMBean {
             return ((ObjectMetric)metric).type().getName();
 
         throw new IllegalArgumentException("Unknown metric class. " + metric.getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public AttributeList getAttributes(String[] attributes) {
-        AttributeList list = new AttributeList();
-
-        for (String attribute : attributes) {
-            Object val = getAttribute(attribute);
-
-            list.add(val);
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setAttribute(Attribute attribute) {
-        throw new UnsupportedOperationException("setAttribute not supported.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public AttributeList setAttributes(AttributeList attributes) {
-        throw new UnsupportedOperationException("setAttributes not supported.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object invoke(String actionName, Object[] params, String[] signature) {
-        if (actionName.equals("getAttribute"))
-            return getAttribute((String)params[0]);
-
-        throw new UnsupportedOperationException("invoke not supported.");
     }
 }

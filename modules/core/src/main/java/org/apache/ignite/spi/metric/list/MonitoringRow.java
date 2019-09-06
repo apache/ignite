@@ -15,27 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric;
+package org.apache.ignite.spi.metric.list;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 
 /**
- * Read only metric registry.
+ * Monitoring list row base interface.
+ * Each row idenitified by the instance of {@code Id}.
+ *
+ * @see MonitoringList
+ * @see GridMetricManager
+ * @see ReadOnlyMonitoringListRegistry
  */
-public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
-    /**
-     * Adds listener of metrics group creation events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
-
-    /**
-     * Adds listener of metric remove events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr);
+public interface MonitoringRow<Id> {
+    /** @return Unique idenitifier of the row in the list. */
+    public Id monitoringRowId();
 }

@@ -18,24 +18,28 @@
 package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 
 /**
- * Read only metric registry.
+ * Read only monitoring list registry.
+ *
+ * @see GridMetricManager
+ * @see MonitoringList
+ * @see MetricExporterSpi
  */
-public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
+public interface ReadOnlyMonitoringListRegistry extends Iterable<MonitoringList<?, ?>> {
     /**
-     * Adds listener of metrics group creation events.
+     * Adds listener of list creation events.
      *
      * @param lsnr Listener.
      */
-    public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
+    public void addListCreationListener(Consumer<MonitoringList<?, ?>> lsnr);
 
     /**
-     * Adds listener of metric remove events.
+     * Adds listener of list remove events.
      *
      * @param lsnr Listener.
      */
-    public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr);
+    public void addListRemoveListener(Consumer<MonitoringList<?, ?>> lsnr);
 }
