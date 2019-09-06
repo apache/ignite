@@ -59,4 +59,12 @@ public interface GridClientClusterState {
      * @throws GridClientException If change of read-only mode is failed.
      */
     public void readOnly(boolean readOnly) throws GridClientException;
+
+    /**
+     * Get the cluster name.
+     *
+     * @return The name of the cluster.
+     * @throws GridClientException If the request to get the cluster name failed.
+     * */
+    String clusterName() throws GridClientException;
 }

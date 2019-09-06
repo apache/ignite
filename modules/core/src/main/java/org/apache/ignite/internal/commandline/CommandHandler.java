@@ -55,6 +55,7 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.System.lineSeparator;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -104,7 +105,7 @@ public class CommandHandler {
     private static final long DFLT_PING_TIMEOUT = 30_000L;
 
     /** */
-    private static final Scanner IN = new Scanner(System.in);
+    private final Scanner in = new Scanner(System.in);
 
     /** Utility name. */
     public static final String UTILITY_NAME = "control.(sh|bat)";
@@ -233,27 +234,31 @@ public class CommandHandler {
             Command command = args.command();
             commandName = command.name();
 
-            if (!args.autoConfirmation() && !confirm(command.confirmationPrompt())) {
-                logger.info("Operation cancelled.");
-
-                return EXIT_CODE_OK;
-            }
+            GridClientConfiguration clientCfg = getClientConfiguration(args);
 
             int tryConnectMaxCount = 3;
 
             boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
-            GridClientConfiguration clientCfg = getClientConfiguration(args);
-
-            logger.info("Command [" + commandName + "] started");
-            logger.info("Arguments: " + argumentsToString(rawArgs));
-
-            logger.info(DELIM);
-
             boolean credentialsRequested = false;
 
             while (true) {
                 try {
+                    if (!args.autoConfirmation()) {
+                        command.prepareConfirmation(clientCfg);
+
+                        if (!confirm(command.confirmationPrompt())) {
+                            logger.info("Operation cancelled.");
+
+                            return EXIT_CODE_OK;
+                        }
+                    }
+
+                    logger.info("Command [" + commandName + "] started");
+                    logger.info("Arguments: " + argumentsToString(rawArgs));
+
+                    logger.info(DELIM);
+
                     lastOperationRes = command.execute(clientCfg, logger);
 
                     break;
@@ -576,7 +581,7 @@ public class CommandHandler {
     private String readLine(String prompt) {
         System.out.print(prompt);
 
-        return IN.nextLine();
+        return in.nextLine();
     }
 
 
@@ -585,11 +590,11 @@ public class CommandHandler {
      *
      * @return {@code true} if operation confirmed (or not needed), {@code false} otherwise.
      */
-    private <T> boolean confirm(String str) {
+    private boolean confirm(String str) {
         if (str == null)
             return true;
 
-        String prompt = str + "\nPress '" + CONFIRM_MSG + "' to continue . . . ";
+        String prompt = str + lineSeparator() + "Press '" + CONFIRM_MSG + "' to continue . . . ";
 
         return CONFIRM_MSG.equalsIgnoreCase(readLine(prompt));
     }

@@ -58,6 +58,7 @@ import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimize
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientReadOnlyModeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
@@ -948,6 +949,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         makeRequest((GridClientMessage)msg, res, true);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<String> clusterName(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        return makeRequest(new GridClientClusterNameRequest(), destNodeId);
     }
 
     /**

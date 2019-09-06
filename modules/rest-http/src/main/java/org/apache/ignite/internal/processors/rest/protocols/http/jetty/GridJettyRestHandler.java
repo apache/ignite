@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestBaselineRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestReadOnlyChangeModeRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -78,6 +79,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_P
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_NAME;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_READ_ONLY_MODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_ENABLE;
@@ -776,6 +778,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                     restReq0.readOnly(cmd == CLUSTER_READ_ONLY_ENABLE);
 
                 restReq = restReq0;
+
+                break;
+            }
+
+            case CLUSTER_NAME: {
+                restReq = new GridRestClusterNameRequest();
 
                 break;
             }
