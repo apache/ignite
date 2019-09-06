@@ -20,6 +20,13 @@ package org.apache.ignite.internal.processors.cache;
  * Update counter implementation for MVCC mode.
  */
 public class PartitionMvccTxUpdateCounterImpl extends PartitionTxUpdateCounterImpl {
+    /**
+     * @param grp Group.
+     */
+    public PartitionMvccTxUpdateCounterImpl(CacheGroupContext grp) {
+        super(grp);
+    }
+
     /** {@inheritDoc} */
     @Override public long reserve(long delta) {
         return next(delta);

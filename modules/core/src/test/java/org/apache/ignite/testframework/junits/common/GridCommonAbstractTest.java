@@ -586,15 +586,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * Takes into account only server nodes, clients are ignored.
      *
      * @param timeout Await timeout.
+     * @param nodeSet Optional nodes set.
      * @throws IgniteException If waiting failed.
      */
-    private void awaitTopologyChanged(long timeout) throws IgniteException {
+    private void awaitTopologyChanged(long timeout, @Nullable Collection<ClusterNode> nodeSet) throws IgniteException {
         if (isMultiJvm())
             return;
 
         List<IgniteEx> allNodes0 = G.allGrids().stream()
             .map(i -> (IgniteEx)i)
-            .filter(i -> isServer(i.localNode()))
+            .filter(i -> isServer(i.localNode()) && (nodeSet == null || nodeSet.contains(i.localNode())))
             .collect(toList());
 
         Set<ClusterNode> nodes0 = allNodes0.stream()
@@ -611,7 +612,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 Collection<ClusterNode> nodes = disc.nodes(topVer)
                     .stream()
-                    .filter(GridCommonAbstractTest::isServer)
+                    .filter(i -> isServer(i) && (nodeSet == null || nodeSet.contains(i)))
                     .collect(Collectors.toSet());
 
                 if (System.currentTimeMillis() > endTime) {
@@ -682,7 +683,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     ) throws InterruptedException {
         long timeout = getPartitionMapExchangeTimeout();
 
-        awaitTopologyChanged(timeout * 2);
+        awaitTopologyChanged(timeout * 2, nodes);
 
         long startTime = -1;
 
@@ -956,11 +957,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * Print partitionState for cache.
      */
     protected void printPartitionState(String cacheName, int firstParts) {
+        printPartitionState(cacheName, firstParts, G.allGrids());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param firstParts Count partition for print (will be print first count partition).
+     * @param nodes Grid nodes.
+     *
+     * Print partitionState for cache.
+     */
+    protected void printPartitionState(String cacheName, int firstParts, List<? extends Ignite> nodes) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("----preload sync futures----\n");
 
-        for (Ignite ig : G.allGrids()) {
+        for (Ignite ig : nodes) {
             IgniteKernal k = ((IgniteKernal)ig);
 
             IgniteInternalFuture<?> syncFut = k.internalCache(cacheName)
@@ -978,7 +990,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         sb.append("----rebalance futures----\n");
 
-        for (Ignite ig : G.allGrids()) {
+        for (Ignite ig : nodes) {
             IgniteKernal k = ((IgniteKernal)ig);
 
             IgniteInternalFuture<?> f = k.internalCache(cacheName)
@@ -1015,7 +1027,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         sb.append("----partition state----\n");
 
-        for (Ignite g : G.allGrids()) {
+        for (Ignite g : nodes) {
             IgniteKernal g0 = (IgniteKernal)g;
 
             sb.append("localNodeId=").append(g0.localNode().id())

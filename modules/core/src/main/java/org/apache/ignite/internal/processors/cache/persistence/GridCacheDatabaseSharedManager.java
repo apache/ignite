@@ -2771,6 +2771,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     break;
 
+                // Rollback records should never be filtered to avoid gaps in updates.
+                case ROLLBACK_TX_RECORD:
+                    RollbackRecord rbRec = (RollbackRecord)rec;
+
+                    checkpointReadLock();
+
+                    try {
+                        CacheGroupContext ctx = cctx.cache().cacheGroup(rbRec.groupId());
+
+                        if (ctx != null && !ctx.isLocal()) {
+                            ctx.offheap().onPartitionInitialCounterUpdated(rbRec.partitionId(), rbRec.start(),
+                                rbRec.range());
+                        }
+                    }
+                    finally {
+                        checkpointReadUnlock();
+                    }
+
+                    break;
+
                 default:
                     // Skip other records.
             }

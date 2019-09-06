@@ -74,4 +74,9 @@ public interface TransactionalDrProcessor extends GridProcessor, IgniteChangeGlo
      * @return {@code true} if update counters should be applied when the rebalance is finished.
      */
     public boolean shouldApplyUpdateCounterOnRebalance();
+
+    /**
+     * @return {@code True} if partition counter consistency check should be skipped on partition map exchange.
+     */
+    public boolean shouldSkipCounterConsistencyCheckOnPME();
 }
