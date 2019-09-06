@@ -121,7 +121,7 @@ class ClusterCachesInfo {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<String, CacheView> cachesMonList;
+    @Nullable private MonitoringList<String, CacheView> cachesMonList;
 
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
@@ -132,7 +132,7 @@ class ClusterCachesInfo {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<Integer, CacheGroupView> cachesGrpMonList;
+    @Nullable private MonitoringList<Integer, CacheGroupView> cachesGrpMonList;
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
@@ -170,8 +170,13 @@ class ClusterCachesInfo {
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        cachesMonList = ctx.metric().list(CACHES_MON_LIST, CACHES_MON_LIST_DESC, CacheView.class);
-        cachesGrpMonList = ctx.metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC, CacheGroupView.class);
+        ctx.metric().list(CACHES_MON_LIST, CACHES_MON_LIST_DESC, CacheView.class,
+            l -> cachesMonList = l,
+            l -> cachesMonList = null);
+
+        ctx.metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC, CacheGroupView.class,
+            l -> cachesGrpMonList = l,
+            l -> cachesGrpMonList = null);
 
         log = ctx.log(getClass());
     }

@@ -506,6 +506,26 @@ public interface IgniteMXBean {
     @MXBeanParametersDescriptions("Metrics registry.")
     public void resetMetrics(String registry);
 
+    /**
+     * Disables given monitoring list.
+     *
+     * @param list Monitoring list.
+     */
+    @MXBeanDescription("Disables given monitoring list.")
+    @MXBeanParametersNames("list")
+    @MXBeanParametersDescriptions("Monitoring list name.")
+    public void disableMonitoringList(String list);
+
+    /**
+     * Enables given monitoring list.
+     *
+     * @param list Monitoring list.
+     */
+    @MXBeanDescription("Enables given monitoring list.")
+    @MXBeanParametersNames("list")
+    @MXBeanParametersDescriptions("Monitoring list name.")
+    public void enableMonitoringList(String list);
+
 
     /**
      * Gets cluster read-only mode status.

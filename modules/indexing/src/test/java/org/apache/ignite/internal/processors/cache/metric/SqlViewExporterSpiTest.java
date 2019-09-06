@@ -27,6 +27,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcThinDriver;
@@ -58,7 +59,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST_DESC;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -118,7 +118,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testListRemove() throws Exception {
         GridMetricManager mmgr = ignite.context().metric();
 
-        MonitoringList<String, CacheView> list = mmgr.list("test", "description", CacheView.class);
+        mmgr.list("test", "description", CacheView.class, l -> {}, l -> {});
 
         List<List<?>> rows = execute(ignite, "SELECT * FROM MONITORING.TEST");
 
@@ -379,8 +379,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     @Test
     public void testSchemas() throws Exception {
         try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
-            MonitoringList<String, SqlSchemaView> schemasMonList =
-                g.context().metric().list(SQL_SCHEMA_MON_LIST, SQL_SCHEMA_MON_LIST_DESC, SqlSchemaView.class);
+            MonitoringList<String, SqlSchemaView> schemasMonList = g.context().metric().list(SQL_SCHEMA_MON_LIST);
 
             Set<String> schemaFromMon = new HashSet<>();
 

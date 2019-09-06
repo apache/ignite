@@ -136,7 +136,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<IgniteUuid, ServiceView> svcsMonList;
+    @Nullable private MonitoringList<IgniteUuid, ServiceView> svcsMonList;
 
     /**
      * Collection of services information that were processed by deployment worker. <b>It is updated from deployment
@@ -200,7 +200,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        svcsMonList = ctx.metric().list(SVCS_MON_LIST, SVCS_MON_LIST_DESC, ServiceView.class);
+        ctx.metric().list(SVCS_MON_LIST, SVCS_MON_LIST_DESC, ServiceView.class,
+            l -> svcsMonList = l,
+            l -> svcsMonList = null);
     }
 
     /** {@inheritDoc} */

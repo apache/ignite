@@ -96,7 +96,7 @@ public class SchemaManager {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<String, SqlSchemaView> schMonList;
+    @Nullable private MonitoringList<String, SqlSchemaView> schMonList;
 
     /**
      * SQL tables monitoring list.
@@ -104,7 +104,7 @@ public class SchemaManager {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<String, SqlTableView> tblsMonList;
+    @Nullable private MonitoringList<String, SqlTableView> tblsMonList;
 
     /** System VIEW collection. */
     private final Set<SqlSystemView> systemViews = new GridConcurrentHashSet<>();
@@ -128,8 +128,13 @@ public class SchemaManager {
         this.ctx = ctx;
         this.connMgr = connMgr;
 
-        this.schMonList = ctx.metric().list(SQL_SCHEMA_MON_LIST, SQL_SCHEMA_MON_LIST_DESC, SqlSchemaView.class);
-        this.tblsMonList = ctx.metric().list(SQL_TBLS_MON_LIST, SQL_TBLS_MON_LIST_DESC, SqlTableView.class);
+        ctx.metric().list(SQL_SCHEMA_MON_LIST, SQL_SCHEMA_MON_LIST_DESC, SqlSchemaView.class,
+            l -> schMonList = l,
+            l -> schMonList = null);
+
+        ctx.metric().list(SQL_TBLS_MON_LIST, SQL_TBLS_MON_LIST_DESC, SqlTableView.class,
+            l -> tblsMonList = l,
+            l -> tblsMonList = null);
 
         log = ctx.log(SchemaManager.class);
     }

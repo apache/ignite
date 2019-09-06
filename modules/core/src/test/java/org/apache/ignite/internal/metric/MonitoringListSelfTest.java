@@ -94,8 +94,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (String name : cacheNames)
                 g.createCache(name);
 
-            MonitoringList<String, CacheView> caches =
-                g.context().metric().list(CACHES_MON_LIST, CACHE_GRPS_MON_LIST_DESC, CacheView.class);
+            MonitoringList<String, CacheView> caches = g.context().metric().list(CACHES_MON_LIST);
 
             assertEquals("ignite-sys, cache-1, cache-2", 3, F.size(caches.iterator(), alwaysTrue()));
 
@@ -115,8 +114,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (String grpName : grpNames)
                 g.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-            MonitoringList<Integer, CacheGroupView> grps =
-                g.context().metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC, CacheGroupView.class);
+            MonitoringList<Integer, CacheGroupView> grps = g.context().metric().list(CACHE_GRPS_MON_LIST);
 
             assertEquals("ignite-sys, grp-1, grp-2", 3, F.size(grps.iterator(), alwaysTrue()));
 
@@ -139,8 +137,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             g.services().deploy(srvcCfg);
 
-            MonitoringList<IgniteUuid, ServiceView> srvs =
-                g.context().metric().list(SVCS_MON_LIST, SVCS_MON_LIST_DESC, ServiceView.class);
+            MonitoringList<IgniteUuid, ServiceView> srvs = g.context().metric().list(SVCS_MON_LIST);
 
             assertEquals(1, F.size(srvs.iterator(), alwaysTrue()));
 
@@ -171,8 +168,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (int i=0; i<100; i++)
                 cache.put(i, i);
 
-            MonitoringList<UUID, ContinuousQueryView> qrys =
-                g0.context().metric().list(CQ_MON_LIST, CQ_MON_LIST_DESC, ContinuousQueryView.class);
+            MonitoringList<UUID, ContinuousQueryView> qrys = g0.context().metric().list(CQ_MON_LIST);
 
             assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
 
@@ -188,7 +184,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertNull(cq.localTransformedListener());
             assertNull(cq.remoteTransformer());
 
-            qrys = g1.context().metric().list(CQ_MON_LIST, CQ_MON_LIST_DESC, ContinuousQueryView.class);
+            qrys = g1.context().metric().list(CQ_MON_LIST);
 
             assertEquals(1, F.size(qrys.iterator(), alwaysTrue()));
 
@@ -220,8 +216,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             try (IgniteClient client =
                      Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
 
-                MonitoringList<Long, ClientConnectionView> conns =
-                    g0.context().metric().list(CLI_CONN_MON_LIST, CLI_CONN_MON_LIST_DESC, ClientConnectionView.class);
+                MonitoringList<Long, ClientConnectionView> conns = g0.context().metric().list(CLI_CONN_MON_LIST);
 
                 assertEquals(1, F.size(conns.iterator(), alwaysTrue()));
 
@@ -257,8 +252,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache = g.createCache(new CacheConfiguration<Integer, Integer>("c")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-            MonitoringList<IgniteUuid, TransactionView> txs =
-                g.context().metric().list(TXS_MON_LIST, TXS_MON_LIST_DESC, TransactionView.class);
+            MonitoringList<IgniteUuid, TransactionView> txs = g.context().metric().list(TXS_MON_LIST);
 
             assertEquals(0, F.size(txs.iterator(), alwaysTrue()));
 
@@ -333,8 +327,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
     @Test
     public void testNodes() throws Exception {
         try(IgniteEx g1 = startGrid(0)) {
-            MonitoringList<UUID, ClusterNodeView> nodes =
-                g1.context().metric().list(NODES_MON_LIST, NODES_MON_LIST_DESC, ClusterNodeView.class);
+            MonitoringList<UUID, ClusterNodeView> nodes = g1.context().metric().list(NODES_MON_LIST);
 
             assertEquals(1, nodes.size());
 
@@ -347,8 +340,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
                 checkNodeView(nodes.get(g2.localNode().id()), g2.localNode(), false);
 
-                MonitoringList<UUID, ClusterNodeView> nodes2 =
-                    g2.context().metric().list(NODES_MON_LIST, NODES_MON_LIST_DESC, ClusterNodeView.class);
+                MonitoringList<UUID, ClusterNodeView> nodes2 = g2.context().metric().list(NODES_MON_LIST);
 
                 assertEquals(2, nodes2.size());
 
@@ -362,8 +354,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
     @Test
     public void testComputeBroadcast() throws Exception {
         try(IgniteEx g1 = startGrid(0)) {
-            MonitoringList<IgniteUuid, ComputeTaskView> tasks =
-                g1.context().metric().list(TASKS_MON_LIST, TASK_COUNT_DESC, ComputeTaskView.class);
+            MonitoringList<IgniteUuid, ComputeTaskView> tasks = g1.context().metric().list(TASKS_MON_LIST);
 
             for (int i=0; i<5; i++)
                 g1.compute().broadcastAsync(() -> {

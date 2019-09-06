@@ -294,7 +294,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private MonitoringList<Long, QueryView> sqlQryMonList;
+    @Nullable private MonitoringList<Long, QueryView> sqlQryMonList;
 
     /**
      * Text query monitoring list.
@@ -302,7 +302,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private MonitoringList<Long, QueryView> textQryMonList;
+    @Nullable private MonitoringList<Long, QueryView> textQryMonList;
 
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
@@ -2119,8 +2119,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         mmgr.registerWalker(SqlTableView.class, new SqlTableViewWalker());
         mmgr.registerWalker(SqlIndexView.class, new SqlIndexViewWalker());
 
-        sqlQryMonList = mmgr.list(SQL_QRY_MON_LIST, SQL_QRY_MON_LIST_DESC, QueryView.class);
-        textQryMonList = mmgr.list(TEXT_QRY_MON_LIST, TEXT_QRY_MON_LIST_DESC, QueryView.class);
+        mmgr.list(SQL_QRY_MON_LIST, SQL_QRY_MON_LIST_DESC, QueryView.class,
+            l -> sqlQryMonList = l,
+            l -> sqlQryMonList = null);
+
+        mmgr.list(TEXT_QRY_MON_LIST, TEXT_QRY_MON_LIST_DESC, QueryView.class,
+            l -> textQryMonList = l,
+            l -> textQryMonList = null);
 
         partReservationMgr = new PartitionReservationManager(ctx);
 

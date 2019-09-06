@@ -132,7 +132,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<UUID, ContinuousQueryView> cqMonList;
+    @Nullable private MonitoringList<UUID, ContinuousQueryView> cqMonList;
 
     /** Start futures. */
     private final ConcurrentMap<UUID, StartFuture> startFuts = new ConcurrentHashMap<>();
@@ -182,7 +182,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     public GridContinuousProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        cqMonList = ctx.metric().list(CQ_MON_LIST, CQ_MON_LIST_DESC, ContinuousQueryView.class);
+        ctx.metric().list(CQ_MON_LIST, CQ_MON_LIST_DESC, ContinuousQueryView.class,
+            l -> cqMonList = l,
+            l -> cqMonList = null);
     }
 
     /** {@inheritDoc} */

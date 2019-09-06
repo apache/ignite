@@ -66,8 +66,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     @Test
     public void testSchemas() throws Exception {
         try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
-            MonitoringList<String, SqlSchemaView> schemasMonList =
-                g.context().metric().list(SQL_SCHEMA_MON_LIST, SQL_SCHEMA_MON_LIST_DESC, SqlSchemaView.class);
+            MonitoringList<String, SqlSchemaView> schemasMonList = g.context().metric().list(SQL_SCHEMA_MON_LIST);
 
             Set<String> schemaFromMon = new HashSet<>();
 
@@ -81,8 +80,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTables() throws Exception {
         try (IgniteEx g = startGrid()) {
-            MonitoringList<String, SqlTableView> tblsMonList =
-                g.context().metric().list(SQL_TBLS_MON_LIST, SQL_TBLS_MON_LIST_DESC, SqlTableView.class);
+            MonitoringList<String, SqlTableView> tblsMonList = g.context().metric().list(SQL_TBLS_MON_LIST);
 
             assertEquals(0, tblsMonList.size());
 
@@ -119,8 +117,7 @@ public class SqlMonitoringListSelfTest extends GridCommonAbstractTest {
     @Test
     public void testIndexes() throws Exception {
         try (IgniteEx g = startGrid()) {
-            MonitoringList<String, SqlIndexView> idxMonList =
-                g.context().metric().list(SQL_IDXS_MON_LIST, SQL_IDXS_MON_LIST_DESC, SqlIndexView.class);
+            MonitoringList<String, SqlIndexView> idxMonList = g.context().metric().list(SQL_IDXS_MON_LIST);
 
             assertEquals(0, idxMonList.size());
 

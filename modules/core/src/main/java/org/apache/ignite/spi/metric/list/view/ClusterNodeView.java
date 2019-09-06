@@ -17,16 +17,11 @@
 
 package org.apache.ignite.spi.metric.list.view;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 

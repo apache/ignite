@@ -297,8 +297,8 @@ public class CommandProcessor {
 
         String err = null;
 
-        GridRunningQueryInfo runningQryInfo =
-            ctx.metric().list(SQL_QRY_MON_LIST, SQL_QRY_MON_LIST_DESC, GridRunningQueryInfo.class).get(qryId);
+        GridRunningQueryInfo runningQryInfo = (GridRunningQueryInfo)
+            ctx.metric().<Long, QueryView>list(SQL_QRY_MON_LIST).get(qryId);
 
         if (runningQryInfo == null)
             err = "Query with provided ID doesn't exist " +
@@ -1289,7 +1289,7 @@ public class CommandProcessor {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            ctx.metric().list(SQL_QRY_MON_LIST, SQL_QRY_MON_LIST_DESC, QueryView.class), qryId);
+            ctx.metric().list(SQL_QRY_MON_LIST), qryId);
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 

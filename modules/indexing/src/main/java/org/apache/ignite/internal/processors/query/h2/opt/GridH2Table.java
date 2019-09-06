@@ -145,7 +145,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private MonitoringList<String, SqlIndexView> idxMonList;
+    @Nullable private MonitoringList<String, SqlIndexView> idxMonList;
 
     /** */
     private volatile boolean destroyed;
@@ -262,7 +262,9 @@ public class GridH2Table extends TableBase implements SqlTableView {
 
         GridKernalContext ctx = cacheInfo.kernalContext();
 
-        idxMonList = ctx.metric().list(SQL_IDXS_MON_LIST, SQL_IDXS_MON_LIST_DESC, SqlIndexView.class);
+        ctx.metric().list(SQL_IDXS_MON_LIST, SQL_IDXS_MON_LIST_DESC, SqlIndexView.class,
+            l -> idxMonList = l,
+            l -> idxMonList = null);
 
         for (Index idx : idxs)
             addToMonitoring(idx);

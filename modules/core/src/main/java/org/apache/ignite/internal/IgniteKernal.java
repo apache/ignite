@@ -4606,6 +4606,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void disableMonitoringList(String list) {
+        ctx.metric().removeList(list);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableMonitoringList(String list) {
+        ctx.metric().enableList(list);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean readOnlyMode() {
         return ctx.state().publicApiReadOnlyMode();
     }

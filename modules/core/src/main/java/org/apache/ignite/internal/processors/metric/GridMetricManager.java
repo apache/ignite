@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -36,9 +37,12 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
@@ -75,6 +79,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.function.Function.identity;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
@@ -332,6 +337,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** List remove listeners. */
     private final List<Consumer<MonitoringList<?, ?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
 
+    /** List remove listeners. */
+    private final List<Consumer<String>> listEnableLsnrs = new CopyOnWriteArrayList<>();
+
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
 
@@ -445,6 +453,44 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     }
 
     /**
+     * <ul>
+     * <li> Creates list is not exists.</li>
+     * <li> Register and call {@code storer} callback on each list creation.</li>
+     * <li> Register and call {@code cleaner} callback on each list removal.</li>
+     * </ul>
+     *
+     * List can be created or removed by {@link IgniteKernal#enableMonitoringList(String)}, {@link IgniteKernal#disableMonitoringList(String)} calls.
+     *
+     * @param name List name.
+     * @param description List description.
+     * @param row Row class
+     * @param storer Storer callback.
+     * @param cleaner Cleaner callback.
+     * @param <Id> Type of the id of the monitoring row.
+     * @param <R> Type of the monitoring row.
+     */
+    public <Id, R extends MonitoringRow<Id>> void list(String name, String description,
+        Class<R> row,
+        Consumer<MonitoringList<Id, R>> storer,
+        Consumer<MonitoringList<?, ?>> cleaner) {
+
+        Supplier<MonitoringList<Id, R>> p = () -> list(name, description, row);
+
+        storer.accept(p.get());
+
+        ctx.metric().addRemoveListListener(listenOnlyEqual(name, MonitoringList::name, cleaner));
+        ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> storer.accept(p.get())));
+    }
+
+    /**
+     * @param name Name of the list.
+     * @return List.
+     */
+    @Nullable public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name) {
+        return (MonitoringList<Id, R>)lists.get(name);
+    }
+
+    /**
      * Gets or creates {@link MonitoringList}.
      *
      * @param name Name of the list.
@@ -454,7 +500,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <R> Type of the row.
      * @return Monitoring list.
      */
-    public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, String description,
+    private <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, String description,
         Class<R> rowClazz) {
         return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
             MonitoringList<Id, R> list = new MonitoringList<>(name, description, rowClazz,
@@ -466,6 +512,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         });
     }
 
+    /**
+     * Registers walker for specified class.
+     *
+     * @param rowClass Row class.
+     * @param walker Walker.
+     * @param <R> Row type.
+     */
     public <R extends MonitoringRow<?>> void registerWalker(Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
         walkers.put(rowClass, walker);
     }
@@ -482,12 +535,43 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
             notifyListeners(rmv, metricRegRemoveLsnrs, log);
     }
 
-    public void removeList(String listName) {
-        MonitoringList<?, ?> rmv = lists.remove(listName);
+    /**
+     * Removes list from registry.
+     *
+     * @param name List name.
+     */
+    public void removeList(String name) {
+        MonitoringList<?, ?> rmv = lists.remove(name);
 
         if (rmv != null)
             notifyListeners(rmv, listRemoveLsnrs, log);
+    }
 
+    /**
+     * Enables monitoring list.
+     *
+     * @param list Monitoring list.
+     */
+    public void enableList(String list) {
+        notifyListeners(list, listEnableLsnrs, log);
+    }
+
+    /**
+     * Adds enable list listener.
+     *
+     * @param lsnr Listener.
+     */
+    public void addEnableListListener(Consumer<String> lsnr) {
+        listEnableLsnrs.add(lsnr);
+    }
+
+    /**
+     * Adds remove list listener.
+     *
+     * @param lsnr Listener.
+     */
+    public void addRemoveListListener(Consumer<MonitoringList<?, ?>> lsnr) {
+        listRemoveLsnrs.add(lsnr);
     }
 
     /**
@@ -717,6 +801,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         catch (RuntimeException ignored) {
             return -1;
         }
+    }
+
+    /**
+     * @param pattern Pattern to search.
+     * @param f Function to extract pattern from value.
+     * @param c Consumer of filtered values.
+     * @param <V> Value type.
+     * @param <P> Pattern type.
+     * @return Consumer that filters values that not satisfy pattern.
+     */
+    public static <V, P> Consumer<V> listenOnlyEqual(P pattern, Function<V, P> f, Consumer<V> c) {
+        return v -> {
+            if (!Objects.equals(pattern, f.apply(v)))
+                return;
+
+            c.accept(v);
+        };
     }
 
     /** */

@@ -284,13 +284,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private MonitoringList<UUID, ClusterNodeView> nodes;
+    @Nullable private MonitoringList<UUID, ClusterNodeView> nodes;
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
 
-        nodes = ctx.metric().list(NODES_MON_LIST, NODES_MON_LIST_DESC, ClusterNodeView.class);
+        ctx.metric().list(NODES_MON_LIST, NODES_MON_LIST_DESC, ClusterNodeView.class,
+            l -> nodes = l,
+            l -> nodes = null);
     }
 
     /** {@inheritDoc} */

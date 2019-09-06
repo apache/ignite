@@ -70,7 +70,7 @@ public abstract class ClientListenerAbstractConnectionContext
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    protected final MonitoringList<Long, ClientConnectionView> connMonList;
+    @Nullable protected MonitoringList<Long, ClientConnectionView> connMonList;
 
     /**
      * Constructor.
@@ -83,7 +83,10 @@ public abstract class ClientListenerAbstractConnectionContext
         this.ctx = ctx;
         this.connId = connId;
         this.ses = ses;
-        this.connMonList = ctx.metric().list(CLI_CONN_MON_LIST, CLI_CONN_MON_LIST_DESC, ClientConnectionView.class);
+
+        ctx.metric().list(CLI_CONN_MON_LIST, CLI_CONN_MON_LIST_DESC, ClientConnectionView.class,
+            l -> connMonList = l,
+            l -> connMonList = null);
     }
 
     /**

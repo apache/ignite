@@ -130,7 +130,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<IgniteUuid, ComputeTaskView> taskMonList;
+    @Nullable private MonitoringList<IgniteUuid, ComputeTaskView> taskMonList;
 
     /** */
     private boolean stopping;
@@ -170,7 +170,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
-        taskMonList = ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC, ComputeTaskView.class);
+        ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC, ComputeTaskView.class,
+            l -> taskMonList = l,
+            l -> taskMonList = null);
     }
 
     /** {@inheritDoc} */
