@@ -717,7 +717,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testUpdatesRejectedInReadOnlyMode() throws Exception {
         try (Connection conn = getConnection()) {
             try (Statement statement = conn.createStatement()) {
@@ -744,7 +743,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testBatchUpdatesRejectedInReadOnlyMode() throws Exception {
         try (Connection conn = getConnection()) {
             try (Statement statement = conn.createStatement()) {
