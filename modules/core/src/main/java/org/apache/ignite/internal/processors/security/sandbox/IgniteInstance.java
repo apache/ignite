@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.security.closure;
+package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class SandboxIgnite implements Ignite {
+public class IgniteInstance implements Ignite {
     /**
      *
      */
@@ -54,7 +54,7 @@ public class SandboxIgnite implements Ignite {
     /**
      *
      */
-    public SandboxIgnite(Ignite original) {
+    public IgniteInstance(Ignite original) {
         this.original = original;
     }
 

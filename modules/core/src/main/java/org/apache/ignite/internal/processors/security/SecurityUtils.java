@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.security.closure.SandboxIgnite;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteInstance;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -154,7 +154,7 @@ public class SecurityUtils {
             IgniteEx ex = (IgniteEx)ignite;
 
             if (ex.context().security().enabled())
-                return new SandboxIgnite(ignite);
+                return new IgniteInstance(ignite);
         }
 
         return ignite;
