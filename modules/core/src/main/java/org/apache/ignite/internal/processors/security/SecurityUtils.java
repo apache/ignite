@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.security.AllPermission;
 import java.security.Permissions;
 import java.util.Arrays;
 import java.util.Collection;
