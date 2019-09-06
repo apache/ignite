@@ -268,6 +268,29 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             };
 
             Assert.AreEqual(expectedRequests, requests);
+
+            // Test cache for which affinity awareness is not applicable.
+            var cfg = new CacheClientConfiguration("replicated_cache") {CacheMode = CacheMode.Replicated};
+            var cache = Client.CreateCache<int, int>(cfg);
+            ClearLoggers();
+
+            cache.Get(1);
+            cache.Get(1);
+            cache.Get(1);
+
+            requests = null;
+
+            foreach (var logger in _loggers)
+            {
+                var cacheRequestNames = GetCacheRequestNames(logger);
+
+                if (cacheRequestNames.Any())
+                {
+                    requests = cacheRequestNames.ToArray();
+                }
+            }
+
+            Assert.AreEqual(expectedRequests, requests);
         }
 
         [Test]
