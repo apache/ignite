@@ -572,8 +572,7 @@ public class StripedExecutor implements ExecutorService {
                     break;
                 }
                 catch (Throwable e) {
-                    if (e instanceof OutOfMemoryError)
-                        errHnd.apply(e);
+                    errHnd.apply(e);
 
                     U.error(log, "Failed to execute runnable.", e);
                 }

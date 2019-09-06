@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
@@ -124,7 +125,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             //Success
         }
 
-        memory.beginCheckpoint();
+        memory.beginCheckpoint(new GridFinishedFuture());
 
         final AtomicReference<FullPageId> lastPage = new AtomicReference<>();
 
@@ -209,14 +210,14 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             writePage(memory, fullId, (byte)1);
         }
 
-        doCheckpoint(memory.beginCheckpoint(), memory, pageStoreMgr);
+        doCheckpoint(memory.beginCheckpoint(new GridFinishedFuture()), memory, pageStoreMgr);
 
         FullPageId cowPageId = allocated.get(0);
 
         // Mark some pages as dirty.
         writePage(memory, cowPageId, (byte)2);
 
-        GridMultiCollectionWrapper<FullPageId> cpPages = memory.beginCheckpoint();
+        GridMultiCollectionWrapper<FullPageId> cpPages = memory.beginCheckpoint(new GridFinishedFuture());
 
         assertEquals(1, cpPages.size());
 
@@ -287,7 +288,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         }
 
         // CP Write lock.
-        memory.beginCheckpoint();
+        memory.beginCheckpoint(new GridFinishedFuture());
         // CP Write unlock.
 
         byte[] buf = new byte[PAGE_SIZE];
@@ -362,7 +363,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             acquireAndReleaseWriteLock(memory, fullPageId);
         }
 
-        memory.beginCheckpoint();
+        memory.beginCheckpoint(new GridFinishedFuture());
 
         CheckpointMetricsTracker mockTracker = Mockito.mock(CheckpointMetricsTracker.class);
 
@@ -384,7 +385,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             acquireAndReleaseWriteLock(memory, fullPageId);
         }
 
-        memory.beginCheckpoint();
+        memory.beginCheckpoint(new GridFinishedFuture());
 
         Collections.shuffle(pages); // Mix pages in checkpoint with clean pages
 
