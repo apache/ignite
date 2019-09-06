@@ -382,7 +382,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
      * @throws Exception If failed.
      */
     private void checkAllCacheCombinationsSet2(boolean idx) throws Exception {
-        List<List<TestCache>> types = cacheCombinations(TestCacheType.PARTITIONED_b0);
+        List<List<TestCache>> types = cacheCombinations(TestCacheType.PARTITIONED_B0);
 
         checkAllCacheCombinations(idx, types);
     }
@@ -392,7 +392,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
      * @throws Exception If failed.
      */
     private void checkAllCacheCombinationsSet3(boolean idx) throws Exception {
-        List<List<TestCache>> types = cacheCombinations(TestCacheType.PARTITIONED_b1);
+        List<List<TestCache>> types = cacheCombinations(TestCacheType.PARTITIONED_B1);
 
         checkAllCacheCombinations(idx, types);
     }
@@ -1210,10 +1210,10 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         REPLICATED(CacheMode.REPLICATED, 0),
 
         /** */
-        PARTITIONED_b0(CacheMode.PARTITIONED, 0),
+        PARTITIONED_B0(CacheMode.PARTITIONED, 0),
 
         /** */
-        PARTITIONED_b1(CacheMode.PARTITIONED, 1);
+        PARTITIONED_B1(CacheMode.PARTITIONED, 1);
 
         /** */
         final CacheMode cacheMode;

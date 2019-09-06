@@ -104,8 +104,9 @@
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
-        <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
+        <maven.checkstyle.plugin.version>3.1.0</maven.checkstyle.plugin.version>
         <checkstyle.puppycrawl.version>8.19</checkstyle.puppycrawl.version>
+        <sevntu.checkstyle.plugin.version>1.35.0</sevntu.checkstyle.plugin.version>
         <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
@@ -838,6 +839,11 @@
                                 <groupId>com.puppycrawl.tools</groupId>
                                 <artifactId>checkstyle</artifactId>
                                 <version>${checkstyle.puppycrawl.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>com.github.sevntu-checkstyle</groupId>
+                                <artifactId>sevntu-checks</artifactId>
+                                <version>${sevntu.checkstyle.plugin.version}</version>
                             </dependency>
                         </dependencies>
                     </plugin>
