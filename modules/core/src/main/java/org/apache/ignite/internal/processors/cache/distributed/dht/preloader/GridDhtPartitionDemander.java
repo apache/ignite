@@ -807,8 +807,9 @@ public class GridDhtPartitionDemander {
                                 // If message was last for this partition,
                                 // then we take ownership.
                                 if (last) {
+                                    // Set max LWM counter closing possible gaps.
                                     if (ctx.kernalContext().txDr().shouldApplyUpdateCounterOnRebalance())
-                                        grp.offheap().onPartitionInitialCounterUpdated(p, supplyMsg.last().get(p) - 1, 1);
+                                        part.updateCounter(supplyMsg.last().get(p));
 
                                     fut.partitionDone(nodeId, p, true);
 

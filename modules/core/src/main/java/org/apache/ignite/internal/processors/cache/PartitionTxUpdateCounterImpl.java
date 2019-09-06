@@ -76,11 +76,21 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /** */
     private boolean first = true;
 
+    /** */
+    protected CacheGroupContext grp;
+
     /**
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
     @Deprecated private long initCntr;
+
+    /**
+     * @param grp Group.
+     */
+    public PartitionTxUpdateCounterImpl(CacheGroupContext grp) {
+        this.grp = grp;
+    }
 
     /** {@inheritDoc} */
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
@@ -135,7 +145,8 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         // Absolute counter should be not less than last applied update.
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
-        if (val < highestAppliedCounter())
+        if (val < highestAppliedCounter() &&
+            !grp.cacheObjectContext().kernalContext().txDr().shouldSkipCounterConsistencyCheckOnPME())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
         cntr.set(val);

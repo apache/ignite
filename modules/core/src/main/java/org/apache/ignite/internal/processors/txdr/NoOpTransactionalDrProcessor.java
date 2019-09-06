@@ -79,4 +79,9 @@ public class NoOpTransactionalDrProcessor extends GridProcessorAdapter implement
     @Override public boolean shouldApplyUpdateCounterOnRebalance() {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean shouldSkipCounterConsistencyCheckOnPME() {
+        return false;
+    }
 }
