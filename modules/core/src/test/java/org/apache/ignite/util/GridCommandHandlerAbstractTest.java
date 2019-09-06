@@ -17,7 +17,9 @@
 
 package org.apache.ignite.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
@@ -49,9 +51,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static java.lang.String.join;
+import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Arrays.asList;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 
@@ -64,6 +69,9 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
 
     /** System out. */
     protected PrintStream sysOut;
+
+    /** System in. */
+    private static InputStream sysIn;
 
     /**
      * Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test.
@@ -80,11 +88,23 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     /** Checkpoint frequency. */
     protected long checkpointFreq;
 
+    /** Enable automatic confirmation to avoid user interaction. */
+    protected boolean autoConfirmation = true;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        sysIn = System.in;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
         GridTestUtils.cleanIdleVerifyLogFiles();
+
+        System.setIn(sysIn);
     }
 
     /** {@inheritDoc} */
@@ -119,6 +139,7 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         testOut = null;
 
         System.setOut(sysOut);
+        System.setIn(sysIn);
 
         stopAllGrids();
 
@@ -225,13 +246,25 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
      * @param args Incoming arguments;
      */
     protected void addExtraArguments(List<String> args) {
-        // Add force to avoid interactive confirmation.
-        args.add(CMD_AUTO_CONFIRMATION);
+        if (autoConfirmation)
+            args.add(CMD_AUTO_CONFIRMATION);
     }
 
     /** */
     protected void injectTestSystemOut() {
         System.setOut(new PrintStream(testOut));
+    }
+
+    /**
+     * Emulates user input.
+     *
+     * @param inputStrings User input strings.
+     * */
+    protected void injectTestSystemIn(String... inputStrings) {
+        assert nonNull(inputStrings);
+
+        String inputStr = join(lineSeparator(), inputStrings);
+        System.setIn(new ByteArrayInputStream(inputStr.getBytes()));
     }
 
     /**
