@@ -20,7 +20,6 @@ package org.apache.ignite.spi.metric;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
@@ -54,29 +53,10 @@ public interface MetricExporterSpi extends IgniteSpi {
     public void setMetricRegistry(ReadOnlyMetricRegistry registry);
 
     /**
-     * Sets monitoring list registry that SPI should export.
-     * This method called before {@link #spiStart(String)}.
-     *
-     * So all {@link MonitoringList} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link ReadOnlyMonitoringListRegistry#addListCreationListener(Consumer)}.
-     *
-     * @param registry Monitoring list registry.
-     */
-    public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry registry);
-
-    /**
      * Sets export filter.
      * Metric registry that not satisfy {@code filter} shouldn't be exported.
      *
      * @param filter Filter.
      */
-    public void setMetricExportFilter(Predicate<MetricRegistry> filter);
-
-    /**
-     * Sets export filter.
-     * Monitoring list that not satisfy {@code filter} shouldn't be exported.
-     *
-     * @param filter Filter.
-     */
-    public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter);
+    public void setExportFilter(Predicate<MetricRegistry> filter);
 }

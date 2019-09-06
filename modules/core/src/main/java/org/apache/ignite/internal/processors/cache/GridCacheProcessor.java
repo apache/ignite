@@ -947,7 +947,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
-        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc, ctx);
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
 
         ctx.query().onCacheStart(cacheInfo, schema, cacheDesc.sql());
     }
@@ -959,29 +959,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"unchecked"})
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
-        GridCacheContext cctx = cache.context();
+        GridCacheContext ctx = cache.context();
 
         try {
-            if (!cache.isNear() && cctx.shared().wal() != null) {
+            if (!cache.isNear() && ctx.shared().wal() != null) {
                 try {
-                    cctx.shared().wal().flush(null, false);
+                    ctx.shared().wal().flush(null, false);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to flush write-ahead log on cache stop " +
-                        "[cache=" + cctx.name() + "]", e);
+                        "[cache=" + ctx.name() + "]", e);
                 }
             }
 
-            sharedCtx.removeCacheContext(cctx);
+            sharedCtx.removeCacheContext(ctx);
 
             cache.stop();
 
-            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cctx, false);
+            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
-            cctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
+            ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
 
-            if (isNearEnabled(cctx)) {
-                GridDhtCacheAdapter dht = cctx.near().dht();
+            if (isNearEnabled(ctx)) {
+                GridDhtCacheAdapter dht = ctx.near().dht();
 
                 // Check whether dht cache has been started.
                 if (dht != null) {
@@ -999,9 +999,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            List<GridCacheManager> mgrs = cctx.managers();
+            List<GridCacheManager> mgrs = ctx.managers();
 
-            Collection<GridCacheManager> excludes = dhtExcludes(cctx);
+            Collection<GridCacheManager> excludes = dhtExcludes(ctx);
 
             // Reverse order.
             for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
@@ -1011,37 +1011,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     mgr.stop(cancel, destroy);
             }
 
-            cctx.kernalContext().continuous().onCacheStop(cctx);
+            ctx.kernalContext().continuous().onCacheStop(ctx);
 
-            cctx.kernalContext().cache().context().snapshot().onCacheStop(cctx, destroy);
+            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx, destroy);
 
-            cctx.kernalContext().coordinators().onCacheStop(cctx);
+            ctx.kernalContext().coordinators().onCacheStop(ctx);
 
-            cctx.group().stopCache(cctx, destroy);
+            ctx.group().stopCache(ctx, destroy);
 
-            U.stopLifecycleAware(log, lifecycleAwares(cctx.group(), cache.configuration(), cctx.store().configuredStore()));
+            U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
             IgnitePageStoreManager pageStore;
 
             if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
                 try {
-                    pageStore.removeCacheData(new StoredCacheData(cctx.config()));
+                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
-                        "[cache=" + cctx.name() + "]", e);
+                        "[cache=" + ctx.name() + "]", e);
                 }
             }
 
             if (log.isInfoEnabled()) {
-                if (cctx.group().sharedGroup())
-                    log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + cctx.group().name() + ']');
+                if (ctx.group().sharedGroup())
+                    log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + ctx.group().name() + ']');
                 else
                     log.info("Stopped cache [cacheName=" + cache.name() + ']');
             }
         }
         finally {
-            cleanup(cctx);
+            cleanup(ctx);
         }
     }
 
