@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client;
+package org.apache.ignite.internal.processors.rest.request;
+
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *  Interface for manage state of grid cluster.
+ * Grid command request of log file.
  */
-public interface GridClientClusterState {
+public class GridRestClusterNameRequest extends GridRestRequest {
     /**
-     * @param active {@code True} activate, {@code False} deactivate.
+     * Constructor.
      */
-    public void active(boolean active) throws GridClientException;
+    public GridRestClusterNameRequest() {
+        command(GridRestCommand.CLUSTER_NAME);
+    }
 
-    /**
-     * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
-     */
-    public boolean active() throws GridClientException;
-
-    /**
-     * Get the cluster name.
-     *
-     * @return The name of the cluster.
-     * @throws GridClientException If the request to get the cluster name failed.
-     * */
-    String clusterName() throws GridClientException;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestClusterNameRequest.class, this, super.toString());
+    }
 }

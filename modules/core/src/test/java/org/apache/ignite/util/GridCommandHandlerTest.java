@@ -18,7 +18,6 @@
 package org.apache.ignite.util;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
@@ -52,11 +51,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -115,8 +112,10 @@ import org.junit.Test;
 
 import static java.io.File.separatorChar;
 import static java.util.Arrays.asList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
@@ -210,6 +209,79 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--deactivate"));
 
         assertFalse(ignite.cluster().active());
+    }
+
+    /**
+     * Test the deactivation command on the active and no cluster with checking
+     * the cluster name(which is set through the system property) in
+     * confirmation.
+     *
+     * @throws Exception If failed.
+     * */
+    public void testDeactivateWithCheckClusterNameInConfirmationBySystemProperty() throws Exception {
+        withSystemProperty(IGNITE_CLUSTER_NAME, "TEST_CLUSTER_NAME");
+
+        IgniteEx igniteEx = startGrid(0);
+        assertFalse(igniteEx.cluster().active());
+
+        deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(igniteEx, "TEST_CLUSTER_NAME");
+    }
+
+    /**
+     * Test the deactivation command on the active and no cluster with checking
+     * the cluster name(default) in confirmation.
+     *
+     * @throws Exception If failed.
+     * */
+    public void testDeactivateWithCheckClusterNameInConfirmationByDefault() throws Exception {
+        IgniteEx igniteEx = startGrid(0);
+        assertFalse(igniteEx.cluster().active());
+
+        deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
+            igniteEx,
+            igniteEx.context().cache().utilityCache().context().dynamicDeploymentId().toString()
+        );
+    }
+
+    /**
+     * Deactivating the cluster(active and not) with checking the cluster name
+     * in the confirmation.
+     *
+     * @param igniteEx Node.
+     * @param clusterName Cluster name to check in the confirmation message.
+     * */
+    private void deactivateActiveOrNotClusterWithCheckClusterNameInConfirmation(
+        IgniteEx igniteEx,
+        String clusterName
+    ) {
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+
+        igniteEx.cluster().active(true);
+        assertTrue(igniteEx.cluster().active());
+
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+    }
+
+    /**
+     * Deactivating the cluster with checking the cluster name in the
+     * confirmation.
+     *
+     * @param igniteEx Node.
+     * @param clusterName Cluster name to check in the confirmation message.
+     * */
+    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String clusterName) {
+        autoConfirmation = false;
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute(DEACTIVATE.text()));
+        assertFalse(igniteEx.cluster().active());
+
+        assertContains(
+            log,
+            testOut.toString(),
+            "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
+        );
     }
 
     /**
