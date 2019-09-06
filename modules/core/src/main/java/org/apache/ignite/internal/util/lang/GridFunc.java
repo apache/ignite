@@ -980,18 +980,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets size of the given map.
-     *
-     * @param map Map.
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @return Size of the map or 0 if {@code map} is {@code null}.
-     */
-    public static <K, V> int size(@Nullable Map<K, V> map) {
-        return map == null ? 0 : map.size();
-    }
-
-    /**
      * Creates write-through light-weight view on given collection with provided predicates. Resulting
      * collection will only "have" elements for which all provided predicates, if any, evaluate
      * to {@code true}. Note that only wrapping collection will be created and no duplication of
