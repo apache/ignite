@@ -15,36 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.closure;
+package org.apache.ignite.internal.processors.security.sandbox.closure;
 
 import java.util.Objects;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * Wrapper for {@link IgniteClosure} that executes its {@code apply} method with restriction defined by current security
- * context.
+ * Wrapper for {@link IgniteBiPredicate} that executes its {@code apply} method with restriction defined by current
+ * security context.
  *
- * @see IgniteSecurity#execute(java.util.concurrent.Callable)
+ * @see IgniteSandbox#execute(java.util.concurrent.Callable)
  */
-public class SandboxAwareIgniteClosure<E, R> implements IgniteClosure<E, R> {
+public class SandboxAwareIgniteBiPredicate<K, V> implements IgniteBiPredicate<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteSecurity security;
+    private final IgniteSandbox sandbox;
 
     /** */
-    private final IgniteClosure<E, R> original;
+    private final IgniteBiPredicate<K, V> original;
 
     /** */
-    public SandboxAwareIgniteClosure(IgniteSecurity security, IgniteClosure<E, R> original) {
-        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+    public SandboxAwareIgniteBiPredicate(IgniteSandbox sandbox, IgniteBiPredicate<K, V> original) {
+        this.sandbox = Objects.requireNonNull(sandbox, "Sandbox cannot be null.");
         this.original = Objects.requireNonNull(original, "Original cannot be null.");
     }
 
     /** {@inheritDoc} */
-    @Override public R apply(E e) {
-        return security.execute(() -> original.apply(e));
+    @Override public boolean apply(K k, V v) {
+        return sandbox.execute(() -> original.apply(k, v));
     }
 }

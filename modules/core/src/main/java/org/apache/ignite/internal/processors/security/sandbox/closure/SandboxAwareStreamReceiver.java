@@ -15,40 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.closure;
+package org.apache.ignite.internal.processors.security.sandbox.closure;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.stream.StreamReceiver;
 
 /**
  * Wrapper for {@link StreamReceiver} that executes its {@code receive} method with restriction defined by current
  * security context.
  *
- * @see IgniteSecurity#execute(java.util.concurrent.Callable)
+ * @see IgniteSandbox#execute(java.util.concurrent.Callable)
  */
 public class SandboxAwareStreamReceiver<K, V> implements StreamReceiver<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteSecurity security;
+    private final IgniteSandbox sandbox;
 
     /** */
     private final StreamReceiver<K, V> original;
 
     /** */
-    public SandboxAwareStreamReceiver(IgniteSecurity security, StreamReceiver<K, V> original) {
-        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+    public SandboxAwareStreamReceiver(IgniteSandbox sandbox, StreamReceiver<K, V> original) {
+        this.sandbox = Objects.requireNonNull(sandbox, "Sandbox cannot be null.");
         this.original = Objects.requireNonNull(original, "Original cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
-        security.execute(() -> original.receive(cache, entries));
+        sandbox.execute(() -> original.receive(cache, entries));
     }
 }

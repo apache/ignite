@@ -15,35 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.closure;
+package org.apache.ignite.internal.processors.security.sandbox.closure;
 
 import java.util.Objects;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 
 /**
  * Wrapper for {@link EntryProcessor} that executes its {@code process} method with restriction defined by current
  * security context.
  *
- * @see IgniteSecurity#execute(java.util.concurrent.Callable)
+ * @see IgniteSandbox#execute(java.util.concurrent.Callable)
  */
 public class SandboxAwareEntryProcessor<K, V, T> implements EntryProcessor<K, V, T> {
     /** */
-    private final IgniteSecurity security;
+    private final IgniteSandbox sandbox;
 
     /** */
     private final EntryProcessor<K, V, T> original;
 
     /** */
-    public SandboxAwareEntryProcessor(IgniteSecurity security, EntryProcessor<K, V, T> original) {
-        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+    public SandboxAwareEntryProcessor(IgniteSandbox sandbox, EntryProcessor<K, V, T> original) {
+        this.sandbox = Objects.requireNonNull(sandbox, "Sandbox cannot be null.");
         this.original = Objects.requireNonNull(original, "Orginal cannot be null.");
     }
 
     /** {@inheritDoc} */
     @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
-        return security.execute(() -> original.process(entry, arguments));
+        return sandbox.execute(() -> original.process(entry, arguments));
     }
 }

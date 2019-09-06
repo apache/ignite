@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.closure;
+package org.apache.ignite.internal.processors.security.sandbox.closure;
 
 import java.util.Objects;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 
 /**
  * Wrapper for {@link ComputeJob} that executes its {@code execute} method with restriction defined by current security
  * context.
  *
- * @see IgniteSecurity#execute(java.util.concurrent.Callable)
+ * @see IgniteSandbox#execute(java.util.concurrent.Callable)
  */
 public class SandboxAwareComputeJob implements ComputeJob {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteSecurity security;
+    private final IgniteSandbox sandbox;
 
     /** */
     private final ComputeJob original;
 
     /** */
-    public SandboxAwareComputeJob(IgniteSecurity security, ComputeJob original) {
-        this.security = Objects.requireNonNull(security, "Security cannot be null.");
+    public SandboxAwareComputeJob(IgniteSandbox sandbox, ComputeJob original) {
+        this.sandbox = Objects.requireNonNull(sandbox, "Sandbox cannot be null.");
         this.original = Objects.requireNonNull(original, "Original cannot be null.");
     }
 
@@ -51,6 +51,6 @@ public class SandboxAwareComputeJob implements ComputeJob {
 
     /** {@inheritDoc} */
     @Override public Object execute() throws IgniteException {
-        return security.execute(original::execute);
+        return sandbox.execute(original::execute);
     }
 }

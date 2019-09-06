@@ -17,24 +17,18 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.security.ProtectionDomain;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -61,9 +55,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
 
-    /** */
-    private static final ProtectionDomain[] NULL_PD_ARRAY = new ProtectionDomain[0];
-
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
@@ -79,8 +70,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Map of security contexts. Key is the node's id. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
-    /** True if at start of this processor security manager was exist. */
-    private volatile boolean isExistsSecurityMgr;
+    /** Instance of IgniteSandbox. */
+    private IgniteSandbox sandbox;
 
     /**
      * @param ctx Grid kernal context.
@@ -168,40 +159,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T execute(Callable<T> call) throws IgniteException {
-        Objects.requireNonNull(call);
-
-        if (System.getSecurityManager() == null) {
-            if (isExistsSecurityMgr)
-                throw new SecurityException("SecurityManager was, but it disappeared!");
-
-            try {
-                return call.call();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        final SecurityContext secCtx = curSecCtx.get();
-
-        assert secCtx != null;
-
-        final AccessControlContext acc = AccessController.doPrivileged(
-            new PrivilegedAction<AccessControlContext>() {
-                @Override public AccessControlContext run() {
-                    return new AccessControlContext
-                        (new AccessControlContext(NULL_PD_ARRAY),
-                            new IgniteDomainCombiner(secCtx.subject().securityManagerPermissions()));
-                }
-            });
-
-        try {
-            return AccessController.doPrivileged((PrivilegedExceptionAction<T>)call::call, acc);
-        }
-        catch (PrivilegedActionException pae) {
-            throw new IgniteException(pae.getException());
-        }
+    @Override public IgniteSandbox sandbox() {
+        return sandbox;
     }
 
     /** {@inheritDoc} */
@@ -214,9 +173,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         if (System.getSecurityManager() == null) {
             ctx.log(getClass()).warning("IgniteSecurity enabled, but system SecurityManager is not defined, " +
                 "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
+
+            sandbox = new NoOpSandbox();
         }
         else
-            isExistsSecurityMgr = true;
+            sandbox = new AccessControllerSandbox(this);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
