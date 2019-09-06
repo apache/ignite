@@ -31,9 +31,4 @@ public interface CheckpointFuture {
      * @return Finish future.
      */
     public GridFutureAdapter<Object> finishFuture();
-
-    /**
-     * @return Checkpoint was already started.
-     */
-    public boolean started();
 }
