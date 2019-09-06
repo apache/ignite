@@ -36,7 +36,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     private final SecurityPermissionSet perms;
 
     /** */
-    private final Permissions smPerms;
+    private final Permissions sandboxPerms;
 
     /** Users security data. */
     private final TestSecurityData[] clientData;
@@ -49,18 +49,18 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
 
     /** */
     public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        Permissions smPerms, TestSecurityData... clientData) {
+        Permissions sandboxPerms, TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;
         this.perms = perms;
-        this.smPerms = smPerms;
+        this.sandboxPerms = sandboxPerms;
         this.clientData = clientData.clone();
     }
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
         return new TestSecurityProcessor(ctx,
-            new TestSecurityData(login, pwd, perms, smPerms),
+            new TestSecurityData(login, pwd, perms, sandboxPerms),
             Arrays.asList(clientData));
     }
 }

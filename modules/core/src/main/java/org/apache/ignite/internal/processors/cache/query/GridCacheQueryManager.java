@@ -89,8 +89,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.closure.SandboxAwareIgniteBiPredicate;
-import org.apache.ignite.internal.processors.security.closure.SandboxAwareIgniteClosure;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -842,8 +840,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.mvccSnapshot(), qry.isDataPageScanEnabled());
             }
 
-            return new ScanQueryIterator(it, qry, topVer, locPart,
-                securityKeyValFilter(keyValFilter), securityTransformer(transformer), locNode, cctx, log);
+            IgniteSecurity sec = cctx.kernalContext().security();
+
+            return new ScanQueryIterator(it, qry, topVer, locPart, sec.sandbox().wrapper(keyValFilter),
+                sec.sandbox().wrapper(transformer), locNode, cctx, log);
         }
         catch (IgniteCheckedException | RuntimeException e) {
             if (intFilter != null)
@@ -851,20 +851,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw e;
         }
-    }
-
-    /** */
-    private IgniteBiPredicate<K, V> securityKeyValFilter(IgniteBiPredicate<K, V> origin) {
-        IgniteSecurity sec = cctx.kernalContext().security();
-
-        return origin != null && sec.enabled() ? new SandboxAwareIgniteBiPredicate<>(sec, origin) : origin;
-    }
-
-    /** */
-    private <E, R> IgniteClosure<E, R> securityTransformer(IgniteClosure<E, R> origin) {
-        IgniteSecurity sec = cctx.kernalContext().security();
-
-        return origin != null && sec.enabled() ? new SandboxAwareIgniteClosure<>(sec, origin) : origin;
     }
 
     /**

@@ -35,7 +35,7 @@ public class TestSecurityData {
     private SecurityPermissionSet prmSet;
 
     /** */
-    private Permissions smPerms;
+    private Permissions sandboxPerms;
 
     /**
      * Default constructor.
@@ -50,11 +50,11 @@ public class TestSecurityData {
      * @param prmSet Permissions.
      */
     public TestSecurityData(String login, String pwd, SecurityPermissionSet prmSet,
-        Permissions smPerms) {
+        Permissions sandboxPerms) {
         this.login = login;
         this.pwd = pwd;
         this.prmSet = prmSet;
-        this.smPerms = smPerms;
+        this.sandboxPerms = sandboxPerms;
     }
 
     /**
@@ -82,13 +82,13 @@ public class TestSecurityData {
     }
 
     /** */
-    public Permissions getSmPermissions() {
-        return smPerms;
+    public Permissions sandboxPermissions() {
+        return sandboxPerms;
     }
 
     /** */
-    public TestSecurityData getSmPermissions(Permissions smPerms) {
-        this.smPerms = smPerms;
+    public TestSecurityData sandboxPermissions(Permissions perms) {
+        this.sandboxPerms = perms;
 
         return this;
     }

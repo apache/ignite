@@ -24,8 +24,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.closure.SandboxAwareStreamReceiver;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -129,7 +127,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
             }
 
-            StreamReceiver receiver = securityStreamReceiver();
+            StreamReceiver receiver = ctx.security().sandbox().wrapper(rcvr);
 
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
@@ -171,10 +169,4 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             ctx.security().authorize(cacheName, perm);
     }
 
-    /** */
-    private StreamReceiver securityStreamReceiver() {
-        IgniteSecurity sec = ctx.security();
-
-        return rcvr != null && sec.enabled() ? new SandboxAwareStreamReceiver(sec, rcvr) : rcvr;
-    }
 }

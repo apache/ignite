@@ -369,7 +369,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     ", grpId=" + grp.groupId() +
                     ", remainingPartsToEvict=" + (totalTasks.get() - taskInProgress) +
                     ", partsEvictInProgress=" + taskInProgress +
-                    ", totalParts= " + grp.topology().localPartitions().size() + "]");
+                    ", totalParts=" + grp.topology().localPartitions().size() + "]");
         }
     }
 
@@ -412,11 +412,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
 
             try {
-                assert part.state() != GridDhtPartitionState.OWNING : part;
-
                 boolean success = part.tryClear(grpEvictionCtx);
-
-                assert part.state() != GridDhtPartitionState.OWNING : part;
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())

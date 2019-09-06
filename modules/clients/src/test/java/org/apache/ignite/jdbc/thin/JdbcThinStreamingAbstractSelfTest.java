@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -209,6 +210,13 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
 
         for (int i = 51; i <= 100; i++)
             assertEquals(i, grid(0).cache("T").get(i));
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11795")
+    @Test
+    @Override public void testStreamedInsertFailsOnReadOnlyMode() throws Exception {
+        super.testStreamedInsertFailsOnReadOnlyMode();
     }
 
     /**

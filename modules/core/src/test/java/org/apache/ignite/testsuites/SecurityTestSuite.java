@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ConstraintIgnitionTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
-import org.apache.ignite.internal.processors.security.sandbox.DoPrivelegedOnRemoteNodeTest;
+import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -62,7 +62,7 @@ import org.junit.runners.Suite;
     CacheSandboxTest.class,
     DataStreamerSandboxTest.class,
     ComputeSandboxTest.class,
-    DoPrivelegedOnRemoteNodeTest.class,
+    DoPrivilegedOnRemoteNodeTest.class,
 
     ConstraintIgnitionTest.class,
     AccessClassInPackageTest.class

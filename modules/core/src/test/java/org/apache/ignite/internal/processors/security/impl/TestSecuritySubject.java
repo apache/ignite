@@ -43,8 +43,8 @@ public class TestSecuritySubject implements SecuritySubject {
     /** Permissions. */
     private SecurityPermissionSet perms;
 
-    /** Permissions for SecurityManager checks. */
-    private Permissions smPerms;
+    /** Permissions for Sandbox checks. */
+    private Permissions sandboxPerms;
 
     /**
      * Default constructor.
@@ -140,13 +140,13 @@ public class TestSecuritySubject implements SecuritySubject {
     }
 
     /** {@inheritDoc} */
-    @Override public Permissions securityManagerPermissions() {
-        return smPerms;
+    @Override public Permissions sandboxPermissions() {
+        return sandboxPerms;
     }
 
     /** */
-    public TestSecuritySubject securityManagerPermissions(Permissions smPerms) {
-        this.smPerms = smPerms;
+    public TestSecuritySubject sandboxPermissions(Permissions perms) {
+        this.sandboxPerms = perms;
 
         return this;
     }

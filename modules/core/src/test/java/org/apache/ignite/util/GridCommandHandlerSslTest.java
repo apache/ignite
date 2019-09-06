@@ -84,7 +84,6 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerAbstractTest {
         final CommandHandler cmd = new CommandHandler();
 
         List<String> params = new ArrayList<>();
-        params.add("--activate");
         params.add("--keystore");
         params.add(GridTestUtils.keyStorePath("node01"));
         params.add("--keystore-password");
@@ -94,6 +93,8 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerAbstractTest {
             params.add("--ssl-cipher-suites");
             params.add(utilityCipherSuite);
         }
+
+        params.add("--activate");
 
         assertEquals(expRes, execute(params));
 

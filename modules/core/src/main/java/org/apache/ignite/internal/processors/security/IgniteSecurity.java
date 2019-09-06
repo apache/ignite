@@ -19,10 +19,9 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -118,31 +117,9 @@ public interface IgniteSecurity {
     }
 
     /**
-     * Executes {@code callable} with constraints defined by current {@code SecuritySubject}.
-     *
-     * @param call Callable to execute.
-     * @return Result of {@code callable}.
-     * @see #withContext(UUID)
-     * @see #withContext(SecurityContext)
-     * @see SecuritySubject#securityManagerPermissions()
+     * @return Instance of IgniteSandbox.
      */
-    public <T> T execute(Callable<T> call) throws IgniteException;
-
-    /**
-     * Executes {@code runnable} with constraints defined by current {@code SecuritySubject}.
-     *
-     * @param runnable Runnable to execute.
-     * @see #withContext(UUID)
-     * @see #withContext(SecurityContext)
-     * @see SecuritySubject#securityManagerPermissions()
-     */
-    public default void execute(Runnable runnable) throws IgniteException {
-        execute(() -> {
-            runnable.run();
-
-            return null;
-        });
-    }
+    public IgniteSandbox sandbox();
 
     /**
      * @return True if IgniteSecurity is a plugin implementation,
