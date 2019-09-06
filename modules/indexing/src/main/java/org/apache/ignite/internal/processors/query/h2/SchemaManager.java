@@ -142,7 +142,6 @@ public class SchemaManager {
      * @param view System view.
      */
     public void createSystemView(String schema, SqlSystemView view) {
-
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
@@ -160,11 +159,41 @@ public class SchemaManager {
             try (Connection c = connMgr.connectionNoCache(schema)) {
                 SqlSystemTableEngine.registerView(c, view);
 
-                    systemViews.add(view);
+                systemViews.add(view);
             }
         }
         catch (IgniteCheckedException | SQLException e) {
             throw new IgniteException("Failed to register system view.", e);
+        }
+    }
+
+    /**
+     * Removes system view.
+     *
+     * @param schema Schema.
+     * @param name View name.
+     */
+    public void removeSystemView(String schema, String name) {
+        SqlSystemView rmv = null;
+
+        for (SqlSystemView view : systemViews) {
+            if (view.getSchemaName().equals(schema) && view.getTableName().equals(name)) {
+                rmv = view;
+
+                break;
+            }
+        }
+
+        if (rmv == null)
+            return;
+
+        try (Connection c = connMgr.connectionNoCache(schema)) {
+            SqlSystemTableEngine.unregisterView(c, rmv);
+
+            systemViews.remove(rmv);
+        }
+        catch (SQLException e) {
+            throw new IgniteException("Failed to remove system view.", e);
         }
     }
 

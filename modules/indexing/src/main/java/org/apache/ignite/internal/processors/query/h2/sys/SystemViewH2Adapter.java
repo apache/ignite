@@ -114,7 +114,7 @@ public class SystemViewH2Adapter extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void removeChildrenAndResources(Session ses) {
-        throw DbException.getUnsupportedException("META");
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -154,7 +154,7 @@ public class SystemViewH2Adapter extends TableBase {
 
     /** {@inheritDoc} */
     @Override public boolean canDrop() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

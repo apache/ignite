@@ -197,6 +197,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_MONITORING;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
@@ -330,7 +332,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery qry)
-        throws IgniteSQLException{
+        throws IgniteSQLException {
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         if (parsed.remainingQuery() != null)
@@ -356,7 +358,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow,  prevRowAvailable);
+        tbl.table().update(row, prevRow, prevRowAvailable);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -398,7 +400,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists)
-        throws IgniteCheckedException{
+        throws IgniteCheckedException {
         schemaMgr.dropIndex(schemaName, idxName, ifExists);
     }
 
@@ -907,7 +909,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     + e.getMessage());
             }
 
-            throw  e;
+            throw e;
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);
@@ -1778,7 +1780,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> schemasNames(){
+    @Override public Set<String> schemasNames() {
         return schemaMgr.schemaNames();
     }
 
@@ -1818,11 +1820,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .forEach(infos::add);
         }
 
-        if ((allTypes || types.contains(TableType.VIEW.name()))
-            && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+        if ((allTypes || types.contains(TableType.VIEW.name())) &&
+            (matches(SCHEMA_SYS, schemaNamePtrn) || matches(SCHEMA_MONITORING, schemaNamePtrn))) {
             schemaMgr.systemViews().stream()
-                .filter(t -> matches(t.getTableName(), tblNamePtrn))
-                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, v.getTableName(), TableType.VIEW.name()))
+                .filter(t -> matches(t.getTableName(), tblNamePtrn) && matches(t.getSchemaName(), schemaNamePtrn))
+                .map(v -> new TableInformation(v.getSchemaName(), v.getTableName(), TableType.VIEW.name()))
                 .forEach(infos::add);
         }
 
@@ -1866,16 +1868,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ).forEach(infos::add);
 
         // Gather information about system views.
-        if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+        if (matches(SCHEMA_SYS, schemaNamePtrn) || matches(SCHEMA_MONITORING, schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
-                .filter(v -> matches(v.getTableName(), tblNamePtrn))
+                .filter(v -> matches(v.getTableName(), tblNamePtrn) && matches(v.getSchemaName(), schemaNamePtrn))
                 .flatMap(
                     view ->
                         Stream.of(view.getColumns())
                             .filter(c -> matches(c.getName(), colNamePtrn))
                             .map(c -> new ColumnInformation(
                                 c.getColumnId() + 1,
-                                QueryUtils.SCHEMA_SYS,
+                                view.getSchemaName(),
                                 view.getTableName(),
                                 c.getName(),
                                 IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
