@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -159,6 +158,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
@@ -188,6 +188,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
+import static org.apache.ignite.internal.IgniteFeatures.LRT_SYSTEM_USER_TIME_DUMP_SETTINGS;
 import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
@@ -2762,28 +2763,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grpToStop Cache group to stop.
      */
     private void removeOffheapListenerAfterCheckpoint(List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop) {
-        CheckpointFuture checkpointFut;
-        do {
-            do {
-                checkpointFut = sharedCtx.database().forceCheckpoint("caches stop");
-            }
-            while (checkpointFut != null && checkpointFut.started());
-
-            if (checkpointFut != null)
-                checkpointFut.finishFuture().listen((fut) -> removeOffheapCheckpointListener(grpToStop));
+        try {
+            sharedCtx.database().waitForCheckpoint(
+                "caches stop", (fut) -> removeOffheapCheckpointListener(grpToStop)
+            );
         }
-        while (checkpointFut != null && checkpointFut.finishFuture().isDone());
-
-        if (checkpointFut != null) {
-            try {
-                checkpointFut.finishFuture().get();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-            }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
         }
-        else
-            removeOffheapCheckpointListener(grpToStop);
     }
 
     /**
@@ -5195,6 +5182,71 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCompute compute = ctx.grid().compute(grp);
 
         compute.broadcast(new TxOwnerDumpRequestAllowedSettingClosure(allowed));
+    }
+
+    /**
+     * Sets threshold timeout in milliseconds for long transactions, if transaction exceeds it,
+     * it will be dumped in log with information about how much time did
+     * it spent in system time (time while aquiring locks, preparing, commiting, etc.)
+     * and user time (time when client node runs some code while holding transaction).
+     * Can be set to 0 - no transactions will be dumped in log in this case.
+     *
+     * @param threshold Threshold timeout in milliseconds.
+     */
+    public void longTransactionTimeDumpThreshold(long threshold) {
+        assert threshold >= 0 : "Threshold timeout must be greater than or equal to 0.";
+
+        broadcastToNodesSupportingFeature(
+            new LongRunningTxTimeDumpSettingsClosure(threshold, null, null),
+            LRT_SYSTEM_USER_TIME_DUMP_SETTINGS
+        );
+    }
+
+    /**
+     * Sets the coefficient for samples of long running transactions that will be dumped in log, if
+     * {@link #longTransactionTimeDumpThreshold} is set to non-zero value."
+     *
+     * @param coefficient Coefficient, must be value between 0.0 and 1.0 inclusively.
+     */
+    public void transactionTimeDumpSamplesCoefficient(double coefficient) {
+        assert coefficient >= 0.0 && coefficient <= 1.0 : "Percentage value must be between 0.0 and 1.0 inclusively.";
+
+        broadcastToNodesSupportingFeature(
+            new LongRunningTxTimeDumpSettingsClosure(null, coefficient, null),
+            LRT_SYSTEM_USER_TIME_DUMP_SETTINGS
+        );
+    }
+
+    /**
+     * Sets the limit of samples of completed transactions that will be dumped in log per second,
+     * if {@link #transactionTimeDumpSamplesCoefficient} is above <code>0.0</code>.
+     * Must be integer value greater than <code>0</code>.
+     *
+     * @param limit Limit value.
+     */
+    public void longTransactionTimeDumpSamplesPerSecondLimit(int limit) {
+        assert limit > 0 : "Limit value must be greater than 0.";
+
+        broadcastToNodesSupportingFeature(
+            new LongRunningTxTimeDumpSettingsClosure(null, null, limit),
+            LRT_SYSTEM_USER_TIME_DUMP_SETTINGS
+        );
+    }
+
+    /**
+     * Broadcasts given job to nodes that support ignite feature.
+     *
+     * @param job Ignite job.
+     * @param feature Ignite feature.
+     */
+    private void broadcastToNodesSupportingFeature(IgniteRunnable job, IgniteFeatures feature) {
+        ClusterGroup grp = ctx.grid()
+            .cluster()
+            .forPredicate(node -> IgniteFeatures.nodeSupports(node, feature));
+
+        IgniteCompute compute = ctx.grid().compute(grp);
+
+        compute.broadcast(job);
     }
 
     /**
