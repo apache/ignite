@@ -73,6 +73,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_SCHEMA_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_TBLS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_TBLS_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
@@ -147,7 +149,7 @@ public class SchemaManager {
     public void start(String[] schemaNames) throws IgniteCheckedException {
         // Register PUBLIC schema which is always present.
         schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, true));
-        schMonList.add(new SqlSchemaView(QueryUtils.DFLT_SCHEMA, true));
+        addToList(schMonList, () -> new SqlSchemaView(QueryUtils.DFLT_SCHEMA, true));
 
         // Create system views.
         createSystemViews();
@@ -325,7 +327,7 @@ public class SchemaManager {
             if (dataTables.putIfAbsent(h2tbl.identifier(), h2tbl) != null)
                 throw new IllegalStateException("Table already exists: " + h2tbl.identifierString());
 
-            tblsMonList.add(h2tbl);
+            addToList(tblsMonList, () -> h2tbl);
         }
         catch (SQLException e) {
             connMgr.onSqlException(conn);
@@ -369,14 +371,14 @@ public class SchemaManager {
                 GridH2Table h2Tbl = tbl.table();
 
                 dataTables.remove(h2Tbl.identifier(), h2Tbl);
-                tblsMonList.remove(h2Tbl.identifierString());
+                removeFromList(tblsMonList, h2Tbl.identifierString());
             }
         }
 
         synchronized (schemaMux) {
             if (schema.decrementUsageCount()) {
                 schemas.remove(schemaName);
-                schMonList.remove(schemaName);
+                removeFromList(schMonList, schemaName);
 
                 try {
                     dropSchema(schemaName);
@@ -397,13 +399,12 @@ public class SchemaManager {
      * Create and register schema if needed.
      *
      * @param schemaName Schema name.
-     * @param predefined Whether this is predefined schema.
+     * @param predefined0 Whether this is predefined schema.
      */
-    private void createSchema(String schemaName, boolean predefined) throws IgniteCheckedException {
+    private void createSchema(String schemaName, boolean predefined0) throws IgniteCheckedException {
         assert Thread.holdsLock(schemaMux);
 
-        if (!predefined)
-            predefined = isSchemaPredefined(schemaName);
+        final boolean predefined = !predefined0 ? isSchemaPredefined(schemaName) : predefined0;
 
         H2Schema schema = new H2Schema(schemaName, predefined);
 
@@ -412,7 +413,7 @@ public class SchemaManager {
         if (oldSchema == null) {
             createSchema0(schemaName);
 
-            schMonList.add(new SqlSchemaView(schemaName, predefined));
+            addToList(schMonList, () -> new SqlSchemaView(schemaName, predefined));
         } else
             schema = oldSchema;
 

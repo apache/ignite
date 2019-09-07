@@ -112,6 +112,9 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_NOTIFICATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CQ_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CQ_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addIfAbsentToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 
 /**
  * Processor for continuous routines.
@@ -589,7 +592,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     LocalRoutineInfo old = locInfos.putIfAbsent(item.routineId, info);
 
                     if (old == null)
-                        cqMonList.add(new ContinuousQueryView(info, item.routineId));
+                        addToList(cqMonList, () -> new ContinuousQueryView(info, item.routineId));
                 }
             }
 
@@ -813,7 +816,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         locInfos.put(routineId, routineInfo);
-        cqMonList.add(new ContinuousQueryView(routineInfo, routineId));
+        addToList(cqMonList, () -> new ContinuousQueryView(routineInfo, routineId));
 
         registerMessageListener(hnd);
 
@@ -887,7 +890,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         // Register routine locally.
         locInfos.put(routineId, info);
-        cqMonList.add(new ContinuousQueryView(info, routineId));
+        addToList(cqMonList, () -> new ContinuousQueryView(info, routineId));
 
         if (locOnly) {
             try {
@@ -942,7 +945,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 startFuts.remove(routineId);
 
                 locInfos.remove(routineId);
-                cqMonList.remove(routineId);
+                removeFromList(cqMonList, routineId);
 
                 unregisterHandler(routineId, hnd, true);
 
@@ -1106,7 +1109,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 // Unregister routine locally.
                 LocalRoutineInfo routine = locInfos.remove(routineId);
-                cqMonList.remove(routineId);
+                removeFromList(cqMonList, routineId);
 
                 if (routine != null) {
                     stop = true;
@@ -1301,7 +1304,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         for (UUID uuid : rmtInfos.keySet()) {
             if (!locInfos.containsKey(uuid))
-                cqMonList.remove(uuid);
+                removeFromList(cqMonList, uuid);
         }
 
         rmtInfos.clear();
@@ -1485,7 +1488,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     // Register routine locally.
                     locInfos.putIfAbsent(routineId, info);
-                    cqMonList.add(new ContinuousQueryView(info, routineId));
+                    addToList(cqMonList, () -> new ContinuousQueryView(info, routineId));
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1787,7 +1790,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 doRegister = !stopped.remove(routineId) && rmtInfos.putIfAbsent(routineId, info) == null;
 
                 if (doRegister)
-                    cqMonList.addIfAbsent(new ContinuousQueryView(info, routineId));
+                    addIfAbsentToList(cqMonList, () -> new ContinuousQueryView(info, routineId));
             }
             finally {
                 stopLock.unlock();
@@ -1906,7 +1909,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             loc = locInfos.remove(routineId);
 
-            cqMonList.remove(routineId);
+            removeFromList(cqMonList, routineId);
 
             if (remote == null)
                 stopped.add(routineId);

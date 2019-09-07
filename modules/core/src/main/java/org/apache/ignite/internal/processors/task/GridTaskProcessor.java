@@ -97,6 +97,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
@@ -792,8 +794,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     subjId);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
-                taskMonList.add(new ComputeTaskView(taskWorker));
-
+                addToList(taskMonList, () -> new ComputeTaskView(taskWorker));
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
@@ -826,7 +827,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                         }
                         catch (RejectedExecutionException e) {
                             tasks.remove(sesId);
-                            taskMonList.remove(sesId);
+                            removeFromList(taskMonList, sesId);
 
                             release(dep);
 
@@ -1330,7 +1331,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             }
 
             boolean rmv = tasks.remove(worker.getTaskSessionId(), worker);
-            taskMonList.remove(worker.getTaskSessionId());
+            removeFromList(taskMonList, worker.getTaskSessionId());
 
             assert rmv;
 

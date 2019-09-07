@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
@@ -118,6 +122,53 @@ public class MetricUtils {
 
         while (v < update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
             v = m.value();
+    }
+
+    /**
+     * Adds {@code row} to the {@code list} if row not exists.
+     *
+     * @param list List.
+     * @param row Row supplier.
+     * @param <Id> Id type.
+     * @param <R> Row type.
+     */
+    public static <Id, R extends MonitoringRow<Id>> void addIfAbsentToList(@Nullable MonitoringList<Id, R> list,
+        Supplier<R> row) {
+        if (list == null)
+            return;
+
+        list.addIfAbsent(row.get());
+    }
+
+    /**
+     * Adds {@code row} to the {@code list}.
+     *
+     * @param list List.
+     * @param row Row supplier.
+     * @param <Id> Id type.
+     * @param <R> Row type.
+     */
+    public static <Id, R extends MonitoringRow<Id>> void addToList(@Nullable MonitoringList<Id, R> list,
+        Supplier<R> row) {
+        if (list == null)
+            return;
+
+        list.add(row.get());
+    }
+
+    /**
+     * Removes row with the {@code id} from the {@code list}.
+     *
+     * @param list List.
+     * @param id Id.
+     * @param <Id> Id type.
+     * @param <R> Row type.
+     */
+    public static <Id, R extends MonitoringRow<Id>> void removeFromList(@Nullable MonitoringList<Id, R> list, Id id) {
+        if (list == null)
+            return;
+
+        list.remove(id);
     }
 
     /**

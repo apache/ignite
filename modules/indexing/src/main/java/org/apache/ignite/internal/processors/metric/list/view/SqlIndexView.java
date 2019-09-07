@@ -41,13 +41,13 @@ public class SqlIndexView implements MonitoringRow<String> {
     private final H2IndexType type;
 
     /** Inline size. */
-    private final Integer inlineSz;
+    private final int inlineSz;
 
     /** Cache group name. */
     private String cacheGrpName;
 
     /** */
-    public SqlIndexView(GridH2Table tbl, String cacheGrpName, Index idx, H2IndexType type, Integer inlineSz) {
+    public SqlIndexView(GridH2Table tbl, String cacheGrpName, Index idx, H2IndexType type, int inlineSz) {
         this.tbl = tbl;
         this.cacheGrpName = cacheGrpName;
         this.idx = idx;
@@ -135,7 +135,7 @@ public class SqlIndexView implements MonitoringRow<String> {
     }
 
     /** @return Inline size. */
-    public Integer inlineSize() {
+    public int inlineSize() {
         return inlineSz;
     }
 }

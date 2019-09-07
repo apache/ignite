@@ -167,6 +167,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.NODES_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.NODES_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -983,15 +985,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private void updateNodeMonitoring(int type, ClusterNode node, Collection<ClusterNode> topSnapshot) {
         if (node.isLocal() && type == EVT_NODE_JOINED && !F.isEmpty(topSnapshot)) {
             for (ClusterNode n : topSnapshot)
-                nodes.add(new ClusterNodeView(n));
+                addToList(nodes, () -> new ClusterNodeView(n));
         }
         else if (type == EVT_NODE_FAILED ||
             type == EVT_NODE_LEFT ||
             type == EVT_CLIENT_NODE_DISCONNECTED) {
-            nodes.remove(node.id());
+            removeFromList(nodes, node.id());
         } else if (type == EVT_NODE_JOINED ||
             type == EVT_CLIENT_NODE_RECONNECTED) {
-            nodes.add(new ClusterNodeView(node));
+            addToList(nodes, () -> new ClusterNodeView(node));
         }
     }
 

@@ -96,6 +96,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 
 /**
  * Ignite service processor.
@@ -354,7 +356,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         for (ServiceInfo desc : clusterData.registeredServices()) {
             registeredServices.put(desc.serviceId(), desc);
-            svcsMonList.add(desc);
+            addToList(svcsMonList, () -> desc);
         }
     }
 
@@ -389,7 +391,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             if (oldDesc == null) {
                 registeredServices.put(desc.serviceId(), desc);
-                svcsMonList.add(desc);
+                addToList(svcsMonList, () -> desc);
 
                 continue;
             }
@@ -1519,7 +1521,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             staticServicesInfo.forEach(desc -> {
                 registeredServices.put(desc.serviceId(), desc);
-                svcsMonList.add(desc);
+                addToList(svcsMonList, () -> desc);
             });
         }
 
@@ -1623,7 +1625,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
                             registeredServices.put(reqSrvcId, desc);
-                            svcsMonList.add(desc);
+                            addToList(svcsMonList, () -> desc);
 
                             toDeploy.put(reqSrvcId, desc);
                         }
@@ -1657,7 +1659,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
             else if (req instanceof ServiceUndeploymentRequest) {
                 ServiceInfo rmv = registeredServices.remove(reqSrvcId);
-                svcsMonList.remove(reqSrvcId);
+                removeFromList(svcsMonList, reqSrvcId);
 
                 assert oldDesc == rmv : "Concurrent map modification.";
 
@@ -1709,7 +1711,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     if (desc.cacheName().equals(chReq.cacheName())) {
                         toUndeploy.put(desc.serviceId(), desc);
 
-                        svcsMonList.remove(desc.serviceId());
+                        removeFromList(svcsMonList, desc.serviceId());
 
                         return true;
                     }

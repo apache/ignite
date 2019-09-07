@@ -29,6 +29,8 @@ import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.list.view.QueryView;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
+
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
  * received from the client side.
@@ -134,7 +136,7 @@ public class BulkLoadProcessor implements AutoCloseable {
             if (rmv != null) {
                 rmv.failed(failed);
 
-                sqlQryMonList.remove(qryId);
+                removeFromList(sqlQryMonList, qryId);
             }
         }
     }

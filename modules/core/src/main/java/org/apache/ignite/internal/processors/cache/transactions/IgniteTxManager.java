@@ -130,6 +130,8 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteInt
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TXS_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -796,7 +798,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Transaction created: " + tx);
 
-        txMonList.add(tx);
+        addToList(txMonList, () -> tx);
 
         return tx;
     }
@@ -1559,7 +1561,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 tx.txState().onTxEnd(cctx, tx, true);
             }
 
-            txMonList.remove(tx.xid());
+            removeFromList(txMonList, tx.xid());
 
             if (slowTxWarnTimeout > 0 && tx.local() &&
                 U.currentTimeMillis() - tx.startTime() > slowTxWarnTimeout)
@@ -1630,7 +1632,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 tx.txState().onTxEnd(cctx, tx, false);
             }
 
-            txMonList.remove(tx.xid());
+            removeFromList(txMonList, tx.xid());
 
             if (log.isDebugEnabled())
                 log.debug("Rolled back from TM: " + tx);
@@ -1685,7 +1687,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 tx.txState().onTxEnd(cctx, tx, commit);
             }
 
-            txMonList.remove(tx.xid());
+            removeFromList(txMonList, tx.xid());
         }
     }
 

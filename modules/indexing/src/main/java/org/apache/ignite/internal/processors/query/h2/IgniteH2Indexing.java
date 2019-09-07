@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.metric.list.walker.SqlIndexViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.SqlSchemaViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.SqlTableViewWalker;
@@ -212,6 +213,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_QRY_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TEXT_QRY_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TEXT_QRY_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_MONITORING;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
@@ -510,7 +513,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl != null && tbl.luceneIndex() != null) {
             long qryId = qryIdGen.incrementAndGet();
 
-            textQryMonList.add(new GridRunningQueryInfo(
+            addToList(textQryMonList, () -> new GridRunningQueryInfo(
                 qryId,
                 ctx.localNodeId(),
                 qry,
@@ -524,7 +527,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters);
             }
             finally {
-                sqlQryMonList.remove(qryId);
+                removeFromList(textQryMonList, qryId);
             }
         }
 
@@ -725,7 +728,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final Object[] args) throws IgniteCheckedException {
         long qryId = qryIdGen.incrementAndGet();
 
-        sqlQryMonList.add(new GridRunningQueryInfo(
+        addToList(sqlQryMonList, () -> new GridRunningQueryInfo(
             qryId,
             ctx.localNodeId(),
             qry,
@@ -1542,7 +1545,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private long registerRunningQuery(QueryDescriptor qryDesc, GridQueryCancel cancel) {
         long qryId = qryIdGen.incrementAndGet();
 
-        sqlQryMonList.add(new GridRunningQueryInfo(
+        addToList(sqlQryMonList, () -> new GridRunningQueryInfo(
             qryId,
             ctx.localNodeId(),
             qryDesc.sql(),
@@ -3141,7 +3144,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             rmv.runningFuture().onDone();
 
-            sqlQryMonList.remove(qryId);
+            removeFromList(sqlQryMonList, qryId);
         }
     }
 }

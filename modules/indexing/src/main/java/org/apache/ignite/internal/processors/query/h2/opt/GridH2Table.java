@@ -88,7 +88,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_IDXS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SQL_IDXS_MON_LIST_DESC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -757,7 +759,7 @@ public class GridH2Table extends TableBase implements SqlTableView {
 
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase) {
-                    idxMonList.remove(metricName(identifierStr, idxs.get(i).getName()));
+                    removeFromList(idxMonList, metricName(identifierStr, idxs.get(i).getName()));
 
                     index(i).destroy(rmIndex);
                 }
@@ -1652,8 +1654,6 @@ public class GridH2Table extends TableBase implements SqlTableView {
     private void addToMonitoring(Index idx) {
         String cacheGrpName = CacheGroupContext.cacheOrGroupName(cacheInfo.config());
 
-        String idxId = metricName(identifierStr, idx.getName());
-
         H2IndexType type = type(idx);
 
         if (type == null) {
@@ -1662,12 +1662,9 @@ public class GridH2Table extends TableBase implements SqlTableView {
             return;
         }
 
-        Integer inlineSz = null;
+        int inlineSz = idx instanceof H2TreeIndexBase ? ((H2TreeIndexBase)idx).inlineSize() : 0;
 
-        if (idx instanceof H2TreeIndexBase)
-            inlineSz = ((H2TreeIndexBase)idx).inlineSize();
-
-        idxMonList.add(new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
+        addToList(idxMonList, () -> new SqlIndexView(this, cacheGrpName, idx, type, inlineSz));
     }
 
     /**

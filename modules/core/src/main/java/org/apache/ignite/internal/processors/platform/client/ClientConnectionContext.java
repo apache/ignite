@@ -34,6 +34,9 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
+
 /**
  * Thin Client connection context.
  */
@@ -146,7 +149,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         parser = new ClientMessageParser(this, ver);
 
-        connMonList.add(this);
+        addToList(connMonList, () -> this);
     }
 
     /** {@inheritDoc} */
@@ -165,7 +168,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         super.onDisconnected();
 
-        connMonList.remove(connectionId());
+        removeFromList(connMonList, connectionId());
     }
 
     /**

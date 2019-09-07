@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.removeFromList;
 
 /**
  * JDBC Connection Context.
@@ -210,7 +212,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler.start();
 
-        connMonList.add(this);
+        addToList(connMonList, () -> this);
     }
 
     /** {@inheritDoc} */
@@ -229,7 +231,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         super.onDisconnected();
 
-        connMonList.remove(connectionId());
+        removeFromList(connMonList, connectionId());
     }
 
     /**
