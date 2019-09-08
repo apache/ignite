@@ -22,6 +22,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -44,6 +45,9 @@ public class KNNUtils {
     @Nullable public static <K, V, C extends Serializable> Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> buildDataset(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
+        LearningEnvironment environment = envBuilder.buildForTrainer();
+        environment.initDeployingContext(vectorizer);
+
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder
             = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
@@ -53,7 +57,8 @@ public class KNNUtils {
             dataset = datasetBuilder.build(
                 envBuilder,
                 (env, upstream, upstreamSize) -> new EmptyContext(),
-                partDataBuilder
+                partDataBuilder,
+                environment
             );
         }
         return dataset;
