@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBase
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewQueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -171,10 +170,9 @@ public class SchemaManager {
     /**
      * Registers new system view.
      *
-     * @param schema Schema to create view in.
      * @param view System view.
      */
-    public void createSystemView(String schema, SqlSystemView view) {
+    public void createSystemView(SqlSystemView view) {
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
@@ -186,10 +184,10 @@ public class SchemaManager {
 
         try {
             synchronized (schemaMux) {
-                createSchema(schema, true);
+                createSchema(view.getSchemaName(), true);
             }
 
-            try (Connection c = connMgr.connectionNoCache(schema)) {
+            try (Connection c = connMgr.connectionNoCache(view.getSchemaName())) {
                 SqlSystemTableEngine.registerView(c, view);
 
                 systemViews.add(view);
@@ -235,7 +233,7 @@ public class SchemaManager {
      */
     private void createSystemViews() throws IgniteCheckedException {
         for (SqlSystemView view : systemViews(ctx))
-            createSystemView(QueryUtils.SCHEMA_SYS, view);
+            createSystemView(view);
     }
 
     /**
@@ -245,7 +243,6 @@ public class SchemaManager {
     private Collection<SqlSystemView> systemViews(GridKernalContext ctx) {
         Collection<SqlSystemView> views = new ArrayList<>();
 
-        views.add(new SqlSystemViewNodes(ctx));
         views.add(new SqlSystemViewNodeAttributes(ctx));
         views.add(new SqlSystemViewBaselineNodes(ctx));
         views.add(new SqlSystemViewNodeMetrics(ctx));

@@ -22,7 +22,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -62,7 +61,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         this.mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-        mgr.createSystemView(QueryUtils.SCHEMA_MONITORING, new MetricSetLocalSystemView(ctx, mreg, mregFilter));
+        mgr.createSystemView(new MetricSetLocalSystemView(ctx, mreg, mregFilter));
 
         if (log.isDebugEnabled())
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
@@ -111,7 +110,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         MonitoringListLocalSystemView<?, ?> view = new MonitoringListLocalSystemView<>(ctx, mlist);
 
-        mgr.createSystemView(view.getSchemaName(), view);
+        mgr.createSystemView(view);
     }
 
     /** {@inheritDoc} */

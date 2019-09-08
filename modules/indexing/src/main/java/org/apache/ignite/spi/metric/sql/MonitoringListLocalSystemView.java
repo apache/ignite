@@ -49,6 +49,7 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueUuid;
 
 /**
  * System view to export monitoring list data.
@@ -88,9 +89,11 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
                         else if (clazz.isAssignableFrom(Class.class))
                             data[idx] = ValueString.get(((Class)val).getName());
                         else if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                            clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
+                            clazz.isAssignableFrom(IgniteUuid.class) ||
                             clazz.isAssignableFrom(InetSocketAddress.class))
                             data[idx] = ValueString.get(Objects.toString(val));
+                        else if (clazz.isAssignableFrom(UUID.class))
+                            data[idx] = ValueUuid.get((UUID)val);
                         else if (clazz.isAssignableFrom(BigDecimal.class))
                             data[idx] = ValueDecimal.get((BigDecimal)val);
                         else if (clazz.isAssignableFrom(BigInteger.class))
@@ -173,9 +176,11 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
                 int type;
 
                 if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                    clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
+                    clazz.isAssignableFrom(IgniteUuid.class) ||
                     clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
                     type = Value.STRING;
+                else if (clazz.isAssignableFrom(UUID.class))
+                    type = Value.UUID;
                 else if (clazz.isAssignableFrom(BigDecimal.class))
                     type = Value.DECIMAL;
                 else if (clazz.isAssignableFrom(BigInteger.class))
@@ -244,7 +249,7 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
 
     /** {@inheritDoc} */
     @Override public String getSchemaName() {
-        return QueryUtils.SCHEMA_MONITORING;
+        return QueryUtils.SCHEMA_SYS;
     }
 
     /** {@inheritDoc} */

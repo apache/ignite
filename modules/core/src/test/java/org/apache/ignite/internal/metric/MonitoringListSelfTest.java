@@ -60,19 +60,12 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLI_CONN_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLI_CONN_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CQ_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CQ_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.NODES_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.NODES_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASK_COUNT_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TXS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TXS_MON_LIST_DESC;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
@@ -382,11 +375,11 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
     /** */
     private void checkNodeView(ClusterNodeView n, ClusterNode loc, boolean isLocal) {
-        assertEquals(loc.id(), n.id());
+        assertEquals(loc.id(), n.nodeId());
         assertEquals(loc.consistentId().toString(), n.consistentId());
         assertEquals(toStringSafe(loc.addresses()), n.addresses());
-        assertEquals(toStringSafe(loc.hostNames()), n.hostNames());
-        assertEquals(loc.order(), n.order());
+        assertEquals(toStringSafe(loc.hostNames()), n.hostnames());
+        assertEquals(loc.order(), n.nodeOrder());
         assertEquals(loc.version().toString(), n.version());
         assertEquals(isLocal, n.isLocal());
         assertEquals(loc.isDaemon(), n.isDaemon());

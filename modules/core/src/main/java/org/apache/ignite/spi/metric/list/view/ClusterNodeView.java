@@ -41,7 +41,7 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
 
     /** {@inheritDoc} */
     @Override public UUID monitoringRowId() {
-        return id();
+        return nodeId();
     }
 
     /**
@@ -49,7 +49,7 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
      * @see ClusterNode#id()
      */
     @Order
-    public UUID id() {
+    public UUID nodeId() {
         return n.id();
     }
 
@@ -66,7 +66,7 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
      * @return Addresses.
      * @see ClusterNode#addresses()
      * */
-    @Order(2)
+    @Order(6)
     public String addresses() {
         return toStringSafe(n.addresses());
     }
@@ -75,8 +75,8 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
      * @return Addresses string.
      * @see ClusterNode#hostNames()
      */
-    @Order(3)
-    public String hostNames() {
+    @Order(7)
+    public String hostnames() {
         return toStringSafe(n.hostNames());
     }
 
@@ -84,8 +84,8 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
      * @return Topology order.
      * @see ClusterNode#order()
      */
-    @Order(4)
-    public long order() {
+    @Order(5)
+    public long nodeOrder() {
         return n.order();
     }
 
@@ -93,6 +93,7 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
      * @return Version.
      * @see ClusterNode#version()
      */
+    @Order(2)
     public String version() {
         return n.version().toString();
     }
@@ -109,6 +110,7 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
      * @return {@code True} if node is daemon.
      * @see ClusterNode#isDaemon()
      */
+    @Order(4)
     public boolean isDaemon() {
         return n.isDaemon();
     }
@@ -117,6 +119,7 @@ public class ClusterNodeView implements MonitoringRow<UUID> {
      * @return {@code True} if node is client.
      * @see ClusterNode#isClient() ()
      */
+    @Order(3)
     public boolean isClient() {
         return n.isClient();
     }

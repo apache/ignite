@@ -27,7 +27,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcThinDriver;
@@ -120,20 +119,20 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         mmgr.list("test", "description", CacheView.class, l -> {}, l -> {});
 
-        List<List<?>> rows = execute(ignite, "SELECT * FROM MONITORING.TEST");
+        List<List<?>> rows = execute(ignite, "SELECT * FROM SYS.TEST");
 
         assertTrue(rows.isEmpty());
 
         mmgr.removeList("test");
 
-        assertThrowsWithCause(() -> execute(ignite, "SELECT * FROM MONITORING.TEST"), SQLException.class);
+        assertThrowsWithCause(() -> execute(ignite, "SELECT * FROM SYS.TEST"), SQLException.class);
     }
 
     /** */
     @Test
     public void testDataRegionJmxMetrics() throws Exception {
         List<List<?>> res = execute(ignite,
-            "SELECT REPLACE(name, 'io.dataregion.default.'), value, description FROM MONITORING.METRICS");
+            "SELECT REPLACE(name, 'io.dataregion.default.'), value, description FROM SYS.METRICS");
 
         Set<String> names = new HashSet<>();
 
@@ -153,7 +152,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         createAdditionalMetrics(ignite);
 
         List<List<?>> res = execute(ignite,
-            "SELECT name, value, description FROM MONITORING.METRICS WHERE name LIKE 'other.prefix%'");
+            "SELECT name, value, description FROM SYS.METRICS WHERE name LIKE 'other.prefix%'");
 
         Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(Arrays.asList(
             t("other.prefix.test", "42"),
@@ -177,7 +176,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         for (String name : cacheNames)
             ignite.createCache(name);
 
-        List<List<?>> caches = execute(ignite, "SELECT CACHE_NAME FROM MONITORING.CACHES");
+        List<List<?>> caches = execute(ignite, "SELECT CACHE_NAME FROM SYS.CACHES");
 
         assertEquals(3, caches.size());
 
@@ -195,7 +194,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         for (String grpName : grpNames)
             ignite.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-        List<List<?>> grps = execute(ignite, "SELECT CACHE_GROUP_NAME FROM MONITORING.CACHE_GROUPS");
+        List<List<?>> grps = execute(ignite, "SELECT CACHE_GROUP_NAME FROM SYS.CACHE_GROUPS");
 
         assertEquals(3, grps.size());
 
@@ -228,7 +227,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "  TASK_NAME, " +
             "  TASK_NODE_ID, " +
             "  USER_VERSION " +
-            "FROM MONITORING.TASKS");
+            "FROM SYS.TASKS");
 
         assertEquals(5, tasks.size());
 
@@ -239,7 +238,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(-1, t.get(2));
         assertTrue(t.get(3).toString().startsWith(getClass().getName()));
         assertTrue(t.get(4).toString().startsWith(getClass().getName()));
-        assertEquals(ignite.localNode().id().toString(), t.get(5));
+        assertEquals(ignite.localNode().id(), t.get(5));
         assertEquals("0", t.get(6));
     }
 
@@ -266,7 +265,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 "  NODE_FILTER, " +
                 "  STATICALLY_CONFIGURED, " +
                 "  ORIGIN_NODE_ID " +
-                "FROM MONITORING.SERVICES");
+                "FROM SYS.SERVICES");
 
         assertEquals(1, srvs.size());
 
@@ -295,7 +294,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        List<List<?>> qrys = execute(ignite, "SELECT * FROM MONITORING.QUERY_CONTINUOUS");
+        List<List<?>> qrys = execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS");
 
         assertEquals(1, qrys.size());
     }
@@ -316,7 +315,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             try (Connection conn =
                      new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
 
-                List<List<?>> conns = execute(ignite, "SELECT * FROM MONITORING.CLIENT_CONNECTIONS");
+                List<List<?>> conns = execute(ignite, "SELECT * FROM SYS.CLIENT_CONNECTIONS");
 
                 assertEquals(2, conns.size());
             }
@@ -358,7 +357,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 }
             }, 5, "yyy");
 
-            List<List<?>> txs = execute(ignite, "SELECT * FROM MONITORING.TRANSACTIONS");
+            List<List<?>> txs = execute(ignite, "SELECT * FROM SYS.TRANSACTIONS");
 
             assertEquals(10, txs.size());
         }
@@ -370,7 +369,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testNodes() throws Exception {
-        List<List<?>> nodes = execute(ignite, "SELECT * FROM MONITORING.NODES");
+        List<List<?>> nodes = execute(ignite, "SELECT * FROM SYS.NODES");
 
         assertEquals(1, nodes.size());
     }
@@ -397,7 +396,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         execute(ignite, "CREATE TABLE t2(id LONG PRIMARY KEY, NAME VARCHAR)");
         execute(ignite, "CREATE TABLE t3(id LONG PRIMARY KEY, NAME VARCHAR)");
 
-        List<List<?>> tbls = execute(ignite, "SELECT * FROM MONITORING.SQL_TABLES");
+        List<List<?>> tbls = execute(ignite, "SELECT * FROM SYS.SQL_TABLES");
 
         assertEquals(3, tbls.size());
     }
@@ -408,7 +407,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         execute(ignite, "CREATE TABLE t1(id LONG PRIMARY KEY, NAME VARCHAR) WITH \"CACHE_NAME=c1, CACHE_GROUP=g1\"");
         execute(ignite, "CREATE INDEX name_idx ON t1(name);");
 
-        List<List<?>> tbls = execute(ignite, "SELECT * FROM MONITORING.SQL_INDEXES");
+        List<List<?>> tbls = execute(ignite, "SELECT * FROM SYS.SQL_INDEXES");
 
         assertEquals(5, tbls.size());
     }
