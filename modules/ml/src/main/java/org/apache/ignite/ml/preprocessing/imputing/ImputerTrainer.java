@@ -85,7 +85,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     default: throw new UnsupportedOperationException("The chosen strategy is not supported");
                 }
                 return partData;
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
 
             Vector imputingValues;

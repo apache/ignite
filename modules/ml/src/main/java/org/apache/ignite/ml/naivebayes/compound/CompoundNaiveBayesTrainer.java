@@ -56,7 +56,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     private Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
     /** {@inheritDoc} */
-    @Override public <K, V> CompoundNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> CompoundNaiveBayesModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }

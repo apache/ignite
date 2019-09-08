@@ -17,7 +17,10 @@
 
 package org.apache.ignite.ml.pipeline;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 
@@ -27,7 +30,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class PipelineMdl<K, V> implements IgniteModel<Vector, Double> {
+public final class PipelineMdl<K, V> implements IgniteModel<Vector, Double>, DeployableObject {
     /** Internal model produced by {@link Pipeline}. */
     private IgniteModel<Vector, Double> internalMdl;
 
@@ -66,5 +69,10 @@ public class PipelineMdl<K, V> implements IgniteModel<Vector, Double> {
         return "PipelineMdl{" +
             "internalMdl=" + internalMdl +
             '}';
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(preprocessor);
     }
 }
