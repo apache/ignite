@@ -124,7 +124,6 @@ public class MLDeployingTest extends GridCommonAbstractTest {
             Preprocessor<Integer, Vector> customPreprocessor3 = createPreprocessor(knownPreprocessor2, EXT_PREPROCESSOR_1);
             Preprocessor<Integer, Vector> customPreprocessor4 = createPreprocessor(customPreprocessor3, EXT_PREPROCESSOR_2);
 
-
             fitAndTestModel(cache, customPreprocessor1);
             fitAndTestModel(cache, customPreprocessor2);
             fitAndTestModel(cache, knownPreprocessor1);

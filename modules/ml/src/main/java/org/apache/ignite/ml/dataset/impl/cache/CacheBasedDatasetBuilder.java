@@ -67,6 +67,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
     /** Number of retries for the case when one of partitions not found on the node where loading is performed. */
     private final int retries;
+
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
      * predicate that passes all upstream entries to dataset.
