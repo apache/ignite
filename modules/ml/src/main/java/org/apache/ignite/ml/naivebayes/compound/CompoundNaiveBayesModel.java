@@ -18,12 +18,15 @@
 package org.apache.ignite.ml.naivebayes.compound;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
@@ -33,7 +36,7 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
  * A compound Naive Bayes model which uses a composition of{@code GaussianNaiveBayesModel} and {@code
  * DiscreteNaiveBayesModel}.
  */
-public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
+public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -5045925321135798960L;
 
@@ -155,5 +158,10 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             ++index;
         }
         return VectorUtils.of(newFeaturesValues);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Arrays.asList(discreteModel, gaussianModel);
     }
 }
