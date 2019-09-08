@@ -17,18 +17,16 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.naivebayes.BayesModel;
 
 /**
  * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
-public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
-    /** */
+public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesModel, Vector, Double> {
+    /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
     /** Means of features for all classes. kth row contains means for labels[k] class. */
@@ -69,48 +67,61 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** Returns a number of class to which the input belongs. */
     @Override public Double predict(Vector vector) {
-        int k = classProbabilities.length;
+        double[] probapilityPowers = probabilityPowers(vector);
 
-        double maxProbability = .0;
         int max = 0;
+        for (int i = 0; i < probapilityPowers.length; i++) {
+            probapilityPowers[i] += Math.log(classProbabilities[i]);
 
-        for (int i = 0; i < k; i++) {
-            double p = classProbabilities[i];
-            for (int j = 0; j < vector.size(); j++) {
-                double x = vector.get(j);
-                double g = gauss(x, means[i][j], variances[i][j]);
-                p *= g;
-            }
-            if (p > maxProbability) {
+            if (probapilityPowers[i] > probapilityPowers[max]) {
                 max = i;
-                maxProbability = p;
             }
         }
         return labels[max];
     }
 
-    /** */
+    /** {@inheritDoc} */
+    @Override
+    public double[] probabilityPowers(Vector vector) {
+        double[] probapilityPowers = new double[classProbabilities.length];
+
+        for (int i = 0; i < classProbabilities.length; i++) {
+            for (int j = 0; j < vector.size(); j++) {
+                double x = vector.get(j);
+                double parobability = gauss(x, means[i][j], variances[i][j]);
+                probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
+            }
+        }
+        return probapilityPowers;
+    }
+
+    /** A getter for means.*/
     public double[][] getMeans() {
         return means;
     }
 
-    /** */
+    /** A getter for variances.*/
     public double[][] getVariances() {
         return variances;
     }
 
-    /** */
+    /** A getter for classProbabilities.*/
     public double[] getClassProbabilities() {
         return classProbabilities;
     }
 
-    /** */
+    /** A getter for labels.*/
+    public double[] getLabels() {
+        return labels;
+    }
+
+    /** A getter for sumsHolder.*/
     public GaussianNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }
 
-    /** Gauss distribution */
-    private double gauss(double x, double mean, double variance) {
+    /** Gauss distribution. */
+    private static double gauss(double x, double mean, double variance) {
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }
 }
