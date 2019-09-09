@@ -97,6 +97,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
     private static class InterceptorIOFactory extends AsyncFileIOFactory {
         /** */
         private static final Predicate<File> DUMMY_PREDICATE = (f) -> false;
+
         /** Time to wait before exception would be thrown. It is giving time to page replacer to work. */
         private static final long DELAY_TIME = 1000;
 
