@@ -55,6 +55,9 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
 
     /** {@inheritDoc} */
     @Override public boolean apply(Object k, Object v) {
+        System.out.println("MY_DEBUG ctx=" + ctx);
+        System.out.println("MY_DEBUG ctx.memory()=" + ctx.memory());
+
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
@@ -89,10 +92,6 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);
-
-        System.out.println(
-            "MY_DEBUG ignite=" + ignite + ", ctx=" + ctx
-        );
 
         if (ptr != 0)
             return;
