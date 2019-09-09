@@ -171,7 +171,6 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             g.services().deploy(srvcCfg);
 
-
             ((IgniteMXBean)g).enableMonitoringList(SVCS_MON_LIST);
 
             MonitoringList<IgniteUuid, ServiceView> srvs = g.context().metric().list(SVCS_MON_LIST);

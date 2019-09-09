@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
