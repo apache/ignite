@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Broadcast task name. */
         public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
 
-        /** Broadcast task name. */
+        /** Decimal task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
         /** Echo type: null. */

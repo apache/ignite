@@ -343,7 +343,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
-                writer.WriteInt(-1);
+                writer.WriteInt(0);
             else
             {
                 writer.WriteInt(SqlSchemas.Count);
@@ -619,6 +619,20 @@ namespace Apache.Ignite.Core
                 }
             }
 
+            if (ExecutorConfiguration == null)
+            {
+                writer.WriteInt(0);
+            }
+            else
+            {
+                writer.WriteInt(ExecutorConfiguration.Count);
+                foreach (var exec in ExecutorConfiguration)
+                {
+                    writer.WriteString(exec.Name);
+                    writer.WriteInt(exec.Size);
+                }
+            }
+
             // Plugins (should be last).
             if (PluginConfigurations != null)
             {
@@ -735,9 +749,7 @@ namespace Apache.Ignite.Core
 
             int sqlSchemasCnt = r.ReadInt();
 
-            if (sqlSchemasCnt == -1)
-                SqlSchemas = null;
-            else
+            if (sqlSchemasCnt > 0)
             {
                 SqlSchemas = new List<string>(sqlSchemasCnt);
 
@@ -868,7 +880,7 @@ namespace Apache.Ignite.Core
             // SSL context factory.
             SslContextFactory = SslFactorySerializer.Read(r);
 
-            //Failure handler.
+            // Failure handler.
             if (r.ReadBoolean())
             {
                 switch (r.ReadByte())
@@ -897,6 +909,22 @@ namespace Apache.Ignite.Core
             else
             {
                 FailureHandler = null;
+            }
+
+            // Executor configuration.
+            var count = r.ReadInt();
+            if (count >= 0)
+            {
+                ExecutorConfiguration = new List<ExecutorConfiguration>(count);
+
+                for (var i = 0; i < count; i++)
+                {
+                    ExecutorConfiguration.Add(new ExecutorConfiguration
+                    {
+                        Name = r.ReadString(),
+                        Size = r.ReadInt()
+                    });
+                }
             }
         }
 
@@ -1677,5 +1705,11 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> SqlSchemas { get; set; }
+
+        /// <summary>
+        /// Gets or sets custom executor configuration for compute tasks.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<ExecutorConfiguration> ExecutorConfiguration { get; set; }
     }
 }

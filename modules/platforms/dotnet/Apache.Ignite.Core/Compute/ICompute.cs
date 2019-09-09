@@ -84,6 +84,17 @@ namespace Apache.Ignite.Core.Compute
         ICompute WithKeepBinary();
 
         /// <summary>
+        /// Gets instance of the compute API associated with custom executor. All tasks and closures submitted to
+        /// returned instance will be processed by this executor on both remote and local nodes.
+        /// If an executor with the given name doesn't exist, task will be processed in default ("public") pool.
+        /// <para/>
+        /// Executor should be defined in <see cref="IgniteConfiguration.ExecutorConfiguration"/>.
+        /// </summary>
+        /// <param name="executorName">Executor name.</param>
+        /// <returns>New Compute instance associated with a custom executor.</returns>
+        ICompute WithExecutor(string executorName);
+
+        /// <summary>
         /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
         /// then 'taskName' will be used as task class name to auto-deploy the task.
         /// </summary>

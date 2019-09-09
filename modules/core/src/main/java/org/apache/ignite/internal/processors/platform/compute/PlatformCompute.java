@@ -75,6 +75,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private static final int OP_WITH_NO_RESULT_CACHE = 9;
 
+    /** */
+    private static final int OP_WITH_EXECUTOR = 10;
+
     /** Compute instance. */
     private final IgniteComputeImpl compute;
 
@@ -98,6 +101,20 @@ public class PlatformCompute extends PlatformAbstractTarget {
         ClusterGroup platformGrp = grp.forAttribute(platformAttr, platformCtx.platform());
 
         computeForPlatform = (IgniteComputeImpl)grp.ignite().compute(platformGrp);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param platformCtx Context.
+     * @param compute Compute.
+     * @param computeForPlatform Compute over platform-specific nodes.
+     */
+    private PlatformCompute(PlatformContext platformCtx, IgniteComputeImpl compute,
+                            IgniteComputeImpl computeForPlatform) {
+        super(platformCtx);
+        this.compute = compute;
+        this.computeForPlatform = computeForPlatform;
     }
 
     /** {@inheritDoc} */
@@ -124,6 +141,14 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
             case OP_EXEC_ASYNC:
                 return wrapListenable((PlatformListenable) executeJavaTask(reader, true));
+
+            case OP_WITH_EXECUTOR: {
+                String executorName = reader.readString();
+
+                return new PlatformCompute(platformCtx,
+                        (IgniteComputeImpl)compute.withExecutor(executorName),
+                        (IgniteComputeImpl)computeForPlatform.withExecutor(executorName));
+            }
 
             default:
                 return super.processInStreamOutObject(type, reader);

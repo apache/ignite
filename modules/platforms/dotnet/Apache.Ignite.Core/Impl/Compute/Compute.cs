@@ -83,6 +83,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public ICompute WithExecutor(string executorName)
+        {
+            var computeImpl = _compute.WithExecutor(executorName);
+
+            return new Compute(computeImpl);
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes ExecuteJavaTask<TReduceRes>(string taskName, object taskArg)
         {
             return _compute.ExecuteJavaTask<TReduceRes>(taskName, taskArg);

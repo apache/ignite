@@ -117,6 +117,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Common\IgniteProductVersionTests.cs" Link="Common\IgniteProductVersionTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.JavaTask.cs" Link="Compute\ComputeApiTest.JavaTask.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeWithExecutorTest.cs" Link="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicLongTest.cs" Link="DataStructures\AtomicLongTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicReferenceTest.cs" Link="DataStructures\AtomicReferenceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicSequenceTest.cs" Link="DataStructures\AtomicSequenceTest.cs" />
@@ -165,6 +166,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid3.xml" Link="Config\Compute\compute-grid3.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid-custom-executor.xml" Link="Config\Compute\compute-grid-custom-executor.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache.xml" Link="Config\native-client-test-cache.xml">

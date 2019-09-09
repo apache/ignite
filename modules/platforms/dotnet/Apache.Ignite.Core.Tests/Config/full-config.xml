@@ -165,4 +165,8 @@
                        keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' 
                        trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
     <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="true" timeout="0:1:0"/>
+    <executorConfiguration>
+        <executorConfiguration name='exec1' size='1' />
+        <executorConfiguration name='exec2' size='2' />
+    </executorConfiguration>
 </igniteConfiguration>
