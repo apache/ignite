@@ -86,6 +86,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
+import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
@@ -213,6 +214,9 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
     /** */
     private final UUID subjId;
+
+    /** */
+    private volatile ComputeTaskView taskView;
 
     /** Continuous mapper. */
     private final ComputeTaskContinuousMapper mapper = new ComputeTaskContinuousMapper() {
@@ -1664,6 +1668,21 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     /** @return Affinity partition id. */
     public int affPartId() {
         return affPartId;
+    }
+
+    /** @return Compute task view. */
+    public ComputeTaskView taskView() {
+        ComputeTaskView v = taskView;
+
+        if (v == null)
+            taskView = v = new ComputeTaskView(this);
+
+        return v;
+    }
+
+    /** */
+    public void clearTaskView() {
+        taskView = null;
     }
 
     /** {@inheritDoc} */

@@ -30,25 +30,26 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.list.MonitoringListAdapter;
 import org.apache.ignite.internal.processors.metric.list.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ServiceViewWalker;
-import org.apache.ignite.internal.processors.metric.list.MonitoringListImpl;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -81,7 +82,7 @@ import static org.apache.ignite.internal.processors.metric.list.ListUtils.listen
  * @see MetricExporterSpi
  * @see MetricRegistry
  * @see MonitoringList
- * @see MonitoringListImpl
+ * @see MonitoringListAdapter
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
@@ -383,59 +384,44 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         });
     }
 
-    /**
-     * <ul>
-     * <li> Creates list is not exists.</li>
-     * <li> Register and call {@code storer} callback on each list creation.</li>
-     * <li> Register and call {@code cleaner} callback on each list removal.</li>
-     * </ul>
-     *
-     * List can be created or removed by {@link IgniteKernal#enableMonitoringList(String)}, {@link IgniteKernal#disableMonitoringList(String)} calls.
-     *
-     * @param name List name.
-     * @param description List description.
-     * @param row Row class
-     * @param storer Storer callback.
-     * @param cleaner Cleaner callback.
-     * @param <Id> Type of the id of the monitoring row.
-     * @param <R> Type of the monitoring row.
-     */
-    public <Id, R extends MonitoringRow<Id>> void list(String name, String description,
-        Class<R> row,
-        Consumer<MonitoringList<Id, R>> storer,
-        Consumer<MonitoringList<?, ?>> cleaner) {
+    public <Id, R extends MonitoringRow<Id>, D> void list(String name, String description,
+        Class<R> rowClazz, Supplier<ConcurrentMap<?, D>> data, Function<D, R> rowFunc, Consumer<D> clearer) {
 
-        Supplier<MonitoringList<Id, R>> p = () -> list(name, description, row);
+        Supplier<MonitoringList<Id, R>> p = () -> list(name, () -> new MonitoringListAdapter<>(name,
+            description,
+            rowClazz,
+            (MonitoringRowAttributeWalker<R>)walkers.get(rowClazz),
+            data.get(),
+            rowFunc));
 
-        storer.accept(p.get());
+        //Create new instance of the list.
+        p.get();
 
-        ctx.metric().addRemoveListListener(listenOnlyEqual(name, MonitoringList::name, cleaner));
-        ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> storer.accept(p.get())));
+        ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> p.get()));
+        ctx.metric().addRemoveListListener(l -> data.get().values().forEach(clearer));
     }
 
     /**
      * @param name Name of the list.
      * @return List.
      */
-    @Nullable public <Id, R extends MonitoringRow<Id>> MonitoringListImpl<Id, R> list(String name) {
-        return (MonitoringListImpl<Id, R>)lists.get(name);
+    @Nullable public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name) {
+        return (MonitoringList<Id, R>)lists.get(name);
     }
 
     /**
-     * Gets or creates {@link MonitoringListImpl}.
+     * Gets or creates {@link MonitoringList}.
      *
      * @param name Name of the list.
-     * @param description Description.
-     * @param rowClazz Class of the row.
+     * @param listSupplier List supplier.
      * @param <Id> Type of the row identificator.
      * @param <R> Type of the row.
      * @return Monitoring list.
      */
-    private <Id, R extends MonitoringRow<Id>> MonitoringListImpl<Id, R> list(String name, String description,
-        Class<R> rowClazz) {
-        return (MonitoringListImpl<Id, R>)lists.computeIfAbsent(name, n -> {
-            MonitoringListImpl<Id, R> list = new MonitoringListImpl<>(name, description, rowClazz,
-                (MonitoringRowAttributeWalker<R>)walkers.get(rowClazz), log);
+    private <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name,
+        Supplier<MonitoringList<Id, R>> listSupplier) {
+        return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
+            MonitoringList<Id, R> list = listSupplier.get();
 
             notifyListeners(list, listCreationLsnrs, log);
 
@@ -834,7 +820,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricRegistry mreg = GridMetricManager.this.registry(group);
+            MetricRegistry mreg = registry(group);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);

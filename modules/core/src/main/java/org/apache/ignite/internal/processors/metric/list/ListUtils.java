@@ -24,72 +24,11 @@ import java.util.function.Supplier;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
+/** Utils methods for monitoring list feature. */
 public final class ListUtils {
-
     /**
-     * Adds {@code row} to the {@code list} if row not exists.
+     * Return consumer that filters all events expept those equals to {@code pattern}.
      *
-     * @param list List.
-     * @param row Row supplier.
-     * @param <Id> Id type.
-     * @param <R> Row type.
-     */
-    public static <Id, R extends MonitoringRow<Id>> void addIfAbsentToList(@Nullable final MonitoringListImpl<Id, R> list,
-        final Supplier<R> row) {
-        if (list == null)
-            return;
-
-        list.addIfAbsent(row.get());
-    }
-
-    /**
-     * Adds {@code row} to the {@code list}.
-     *
-     * @param list List.
-     * @param row Row supplier.
-     * @param <Id> Id type.
-     * @param <R> Row type.
-     */
-    public static <Id, R extends MonitoringRow<Id>> void addToList(@Nullable final MonitoringListImpl<Id, R> list,
-        final Supplier<R> row) {
-        if (list == null)
-            return;
-
-        list.add(row.get());
-    }
-
-    /**
-     * Removes row with the {@code id} from the {@code list}.
-     *
-     * @param list List.
-     * @param id Id.
-     * @param <Id> Id type.
-     * @param <R> Row type.
-     */
-    public static <Id, R extends MonitoringRow<Id>> void removeFromList(@Nullable final MonitoringListImpl<Id, R> list,
-        final Id id) {
-        if (list == null)
-            return;
-
-        list.remove(id);
-    }
-
-    /**
-     * Clears list.
-     *
-     * @param list List.
-     */
-    public static void clearList(@Nullable final MonitoringListImpl<?, ?> list) {
-        if (list == null)
-            return;
-
-        list.clear();
-    }
-
-    /**
      * @param pattern Pattern to search.
      * @param f Function to extract pattern from value.
      * @param c Consumer of filtered values.

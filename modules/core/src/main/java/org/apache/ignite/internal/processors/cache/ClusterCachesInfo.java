@@ -53,9 +53,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.internal.processors.metric.list.MonitoringListImpl;
 import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
@@ -86,9 +83,6 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.CAC
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST_DESC;
-import static org.apache.ignite.internal.processors.metric.list.ListUtils.addToList;
-import static org.apache.ignite.internal.processors.metric.list.ListUtils.clearList;
-import static org.apache.ignite.internal.processors.metric.list.ListUtils.removeFromList;
 
 /**
  * Logic related to cache discovery data processing.
@@ -118,24 +112,8 @@ class ClusterCachesInfo {
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
-    /**
-     * Monitoring list for caches.
-     *
-     * @see ReadOnlyMonitoringListRegistry
-     * @see GridMetricManager
-     */
-    @Nullable private volatile MonitoringListImpl<String, CacheView> cachesMonList;
-
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
-
-    /**
-     * Monitoring list for cache groups.
-     *
-     * @see ReadOnlyMonitoringListRegistry
-     * @see GridMetricManager
-     */
-    @Nullable private volatile MonitoringListImpl<Integer, CacheGroupView> cachesGrpMonList;
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
@@ -173,13 +151,17 @@ class ClusterCachesInfo {
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        ctx.metric().list(CACHES_MON_LIST, CACHES_MON_LIST_DESC, CacheView.class,
-            l -> cachesMonList = (MonitoringListImpl<String, CacheView>)l,
-            l -> cachesMonList = null);
+        ctx.metric().list(CACHES_MON_LIST, CACHES_MON_LIST_DESC,
+            CacheView.class,
+            () -> registeredCaches,
+            DynamicCacheDescriptor::cacheView,
+            DynamicCacheDescriptor::clearCacheView);
 
-        ctx.metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC, CacheGroupView.class,
-            l -> cachesGrpMonList = (MonitoringListImpl<Integer, CacheGroupView>)l,
-            l -> cachesGrpMonList = null);
+        ctx.metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC,
+            CacheGroupView.class,
+            () -> registeredCacheGrps,
+            CacheGroupDescriptor::cacheGroupView,
+            CacheGroupDescriptor::clearCacheGroupView);
 
         log = ctx.log(getClass());
     }
@@ -227,7 +209,6 @@ class ClusterCachesInfo {
 
             if (!locCaches.contains(e.getKey())) {
                 cachesIter.remove();
-                removeFromList(cachesMonList, e.getKey());
 
                 ctx.discovery().removeCacheFilter(e.getKey());
             }
@@ -251,7 +232,6 @@ class ClusterCachesInfo {
 
             if (removeGrp) {
                 grpsIter.remove();
-                removeFromList(cachesGrpMonList, e.getKey());
 
                 ctx.discovery().removeCacheGroup(e.getValue());
             }
@@ -799,7 +779,6 @@ class ClusterCachesInfo {
         markedForDeletionCaches.put(cacheName, old);
 
         registeredCaches.remove(cacheName);
-        removeFromList(cachesMonList, cacheName);
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
@@ -821,7 +800,6 @@ class ClusterCachesInfo {
             markedForDeletionCacheGrps.put(grpDesc.groupId(), grpDesc);
 
             registeredCacheGrps.remove(grpDesc.groupId());
-            removeFromList(cachesGrpMonList, grpDesc.groupId());
 
             ctx.discovery().removeCacheGroup(grpDesc);
 
@@ -1005,7 +983,6 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
-        addToList(cachesMonList, () -> new CacheView(startDesc));
 
         restartingCaches.remove(ccfg.getName());
 
@@ -1439,7 +1416,6 @@ class ClusterCachesInfo {
             desc.receivedOnDiscovery(true);
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
-            addToList(cachesMonList, () -> new CacheView(desc));
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1538,7 +1514,6 @@ class ClusterCachesInfo {
             }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
-            addToList(cachesGrpMonList, () -> new CacheGroupView(grpDesc));
 
             assert old == null : old;
 
@@ -1553,11 +1528,7 @@ class ClusterCachesInfo {
      */
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
-        clearList(cachesMonList);
-
         registeredCacheGrps.clear();
-        clearList(cachesGrpMonList);
-
         ctx.discovery().cleanCachesAndGroups();
     }
 
@@ -1925,10 +1896,9 @@ class ClusterCachesInfo {
         }
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-            if (desc.cacheId() == cacheId) {
+            if (desc.cacheId() == cacheId)
                 return "Cache ID conflict (change cache name) [cacheName=" + cfg.getName() +
                     ", conflictingCacheName=" + desc.cacheName() + ']';
-            }
         }
 
         int grpId = CU.cacheGroupId(cfg.getName(), cfg.getGroupName());
@@ -1937,20 +1907,18 @@ class ClusterCachesInfo {
             if (cacheGroupByName(cfg.getGroupName()) == null) {
                 CacheGroupDescriptor desc = registeredCacheGrps.get(grpId);
 
-                if (desc != null) {
+                if (desc != null)
                     return "Cache group ID conflict (change cache group name) [cacheName=" + cfg.getName() +
                         ", groupName=" + cfg.getGroupName() +
                         (desc.sharedGroup() ? ", conflictingGroupName=" : ", conflictingCacheName=") + desc.cacheOrGroupName() + ']';
-                }
             }
         }
         else {
             CacheGroupDescriptor desc = registeredCacheGrps.get(grpId);
 
-            if (desc != null) {
+            if (desc != null)
                 return "Cache group ID conflict (change cache name) [cacheName=" + cfg.getName() +
                     (desc.sharedGroup() ? ", conflictingGroupName=" : ", conflictingCacheName=") + desc.cacheOrGroupName() + ']';
-            }
         }
 
         return null;
@@ -2072,7 +2040,6 @@ class ClusterCachesInfo {
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
-        addToList(cachesMonList, () -> new CacheView(desc));
 
         assert old == null : old;
     }
@@ -2219,7 +2186,6 @@ class ClusterCachesInfo {
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
-        addToList(cachesGrpMonList, () -> new CacheGroupView(grpDesc));
 
         assert old == null : old;
 
@@ -2407,11 +2373,7 @@ class ClusterCachesInfo {
             new HashMap<>(registeredCaches));
 
         registeredCacheGrps.clear();
-        clearList(cachesGrpMonList);
-
         registeredCaches.clear();
-        clearList(cachesMonList);
-
         registeredTemplates.clear();
 
         clientReconnectReqs = null;

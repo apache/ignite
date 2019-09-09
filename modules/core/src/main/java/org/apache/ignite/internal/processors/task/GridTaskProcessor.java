@@ -64,7 +64,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -81,8 +80,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.internal.processors.metric.list.MonitoringListImpl;
 import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,8 +100,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.list.ListUtils.addToList;
-import static org.apache.ignite.internal.processors.metric.list.ListUtils.removeFromList;
 
 /**
  * This class defines task processor.
@@ -125,14 +120,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();
-
-    /**
-     * Compute task monitoring list.
-     *
-     * @see ReadOnlyMonitoringListRegistry
-     * @see GridMetricManager
-     */
-    @Nullable private volatile MonitoringListImpl<IgniteUuid, ComputeTaskView> taskMonList;
 
     /** */
     private boolean stopping;
@@ -172,9 +159,11 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
-        ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC, ComputeTaskView.class,
-            l -> taskMonList = (MonitoringListImpl<IgniteUuid, ComputeTaskView>)l,
-            l -> taskMonList = null);
+        ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC,
+            ComputeTaskView.class,
+            () -> tasks,
+            GridTaskWorker::taskView,
+            GridTaskWorker::clearTaskView);
     }
 
     /** {@inheritDoc} */
@@ -794,7 +783,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     subjId);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
-                addToList(taskMonList, () -> new ComputeTaskView(taskWorker));
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
@@ -827,7 +815,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                         }
                         catch (RejectedExecutionException e) {
                             tasks.remove(sesId);
-                            removeFromList(taskMonList, sesId);
 
                             release(dep);
 
@@ -1331,7 +1318,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             }
 
             boolean rmv = tasks.remove(worker.getTaskSessionId(), worker);
-            removeFromList(taskMonList, worker.getTaskSessionId());
 
             assert rmv;
 

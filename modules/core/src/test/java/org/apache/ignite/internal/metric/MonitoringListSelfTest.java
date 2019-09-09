@@ -81,9 +81,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             g.createCache("cache-2");
 
-            assertEquals(1, F.size(caches.iterator()));
-
-            assertEquals("cache-2", caches.iterator().next().cacheName());
+            assertEquals(3, F.size(caches.iterator()));
         }
     }
 
@@ -125,9 +123,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             g.createCache(new CacheConfiguration<>("cache-2").setGroupName("grp-2"));
 
-            assertEquals(1, F.size(mlist.iterator()));
-
-            assertEquals("grp-2", mlist.iterator().next().cacheGroupName());
+            assertEquals(3, F.size(mlist.iterator()));
         }
     }
 

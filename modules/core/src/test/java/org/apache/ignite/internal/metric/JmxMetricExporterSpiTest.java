@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -175,7 +176,10 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     public void testListRemove() throws Exception {
         GridMetricManager mmgr = ignite.context().metric();
 
-        mmgr.list("test", "description", CacheView.class, l -> {}, l -> {});
+        mmgr.list("test", "description", CacheView.class,
+            () -> new ConcurrentHashMap<String, CacheView>(),
+            v -> null,
+            v -> {});
 
         DynamicMBean listBean = mbean(LIST, "test");
 

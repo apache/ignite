@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -95,7 +96,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testListRemove() throws Exception {
         GridMetricManager mmgr = ignite.context().metric();
 
-        mmgr.list("test", "description", CacheView.class, l -> {}, l -> {});
+        mmgr.list("test", "description", CacheView.class, () -> new ConcurrentHashMap<String, CacheView>(), v -> null);
 
         List<List<?>> rows = execute(ignite, "SELECT * FROM SYS.TEST");
 

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -77,6 +78,9 @@ public class CacheGroupDescriptor {
 
     /** Is configuration enriched. */
     private volatile boolean cacheCfgEnriched;
+
+    /** Cache group view. */
+    private volatile CacheGroupView cacheGrpView;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -343,6 +347,21 @@ public class CacheGroupDescriptor {
      */
     public void configurationEnriched(boolean cacheCfgEnriched) {
         this.cacheCfgEnriched = cacheCfgEnriched;
+    }
+
+    /** @return Cache group view. */
+    public CacheGroupView cacheGroupView() {
+        CacheGroupView v = cacheGrpView;
+
+        if (v == null)
+            cacheGrpView = v = new CacheGroupView(this);
+
+        return v;
+    }
+
+    /** */
+    public void clearCacheGroupView() {
+        cacheGrpView = null;
     }
 
     /** {@inheritDoc} */
