@@ -52,7 +52,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -103,7 +102,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Very basic tests for running the command in different enviroment which other command are running in.
      */
-    @Test
     public void testFindAndDeleteGarbage() {
         Ignite ignite = crd;
 
@@ -131,7 +129,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Smoke test for --tx --info command.
      */
-    @Test
     public void testTransactionInfo() throws Exception {
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL).setBackups(1).setWriteSynchronizationMode(FULL_SYNC));
@@ -180,7 +177,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Smoke test for historical mode of --tx --info command.
      */
-    @Test
     public void testTransactionHistoryInfo() throws Exception {
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
@@ -245,8 +241,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
-    public void testCacheHelp() {
+    public void testCacheHelp() throws Exception {
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "help"));
@@ -273,7 +268,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
@@ -287,8 +281,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
-    public void testHelp() {
+    public void testHelp() throws Exception {
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--help"));
@@ -305,7 +298,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testPrintTimestampAtEndsOfExecution() {
         injectTestSystemOut();
 
@@ -317,7 +309,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheIdleVerify() {
         IgniteEx ignite = crd;
 
@@ -339,7 +330,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheIdleVerifyNodeFilter() {
         IgniteEx ignite = crd;
 
@@ -365,7 +355,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Tests that both update counter and hash conflicts are detected.
      */
-    @Test
     public void testCacheIdleVerifyTwoConflictTypes() {
         IgniteEx ignite = crd;
 
@@ -393,7 +382,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpSkipZerosUpdateCounters() throws Exception {
         IgniteEx ignite = crd;
 
@@ -446,7 +434,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDump() throws Exception {
         IgniteEx ignite = crd;
 
@@ -502,7 +489,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Common method for idle_verify tests with multiple options.
      */
-    @Test
     public void testCacheIdleVerifyMultipleCacheFilterOptions()
             throws Exception {
         IgniteEx ignite = crd;
@@ -674,7 +660,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpForCorruptedData() throws Exception {
         IgniteEx ignite = crd;
 
@@ -690,7 +675,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyForCorruptedData() throws Exception {
         IgniteEx ignite = crd;
 
@@ -744,7 +728,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnSystemCache() throws Exception {
         int parts = 32;
 
@@ -805,7 +788,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
         IgniteEx ignite = crd;
 
@@ -819,7 +801,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpExcludedCacheGrp() throws Exception {
         IgniteEx ignite = crd;
 
@@ -857,7 +838,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpExcludedCaches() throws Exception {
         IgniteEx ignite = crd;
 
@@ -908,7 +888,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheContention() throws Exception {
         int cnt = 10;
 
@@ -980,7 +959,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheGroups() {
         Ignite ignite = crd;
 
@@ -1001,7 +979,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheAffinity() {
         Ignite ignite = crd;
 
@@ -1026,43 +1003,36 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheConfigNoOutputFormat() {
         testCacheConfig(null, 1, 1);
     }
 
     /** */
-    @Test
     public void testCacheConfigSingleLineOutputFormatSingleNodeSignleCache() {
         testCacheConfigSingleLineOutputFormat(1, 1);
     }
 
     /** */
-    @Test
     public void testCacheConfigSingleLineOutputFormatTwoNodeSignleCache() {
         testCacheConfigSingleLineOutputFormat(2, 1);
     }
 
     /** */
-    @Test
     public void testCacheConfigSingleLineOutputFormatTwoNodeManyCaches() {
         testCacheConfigSingleLineOutputFormat(2, 100);
     }
 
     /** */
-    @Test
     public void testCacheConfigMultiLineOutputFormatSingleNodeSingleCache() {
         testCacheConfigMultiLineOutputFormat(1, 1);
     }
 
     /** */
-    @Test
     public void testCacheConfigMultiLineOutputFormatTwoNodeSingleCache() {
         testCacheConfigMultiLineOutputFormat(2, 1);
     }
 
     /** */
-    @Test
     public void testCacheConfigMultiLineOutputFormatTwoNodeManyCaches() {
         testCacheConfigMultiLineOutputFormat(2, 100);
     }
@@ -1133,7 +1103,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheDistribution() {
         Ignite ignite = crd;
 
@@ -1175,7 +1144,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    @Test
     public void testCacheResetLostPartitions() {
         Ignite ignite = crd;
 
@@ -1220,7 +1188,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Test execution of --wal print command.
      */
-    @Test
     public void testUnusedWalPrint() {
         Ignite ignite = crd;
 
@@ -1252,7 +1219,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Test execution of --wal delete command.
      */
-    @Test
     public void testUnusedWalDelete() {
         Ignite ignite = crd;
 
@@ -1425,7 +1391,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * Don't show wal commands by --help in case
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
      */
-    @Test
     public void testHideWalInHelpWhenDisableExperimentalCommand() {
         withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, FALSE.toString());
 
@@ -1440,7 +1405,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * Wal commands should ignored and print warning in case
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
      * */
-    @Test
     public void testWalCommandsInCaseDisableExperimentalCommand() {
         withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, FALSE.toString());
 

@@ -32,7 +32,6 @@ import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Test;
 
 import javax.cache.Cache;
 import java.util.Iterator;
@@ -60,7 +59,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     /**
      * Tests that validation doesn't fail if nothing is broken.
      */
-    @Test
     public void testValidateIndexesNoErrors() {
         injectTestSystemOut();
 
@@ -72,7 +70,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     /**
      * Test verifies that validate_indexes command finishes successfully when no cache names are specified.
      */
-    @Test
     public void testValidateIndexesNoErrorEmptyCacheNameArg() {
         injectTestSystemOut();
 
@@ -84,7 +81,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     /**
      * Tests that missing rows in CacheDataTree are detected.
      */
-    @Test
     public void testBrokenCacheDataTreeShouldFailValidation() {
         breakCacheDataTree(crd, CACHE_NAME, 1);
 
@@ -108,7 +104,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     /**
      * Tests that missing rows in H2 indexes are detected.
      */
-    @Test
     public void testBrokenSqlIndexShouldFailValidation() throws Exception {
         breakSqlIndex(crd, CACHE_NAME);
 
@@ -122,7 +117,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     /**
      * Test to validate only specified cache, not all cache group.
      */
-    @Test
     public void testValidateSingleCacheShouldNotTriggerCacheGroupValidation() throws Exception {
         createAndFillCache(crd, DEFAULT_CACHE_NAME, GROUP_NAME);
 

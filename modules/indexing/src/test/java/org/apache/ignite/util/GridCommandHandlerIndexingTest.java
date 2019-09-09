@@ -40,7 +40,6 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFi
  */
 public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
-    @Test
     public void testValidateIndexesFailedOnNotIdleCluster() throws Exception {
         checkpointFreq = 100L;
 
@@ -87,7 +86,6 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     /**
      * Tests that corrupted pages in the index partition are detected.
      */
-    @Test
     public void testCorruptedIndexPartitionShouldFailValidation() throws Exception {
         Ignite ignite = prepareGridForTest();
 
