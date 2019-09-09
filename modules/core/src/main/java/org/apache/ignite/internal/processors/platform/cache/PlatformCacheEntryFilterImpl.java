@@ -90,6 +90,10 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
     public void setIgniteInstance(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);
 
+        System.out.println(
+            "MY_DEBUG ignite=" + ignite + ", ctx=" + ctx
+        );
+
         if (ptr != 0)
             return;
 
