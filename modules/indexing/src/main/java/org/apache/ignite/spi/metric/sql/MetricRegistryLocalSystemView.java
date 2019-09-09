@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
