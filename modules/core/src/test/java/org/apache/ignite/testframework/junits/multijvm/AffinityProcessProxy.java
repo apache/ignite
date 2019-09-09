@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
+
 /**
  * Proxy class for affinity at another JVM.
  */
@@ -102,10 +103,10 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
         return compute.call(new MapKeyToNodeTask<>(cacheName, key));
     }
 
-    /** @deprecated use mapKeyToPrimaryAndBackupsList instead */
+    /** @deprecated use mapKeyToPrimaryAndBackupsList instead. */
     @Deprecated
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
-        return compute.call(new mapKeyToPrimaryAndBackupsTask<>(cacheName, key));
+        return mapKeyToPrimaryAndBackupsList(key);
     }
 
     /** {@inheritDoc} */
@@ -125,12 +126,13 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     }
 
     /** {@inheritDoc}
-     * @deprecated use AffinityProcessProxy#mapPartitionToPrimaryAndBackupsListList(int) instead
+     *
+     * @deprecated use AffinityProcessProxy#mapPartitionToPrimaryAndBackupsListList(int) instead.
+     *
      * */
-
     @Deprecated
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
-        return compute.call(new MapPartitionsToPrimaryAndBackupsTask<>(cacheName, part));
+        return mapPartitionToPrimaryAndBackupsList(part);
     }
 
     /** {@inheritDoc} */
@@ -179,29 +181,6 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
                 return affinity().isBackup(n, key);
             else
                 throw new IllegalStateException("primary or backup or both flags should be switched on");
-        }
-    }
-
-    /**
-     * @deprecated Use mapKeyToPrimaryAndBackupsListTask instead
-     */
-    @Deprecated
-    private static class mapKeyToPrimaryAndBackupsTask<K> extends AffinityTaskAdapter<K, Collection<ClusterNode>> {
-        /** Key. */
-        private final K key;
-
-        /**
-         * @param cacheName Cache name.
-         * @param key Key.
-         */
-        public mapKeyToPrimaryAndBackupsTask(String cacheName, K key) {
-            super(cacheName);
-            this.key = key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> call() throws Exception {
-            return affinity().mapKeyToPrimaryAndBackups(key);
         }
     }
 
@@ -409,29 +388,6 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
         /** {@inheritDoc} */
         @Override public Map<Integer, ClusterNode> call() throws Exception {
             return affinity().mapPartitionsToNodes(parts);
-        }
-    }
-
-    /**
-     * @deprecated Use MapPartitionsToPrimaryAndBackupsListTask instead
-     */
-    @Deprecated
-    private static class MapPartitionsToPrimaryAndBackupsTask<K> extends AffinityTaskAdapter<K, Collection<ClusterNode>> {
-        /** Partition. */
-        private final int part;
-
-        /**
-         * @param cacheName Cache name.
-         * @param part Partition.
-         */
-        public MapPartitionsToPrimaryAndBackupsTask(String cacheName, int part) {
-            super(cacheName);
-            this.part = part;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> call() throws Exception {
-            return affinity().mapPartitionToPrimaryAndBackupsList(part);
         }
     }
 

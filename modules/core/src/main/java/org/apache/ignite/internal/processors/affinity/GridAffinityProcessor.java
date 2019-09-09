@@ -1050,27 +1050,18 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        /** @deprecated Use mapKeyToPrimaryAndBackupsList instead */
+        /**
+         * {@inheritDoc}
+         *
+         * @deprecated Use mapKeyToPrimaryAndBackupsList instead.
+         */
         @Deprecated
         @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
-            ctx.gateway().readLock();
-
-            try {
-                AffinityInfo aff = cache();
-
-                return aff.assignment().get(GridAffinityProcessor.this.partition(cacheName, key, aff));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-            finally {
-                ctx.gateway().readUnlock();
-            }
+            return mapKeyToPrimaryAndBackupsList(key);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
+        @Override public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
             ctx.gateway().readLock();
 
             try {
@@ -1125,20 +1116,14 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        /** @deprecated use mapPartitionToPrimaryAndBackupsList instead */
+        /**
+         * {@inheritDoc}
+         *
+         * @deprecated use CacheAffinityProxy#mapPartitionToPrimaryAndBackupsList(int) instead.
+         */
         @Deprecated
         @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
-            ctx.gateway().readLock();
-
-            try {
-                return cache().assignment().get(part);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-            finally {
-                ctx.gateway().readUnlock();
-            }
+             return mapPartitionToPrimaryAndBackupsList(part);
         }
 
         /** {@inheritDoc} */

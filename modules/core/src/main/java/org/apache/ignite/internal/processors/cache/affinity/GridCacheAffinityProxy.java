@@ -222,22 +222,14 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
         }
     }
 
-    /** @deprecated use GridCacheAffinityProxy#mapKeyToPrimaryAndBackupsList(java.lang.Object) instead */
+    /** @deprecated use GridCacheAffinityProxy#mapKeyToPrimaryAndBackupsList(java.lang.Object) instead. */
     @Deprecated
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
-        CacheOperationContext old = gate.enter(null);
-
-        try {
-            return delegate.mapKeyToPrimaryAndBackups(key);
-        }
-        finally {
-            gate.leave(old);
-        }
+        return mapKeyToPrimaryAndBackupsList(key);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
+    @Override public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
         CacheOperationContext old = gate.enter(null);
 
         try {
@@ -248,17 +240,10 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
         }
     }
 
-    /** @deprecated Use GridCacheAffinityProxy#mapPartitionToPrimaryAndBackupsList(int) */
+    /** @deprecated use GridCacheAffinityProxy#mapPartitionToPrimaryAndBackupsList(int) instead. */
     @Deprecated
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
-        CacheOperationContext old = gate.enter(null);
-
-        try {
-            return delegate.mapPartitionToPrimaryAndBackups(part);
-        }
-        finally {
-            gate.leave(old);
-        }
+        return mapPartitionToPrimaryAndBackupsList(part);
     }
 
     /** {@inheritDoc} */

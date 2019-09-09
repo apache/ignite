@@ -319,7 +319,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
                 String.format("Query did not return expected key '%d' (exists: %s), partition '%d', partition nodes: ",
                     key, cache.get(key) != null, part));
 
-            Collection<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackups(part);
+            List<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackupsList(part);
 
             for (ClusterNode node : partNodes)
                 sb.append(node).append("  ");

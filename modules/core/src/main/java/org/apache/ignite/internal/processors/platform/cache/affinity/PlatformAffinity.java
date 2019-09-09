@@ -237,7 +237,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             case OP_MAP_KEY_TO_PRIMARY_AND_BACKUPS: {
                 Object key = reader.readObjectDetached();
 
-                platformCtx.writeNodes(writer, aff.mapKeyToPrimaryAndBackups(key));
+                platformCtx.writeNodes(writer, aff.mapKeyToPrimaryAndBackupsList(key));
 
                 break;
             }
@@ -245,7 +245,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             case OP_MAP_PARTITION_TO_PRIMARY_AND_BACKUPS: {
                 int part = reader.readObject();
 
-                platformCtx.writeNodes(writer, aff.mapPartitionToPrimaryAndBackups(part));
+                platformCtx.writeNodes(writer, aff.mapPartitionToPrimaryAndBackupsList(part));
 
                 break;
             }

@@ -192,7 +192,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
         Set<UUID> nodes = new HashSet<>();
 
         for (Cache.Entry<Integer, Integer> entry : entries)
-            nodes.add(g.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(entry.getKey()).iterator().next().id());
+            nodes.add(g.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(entry.getKey()).iterator().next().id());
 
         return nodes;
     }

@@ -20,16 +20,28 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
@@ -341,7 +353,11 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
             assertFalse(w.isCancelled());
             assertFalse(w.isDone());
         }
+
+        runVacuumSync();
+        checkOldVersions();
     }
+
 
     /**
      * Ensures vacuum is stopped on the given node.
@@ -354,6 +370,67 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         assertNull("Vacuums workers shouldn't be started.", GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
 
         assertNull("TxLog shouldn't exists.", GridTestUtils.getFieldValue(crd, "txLog"));
+    }
+
+    /**
+     * Checks if outdated versions were cleaned after the vacuum process.
+     *
+     * @return {@code False} if not cleaned.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkOldVersions() throws IgniteCheckedException {
+        for (Ignite node : G.allGrids()) {
+            for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
+                GridCacheContext cctx = cache.context();
+
+                if (!cctx.userCache() || !cctx.group().mvccEnabled() || F.isEmpty(cctx.group().caches()) || cctx.shared().closed(cctx))
+                    continue;
+
+                try (GridCloseableIterator it = (GridCloseableIterator)cache.withKeepBinary().iterator()) {
+                    while (it.hasNext()) {
+                        IgniteBiTuple entry = (IgniteBiTuple)it.next();
+
+                        KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+                        List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key)
+                            .stream().filter(t -> t.get1() != null).collect(Collectors.toList());
+
+                        if (vers.size() > 1) {
+                            fail("[key=" + key.value(null, false) + "; vers=" + vers + ']');
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Runs vacuum on all nodes and waits for its completion.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void runVacuumSync() throws IgniteCheckedException {
+        GridCompoundIdentityFuture<VacuumMetrics> fut = new GridCompoundIdentityFuture<>();
+
+        // Run vacuum manually.
+        for (Ignite node : G.allGrids()) {
+            if (!node.configuration().isClientMode()) {
+                MvccProcessorImpl crd = mvccProcessor(node);
+
+                if (!crd.mvccEnabled() || GridTestUtils.getFieldValue(crd, "vacuumWorkers") == null)
+                    continue;
+
+                assert GridTestUtils.getFieldValue(crd, "txLog") != null;
+
+                fut.add(crd.runVacuum());
+            }
+        }
+
+        fut.markInitialized();
+
+        // Wait vacuum finished.
+        fut.get(getTestTimeout());
     }
 
     /**
