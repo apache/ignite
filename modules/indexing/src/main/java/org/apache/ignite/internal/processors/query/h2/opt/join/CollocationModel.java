@@ -215,7 +215,8 @@ public final class CollocationModel {
             this.childFilters = childFilters.clone();
 
             children = new CollocationModel[childFilters.length];
-        } else {
+        }
+        else {
             // We have to copy because H2 reuses array and reorders elements.
             System.arraycopy(childFilters, 0, this.childFilters, 0, childFilters.length);
 
