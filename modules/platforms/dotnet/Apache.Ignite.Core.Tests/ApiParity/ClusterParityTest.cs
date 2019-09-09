@@ -40,7 +40,7 @@
         {
             "enableStatistics",  // IGNITE-7276
             "setTxTimeoutOnPartitionMapExchange", // IGNITE-8075
-            "clearStatistics"  // IGNITE-9017,
+            "clearStatistics",  // IGNITE-9017
             "readOnly"            // GG-23363
         };
 
