@@ -49,7 +49,7 @@ public class DiscreteNaiveBayesSumsHolder implements AutoCloseable, Serializable
         return arr1;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void close() {
         // Do nothing, GC will clean up.
     }
