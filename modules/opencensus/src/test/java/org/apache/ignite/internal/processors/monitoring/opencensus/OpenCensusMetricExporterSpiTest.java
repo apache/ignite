@@ -108,6 +108,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
                     return false;
 
                 String consistentId = CONSISTENT_ID_TAG.getName() + "=\"" + ignite.localNode().consistentId() + '\"';
+
                 if (!httpMetrics.contains(consistentId))
                     return false;
 
