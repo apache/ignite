@@ -41,9 +41,9 @@ import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
+import org.apache.ignite.spi.metric.sql.MonitoringListLocalSystemView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
-import static org.apache.ignite.codegen.MessageCodeGenerator.TAB;
 
 /**
  * Application for code generation of {@link MonitoringRowAttributeWalker}.
@@ -60,6 +60,9 @@ public class MonitoringRowAttributeWalkerGenerator {
 
     /** Package for {@link MonitoringRowAttributeWalker} implementations. */
     public static final String WALKER_PACKAGE = "org.apache.ignite.internal.processors.metric.list.walker";
+
+    /** */
+    public static final String TAB = "    ";
 
     /**
      * @throws Exception If generation failed.
@@ -138,7 +141,8 @@ public class MonitoringRowAttributeWalkerGenerator {
                     imports.add("import " + retClazz.getName() + ';');
 
                 line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class);";
-            } else if (retClazz == boolean.class)
+            }
+            else if (retClazz == boolean.class)
                 line += "v.acceptBoolean(" + i + ", \"" + name + "\");";
             else if (retClazz == char.class)
                 line += "v.acceptChar(" + i + ", \"" + name + "\");";
@@ -172,7 +176,8 @@ public class MonitoringRowAttributeWalkerGenerator {
 
             if (!retClazz.isPrimitive()) {
                 line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class, row." + m.getName() + "());";
-            } else if (retClazz == boolean.class)
+            }
+            else if (retClazz == boolean.class)
                 line += "v.acceptBoolean(" + i + ", \"" + name + "\", row." + m.getName() + "());";
             else if (retClazz == char.class)
                 line += "v.acceptChar(" + i + ", \"" + name + "\", row." + m.getName() + "());";
