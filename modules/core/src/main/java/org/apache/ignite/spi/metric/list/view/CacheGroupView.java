@@ -38,10 +38,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
  */
 public class CacheGroupView implements MonitoringRow<Integer> {
     /** Cache group. */
-    private CacheGroupDescriptor grp;
+    private final CacheGroupDescriptor grp;
 
     /** Cache configuration. */
-    private CacheConfiguration<?, ?> ccfg;
+    private final CacheConfiguration<?, ?> ccfg;
 
     /**
      * @param grp Cache group.

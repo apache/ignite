@@ -58,13 +58,13 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
     private final MonitoringList<Id, R> mlist;
 
     /** MBean info. */
-    private MBeanInfo info;
+    private final MBeanInfo info;
 
     /** Row type */
-    private CompositeType rowType;
+    private final CompositeType rowType;
 
     /** List type. */
-    private TabularType listType;
+    private final TabularType listType;
 
     /**
      * @param mlist Monitoring list to export.
@@ -111,7 +111,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
                     types[idx] = SimpleType.DOUBLE;
                 else {
                     throw new IllegalStateException(
-                        "Unsupported type [rowClass=" + mlist.rowClass().getName() + ",col=" + name);
+                        "Unsupported type [rowClass=" + mlist.rowClass().getName() + ",col=" + name + ']');
                 }
             }
 
