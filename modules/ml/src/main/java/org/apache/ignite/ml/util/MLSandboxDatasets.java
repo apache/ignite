@@ -62,7 +62,10 @@ public enum MLSandboxDatasets {
     WHOLESALE_CUSTOMERS("modules/ml/src/main/resources/datasets/wholesale_customers.csv", true, ","),
 
     /** Fraud detection problem [part of whole dataset]. Could be found <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud/">here</a>. */
-    FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ",");
+    FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ","),
+
+    /** A dataset with discrete and continious features. */
+    MIXED_DATASET("modules/ml/src/main/resources/datasets/mixed_dataset.csv", true, ",");
 
     /** Filename. */
     private final String filename;
