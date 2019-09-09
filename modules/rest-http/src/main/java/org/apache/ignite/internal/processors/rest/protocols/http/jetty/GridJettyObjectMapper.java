@@ -154,6 +154,13 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
             writeException(e, gen);
 
+            gen.writeArrayFieldStart("stackTrace");
+
+            for (StackTraceElement el: e.getStackTrace())
+                gen.writeString(el.toString());
+
+            gen.writeEndArray();
+
             if (e.getCause() != null)
                 gen.writeObjectField("cause", e.getCause());
 
