@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -2951,7 +2951,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param success Future result.
      * @param err Error if any.
      */
-    void completeCacheStartFuture(DynamicCacheChangeRequest req, boolean success, @Nullable Throwable err) {
+    public void completeCacheStartFuture(DynamicCacheChangeRequest req, boolean success, @Nullable Throwable err) {
         if (ctx.localNodeId().equals(req.initiatingNodeId())) {
             DynamicCacheStartFuture fut = pendingFuts.get(req.requestId());
 
@@ -4138,8 +4138,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return msg0.needExchange();
         }
 
-        if (msg instanceof DynamicCacheChangeBatch)
-            return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+        if (msg instanceof DynamicCacheChangeBatch) {
+            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+
+            ctx.query().onCacheChangeRequested((DynamicCacheChangeBatch)msg);
+
+            return changeRequested;
+        }
 
         if (msg instanceof DynamicCacheChangeFailureMessage)
             cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);

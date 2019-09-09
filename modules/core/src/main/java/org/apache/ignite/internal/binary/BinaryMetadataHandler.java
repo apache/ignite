@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposed
  */
 public interface BinaryMetadataHandler {
     /**
-     * Adds a new or updates an existing metadata to the latest version.
-     * See {@link MetadataUpdateProposedMessage} javadoc for detailed protocol description.
+     * Adds a new or updates an existing metadata to the latest version. See {@link MetadataUpdateProposedMessage}
+     * javadoc for detailed protocol description.
      *
      * @param typeId Type ID.
      * @param meta Metadata.
@@ -35,6 +35,16 @@ public interface BinaryMetadataHandler {
      * @throws BinaryObjectException In case of error.
      */
     public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
+
+    /**
+     * Adds meta data locally on current node without sending any messages.
+     *
+     * @param typeId Type ID.
+     * @param meta Metadata.
+     * @param failIfUnregistered Fail if unregistered.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID.
@@ -66,6 +76,7 @@ public interface BinaryMetadataHandler {
 
     /**
      * Gets all metadata known to the node.
+     *
      * @return Metadata collection
      * @throws BinaryObjectException If failed.
      */

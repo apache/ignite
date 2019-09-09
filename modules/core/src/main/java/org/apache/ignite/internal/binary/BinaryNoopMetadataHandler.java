@@ -42,7 +42,14 @@ public class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
+    @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
+        throws BinaryObjectException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+        throws BinaryObjectException {
         // No-op.
     }
 

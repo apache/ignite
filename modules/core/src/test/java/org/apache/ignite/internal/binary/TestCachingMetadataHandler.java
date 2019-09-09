@@ -29,12 +29,19 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     private final ConcurrentHashMap<Integer, BinaryType> metas = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
+    @Override public void addMeta(int typeId, BinaryType meta,
+        boolean failIfUnregistered) throws BinaryObjectException {
         BinaryType otherType = metas.put(typeId, meta);
 
         if (otherType != null)
             throw new IllegalStateException("Metadata replacement is not allowed in " +
                 TestCachingMetadataHandler.class.getSimpleName() + '.');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+        throws BinaryObjectException {
+        addMeta(typeId, meta, failIfUnregistered);
     }
 
     /** {@inheritDoc} */
