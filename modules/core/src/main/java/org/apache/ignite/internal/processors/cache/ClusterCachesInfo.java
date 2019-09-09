@@ -1438,9 +1438,7 @@ class ClusterCachesInfo {
 
             desc.receivedOnDiscovery(true);
 
-            String cacheName = cacheData.cacheConfiguration().getName();
-
-            registeredCaches.put(cacheName, desc);
+            registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
             addToList(cachesMonList, () -> new CacheView(desc));
 
             ctx.discovery().setCacheFilter(
@@ -2572,7 +2570,7 @@ class ClusterCachesInfo {
                 if (o1.cacheType().userCache() ^ o2.cacheType().userCache())
                     return o2.cacheType().userCache() ? -1 : 1;
 
-                return o1.cacheId() - o2.cacheId();
+                return Integer.compare(o1.cacheId(), o2.cacheId());
             }
         };
 
