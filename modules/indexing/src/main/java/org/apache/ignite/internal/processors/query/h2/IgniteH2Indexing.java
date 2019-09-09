@@ -197,8 +197,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_MONITORING;
-import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
@@ -1820,10 +1818,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .forEach(infos::add);
         }
 
-        if ((allTypes || types.contains(TableType.VIEW.name())) &&
-            (matches(SCHEMA_SYS, schemaNamePtrn) || matches(SCHEMA_MONITORING, schemaNamePtrn))) {
+        if ((allTypes || types.contains(TableType.VIEW.name()))
+            && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
-                .filter(t -> matches(t.getTableName(), tblNamePtrn) && matches(t.getSchemaName(), schemaNamePtrn))
+                .filter(t -> matches(t.getTableName(), tblNamePtrn))
                 .map(v -> new TableInformation(v.getSchemaName(), v.getTableName(), TableType.VIEW.name()))
                 .forEach(infos::add);
         }
@@ -1868,9 +1866,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ).forEach(infos::add);
 
         // Gather information about system views.
-        if (matches(SCHEMA_SYS, schemaNamePtrn) || matches(SCHEMA_MONITORING, schemaNamePtrn)) {
+        if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
-                .filter(v -> matches(v.getTableName(), tblNamePtrn) && matches(v.getSchemaName(), schemaNamePtrn))
+                .filter(v -> matches(v.getTableName(), tblNamePtrn))
                 .flatMap(
                     view ->
                         Stream.of(view.getColumns())
@@ -1893,7 +1891,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException{
+    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException {
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         return parsed.isDml() && parsed.dml().streamable() && parsed.remainingQuery() == null;
@@ -1906,7 +1904,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
-        assert cctx.group().persistenceEnabled(): cctx;
+        assert cctx.group().persistenceEnabled() : cctx;
 
         markIndexRebuild(cctx.name(), true);
     }
@@ -2609,7 +2607,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         ress.add(res);
                     }
-                    catch (Exception e ) {
+                    catch (Exception e) {
                         SQLException sqlEx = QueryUtils.toSqlException(e);
 
                         batchException = DmlUtils.chainException(batchException, sqlEx);
@@ -3009,7 +3007,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-            if(sqlEx != null)
+            if (sqlEx != null)
                 throw sqlEx;
 
             Exception ex = IgniteUtils.convertExceptionNoWrap(e);

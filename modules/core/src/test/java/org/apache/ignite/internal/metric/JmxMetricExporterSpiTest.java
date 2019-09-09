@@ -187,7 +187,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     public void testListRemove() throws Exception {
         GridMetricManager mmgr = ignite.context().metric();
 
-        mmgr.list("test", "description", CacheView.class);
+        mmgr.list("test", "description", CacheView.class, l -> {}, l -> {});
 
         DynamicMBean listBean = mbean(LIST, "test");
 

@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
@@ -49,6 +48,7 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueUuid;
 
 /**
  * System view to export monitoring list data.
@@ -88,9 +88,11 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
                         else if (clazz.isAssignableFrom(Class.class))
                             data[idx] = ValueString.get(((Class)val).getName());
                         else if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                            clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
+                            clazz.isAssignableFrom(IgniteUuid.class) ||
                             clazz.isAssignableFrom(InetSocketAddress.class))
                             data[idx] = ValueString.get(Objects.toString(val));
+                        else if (clazz.isAssignableFrom(UUID.class))
+                            data[idx] = ValueUuid.get((UUID)val);
                         else if (clazz.isAssignableFrom(BigDecimal.class))
                             data[idx] = ValueDecimal.get((BigDecimal)val);
                         else if (clazz.isAssignableFrom(BigInteger.class))
@@ -173,9 +175,11 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
                 int type;
 
                 if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                    clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
+                    clazz.isAssignableFrom(IgniteUuid.class) ||
                     clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
                     type = Value.STRING;
+                else if (clazz.isAssignableFrom(UUID.class))
+                    type = Value.UUID;
                 else if (clazz.isAssignableFrom(BigDecimal.class))
                     type = Value.DECIMAL;
                 else if (clazz.isAssignableFrom(BigInteger.class))
@@ -240,11 +244,6 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
         });
 
         return cols;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getSchemaName() {
-        return QueryUtils.SCHEMA_MONITORING;
     }
 
     /** {@inheritDoc} */

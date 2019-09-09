@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -94,10 +95,13 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
 
     /**
      * Adds row to the list.
+     * This method intentionally created package-private.
+     * Please, use {@link ListUtils#addToList(MonitoringList, Supplier)}
      *
      * @param row Row.
+     * @see ListUtils#addToList(MonitoringList, Supplier)
      */
-    public void add(R row) {
+    void add(R row) {
         data.put(row.monitoringRowId(), row);
 
         notifyListeners(row, rowCreationLsnrs, log);
@@ -105,10 +109,13 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
 
     /**
      * Adds row to the list if not exists.
+     * This method intentionally created package-private.
+     * Please, use {@link ListUtils#addIfAbsentToList(MonitoringList, Supplier)}
      *
      * @param row Row.
+     * @see ListUtils#addIfAbsentToList(MonitoringList, Supplier)
      */
-    public void addIfAbsent(R row) {
+    void addIfAbsent(R row) {
         MonitoringRow<Id> old = data.putIfAbsent(row.monitoringRowId(), row);
 
         if (old != null)
@@ -119,11 +126,14 @@ public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable
 
     /**
      * Removes row from the list.
+     * This method intentionally created package-private.
+     * Please, use {@link ListUtils#removeFromList(MonitoringList, Object)}
      *
      * @param id Id of the row.
      * @return Removed row.
+     * @see ListUtils#removeFromList(MonitoringList, Object)
      */
-    public R remove(Id id) {
+    R remove(Id id) {
         R rmv = data.remove(id);
 
         if (rmv == null)

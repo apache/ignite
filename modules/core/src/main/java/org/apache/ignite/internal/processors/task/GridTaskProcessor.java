@@ -103,6 +103,8 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.apache.ignite.spi.metric.list.ListUtils.addToList;
+import static org.apache.ignite.spi.metric.list.ListUtils.removeFromList;
 
 /**
  * This class defines task processor.
@@ -130,7 +132,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    private final MonitoringList<IgniteUuid, ComputeTaskView> taskMonList;
+    @Nullable private volatile MonitoringList<IgniteUuid, ComputeTaskView> taskMonList;
 
     /** */
     private boolean stopping;
@@ -170,7 +172,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
-        taskMonList = ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC, ComputeTaskView.class);
+        ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC, ComputeTaskView.class,
+            l -> taskMonList = l,
+            l -> taskMonList = null);
     }
 
     /** {@inheritDoc} */
@@ -790,8 +794,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     subjId);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
-                taskMonList.add(new ComputeTaskView(taskWorker));
-
+                addToList(taskMonList, () -> new ComputeTaskView(taskWorker));
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
@@ -824,7 +827,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                         }
                         catch (RejectedExecutionException e) {
                             tasks.remove(sesId);
-                            taskMonList.remove(sesId);
+                            removeFromList(taskMonList, sesId);
 
                             release(dep);
 
@@ -1328,7 +1331,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             }
 
             boolean rmv = tasks.remove(worker.getTaskSessionId(), worker);
-            taskMonList.remove(worker.getTaskSessionId());
+            removeFromList(taskMonList, worker.getTaskSessionId());
 
             assert rmv;
 

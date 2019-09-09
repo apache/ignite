@@ -101,9 +101,4 @@ public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
             }
         };
     }
-
-    /** {@inheritDoc} */
-    @Override public String getSchemaName() {
-        return QueryUtils.SCHEMA_MONITORING;
-    }
 }
