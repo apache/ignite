@@ -97,6 +97,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST_DESC;
 import static org.apache.ignite.spi.metric.list.ListUtils.addToList;
+import static org.apache.ignite.spi.metric.list.ListUtils.clearList;
 import static org.apache.ignite.spi.metric.list.ListUtils.removeFromList;
 
 /**
@@ -284,7 +285,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         cancelDeployedServices();
 
         registeredServices.clear();
-        svcsMonList.clear();
+        clearList(svcsMonList);
 
         // If user requests sent to network but not received back to handle in deployment manager.
         Stream.concat(depFuts.values().stream(), undepFuts.values().stream()).forEach(fut -> {

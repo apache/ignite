@@ -87,6 +87,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.CAC
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST_DESC;
 import static org.apache.ignite.spi.metric.list.ListUtils.addToList;
+import static org.apache.ignite.spi.metric.list.ListUtils.clearList;
 import static org.apache.ignite.spi.metric.list.ListUtils.removeFromList;
 
 /**
@@ -1554,10 +1555,10 @@ class ClusterCachesInfo {
      */
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
-        cachesMonList.clear();
+        clearList(cachesMonList);
 
         registeredCacheGrps.clear();
-        cachesGrpMonList.clear();
+        clearList(cachesGrpMonList);
 
         ctx.discovery().cleanCachesAndGroups();
     }
@@ -2408,10 +2409,10 @@ class ClusterCachesInfo {
             new HashMap<>(registeredCaches));
 
         registeredCacheGrps.clear();
-        cachesGrpMonList.clear();
+        clearList(cachesGrpMonList);
 
         registeredCaches.clear();
-        cachesMonList.clear();
+        clearList(cachesMonList);
 
         registeredTemplates.clear();
 

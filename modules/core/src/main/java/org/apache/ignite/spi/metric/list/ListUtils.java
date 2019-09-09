@@ -36,8 +36,8 @@ public final class ListUtils {
      * @param <Id> Id type.
      * @param <R> Row type.
      */
-    public static <Id, R extends MonitoringRow<Id>> void addIfAbsentToList(@Nullable MonitoringList<Id, R> list,
-        Supplier<R> row) {
+    public static <Id, R extends MonitoringRow<Id>> void addIfAbsentToList(@Nullable final MonitoringList<Id, R> list,
+        final Supplier<R> row) {
         if (list == null)
             return;
 
@@ -52,8 +52,8 @@ public final class ListUtils {
      * @param <Id> Id type.
      * @param <R> Row type.
      */
-    public static <Id, R extends MonitoringRow<Id>> void addToList(@Nullable MonitoringList<Id, R> list,
-        Supplier<R> row) {
+    public static <Id, R extends MonitoringRow<Id>> void addToList(@Nullable final MonitoringList<Id, R> list,
+        final Supplier<R> row) {
         if (list == null)
             return;
 
@@ -68,11 +68,24 @@ public final class ListUtils {
      * @param <Id> Id type.
      * @param <R> Row type.
      */
-    public static <Id, R extends MonitoringRow<Id>> void removeFromList(@Nullable MonitoringList<Id, R> list, Id id) {
+    public static <Id, R extends MonitoringRow<Id>> void removeFromList(@Nullable final MonitoringList<Id, R> list,
+        final Id id) {
         if (list == null)
             return;
 
         list.remove(id);
+    }
+
+    /**
+     * Clears list.
+     *
+     * @param list List.
+     */
+    public static void clearList(@Nullable final MonitoringList<?, ?> list) {
+        if (list == null)
+            return;
+
+        list.clear();
     }
 
     /**
@@ -83,7 +96,7 @@ public final class ListUtils {
      * @param <P> Pattern type.
      * @return Consumer that filters values that not satisfy pattern.
      */
-    public static <V, P> Consumer<V> listenOnlyEqual(P pattern, Function<V, P> f, Consumer<V> c) {
+    public static <V, P> Consumer<V> listenOnlyEqual(final P pattern, final Function<V, P> f, final Consumer<V> c) {
         return v -> {
             if (!Objects.equals(pattern, f.apply(v)))
                 return;
