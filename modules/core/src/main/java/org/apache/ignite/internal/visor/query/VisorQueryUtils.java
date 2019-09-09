@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -388,7 +389,13 @@ public class VisorQueryUtils {
 
                 if (!F.isEmpty(cacheName)) {
                     qry.setSchema(cacheName);
-                    cctx = ignite.context().cache().cache(cacheName).context();
+
+                    IgniteInternalCache<Object, Object> cache = ignite.cachex(cacheName);
+
+                    if (cache == null)
+                        throw new IgniteException("Failed to find a cache with the specified name to use as the default schema.");
+
+                    cctx = cache.context();
                 }
 
                 long start = U.currentTimeMillis();
