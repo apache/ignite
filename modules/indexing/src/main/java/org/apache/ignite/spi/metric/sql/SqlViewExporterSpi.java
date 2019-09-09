@@ -21,7 +21,6 @@ import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,6 +30,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
+import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -97,7 +97,6 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
      * @param mlist Monitoring list.
      */
     private void register(MonitoringList<?,?> mlist) {
-        System.out.println("SqlViewExporterSpi.register - " + mlist.name());
         if (mlistFilter != null && !mlistFilter.test(mlist)) {
             if (log.isDebugEnabled())
                 U.debug(log, "Monitoring list filtered and will not be registered.[name=" + mlist.name() + ']');

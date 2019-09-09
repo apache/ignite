@@ -17,179 +17,25 @@
 
 package org.apache.ignite.spi.metric.list;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import org.apache.ignite.IgniteLogger;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
-
 /**
- * Class to store data for monitoring some internal Ignite objects.
+ * Implementation provides data for some internal Ignite objects.
  *
  * @param <Id> Type of the row identificator.
  * @param <R> Type of the row.
  */
-public class MonitoringList<Id, R extends MonitoringRow<Id>> implements Iterable<R> {
-    /** Name of the list. */
-    private final String name;
-
-    /** Description of the list. */
-    private final String description;
-
-    /** Class of the row */
-    private final Class<R> rowClass;
-
-    /** Ignite logger. */
-    private final IgniteLogger log;
-
-    /** Data of the list. */
-    private final ConcurrentHashMap<Id, R> data = new ConcurrentHashMap<>();
-
-    /** Row creation listeners. */
-    private volatile List<Consumer<R>> rowCreationLsnrs;
-
-    /** Row remove listeners. */
-    private volatile List<Consumer<R>> rowRemoveLsnrs;
-
-    /**
-     * Row attribute walker.
-     *
-     * @see org.apache.ignite.codegen.MonitoringRowAttributeWalkerGenerator
-     */
-    private final MonitoringRowAttributeWalker<R> walker;
-
-    /**
-     * @param name Name of the list.
-     * @param description Description of the list.
-     * @param rowClass Class of the row.
-     * @param walker Row attribute walker.
-     * @param log Logger.
-     */
-    public MonitoringList(String name, String description, Class<R> rowClass, MonitoringRowAttributeWalker<R> walker,
-        IgniteLogger log) {
-        assert rowClass != null;
-        assert walker != null : "Please, add walker class via GridMetricManager#registerWalker";
-
-        this.name = name;
-        this.description = description;
-        this.rowClass = rowClass;
-        this.log = log;
-        this.walker = walker;
-    }
-
+public interface MonitoringList<Id, R extends MonitoringRow<Id>> extends Iterable<R> {
     /** @return Helper for exporters. */
-    public MonitoringRowAttributeWalker<R> walker() {
-        return walker;
-    }
+    public MonitoringRowAttributeWalker<R> walker();
 
     /** @return Class of the row. */
-    public Class<R> rowClass() {
-        return rowClass;
-    }
-
-    /**
-     * Adds row to the list.
-     * This method intentionally created package-private.
-     * Please, use {@link ListUtils#addToList(MonitoringList, Supplier)}
-     *
-     * @param row Row.
-     * @see ListUtils#addToList(MonitoringList, Supplier)
-     */
-    void add(R row) {
-        data.put(row.monitoringRowId(), row);
-
-        notifyListeners(row, rowCreationLsnrs, log);
-    }
-
-    /**
-     * Adds row to the list if not exists.
-     * This method intentionally created package-private.
-     * Please, use {@link ListUtils#addIfAbsentToList(MonitoringList, Supplier)}
-     *
-     * @param row Row.
-     * @see ListUtils#addIfAbsentToList(MonitoringList, Supplier)
-     */
-    void addIfAbsent(R row) {
-        MonitoringRow<Id> old = data.putIfAbsent(row.monitoringRowId(), row);
-
-        if (old != null)
-            return;
-
-        notifyListeners(row, rowCreationLsnrs, log);
-    }
-
-    /**
-     * Removes row from the list.
-     * This method intentionally created package-private.
-     * Please, use {@link ListUtils#removeFromList(MonitoringList, Object)}
-     *
-     * @param id Id of the row.
-     * @return Removed row.
-     * @see ListUtils#removeFromList(MonitoringList, Object)
-     */
-    R remove(Id id) {
-        R rmv = data.remove(id);
-
-        if (rmv == null)
-            return null;
-
-        notifyListeners(rmv, rowRemoveLsnrs, log);
-
-        return rmv;
-    }
-
-    /**
-     * @param id Idenitificator of the row.
-     * @return Row if exists, null otherwise.
-     */
-    @Nullable public R get(Id id) {
-        return data.get(id);
-    }
+    public Class<R> rowClass();
 
     /** @return List name. */
-    public String name() {
-        return name;
-    }
+    public String name();
 
     /** @return List description. */
-    public String description() {
-        return description;
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<R> iterator() {
-        return data.values().iterator();
-    }
-
-    /** Clears list data. */
-    public void clear() {
-        data.clear();
-    }
+    public String description();
 
     /** @return Size of the list. */
-    public int size() {
-        return data.size();
-    }
-
-    /** Adds row creation listener. */
-    public synchronized void addRowCreationListener(Consumer<R> lsnr) {
-        if (rowCreationLsnrs == null)
-            rowCreationLsnrs = new CopyOnWriteArrayList<>();
-
-        rowCreationLsnrs.add(lsnr);
-    }
-
-    /** Adds row remove listener. */
-    public synchronized void addRowRemoveListener(Consumer<R> lsnr) {
-        if (rowRemoveLsnrs == null)
-            rowRemoveLsnrs = new CopyOnWriteArrayList<>();
-
-        rowRemoveLsnrs.add(lsnr);
-    }
+    public int size();
 }

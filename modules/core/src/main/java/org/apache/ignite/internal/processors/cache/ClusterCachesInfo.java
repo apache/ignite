@@ -55,7 +55,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.MonitoringListImpl;
 import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
@@ -86,9 +86,9 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.CAC
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST_DESC;
-import static org.apache.ignite.spi.metric.list.ListUtils.addToList;
-import static org.apache.ignite.spi.metric.list.ListUtils.clearList;
-import static org.apache.ignite.spi.metric.list.ListUtils.removeFromList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.clearList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.removeFromList;
 
 /**
  * Logic related to cache discovery data processing.
@@ -124,7 +124,7 @@ class ClusterCachesInfo {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    @Nullable private volatile MonitoringList<String, CacheView> cachesMonList;
+    @Nullable private volatile MonitoringListImpl<String, CacheView> cachesMonList;
 
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
@@ -135,7 +135,7 @@ class ClusterCachesInfo {
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    @Nullable private volatile MonitoringList<Integer, CacheGroupView> cachesGrpMonList;
+    @Nullable private volatile MonitoringListImpl<Integer, CacheGroupView> cachesGrpMonList;
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
@@ -174,11 +174,11 @@ class ClusterCachesInfo {
         this.ctx = ctx;
 
         ctx.metric().list(CACHES_MON_LIST, CACHES_MON_LIST_DESC, CacheView.class,
-            l -> cachesMonList = l,
+            l -> cachesMonList = (MonitoringListImpl<String, CacheView>)l,
             l -> cachesMonList = null);
 
         ctx.metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC, CacheGroupView.class,
-            l -> cachesGrpMonList = l,
+            l -> cachesGrpMonList = (MonitoringListImpl<Integer, CacheGroupView>)l,
             l -> cachesGrpMonList = null);
 
         log = ctx.log(getClass());

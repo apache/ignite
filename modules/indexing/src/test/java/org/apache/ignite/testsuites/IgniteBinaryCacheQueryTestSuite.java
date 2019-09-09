@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.metric.MonitoringListSelfTest;
+import org.apache.ignite.internal.metric.MonitoringListImplSelfTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
 import org.apache.ignite.internal.processors.cache.BinaryMetadataConcurrentUpdateWithIndexesTest;
@@ -581,7 +581,7 @@ import org.junit.runners.Suite;
     RowCountTableStatisticsSurvivesNodeRestartTest.class,
 
     SqlViewExporterSpiTest.class,
-    MonitoringListSelfTest.class
+    MonitoringListImplSelfTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

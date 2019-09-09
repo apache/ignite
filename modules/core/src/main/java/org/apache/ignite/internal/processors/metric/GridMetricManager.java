@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.metric.list.walker.CacheGroupViewWa
 import org.apache.ignite.internal.processors.metric.list.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ServiceViewWalker;
+import org.apache.ignite.internal.processors.metric.list.MonitoringListImpl;
 import org.apache.ignite.spi.metric.list.MonitoringList;
 import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -71,7 +72,7 @@ import static java.util.function.Function.identity;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
-import static org.apache.ignite.spi.metric.list.ListUtils.listenOnlyEqual;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.listenOnlyEqual;
 
 /**
  * This manager should provide {@link ReadOnlyMetricRegistry} and {@link ReadOnlyMonitoringListRegistry}
@@ -80,6 +81,7 @@ import static org.apache.ignite.spi.metric.list.ListUtils.listenOnlyEqual;
  * @see MetricExporterSpi
  * @see MetricRegistry
  * @see MonitoringList
+ * @see MonitoringListImpl
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
@@ -180,12 +182,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public static final String PME_OPS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
 
     /** */
-    public static final String NODES_MON_LIST = "nodes";
-
-    /** */
-    public static final String NODES_MON_LIST_DESC = "Cluster nodes";
-
-    /** */
     public static final String CACHES_MON_LIST = "caches";
 
     /** */
@@ -257,7 +253,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         /** {@inheritDoc} */
         @Override public void addListRemoveListener(Consumer<MonitoringList<?, ?>> lsnr) {
-            listRemoveLsnrs.add(lsnr);
+            listRemoveLsnrs.add(lsnr::accept);
         }
 
         /** {@inheritDoc} */
@@ -421,12 +417,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param name Name of the list.
      * @return List.
      */
-    @Nullable public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name) {
-        return (MonitoringList<Id, R>)lists.get(name);
+    @Nullable public <Id, R extends MonitoringRow<Id>> MonitoringListImpl<Id, R> list(String name) {
+        return (MonitoringListImpl<Id, R>)lists.get(name);
     }
 
     /**
-     * Gets or creates {@link MonitoringList}.
+     * Gets or creates {@link MonitoringListImpl}.
      *
      * @param name Name of the list.
      * @param description Description.
@@ -435,10 +431,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <R> Type of the row.
      * @return Monitoring list.
      */
-    private <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name, String description,
+    private <Id, R extends MonitoringRow<Id>> MonitoringListImpl<Id, R> list(String name, String description,
         Class<R> rowClazz) {
-        return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
-            MonitoringList<Id, R> list = new MonitoringList<>(name, description, rowClazz,
+        return (MonitoringListImpl<Id, R>)lists.computeIfAbsent(name, n -> {
+            MonitoringListImpl<Id, R> list = new MonitoringListImpl<>(name, description, rowClazz,
                 (MonitoringRowAttributeWalker<R>)walkers.get(rowClazz), log);
 
             notifyListeners(list, listCreationLsnrs, log);

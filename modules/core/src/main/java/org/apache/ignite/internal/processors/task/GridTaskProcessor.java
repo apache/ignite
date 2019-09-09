@@ -82,7 +82,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.MonitoringListImpl;
 import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,8 +103,8 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
-import static org.apache.ignite.spi.metric.list.ListUtils.addToList;
-import static org.apache.ignite.spi.metric.list.ListUtils.removeFromList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.removeFromList;
 
 /**
  * This class defines task processor.
@@ -132,7 +132,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    @Nullable private volatile MonitoringList<IgniteUuid, ComputeTaskView> taskMonList;
+    @Nullable private volatile MonitoringListImpl<IgniteUuid, ComputeTaskView> taskMonList;
 
     /** */
     private boolean stopping;
@@ -173,7 +173,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
         ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC, ComputeTaskView.class,
-            l -> taskMonList = l,
+            l -> taskMonList = (MonitoringListImpl<IgniteUuid, ComputeTaskView>)l,
             l -> taskMonList = null);
     }
 

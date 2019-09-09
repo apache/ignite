@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.internal.processors.metric.list;
 
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.spi.metric.list.MonitoringRow;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,7 +37,7 @@ public final class ListUtils {
      * @param <Id> Id type.
      * @param <R> Row type.
      */
-    public static <Id, R extends MonitoringRow<Id>> void addIfAbsentToList(@Nullable final MonitoringList<Id, R> list,
+    public static <Id, R extends MonitoringRow<Id>> void addIfAbsentToList(@Nullable final MonitoringListImpl<Id, R> list,
         final Supplier<R> row) {
         if (list == null)
             return;
@@ -52,7 +53,7 @@ public final class ListUtils {
      * @param <Id> Id type.
      * @param <R> Row type.
      */
-    public static <Id, R extends MonitoringRow<Id>> void addToList(@Nullable final MonitoringList<Id, R> list,
+    public static <Id, R extends MonitoringRow<Id>> void addToList(@Nullable final MonitoringListImpl<Id, R> list,
         final Supplier<R> row) {
         if (list == null)
             return;
@@ -68,7 +69,7 @@ public final class ListUtils {
      * @param <Id> Id type.
      * @param <R> Row type.
      */
-    public static <Id, R extends MonitoringRow<Id>> void removeFromList(@Nullable final MonitoringList<Id, R> list,
+    public static <Id, R extends MonitoringRow<Id>> void removeFromList(@Nullable final MonitoringListImpl<Id, R> list,
         final Id id) {
         if (list == null)
             return;
@@ -81,7 +82,7 @@ public final class ListUtils {
      *
      * @param list List.
      */
-    public static void clearList(@Nullable final MonitoringList<?, ?> list) {
+    public static void clearList(@Nullable final MonitoringListImpl<?, ?> list) {
         if (list == null)
             return;
 

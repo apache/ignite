@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.internal.processors.metric.list.MonitoringListImpl;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -96,9 +96,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST_DESC;
-import static org.apache.ignite.spi.metric.list.ListUtils.addToList;
-import static org.apache.ignite.spi.metric.list.ListUtils.clearList;
-import static org.apache.ignite.spi.metric.list.ListUtils.removeFromList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.addToList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.clearList;
+import static org.apache.ignite.internal.processors.metric.list.ListUtils.removeFromList;
 
 /**
  * Ignite service processor.
@@ -139,7 +139,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @see ReadOnlyMonitoringListRegistry
      * @see GridMetricManager
      */
-    @Nullable private volatile MonitoringList<IgniteUuid, ServiceView> svcsMonList;
+    @Nullable private volatile MonitoringListImpl<IgniteUuid, ServiceView> svcsMonList;
 
     /**
      * Collection of services information that were processed by deployment worker. <b>It is updated from deployment
@@ -204,7 +204,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         super(ctx);
 
         ctx.metric().list(SVCS_MON_LIST, SVCS_MON_LIST_DESC, ServiceView.class,
-            l -> svcsMonList = l,
+            l -> svcsMonList = (MonitoringListImpl<IgniteUuid, ServiceView>)l,
             l -> svcsMonList = null);
     }
 
