@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.security.AccessControlContext;
 import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
@@ -28,7 +27,6 @@ import java.util.concurrent.Callable;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.internal.processors.security.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.sandbox.closure.SandboxAwareComputeJob;
@@ -67,17 +65,13 @@ public class AccessControllerSandbox implements IgniteSandbox {
 
         assert secCtx != null;
 
-        final AccessControlContext acc = AccessController.doPrivileged(
-            new PrivilegedAction<AccessControlContext>() {
-                @Override public AccessControlContext run() {
-                    return new AccessControlContext
-                        (new AccessControlContext(NULL_PD_ARRAY),
-                            new IgniteDomainCombiner(secCtx.subject().sandboxPermissions()));
-                }
-            });
-
         try {
-            return AccessController.doPrivileged((PrivilegedExceptionAction<T>)call::call, acc);
+            return AccessController.doPrivileged((PrivilegedExceptionAction<T>)call::call,
+                new AccessControlContext(
+                    new ProtectionDomain[] {
+                        new ProtectionDomain(null, secCtx.subject().sandboxPermissions())
+                    }
+                ));
         }
         catch (PrivilegedActionException pae) {
             throw new IgniteException(pae.getException());
