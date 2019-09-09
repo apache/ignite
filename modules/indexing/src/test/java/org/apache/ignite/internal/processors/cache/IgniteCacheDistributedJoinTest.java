@@ -28,7 +28,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -38,6 +37,10 @@ import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  */
@@ -219,21 +222,30 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
     @Test
     public void testManyTables() {
         Ignite ignite = ignite(0);
-        IgniteCache cache = ignite.createCache("person");
-        cache.query(new SqlFieldsQuery("CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));"));
-        cache.query(new SqlFieldsQuery("INSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');"));
 
-        FieldsQueryCursor<List<Object>> res = cache.query(new SqlFieldsQuery("SELECT *\n" +
-            "FROM PERSON P1\n" +
-            "JOIN PERSON P2 ON P1.ID = P2.ID\n" +
-            "JOIN PERSON P3 ON P1.ID = P3.ID\n" +
-            "JOIN PERSON P4 ON P1.ID = P4.ID\n" +
-            "JOIN PERSON P5 ON P1.ID = P5.ID\n" +
-            "JOIN PERSON P6 ON P1.ID = P6.ID\n" +
-            "JOIN PERSON P7 ON P1.ID = P7.ID\n" +
-            "JOIN PERSON P8 ON P1.ID = P8.ID").setDistributedJoins(true).setEnforceJoinOrder(false));
+        queryProcessor(ignite).querySqlFields(new SqlFieldsQuery(
+            "CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100))"), true);
+        queryProcessor(ignite).querySqlFields(new SqlFieldsQuery(
+            "INSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma')"), true);
 
-        assertEquals(3, res.getAll().size());
+        SqlFieldsQuery selectQuery = new SqlFieldsQuery(
+            "SELECT P1.NAME " +
+            "FROM PERSON P1 " +
+            "JOIN PERSON P2 ON P1.ID = P2.ID " +
+            "JOIN PERSON P3 ON P1.ID = P3.ID " +
+            "JOIN PERSON P4 ON P1.ID = P4.ID " +
+            "JOIN PERSON P5 ON P1.ID = P5.ID " +
+            "JOIN PERSON P6 ON P1.ID = P6.ID " +
+            "JOIN PERSON P7 ON P1.ID = P7.ID " +
+            "JOIN PERSON P8 ON P1.ID = P8.ID " +
+            "ORDER BY P1.NAME")
+            .setDistributedJoins(true).setEnforceJoinOrder(false);
+        List<List<?>> res = queryProcessor(ignite).querySqlFields(selectQuery, true).getAll();
+
+        assertEquals(3, res.size());
+        assertThat(res.get(0).get(0), is("Ann"));
+        assertThat(res.get(1).get(0), is("Ed"));
+        assertThat(res.get(2).get(0), is("Emma"));
     }
 
     /** {@inheritDoc} */
