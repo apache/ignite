@@ -182,12 +182,13 @@ public interface Affinity<K> {
     @Nullable public ClusterNode mapKeyToNode(K key);
 
     /**
+     *
+     * Gets primary and backup nodes for the key. Note that primary node is always first in the returned collection.
+     *
      * @param key Key to get affinity nodes for.
      * @return Collection of primary and backup nodes for the key with primary node always first.
      * @throws IgniteException If there are no alive nodes for this cache.
      * @deprecated Use Affinity#mapKeyToPrimaryAndBackups(java.lang.Object) instead.
-     *
-     * Gets primary and backup nodes for the key. Note that primary node is always first in the returned collection.
      */
     @Deprecated
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
