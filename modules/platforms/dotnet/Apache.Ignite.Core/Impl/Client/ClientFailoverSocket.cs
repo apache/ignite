@@ -212,6 +212,11 @@ namespace Apache.Ignite.Core.Impl.Client
                 return null;
             }
 
+            if (cachePartMap == null)
+            {
+                return null;
+            }
+
             var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count, cachePartMap.KeyConfiguration);
             var nodeId = cachePartMap.PartitionNodeIds[partition];
 
@@ -401,6 +406,16 @@ namespace Apache.Ignite.Core.Impl.Client
             for (int i = 0; i < size; i++)
             {
                 var grp = new ClientCacheAffinityAwarenessGroup(s);
+
+                if (grp.PartitionMap == null)
+                {
+                    foreach (var cache in grp.Caches)
+                    {
+                        mapping[cache.Key] = null;
+                    }
+
+                    continue;
+                }
 
                 // Count partitions to avoid reallocating array.
                 int maxPartNum = 0;
