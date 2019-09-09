@@ -47,14 +47,14 @@ public class MetricUtils {
         long[] values = metric.value();
 
         for (int i = 0; i < values.length; i++) {
-            long fromExclusive = (i == 0 ? 0 : bounds[i - 1]);
-            long toInclusive = (i == values.length - 1 ? -1 : bounds[i]);
+            long from = (i == 0 ? 0 : bounds[i - 1]);
+            long to = (i == values.length - 1 ? -1 : bounds[i]);
             long val = values[i];
 
-            json.a("{\"fromExclusive\":").a(fromExclusive);
+            json.a(i == 0 ? "{\"fromInclusive\":" : "{\"fromExclusive\":").a(from);
 
-            if (toInclusive >= 0)
-                json.a(",\"toInclusive\":").a(toInclusive);
+            if (to >= 0)
+                json.a(",\"toInclusive\":").a(to);
 
             json
                 .a(",\"value\":")
