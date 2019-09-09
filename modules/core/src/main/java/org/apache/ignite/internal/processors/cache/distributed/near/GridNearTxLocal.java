@@ -4545,10 +4545,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param userTime User time.
      */
     private void writeTxMetrics(long systemTime, long userTime) {
-        if (systemTime > 0)
+        if (systemTime >= 0)
             cctx.txMetrics().writeTxSystemTime(systemTime);
 
-        if (userTime > 0)
+        if (userTime >= 0)
             cctx.txMetrics().writeTxUserTime(userTime);
     }
 
