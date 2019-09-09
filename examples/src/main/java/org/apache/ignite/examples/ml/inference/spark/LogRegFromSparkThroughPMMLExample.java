@@ -52,7 +52,7 @@ import org.xml.sax.SAXException;
  */
 public class LogRegFromSparkThroughPMMLExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model loaded from PMML over partitioned dataset usage example started.");
         // Start ignite grid.
