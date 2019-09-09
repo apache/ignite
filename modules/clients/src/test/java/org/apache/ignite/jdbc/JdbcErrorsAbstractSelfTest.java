@@ -720,7 +720,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     public void testUpdatesRejectedInReadOnlyMode() throws Exception {
         try (Connection conn = getConnection()) {
             try (Statement statement = conn.createStatement()) {
-                statement.executeUpdate("CREATE TABLE TEST_READ_ONLY (ID LONG PRIMARY KEY, VAL LONG)");
+                statement.executeUpdate("CREATE TABLE PUBLIC.TEST_READ_ONLY (ID LONG PRIMARY KEY, VAL LONG)");
             }
         }
 
@@ -729,7 +729,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
         try {
             checkErrorState((conn) -> {
                 try (Statement statement = conn.createStatement()) {
-                    statement.executeUpdate("INSERT INTO TEST_READ_ONLY VALUES (1, 2)");
+                    statement.executeUpdate("INSERT INTO PUBLIC.TEST_READ_ONLY VALUES (1, 2)");
                 }
             }, "90097", "Failed to execute DML statement. Cluster in read-only mode");
         }
@@ -746,7 +746,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     public void testBatchUpdatesRejectedInReadOnlyMode() throws Exception {
         try (Connection conn = getConnection()) {
             try (Statement statement = conn.createStatement()) {
-                statement.executeUpdate("CREATE TABLE TEST_READ_ONLY_BATCH (ID LONG PRIMARY KEY, VAL LONG)");
+                statement.executeUpdate("CREATE TABLE PUBLIC.TEST_READ_ONLY_BATCH (ID LONG PRIMARY KEY, VAL LONG)");
             }
         }
 
@@ -755,7 +755,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
         try {
             checkErrorState((conn) -> {
                 try (Statement statement = conn.createStatement()) {
-                    statement.addBatch("INSERT INTO TEST_READ_ONLY_BATCH VALUES (1, 2)");
+                    statement.addBatch("INSERT INTO PUBLIC.TEST_READ_ONLY_BATCH VALUES (1, 2)");
                     statement.executeBatch();
                 }
             }, "90097", null);
