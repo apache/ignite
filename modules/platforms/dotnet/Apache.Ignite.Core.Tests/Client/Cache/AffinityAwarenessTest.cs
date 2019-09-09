@@ -272,6 +272,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Test cache for which affinity awareness is not applicable.
             var cfg = new CacheClientConfiguration("replicated_cache") {CacheMode = CacheMode.Replicated};
             var cache = Client.CreateCache<int, int>(cfg);
+            cache.Put(1, 1);
             ClearLoggers();
 
             cache.Get(1);
