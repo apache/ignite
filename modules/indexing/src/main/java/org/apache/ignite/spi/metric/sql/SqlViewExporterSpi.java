@@ -61,7 +61,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         this.mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-        mgr.createSystemView(new MetricSetLocalSystemView(ctx, mreg, mregFilter));
+        mgr.createSystemView(new MetricRegistryLocalSystemView(ctx, mreg, mregFilter));
 
         if (log.isDebugEnabled())
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
@@ -97,6 +97,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
      * @param mlist Monitoring list.
      */
     private void register(MonitoringList<?,?> mlist) {
+        System.out.println("SqlViewExporterSpi.register - " + mlist.name());
         if (mlistFilter != null && !mlistFilter.test(mlist)) {
             if (log.isDebugEnabled())
                 U.debug(log, "Monitoring list filtered and will not be registered.[name=" + mlist.name() + ']');

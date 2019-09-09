@@ -24,9 +24,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -38,7 +35,6 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -50,9 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.list.view.CacheView;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
-import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static java.util.Arrays.stream;
@@ -66,12 +60,6 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.spi.metric.jmx.MonitoringListMBean.LIST;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** */
 public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
@@ -310,94 +298,6 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(t.get("taskName").toString().startsWith(getClass().getName()));
         assertEquals(ignite.localNode().id().toString(), t.get("taskNodeId"));
         assertEquals("0", t.get("userVersion"));
-    }
-
-    /** */
-    @Test
-    public void testTransactions() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        AtomicReference<TabularDataSupport> txs = new AtomicReference<>(monitoringList("transactions"));
-
-        assertEquals(0, txs.get().size());
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        try {
-            AtomicInteger cntr = new AtomicInteger();
-
-            GridTestUtils.runMultiThreadedAsync(() -> {
-                try (Transaction tx = ignite.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
-                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
-
-                    latch.await();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }, 5, "xxx");
-
-            boolean res = waitForCondition(() -> {
-                txs.set(monitoringList("transactions"));
-
-                return txs.get().size() == 5;
-            }, 5_000L);
-
-            assertTrue(res);
-
-            CompositeData txv = txs.get().get(new Object[] {0});
-
-            assertEquals(ignite.localNode().id().toString(), txv.get("nodeId"));
-            assertEquals(txv.get("isolation"), REPEATABLE_READ.name());
-            assertEquals(txv.get("concurrency"), PESSIMISTIC.name());
-            assertEquals(txv.get("state"), ACTIVE.name());
-            assertNotNull(txv.get("xid"));
-            assertFalse((Boolean)txv.get("system"));
-            assertFalse((Boolean)txv.get("implicit"));
-            assertFalse((Boolean)txv.get("implicitSingle"));
-            assertTrue((Boolean)txv.get("near"));
-            assertFalse((Boolean)txv.get("dht"));
-            assertTrue((Boolean)txv.get("colocated"));
-            assertTrue((Boolean)txv.get("local"));
-            assertEquals("test", txv.get("label"));
-            assertFalse((Boolean)txv.get("onePhaseCommit"));
-            assertFalse((Boolean)txv.get("internal"));
-            assertEquals(0L, txv.get("timeout"));
-            assertTrue((Long)txv.get("startTime") <= System.currentTimeMillis());
-
-            GridTestUtils.runMultiThreadedAsync(() -> {
-                try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
-                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
-
-                    latch.await();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }, 5, "yyy");
-
-            res = waitForCondition(() -> {
-                txs.set(monitoringList("transactions"));
-
-                return txs.get().size() == 10;
-            }, 5_000L);
-
-            assertTrue(res);
-        }
-        finally {
-            latch.countDown();
-        }
-
-        boolean res = waitForCondition(() -> {
-            txs.set(monitoringList("transactions"));
-
-            return txs.get().isEmpty();
-        }, 5_000L);
-
-        assertTrue(res);
     }
 
     /** */

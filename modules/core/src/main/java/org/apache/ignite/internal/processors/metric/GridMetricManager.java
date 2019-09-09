@@ -198,24 +198,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public static final String CACHE_GRPS_MON_LIST_DESC = "Cache groups";
 
     /** */
-    public static final String TXS_MON_LIST = "transactions";
-
-    /** */
-    public static final String TXS_MON_LIST_DESC = "Running transactions";
-
-    /** */
-    public static final String CQ_MON_LIST = metricName("query", "continuous");
-
-    /** */
-    public static final String CQ_MON_LIST_DESC = "Continuous queries";
-
-    /** */
-    public static final String CLI_CONN_MON_LIST = metricName("client", "connections");
-
-    /** */
-    public static final String CLI_CONN_MON_LIST_DESC = "Client connections";
-
-    /** */
     public static final String SVCS_MON_LIST = "services";
 
     /** */

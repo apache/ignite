@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Sql view for exporting metrics.
  */
-public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
+public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
     /** Metric registry. */
     private ReadOnlyMetricRegistry mreg;
 
@@ -47,7 +47,7 @@ public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
      * @param mreg Metric registry.
      * @param filter Metric registry filter.
      */
-    public MetricSetLocalSystemView(GridKernalContext ctx, ReadOnlyMetricRegistry mreg,
+    public MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricRegistry mreg,
         @Nullable Predicate<MetricRegistry> filter) {
         super(SqlViewExporterSpi.SYS_VIEW_NAME, "Ignite metrics",
             ctx,
