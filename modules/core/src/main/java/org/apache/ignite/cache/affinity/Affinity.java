@@ -182,11 +182,12 @@ public interface Affinity<K> {
     @Nullable public ClusterNode mapKeyToNode(K key);
 
     /**
-     *
-     * Gets primary and backup nodes for the key. Note that primary node is always first in the returned collection.
+     * Gets primary and backup nodes for the key. Note that primary node is always
+     * first in the returned collection.
      *
      * @param key Key to get affinity nodes for.
-     * @return Collection of primary and backup nodes for the key with primary node always first.
+     * @return Collection of primary and backup nodes for the key with primary node
+     *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
      * @deprecated Use Affinity#mapKeyToPrimaryAndBackups(java.lang.Object) instead.
      */
@@ -194,7 +195,8 @@ public interface Affinity<K> {
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
 
     /**
-     * Gets primary and backup nodes for the key. Primary node is always first in the returned list.
+     * Gets primary and backup nodes for the key. Primary node is always
+     * first in the returned list.
      *
      * @param key Key to get affinity nodes for.
      * @return List of primary and backup nodes for the key with primary node always first.
@@ -241,7 +243,8 @@ public interface Affinity<K> {
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
 
     /**
-     * Gets primary and backup nodes for partition. Note that primary node is always first in the returned list.
+     * Gets primary and backup nodes for partition. Note that primary node is always
+     * first in the returned list.
      *
      * @param part Partition to get affinity nodes for.
      * @return List of primary and backup nodes for partition with primary node always first.

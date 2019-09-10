@@ -219,8 +219,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         return res;
     }
 
-    /** @deprecated Use GridCacheAffinityImpl#mapKeyToPrimaryAndBackupsList(K) instead. */
-    @Deprecated
+    /** {@inheritDoc} */
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
         return mapKeyToPrimaryAndBackupsList(key);
     }
@@ -232,9 +231,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         return cctx.affinity().nodesByPartition(partition(key), topologyVersion());
     }
 
-    /**
-     * @deprecated Use GridCacheAffinityImpl#mapPartitionToPrimaryAndBackupsList(int) instead.
-     */
+    /** {@inheritDoc} */
     @Deprecated
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
         return mapPartitionToPrimaryAndBackupsList(part);

@@ -222,7 +222,7 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
         }
     }
 
-    /** @deprecated use GridCacheAffinityProxy#mapKeyToPrimaryAndBackupsList(java.lang.Object) instead. */
+    /** {@inheritDoc} */
     @Deprecated
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
         return mapKeyToPrimaryAndBackupsList(key);
@@ -240,7 +240,7 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
         }
     }
 
-    /** @deprecated use GridCacheAffinityProxy#mapPartitionToPrimaryAndBackupsList(int) instead. */
+    /** {@inheritDoc} */
     @Deprecated
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
         return mapPartitionToPrimaryAndBackupsList(part);

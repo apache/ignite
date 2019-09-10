@@ -1050,11 +1050,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        /**
-         * {@inheritDoc}
-         *
-         * @deprecated Use mapKeyToPrimaryAndBackupsList instead.
-         */
+        /** {@inheritDoc} */
         @Deprecated
         @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
             return mapKeyToPrimaryAndBackupsList(key);
@@ -1116,11 +1112,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        /**
-         * {@inheritDoc}
-         *
-         * @deprecated use CacheAffinityProxy#mapPartitionToPrimaryAndBackupsList(int) instead.
-         */
+        /** {@inheritDoc} */
         @Deprecated
         @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
              return mapPartitionToPrimaryAndBackupsList(part);
