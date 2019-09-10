@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.IOException;
-import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,13 +27,15 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.IOException;
+import java.util.function.BiFunction;
 
 /**
  * Example of using Linear Regression model in Apache Ignite for house prices prediction.
@@ -79,7 +79,7 @@ public class BostonHousePricesPredictionExample {
                     split.getTestFilter(),
                     mdl,
                     vectorizer,
-                    new RegressionMetrics().withMetric(RegressionMetricValues::r2)
+                    MetricName.R2
                 );
 
                 System.out.println(">>> Model: " + toString(mdl));

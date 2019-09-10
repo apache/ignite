@@ -15,32 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric.classification;
-
-import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
-import org.junit.Test;
-
-import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
-
 /**
- * Tests for {@link Fmeasure}.
+ * <!-- Package description. -->
+ * Package contains aggregators for metrics computation.
  */
-public class FmeasureTest {
-    /** */
-    @Test
-    public void testScore() {
-        Fmeasure<Integer> scoreCalculator = new Fmeasure<>(1);
-
-        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1, 0, 1, 0, 1, 0),
-            Arrays.asList(1, 0, 0, 1, 1, 0)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals((double)2/3, score, 1e-12);
-    }
-}
+package org.apache.ignite.ml.selection.scoring.evaluator.aggregator;

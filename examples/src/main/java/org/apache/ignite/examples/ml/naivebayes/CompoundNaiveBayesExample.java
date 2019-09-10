@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.naivebayes;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,8 +28,11 @@ import org.apache.ignite.ml.naivebayes.compound.CompoundNaiveBayesTrainer;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.FileNotFoundException;
 
 import static java.util.Arrays.asList;
 
@@ -84,8 +86,9 @@ public class CompoundNaiveBayesExample {
             double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
-                vectorizer
-            ).accuracy();
+                vectorizer,
+                MetricName.ACCURACY
+            );
 
             System.out.println("\n>>> Accuracy " + accuracy);
 

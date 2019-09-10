@@ -17,58 +17,50 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import org.apache.ignite.ml.selection.scoring.LabelPair;
+import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
-import java.util.Iterator;
+import java.io.Serializable;
 
 /**
- * Precision calculator.
- *
- * @param <L> Type of a label (truth or prediction).
+ * Precision metric class for binary classificaion.
  */
-public class Precision<L> extends ClassMetric<L> {
+public class Precision<L extends Serializable> extends BinaryClassificationMetric<L> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 2112795951652050170L;
+
+    /** Precision. */
+    private Double precision = Double.NaN;
+
     /**
-     * The class of interest or positive class.
+     * Creates an instance Precision class.
      *
-     * @param clsLb The label.
+     * @param truthLabel Truth label.
+     * @param falseLabel False label.
      */
-    public Precision(L clsLb) {
-        super(clsLb);
+    public Precision(L truthLabel, L falseLabel) {
+        super(truthLabel, falseLabel);
+    }
+
+    /**
+     * Creates an instance Precision class.
+     */
+    public Precision() {
     }
 
     /** {@inheritDoc} */
-    @Override public double score(Iterator<LabelPair<L>> it) {
-        if (clsLb != null) {
-            long tp = 0;
-            long fp = 0;
-
-            while (it.hasNext()) {
-                LabelPair<L> e = it.next();
-
-                L prediction = e.getPrediction();
-                L truth = e.getTruth();
-
-                if (clsLb.equals(prediction)) {
-                    if (prediction.equals(truth))
-                        tp++;
-                    else
-                        fp++;
-                }
-            }
-            long denominator = tp + fp;
-
-            if (denominator == 0)
-                return 1; // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
-
-            return (double)tp / denominator;
-        }
-        else
-            return Double.NaN;
+    @Override public Precision<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
+        precision = ((double) (aggr.getTruePositive()) / (aggr.getTruePositive() + aggr.getFalsePositive()));
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
-        return "precision for class with label " + clsLb;
+    @Override public double value() {
+        return precision;
     }
 
+    /** {@inheritDoc} */
+    @Override public MetricName name() {
+        return MetricName.PRECISION;
+    }
 }

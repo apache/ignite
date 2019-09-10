@@ -17,57 +17,50 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import org.apache.ignite.ml.selection.scoring.LabelPair;
+import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
-import java.util.Iterator;
+import java.io.Serializable;
 
 /**
- * Recall calculator.
- *
- * @param <L> Type of a label (truth or prediction).
+ * Recall metric class for binary classiticaion.
  */
-public class Recall<L> extends ClassMetric<L> {
+public class Recall<L extends Serializable> extends BinaryClassificationMetric<L> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 8128102840736337225L;
+
+    /** Recall. */
+    private Double recall = Double.NaN;
+
     /**
-     * The class of interest or positive class.
+     * Creates an instance Recall class.
      *
-     * @param clsLb The label.
+     * @param truthLabel Truth label.
+     * @param falseLabel False label.
      */
-    public Recall(L clsLb) {
-        super(clsLb);
+    public Recall(L truthLabel, L falseLabel) {
+        super(truthLabel, falseLabel);
+    }
+
+    /**
+     * Creates an instance Recall class.
+     */
+    public Recall() {
     }
 
     /** {@inheritDoc} */
-    @Override public double score(Iterator<LabelPair<L>> it) {
-        if (clsLb != null) {
-            long tp = 0;
-            long fn = 0;
-
-            while (it.hasNext()) {
-                LabelPair<L> e = it.next();
-
-                L prediction = e.getPrediction();
-                L truth = e.getTruth();
-
-                if (clsLb.equals(truth)) {
-                    if (prediction.equals(truth))
-                        tp++;
-                    else
-                        fn++;
-                }
-            }
-            long denominator = tp + fn;
-
-            if (denominator == 0)
-                return 1; // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
-
-            return (double)tp / denominator;
-        }
-        else
-            return Double.NaN;
+    @Override public Recall<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
+        recall = ((double) (aggr.getTruePositive()) / (aggr.getTruePositive() + aggr.getFalseNegative()));
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
-        return "recall for class with label " + clsLb;
+    @Override public double value() {
+        return recall;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MetricName name() {
+        return MetricName.RECALL;
     }
 }

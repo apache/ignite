@@ -17,19 +17,21 @@
 
 package org.apache.ignite.examples.ml.selection.scoring;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.selection.scoring.evaluator.EvaluationResult;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.IOException;
 
 /**
  * Run SVM classification trainer ({@link SVMLinearClassificationTrainer}) over distributed dataset.
@@ -65,22 +67,11 @@ public class EvaluatorExample {
 
                 SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                double accuracy = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    vectorizer,
-                    new Accuracy<>()
+                EvaluationResult evaluationResult = Evaluator.evaluate(dataCache,
+                    mdl, vectorizer, MetricName.ACCURACY, MetricName.F_MEASURE
                 );
 
-                System.out.println("\n>>> Accuracy " + accuracy);
-
-                double f1Score = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    vectorizer
-                ).f1Score();
-
-                System.out.println("\n>>> F1-Score " + f1Score);
+                evaluationResult.print();
             } finally {
                 dataCache.destroy();
             }

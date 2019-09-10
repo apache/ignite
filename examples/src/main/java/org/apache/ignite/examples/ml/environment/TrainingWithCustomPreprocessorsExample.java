@@ -34,8 +34,7 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
@@ -88,11 +87,8 @@ public class TrainingWithCustomPreprocessorsExample {
                 .fit(ignite, trainingSet);
 
             System.out.println(">>> Perform scoring.");
-            double score = Evaluator.evaluate(
-                trainingSet,
-                mdl,
-                mdl.getPreprocessor(),
-                new RegressionMetrics().withMetric(RegressionMetricValues::r2)
+            double score = Evaluator.evaluate(trainingSet,
+                mdl, mdl.getPreprocessor(), MetricName.R2
             );
 
             System.out.println(">>> R^2 score: " + score);

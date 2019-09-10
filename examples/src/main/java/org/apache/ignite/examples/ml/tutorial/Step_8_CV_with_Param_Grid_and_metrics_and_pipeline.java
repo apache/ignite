@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -32,12 +30,14 @@ import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+
+import java.io.FileNotFoundException;
+import java.util.Arrays;
 
 /**
  * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
@@ -90,23 +90,18 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
 
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
-                CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
+                CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
                     .addHyperParam("maxDeep", trainer::withMaxDeep, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
                     .addHyperParam("minImpurityDecrease", trainer::withMinImpurityDecrease, new Double[]{0.0, 0.25, 0.5});
 
-                BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
-                    .withNegativeClsLb(0.0)
-                    .withPositiveClsLb(1.0)
-                    .withMetric(BinaryClassificationMetricValues::accuracy);
-
                 scoreCalculator
                     .withIgnite(ignite)
                     .withUpstreamCache(dataCache)
                     .withPipeline(pipeline)
-                    .withMetric(metrics)
+                    .withMetric(new Accuracy<>())
                     .withFilter(split.getTrainFilter())
                     .withPreprocessor(vectorizer)
                     .withAmountOfFolds(3)

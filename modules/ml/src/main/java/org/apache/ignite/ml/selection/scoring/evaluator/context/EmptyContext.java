@@ -15,23 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric.exceptions;
+package org.apache.ignite.ml.selection.scoring.evaluator.context;
 
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.ml.structures.LabeledVector;
+
+import java.io.Serializable;
 
 /**
- * Indicates an unknown class label for metric calculator.
+ * Class represents context stub for metrics that don't require such context preparations.
  */
-public class UnknownClassLabelException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class EmptyContext<L extends Serializable> implements EvaluationContext<L, EmptyContext<L>> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 1439494372470803212L;
 
-    /**
-     * @param incorrectVal Incorrect value.
-     * @param positiveClsLb Positive class label.
-     * @param negativeClsLb Negative class label.
-     */
-    public UnknownClassLabelException(double incorrectVal, double positiveClsLb, double negativeClsLb) {
-        super("The next class label: " + incorrectVal + " is not positive class label: " + positiveClsLb + " or negative class label: " + negativeClsLb);
+    /** {@inheritDoc} */
+    @Override public void aggregate(LabeledVector<L> vector) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public EmptyContext<L> mergeWith(EmptyContext<L> other) {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needToCompute() {
+        return false;
     }
 }

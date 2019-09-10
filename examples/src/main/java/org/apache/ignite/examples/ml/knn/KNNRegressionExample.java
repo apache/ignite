@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,9 +28,11 @@ import org.apache.ignite.ml.knn.utils.indices.SpatialIndexType;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Rmse;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.IOException;
 
 /**
  * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
@@ -76,7 +77,7 @@ public class KNNRegressionExample {
                     dataCache,
                     knnMdl,
                     vectorizer,
-                    new RegressionMetrics()
+                    new Rmse()
                 );
 
                 System.out.println("\n>>> Rmse = " + rmse);

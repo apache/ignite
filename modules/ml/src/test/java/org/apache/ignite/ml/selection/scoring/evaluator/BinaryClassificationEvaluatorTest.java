@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -26,10 +24,13 @@ import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -56,9 +57,9 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
             vectorizer
         );
 
-        double score = Evaluator.evaluate(cacheMock, mdl, vectorizer, new Accuracy<>());
+        double score = Evaluator.evaluate(cacheMock, mdl, vectorizer, MetricName.ACCURACY);
 
-        assertEquals(0.9839357429718876, score, 1e-12);
+        assertEquals(0.9919839679358717, score, 1e-12);
     }
 
     /**
@@ -85,8 +86,7 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
             vectorizer
         );
 
-        double score = Evaluator.evaluate(cacheMock, mdl, vectorizer, new Accuracy<>());
-
+        double score = Evaluator.evaluate(cacheMock, split.getTestFilter(), mdl, vectorizer, MetricName.ACCURACY);
         assertEquals(0.9, score, 1);
     }
 }

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.dataset.impl.cache;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -32,6 +30,9 @@ import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapper;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * A dataset builder that makes {@link CacheBasedDataset}. Encapsulate logic of building cache based dataset such as
@@ -195,5 +196,14 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      */
     public CacheBasedDatasetBuilder<K, V> withRetriesNumber(int retries) {
         return new CacheBasedDatasetBuilder<K, V>(ignite, upstreamCache, filter, transformerBuilder, upstreamKeepBinary, retries);
+    }
+
+    /**
+     * Returns upstream cache.
+     *
+     * @return Upstream cache.
+     */
+    public IgniteCache<K, V> getUpstreamCache() {
+        return upstreamCache;
     }
 }

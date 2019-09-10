@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,8 +27,11 @@ import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.IOException;
 
 /**
  * Run kNN multi-class classification trainer ({@link KNNClassificationTrainer}) over distributed dataset.
@@ -72,8 +74,9 @@ public class KNNClassificationExample {
                 double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    vectorizer
-                ).accuracy();
+                    vectorizer,
+                    new Accuracy<>()
+                );
 
                 System.out.println("\n>>> Accuracy " + accuracy);
             } finally {

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples.ml.selection.scoring;
 
-import java.io.IOException;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -31,6 +29,8 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.IOException;
 
 /**
  * Run kNN multi-class classification trainer ({@link KNNClassificationTrainer}) over distributed dataset.
@@ -64,15 +64,7 @@ public class MultipleMetricsExample {
 
                 SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                Map<String, Double> scores = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    vectorizer
-                ).toMap();
-
-                scores.forEach(
-                    (metricName, score) -> System.out.println("\n>>>" + metricName + ": " + score)
-                );
+                Evaluator.evaluateBinaryClassification(dataCache, mdl, vectorizer).print();
             } finally {
                 dataCache.destroy();
             }

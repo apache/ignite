@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -30,9 +29,11 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.IOException;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
@@ -85,12 +86,7 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
 
                 System.out.println(">>> Linear regression model: " + mdl);
 
-                double rmse = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    preprocessor,
-                    new RegressionMetrics()
-                );
+                double rmse = Evaluator.evaluate(dataCache, mdl, preprocessor, MetricName.RMSE);
 
                 System.out.println("\n>>> Rmse = " + rmse);
 

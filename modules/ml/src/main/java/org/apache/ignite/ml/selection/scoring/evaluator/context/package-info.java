@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric.classification;
-
-import org.apache.ignite.ml.selection.scoring.metric.Metric;
-
 /**
- * Metric calculator for one class label.
- *
- * @param <L> Type of a label (truth or prediction).
+ * <!-- Package description. -->
+ * Package for metric evaluation contexts.
  */
-public abstract class ClassMetric<L> implements Metric<L> {
-    /** Class label. */
-    protected L clsLb;
-
-    /**
-     * The class of interest or positive class.
-     *
-     * @param clsLb The label.
-     */
-    public ClassMetric(L clsLb) {
-        this.clsLb = clsLb;
-    }
-}
+package org.apache.ignite.ml.selection.scoring.evaluator.context;

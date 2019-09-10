@@ -17,11 +17,11 @@
 
 package org.apache.ignite.ml.selection.cv;
 
-import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
+
+import java.util.Map;
 
 /**
  * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the
@@ -34,11 +34,10 @@ import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
  * </ul>
  *
  * @param <M> Type of model.
- * @param <L> Type of a label (truth or prediction).
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class DebugCrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends AbstractCrossValidation<M, L, K, V> {
+public class DebugCrossValidation<M extends IgniteModel<Vector, Double>, K, V> extends AbstractCrossValidation<M, K, V> {
     /** Upstream map. */
     private Map<K, V> upstreamMap;
 
@@ -67,12 +66,6 @@ public class DebugCrossValidation<M extends IgniteModel<Vector, L>, L, K, V> ext
                 upstreamMap,
                 (k, v) -> filter.apply(k, v) && predicate.apply(k, v),
                 parts
-            ),
-            (predicate, mdl) -> new LocalLabelPairCursor<>(
-                upstreamMap,
-                (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
-                preprocessor,
-                mdl
             )
         );
     }
@@ -88,12 +81,6 @@ public class DebugCrossValidation<M extends IgniteModel<Vector, L>, L, K, V> ext
                 upstreamMap,
                 (k, v) -> filter.apply(k, v) && predicate.apply(k, v),
                 parts
-            ),
-            (predicate, mdl) -> new LocalLabelPairCursor<>(
-                upstreamMap,
-                (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
-                preprocessor,
-                mdl
             )
         );
     }
@@ -101,7 +88,7 @@ public class DebugCrossValidation<M extends IgniteModel<Vector, L>, L, K, V> ext
     /**
      * @param upstreamMap Upstream map.
      */
-    public DebugCrossValidation<M, L, K, V> withUpstreamMap(Map<K, V> upstreamMap) {
+    public DebugCrossValidation<M, K, V> withUpstreamMap(Map<K, V> upstreamMap) {
         this.upstreamMap = upstreamMap;
         return this;
     }
@@ -109,7 +96,7 @@ public class DebugCrossValidation<M extends IgniteModel<Vector, L>, L, K, V> ext
     /**
      * @param parts Parts.
      */
-    public DebugCrossValidation<M, L, K, V> withAmountOfParts(int parts) {
+    public DebugCrossValidation<M, K, V> withAmountOfParts(int parts) {
         this.parts = parts;
         return this;
     }
