@@ -2210,8 +2210,13 @@ export class NotebookCtrl {
             const paragraphs = _.get(this, '$scope.notebook.paragraphs');
 
             if (this._hasRunningQueries(paragraphs)) {
-                return Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'))
-                    .then(() => this._closeOpenedQueries(paragraphs));
+                try {
+                    return Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'))
+                        .then(() => this._closeOpenedQueries(paragraphs));
+                }
+                catch (err) {
+                    return Promise.reject(new CancellationError());
+                }
             }
 
             return Promise.resolve(true);

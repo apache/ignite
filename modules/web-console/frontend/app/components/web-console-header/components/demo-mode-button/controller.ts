@@ -20,7 +20,7 @@ import {UserService} from '../../../../modules/user/User.service';
 import {take} from 'rxjs/operators';
 
 export default class DemoModeButton {
-    static $inject = ['User', '$state', '$window', 'IgniteConfirm', 'AgentManager', 'IgniteMessages'];
+    static $inject = ['User', '$state', '$window', 'IgniteConfirm', 'AgentManager', 'IgniteMessages', '$translate'];
 
     constructor(
         private User: UserService,
@@ -28,7 +28,8 @@ export default class DemoModeButton {
         private $window: ng.IWindowService,
         private Confirm: ReturnType<typeof LegacyConfirmFactory>,
         private agentMgr: AgentManager,
-        private Messages
+        private Messages,
+        private $translate: ng.translate.ITranslateService
     ) {}
 
     private _openTab(stateName: string) {
@@ -45,7 +46,7 @@ export default class DemoModeButton {
             if (!user.demoCreated)
                 return this._openTab('demo.reset');
 
-            this.Confirm.confirm('Would you like to continue with previous demo session?', true, false)
+            this.Confirm.confirm(this.$translate.instant('demoModeButton.continueConfirmationMessage'), true, false)
                 .then((resume) => {
                     if (resume)
                         return this._openTab('demo.resume');
@@ -54,6 +55,6 @@ export default class DemoModeButton {
                 });
         }
         else
-            this.Messages.showError('Demo mode disabled by administrator');
+            this.Messages.showError(this.$translate.instant('demoModeButton.demoModeDisabledErrorMessage'));
     }
 }

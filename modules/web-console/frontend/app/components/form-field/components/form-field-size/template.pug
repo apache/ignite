@@ -43,13 +43,13 @@ include /app/helpers/jade/mixins
     )
     button.select-toggle(
         bs-select
-        bs-options='size as size.label for size in $ctrl.sizesMenu'
+        bs-options='size as size.translationId for size in $ctrl.sizesMenu'
         ng-model='$ctrl.sizeScale'
         protect-from-bs-select-render
         ng-disabled='$ctrl.ngDisabled'
         type='button'
+        translate='{{$ctrl.sizeScale.translationId}}'
     )
-        | {{ $ctrl.sizeScale.label }}
 
 .form-field__errors(
     ng-messages='$ctrl.ngModel.$error'

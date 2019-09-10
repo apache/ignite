@@ -16,62 +16,58 @@
 
 import _ from 'lodash';
 import moment from 'moment';
+import {ChartConfiguration} from 'chart.js';
 
-/**
- * @typedef {{x: number, y: {[key: string]: number}}} IgniteChartDataPoint
- */
+type IgniteChartDataPoint = {x: number, y: {[key: string]: number}}
+type RangeOption = {label: string, value: number}
 
-const RANGE_RATE_PRESET = [
-    {label: '1 min', value: 1},
-    {label: '5 min', value: 5},
-    {label: '10 min', value: 10},
-    {label: '15 min', value: 15},
-    {label: '30 min', value: 30}
+const RANGE_RATE_PRESET: RangeOption[] = [
+    {label: 'igniteChartComponent.ranges.1', value: 1},
+    {label: 'igniteChartComponent.ranges.5', value: 5},
+    {label: 'igniteChartComponent.ranges.10', value: 10},
+    {label: 'igniteChartComponent.ranges.15', value: 15},
+    {label: 'igniteChartComponent.ranges.30', value: 30}
 ];
 
 /**
  * Determines what label format was chosen by determineLabelFormat function
  * in Chart.js streaming plugin.
- *
- * @param {string} label
  */
-const inferLabelFormat = (label) => {
+const inferLabelFormat = (label: string) => {
     if (label.match(/\.\d{3} (am|pm)$/)) return 'MMM D, YYYY h:mm:ss.SSS a';
     if (label.match(/:\d{1,2} (am|pm)$/)) return 'MMM D, YYYY h:mm:ss a';
     if (label.match(/ \d{4}$/)) return 'MMM D, YYYY';
 };
 
 export class IgniteChartController {
-    /** @type {import('chart.js').ChartConfiguration} */
-    chartOptions;
-    /** @type {string} */
-    chartTitle;
-    /** @type {IgniteChartDataPoint} */
-    chartDataPoint;
-    /** @type {Array<IgniteChartDataPoint>} */
-    chartHistory;
+    chartOptions: ChartConfiguration;
+    chartTitle: string;
+    chartDataPoint: IgniteChartDataPoint;
+    chartHistory: IgniteChartDataPoint[];
     newPoints = [];
 
-    static $inject = ['$element', 'IgniteChartColors', '$filter'];
+    datePipe = this.$filter('date');
+    ranges = RANGE_RATE_PRESET;
+    currentRange = this.ranges[0];
+    maxRangeInMilliseconds = RANGE_RATE_PRESET[RANGE_RATE_PRESET.length - 1].value * 60 * 1000;
+    ctx = (this.$element.find('canvas')[0] as HTMLCanvasElement).getContext('2d');
+    localHistory = [];
+    updateIsBusy = false;
 
-    /**
-     * @param {JQLite} $element
-     * @param {Array<string>} IgniteChartColors
-     * @param {ng.IFilterService} $filter
-     */
-    constructor($element, IgniteChartColors, $filter) {
-        this.$element = $element;
-        this.IgniteChartColors = IgniteChartColors;
+    chart?: Chart;
+    config?: ChartConfiguration;
+    refreshRate: number;
+    xRangeUpdateInProgress?: boolean;
+    chartColors: string[];
 
-        this.datePipe = $filter('date');
-        this.ranges = RANGE_RATE_PRESET;
-        this.currentRange = this.ranges[0];
-        this.maxRangeInMilliseconds = RANGE_RATE_PRESET[RANGE_RATE_PRESET.length - 1].value * 60 * 1000;
-        this.ctx = this.$element.find('canvas')[0].getContext('2d');
+    static $inject = ['$element', 'IgniteChartColors', '$filter', '$translate'];
 
-        this.localHistory = [];
-        this.updateIsBusy = false;
-    }
+    constructor(
+        private $element: JQLite,
+        private IgniteChartColors: Array<string>,
+        private $filter: ng.IFilterService,
+        private $translate: ng.translate.ITranslateService
+    ) {}
 
     $onDestroy() {
         if (this.chart)
@@ -89,10 +85,7 @@ export class IgniteChartController {
         this.rerenderChart();
     }
 
-    /**
-     * @param {{chartOptions: ng.IChangesObject<import('chart.js').ChartConfiguration>, chartTitle: ng.IChangesObject<string>, chartDataPoint: ng.IChangesObject<IgniteChartDataPoint>, chartHistory: ng.IChangesObject<Array<IgniteChartDataPoint>>}} changes
-     */
-    async $onChanges(changes) {
+    async $onChanges(changes: {chartOptions: ng.IChangesObject<import('chart.js').ChartConfiguration>, chartTitle: ng.IChangesObject<string>, chartDataPoint: ng.IChangesObject<IgniteChartDataPoint>, chartHistory: ng.IChangesObject<Array<IgniteChartDataPoint>>}) {
         if (this.chart && _.get(changes, 'refreshRate.currentValue'))
             this.onRefreshRateChanged(_.get(changes, 'refreshRate.currentValue'));
 
@@ -130,7 +123,6 @@ export class IgniteChartController {
     }
 
     async initChart() {
-        /** @type {import('chart.js').ChartConfiguration} */
         this.config = {
             type: 'LineWithVerticalCursor',
             data: {
@@ -294,10 +286,7 @@ export class IgniteChartController {
         this.newPoints.splice(0, this.newPoints.length);
     }
 
-    /**
-     * @param {IgniteChartDataPoint} dataPoint
-     */
-    appendChartPoint(dataPoint) {
+    appendChartPoint(dataPoint: IgniteChartDataPoint) {
         Object.keys(dataPoint.y).forEach((key) => {
             if (this.checkDatasetCanBeAdded(key)) {
                 let datasetIndex = this.findDatasetIndex(key);
@@ -335,10 +324,8 @@ export class IgniteChartController {
 
     /**
      * Checks if a key of dataset can be added to chart or should be ignored.
-     * @param dataPointKey {String}
-     * @return {Boolean}
      */
-    checkDatasetCanBeAdded(dataPointKey) {
+    checkDatasetCanBeAdded(dataPointKey: string): boolean {
         // If datasetLegendMapping is empty all keys are allowed.
         if (!this.config.datasetLegendMapping)
             return true;
@@ -351,9 +338,9 @@ export class IgniteChartController {
             this.config.data.datasets.forEach((dataset) => dataset.data = []);
     }
 
-    addDataset(datasetName) {
+    addDataset(datasetName: string) {
         if (this.findDatasetIndex(datasetName) >= 0)
-            throw new Error(`Dataset with name ${datasetName} is already in chart`);
+            throw new Error(this.$translate.instant('igniteChartComponent.duplicateDatasetErrorMessage', {datasetName}));
         else {
             const datasetIsHidden = _.isNil(this.config.datasetLegendMapping[datasetName].hidden)
                 ? false
@@ -363,11 +350,11 @@ export class IgniteChartController {
         }
     }
 
-    findDatasetIndex(searchedDatasetLabel) {
+    findDatasetIndex(searchedDatasetLabel: string) {
         return this.config.data.datasets.findIndex((dataset) => dataset.label === searchedDatasetLabel);
     }
 
-    changeXRange(range) {
+    changeXRange(range: RangeOption) {
         if (this.chart) {
             this.xRangeUpdateInProgress = true;
 
@@ -383,7 +370,7 @@ export class IgniteChartController {
         }
     }
 
-    onRefreshRateChanged(refreshRate) {
+    onRefreshRateChanged(refreshRate: number) {
         this.chart.config.options.plugins.streaming.frameRate = 1000 / refreshRate;
         this.chart.config.options.plugins.streaming.refresh = refreshRate;
         this.rerenderChart();

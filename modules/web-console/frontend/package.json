@@ -98,6 +98,7 @@
     "@types/angular-strap": "2.3.1",
     "@types/angular-translate": "2.16.0",
     "@types/chai": "4.1.7",
+    "@types/chart.js": "^2.8.4",
     "@types/copy-webpack-plugin": "4.4.4",
     "@types/karma": "1.7.4",
     "@types/lodash": "4.14.110",

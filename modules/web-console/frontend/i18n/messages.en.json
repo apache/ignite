@@ -1,23 +1,46 @@
 {
     "scale": {
         "time": {
+            "nanosecond": {
+                "short": "ns"
+            },
+            "milisecond": {
+                "short": "ms"
+            },
             "second": {
                 "long": "seconds",
+                "medium": "sec",
                 "short": "s"
             },
             "minute": {
                 "long": "minutes",
+                "medium": "min",
                 "short": "m"
             },
             "hour": {
                 "long": "hours",
                 "short": "h"
             }
+        },
+        "digital": {
+            "kilobyte": {
+                "short": "Kb"
+            },
+            "megabyte": {
+                "short": "Mb"
+            },
+            "gigabyte": {
+                "short": "Gb"
+            },
+            "terabyte": {
+                "short": "Tb"
+            }
         }
     },
     "actionsButtonLabel": "Actions",
     "closeButtonLabel": "Close",
     "cancelButtonLabel": "Cancel",
+    "confirmButtonLabel": "Confirm",
     "configuration": {
         "configurations": {},
         "basic": {
@@ -286,6 +309,156 @@
     "userMenu": {},
     "userProfile": {},
     "admin": {
+        "pageTitle": "Admin panel",
+        "setUserNotificationsButtonLabel": "Set user notifications",
+        "listOfRegisteredUsers": {
+            "tabs": {
+                "users": "Users",
+                "companies": "Companies",
+                "countries": "Countries"
+            },
+            "gridTitles": {
+                "users": "List of registered users",
+                "companies": "List of registered companies",
+                "countries": "List of registered countries"
+            },
+            "excludeInput": {
+                "placeholder": "Exclude by company name..."
+            },
+            "noData": {
+                "nonEmptyFilterMessage": "Nothing to display. Check your filters."
+            },
+            "actions": {
+                "becomeThisUser": "Become this user",
+                "removeAdmin": "Revoke admin",
+                "grantAdmin": "Grant admin",
+                "addUser": "Add user",
+                "removeUser": "Remove user",
+                "activityDetail": "Activity detail"
+            },
+            "removeUserConfirmationMessage": "Are you sure you want to remove user: \"{{userName}}\"?",
+            "categoryDisplayNames": {
+                "user": "User",
+                "email": "Email",
+                "activated": "Activated",
+                "company": "Company",
+                "country": "Country",
+                "lastLogin": "Last login",
+                "lastActivity": "Last activity",
+                "configurations": "Configurations",
+                "totalActivities": "Total activities",
+                "configurationActivities": "Configuration's activities",
+                "queriesActivities": "Queries' activities"
+            },
+            "columns": {
+                "user": {
+                    "title": "User",
+                    "filterPlaceholder": "Filter by name..."
+                },
+                "email": {
+                    "title": "Email",
+                    "filterPlaceholder": "Filter by email..."
+                },
+                "activated": {
+                    "title": "Activated",
+                    "filterPlaceholder": "Filter by activation..."
+                },
+                "company": {
+                    "title": "Company",
+                    "filterPlaceholder": "Filter by company..."
+                },
+                "country": {
+                    "title": "Country",
+                    "filterPlaceholder": "Filter by country..."
+                },
+                "lastlogin": {
+                    "title": "Last login"
+                },
+                "lastactivity": {
+                    "title": "Last activity"
+                },
+                "cfg_clusters": {
+                    "title": "Clusters count",
+                    "tooltip": "Clusters count"
+                },
+                "cfg_models": {
+                    "title": "Models count",
+                    "tooltip": "Models count"
+                },
+                "cfg_caches": {
+                    "title": "Caches count",
+                    "tooltip": "Caches count"
+                },
+                "cfg": {
+                    "title": "Cfg",
+                    "tooltip": "Total count of configuration usages"
+                },
+                "qry": {
+                    "title": "Qry",
+                    "tooltip": "Total count of queries usages"
+                },
+                "demo": {
+                    "title": "Demo",
+                    "tooltip": "Total count of demo startup"
+                },
+                "dnld": {
+                    "title": "Dnld",
+                    "tooltip": "Total count of agent downloads"
+                },
+                "starts": {
+                    "title": "Starts",
+                    "tooltip": "Total count of agent startup"
+                },
+                "clusters": {
+                    "title": "Clusters",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterBasic": {
+                    "title": "Basic",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterBasicNew": {
+                    "title": "Basic create",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedNew": {
+                    "title": "Adv. Cluster create",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedCluster": {
+                    "title": "Adv. Cluster edit",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedCaches": {
+                    "title": "Adv. Caches",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedCache": {
+                    "title": "Adv. Cache edit",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedModels": {
+                    "title": "Adv. Models",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedModel": {
+                    "title": "Adv. Model edit",
+                    "tooltip": "Configuration clusters"
+                },
+                "execute": {
+                    "title": "Execute",
+                    "tooltip": "Query executions"
+                },
+                "explain": {
+                    "title": "Explain",
+                    "tooltip": "Query explain executions"
+                },
+                "scan": {
+                    "title": "Scan",
+                    "tooltip": "Scan query executions"
+                }
+            }
+        },
         "userActivitiesDialog": {
             "title": "Activity details: {{ userName }}",
             "grid": {
@@ -302,7 +475,15 @@
                 }
             }
         },
-        "userNotificationsDialog": {},
+        "userNotificationsDialog": {
+            "title": "Set user notifications",
+            "message": "Enter the text, which will show for all users of the Web Console about an important event or warning about ongoing technical works. It will appear <b>on the yellow bar</b> in the header.",
+            "formActionButtonLabel": "Submit",
+            "cancelButtonLabel": "Cancel",
+            "showMessageInput": {
+                "label": "Show message"
+            }
+        },
         "createUserDialog": {
             "userCreatedSuccessNotification": "User {{user.email}} created",
             "loadingText": "Creating user…",
@@ -332,7 +513,18 @@
         "signupMessage": "Don't have an account? <a href='/signup'>Get started</a>",
         "confirmRegistrationMessage": "Please sign in to confirm your registration"
     },
-    "signUp": {},
+    "signUp": {
+        "documentTitle": "Sign Up",
+        "pageTitle": "Don't Have An Account?",
+        "formActionButtonLabel": "Sign Up",
+        "signInMessage": "Already have an account? <a ui-sref='signin'>Sign in here</a>"
+    },
+    "signupConfirmation": {
+        "documentTitle": "Sign Up Confirmation",
+        "pageTitle": "Confirm your email",
+        "message": "Thanks For Signing Up!<br />Please check your email and click link in the message we just sent to <b>{{::$ctrl.email}}</b>.<br />If you don’t receive email try to <a ng-click='$ctrl.resendConfirmation()'>resend confirmation</a> once more.",
+        "successNotification": "Signup confirmation sent, check your email"
+    },
     "forgotPassword": {
         "documentTitle": "Forgot Password",
         "pageTitle": "Forgot password?",
@@ -353,7 +545,13 @@
             "placeholder": "Confirm new password"
         },
         "cancelLinkLabel": "Cancel",
-        "formActionButtonLabel": "Save Changes"
+        "formActionButtonLabel": "Save Changes",
+        "successNotification": "Password successfully changed"
+    },
+    "passwordChangedPage": {
+        "documentTitle": "Password send",
+        "pageTitle": "Ready!",
+        "message": "Further instructions for password reset have been sent to your e-mail address.<br />You'll be redirected back automatically in a few seconds. If not, please <a ui-sref='signin'>click here</a>."
     },
     "landing": {
         "intro": {
@@ -470,5 +668,99 @@
     },
     "connectedClustersBadgeComponent": {
         "message": "My Connected Clusters: "
+    },
+    "signupFormComponent": {
+        "emailInput": {
+            "placeholder": "Input email"
+        },
+        "passwordInput": {
+            "placeholder": "Input password"
+        },
+        "confirmPasswordInput": {
+            "placeholder": "Confirm password"
+        },
+        "firstNameInput": {
+            "placeholder": "Input first name"
+        },
+        "lastNameInput": {
+            "placeholder": "Input last name"
+        },
+        "phoneInput": {
+            "placeholder": "Input phone (ex.: +15417543010)"
+        },
+        "countryInput": {
+            "placeholder": "Choose your country"
+        },
+        "companyInput": {
+            "placeholder": "Input company name"
+        }
+    },
+    "gridExportComponent": {
+        "tooltip": "Export filtered rows to CSV",
+        "buttonLabel": "Export to .csv"
+    },
+    "gridItemSelectedComponent": {
+        "someSelected": "{{ selected }} of {{ count }} selected",
+        "noneSelected": "Showing: 0 rows"
+    },
+    "gridShowingRowsComponent": {
+        "total": "Total: {{count}}",
+        "showing": "Showing: {{visible}}",
+        "selected": "Selected: {{selected}} of {{count}}",
+        "copyToClipboardButtonLabel": "Copy to clipboard"
+    },
+    "igniteChartComponent": {
+        "chartNoDataComponent": {
+            "noDatasets": "No Data<br />Make sure you are connected to the right grid."
+        },
+        "ranges": {
+            "1": "1 min",
+            "5": "5 min",
+            "10": "10 min",
+            "15": "15 min",
+            "30": "30 min"
+        },
+        "duplicateDatasetErrorMessage": "Dataset with name {{datasetName}} is already in chart",
+        "rangeLabel": "Range: "
+    },
+    "inputDialog": {
+        "textModeInput": {
+            "placeholder": "Enter value"
+        },
+        "emailModeInput": {
+            "placeholder": "Input email"
+        }
+    },
+    "listEditableComponent": {
+        "addNewItemsButtonLabel": "+ Add new {{entity}}",
+        "noItemsMessage": "You have no {{entity}}. ",
+        "noItemsCreateOneButtonLabel": "Create one?"
+    },
+    "noDataComponent": {
+        "agentDisconnected": "Agent is disconnected. <a ng-click='$ctrl.openAgentMissingDialog()'>Check</a> agent is up and running.",
+        "clusterDisconnected": "Cluster is not available. <a ng-click='$ctrl.openNodeMissingDialog()'>Check</a> cluster is up and running and agent is appropriately <a href=\"https://apacheignite-tools.readme.io/docs/getting-started#section-configuration\" target=\"_blank\">configured</a>.",
+        "clusterInactive": "Cluster is inactive. Please activate cluster.",
+        "dataIsLoading": "Data is loading..."
+    },
+    "permanentNotificationsComponent": {
+        "assumedIdentity": "You are currently viewing user <strong>{{user.firstName}} {{user.lastName}}</strong> as administrator. <a ng-click='$ctrl.revertIdentity()'>Revert to your identity?</a>",
+        "demoMode": "You are now in Demo Mode. <a ng-click='$ctrl.closeDemo()'>Close Demo?</a>"
+    },
+    "timedRedirectionComponent": {
+        "message": "You’ll be redirected back automatically in {{secondsLeft}} seconds, or <a ng-click='$ctrl.go()'>click here</a> to redirect now."
+    },
+    "versionPickerComponent": {
+        "tooltip": "Web Console supports multiple Ignite versions.<br>Select version you need to configure cluster."
+    },
+    "appFooter": {
+        "downloadAgentButtonLabel": "Download Agent",
+        "product": "Apache Ignite Web Console ({{version}})",
+        "copyright": "© {{year}} The Apache Software Foundation.",
+        "legal": "Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation."
+    },
+    "demoModeButton": {
+        "continueConfirmationMessage": "Would you like to continue with previous demo session?",
+        "demoModeDisabledErrorMessage": "Demo mode disabled by administrator",
+        "startDemoButtonLabel": "Start Demo"
     }
 }

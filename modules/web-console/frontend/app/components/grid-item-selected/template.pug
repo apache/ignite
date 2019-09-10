@@ -14,6 +14,9 @@
     limitations under the License.
 
 span(ng-if='$ctrl.count')
-    i {{ $ctrl.selected }} of {{ $ctrl.count }} selected
+    i(
+        translate='gridItemSelectedComponent.someSelected'
+        translate-values='{selected: $ctrl.selected, count: $ctrl.count}'
+    )
 span(ng-if='!$ctrl.count')
-    i Showing: 0 rows
+    i(translate='gridItemSelectedComponent.noneSelected')

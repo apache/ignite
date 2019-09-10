@@ -20,7 +20,8 @@ import {IInputErrorNotifier} from '../../../../types';
 
 interface ISizeTypeOption {
     label: string,
-    value: number
+    value: number,
+    translationId: string
 }
 
 type ISizeType = Array<ISizeTypeOption>;
@@ -46,23 +47,23 @@ export default class PCFormFieldSizeController<T> implements IInputErrorNotifier
 
     static sizeTypes: ISizeTypes = {
         bytes: [
-            {label: 'Kb', value: 1024},
-            {label: 'Mb', value: 1024 * 1024},
-            {label: 'Gb', value: 1024 * 1024 * 1024}
+            {label: 'Kb', translationId: 'scale.digital.kilobyte.short', value: 1024},
+            {label: 'Mb', translationId: 'scale.digital.megabyte.short', value: 1024 * 1024},
+            {label: 'Gb', translationId: 'scale.digital.gigabyte.short', value: 1024 * 1024 * 1024}
         ],
         gigabytes: [
-            {label: 'Gb', value: 1},
-            {label: 'Tb', value: 1024}
+            {label: 'Gb', translationId: 'scale.digital.gigabyte.short', value: 1},
+            {label: 'Tb', translationId: 'scale.digital.terabyte.short', value: 1024}
         ],
         seconds: [
-            {label: 'ns', value: 1 / 1000},
-            {label: 'ms', value: 1},
-            {label: 's', value: 1000}
+            {label: 'ns', translationId: 'scale.time.nanosecond.short', value: 1 / 1000},
+            {label: 'ms', translationId: 'scale.time.milisecond.short', value: 1},
+            {label: 's', translationId: 'scale.time.second.short', value: 1000}
         ],
         time: [
-            {label: 'sec', value: 1},
-            {label: 'min', value: 60},
-            {label: 'hour', value: 60 * 60}
+            {label: 'sec', translationId: 'scale.time.second.medium', value: 1},
+            {label: 'min', translationId: 'scale.time.minute.medium', value: 60},
+            {label: 'hour', translationId: 'scale.time.hour.long', value: 60 * 60}
         ]
     };
 

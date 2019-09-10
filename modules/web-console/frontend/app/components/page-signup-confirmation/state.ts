@@ -20,9 +20,9 @@ import publicTemplate from '../../../views/public.pug';
 
 export type PageSignupConfirmationStateParams = StateParams & {email: string};
 
-state.$inject = ['$uiRouter'];
+state.$inject = ['$uiRouter', '$translate'];
 
-export function state(router: UIRouter) {
+export function state(router: UIRouter, $translate: ng.translate.ITranslateService) {
     router.stateRegistry.register({
         name: 'signup-confirmation',
         url: '/signup-confirmation?{email:string}',
@@ -36,7 +36,7 @@ export function state(router: UIRouter) {
         },
         unsaved: true,
         tfMetaTags: {
-            title: 'Sign Up Confirmation'
+            title: $translate.instant('signupConfirmation.documentTitle')
         },
         resolve: {
             email() {

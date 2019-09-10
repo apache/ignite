@@ -14,10 +14,5 @@
     limitations under the License.
 
 
-h3.public-page__title Confirm your email
-p
-    | Thanks For Signing Up!
-    br
-    | Please check your email and click link in the message we just sent to <b>{{::$ctrl.email}}</b>.
-    br
-    | If you don’t receive email try to <a ng-click='$ctrl.resendConfirmation()'>resend confirmation</a> once more.
+h3.public-page__title(translate='signupConfirmation.pageTitle')
+p(translate='signupConfirmation.message' translate-sanitize-strategy='null' translate-compile)

@@ -18,5 +18,6 @@ button.btn-ignite.btn-ignite--link(
     type='button'
     ng-if='$ctrl.hasItems'
     ng-click='$ctrl.addItem()'
+    translate='listEditableComponent.addNewItemsButtonLabel'
+    translate-values='::{entity: $ctrl.labelSingle}'
 )
-    | + Add new {{::$ctrl.labelSingle}}

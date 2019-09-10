@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['$modal', '$http', '$state', 'IgniteMessages', '$element'];
-    /** @type {JQLite} */
-    el;
+import {StateService} from '@uirouter/angularjs';
+import {default as MessagesFactory} from 'app/services/Messages.service';
 
-    /**
-     * @param {mgcrea.ngStrap.modal.IModalService} $modal
-     * @param {ng.IHttpService} $http
-     * @param {import('@uirouter/angularjs').StateService} $state
-     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
-     * @param el Element.
-     */
-    constructor($modal, $http, $state, Messages, el) {
-        this.$http = $http;
-        this.$state = $state;
-        this.Messages = Messages;
-        this.el = el;
-    }
+export default class {
+    static $inject = ['$modal', '$http', '$state', 'IgniteMessages', '$element', '$translate'];
+
+    ui?: {email: string, token: string, password?: string};
+
+    constructor(
+        $modal: mgcrea.ngStrap.modal.IModalService,
+        private $http,
+        private $state: StateService,
+        private Messages: ReturnType<typeof MessagesFactory>,
+        private el: JQLite,
+        private $translate: ng.translate.ITranslateService
+    ) {}
 
     $postLink() {
         this.el.addClass('public-page');
@@ -56,7 +54,7 @@ export default class {
             .then(() => {
                 this.$state.go('signin');
 
-                this.Messages.showInfo('Password successfully changed');
+                this.Messages.showInfo(this.$translate.instant('passwordReset.successNotification'));
             })
             .catch(({data, state}) => {
                 if (state === 503)

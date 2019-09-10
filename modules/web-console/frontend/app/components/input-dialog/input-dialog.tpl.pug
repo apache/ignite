@@ -32,7 +32,7 @@ include /app/helpers/jade/mixins
                             model: 'ctrl.options.value',
                             name: '"inputDialogField"',
                             required: true,
-                            placeholder: 'Enter value'
+                            placeholder: 'inputDialog.textModeInput.placeholder'
                         })(
                             ignite-form-field-input-autofocus='true'
                             ignite-on-enter='form.$valid && ctrl.confirm()'
@@ -59,7 +59,7 @@ include /app/helpers/jade/mixins
                             model: 'ctrl.options.value',
                             name: '"email"',
                             required: true,
-                            placeholder: 'Input email'
+                            placeholder: 'inputDialog.emailModeInput.placeholder'
                         })(
                             ignite-form-field-input-autofocus='true'
                             ignite-on-enter='form.$valid && ctrl.confirm()'
@@ -103,5 +103,5 @@ include /app/helpers/jade/mixins
                             })
             .modal-footer
                 div
-                    button#copy-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='$hide()') Cancel
-                    button#copy-btn-confirm.btn-ignite.btn-ignite--success(ng-disabled='ctrl.form.$invalid' ng-click='ctrl.confirm()') Confirm
+                    button#copy-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='$hide()' translate='cancelButtonLabel')
+                    button#copy-btn-confirm.btn-ignite.btn-ignite--success(ng-disabled='ctrl.form.$invalid' ng-click='ctrl.confirm()' translate='confirmButtonLabel')

@@ -18,4 +18,9 @@
 
     .sub-header {{::$ctrl.subHeaderText}}
 
-    .redirection-text You’ll be redirected back automatically in {{$ctrl.secondsLeft}} seconds, or #[a(ng-click='$ctrl.go()') click here] to redirect now.
+    .redirection-text(
+        translate='timedRedirectionComponent.message'
+        translate-values='{secondsLeft: $ctrl.secondsLeft}'
+        translate-sanitize-strategy='null'
+        translate-compile
+    )

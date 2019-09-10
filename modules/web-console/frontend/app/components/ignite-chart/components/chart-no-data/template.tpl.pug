@@ -14,6 +14,4 @@
     limitations under the License.
 
 no-data(result-data-status='$ctrl.resultDataStatus' handle-cluster-inactive='$ctrl.handleClusterInactive').no-data
-    div(ng-if='!$ctrl.igniteChart.config.data.datasets')
-        | No Data #[br]
-        | Make sure you are connected to the right grid.
+    div(ng-if='!$ctrl.igniteChart.config.data.datasets' translate='igniteChartComponent.chartNoDataComponent.noDatasets')

@@ -13,5 +13,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-| You have no {{::$ctrl.labelMultiple}}. 
-a.link-success(ng-click=`$ctrl.addItem()`) Create one?
+span(
+    translate='listEditableComponent.noItemsMessage'
+    translate-values='::{entity: $ctrl.labelMultiple}'
+)
+a.link-success(ng-click=`$ctrl.addItem()` translate='listEditableComponent.noItemsCreateOneButtonLabel')

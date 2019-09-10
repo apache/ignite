@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export default [
+export const categoriesFn = ($translate: ng.translate.ITranslateService) => [
     {name: 'Actions', visible: false, enableHiding: false},
     {name: 'User', visible: true, enableHiding: false},
     {name: 'Email', visible: true, enableHiding: true},

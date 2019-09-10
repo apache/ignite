@@ -33,8 +33,7 @@ export const component = {
         <button
             type='button'
             ng-click='$ctrl.toggleVisibility()'
-            bs-tooltip=''
-            data-title='{{ $ctrl.isVisible ? "Hide password" : "Show password" }}'
+            bs-tooltip='{title: (($ctrl.isVisible ? "formField.passwordVisibility.hide" : "formField.passwordVisibility.show")|translate)}'
             data-placement='top'
         >
             <svg ignite-icon='eyeOpened' class='password-visibility__icon-visible'></svg>

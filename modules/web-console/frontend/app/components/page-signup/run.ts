@@ -15,13 +15,13 @@
  */
 
 import publicTemplate from '../../../views/public.pug';
+import {IIgniteNg1StateDeclaration} from 'app/types';
+import {UIRouter} from '@uirouter/angularjs';
 
-/**
- * @param {import("@uirouter/angularjs").UIRouter} $uiRouter
- */
-export function registerState($uiRouter) {
-    /** @type {import("app/types").IIgniteNg1StateDeclaration} */
-    const state = {
+registerState.$inject = ['$uiRouter', '$translate'];
+
+export function registerState($uiRouter: UIRouter, $translate: ng.translate.ITranslateService) {
+    const state: IIgniteNg1StateDeclaration = {
         name: 'signup',
         url: '/signup',
         views: {
@@ -55,10 +55,8 @@ export function registerState($uiRouter) {
                 .catch(() => true);
         },
         tfMetaTags: {
-            title: 'Sign Up'
+            title: $translate.instant('signUp.documentTitle')
         }
     };
     $uiRouter.stateRegistry.register(state);
 }
-
-registerState.$inject = ['$uiRouter'];

@@ -17,7 +17,7 @@ mixin form-field__input({ name, model, disabled, required, placeholder, namePost
     input(
         id=`{{ ${name} }}${ namePostfix }Input`
         name=`{{ ${name} }}`
-        placeholder=placeholder
+        translate-attr=`{placeholder: "${placeholder}"}`
 
         ng-model=model
 

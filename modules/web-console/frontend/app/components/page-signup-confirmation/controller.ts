@@ -20,10 +20,14 @@ import {default as MessagesFactory} from '../../services/Messages.service';
 export default class PageSignupConfirmation {
     email: string;
 
-    static $inject = ['Auth', 'IgniteMessages', '$element'];
+    static $inject = ['Auth', 'IgniteMessages', '$element', '$translate'];
 
-    constructor(private auth: Auth, private messages: ReturnType<typeof MessagesFactory>, private el: JQLite) {
-    }
+    constructor(
+        private auth: Auth,
+        private messages: ReturnType<typeof MessagesFactory>,
+        private el: JQLite,
+        private $translate: ng.translate.ITranslateService
+    ) {}
 
     $postLink() {
         this.el.addClass('public-page');
@@ -32,7 +36,7 @@ export default class PageSignupConfirmation {
     async resendConfirmation() {
         try {
             await this.auth.resendSignupConfirmation(this.email);
-            this.messages.showInfo('Signup confirmation sent, check your email');
+            this.messages.showInfo(this.$translate.instant('signupConfirmation.successNotification'));
         }
         catch (e) {
             this.messages.showError(e);

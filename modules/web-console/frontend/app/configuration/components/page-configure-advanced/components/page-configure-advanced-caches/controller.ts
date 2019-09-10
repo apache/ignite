@@ -110,7 +110,7 @@ export default class Controller {
 
         this.isNew$ = cacheID$.pipe(map((id) => id === 'new'));
         this.itemEditTitle$ = combineLatest(this.isNew$, this.originalCache$, (isNew, cache) => {
-            return `${isNew ? 'Create' : 'Edit'} cache ${!isNew && cache.name ? `‘${cache.name}’` : ''}`;
+            return `${isNew ? 'Create' : 'Edit'} cache ${!isNew && !!cache && cache.name ? `‘${cache.name}’` : ''}`;
         });
         this.selectionManager = this.configSelectionManager({
             itemID$: cacheID$,

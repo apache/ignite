@@ -29,3 +29,4 @@ export default class ActivitiesCtrl {
         this.data = user.activitiesDetail;
     }
 }
+

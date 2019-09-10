@@ -14,10 +14,11 @@
     limitations under the License.
 
 
-i Total: {{$ctrl.count}}
+i(translate='gridShowingRowsComponent.total' translate-values='{count: $ctrl.count}')
 
-i Showing: {{$ctrl.visible}}
+i(translate='gridShowingRowsComponent.showing' translate-values='{visible: $ctrl.visible}')
 
-i Selected: {{$ctrl.selected}} of {{$ctrl.count}}
+i(translate='gridShowingRowsComponent.selected' translate-values='{selected: $ctrl.selected, count: $ctrl.count}')
 
-a(ng-click='$ctrl.copyToClipBoard()') #[i Copy to clipboard]
+a(ng-click='$ctrl.copyToClipBoard()')
+    i(translate='gridShowingRowsComponent.copyToClipboardButtonLabel')
