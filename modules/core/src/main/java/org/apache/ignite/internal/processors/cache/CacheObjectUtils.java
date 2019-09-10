@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -183,6 +185,32 @@ public class CacheObjectUtils {
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
 
         return o;
+    }
+
+    /**
+     * Checks the cache object is binary object.
+     *
+     * @param o Cache object.
+     * @return {@code true} if the key is binary object. Otherwise (key's type is a platform type) returns false.
+     */
+    public static boolean isBinary(CacheObject o) {
+        return o instanceof BinaryObject
+            || (o instanceof KeyCacheObjectImpl
+            && o.value(null, false) instanceof BinaryObject);
+    }
+
+    /**
+     * @param o Cache object.
+     * @return Binary object.
+     * @throws IgniteException is the object is not binary object (e.g. platform / primitive type)
+     */
+    public static BinaryObject binary(CacheObject o) {
+        if (o instanceof BinaryObject)
+            return (BinaryObject)o;
+        else if (o instanceof KeyCacheObjectImpl && o.value(null, false) instanceof BinaryObject)
+            return o.value(null, false);
+
+        throw new IgniteException("The object is not binary object [obj=" + o + ']');
     }
 
     /**
