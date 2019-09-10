@@ -64,7 +64,7 @@ public class MultipleMetricsExample {
 
                 SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                Evaluator.evaluateBinaryClassification(dataCache, mdl, vectorizer).print();
+                System.out.println(Evaluator.evaluateBinaryClassification(dataCache, mdl, vectorizer));
             } finally {
                 dataCache.destroy();
             }

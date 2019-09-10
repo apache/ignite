@@ -26,7 +26,6 @@ import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.EvaluationResult;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
@@ -108,7 +107,6 @@ public class FraudDetectionExample {
         );
 
         System.out.println(">>> Perform scoring.");
-        EvaluationResult metricValues = Evaluator.evaluateBinaryClassification(dataCache, splitter.getTestFilter(), mdl, vectorizer);
-        metricValues.print();
+        System.out.println(Evaluator.evaluateBinaryClassification(dataCache, splitter.getTestFilter(), mdl, vectorizer));
     }
 }

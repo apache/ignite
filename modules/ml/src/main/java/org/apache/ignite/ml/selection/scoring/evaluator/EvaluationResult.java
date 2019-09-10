@@ -20,7 +20,6 @@ package org.apache.ignite.ml.selection.scoring.evaluator;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
-import java.io.PrintStream;
 import java.util.Map;
 
 /**
@@ -69,42 +68,6 @@ public class EvaluationResult {
      */
     public Iterable<Map.Entry<MetricName, Double>> getAll() {
         return values.entrySet();
-    }
-
-    /**
-     * Print metric values to stdout.
-     */
-    public void print() {
-        print(DEFAULT_PRECISION , System.out);
-    }
-
-    /**
-     * Print metric values to user provided stream.
-     *
-     * @param out Out.
-     */
-    public void print(PrintStream out) {
-        print(DEFAULT_PRECISION , out);
-    }
-
-    /**
-     * Print metric values to stdout.
-     *
-     * @param precition Metric printing precision.
-     */
-    public void print(int precition) {
-        print(precition, System.out);
-    }
-
-    /**
-     * Print metric values to user provided stream.
-     *
-     * @param precition Metric printing precision.
-     * @param out Out.
-     */
-    public void print(int precition, PrintStream out) {
-        A.ensure(precition > 0, "precition > 0");
-        out.println(toString(precition));
     }
 
     /**

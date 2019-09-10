@@ -23,7 +23,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.selection.scoring.evaluator.EvaluationResult;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
@@ -66,8 +65,7 @@ public class EvaluatorExample {
 
                 SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                EvaluationResult evaluationResult = Evaluator.evaluateBinaryClassification(dataCache, mdl, vectorizer);
-                evaluationResult.print();
+                System.out.println(Evaluator.evaluateBinaryClassification(dataCache, mdl, vectorizer));
             } finally {
                 dataCache.destroy();
             }
