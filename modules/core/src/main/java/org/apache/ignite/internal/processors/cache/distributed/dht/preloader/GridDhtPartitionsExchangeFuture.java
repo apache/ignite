@@ -996,6 +996,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             // TODO Wait for tx recovery
+            cctx.tm().finishLocalTxs(initialVersion()).get();
 
             finalizePartitionCounters();
 
