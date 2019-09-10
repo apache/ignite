@@ -40,6 +40,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2009,8 +2010,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 BinaryMetadata meta = type != null ? type.metadata() : null;
 
                 if (type == null || meta == null)
-                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
-                        typeId);
+                    throw new BinaryObjectException("Cannot find metadata for object with compact footer " +
+                        "(Ignite work directory might have been cleared after restart. Make sure that IGNITE_HOME " +
+                        "does not point to a temp folder or any other folder that is destroyed/cleared on restarts) [" +
+                        "typeId=" + typeId + ", IGNITE_HOME='" + U.getIgniteHome() + "']");
 
                 Collection<BinarySchema> existingSchemas = meta.schemas();
 
