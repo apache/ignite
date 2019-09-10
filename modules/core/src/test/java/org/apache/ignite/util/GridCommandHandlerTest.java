@@ -181,7 +181,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testReadOnlyEnableDisable() throws Exception {
         Ignite ignite = startGrids(1);
 
