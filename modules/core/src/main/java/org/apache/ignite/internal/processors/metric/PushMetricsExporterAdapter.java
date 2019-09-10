@@ -45,7 +45,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     protected @Nullable Predicate<MetricRegistry> mregFilter;
 
     /** Monitoring list filter. */
-    protected @Nullable Predicate<MonitoringList<?, ?>> mlistFilter;
+    protected @Nullable Predicate<MonitoringList<?>> mlistFilter;
 
     /** Export period. */
     private long period;
@@ -116,7 +116,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
+    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter) {
         this.mlistFilter = filter;
     }
 }

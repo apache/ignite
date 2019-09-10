@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Cache representation for a {@link MonitoringList}.
  */
-public class CacheView implements MonitoringRow<String> {
+public class CacheView implements MonitoringRow {
     /** Cache descriptor. */
     private DynamicCacheDescriptor cache;
 
@@ -48,11 +48,6 @@ public class CacheView implements MonitoringRow<String> {
      */
     public CacheView(DynamicCacheDescriptor cache) {
         this.cache = cache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String monitoringRowId() {
-        return cacheName();
     }
 
     /** @see DynamicCacheDescriptor#groupId() */

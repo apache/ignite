@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Cache group representation for the {@link MonitoringList}.
  */
-public class CacheGroupView implements MonitoringRow<Integer> {
+public class CacheGroupView implements MonitoringRow {
     /** Cache group. */
     private final CacheGroupDescriptor grp;
 
@@ -49,11 +49,6 @@ public class CacheGroupView implements MonitoringRow<Integer> {
     public CacheGroupView(CacheGroupDescriptor grp) {
         this.grp = grp;
         this.ccfg = grp.config();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Integer monitoringRowId() {
-        return cacheGroupId();
     }
 
     /** @return Cache group id. */

@@ -53,15 +53,15 @@ import org.h2.value.ValueUuid;
 /**
  * System view to export monitoring list data.
  */
-public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> extends SqlAbstractLocalSystemView {
+public class MonitoringListLocalSystemView<R extends MonitoringRow> extends SqlAbstractLocalSystemView {
     /** Monitoring list for export. */
-    private final MonitoringList<Id, R> mlist;
+    private final MonitoringList<R> mlist;
 
     /**
      * @param ctx Kernal context.
      * @param mlist List to export.
      */
-    public MonitoringListLocalSystemView(GridKernalContext ctx, MonitoringList<Id, R> mlist) {
+    public MonitoringListLocalSystemView(GridKernalContext ctx, MonitoringList<R> mlist) {
         super(sqlName(mlist.name()), mlist.description(), ctx, columnsList(mlist));
 
         this.mlist = mlist;
@@ -167,7 +167,7 @@ public class MonitoringListLocalSystemView<Id, R extends MonitoringRow<Id>> exte
      * @return SQL column array for {@code rowClass}.
      * @see MonitoringList#rowClass()
      */
-    private static <Id, R extends MonitoringRow<Id>> Column[] columnsList(MonitoringList<Id, R> mlist) {
+    private static <R extends MonitoringRow> Column[] columnsList(MonitoringList<R> mlist) {
         Column[] cols = new Column[mlist.walker().count()];
 
         mlist.walker().visitAll(new AttributeVisitor() {

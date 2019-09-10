@@ -188,6 +188,7 @@ public interface Affinity<K> {
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
      */
+    @Deprecated
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
 
     /**

@@ -60,10 +60,9 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
      * Prints list data in CSV style format.
      *
      * @param list List to print.
-     * @param <Id> Id type.
      * @param <R> Row type.
      */
-    private <Id, R extends MonitoringRow<Id>> void exportList(MonitoringList<Id, R> list) {
+    private <R extends MonitoringRow> void exportList(MonitoringList<R> list) {
         if (mlistFilter != null && !mlistFilter.test(list))
             return;
 

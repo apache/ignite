@@ -84,7 +84,7 @@ public class MonitoringRowAttributeWalkerGenerator {
      * @param <T> type of the {@link MonitoringRow}.
      * @throws IOException If generation failed.
      */
-    private <T extends MonitoringRow<?>> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
+    private <T extends MonitoringRow> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
         File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
             clazz.getSimpleName() + "Walker.java");
 
@@ -107,7 +107,7 @@ public class MonitoringRowAttributeWalkerGenerator {
      * @param <T> type of the {@link MonitoringRow}.
      * @return Java source code of the {@link MonitoringRowAttributeWalker} implementation.
      */
-    private <T extends MonitoringRow<?>> Collection<String> generate(Class<T> clazz) {
+    private <T extends MonitoringRow> Collection<String> generate(Class<T> clazz) {
         final List<String> code = new ArrayList<>();
         final Set<String> imports = new TreeSet<>();
 

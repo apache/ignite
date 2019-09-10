@@ -28,7 +28,5 @@ import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
  * @see GridMetricManager
  * @see ReadOnlyMonitoringListRegistry
  */
-public interface MonitoringRow<Id> {
-    /** @return Unique idenitifier of the row in the list. */
-    public Id monitoringRowId();
+public interface MonitoringRow {
 }

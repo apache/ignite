@@ -20,7 +20,7 @@ package org.apache.ignite.spi.metric.list;
 /**
  * Utility class for quick iteration over {@link MonitoringRow} properties.
  */
-public interface MonitoringRowAttributeWalker<R extends MonitoringRow<?>> {
+public interface MonitoringRowAttributeWalker<R extends MonitoringRow> {
     /** @return Count of a row properties. */
     public int count();
 

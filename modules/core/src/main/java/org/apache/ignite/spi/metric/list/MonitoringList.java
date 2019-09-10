@@ -20,10 +20,9 @@ package org.apache.ignite.spi.metric.list;
 /**
  * Implementation provides data for some internal Ignite objects.
  *
- * @param <Id> Type of the row identificator.
  * @param <R> Type of the row.
  */
-public interface MonitoringList<Id, R extends MonitoringRow<Id>> extends Iterable<R> {
+public interface MonitoringList<R extends MonitoringRow> extends Iterable<R> {
     /** @return Helper for exporters. */
     public MonitoringRowAttributeWalker<R> walker();
 

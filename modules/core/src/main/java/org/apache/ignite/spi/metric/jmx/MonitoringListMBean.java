@@ -50,12 +50,12 @@ import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeW
  * @see JmxMetricExporterSpi
  * @see GridMetricManager
  */
-public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOnlyDynamicMBean {
+public class MonitoringListMBean<R extends MonitoringRow> extends ReadOnlyDynamicMBean {
     /** List attribute.  */
     public static final String LIST = "list";
 
     /** Monitoring list to export. */
-    private final MonitoringList<Id, R> mlist;
+    private final MonitoringList<R> mlist;
 
     /** MBean info. */
     private final MBeanInfo info;
@@ -69,7 +69,7 @@ public class MonitoringListMBean<Id, R extends MonitoringRow<Id>> extends ReadOn
     /**
      * @param mlist Monitoring list to export.
      */
-    public MonitoringListMBean(MonitoringList<Id, R> mlist) {
+    public MonitoringListMBean(MonitoringList<R> mlist) {
         this.mlist = mlist;
 
         int cnt = mlist.walker().count();

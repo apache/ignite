@@ -26,7 +26,7 @@ import org.apache.ignite.spi.metric.list.MonitoringRow;
 /**
  * Compute task representation for a {@link MonitoringList}.
  */
-public class ComputeTaskView implements MonitoringRow<IgniteUuid> {
+public class ComputeTaskView implements MonitoringRow {
     /** Worker for task. */
     private final GridTaskWorker worker;
 
@@ -35,11 +35,6 @@ public class ComputeTaskView implements MonitoringRow<IgniteUuid> {
      */
     public ComputeTaskView(GridTaskWorker worker) {
         this.worker = worker;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid monitoringRowId() {
-        return worker.getSession().getId();
     }
 
     /** @return {@code True} if task is internal. */

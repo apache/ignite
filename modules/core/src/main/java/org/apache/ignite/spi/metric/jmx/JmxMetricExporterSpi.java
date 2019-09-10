@@ -54,7 +54,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     private @Nullable Predicate<MetricRegistry> metricFilter;
 
     /** Monitoring list filter. */
-    private @Nullable Predicate<MonitoringList<?, ?>> monListFilter;
+    private @Nullable Predicate<MonitoringList<?>> monListFilter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
@@ -76,7 +76,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
      *
      * @param mlist Monitoring list.
      */
-    private void register(MonitoringList<?, ?> mlist) {
+    private void register(MonitoringList<?> mlist) {
         if (monListFilter != null && !monListFilter.test(mlist)) {
             if (log.isDebugEnabled())
                 U.debug(log, "Monitoring list filtered and will not be registered.[name=" + mlist.name() + ']');
@@ -112,7 +112,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
      *
      * @param mlist Monitoring list.
      */
-    private void unregister(MonitoringList<?,?> mlist) {
+    private void unregister(MonitoringList<?> mlist) {
         unregister(LIST, mlist.name());
     }
 
@@ -225,7 +225,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
+    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter) {
         this.monListFilter = filter;
     }
 }

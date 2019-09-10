@@ -243,22 +243,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     };
 
     /** Registered lists. */
-    private final ConcurrentHashMap<String, MonitoringList<?, ?>> lists = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, MonitoringList<?>> lists = new ConcurrentHashMap<>();
 
     /** Lists registry. */
     private final ReadOnlyMonitoringListRegistry listRegistry = new ReadOnlyMonitoringListRegistry() {
         /** {@inheritDoc} */
-        @Override public void addListCreationListener(Consumer<MonitoringList<?, ?>> lsnr) {
+        @Override public void addListCreationListener(Consumer<MonitoringList<?>> lsnr) {
             listCreationLsnrs.add(lsnr);
         }
 
         /** {@inheritDoc} */
-        @Override public void addListRemoveListener(Consumer<MonitoringList<?, ?>> lsnr) {
+        @Override public void addListRemoveListener(Consumer<MonitoringList<?>> lsnr) {
             listRemoveLsnrs.add(lsnr::accept);
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<MonitoringList<?, ?>> iterator() {
+        @NotNull @Override public Iterator<MonitoringList<?>> iterator() {
             return lists.values().iterator();
         }
     };
@@ -270,10 +270,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** List creation listeners. */
-    private final List<Consumer<MonitoringList<?, ?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<MonitoringList<?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** List remove listeners. */
-    private final List<Consumer<MonitoringList<?, ?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<MonitoringList<?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** List remove listeners. */
     private final List<Consumer<String>> listEnableLsnrs = new CopyOnWriteArrayList<>();
@@ -384,10 +384,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         });
     }
 
-    public <Id, R extends MonitoringRow<Id>, D> void list(String name, String description,
+    public <R extends MonitoringRow, D> void list(String name, String description,
         Class<R> rowClazz, Supplier<ConcurrentMap<?, D>> data, Function<D, R> rowFunc, Consumer<D> clearer) {
 
-        Supplier<MonitoringList<Id, R>> p = () -> list(name, () -> new MonitoringListAdapter<>(name,
+        Supplier<MonitoringList<R>> listCreator = () -> list(name, () -> new MonitoringListAdapter<>(name,
             description,
             rowClazz,
             (MonitoringRowAttributeWalker<R>)walkers.get(rowClazz),
@@ -395,9 +395,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
             rowFunc));
 
         //Create new instance of the list.
-        p.get();
+        listCreator.get();
 
-        ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> p.get()));
+        ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> listCreator.get()));
         ctx.metric().addRemoveListListener(l -> data.get().values().forEach(clearer));
     }
 
@@ -405,8 +405,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param name Name of the list.
      * @return List.
      */
-    @Nullable public <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name) {
-        return (MonitoringList<Id, R>)lists.get(name);
+    @Nullable public <R extends MonitoringRow> MonitoringList<R> list(String name) {
+        return (MonitoringList<R>)lists.get(name);
     }
 
     /**
@@ -414,14 +414,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      *
      * @param name Name of the list.
      * @param listSupplier List supplier.
-     * @param <Id> Type of the row identificator.
      * @param <R> Type of the row.
      * @return Monitoring list.
      */
-    private <Id, R extends MonitoringRow<Id>> MonitoringList<Id, R> list(String name,
-        Supplier<MonitoringList<Id, R>> listSupplier) {
-        return (MonitoringList<Id, R>)lists.computeIfAbsent(name, n -> {
-            MonitoringList<Id, R> list = listSupplier.get();
+    private <R extends MonitoringRow> MonitoringList<R> list(String name,
+        Supplier<MonitoringList<R>> listSupplier) {
+        return (MonitoringList<R>)lists.computeIfAbsent(name, n -> {
+            MonitoringList<R> list = listSupplier.get();
 
             notifyListeners(list, listCreationLsnrs, log);
 
@@ -436,7 +435,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param walker Walker.
      * @param <R> Row type.
      */
-    public <R extends MonitoringRow<?>> void registerWalker(Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
+    public <R extends MonitoringRow> void registerWalker(Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
         walkers.put(rowClass, walker);
     }
 
@@ -458,7 +457,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param name List name.
      */
     public void removeList(String name) {
-        MonitoringList<?, ?> rmv = lists.remove(name);
+        MonitoringList<?> rmv = lists.remove(name);
 
         if (rmv != null)
             notifyListeners(rmv, listRemoveLsnrs, log);
@@ -487,7 +486,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      *
      * @param lsnr Listener.
      */
-    public void addRemoveListListener(Consumer<MonitoringList<?, ?>> lsnr) {
+    public void addRemoveListListener(Consumer<MonitoringList<?>> lsnr) {
         listRemoveLsnrs.add(lsnr);
     }
 

@@ -24,7 +24,7 @@ import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
 /**
  *
  */
-abstract class AbstractMonitoringList<Id, R extends MonitoringRow<Id>> implements MonitoringList<Id, R> {
+abstract class AbstractMonitoringList<R extends MonitoringRow> implements MonitoringList<R> {
     /** Name of the list. */
     private final String name;
 

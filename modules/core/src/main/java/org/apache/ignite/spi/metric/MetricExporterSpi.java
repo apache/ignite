@@ -78,5 +78,5 @@ public interface MetricExporterSpi extends IgniteSpi {
      *
      * @param filter Filter.
      */
-    public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter);
+    public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter);
 }

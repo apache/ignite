@@ -28,18 +28,18 @@ import org.apache.ignite.spi.metric.list.MonitoringList;
  * @see MonitoringList
  * @see MetricExporterSpi
  */
-public interface ReadOnlyMonitoringListRegistry extends Iterable<MonitoringList<?, ?>> {
+public interface ReadOnlyMonitoringListRegistry extends Iterable<MonitoringList<?>> {
     /**
      * Adds listener of list creation events.
      *
      * @param lsnr Listener.
      */
-    public void addListCreationListener(Consumer<MonitoringList<?, ?>> lsnr);
+    public void addListCreationListener(Consumer<MonitoringList<?>> lsnr);
 
     /**
      * Adds listener of list remove events.
      *
      * @param lsnr Listener.
      */
-    public void addListRemoveListener(Consumer<MonitoringList<?, ?>> lsnr);
+    public void addListRemoveListener(Consumer<MonitoringList<?>> lsnr);
 }

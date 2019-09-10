@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Monitoring list backed by {@code data} {@link ConcurrentMap}.
  */
-public class MonitoringListAdapter<Id, R extends MonitoringRow<Id>, D> extends AbstractMonitoringList<Id, R> {
+public class MonitoringListAdapter<R extends MonitoringRow, D> extends AbstractMonitoringList<R> {
     /** Data backed by this list. */
     private final ConcurrentMap<?, D> data;
 

@@ -59,7 +59,7 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
+    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter) {
         // No-op.
     }
 }
