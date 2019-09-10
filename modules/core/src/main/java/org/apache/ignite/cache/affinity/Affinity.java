@@ -232,10 +232,12 @@ public interface Affinity<K> {
     public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts);
 
     /**
-     * Gets primary and backup nodes for partition. Note that primary node is always first in the returned collection.
+     * Gets primary and backup nodes for partition. Note that primary node is always
+     * first in the returned collection.
      *
      * @param part Partition to get affinity nodes for.
-     * @return Collection of primary and backup nodes for partition with primary node always first.
+     * @return Collection of primary and backup nodes for partition with primary node
+     *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
      * @deprecated Use Affinity#mapPartitionToPrimaryAndBackupsList(int) instead.
      */
