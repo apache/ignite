@@ -43,7 +43,6 @@ import org.apache.ignite.ml.selection.scoring.evaluator.context.EvaluationContex
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.jetbrains.annotations.NotNull;
 
 import javax.cache.Cache;
 import java.util.Arrays;
@@ -70,7 +69,6 @@ public class Evaluator {
         Preprocessor<K, V> preprocessor,
         Metric metric
     ) {
-
         return evaluate(dataCache, (k, v) -> true, mdl, preprocessor, metric);
     }
 
@@ -97,42 +95,6 @@ public class Evaluator {
             new CacheBasedDatasetBuilder<>(Ignition.ignite(), dataCache, filter),
             mdl, preprocessor, metric
         ).getSignle();
-    }
-
-    /**
-     * Computes the given metric on the given cache.
-     *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param preprocessor The preprocessor.
-     * @param metric1 The metric.
-     * @param metric2 The metric.
-     * @param other Other metrics.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
-     * @return Computed metric.
-     */
-    public static <K, V> EvaluationResult evaluate(IgniteCache<K, V> dataCache,
-        IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, Double> mdl,
-        Preprocessor<K, V> preprocessor,
-        Metric metric1, Metric metric2, Metric... other
-    ) {
-        Metric[] ms = merge(metric1, metric2, other);
-
-        return evaluate(
-            new CacheBasedDatasetBuilder<>(Ignition.ignite(), dataCache, filter),
-            mdl, preprocessor, ms
-        );
-    }
-
-    @NotNull private static Metric[] merge(Metric metric1, Metric metric2, Metric[] other) {
-        Metric[] ms = new Metric[other.length + 2];
-        ms[0] = metric1;
-        ms[1] = metric2;
-        System.arraycopy(other, 0, ms, 2, other.length);
-        return ms;
     }
 
     /**
@@ -183,53 +145,6 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param preprocessor The preprocessor.
-     * @param metric1 The metric.
-     * @param metric2 The metric.
-     * @param other Other metrics.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
-     * @return Computed metrics.
-     */
-    public static <K, V> EvaluationResult evaluate(IgniteCache<K, V> dataCache,
-        IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, Double> mdl,
-        Preprocessor<K, V> preprocessor,
-        MetricName metric1, MetricName metric2, MetricName... other
-    ) {
-        return evaluate(
-            new CacheBasedDatasetBuilder<>(Ignition.ignite(), dataCache, filter),
-            mdl, preprocessor, merge(metric1, metric2, other)
-        );
-    }
-
-    /**
-     * Computes the given metric on the given cache.
-     *
-     * @param dataCache The given cache.
-     * @param mdl The model.
-     * @param preprocessor The preprocessor.
-     * @param metric1 The metric.
-     * @param metric2 The metric.
-     * @param other Other metrics.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
-     * @return Computed metric.
-     */
-    public static <K, V> EvaluationResult evaluate(IgniteCache<K, V> dataCache,
-        IgniteModel<Vector, Double> mdl,
-        Preprocessor<K, V> preprocessor,
-        MetricName metric1, MetricName metric2, MetricName... other
-    ) {
-        return evaluate(dataCache, (k, v) -> true, mdl, preprocessor, metric1, metric2, other);
-    }
-
-    /**
-     * Computes the given metric on the given cache.
-     *
      * @param dataCache The given local data.
      * @param mdl The model.
      * @param preprocessor The preprocessor.
@@ -269,31 +184,6 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param preprocessor The preprocessor.
-     * @param metric1 Metric 1.
-     * @param metric2 Metric 2.
-     * @param other Other metrics.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
-     * @return Computed metrics.
-     */
-    public static <K, V> EvaluationResult evaluate(Map<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, Double> mdl,
-        Preprocessor<K, V> preprocessor,
-        Metric metric1, Metric metric2, Metric... other) {
-
-        return evaluate(
-            new LocalDatasetBuilder<>(dataCache, filter, 1),
-            mdl, preprocessor, merge(metric1, metric2, other)
-        );
-    }
-
-    /**
-     * Computes the given metric on the given cache.
-     *
      * @param dataCache The given local data.
      * @param mdl The model.
      * @param preprocessor The preprocessor.
@@ -328,31 +218,6 @@ public class Evaluator {
         Preprocessor<K, V> preprocessor,
         MetricName metric) {
         return evaluate(dataCache, filter, mdl, preprocessor, metric.create());
-    }
-
-    /**
-     * Computes the given metric on the given cache.
-     *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param preprocessor The preprocessor.
-     * @param metric1 Metric 1.
-     * @param metric2 Metric 2.
-     * @param other Other metrics.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
-     * @return Computed metrics.
-     */
-    public static <K, V> EvaluationResult evaluate(Map<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, Double> mdl,
-        Preprocessor<K, V> preprocessor,
-        MetricName metric1, MetricName metric2, MetricName... other) {
-
-        return evaluate(
-            new LocalDatasetBuilder<>(dataCache, filter, 1),
-            mdl, preprocessor, merge(metric1, metric2, other)
-        );
     }
 
     /**
