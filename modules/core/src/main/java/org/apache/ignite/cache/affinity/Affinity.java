@@ -189,7 +189,7 @@ public interface Affinity<K> {
      * @return Collection of primary and backup nodes for the key with primary node
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
-     * @deprecated Use Affinity#mapKeyToPrimaryAndBackups(java.lang.Object) instead.
+     * @deprecated Use {@link Affinity#mapKeyToPrimaryAndBackups(Object)} instead.
      */
     @Deprecated
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
@@ -239,7 +239,7 @@ public interface Affinity<K> {
      * @return Collection of primary and backup nodes for partition with primary node
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
-     * @deprecated Use Affinity#mapPartitionToPrimaryAndBackupsList(int) instead.
+     * @deprecated Use {@link Affinity#mapPartitionToPrimaryAndBackupsList(int)} instead.
      */
     @Deprecated
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
