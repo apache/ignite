@@ -215,7 +215,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     /** */
     private final UUID subjId;
 
-    /** */
+    /** Compute task view. */
     private volatile ComputeTaskView taskView;
 
     /** Continuous mapper. */

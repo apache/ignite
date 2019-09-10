@@ -103,7 +103,7 @@ public class DynamicCacheDescriptor {
     /** Cache config enriched. */
     private volatile boolean cacheCfgEnriched;
 
-    /** Cache view */
+    /** Cache view. */
     private volatile CacheView cacheView;
 
     /**
