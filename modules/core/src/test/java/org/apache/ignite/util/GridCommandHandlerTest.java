@@ -69,6 +69,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -163,6 +164,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testActivate() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -179,6 +181,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReadOnlyEnableDisable() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -200,6 +203,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivate() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -219,6 +223,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testState() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -236,6 +241,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineCollect() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -253,6 +259,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineCollectCrd() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -336,6 +343,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineAdd() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -359,6 +367,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineRemove() throws Exception {
         Ignite ignite = startGrids(1);
         Ignite other = startGrid("nodeToStop");
@@ -382,6 +391,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineRemoveOnNotActiveCluster() throws Exception {
         Ignite ignite = startGrids(1);
         Ignite other = startGrid("nodeToStop");
@@ -414,6 +424,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineSet() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -435,6 +446,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineVersion() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -456,6 +468,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineAutoAdjustmentAutoRemoveNode() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -492,6 +505,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineAutoAdjustmentAutoAddNode() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -530,6 +544,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
@@ -687,6 +702,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * Simulate uncommitted backup transactions and test rolling back using utility.
      */
+    @Test
     public void testKillHangingRemoteTransactions() throws Exception {
         final int cnt = 3;
 
@@ -873,6 +889,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineAddOnNotActiveCluster() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -905,6 +922,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
+    @Test
     public void testIdleVerifyCheckCrcFailsOnNotIdleCluster() throws Exception {
         checkpointFreq = 100L;
 
@@ -963,6 +981,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpWhenNodeFailing() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -998,6 +1017,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpWhenSeveralNodesFailing() throws Exception {
         int nodes = 6;
 
@@ -1044,6 +1064,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
+    @Test
     public void testCacheIdleVerifyCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
 
@@ -1054,6 +1075,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
+    @Test
     public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
 
@@ -1144,6 +1166,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnNonePersistenceClientCache() throws Exception {
         int parts = 32;
 
@@ -1201,6 +1224,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyMovingParts() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -1233,6 +1257,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
+    @Test
     public void testCacheSequence() throws Exception {
         Ignite ignite = startGrid();
 
@@ -1286,6 +1311,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDiagnosticPageLocksTracker() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -1558,6 +1584,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
+    @Test
     public void testKillHangingLocalTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
@@ -1630,6 +1657,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @throws Exception If failed.
      */
+    @Test
     @SuppressWarnings("unchecked")
     public void setConsistenceIdsWithOfflineBaselineNode() throws Exception {
         Ignite ignite = startGrids(2);
@@ -1646,6 +1674,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyPrintLostPartitions() throws Exception {
         IgniteEx ignite = startGrids(3);
 
