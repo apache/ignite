@@ -1224,8 +1224,9 @@ public class BinaryContext {
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
-     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with
-     *      {@link MappingExchangeResult} future instead of synchronously awaiting for its completion.
+     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with {@link
+     * org.apache.ignite.internal.processors.marshaller.MappingExchangeResult} future instead of synchronously awaiting
+     * for its completion.
      * @return {@code True} if the mapping was registered successfully.
      */
     public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered, boolean onlyLocReg) {
