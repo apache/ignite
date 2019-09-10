@@ -37,9 +37,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CheckpointEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -324,29 +322,37 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 0);
             taskSes.saveCheckpoint(key2, val2, SESSION_SCOPE, 0);
 
-            assertWithRetries(() -> val1.equals(taskSes.loadCheckpoint(key1))
-                                 && val2.equals(taskSes.loadCheckpoint(key2)));
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   val1.equals(taskSes.loadCheckpoint(key1))
+                && val2.equals(taskSes.loadCheckpoint(key2))),
+                5000));
 
             // Don't overwrite.
             taskSes.saveCheckpoint(key1, val2, GLOBAL_SCOPE, 0, false);
             taskSes.saveCheckpoint(key2, val1, SESSION_SCOPE, 0, false);
 
-            assertWithRetries(() -> val1.equals(taskSes.loadCheckpoint(key1))
-                                 && val2.equals(taskSes.loadCheckpoint(key2)));
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   val1.equals(taskSes.loadCheckpoint(key1))
+                && val2.equals(taskSes.loadCheckpoint(key2))),
+                5000));
 
             taskSes.saveCheckpoint(key1, val2, GLOBAL_SCOPE, 0, true);
             taskSes.saveCheckpoint(key2, val1, SESSION_SCOPE, 0, true);
 
-            assertWithRetries(() -> val2.equals(taskSes.loadCheckpoint(key1))
-                                 && val1.equals(taskSes.loadCheckpoint(key2)));
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   val2.equals(taskSes.loadCheckpoint(key1))
+                && val1.equals(taskSes.loadCheckpoint(key2))),
+                5000));
 
             assert taskSes.removeCheckpoint(key1);
             assert taskSes.removeCheckpoint(key2);
             assert !taskSes.removeCheckpoint(key1);
             assert !taskSes.removeCheckpoint(key2);
 
-            assertWithRetries(() -> taskSes.loadCheckpoint(key1) == null
-                                 && taskSes.loadCheckpoint(key2) == null);
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   taskSes.loadCheckpoint(key1) == null
+                && taskSes.loadCheckpoint(key2) == null),
+                5000));
 
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 0);
 
@@ -365,8 +371,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 throw new IgniteException(e);
             }
 
-            assertWithRetries(() -> taskSes.loadCheckpoint(key1) == null
-                                 && taskSes.loadCheckpoint(key2) == null);
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   taskSes.loadCheckpoint(key1) == null
+                && taskSes.loadCheckpoint(key2) == null),
+                5000));
 
             // This checkpoint will be removed when task session end.
             taskSes.saveCheckpoint(key3, val3, SESSION_SCOPE, 0);
@@ -488,8 +496,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             rmvLatch.countDown();
 
-            assertWithRetries(() -> taskSes.loadCheckpoint(GLOBAL_KEY) == null
-                                 && taskSes.loadCheckpoint(SES_KEY) == null);
+            assertTrue(GridTestUtils.waitUntil(() ->
+                   taskSes.loadCheckpoint(GLOBAL_KEY) == null
+                && taskSes.loadCheckpoint(SES_KEY) == null,
+                5000));
 
             return null;
         }
@@ -538,9 +548,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             }
 
             // Test that checkpoints were saved properly.
-            assertWithRetries(() -> GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY))
-                                 && SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY))
-            );
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY))
+                && SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY))),
+                5000));
 
             read1FinishedLatch.countDown();
 
@@ -552,8 +563,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             }
 
             // Test that checkpoints were not overwritten.
-            assertWithRetries(() -> GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY))
-                                 && SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY)));
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY))
+                && SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY))),
+                5000));
 
             read2FinishedLatch.countDown();
 
@@ -564,8 +577,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 throw new IgniteException("Thread has been interrupted.", e);
             }
 
-            assertWithRetries(() -> SES_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(GLOBAL_KEY))
-                                && GLOBAL_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(SES_KEY)));
+            assertTrue(GridTestUtils.waitUntil((() ->
+                   SES_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(GLOBAL_KEY))
+                && GLOBAL_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(SES_KEY))),
+                5000));
 
             read3FinishedLatch.countDown();
 
@@ -579,8 +594,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             assert !taskSes.removeCheckpoint(GLOBAL_KEY);
             assert !taskSes.removeCheckpoint(SES_KEY);
 
-            assertWithRetries(() -> taskSes.loadCheckpoint(GLOBAL_KEY) == null
-                                 && taskSes.loadCheckpoint(SES_KEY) == null);
+            assertTrue(GridTestUtils.waitUntil(() ->
+                   taskSes.loadCheckpoint(GLOBAL_KEY) == null
+                && taskSes.loadCheckpoint(SES_KEY) == null,
+                5000));
 
             return null;
         }
@@ -707,20 +724,6 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 sum += res.<Integer>getData();
 
             return sum;
-        }
-    }
-
-    /**
-     * Wrapper around {@link GridTestUtils#waitForCondition(org.apache.ignite.internal.util.lang.GridAbsPredicate, long).
-     * For the given closure provides count of retries, configured by {@link #retries} attribute.
-     * @param assertion Closure with assertion inside.
-     */
-    private static void assertWithRetries(GridAbsPredicate assertion) {
-        try {
-            assertTrue(GridTestUtils.waitForCondition(assertion, 5000));
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            throw new IgniteException(e);
         }
     }
 }

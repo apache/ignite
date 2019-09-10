@@ -476,7 +476,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
                                 && (!strict || state == GridDhtPartitionState.OWNING)
                                 && state == nodeEntry.getValue();
                             if (!isOk) {
-                                info("Entry state is invalid, rerun");
+                                info("Partition state is invalid, rerun");
                                 return false;
                             }
                         }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -282,10 +283,10 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             fs.delete(path, true);
         }
 
-        for (int i = 0; i < NODES_CNT; i++) {
+        IntStream.range(0, NODES_CNT).parallel().forEach(i -> {
             IgniteEx grid = grid(i);
-            assertTrue(GridTestUtils.waitForCondition(() -> grid.cachex(dataCacheName).isEmpty(), ASSERT_RETRIES*ASSERT_RETRY_INTERVAL));
-        }
+            assertTrue(GridTestUtils.waitUntil(() -> grid.cachex(dataCacheName).isEmpty(), ASSERT_RETRIES*ASSERT_RETRY_INTERVAL));
+        });
     }
 
     /**
