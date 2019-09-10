@@ -995,16 +995,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 top.beforeExchange(this, true, false);
             }
 
-            // Here we cann't correct collect gaps without completeng all txs
+            // TODO Wait for tx recovery
+
             finalizePartitionCounters();
-
-            // Here we cann't apply counters without completeng all txs
-            for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                if (!grpCtx.isLocal())
-                    grpCtx.topology().applyUpdateCounters();
-            }
-
-            timeBag.finishGlobalStage("Apply update counters");
 
             initDone();
 
