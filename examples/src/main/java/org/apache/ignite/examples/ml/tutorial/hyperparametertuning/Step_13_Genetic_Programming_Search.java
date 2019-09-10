@@ -35,6 +35,7 @@ import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.EvolutionOptimizationStrategy;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
@@ -131,7 +132,7 @@ public class Step_13_Genetic_Programming_Search {
                     .withIgnite(ignite)
                     .withUpstreamCache(dataCache)
                     .withTrainer(trainerCV)
-                    .withMetric(new Accuracy<>())
+                    .withMetric(MetricName.ACCURACY)
                     .withFilter(split.getTrainFilter())
                     .isRunningOnPipeline(false)
                     .withPreprocessor(normalizationPreprocessor)

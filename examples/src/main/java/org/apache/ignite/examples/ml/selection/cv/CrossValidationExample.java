@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -83,7 +83,7 @@ public class CrossValidationExample {
                     .withIgnite(ignite)
                     .withUpstreamCache(trainingSet)
                     .withTrainer(trainer)
-                    .withMetric(new Accuracy<>())
+                    .withMetric(MetricName.ACCURACY)
                     .withPreprocessor(vectorizer)
                     .withAmountOfFolds(4)
                     .isRunningOnPipeline(false)
@@ -92,7 +92,7 @@ public class CrossValidationExample {
                 System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
 
                 double[] balancedAccuracyScores = scoreCalculator
-                    .withMetric(new Accuracy<>())
+                    .withMetric(MetricName.ACCURACY)
                     .scoreByFolds();
 
                 System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));

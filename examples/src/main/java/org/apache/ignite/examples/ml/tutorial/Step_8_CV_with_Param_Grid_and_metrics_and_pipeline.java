@@ -30,7 +30,7 @@ import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -101,7 +101,7 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
                     .withIgnite(ignite)
                     .withUpstreamCache(dataCache)
                     .withPipeline(pipeline)
-                    .withMetric(new Accuracy<>())
+                    .withMetric(MetricName.ACCURACY)
                     .withFilter(split.getTrainFilter())
                     .withPreprocessor(vectorizer)
                     .withAmountOfFolds(3)

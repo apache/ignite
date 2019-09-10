@@ -38,6 +38,7 @@ import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.EvolutionOptimizationStrategy;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
@@ -137,7 +138,7 @@ public class Step_14_Parallel_Genetic_Programming_Search {
                         .withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
                         .withLoggingFactoryDependency(ConsoleLogger.Factory.LOW))
                     .withTrainer(trainerCV)
-                    .withMetric(new Accuracy<>())
+                    .withMetric(MetricName.ACCURACY)
                     .withFilter(split.getTrainFilter())
                     .isRunningOnPipeline(false)
                     .withPreprocessor(normalizationPreprocessor)

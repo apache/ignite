@@ -38,6 +38,7 @@ import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.paramgrid.RandomStrategy;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
@@ -142,7 +143,7 @@ public class Step_12_Parallel_Random_Search {
                         .withLoggingFactoryDependency(ConsoleLogger.Factory.LOW))
                     .withTrainer(trainerCV)
                     .isRunningOnPipeline(false)
-                    .withMetric(new Accuracy<>())
+                    .withMetric(MetricName.ACCURACY)
                     .withFilter(split.getTrainFilter())
                     .withPreprocessor(normalizationPreprocessor)
                     .withAmountOfFolds(3)

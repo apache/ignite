@@ -27,7 +27,7 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.paramgrid.RandomStrategy;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
@@ -63,7 +63,7 @@ public class CrossValidationTest {
             .withUpstreamMap(data)
             .withAmountOfParts(1)
             .withTrainer(trainer)
-            .withMetric(new Accuracy())
+            .withMetric(MetricName.ACCURACY)
             .withPreprocessor(vectorizer)
             .withAmountOfFolds(folds)
             .isRunningOnPipeline(false);
@@ -92,7 +92,7 @@ public class CrossValidationTest {
             .withUpstreamMap(data)
             .withAmountOfParts(1)
             .withTrainer(trainer)
-            .withMetric(new Accuracy())
+            .withMetric(MetricName.ACCURACY)
             .withPreprocessor(vectorizer)
             .withAmountOfFolds(folds)
             .isRunningOnPipeline(false);
@@ -129,7 +129,7 @@ public class CrossValidationTest {
             .withUpstreamMap(data)
             .withAmountOfParts(1)
             .withTrainer(trainer)
-            .withMetric(new Accuracy())
+            .withMetric(MetricName.ACCURACY)
             .withPreprocessor(vectorizer)
             .withAmountOfFolds(folds)
             .isRunningOnPipeline(false);
@@ -172,7 +172,7 @@ public class CrossValidationTest {
                 .withUpstreamMap(data)
                 .withAmountOfParts(1)
                 .withTrainer(trainer)
-                .withMetric(new Accuracy())
+                .withMetric(MetricName.ACCURACY)
                 .withPreprocessor(vectorizer)
                 .withAmountOfFolds(4)
                 .isRunningOnPipeline(false)
@@ -221,7 +221,7 @@ public class CrossValidationTest {
                 .withUpstreamMap(data)
                 .withAmountOfParts(1)
                 .withTrainer(trainer)
-                .withMetric(new Accuracy())
+                .withMetric(MetricName.ACCURACY)
                 .withPreprocessor(vectorizer)
                 .withAmountOfFolds(4)
                 .isRunningOnPipeline(false)
@@ -273,7 +273,7 @@ public class CrossValidationTest {
                 .withUpstreamMap(data)
                 .withAmountOfParts(1)
                 .withPipeline(pipeline)
-                .withMetric(new Accuracy())
+                .withMetric(MetricName.ACCURACY)
                 .withPreprocessor(vectorizer)
                 .withAmountOfFolds(4)
                 .isRunningOnPipeline(true)
@@ -306,7 +306,7 @@ public class CrossValidationTest {
             .withUpstreamMap(data)
             .withAmountOfParts(1)
             .withTrainer(trainer)
-            .withMetric(new Accuracy<>())
+            .withMetric(MetricName.ACCURACY)
             .withPreprocessor(vectorizer)
             .withAmountOfFolds(folds)
             .isRunningOnPipeline(false);

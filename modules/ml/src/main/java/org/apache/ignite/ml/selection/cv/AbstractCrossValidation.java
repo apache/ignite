@@ -31,6 +31,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.selection.paramgrid.*;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.apache.ignite.ml.selection.split.mapper.UniformMapper;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -383,8 +384,8 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
     /**
      * @param metric Metric.
      */
-    public AbstractCrossValidation<M, K, V> withMetric(Metric metric) {
-        this.metric = metric;
+    public AbstractCrossValidation<M, K, V> withMetric(MetricName metric) {
+        this.metric = metric.create();
         return this;
     }
 

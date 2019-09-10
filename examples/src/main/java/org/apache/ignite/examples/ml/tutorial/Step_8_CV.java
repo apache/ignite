@@ -31,6 +31,7 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
@@ -131,7 +132,7 @@ public class Step_8_CV {
                             .withIgnite(ignite)
                             .withUpstreamCache(dataCache)
                             .withTrainer(trainer)
-                            .withMetric(new Accuracy())
+                            .withMetric(MetricName.ACCURACY)
                             .withFilter(split.getTrainFilter())
                             .withPreprocessor(normalizationPreprocessor)
                             .withAmountOfFolds(3)
