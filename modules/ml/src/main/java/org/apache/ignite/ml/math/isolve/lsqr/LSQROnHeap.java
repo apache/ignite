@@ -23,6 +23,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 
 /**
@@ -41,11 +42,13 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      */
     public LSQROnHeap(DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
-        PartitionDataBuilder<K, V, LSQRPartitionContext, SimpleLabeledDatasetData> partDataBuilder) {
+        PartitionDataBuilder<K, V, LSQRPartitionContext, SimpleLabeledDatasetData> partDataBuilder,
+        LearningEnvironment localLearningEnv) {
         this.dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new LSQRPartitionContext(),
-            partDataBuilder
+            partDataBuilder,
+            localLearningEnv
         );
     }
 

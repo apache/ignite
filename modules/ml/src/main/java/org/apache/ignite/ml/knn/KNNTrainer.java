@@ -50,7 +50,8 @@ public abstract class KNNTrainer<M extends KNNModel<Double>, Self extends KNNTra
     protected boolean weighted;
 
     /** {@inheritDoc} */
-    @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+    @Override protected <K, V> M fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor) {
         return updateModel(null, datasetBuilder, preprocessor);
     }
 
@@ -65,7 +66,8 @@ public abstract class KNNTrainer<M extends KNNModel<Double>, Self extends KNNTra
         Dataset<EmptyContext, SpatialIndex<Double>> knnDataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new KNNPartitionDataBuilder<>(preprocessor, idxType, distanceMeasure)
+            new KNNPartitionDataBuilder<>(preprocessor, idxType, distanceMeasure),
+            learningEnvironment()
         );
 
         return convertDatasetIntoModel(knnDataset);

@@ -1572,6 +1572,12 @@ public class IgnitionEx {
         /** Query executor service. */
         private ThreadPoolExecutor schemaExecSvc;
 
+        /** Rebalance executor service. */
+        private ThreadPoolExecutor rebalanceExecSvc;
+
+        /** Rebalance striped executor service. */
+        private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
+
         /** Executor service. */
         private Map<String, ThreadPoolExecutor> customExecSvcs;
 
@@ -1882,7 +1888,9 @@ public class IgnitionEx {
                 cfg.getAsyncCallbackPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "callback",
-                oomeHnd);
+                oomeHnd,
+                false,
+                0);
 
             if (cfg.getConnectorConfiguration() != null) {
                 validateThreadPoolSize(cfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
@@ -1968,6 +1976,28 @@ public class IgnitionEx {
 
             schemaExecSvc.allowCoreThreadTimeOut(true);
 
+            validateThreadPoolSize(cfg.getRebalanceThreadPoolSize(), "rebalance");
+
+            rebalanceExecSvc = new IgniteThreadPoolExecutor(
+                "rebalance",
+                cfg.getIgniteInstanceName(),
+                cfg.getRebalanceThreadPoolSize(),
+                cfg.getRebalanceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                oomeHnd);
+
+            rebalanceExecSvc.allowCoreThreadTimeOut(true);
+
+            rebalanceStripedExecSvc = new IgniteStripedThreadPoolExecutor(
+                cfg.getRebalanceThreadPoolSize(),
+                cfg.getIgniteInstanceName(),
+                "rebalance-striped",
+                oomeHnd,
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME);
+
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 
@@ -2018,6 +2048,8 @@ public class IgnitionEx {
                     callbackExecSvc,
                     qryExecSvc,
                     schemaExecSvc,
+                    rebalanceExecSvc,
+                    rebalanceStripedExecSvc,
                     customExecSvcs,
                     new CA() {
                         @Override public void apply() {
@@ -2661,6 +2693,14 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), schemaExecSvc, log);
 
             schemaExecSvc = null;
+
+            U.shutdownNow(getClass(), rebalanceExecSvc, log);
+
+            rebalanceExecSvc = null;
+
+            U.shutdownNow(getClass(), rebalanceStripedExecSvc, log);
+
+            rebalanceStripedExecSvc = null;
 
             U.shutdownNow(getClass(), stripedExecSvc, log);
 
