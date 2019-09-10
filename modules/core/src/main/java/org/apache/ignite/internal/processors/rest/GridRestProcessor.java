@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeReadOnlyModeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridClusterNameCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
@@ -540,6 +541,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridChangeStateCommandHandler(ctx));
+            addHandler(new GridChangeReadOnlyModeCommandHandler(ctx));
             addHandler(new GridClusterNameCommandHandler(ctx));
             addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));
@@ -904,6 +906,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case CLUSTER_ACTIVE:
             case CLUSTER_INACTIVE:
+            case CLUSTER_READ_ONLY_ENABLE:
+            case CLUSTER_READ_ONLY_DISABLE:
                 perm = SecurityPermission.ADMIN_OPS;
 
                 break;
@@ -921,6 +925,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
+            case CLUSTER_CURRENT_READ_ONLY_MODE:
             case CLUSTER_NAME:
             case AUTHENTICATE:
             case ADD_USER:

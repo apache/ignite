@@ -25,6 +25,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.G;
 
+import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.checkThatRootCauseIsReadOnly;
 /**
  * Tests SQL queries in read-only cluster mode.
  */
@@ -58,7 +59,7 @@ public class ClusterReadOnlyModeSqlTest extends ClusterReadOnlyModeAbstractTest 
                     cur.getAll();
                 }
 
-                boolean failed = false;
+                Throwable failed = null;
 
                 try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery("DELETE FROM Integer"))) {
                     cur.getAll();
@@ -67,13 +68,15 @@ public class ClusterReadOnlyModeSqlTest extends ClusterReadOnlyModeAbstractTest 
                     if (!readOnly)
                         log.error("Failed to delete data", ex);
 
-                    failed = true;
+                    failed = ex;
                 }
 
-                if (failed != readOnly)
+                if ((failed == null) == readOnly)
                     fail("SQL delete from " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
 
-                failed = false;
+                checkThatRootCauseIsReadOnly(failed);
+
+                failed = null;
 
                 try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery(
                     "INSERT INTO Integer(_KEY, _VAL) VALUES (?, ?)").setArgs(rnd.nextInt(1000), rnd.nextInt()))) {
@@ -83,11 +86,13 @@ public class ClusterReadOnlyModeSqlTest extends ClusterReadOnlyModeAbstractTest 
                     if (!readOnly)
                         log.error("Failed to insert data", ex);
 
-                    failed = true;
+                    failed = ex;
                 }
 
-                if (failed != readOnly)
+                if ((failed == null) == readOnly)
                     fail("SQL insert into " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
+
+                checkThatRootCauseIsReadOnly(failed);
             }
         }
     }

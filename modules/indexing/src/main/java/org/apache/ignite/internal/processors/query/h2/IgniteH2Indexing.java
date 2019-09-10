@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
@@ -149,6 +150,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1486,6 +1488,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
                 catch (IgniteCheckedException e) {
+                    IgniteClusterReadOnlyException roEx = X.cause(e, IgniteClusterReadOnlyException.class);
+
+                    if (roEx != null) {
+                        throw new IgniteSQLException(
+                            "Failed to execute DML statement. Cluster in read-only mode [stmt=" + sqlQry +
+                                ", params=" + Arrays.deepToString(qry.getArgs()) + "]",
+                            IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
+                            e
+                        );
+                    }
+
                     throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
                         ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
                 }

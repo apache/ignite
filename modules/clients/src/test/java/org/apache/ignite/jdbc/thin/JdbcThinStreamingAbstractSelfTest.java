@@ -198,6 +198,13 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
             assertEquals(i, grid(0).cache("T").get(i));
     }
 
+    /** {@inheritDoc} */
+    @Override public void testStreamedInsertFailsOnReadOnlyMode() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-17406");
+
+        super.testStreamedInsertFailsOnReadOnlyMode();
+    }
+
     /**
      *
      */

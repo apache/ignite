@@ -48,6 +48,8 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCa
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
+import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeNodeJoinTest;
+import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
@@ -161,6 +163,10 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
         suite.addTestSuite(NodeWithFilterRestartTest.class);
+
+        suite.addTestSuite(ClusterReadOnlyModeSelfTest.class);
+        suite.addTestSuite(ClusterReadOnlyModeNodeJoinTest.class);
+
 
         return suite;
     }
