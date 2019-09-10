@@ -238,8 +238,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
+    @Override public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
         return cctx.affinity().nodesByPartition(part, topologyVersion());

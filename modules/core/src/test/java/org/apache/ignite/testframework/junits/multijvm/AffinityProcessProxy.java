@@ -110,8 +110,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
+    @Override public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
         return compute.call(new mapKeyToPrimaryAndBackupsListTask<>(cacheName, key));
     }
 
@@ -132,8 +131,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
+    @Override public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
         return compute.call(new MapPartitionsToPrimaryAndBackupsListTask<>(cacheName, part));
     }
 

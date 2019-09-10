@@ -1119,8 +1119,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
+        @Override public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
             ctx.gateway().readLock();
 
             try {

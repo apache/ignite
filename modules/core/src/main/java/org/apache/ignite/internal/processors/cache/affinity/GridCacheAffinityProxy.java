@@ -247,8 +247,7 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override
-    public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
+    @Override public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
         CacheOperationContext old = gate.enter(null);
 
         try {
