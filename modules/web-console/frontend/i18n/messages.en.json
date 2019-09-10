@@ -131,7 +131,9 @@
                 "nodeId": " Node ID8: {{id}}"
             },
             "stackTraceDialog": {
-                "title": "Error details"
+                "title": "Error details",
+                "noStacktraceMessage": "Full stacktrace is not available",
+                "closeButtonLabel": "Ok"
             },
             "leaveWithRunningQueriesConfirmationMessage": "You have running queries. Are you sure you want to cancel them?",
             "scanActions": {

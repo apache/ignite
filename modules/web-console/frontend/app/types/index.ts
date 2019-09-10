@@ -87,3 +87,8 @@ export type BsSelectDropdownAction = {
 }
 
 export type BsSelectDropdownActions = BsSelectDropdownAction[]
+
+export type Stacktrace = {
+    message: string,
+    stacktrace: string[]
+};
