@@ -29,7 +29,7 @@ public class FMeasure<L extends Serializable> extends BinaryClassificationMetric
     /**
      * Serial version uid.
      */
-    private static final long serialVersionUID = 5110086813607332001L;
+    private static final long serialVersionUID = 9156779288165194348L;
 
     /**
      * Square of beta parameter for F-score.

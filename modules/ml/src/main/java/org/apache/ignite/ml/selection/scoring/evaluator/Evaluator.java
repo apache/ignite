@@ -253,8 +253,14 @@ public class Evaluator {
         IgniteModel<Vector, Double> mdl,
         Preprocessor<K, V> preprocessor) {
 
+        Metric[] metrics = merge(
+                MetricName.ACCURACY, MetricName.PRECISION, MetricName.RECALL, MetricName.F_MEASURE,
+                MetricName.BALANCED_ACCURACY, MetricName.FALL_OUT, MetricName.FDR, MetricName.MISS_RATE,
+                MetricName.NPV, MetricName.SPECIFICITY, MetricName.TRUE_POSITIVE, MetricName.FALSE_POSITIVE,
+                MetricName.TRUE_NEGATIVE, MetricName.FALSE_NEGATIVE
+        );
         return evaluate(new CacheBasedDatasetBuilder<>(Ignition.ignite(), dataCache, filter), mdl, preprocessor,
-            merge(MetricName.ACCURACY, MetricName.PRECISION, MetricName.RECALL, MetricName.F_MEASURE));
+                metrics);
     }
 
     /**

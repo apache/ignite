@@ -17,10 +17,7 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
-import org.apache.ignite.ml.selection.scoring.metric.classification.FMeasure;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Precision;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Recall;
+import org.apache.ignite.ml.selection.scoring.metric.classification.*;
 import org.apache.ignite.ml.selection.scoring.metric.regression.*;
 
 /**
@@ -39,6 +36,36 @@ public enum MetricName {
 
     /** F measure. */
     F_MEASURE("F-measure"),
+
+    /** TP. */
+    TRUE_POSITIVE("TP"),
+
+    /** TN. */
+    TRUE_NEGATIVE("TN"),
+
+    /** FN. */
+    FALSE_NEGATIVE("FN"),
+
+    /** FP. */
+    FALSE_POSITIVE("FP"),
+
+    /** Specificity. */
+    SPECIFICITY("Specificity"),
+
+    /** NPV. */
+    NPV("NPV"),
+
+    /** FallOut. */
+    FALL_OUT("Fall out"),
+
+    /** FDR. */
+    FDR("FDR"),
+
+    /** Miss Rate. */
+    MISS_RATE("Miss rate"),
+
+    /** Balanced accuracy. */
+    BALANCED_ACCURACY("Balanced accuracy"),
 
     // regression metrics
     /** Mae. */
@@ -93,6 +120,26 @@ public enum MetricName {
                 return new Rmse();
             case RSS:
                 return new Rss();
+            case TRUE_POSITIVE:
+                return new TruePositiveAbsoluteValue();
+            case TRUE_NEGATIVE:
+                return new TrueNegativeAbsoluteValue();
+            case FALSE_POSITIVE:
+                return new FalsePositiveAbsoluteValue();
+            case FALSE_NEGATIVE:
+                return new FalseNegativeAbsoluteValue();
+            case SPECIFICITY:
+                return new Specificity();
+            case FALL_OUT:
+                return new FallOut();
+            case BALANCED_ACCURACY:
+                return new BalancedAccuracy();
+            case FDR:
+                return new Fdr();
+            case MISS_RATE:
+                return new MissRate();
+            case NPV:
+                return new Npv();
         }
 
         throw new IllegalArgumentException("Cannot define metric by name: " + name());
