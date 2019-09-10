@@ -80,7 +80,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     private static final String CLIENT_GRID_NAME = "client";
 
     /** */
-    protected static final String EXISTING_CACHE_NAME = "existing-cache";;
+    protected static final String EXISTING_CACHE_NAME = "existing-cache";
 
     /** */
     private static final int PARTITION_COUNT = 16;

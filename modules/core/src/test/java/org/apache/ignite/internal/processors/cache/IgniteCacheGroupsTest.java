@@ -81,6 +81,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
@@ -867,7 +868,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
-
         int p = ThreadLocalRandom.current().nextInt(32);
 
         ScanQuery<Integer, Integer> qry = new ScanQuery().setPartition(p);
@@ -966,7 +966,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
-
         Set<Integer> keysSet = sequence(keys);
 
         for (Cache.Entry<Integer, Integer> entry : ignite(loc ? 0 : 3).<Integer, Integer>cache(CACHE1)) {
@@ -1007,7 +1006,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             startGrid(0);
         else
             startGridsMultiThreaded(4);
-
 
         Ignite srv0 = ignite(0);
 
@@ -1569,7 +1567,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             assertEquals(ITEMS * 2, cache6.size(CachePeekMode.ALL));
             assertEquals(ITEMS, cache6.localSize(CachePeekMode.ALL));
-
 
             for (int k = 0; k < ITEMS; k++) {
                 assertEquals(i, cache1.localPeek(new Key1(i)));
@@ -2581,7 +2578,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Integer key = rnd.nextInt();
         Integer val = rnd.nextInt();
 
-
         cache.put(key, val);
 
         Object val0 = cache.getAndRemove(key);
@@ -2603,7 +2599,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Integer key = rnd.nextInt();
         Integer val = rnd.nextInt();
-
 
         cache.put(key, val);
 
@@ -2627,7 +2622,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Integer key = rnd.nextInt();
         Integer val1 = rnd.nextInt();
         Integer val2 = rnd.nextInt();
-
 
         assertTrue(cache.putIfAbsent(key, val1));
 
@@ -2653,7 +2647,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Integer key = rnd.nextInt();
         Integer val1 = rnd.nextInt();
         Integer val2 = rnd.nextInt();
-
 
         assertTrue((Boolean)cache.putIfAbsentAsync(key, val1).get(ASYNC_TIMEOUT));
 
@@ -2958,7 +2951,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Factory<? extends CacheStore<Integer, Integer>> fctr2 =
             FactoryBuilder.factoryOf(new MapBasedStore<>(data2));
-
 
         CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 1, false)
             .setCacheStoreFactory(fctr1);
@@ -4186,12 +4178,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     assertNotNull(grp);
 
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        Map<Integer, Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
+                        IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
 
                         assertTrue(cachesMap.size() <= cacheIds.size());
 
-                        for (Integer cacheId : cachesMap.keySet())
-                            assertTrue(cachesMap.containsKey(cacheId));
+                        cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
                     }
                 }
             }

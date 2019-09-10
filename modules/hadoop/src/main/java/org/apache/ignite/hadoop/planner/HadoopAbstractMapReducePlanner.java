@@ -87,7 +87,6 @@ public abstract class HadoopAbstractMapReducePlanner implements HadoopMapReduceP
         return new HadoopMapReducePlanTopology(new ArrayList<>(macsMap.values()), idToGrp, hostToGrp);
     }
 
-
     /**
      * Groups nodes by host names.
      *

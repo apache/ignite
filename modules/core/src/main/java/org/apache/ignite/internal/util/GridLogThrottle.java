@@ -132,7 +132,6 @@ public class GridLogThrottle {
         log(log, e, msg, LogLevel.WARN, quite, byMsg);
     }
 
-
     /**
      * Logs warning if needed.
      *

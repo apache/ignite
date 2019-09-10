@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
@@ -70,9 +69,6 @@ class GridDhtPartitionSupplier {
 
     /** */
     private GridDhtPartitionTopology top;
-
-    /** Preload predicate. */
-    private IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /** Supply context map. T3: nodeId, topicId, topVer. */
     private final Map<T3<UUID, Integer, AffinityTopologyVersion>, SupplyContext> scMap = new HashMap<>();
@@ -166,15 +162,6 @@ class GridDhtPartitionSupplier {
     }
 
     /**
-     * Sets preload predicate for this supplier.
-     *
-     * @param preloadPred Preload predicate.
-     */
-    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
-        this.preloadPred = preloadPred;
-    }
-
-    /**
      * For each demand message method lookups (or creates new) supply context and starts to iterate entries across requested partitions.
      * Each entry in iterator is placed to prepared supply message.
      *
@@ -258,7 +245,8 @@ class GridDhtPartitionSupplier {
 
             assert !(sctx != null && !demandMsg.partitions().isEmpty());
 
-            long maxBatchesCnt = grp.preloader().batchesPrefetchCount();
+            long maxBatchesCnt = /* Each thread should gain prefetched batches. */
+                grp.preloader().batchesPrefetchCount() * grp.shared().gridConfig().getRebalanceThreadPoolSize();
 
             if (sctx == null) {
                 if (log.isDebugEnabled())
@@ -389,13 +377,7 @@ class GridDhtPartitionSupplier {
                 if (info == null)
                     continue;
 
-                if (preloadPred == null || preloadPred.apply(info))
-                    supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
-                else {
-                    if (log.isTraceEnabled())
-                        log.trace("Rebalance predicate evaluated to false (will not send " +
-                            "cache entry): " + info);
-                }
+                supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
 
                 if (iter.isPartitionDone(part)) {
                     supplyMsg.last(part, loc.updateCounter());

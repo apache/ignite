@@ -39,6 +39,7 @@ public class StandardScalerPreprocessor<K, V> implements Preprocessor<K, V> {
 
     /** Means for each column. */
     private final double[] means;
+
     /** Standard deviation for each column. */
     private final double[] sigmas;
 

@@ -158,7 +158,6 @@ public class Evaluator {
         return calcMetricValues(dataCache, null, mdl, preprocessor);
     }
 
-
     /**
      * Computes the given metrics on the given cache.
      *

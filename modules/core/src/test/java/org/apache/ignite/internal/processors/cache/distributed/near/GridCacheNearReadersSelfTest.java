@@ -262,7 +262,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         if (f1 != null)
             f1.get();
 
-
         IgniteInternalFuture<Object> f2 = ((IgniteKernal)g2).internalCache(DEFAULT_CACHE_NAME).preloader().request(
             ((IgniteKernal)g2).internalCache(DEFAULT_CACHE_NAME).context(),
             cacheKeys,

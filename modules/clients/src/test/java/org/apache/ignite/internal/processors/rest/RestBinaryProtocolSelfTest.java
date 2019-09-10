@@ -269,7 +269,6 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
         assertNull(jcacheDflt.get("key"));
 
-
         jcacheName.put("key", "val");
 
         assertTrue(client.cacheRemove(CACHE_NAME, "key"));

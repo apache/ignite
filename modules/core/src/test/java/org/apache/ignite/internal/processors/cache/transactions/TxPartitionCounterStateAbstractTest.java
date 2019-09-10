@@ -78,6 +78,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toCollection;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
@@ -90,7 +91,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
  */
 public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int MB = 1024 * 1024;
@@ -143,10 +144,24 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
     /**
      * @param name Name.
      */
-    protected CacheConfiguration cacheConfiguration(String name) {
+    protected CacheConfiguration<Object, Object> cacheConfiguration(String name) {
         CacheConfiguration ccfg = new CacheConfiguration(name);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -171,7 +186,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         stopAllGrids();
 
-        //cleanPersistenceDir();
+        cleanPersistenceDir();
     }
 
     /**
@@ -570,6 +585,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     protected class TxCallbackAdapter implements TxCallback {
         /** */
         private Map<Integer, IgniteUuid> txMap = new ConcurrentHashMap<>();
+
         /** */
         private Map<IgniteUuid, Integer> revTxMap = new ConcurrentHashMap<>();
 

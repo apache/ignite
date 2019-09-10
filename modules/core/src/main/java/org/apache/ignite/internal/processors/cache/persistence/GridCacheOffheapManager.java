@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -69,8 +72,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -99,6 +102,7 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -114,6 +118,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * Used when persistence enabled.
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
+    /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind
+     * if there is nothing to clean yet.
+     */
+    private final long unwindThrottlingTimeout = Long.getLong(
+        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
+
     /** */
     private IndexStorage indexStorage;
 
@@ -134,18 +145,27 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         Metas metas = getOrAllocateCacheMetas();
 
+        CacheDiagnosticManager diagnosticMgr = ctx.diagnostic();
+
+        String reuseListName = grp.cacheOrGroupName() + "##ReuseList";
+        String indexStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
+
         RootPage reuseListRoot = metas.reuseListRoot;
 
-        reuseList = new ReuseListImpl(grp.groupId(),
+        reuseList = new ReuseListImpl(
+            grp.groupId(),
             grp.cacheOrGroupName(),
             grp.dataRegion().pageMemory(),
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
-            reuseListRoot.isAllocated());
+            reuseListRoot.isAllocated(),
+            diagnosticMgr.pageLockTracker().createPageLockTracker(reuseListName)
+        );
 
         RootPage metastoreRoot = metas.treeRoot;
 
-        indexStorage = new IndexStorageImpl(grp.dataRegion().pageMemory(),
+        indexStorage = new IndexStorageImpl(
+            grp.dataRegion().pageMemory(),
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
@@ -155,7 +175,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseList,
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
-            ctx.kernalContext().failure());
+            ctx.kernalContext().failure(),
+            diagnosticMgr.pageLockTracker().createPageLockTracker(indexStorageTreeName)
+        );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
     }
@@ -272,7 +294,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
-            ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
+            ((CacheFreeList)rowStore0.freeList()).saveMetadata();
 
             PartitionMetaStorage<SimpleDataRow> partStore = store.partStorage();
 
@@ -547,7 +569,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     ctx.database().checkpointReadUnlock();
                 }
             }
-            else if (recoverState != null && recoverState >= 0) { // Pre-create partition if having valid state.
+            else if (recoverState != null) { // Pre-create partition if having valid state.
                 GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
                 updateState(part, recoverState);
@@ -1552,9 +1574,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final int partId;
 
         /** */
-        private String name;
-
-        /** */
         private volatile AbstractFreeList<CacheDataRow> freeList;
 
         /** */
@@ -1573,7 +1592,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * in accordance with the value of {@code lastThrottledCacheId}.
          * Used for fine-grained throttling on per-partition basis.
          */
-        private volatile long nextStoreCleanTime;
+        private volatile long nextStoreCleanTimeNanos;
 
         /** */
         private PartitionMetaStorage<SimpleDataRow> partStorage;
@@ -1589,16 +1608,45 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /**
          * @param partId Partition.
-         * @param exists {@code True} if store for this index exists.
+         * @param exists {@code True} if store exists.
          */
         private GridCacheDataStore(int partId, boolean exists) {
             this.partId = partId;
             this.exists = exists;
-
-            name = treeName(partId);
         }
 
         /**
+         * @return Name of free pages list.
+         */
+        private String freeListName() {
+            return grp.cacheOrGroupName() + "-" + partId;
+        }
+
+        /**
+         * @return Name of partition meta store.
+         */
+        private String partitionMetaStoreName() {
+            return grp.cacheOrGroupName() + "-partstore-" + partId;
+        }
+
+        /**
+         * @return Name of data tree.
+         */
+        private String dataTreeName() {
+            return grp.cacheOrGroupName() + "-" + treeName(partId);
+        }
+
+        /**
+         * @return Name of pending entires tree.
+         */
+        private String pendingEntriesTreeName() {
+            return grp.cacheOrGroupName() + "-" +"PendingEntries-" + partId;
+        }
+
+        /**
+         * @param checkExists If {@code true} data store won't be initialized if it doesn't exists
+         * (has non empty data file). This is an optimization for lazy store initialization on writes.
+         *
          * @return Store delegate.
          * @throws IgniteCheckedException If failed.
          */
@@ -1632,17 +1680,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             ", metas=" + metas + ']');
                     }
 
+                    String freeListName = freeListName();
+
                     RootPage reuseRoot = metas.reuseListRoot;
 
-                    freeList = new CacheFreeListImpl(
+                    freeList = new CacheFreeList(
                         grp.groupId(),
-                        grp.cacheOrGroupName() + "-" + partId,
+                        freeListName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
-                        null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
-                        reuseRoot.isAllocated()) {
+                        reuseRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1650,18 +1701,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
+
+                    String partitionMetaStoreName = partitionMetaStoreName();
 
                     RootPage partMetastoreReuseListRoot = metas.partMetastoreReuseListRoot;
 
                     partStorage = new PartitionMetaStorageImpl<SimpleDataRow>(
                         grp.groupId(),
-                        grp.cacheOrGroupName() + "-partstore-" + partId,
+                        partitionMetaStoreName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
                         freeList,
                         ctx.wal(),
                         partMetastoreReuseListRoot.pageId().pageId(),
-                        partMetastoreReuseListRoot.isAllocated()) {
+                        partMetastoreReuseListRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(partitionMetaStoreName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1669,6 +1724,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
+
+                    String dataTreeName = dataTreeName();
 
                     CacheDataRowStore rowStore = new CacheDataRowStore(grp, freeList, partId);
 
@@ -1676,11 +1733,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     CacheDataTree dataTree = new CacheDataTree(
                         grp,
-                        name,
+                        dataTreeName,
                         freeList,
                         rowStore,
                         treeRoot.pageId().pageId(),
-                        treeRoot.isAllocated()) {
+                        treeRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(dataTreeName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1689,15 +1748,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
+                    String pendingEntriesTreeName = pendingEntriesTreeName();
+
                     RootPage pendingTreeRoot = metas.pendingTreeRoot;
 
                     final PendingEntriesTree pendingTree0 = new PendingEntriesTree(
                         grp,
-                        "PendingEntries-" + partId,
+                        pendingEntriesTreeName,
                         grp.dataRegion().pageMemory(),
                         pendingTreeRoot.pageId().pageId(),
                         freeList,
-                        pendingTreeRoot.isAllocated()) {
+                        pendingTreeRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(pendingEntriesTreeName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1708,7 +1771,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-                    delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
+                    delegate0 = new CacheDataStoreImpl(partId, rowStore, dataTree) {
                         /** {@inheritDoc} */
                         @Override public PendingEntriesTree pendingTree() {
                             return pendingTree0;
@@ -1955,11 +2018,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
         @Override public RowStore rowStore() {
             CacheDataStore delegate0 = delegate;
 
@@ -2157,11 +2215,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateInitialCounter(long start, long delta) {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
-                if (delegate0 == null)
-                    throw new IllegalStateException("Should be never called.");
-
+                // Partition may not exists before recovery starts in case of recovering counters from RollbackRecord.
                 delegate0.updateInitialCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
@@ -2326,6 +2382,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             return delegate.createRow(cctx, key, val, ver, expireTime, oldRow);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void insertRows(Collection<DataRowCacheAware> rows,
+            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            ctx.database().checkpointReadLock();
+
+            try {
+                delegate.insertRows(rows, initPred);
+            } finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
 
         /** {@inheritDoc} */
@@ -2567,9 +2637,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
-            long now = U.currentTimeMillis();
+            long nowNanos = System.nanoTime();
 
-            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTime > now))
+            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTimeNanos - nowNanos > 0))
                 return 0;
 
             assert pendingTree != null : "Partition data store was not initialized.";
@@ -2580,7 +2650,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (cleared < amount) {
                 lastThrottledCacheId = cctx.cacheId();
 
-                nextStoreCleanTime = now + GridCacheTtlManager.UNWIND_THROTTLING_TIMEOUT;
+                nextStoreCleanTimeNanos = nowNanos + U.millisToNanos(unwindThrottlingTimeout);
             }
 
             return cleared;

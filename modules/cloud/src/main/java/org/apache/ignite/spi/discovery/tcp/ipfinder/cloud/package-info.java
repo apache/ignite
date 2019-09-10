@@ -18,4 +18,5 @@
  * <!-- Package description. -->
  * Contains Apache jclouds based IP finder.
  */
+
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;

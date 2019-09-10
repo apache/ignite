@@ -120,6 +120,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.encryption.EncryptedSqlTableTest;
+import org.apache.ignite.internal.processors.cache.index.ArrayIndexTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexMultinodeTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ComplexPrimaryKeyUnwrapSelfTest;
@@ -165,6 +166,7 @@ import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQ
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryCancelOrTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.CacheDataPageScanQueryTest;
 import org.apache.ignite.internal.processors.cache.query.CacheScanQueryFailoverTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransformerSelfTest;
@@ -287,6 +289,7 @@ import org.junit.runners.Suite;
     MultipleStatementsSqlQuerySelfTest.class,
 
     BasicIndexTest.class,
+    ArrayIndexTest.class,
     BasicIndexMultinodeTest.class,
 
     // Misc tests.
@@ -574,7 +577,9 @@ import org.junit.runners.Suite;
 
     // Table statistics.
     RowCountTableStatisticsUsageTest.class,
-    RowCountTableStatisticsSurvivesNodeRestartTest.class
+    RowCountTableStatisticsSurvivesNodeRestartTest.class,
+
+    SqlViewExporterSpiTest.class
 
 })
 public class IgniteBinaryCacheQueryTestSuite {

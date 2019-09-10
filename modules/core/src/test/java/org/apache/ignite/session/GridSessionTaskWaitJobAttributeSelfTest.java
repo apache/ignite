@@ -148,7 +148,6 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
 
                         taskSes.setAttribute("testName", "testVal");
 
-
                         return 1;
                     }
                 });

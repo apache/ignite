@@ -453,7 +453,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * pair (init, delta) values, where init - initial update counter, and delta - updates count made
      * by current transaction for a given partition.
      */
-    public void calculatePartitionUpdateCounters() {
+    public void calculatePartitionUpdateCounters() throws IgniteTxRollbackCheckedException {
         TxCounters counters = txCounters(false);
 
         if (counters != null && F.isEmpty(counters.updateCounters())) {
@@ -491,11 +491,31 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
+                        // Verify primary tx mapping.
                         // LOST state is possible if tx is started over LOST partition.
-                        assert part != null && (part.state() == OWNING || part.state() == LOST):
-                            part == null ?
-                                "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
-                                "part=" + part.toString();
+                        boolean valid = part != null &&
+                            (part.state() == OWNING || part.state() == LOST) &&
+                            part.primary(top.readyTopologyVersion());
+
+                        if (!valid) {
+                            // Local node is no longer primary for the partition, need to rollback a transaction.
+                            if (part != null && !part.primary(top.readyTopologyVersion())) {
+                                log.warning("Failed to prepare a transaction on outdated topology, rolling back " +
+                                    "[tx=" + CU.txString(this) +
+                                    ", readyTopVer=" + top.readyTopologyVersion() +
+                                    ", lostParts=" + top.lostPartitions() +
+                                    ", part=" + part.toString() + ']');
+
+                                throw new IgniteTxRollbackCheckedException("Failed to prepare a transaction on outdated " +
+                                    "topology, please try again [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+                            }
+
+                            // Trigger error.
+                            throw new AssertionError("Invalid primary mapping [tx=" + CU.txString(this) +
+                                ", readyTopVer=" + top.readyTopologyVersion() +
+                                ", lostParts=" + top.lostPartitions() +
+                                ", part=" + (part == null ? "NULL" : part.toString()) + ']');
+                        }
 
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
@@ -1002,7 +1022,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
     }
 
-
     /**
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *
@@ -1173,7 +1192,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 GridCacheEntryEx cached = txEntry.cached();
 
                 try {
-                    assert cached.detached() || cached.lockedByThread(threadId) || isRollbackOnly() :
+                    assert cached.detached() || cached.lockedLocally(xidVersion()) || isRollbackOnly() :
                         "Transaction lock is not acquired [entry=" + cached + ", tx=" + this +
                             ", nodeId=" + cctx.localNodeId() + ", threadId=" + threadId + ']';
 
@@ -1555,7 +1574,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 else if (explicitCand.dhtLocal())
                     locCand = cctx.localNodeId().equals(explicitCand.otherNodeId());
 
-                if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx() && locCand) {
+                if (!explicitVer.equals(xidVer) && explicitCand.isHeldByThread(threadId) && !explicitCand.tx() && locCand) {
                     txEntry.explicitVersion(explicitVer);
 
                     if (explicitVer.isLess(minVer))

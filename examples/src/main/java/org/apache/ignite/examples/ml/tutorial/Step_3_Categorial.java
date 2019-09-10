@@ -67,7 +67,7 @@ public class Step_3_Categorial {
                     .fit(ignite,
                         dataCache,
                         vectorizer
-                );
+                    );
 
                 Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
@@ -97,10 +97,11 @@ public class Step_3_Categorial {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 3 (categorial) example completed.");
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } finally {
+            System.out.flush();
         }
     }
 }

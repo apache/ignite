@@ -25,7 +25,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  * Queue tests with local atomic cache.
  */
 public class GridCacheLocalAtomicQueueApiSelfTest extends GridCacheLocalQueueApiSelfTest {
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;

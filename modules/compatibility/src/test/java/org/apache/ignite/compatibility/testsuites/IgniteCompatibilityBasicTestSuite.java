@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
-import org.apache.ignite.compatibility.PdsWithTtlCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
@@ -30,8 +29,6 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     PersistenceBasicCompatibilityTest.class,
-
-    PdsWithTtlCompatibilityTest.class,
 
     FoldersReuseCompatibilityTest.class,
 

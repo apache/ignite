@@ -335,8 +335,10 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
     private static class ClassProperty {
         /** */
         private final Method getter;
+
         /** */
         private final Method setter;
+
         /** */
         private final Field field;
 
