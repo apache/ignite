@@ -194,11 +194,6 @@
                     </exclusions>
                 </dependency>
 
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-spark_2.10</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
             </dependencies>
 
             <build>
