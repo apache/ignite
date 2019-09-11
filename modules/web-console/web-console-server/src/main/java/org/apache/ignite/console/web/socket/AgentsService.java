@@ -18,13 +18,12 @@ package org.apache.ignite.console.web.socket;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.console.dto.Account;
@@ -46,8 +45,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
 
-import static org.apache.ignite.console.utils.Utils.entriesToMap;
-import static org.apache.ignite.console.utils.Utils.entry;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 import static org.apache.ignite.console.websocket.AgentHandshakeRequest.SUPPORTED_VERS;
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENT_HANDSHAKE;
@@ -224,16 +223,21 @@ public class AgentsService extends AbstractSocketHandler {
     public void revokeToken(Account acc, String oldTok) {
         log.info("Revoke token for account with email: " + acc.getUsername());
 
+        UUID accId = acc.getId();
+        Set<UUID> accIds = singleton(accId);
+
         locAgents.forEach((ws, agentSes) -> {
-            if (agentSes.revokeAccount(acc.getId())) {
+            if (agentSes.revokeAccount(accId)) {
                 sendMessageQuiet(ws, new WebSocketResponse(AGENT_REVOKE_TOKEN, oldTok));
 
                 if (agentSes.canBeClosed())
                     U.closeQuiet(ws);
+
+                tryCleanupIndexes(accIds, emptySet());
             }
         });
         
-        sendAgentStats(Collections.singleton(acc.getId()));
+        sendAgentStats(accIds);
     }
 
     /** {@inheritDoc} */
@@ -289,13 +293,13 @@ public class AgentsService extends AbstractSocketHandler {
      * Send to browser info about agent status.
      */
     WebSocketResponse collectAgentStats(UserKey userKey) {
-        Set<TopologySnapshot> clusters = clustersRepo.get(userKey);
+        boolean hasAgent = agentsRepo.hasAgent(userKey.getAccId());
 
-        Map<String, Object> res = Stream.<Map.Entry<String, Object>>of(
-            entry("clusters", clusters),
-            entry("hasAgent", agentsRepo.hasAgent(userKey.getAccId())),
-            entry("hasDemo", clustersRepo.hasDemo(userKey.getAccId()))
-        ).collect(entriesToMap());
+        Map<String, Object> res = new HashMap<>();
+
+        res.put("hasAgent", hasAgent);
+        res.put("clusters", hasAgent ? clustersRepo.get(userKey) : emptySet());
+        res.put("hasDemo", !hasAgent && clustersRepo.hasDemo(userKey.getAccId()));
 
         return new WebSocketResponse(AGENT_STATUS, res);
     }
