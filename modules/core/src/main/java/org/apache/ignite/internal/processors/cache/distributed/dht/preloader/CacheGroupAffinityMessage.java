@@ -157,9 +157,8 @@ public class CacheGroupAffinityMessage implements Message {
                 if (aff == null) {
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                    assert grp != null : "No cache group holder or cache group to create AffinityMessage"
-                        + ". Requested group id: " + grpId
-                        + ". Topology version: " + topVer;
+                    if (grp == null)
+                        return null;
 
                     aff = grp.affinity();
                 }
