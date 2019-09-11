@@ -268,32 +268,43 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             };
 
             Assert.AreEqual(expectedRequests, requests);
+        }
 
+
+        [Test]
+        public void ReplicatedCacheGet_RepeatedCall_DoesNotRequestAffinityMapping()
+        {
             // Test cache for which affinity awareness is not applicable.
             var cfg = new CacheClientConfiguration("replicated_cache") {CacheMode = CacheMode.Replicated};
             var cache = Client.CreateCache<int, int>(cfg);
 
+            // Init the replicated cache and start the new one to enforce partition mapping request.
             cache.Put(1, 1);
             Client.CreateCache<int, int>("repeat-call-test-replicated");
             ClearLoggers();
 
             cache.Get(1);
-            cache.Get(1);
-            cache.Get(1);
+            cache.Get(2);
+            cache.Get(3);
 
-            requests = null;
+            var reqs = _loggers
+                .Select(l => new {Logger = l, Requests = GetCacheRequestNames(l).ToArray()})
+                .Where(r => r.Requests.Length > 0)
+                .ToArray();
 
-            foreach (var logger in _loggers)
+            // All requests should go to a single (default) node, because affinity awareness is not applicable.
+            Assert.AreEqual(1, reqs.Length);
+
+            // There should be only one partitions request.
+            var expectedRequests = new[]
             {
-                var cacheRequestNames = GetCacheRequestNames(logger);
+                "Partitions",
+                "Get",
+                "Get",
+                "Get"
+            };
 
-                if (cacheRequestNames.Any())
-                {
-                    requests = cacheRequestNames.ToArray();
-                }
-            }
-
-            Assert.AreEqual(expectedRequests, requests);
+            Assert.AreEqual(expectedRequests, reqs[0].Requests);
         }
 
         [Test]
