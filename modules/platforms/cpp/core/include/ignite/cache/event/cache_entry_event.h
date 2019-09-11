@@ -30,6 +30,41 @@ namespace ignite
     namespace cache
     {
         /**
+         * Cache entry event type.
+         */
+        struct CacheEntryEventType
+        {
+            enum T
+            {
+                /** Event type - Create. */
+                CREATE = 0,
+
+                /** Event type - Update. */
+                UPDATE = 1,
+
+                /** Event type - Remove. */
+                REMOVE = 2,
+            };
+
+            static T FromInt8(int8_t val)
+            {
+                switch (val)
+                {
+                    case CREATE:
+                    case UPDATE:
+                    case REMOVE:
+                        return static_cast<T>(val);
+
+                    default:
+                    {
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_BINARY,
+                            "Unsupported CacheEntryEventType", "val", val);
+                    }
+                }
+            }
+        };
+
+        /**
          * Cache entry event class template.
          *
          * Both key and value types should be default-constructable,
@@ -47,7 +82,8 @@ namespace ignite
             CacheEntryEvent() :
                 CacheEntry<K, V>(),
                 oldVal(),
-                hasOldValue(false)
+                hasOldValue(false),
+                eventType(CacheEntryEventType::CREATE)
             {
                 // No-op.
             }
@@ -60,7 +96,8 @@ namespace ignite
             CacheEntryEvent(const CacheEntryEvent<K, V>& other) :
                 CacheEntry<K, V>(other),
                 oldVal(other.oldVal),
-                hasOldValue(other.hasOldValue)
+                hasOldValue(other.hasOldValue),
+                eventType(other.eventType)
             {
                 // No-op.
             }
@@ -87,6 +124,7 @@ namespace ignite
 
                     oldVal = other.oldVal;
                     hasOldValue = other.hasOldValue;
+                    eventType = other.eventType;
                 }
 
                 return *this;
@@ -113,6 +151,18 @@ namespace ignite
             }
 
             /**
+             * Get event type.
+             *
+             * @see CacheEntryEventType::T for details on possible types of events.
+             *
+             * @return Event type.
+             */
+            CacheEntryEventType::T GetEventType() const
+            {
+                return eventType;
+            }
+
+            /**
              * Reads cache event using provided raw reader.
              *
              * @param reader Reader to use.
@@ -123,9 +173,9 @@ namespace ignite
 
                 this->hasOldValue = reader.TryReadObject(this->oldVal);
                 this->hasValue = reader.TryReadObject(this->val);
-                
-                //java send an event type, we need to fetch it from the buffer
-                reader.ReadInt8();
+
+                int8_t eventTypeByte = reader.ReadInt8();
+                this->eventType = CacheEntryEventType::FromInt8(eventTypeByte);
             }
 
         private:
@@ -134,6 +184,9 @@ namespace ignite
 
             /** Indicates whether old value exists */
             bool hasOldValue;
+
+            /** Event type. */
+            CacheEntryEventType::T eventType;
         };
     }
 }
