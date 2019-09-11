@@ -254,7 +254,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         /** {@inheritDoc} */
         @Override public void addListRemoveListener(Consumer<MonitoringList<?>> lsnr) {
-            listRemoveLsnrs.add(lsnr::accept);
+            listRemoveLsnrs.add(lsnr);
         }
 
         /** {@inheritDoc} */
