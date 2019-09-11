@@ -19,7 +19,6 @@ package org.apache.ignite.examples.ml.inference.spark;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.xml.bind.JAXBException;
