@@ -796,8 +796,8 @@ public class PlatformConfigurationUtils {
 
             case 2:
                 cfg.setEventStorageSpi(new MemoryEventStorageSpi()
-                        .setExpireCount(in.readLong())
-                        .setExpireAgeMs(in.readLong()));
+                    .setExpireCount(in.readLong())
+                    .setExpireAgeMs(in.readLong()));
                 break;
         }
 
@@ -1343,7 +1343,7 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
             w.writeBoolean(bc.getNameMapper() instanceof BinaryBasicNameMapper &&
-                    ((BinaryBasicNameMapper)(bc.getNameMapper())).isSimpleName());
+                ((BinaryBasicNameMapper)(bc.getNameMapper())).isSimpleName());
         }
         else
             w.writeBoolean(false);
@@ -1620,7 +1620,7 @@ public class PlatformConfigurationUtils {
 
         if (factory == null) {
             throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
-                    "(did you put into the classpath?): " + factoryId);
+                "(did you put into the classpath?): " + factoryId);
         }
 
         return factory.create();
@@ -1664,7 +1664,7 @@ public class PlatformConfigurationUtils {
 
         if (factory == null) {
             throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
-                    "(did you put into the classpath?): " + factoryId);
+                "(did you put into the classpath?): " + factoryId);
         }
 
         return factory.create();
@@ -1681,10 +1681,10 @@ public class PlatformConfigurationUtils {
         MemoryConfiguration res = new MemoryConfiguration();
 
         res.setSystemCacheInitialSize(in.readLong())
-                .setSystemCacheMaxSize(in.readLong())
-                .setPageSize(in.readInt())
-                .setConcurrencyLevel(in.readInt())
-                .setDefaultMemoryPolicyName(in.readString());
+            .setSystemCacheMaxSize(in.readLong())
+            .setPageSize(in.readInt())
+            .setConcurrencyLevel(in.readInt())
+            .setDefaultMemoryPolicyName(in.readString());
 
         int cnt = in.readInt();
 
@@ -1695,15 +1695,15 @@ public class PlatformConfigurationUtils {
                 MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
 
                 cfg.setName(in.readString())
-                        .setInitialSize(in.readLong())
-                        .setMaxSize(in.readLong())
-                        .setSwapFilePath(in.readString())
-                        .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
-                        .setEvictionThreshold(in.readDouble())
-                        .setEmptyPagesPoolSize(in.readInt())
-                        .setMetricsEnabled(in.readBoolean())
-                        .setSubIntervals(in.readInt())
-                        .setRateTimeInterval(in.readLong());
+                    .setInitialSize(in.readLong())
+                    .setMaxSize(in.readLong())
+                    .setSwapFilePath(in.readString())
+                    .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
+                    .setEvictionThreshold(in.readDouble())
+                    .setEmptyPagesPoolSize(in.readInt())
+                    .setMetricsEnabled(in.readBoolean())
+                    .setSubIntervals(in.readInt())
+                    .setRateTimeInterval(in.readLong());
 
                 plcs[i] = cfg;
             }
