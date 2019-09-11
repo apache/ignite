@@ -121,24 +121,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     private Map<String, Measure> measures = new HashMap<>();
 
     /** Cached histogram metrics intervals names. */
-    private Map<T2<String, long[]>, String[]> histogramNames = new HashMap<>();
-
-    /** Create histogram interval names. */
-    private static final Function<T2<String, long[]>, String[]> CREATE_INTERVAL_NAMES = k -> {
-        String histogramName = k.get1();
-        long[] bounds = k.get2();
-
-        String[] names = new String[bounds.length + 1];
-
-        for (int i = 0; i < bounds.length + 1; i++) {
-            String minBound = i == 0 ? "_0" : "_" + bounds[i - 1];
-            String maxBound = i == bounds.length ? "_inf" : "_" + bounds[i];
-
-            names[i] = histogramName + minBound + maxBound;
-        }
-
-        return names;
-    };
+    private Map<String, T2<long[], String[]>> histogramNames = new HashMap<>();
 
     /** */
     private static final Function<Metric, Measure> CREATE_LONG = m ->
@@ -213,26 +196,28 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                                 histogram_10_100 (between 10 and 100)
                                 histogram_100_inf (more than 100)
                          */
-                        long[] value = ((HistogramMetric)metric).value();
+                        long[] values = ((HistogramMetric)metric).value();
                         long[] bounds = ((HistogramMetric)metric).bounds();
 
-                        T2<String, long[]> tuple = new T2<>(metric.name(), bounds);
+                        T2<long[], String[]> tuple = histogramNames.get(metric.name());
 
-                        String[] intervalNames = histogramNames.get(tuple);
+                        String[] intervalNames;
 
-                        if (intervalNames == null) {
-                            histogramNames.keySet().removeIf(t -> metric.name().equals(t.get1()));
+                        if (tuple != null && tuple.get1() == bounds)
+                            intervalNames = tuple.get2();
+                        else {
+                            intervalNames = createIntervalNames(metric.name(), bounds);
 
-                            intervalNames = histogramNames.computeIfAbsent(tuple, CREATE_INTERVAL_NAMES);
+                            histogramNames.put(metric.name(), new T2<>(bounds, intervalNames));
                         }
 
-                        for (int i = 0; i < value.length; i++) {
+                        for (int i = 0; i < values.length; i++) {
                             String mName = intervalNames[i];
 
                             MeasureLong msr = (MeasureLong)measures.computeIfAbsent(mName,
                                 k -> createMeasureLong(mName, metric.description()));
 
-                            mmap.put(msr, value[i]);
+                            mmap.put(msr, values[i]);
                         }
                     }
                     else if (log.isDebugEnabled()) {
@@ -286,6 +271,29 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
         Stats.getViewManager().registerView(v);
     }
+
+    /**
+     * Create histogram interval names.
+     *
+     * @param histogramName Histogram metric name.
+     * @param bounds Histogram bounds.
+     * @return Histogram intervals names.
+     */
+    private static String[] createIntervalNames(String histogramName, long[] bounds) {
+        String[] names = new String[bounds.length + 1];
+
+        long min = 0;
+
+        for (int i = 0; i < bounds.length; i++) {
+            names[i] = histogramName + "_" + min + "_" + bounds[i];
+
+            min = bounds[i];
+        }
+
+        names[bounds.length] = histogramName + "_" + min + "_inf";
+
+        return names;
+    };
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
