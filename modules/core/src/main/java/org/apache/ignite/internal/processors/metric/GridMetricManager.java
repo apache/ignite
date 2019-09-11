@@ -384,21 +384,34 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         });
     }
 
-    public <R extends MonitoringRow, D> void list(String name, String description,
-        Class<R> rowClazz, Supplier<ConcurrentMap<?, D>> data, Function<D, R> rowFunc, Consumer<D> clearer) {
+    /**
+     * Registers list which exports {@link ConcurrentMap} content.
+     *
+     * @param name Name of the list.
+     * @param desc Description of the list.
+     * @param rowCls Row class.
+     * @param data Data of the list.
+     * @param rowFunc value to row function.
+     * @param rowClearer Function that clears data on list removal.
+     * @param <R> List row type.
+     * @param <D> Map data type.
+     */
+    public <R extends MonitoringRow, D> void list(String name, String desc,
+        Class<R> rowCls, Supplier<ConcurrentMap<?, D>> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
 
         Supplier<MonitoringList<R>> listCreator = () -> list(name, () -> new MonitoringListAdapter<>(name,
-            description,
-            rowClazz,
-            (MonitoringRowAttributeWalker<R>)walkers.get(rowClazz),
+            desc,
+            rowCls,
+            (MonitoringRowAttributeWalker<R>)walkers.get(rowCls),
             data.get(),
             rowFunc));
 
-        //Create new instance of the list.
+        // Create new instance of the list.
         listCreator.get();
 
         ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> listCreator.get()));
-        ctx.metric().addRemoveListListener(l -> data.get().values().forEach(clearer));
+        ctx.metric().addRemoveListListener(listenOnlyEqual(name, MonitoringList::name,
+            l -> data.get().values().forEach(rowClearer)));
     }
 
     /**
