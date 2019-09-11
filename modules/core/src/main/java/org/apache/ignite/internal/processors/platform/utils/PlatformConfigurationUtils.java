@@ -796,8 +796,8 @@ public class PlatformConfigurationUtils {
 
             case 2:
                 cfg.setEventStorageSpi(new MemoryEventStorageSpi()
-                    .setExpireCount(in.readLong())
-                    .setExpireAgeMs(in.readLong()));
+                        .setExpireCount(in.readLong())
+                        .setExpireAgeMs(in.readLong()));
                 break;
         }
 
@@ -1343,7 +1343,7 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
             w.writeBoolean(bc.getNameMapper() instanceof BinaryBasicNameMapper &&
-                ((BinaryBasicNameMapper)(bc.getNameMapper())).isSimpleName());
+                    ((BinaryBasicNameMapper)(bc.getNameMapper())).isSimpleName());
         }
         else
             w.writeBoolean(false);
@@ -1606,21 +1606,21 @@ public class PlatformConfigurationUtils {
      */
     private static PlatformPluginConfigurationClosure pluginConfiguration(final int factoryId) {
         PlatformPluginConfigurationClosureFactory factory = AccessController.doPrivileged(
-            new PrivilegedAction<PlatformPluginConfigurationClosureFactory>() {
-                @Override public PlatformPluginConfigurationClosureFactory run() {
-                    for (PlatformPluginConfigurationClosureFactory factory :
-                        ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)) {
-                        if (factory.id() == factoryId)
-                            return factory;
-                    }
+                new PrivilegedAction<PlatformPluginConfigurationClosureFactory>() {
+                    @Override public PlatformPluginConfigurationClosureFactory run() {
+                        for (PlatformPluginConfigurationClosureFactory factory :
+                                ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)) {
+                            if (factory.id() == factoryId)
+                                return factory;
+                        }
 
-                    return null;
-                }
-            });
+                        return null;
+                    }
+                });
 
         if (factory == null) {
             throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
-                "(did you put into the classpath?): " + factoryId);
+                    "(did you put into the classpath?): " + factoryId);
         }
 
         return factory.create();
@@ -1650,21 +1650,21 @@ public class PlatformConfigurationUtils {
      */
     private static PlatformCachePluginConfigurationClosure cachePluginConfiguration(final int factoryId) {
         PlatformCachePluginConfigurationClosureFactory factory = AccessController.doPrivileged(
-            new PrivilegedAction<PlatformCachePluginConfigurationClosureFactory>() {
-                @Override public PlatformCachePluginConfigurationClosureFactory run() {
-                    for (PlatformCachePluginConfigurationClosureFactory factory :
-                        ServiceLoader.load(PlatformCachePluginConfigurationClosureFactory.class)) {
-                        if (factory.id() == factoryId)
-                            return factory;
-                    }
+                new PrivilegedAction<PlatformCachePluginConfigurationClosureFactory>() {
+                    @Override public PlatformCachePluginConfigurationClosureFactory run() {
+                        for (PlatformCachePluginConfigurationClosureFactory factory :
+                                ServiceLoader.load(PlatformCachePluginConfigurationClosureFactory.class)) {
+                            if (factory.id() == factoryId)
+                                return factory;
+                        }
 
-                    return null;
-                }
-            });
+                        return null;
+                    }
+                });
 
         if (factory == null) {
             throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
-                "(did you put into the classpath?): " + factoryId);
+                    "(did you put into the classpath?): " + factoryId);
         }
 
         return factory.create();
@@ -1681,10 +1681,10 @@ public class PlatformConfigurationUtils {
         MemoryConfiguration res = new MemoryConfiguration();
 
         res.setSystemCacheInitialSize(in.readLong())
-            .setSystemCacheMaxSize(in.readLong())
-            .setPageSize(in.readInt())
-            .setConcurrencyLevel(in.readInt())
-            .setDefaultMemoryPolicyName(in.readString());
+                .setSystemCacheMaxSize(in.readLong())
+                .setPageSize(in.readInt())
+                .setConcurrencyLevel(in.readInt())
+                .setDefaultMemoryPolicyName(in.readString());
 
         int cnt = in.readInt();
 
@@ -1695,15 +1695,15 @@ public class PlatformConfigurationUtils {
                 MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
 
                 cfg.setName(in.readString())
-                    .setInitialSize(in.readLong())
-                    .setMaxSize(in.readLong())
-                    .setSwapFilePath(in.readString())
-                    .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
-                    .setEvictionThreshold(in.readDouble())
-                    .setEmptyPagesPoolSize(in.readInt())
-                    .setMetricsEnabled(in.readBoolean())
-                    .setSubIntervals(in.readInt())
-                    .setRateTimeInterval(in.readLong());
+                        .setInitialSize(in.readLong())
+                        .setMaxSize(in.readLong())
+                        .setSwapFilePath(in.readString())
+                        .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
+                        .setEvictionThreshold(in.readDouble())
+                        .setEmptyPagesPoolSize(in.readInt())
+                        .setMetricsEnabled(in.readBoolean())
+                        .setSubIntervals(in.readInt())
+                        .setRateTimeInterval(in.readLong());
 
                 plcs[i] = cfg;
             }
@@ -1766,14 +1766,14 @@ public class PlatformConfigurationUtils {
     @SuppressWarnings("deprecation")
     private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
         return new SqlConnectorConfiguration()
-            .setHost(in.readString())
-            .setPort(in.readInt())
-            .setPortRange(in.readInt())
-            .setSocketSendBufferSize(in.readInt())
-            .setSocketReceiveBufferSize(in.readInt())
-            .setTcpNoDelay(in.readBoolean())
-            .setMaxOpenCursorsPerConnection(in.readInt())
-            .setThreadPoolSize(in.readInt());
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
     }
 
     /**
@@ -1810,18 +1810,18 @@ public class PlatformConfigurationUtils {
     private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in,
         ClientListenerProtocolVersion ver) {
         ClientConnectorConfiguration cfg = new ClientConnectorConfiguration()
-            .setHost(in.readString())
-            .setPort(in.readInt())
-            .setPortRange(in.readInt())
-            .setSocketSendBufferSize(in.readInt())
-            .setSocketReceiveBufferSize(in.readInt())
-            .setTcpNoDelay(in.readBoolean())
-            .setMaxOpenCursorsPerConnection(in.readInt())
-            .setThreadPoolSize(in.readInt())
-            .setIdleTimeout(in.readLong())
-            .setThinClientEnabled(in.readBoolean())
-            .setOdbcEnabled(in.readBoolean())
-            .setJdbcEnabled(in.readBoolean());
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt())
+                .setIdleTimeout(in.readLong())
+                .setThinClientEnabled(in.readBoolean())
+                .setOdbcEnabled(in.readBoolean())
+                .setJdbcEnabled(in.readBoolean());
 
         if (ver.compareTo(VER_1_3_0) >= 0)
             cfg.setHandshakeTimeout(in.readLong());
@@ -1872,27 +1872,27 @@ public class PlatformConfigurationUtils {
     @SuppressWarnings("deprecation")
     private static PersistentStoreConfiguration readPersistentStoreConfiguration(BinaryRawReader in) {
         return new PersistentStoreConfiguration()
-            .setPersistentStorePath(in.readString())
-            .setCheckpointingFrequency(in.readLong())
-            .setCheckpointingPageBufferSize(in.readLong())
-            .setCheckpointingThreads(in.readInt())
-            .setLockWaitTime((int) in.readLong())
-            .setWalHistorySize(in.readInt())
-            .setWalSegments(in.readInt())
-            .setWalSegmentSize(in.readInt())
-            .setWalStorePath(in.readString())
-            .setWalArchivePath(in.readString())
-            .setWalMode(WALMode.fromOrdinal(in.readInt()))
-            .setWalBufferSize(in.readInt())
-            .setWalFlushFrequency((int) in.readLong())
-            .setWalFsyncDelayNanos(in.readLong())
-            .setWalRecordIteratorBufferSize(in.readInt())
-            .setAlwaysWriteFullPages(in.readBoolean())
-            .setMetricsEnabled(in.readBoolean())
-            .setSubIntervals(in.readInt())
-            .setRateTimeInterval(in.readLong())
-            .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
-            .setWriteThrottlingEnabled(in.readBoolean());
+                .setPersistentStorePath(in.readString())
+                .setCheckpointingFrequency(in.readLong())
+                .setCheckpointingPageBufferSize(in.readLong())
+                .setCheckpointingThreads(in.readInt())
+                .setLockWaitTime((int) in.readLong())
+                .setWalHistorySize(in.readInt())
+                .setWalSegments(in.readInt())
+                .setWalSegmentSize(in.readInt())
+                .setWalStorePath(in.readString())
+                .setWalArchivePath(in.readString())
+                .setWalMode(WALMode.fromOrdinal(in.readInt()))
+                .setWalBufferSize(in.readInt())
+                .setWalFlushFrequency((int) in.readLong())
+                .setWalFsyncDelayNanos(in.readLong())
+                .setWalRecordIteratorBufferSize(in.readInt())
+                .setAlwaysWriteFullPages(in.readBoolean())
+                .setMetricsEnabled(in.readBoolean())
+                .setSubIntervals(in.readInt())
+                .setRateTimeInterval(in.readLong())
+                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
+                .setWriteThrottlingEnabled(in.readBoolean());
     }
 
     /**
@@ -1905,33 +1905,33 @@ public class PlatformConfigurationUtils {
     private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in,
         ClientListenerProtocolVersion ver) {
         DataStorageConfiguration res = new DataStorageConfiguration()
-            .setStoragePath(in.readString())
-            .setCheckpointFrequency(in.readLong())
-            .setCheckpointThreads(in.readInt())
-            .setLockWaitTime((int) in.readLong())
-            .setWalHistorySize(in.readInt())
-            .setWalSegments(in.readInt())
-            .setWalSegmentSize(in.readInt())
-            .setWalPath(in.readString())
-            .setWalArchivePath(in.readString())
-            .setWalMode(WALMode.fromOrdinal(in.readInt()))
-            .setWalThreadLocalBufferSize(in.readInt())
-            .setWalFlushFrequency((int) in.readLong())
-            .setWalFsyncDelayNanos(in.readLong())
-            .setWalRecordIteratorBufferSize(in.readInt())
-            .setAlwaysWriteFullPages(in.readBoolean())
-            .setMetricsEnabled(in.readBoolean())
-            .setMetricsSubIntervalCount(in.readInt())
-            .setMetricsRateTimeInterval(in.readLong())
-            .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
-            .setWriteThrottlingEnabled(in.readBoolean())
-            .setWalCompactionEnabled(in.readBoolean())
-            .setMaxWalArchiveSize(in.readLong())
-            .setSystemRegionInitialSize(in.readLong())
-            .setSystemRegionMaxSize(in.readLong())
-            .setPageSize(in.readInt())
-            .setConcurrencyLevel(in.readInt())
-            .setWalAutoArchiveAfterInactivity(in.readLong());
+                .setStoragePath(in.readString())
+                .setCheckpointFrequency(in.readLong())
+                .setCheckpointThreads(in.readInt())
+                .setLockWaitTime((int) in.readLong())
+                .setWalHistorySize(in.readInt())
+                .setWalSegments(in.readInt())
+                .setWalSegmentSize(in.readInt())
+                .setWalPath(in.readString())
+                .setWalArchivePath(in.readString())
+                .setWalMode(WALMode.fromOrdinal(in.readInt()))
+                .setWalThreadLocalBufferSize(in.readInt())
+                .setWalFlushFrequency((int) in.readLong())
+                .setWalFsyncDelayNanos(in.readLong())
+                .setWalRecordIteratorBufferSize(in.readInt())
+                .setAlwaysWriteFullPages(in.readBoolean())
+                .setMetricsEnabled(in.readBoolean())
+                .setMetricsSubIntervalCount(in.readInt())
+                .setMetricsRateTimeInterval(in.readLong())
+                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
+                .setWriteThrottlingEnabled(in.readBoolean())
+                .setWalCompactionEnabled(in.readBoolean())
+                .setMaxWalArchiveSize(in.readLong())
+                .setSystemRegionInitialSize(in.readLong())
+                .setSystemRegionMaxSize(in.readLong())
+                .setPageSize(in.readInt())
+                .setConcurrencyLevel(in.readInt())
+                .setWalAutoArchiveAfterInactivity(in.readLong());
 
         if (in.readBoolean())
             res.setCheckpointReadLockTimeout(in.readLong());
