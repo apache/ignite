@@ -5359,6 +5359,45 @@ public abstract class IgniteUtils {
         return map;
     }
 
+
+    /**
+     * Calculate a hashCode for an array.
+     *
+     * @param obj Object.
+     */
+    public static int hashCode(Object obj) {
+        if(obj == null)
+            return 0;
+
+        if (obj.getClass().isArray()) {
+            if (obj instanceof byte[])
+                return Arrays.hashCode((byte[])obj);
+            if (obj instanceof short[])
+                return Arrays.hashCode((short[])obj);
+            if (obj instanceof int[])
+                return Arrays.hashCode((int[])obj);
+            if (obj instanceof long[])
+                return Arrays.hashCode((long[])obj);
+            if (obj instanceof float[])
+                return Arrays.hashCode((float[])obj);
+            if (obj instanceof double[])
+                return Arrays.hashCode((double[])obj);
+            if (obj instanceof char[])
+                return Arrays.hashCode((char[])obj);
+            if (obj instanceof boolean[])
+                return Arrays.hashCode((boolean[])obj);
+
+            int result = 1;
+
+            for (Object element : (Object[])obj)
+                result = 31 * result + hashCode(element);
+
+            return result;
+        }
+        else
+            return obj.hashCode();
+    }
+
     /**
      * @param in Input.
      * @return Read map.
@@ -9294,7 +9333,28 @@ public abstract class IgniteUtils {
                         IgniteSystemProperties.IGNITE_WORK_DIR + ") must be explicitly set."
                 );
 
-            workDir = new File(userDir, DEFAULT_WORK_DIR);
+            File igniteDir = new File(userDir, "ignite");
+
+            try {
+                igniteDir.mkdirs();
+
+                File readme = new File(igniteDir, "README.txt");
+
+                if (!readme.exists()) {
+                    U.writeStringToFile(readme,
+                        "This is Apache Ignite working directory that contains information that \n" +
+                        "    Ignite nodes need in order to function normally.\n" +
+                        "Don't delete it unless you're sure you know what you're doing.\n\n" +
+                        "You can change the location of working directory with \n" +
+                        "    igniteConfiguration.setWorkingDirectory(location) or \n" +
+                        "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
+                }
+            }
+            catch (Exception e) {
+                // Ignore.
+            }
+
+            workDir = new File(igniteDir, DEFAULT_WORK_DIR);
         }
 
         if (!workDir.isAbsolute())

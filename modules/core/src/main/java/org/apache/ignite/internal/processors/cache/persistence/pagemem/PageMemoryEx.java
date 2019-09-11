@@ -114,8 +114,9 @@ public interface PageMemoryEx extends PageMemory {
      *
      * @return Collection of dirty page IDs.
      * @throws IgniteException If checkpoint has been already started and was not finished.
+     * @param allowToReplace The sign which allows to replace pages from a checkpoint by page replacer.
      */
-    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException;
+    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint(IgniteInternalFuture allowToReplace) throws IgniteException;
 
     /**
      * Finishes checkpoint operation.
@@ -127,7 +128,7 @@ public interface PageMemoryEx extends PageMemory {
      *{@link PageStoreWriter} will be called when the page will be ready to write.
      *
      * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
-     *      the {@link #beginCheckpoint()} method call.
+     *      the {@link #beginCheckpoint(IgniteInternalFuture)} method call.
      * @param buf Temporary buffer to write changes into.
      * @param pageWriter Checkpoint page write context.
      * @param tracker Checkpoint metrics tracker.
