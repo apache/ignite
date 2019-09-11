@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -83,6 +86,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -499,6 +504,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     cctx.database().checkpointReadLock();
 
+                    // Reserved partitions (necessary to prevent race due to updates in RENTING state).
+                    Set<GridDhtLocalPartition> reservedParts = new HashSet<>();
+
                     try {
                         assert !txState.mvccEnabled() || mvccSnapshot != null : "Mvcc is not initialized: " + this;
 
@@ -512,6 +520,36 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         // Node that for near transactions we grab all entries.
                         for (IgniteTxEntry txEntry : entries) {
                             GridCacheContext cacheCtx = txEntry.context();
+
+                            // Prevent stale updates.
+                            GridDhtLocalPartition locPart =
+                                    cacheCtx.group().topology().localPartition(txEntry.cached().partition());
+
+                            boolean reserved = false;
+
+                            if (!near() && locPart != null && !reservedParts.contains(locPart) &&
+                                    (!(reserved = locPart.reserve()) || locPart.state() == RENTING)) {
+                                LT.warn(log(), "Skipping update to partition that is concurrently evicting " +
+                                        "[grp=" + cacheCtx.group().cacheOrGroupName() + ", part=" + locPart + "]");
+
+                                // Reserved RENTING partition.
+                                if (reserved) {
+                                    assert locPart.state() != EVICTED && locPart.reservations() > 0;
+
+                                    reservedParts.add(locPart);
+                                }
+
+                                continue;
+                            }
+
+                            if (reserved) {
+                                assert locPart.state() != EVICTED && locPart.reservations() > 0;
+
+                                reservedParts.add(locPart);
+                            }
+
+                            assert near() || locPart == null ||
+                                    !(locPart.state() == RENTING || locPart.state() == EVICTED) : locPart;
 
                             boolean replicate = cacheCtx.isDrEnabled();
 
@@ -804,6 +842,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         throw err;
                     }
                     finally {
+                        for (GridDhtLocalPartition locPart : reservedParts)
+                            locPart.release();
+
                         cctx.database().checkpointReadUnlock();
 
                         if (wrapper != null)

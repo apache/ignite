@@ -51,7 +51,7 @@ class GaussianNaiveBayesSumsHolder implements Serializable, AutoCloseable {
         return arr1;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void close() {
         // Do nothing, GC will clean up.
     }

@@ -23,6 +23,8 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+
 /**
  * JDBC tables metadata request.
  */
@@ -32,6 +34,9 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
 
     /** Table search pattern. */
     private String tblName;
+
+    /** Table types. */
+    private String[] tblTypes;
 
     /**
      * Default constructor is used for deserialization.
@@ -43,12 +48,14 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     /**
      * @param schemaName Schema search pattern.
      * @param tblName Table search pattern.
+     * @param tblTypes Table types.
      */
-    public JdbcMetaTablesRequest(String schemaName, String tblName) {
+    public JdbcMetaTablesRequest(String schemaName, String tblName, String[] tblTypes) {
         super(META_TABLES);
 
         this.schemaName = schemaName;
         this.tblName = tblName;
+        this.tblTypes = tblTypes;
     }
 
     /**
@@ -65,6 +72,13 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
         return tblName;
     }
 
+    /**
+     * @return Table types.
+     */
+    public String[] tableTypes() {
+        return tblTypes;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
@@ -72,6 +86,9 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
 
         writer.writeString(schemaName);
         writer.writeString(tblName);
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeStringArray(tblTypes);
     }
 
     /** {@inheritDoc} */
@@ -79,8 +96,11 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        this.schemaName = reader.readString();
-        this.tblName = reader.readString();
+        schemaName = reader.readString();
+        tblName = reader.readString();
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            tblTypes = reader.readStringArray();
     }
 
     /** {@inheritDoc} */

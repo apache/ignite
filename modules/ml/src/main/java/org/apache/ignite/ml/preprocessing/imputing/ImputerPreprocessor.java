@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -27,7 +30,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class ImputerPreprocessor<K, V> implements Preprocessor<K, V> {
+public final class ImputerPreprocessor<K, V> implements Preprocessor<K, V>, DeployableObject {
     /** */
     private static final long serialVersionUID = 6887800576392623469L;
 
@@ -65,5 +68,10 @@ public class ImputerPreprocessor<K, V> implements Preprocessor<K, V> {
                 res.set(i, imputingValues.get(i));
         }
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

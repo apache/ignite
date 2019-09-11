@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Map of partitions demanded during rebalancing.
@@ -39,13 +38,6 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     /** Set of partitions that will be preloaded from all it's current data. */
     @GridToStringInclude
     private Set<Integer> full;
-
-    public IgniteDhtDemandedPartitionsMap(
-        @Nullable CachePartitionPartialCountersMap historical,
-        @Nullable Set<Integer> full) {
-        this.historical = historical;
-        this.full = full;
-    }
 
     public IgniteDhtDemandedPartitionsMap() {
         // No-op.
