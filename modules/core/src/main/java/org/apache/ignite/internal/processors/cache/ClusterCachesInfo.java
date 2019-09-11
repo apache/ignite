@@ -151,13 +151,13 @@ class ClusterCachesInfo {
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        ctx.metric().list(CACHES_MON_LIST, CACHES_MON_LIST_DESC,
+        ctx.metric().registerList(CACHES_MON_LIST, CACHES_MON_LIST_DESC,
             CacheView.class,
             () -> registeredCaches,
             DynamicCacheDescriptor::cacheView,
             DynamicCacheDescriptor::clearCacheView);
 
-        ctx.metric().list(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC,
+        ctx.metric().registerList(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC,
             CacheGroupView.class,
             () -> registeredCacheGrps,
             CacheGroupDescriptor::cacheGroupView,

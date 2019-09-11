@@ -159,7 +159,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
-        ctx.metric().list(TASKS_MON_LIST, TASKS_MON_LIST_DESC,
+        ctx.metric().registerList(TASKS_MON_LIST, TASKS_MON_LIST_DESC,
             ComputeTaskView.class,
             () -> tasks,
             GridTaskWorker::taskView,

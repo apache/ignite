@@ -38,7 +38,7 @@ public interface MonitoringRowAttributeWalker<R extends MonitoringRow> {
      * @param row Row to iterate.
      * @param visitor Attribute visitor.
      */
-    public void visitAllWithValues(R row, AttributeWithValueVisitor visitor);
+    public void visitAll(R row, AttributeWithValueVisitor visitor);
 
     /** Attribute visitor. */
     public interface AttributeVisitor {

@@ -207,7 +207,7 @@ public class MonitoringListMBean<R extends MonitoringRow> extends ReadOnlyDynami
 
                     visitor.data(data);
 
-                    mlist.walker().visitAllWithValues(row, visitor);
+                    mlist.walker().visitAll(row, visitor);
 
                     data.put("monitoringRowId", idx++);
 

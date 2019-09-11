@@ -122,7 +122,7 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
         for (R row : list) {
             StringBuilder rowStr = new StringBuilder();
 
-            walker.visitAllWithValues(row, new AttributeWithValueVisitor() {
+            walker.visitAll(row, new AttributeWithValueVisitor() {
                 @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                     if (idx != 0)
                         rowStr.append(COL_SEPARATOR);

@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.metric.list;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
-import org.jetbrains.annotations.Nullable;
 
 /** Utils methods for monitoring list feature. */
 public final class ListUtils {

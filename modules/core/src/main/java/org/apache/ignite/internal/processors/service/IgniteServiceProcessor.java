@@ -189,7 +189,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.metric().list(SVCS_MON_LIST, SVCS_MON_LIST_DESC,
+        ctx.metric().registerList(SVCS_MON_LIST, SVCS_MON_LIST_DESC,
             ServiceView.class,
             () -> registeredServices,
             s -> s,

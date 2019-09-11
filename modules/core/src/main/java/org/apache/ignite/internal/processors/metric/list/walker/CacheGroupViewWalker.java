@@ -52,7 +52,7 @@ public class CacheGroupViewWalker implements MonitoringRowAttributeWalker<CacheG
     }
 
     /** {@inheritDoc} */
-    @Override public void visitAllWithValues(CacheGroupView row, AttributeWithValueVisitor v) {
+    @Override public void visitAll(CacheGroupView row, AttributeWithValueVisitor v) {
         v.accept(0, "cacheGroupName", String.class, row.cacheGroupName());
         v.acceptInt(1, "cacheCount", row.cacheCount());
         v.accept(2, "dataRegionName", String.class, row.dataRegionName());

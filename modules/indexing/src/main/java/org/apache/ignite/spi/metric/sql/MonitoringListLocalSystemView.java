@@ -81,7 +81,7 @@ public class MonitoringListLocalSystemView<R extends MonitoringRow> extends SqlA
 
                 Value[] data = new Value[mlist.walker().count()];
 
-                mlist.walker().visitAllWithValues(row, new AttributeWithValueVisitor() {
+                mlist.walker().visitAll(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;

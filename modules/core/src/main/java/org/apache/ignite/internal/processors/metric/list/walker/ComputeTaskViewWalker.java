@@ -45,7 +45,7 @@ public class ComputeTaskViewWalker implements MonitoringRowAttributeWalker<Compu
     }
 
     /** {@inheritDoc} */
-    @Override public void visitAllWithValues(ComputeTaskView row, AttributeWithValueVisitor v) {
+    @Override public void visitAll(ComputeTaskView row, AttributeWithValueVisitor v) {
         v.accept(0, "affinityCacheName", String.class, row.affinityCacheName());
         v.acceptInt(1, "affinityPartitionId", row.affinityPartitionId());
         v.acceptLong(2, "endTime", row.endTime());

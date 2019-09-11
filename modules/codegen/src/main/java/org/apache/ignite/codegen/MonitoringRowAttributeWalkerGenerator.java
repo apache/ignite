@@ -165,7 +165,7 @@ public class MonitoringRowAttributeWalkerGenerator {
         code.add(TAB + "}");
         code.add("");
         code.add(TAB + "/** {@inheritDoc} */");
-        code.add(TAB + "@Override public void visitAllWithValues(" + simpleName + " row, AttributeWithValueVisitor v) {");
+        code.add(TAB + "@Override public void visitAll(" + simpleName + " row, AttributeWithValueVisitor v) {");
 
         forEachMethod(clazz, (m, i) -> {
             String name = m.getName();

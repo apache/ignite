@@ -99,7 +99,7 @@ public class CacheViewWalker implements MonitoringRowAttributeWalker<CacheView> 
     }
 
     /** {@inheritDoc} */
-    @Override public void visitAllWithValues(CacheView row, AttributeWithValueVisitor v) {
+    @Override public void visitAll(CacheView row, AttributeWithValueVisitor v) {
         v.accept(0, "cacheName", String.class, row.cacheName());
         v.acceptInt(1, "cacheId", row.cacheId());
         v.accept(2, "cacheType", CacheType.class, row.cacheType());

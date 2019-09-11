@@ -396,10 +396,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <R> List row type.
      * @param <D> Map data type.
      */
-    public <R extends MonitoringRow, D> void list(String name, String desc,
+    public <R extends MonitoringRow, D> void registerList(String name, String desc,
         Class<R> rowCls, Supplier<ConcurrentMap<?, D>> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
 
-        Supplier<MonitoringList<R>> listCreator = () -> list(name, () -> new MonitoringListAdapter<>(name,
+        Supplier<MonitoringList<R>> listCreator = () -> registerList(name, () -> new MonitoringListAdapter<>(name,
             desc,
             rowCls,
             (MonitoringRowAttributeWalker<R>)walkers.get(rowCls),
@@ -430,7 +430,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <R> Type of the row.
      * @return Monitoring list.
      */
-    private <R extends MonitoringRow> MonitoringList<R> list(String name,
+    private <R extends MonitoringRow> MonitoringList<R> registerList(String name,
         Supplier<MonitoringList<R>> listSupplier) {
         return (MonitoringList<R>)lists.computeIfAbsent(name, n -> {
             MonitoringList<R> list = listSupplier.get();

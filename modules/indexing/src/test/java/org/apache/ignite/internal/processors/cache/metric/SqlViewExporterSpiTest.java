@@ -96,7 +96,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testListRemove() throws Exception {
         GridMetricManager mmgr = ignite.context().metric();
 
-        mmgr.list("test", "description", CacheView.class, ConcurrentHashMap::new, v -> null, l -> {});
+        mmgr.registerList("test", "description", CacheView.class, ConcurrentHashMap::new, v -> null, l -> {});
 
         List<List<?>> rows = execute(ignite, "SELECT * FROM SYS.TEST");
 

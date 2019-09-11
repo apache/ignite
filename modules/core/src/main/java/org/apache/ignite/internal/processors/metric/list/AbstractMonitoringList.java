@@ -37,7 +37,7 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
     /**
      * Row attribute walker.
      *
-     * @see org.apache.ignite.codegen.MonitoringRowAttributeWalkerGenerator
+     * @see "org.apache.ignite.codegen.MonitoringRowAttributeWalkerGenerator"
      */
     private final MonitoringRowAttributeWalker<R> walker;
 

@@ -44,7 +44,7 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
     }
 
     /** {@inheritDoc} */
-    @Override public void visitAllWithValues(ServiceView row, AttributeWithValueVisitor v) {
+    @Override public void visitAll(ServiceView row, AttributeWithValueVisitor v) {
         v.accept(0, "serviceId", IgniteUuid.class, row.serviceId());
         v.accept(1, "name", String.class, row.name());
         v.accept(2, "serviceClass", Class.class, row.serviceClass());
