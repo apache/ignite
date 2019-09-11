@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,17 +60,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.Repeat;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.Test;
-
-import javax.cache.Cache;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests partition scan query fallback.
@@ -413,7 +416,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     }
 
     @Test
-    public void testScanQueryFallbackOnSerialShutdown() {
+    public void testScanQueryFallbackOnSerialShutdown() throws Exception{
         cacheMode = CacheMode.PARTITIONED;
         backups = 1;
         commSpiFactory = new TestLocalCommunicationSpiFactory();
@@ -441,10 +444,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                     assertEquals("Invalid number of entries for partition: " + part, map.size(), recordCount);
                 }
             }
-
-
-        } catch (Exception e) {
-            Assert.fail(e.getMessage());
         }
         finally {
             stopAllGrids();
