@@ -52,7 +52,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         );
     }
 
-    /** */
+    /** . */
     @Parameterized.Parameter(0)
     public CacheMode mode;
 

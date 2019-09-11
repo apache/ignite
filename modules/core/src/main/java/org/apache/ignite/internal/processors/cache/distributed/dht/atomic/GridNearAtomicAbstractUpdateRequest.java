@@ -48,7 +48,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
-    /** */
+    /** . */
     private static final int NEED_PRIMARY_RES_FLAG_MASK = 0x01;
 
     /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */

@@ -1605,18 +1605,26 @@ public class PlatformConfigurationUtils {
      * @return PlatformPluginConfigurationClosure.
      */
     private static PlatformPluginConfigurationClosure pluginConfiguration(final int factoryId) {
-        PlatformPluginConfigurationClosureFactory factory = AccessController.doPrivileged(
-                new PrivilegedAction<PlatformPluginConfigurationClosureFactory>() {
-                    @Override public PlatformPluginConfigurationClosureFactory run() {
-                        for (PlatformPluginConfigurationClosureFactory factory :
-                                ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)) {
-                            if (factory.id() == factoryId)
-                                return factory;
-                        }
+        final ServiceLoader<PlatformPluginConfigurationClosureFactory> sl;
 
-                        return null;
-                    }
-                });
+        if (System.getSecurityManager() != null) {
+            sl = AccessController.doPrivileged(
+                (PrivilegedAction<ServiceLoader<PlatformPluginConfigurationClosureFactory>>)
+                    () -> ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)
+            );
+        }
+        else
+            sl = ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class);
+
+        PlatformPluginConfigurationClosureFactory factory = null;
+
+        for (PlatformPluginConfigurationClosureFactory f : sl) {
+            if (f.id() == factoryId) {
+                factory = f;
+
+                break;
+            }
+        }
 
         if (factory == null) {
             throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
@@ -1649,18 +1657,26 @@ public class PlatformConfigurationUtils {
      * @return PlatformCachePluginConfigurationClosure.
      */
     private static PlatformCachePluginConfigurationClosure cachePluginConfiguration(final int factoryId) {
-        PlatformCachePluginConfigurationClosureFactory factory = AccessController.doPrivileged(
-                new PrivilegedAction<PlatformCachePluginConfigurationClosureFactory>() {
-                    @Override public PlatformCachePluginConfigurationClosureFactory run() {
-                        for (PlatformCachePluginConfigurationClosureFactory factory :
-                                ServiceLoader.load(PlatformCachePluginConfigurationClosureFactory.class)) {
-                            if (factory.id() == factoryId)
-                                return factory;
-                        }
+        final ServiceLoader<PlatformCachePluginConfigurationClosureFactory> sl;
 
-                        return null;
-                    }
-                });
+        if (System.getSecurityManager() != null) {
+            sl = AccessController.doPrivileged(
+                (PrivilegedAction<ServiceLoader<PlatformCachePluginConfigurationClosureFactory>>)
+                    () -> ServiceLoader.load(PlatformCachePluginConfigurationClosureFactory.class)
+            );
+        }
+        else
+            sl = ServiceLoader.load(PlatformCachePluginConfigurationClosureFactory.class);
+
+        PlatformCachePluginConfigurationClosureFactory factory = null;
+
+        for (PlatformCachePluginConfigurationClosureFactory f : sl) {
+            if (f.id() == factoryId) {
+                factory = f;
+
+                break;
+            }
+        }
 
         if (factory == null) {
             throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +

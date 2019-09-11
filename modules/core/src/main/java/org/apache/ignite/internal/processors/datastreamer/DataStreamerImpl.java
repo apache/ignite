@@ -2216,7 +2216,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext<?, ?> cctx = internalCache.context();
 
-            if (cctx.kernalContext().security().enabled())
+            if (System.getSecurityManager() != null)
                 AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
                     body(cache, entries);
 

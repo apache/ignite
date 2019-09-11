@@ -138,7 +138,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                         private Ignite loc;
 
                         @Override public void cancel() {
-                            // No-op.
+                            // no-op
                         }
 
                         @Override public Object execute() {

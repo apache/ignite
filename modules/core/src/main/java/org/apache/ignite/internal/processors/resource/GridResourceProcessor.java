@@ -249,13 +249,17 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         final Object target = unwrapTarget(obj);
 
         try {
-            AccessController.doPrivileged(
-                (PrivilegedExceptionAction<Void>)() -> {
-                    inject(target, annSet, null, null, params);
+            if (System.getSecurityManager() != null) {
+                AccessController.doPrivileged(
+                    (PrivilegedExceptionAction<Void>)() -> {
+                        inject(target, annSet, null, null, params);
 
-                    return null;
-                }
-            );
+                        return null;
+                    }
+                );
+            }
+            else
+                inject(target, annSet, null, null, params);
         }
         catch (PrivilegedActionException e) {
             if (e.getException() instanceof IgniteCheckedException)

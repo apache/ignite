@@ -66,6 +66,6 @@ public interface SecuritySubject extends Serializable {
      * @return Permissions for SecurityManager checks.
      */
     public default Permissions sandboxPermissions(){
-        return SecurityUtils.EMPTY_PERMISSIONS;
+        return SecurityUtils.ALL_PERMISSIONS;
     }
 }

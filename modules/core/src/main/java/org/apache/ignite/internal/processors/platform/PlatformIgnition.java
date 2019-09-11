@@ -163,22 +163,31 @@ public class PlatformIgnition {
      * @return Bootstrap.
      */
     private static PlatformBootstrap bootstrap(final int factoryId) {
-        PlatformBootstrapFactory factory = AccessController.doPrivileged(
-            new PrivilegedAction<PlatformBootstrapFactory>() {
-                @Override public PlatformBootstrapFactory run() {
-                    for (PlatformBootstrapFactory factory : ServiceLoader.load(PlatformBootstrapFactory.class)) {
-                        if (factory.id() == factoryId)
-                            return factory;
-                    }
+        final PlatformBootstrapFactory factory;
 
-                    return null;
-                }
-            });
+        if (System.getSecurityManager() != null) {
+            factory = AccessController.doPrivileged(
+                (PrivilegedAction<PlatformBootstrapFactory>)() -> factory(factoryId));
+        }
+        else
+            factory = factory(factoryId);
 
         if (factory == null)
             throw new IgniteException("Interop factory is not found (did you put into the classpath?): " + factoryId);
 
         return factory.create();
+    }
+
+    /**
+     *
+     */
+    private static PlatformBootstrapFactory factory(final int factoryId) {
+        for (PlatformBootstrapFactory factory : ServiceLoader.load(PlatformBootstrapFactory.class)) {
+            if (factory.id() == factoryId)
+                return factory;
+        }
+
+        return null;
     }
 
     /**

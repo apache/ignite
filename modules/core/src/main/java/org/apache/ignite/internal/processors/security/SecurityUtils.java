@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.AllPermission;
 import java.security.Permissions;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,12 +52,13 @@ public class SecurityUtils {
     };
 
     /** Permissions that contain {@code AllPermission}. */
-    public static final Permissions EMPTY_PERMISSIONS;
+    public static final Permissions ALL_PERMISSIONS;
 
     static {
-        EMPTY_PERMISSIONS = new Permissions();
+        ALL_PERMISSIONS = new Permissions();
 
-        EMPTY_PERMISSIONS.setReadOnly();
+        ALL_PERMISSIONS.add(new AllPermission());
+        ALL_PERMISSIONS.setReadOnly();
     }
 
     /**
