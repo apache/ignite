@@ -44,7 +44,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     private @Nullable Predicate<MetricRegistry> mregFilter;
 
     /** Monitoring list filter. */
-    private @Nullable Predicate<MonitoringList<?, ?>> mlistFilter;
+    private @Nullable Predicate<MonitoringList<?>> mlistFilter;
 
     /** Metric Registry. */
     private ReadOnlyMetricRegistry mreg;
@@ -76,7 +76,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
      *
      * @param mlist Monitoring list.
      */
-    private void unregister(MonitoringList<?,?> mlist) {
+    private void unregister(MonitoringList<?> mlist) {
         if (mlistFilter != null && !mlistFilter.test(mlist)) {
             if (log.isDebugEnabled())
                 U.debug(log, "Monitoring list filtered and will not be unregistered.[name=" + mlist.name() + ']');
@@ -86,7 +86,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        MonitoringListLocalSystemView<?, ?> view = new MonitoringListLocalSystemView<>(ctx, mlist);
+        MonitoringListLocalSystemView<?> view = new MonitoringListLocalSystemView<>(ctx, mlist);
 
         mgr.removeSystemView(view.getSchemaName(), view.getTableName());
     }
@@ -96,7 +96,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
      *
      * @param mlist Monitoring list.
      */
-    private void register(MonitoringList<?,?> mlist) {
+    private void register(MonitoringList<?> mlist) {
         if (mlistFilter != null && !mlistFilter.test(mlist)) {
             if (log.isDebugEnabled())
                 U.debug(log, "Monitoring list filtered and will not be registered.[name=" + mlist.name() + ']');
@@ -108,7 +108,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        MonitoringListLocalSystemView<?, ?> view = new MonitoringListLocalSystemView<>(ctx, mlist);
+        MonitoringListLocalSystemView<?> view = new MonitoringListLocalSystemView<>(ctx, mlist);
 
         mgr.createSystemView(view);
     }
@@ -139,7 +139,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?, ?>> filter) {
+    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter) {
         this.mlistFilter = filter;
     }
 }
