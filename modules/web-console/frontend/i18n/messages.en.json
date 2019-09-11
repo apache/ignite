@@ -135,7 +135,7 @@
             "stackTraceDialog": {
                 "title": "Error details",
                 "noStacktraceMessage": "Full stacktrace is not available",
-                "closeButtonLabel": "Ok"
+                "closeButtonLabel": "OK"
             },
             "leaveWithRunningQueriesConfirmationMessage": "You have running queries. Are you sure you want to cancel them?",
             "scanActions": {
