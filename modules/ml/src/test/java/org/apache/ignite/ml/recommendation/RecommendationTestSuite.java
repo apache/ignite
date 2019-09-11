@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.ml.recommendation;
 
-import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Cache tests using indexing.
+ * Test suite for all tests located in org.apache.ignite.ml.preprocessing.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCommandHandlerIndexingTest.class,
-    GridCommandHandlerIndexingClusterByClassTest.class,
-    StartCachesInParallelTest.class
+    RecommendationTrainerTest.class,
+    RecommendationTrainerSQLTest.class
+
 })
-public class IgniteCacheWithIndexingAndPersistenceTestSuite {
+public class RecommendationTestSuite {
+    // No-op.
 }
