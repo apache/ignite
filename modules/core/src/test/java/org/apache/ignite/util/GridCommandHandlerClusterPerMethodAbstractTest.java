@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.util;
 
 /**
- * Cache tests using indexing.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    GridCommandHandlerIndexingTest.class,
-    GridCommandHandlerIndexingClusterByClassTest.class,
-    StartCachesInParallelTest.class
-})
-public class IgniteCacheWithIndexingAndPersistenceTestSuite {
+ * It is recommended to extends from this class in case of creating a cluster
+ * for each test method. Otherwise, use
+ * {@link GridCommandHandlerClusterByClassAbstractTest}
+ * */
+public abstract class GridCommandHandlerClusterPerMethodAbstractTest extends GridCommandHandlerAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
 }
