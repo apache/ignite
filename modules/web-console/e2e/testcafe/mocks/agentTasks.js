@@ -62,47 +62,54 @@ export const simeplFakeSQLQuery = (nid, response) => (ws) => {
     });
 };
 
+const CLUSTER_1 = {
+    id: '70831a7c-2b5e-4c11-8c08-5888911d5962',
+    name: 'Cluster 1',
+    nids: ['143048f1-b5b8-47d6-9239-fed76222efe3'],
+    addresses: {
+        '143048f1-b5b8-47d6-9239-fed76222efe3': '10.0.75.1'
+    },
+    clients: {
+        '143048f1-b5b8-47d6-9239-fed76222efe3': false
+    },
+    clusterVersion: '8.8.0-SNAPSHOT',
+    active: true,
+    secured: false,
+    supportedFeatures: '+/l9'
+};
+
+const CLUSTER_2 = {
+    id: '70831a7c-2b5e-4c11-8c08-5888911d5963',
+    name: 'Cluster 2',
+    nids: ['143048f1-b5b8-47d6-9239-fed76222efe4'],
+    addresses: {
+        '143048f1-b5b8-47d6-9239-fed76222efe3': '10.0.75.1'
+    },
+    clients: {
+        '143048f1-b5b8-47d6-9239-fed76222efe3': false
+    },
+    clusterVersion: '8.8.0-SNAPSHOT',
+    active: true,
+    secured: false,
+    supportedFeatures: '+/l9'
+};
+
 export const FAKE_CLUSTERS = {
     hasAgent: true,
     hasDemo: true,
-    clusters: [
-        {
-            id: '70831a7c-2b5e-4c11-8c08-5888911d5962',
-            name: 'Cluster 1',
-            nids: ['143048f1-b5b8-47d6-9239-fed76222efe3'],
-            addresses: {
-                '143048f1-b5b8-47d6-9239-fed76222efe3': '10.0.75.1'
-            },
-            clients: {
-                '143048f1-b5b8-47d6-9239-fed76222efe3': false
-            },
-            clusterVersion: '8.8.0-SNAPSHOT',
-            active: true,
-            secured: false,
-            supportedFeatures: ''
-        },
-        {
-            id: '70831a7c-2b5e-4c11-8c08-5888911d5963',
-            name: 'Cluster 2',
-            nids: ['143048f1-b5b8-47d6-9239-fed76222efe4'],
-            addresses: {
-                '143048f1-b5b8-47d6-9239-fed76222efe3': '10.0.75.1'
-            },
-            clients: {
-                '143048f1-b5b8-47d6-9239-fed76222efe3': false
-            },
-            clusterVersion: '8.8.0-SNAPSHOT',
-            active: true,
-            secured: false,
-            supportedFeatures: ''
-        }
-    ]
+    clusters: [CLUSTER_1, CLUSTER_2]
 };
 
 export const AGENT_DISCONNECTED_GRID = {
     hasAgent: false,
     hasDemo: false,
     clusters: []
+};
+
+export const INACTIVE_CLUSTER = {
+    hasAgent: true,
+    hasDemo: true,
+    clusters: [Object.assign({ ...CLUSTER_1 }, { active: false })]
 };
 
 export const SIMPLE_QUERY_RESPONSE = {

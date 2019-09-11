@@ -108,10 +108,12 @@
             "newScanNamePrefix": "Scan",
             "clearQueryResultConfirmationMessage": "Are you sure you want to clear query result?",
             "queryTooltip": {
+                "clusterIsInactive": "Cluster is inactive",
                 "waitingForResponse": "Waiting for server response",
                 "actionPrefix": "Input text to "
             },
             "scanTooltip": {
+                "clusterIsInactive": "Cluster is inactive",
                 "waitingForResponse": "Waiting for server response",
                 "text": "Select cache to export scan results"
             },

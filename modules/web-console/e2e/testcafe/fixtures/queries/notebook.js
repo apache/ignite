@@ -17,7 +17,7 @@
 import {WebSocketHook} from '../../mocks/WebSocketHook';
 import {
     cacheNamesCollectorTask, agentStat, simeplFakeSQLQuery,
-    FAKE_CLUSTERS, SIMPLE_QUERY_RESPONSE, FAKE_CACHES
+    FAKE_CLUSTERS, SIMPLE_QUERY_RESPONSE, FAKE_CACHES, INACTIVE_CLUSTER
 } from '../../mocks/agentTasks';
 import {resolveUrl, dropTestDB, insertTestUser} from '../../environment/envtools';
 import {createRegularUser} from '../../roles';
@@ -25,29 +25,47 @@ import {Paragraph, showQueryDialog, confirmClearQueryDialog} from '../../page-mo
 import {PageQueriesNotebooksList} from '../../page-models/PageQueries';
 
 const user = createRegularUser();
+const notebooks = new PageQueriesNotebooksList();
+const query = `SELECT * FROM Person;`;
+const paragraph = new Paragraph('Query');
 
 fixture('Notebook')
     .beforeEach(async(t) => {
         await dropTestDB();
         await insertTestUser();
-        await t.addRequestHooks(
-            t.ctx.ws = new WebSocketHook()
-                .use(
-                    agentStat(FAKE_CLUSTERS),
-                    cacheNamesCollectorTask(FAKE_CACHES),
-                    simeplFakeSQLQuery(FAKE_CLUSTERS.clusters[0].nids[0], SIMPLE_QUERY_RESPONSE)
-                )
-        );
     })
     .afterEach(async(t) => {
         t.ctx.ws.destroy();
         await dropTestDB();
     });
 
+test('With inactive cluster', async(t) => {
+    await t.addRequestHooks(
+        t.ctx.ws = new WebSocketHook()
+            .use(
+                agentStat(INACTIVE_CLUSTER)
+            )
+    );
+
+    await t
+        .useRole(user)
+        .navigateTo(resolveUrl('/queries/notebooks'));
+    await notebooks.createNotebook('Foo');
+    await t.click(notebooks.getNotebookByName('Foo'));
+    await paragraph.enterQuery(query, {replace: true});
+    await t.expect(paragraph.topRightExecuteButton.withAttribute('disabled')).ok('Top right Execute button should be disabled');
+    await t.expect(paragraph.bottomExecuteButton.withAttribute('disabled')).ok('Bottom Execute button should be disabled');
+});
+
 test('Sending a request', async(t) => {
-    const notebooks = new PageQueriesNotebooksList();
-    const query = `SELECT * FROM Person;`;
-    const paragraph = new Paragraph('Query');
+    await t.addRequestHooks(
+        t.ctx.ws = new WebSocketHook()
+            .use(
+                agentStat(FAKE_CLUSTERS),
+                cacheNamesCollectorTask(FAKE_CACHES),
+                simeplFakeSQLQuery(FAKE_CLUSTERS.clusters[0].nids[0], SIMPLE_QUERY_RESPONSE)
+            )
+    );
 
     await t
 		.useRole(user)
@@ -56,7 +74,7 @@ test('Sending a request', async(t) => {
     await t.click(notebooks.getNotebookByName('Foo'));
     await paragraph.enterQuery(query, {replace: true});
     await t
-        .click(paragraph.executeButton)
+        .click(paragraph.bottomExecuteButton)
         .pressKey('pagedown')
         .expect(paragraph.resultsTable._selector.visible).ok()
         .expect(paragraph.resultsTable.findCell(0, 'ID').innerText).contains(SIMPLE_QUERY_RESPONSE.result.rows[0][0].toString())

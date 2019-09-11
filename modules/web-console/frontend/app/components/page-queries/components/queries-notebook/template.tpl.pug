@@ -469,8 +469,12 @@ mixin paragraph-query
                                 value: 'cache.value'
                             })
 
+                    .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
+                        no-data
+                            label(translate='queries.notebook.queryResult.wrongCachesFilterError')
+
                     .settings-row
-                        .row(ng-if='ddlAvailable(paragraph)')
+                        .row(ng-if='displayedCaches.length > 0 && ddlAvailable(paragraph)')
                             +form-field__checkbox({
                                 label: '{{::"queries.notebook.queryResult.useAsDefaultSchemaInput.label"|translate}}',
                                 model: 'paragraph.useAsDefaultSchema',
@@ -478,11 +482,8 @@ mixin paragraph-query
                                 tip: '{{::"queries.notebook.queryResult.useAsDefaultSchemaInput.tooltip"|translate}}',
                                 tipOpts: { placement: 'top' }
                             })
-                .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
-                    no-data
-                        label(translate='queries.notebook.queryResult.wrongCachesFilterError')
                 .empty-caches(ng-show='caches.length == 0')
-                    no-data
+                    no-data(handle-cluster-inactive='true')
                         label(translate='queries.notebook.queryResult.noCaches')
         .col-sm-12.sql-controls
             div

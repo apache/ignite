@@ -318,6 +318,8 @@ export class NotebookCtrl {
                 $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
         };
 
+        $scope.clusterIsActive = false;
+
         $scope.caches = [];
 
         $scope.pageSizesOptions = [
@@ -970,16 +972,17 @@ export class NotebookCtrl {
 
             const checkState$ = combineLatest(
                 cluster$,
-                agentMgr.currentCluster$.pipe(pluck('state'), distinctUntilChanged())
+                agentMgr.currentCluster$.pipe(pluck('state'), distinctUntilChanged()),
+                agentMgr.clusterIsActive$.pipe(tap((active) => $scope.clusterIsActive = active))
             );
 
             this.refresh$ = checkState$.pipe(
-                tap(([cluster, state]) => {
-                    if (state !== 'CONNECTED' || (!cluster && !agentMgr.isDemoMode()))
+                tap(([cluster, state, active]) => {
+                    if (!active || state !== 'CONNECTED' || (!cluster && !agentMgr.isDemoMode()))
                         $scope.caches = [];
                 }),
-                switchMap(([cluster, state]) => {
-                    if (state !== 'CONNECTED' || (!cluster && !agentMgr.isDemoMode()))
+                switchMap(([cluster, state, active]) => {
+                    if (!active || state !== 'CONNECTED' || (!cluster && !agentMgr.isDemoMode()))
                         return of(EMPTY);
 
                     return of(cluster).pipe(
@@ -2072,12 +2075,15 @@ export class NotebookCtrl {
         };
 
         $scope.queryAvailable = function(paragraph) {
-            return paragraph.query && !paragraph.loading;
+            return $scope.clusterIsActive && paragraph.query && !paragraph.loading;
         };
 
         $scope.queryTooltip = function(paragraph, action) {
             if ($scope.queryAvailable(paragraph))
                 return;
+
+            if (!$scope.clusterIsActive)
+                return $translate.instant('queries.notebook.queryTooltip.clusterIsInactive');
 
             if (paragraph.loading)
                 return $translate.instant('queries.notebook.queryTooltip.waitingForResponse');
@@ -2086,12 +2092,15 @@ export class NotebookCtrl {
         };
 
         $scope.scanAvailable = function(paragraph) {
-            return $scope.caches.length && !(paragraph.loading || paragraph.csvIsPreparing);
+            return $scope.clusterIsActive && $scope.caches.length && !(paragraph.loading || paragraph.csvIsPreparing);
         };
 
         $scope.scanTooltip = function(paragraph) {
             if ($scope.scanAvailable(paragraph))
                 return;
+
+            if (!$scope.clusterIsActive)
+                return $translate.instant('queries.notebook.scanTooltip.clusterIsInactive');
 
             if (paragraph.loading)
                 return $translate.instant('queries.notebook.scanTooltip.waitingForResponse');
