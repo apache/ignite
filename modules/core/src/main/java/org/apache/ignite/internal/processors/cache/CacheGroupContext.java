@@ -668,6 +668,11 @@ public class CacheGroupContext {
         return top;
     }
 
+    /** @return {@code True} if topology started. */
+    public boolean isTopologyStarted() {
+        return top != null;
+    }
+
     /**
      * @return {@code True} if current thread holds lock on topology.
      */

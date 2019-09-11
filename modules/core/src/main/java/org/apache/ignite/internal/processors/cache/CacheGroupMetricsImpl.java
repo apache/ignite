@@ -206,7 +206,7 @@ public class CacheGroupMetricsImpl {
      * @param pred Predicate.
      */
     private int numberOfPartitionCopies(IntBiPredicate pred) {
-        if (!isTopologyStarted())
+        if (!ctx.isTopologyStarted())
             return 0;
 
         int parts = ctx.topology().partitions();
@@ -293,7 +293,7 @@ public class CacheGroupMetricsImpl {
      * @param state State.
      */
     private int localNodePartitionsCountByState(GridDhtPartitionState state) {
-        if (!isTopologyStarted())
+        if (!ctx.isTopologyStarted())
             return 0;
 
         int cnt = 0;
@@ -323,7 +323,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getLocalNodeRentingEntriesCount() {
-        if (!isTopologyStarted())
+        if (!ctx.isTopologyStarted())
             return 0;
 
         long entriesCnt = 0;
@@ -353,7 +353,7 @@ public class CacheGroupMetricsImpl {
      * @return Partitions allocation map.
      */
     private Map<Integer, Set<String>> clusterPartitionsMapByState(GridDhtPartitionState state) {
-        if (!isTopologyStarted())
+        if (!ctx.isTopologyStarted())
             return Collections.emptyMap();
 
         int parts = ctx.topology().partitions();
@@ -423,7 +423,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public List<Integer> getPartitionIds() {
-        if (!isTopologyStarted())
+        if (!ctx.isTopologyStarted())
             return Collections.emptyList();
 
         List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
@@ -481,16 +481,5 @@ public class CacheGroupMetricsImpl {
     /** @return Metric group name. */
     private String metricGroupName() {
         return metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName());
-    }
-
-    /** @return {@code True} if topology started. */
-    private boolean isTopologyStarted() {
-        try {
-            ctx.topology();
-
-            return true;
-        } catch (IllegalStateException ignored) {
-            return false;
-        }
     }
 }
