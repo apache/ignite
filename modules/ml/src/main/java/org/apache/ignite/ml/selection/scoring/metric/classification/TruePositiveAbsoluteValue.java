@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * TruePositive metric class.
@@ -31,7 +30,9 @@ public class TruePositiveAbsoluteValue<L extends Serializable> extends BinaryCla
      */
     private static final long serialVersionUID = 5126895790009271001L;
 
-    /** TP value. */
+    /**
+     * TP value.
+     */
     private Double tp = Double.NaN;
 
     /**
@@ -50,18 +51,24 @@ public class TruePositiveAbsoluteValue<L extends Serializable> extends BinaryCla
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public TruePositiveAbsoluteValue<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
-        tp = (double) aggr.getTruePositive();
+        tp = (double)aggr.getTruePositive();
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return tp;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.TRUE_POSITIVE;
     }

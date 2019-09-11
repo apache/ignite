@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -25,16 +27,15 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for binary classification metrics.
  */
 public class BinaryClassificationMetricsTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCalculation() {
         Map<Vector, Double> xorset = new HashMap<Vector, Double>() {{

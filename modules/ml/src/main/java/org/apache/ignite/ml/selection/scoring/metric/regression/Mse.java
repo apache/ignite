@@ -26,30 +26,42 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
  * Class for mean squared error metric.
  */
 public class Mse implements Metric<Double, EmptyContext<Double>, RegressionMetricStatsAggregator> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = -5087769149524246865L;
 
-    /** Value. */
+    /**
+     * Value.
+     */
     private double value = Double.NaN;
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public RegressionMetricStatsAggregator makeAggregator() {
         return new RegressionMetricStatsAggregator();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Mse initBy(RegressionMetricStatsAggregator aggr) {
         value = aggr.getMSE();
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.MSE;
     }

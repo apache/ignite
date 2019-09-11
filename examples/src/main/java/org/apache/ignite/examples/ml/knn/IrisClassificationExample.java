@@ -37,15 +37,16 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using Knn model in Apache Ignite for iris class predicion.
- *
- * Description of model can be found in: https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm .
- * Original dataset can be downloaded from: https://archive.ics.uci.edu/ml/datasets/Wholesale+customers .
- * Copy of dataset are stored in: https://archive.ics.uci.edu/ml/datasets/iris .
- * Score for classifier estimation: accuracy .
- * Description of score can be found in: https://stattrek.com/statistics/dictionary.aspx?definition=accuracy .
+ * <p>
+ * Description of model can be found in: https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm . Original dataset
+ * can be downloaded from: https://archive.ics.uci.edu/ml/datasets/Wholesale+customers . Copy of dataset are stored in:
+ * https://archive.ics.uci.edu/ml/datasets/iris . Score for classifier estimation: accuracy . Description of score can
+ * be found in: https://stattrek.com/statistics/dictionary.aspx?definition=accuracy .
  */
 public class IrisClassificationExample {
-    /** Runs example. */
+    /**
+     * Runs example.
+     */
     public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -84,10 +85,12 @@ public class IrisClassificationExample {
                 );
 
                 System.out.println(">> Model accuracy: " + accuracy);
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

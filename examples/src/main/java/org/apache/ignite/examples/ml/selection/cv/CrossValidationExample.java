@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.ml.selection.cv;
 
+import java.util.Arrays;
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,9 +31,6 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Run <a href="https://en.wikipedia.org/wiki/Decision_tree">decision tree</a> classification with
@@ -98,10 +97,12 @@ public class CrossValidationExample {
                 System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
                 System.out.println(">>> Cross validation score calculator example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

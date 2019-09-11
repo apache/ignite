@@ -17,28 +17,35 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator.context;
 
-import org.apache.ignite.ml.structures.LabeledVector;
-
 import java.io.Serializable;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Class represents context stub for metrics that don't require such context preparations.
  */
 public class EmptyContext<L extends Serializable> implements EvaluationContext<L, EmptyContext<L>> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = 1439494372470803212L;
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void aggregate(LabeledVector<L> vector) {
 
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public EmptyContext<L> mergeWith(EmptyContext<L> other) {
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public boolean needToCompute() {
         return false;
     }

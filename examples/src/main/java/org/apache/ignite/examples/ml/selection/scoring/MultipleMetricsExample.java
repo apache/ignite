@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.selection.scoring;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -30,8 +31,6 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
-import java.io.IOException;
-
 /**
  * Run kNN multi-class classification trainer ({@link KNNClassificationTrainer}) over distributed dataset.
  * <p>
@@ -41,13 +40,15 @@ import java.io.IOException;
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> algorithm.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster does
+ * this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class MultipleMetricsExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
@@ -65,10 +66,12 @@ public class MultipleMetricsExample {
                 SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
                 System.out.println(Evaluator.evaluateBinaryClassification(dataCache, mdl, vectorizer));
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

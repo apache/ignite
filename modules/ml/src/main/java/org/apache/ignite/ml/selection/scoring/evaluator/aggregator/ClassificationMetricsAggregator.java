@@ -17,26 +17,32 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator.aggregator;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.context.EmptyContext;
 import org.apache.ignite.ml.selection.scoring.evaluator.context.EvaluationContext;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import java.io.Serializable;
-
 /**
  * Class represents aggregations for classification metric (including multiclassification case).
+ *
  * @param <L> Type of label.
  */
 public class ClassificationMetricsAggregator<L extends Serializable> implements MetricStatsAggregator<L, EmptyContext<L>, ClassificationMetricsAggregator<L>> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = 6508258921730584458L;
 
-    /** Valid answers count. */
+    /**
+     * Valid answers count.
+     */
     private long validAnswersCount = 0;
 
-    /** Total number of examples. */
+    /**
+     * Total number of examples.
+     */
     private long totalNumberOfExamples = 0;
 
     /**
@@ -48,7 +54,7 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
     /**
      * Creates an instance of ClassificationMetricsAggregator.
      *
-     * @param validAnswersCount Valid answers count.
+     * @param validAnswersCount     Valid answers count.
      * @param totalNumberOfExamples Total number of examples.
      */
     public ClassificationMetricsAggregator(long validAnswersCount, long totalNumberOfExamples) {
@@ -56,7 +62,9 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
         this.totalNumberOfExamples = totalNumberOfExamples;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void aggregate(IgniteModel<Vector, L> model, LabeledVector<L> vector) {
         L modelAns = model.predict(vector.features());
         L truth = vector.label();
@@ -65,7 +73,9 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
         totalNumberOfExamples++;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public ClassificationMetricsAggregator<L> mergeWith(ClassificationMetricsAggregator<L> other) {
         return new ClassificationMetricsAggregator<>(
             this.validAnswersCount + other.validAnswersCount,
@@ -73,18 +83,23 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
         );
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public EmptyContext<L> createUnitializedContext() {
         return EvaluationContext.empty();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void initByContext(EmptyContext<L> context) {
 
     }
 
     /**
      * Returns validAnswersCount.
+     *
      * @return validAnswersCount.
      */
     public long getValidAnswersCount() {
@@ -93,6 +108,7 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
 
     /**
      * Returns totalNumberOfExamples.
+     *
      * @return totalNumberOfExamples.
      */
     public long getTotalNumberOfExamples() {

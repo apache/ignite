@@ -56,7 +56,9 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * smallest 3rd class could not be classified via linear SVM here.
  */
 public class OneVsRestClassificationExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> One-vs-Rest SVM Multi-class classification model over cached dataset usage example started.");
@@ -158,11 +160,13 @@ public class OneVsRestClassificationExample {
 
                     System.out.println(">>> One-vs-Rest SVM model over cache based dataset usage example completed.");
                 }
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

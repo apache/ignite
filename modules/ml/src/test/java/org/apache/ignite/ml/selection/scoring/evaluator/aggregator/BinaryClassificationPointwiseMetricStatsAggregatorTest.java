@@ -29,7 +29,9 @@ import static org.junit.Assert.assertEquals;
  * Test class for {@link BinaryClassificationPointwiseMetricStatsAggregator} class.
  */
 public class BinaryClassificationPointwiseMetricStatsAggregatorTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void testAggregate() {
         BinaryClassificationPointwiseMetricStatsAggregator<Double> aggregator = new BinaryClassificationPointwiseMetricStatsAggregator<>();
@@ -55,7 +57,9 @@ public class BinaryClassificationPointwiseMetricStatsAggregatorTest {
         assertEquals(1, aggregator.getFalsePositive());
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testMerge() {
         BinaryClassificationPointwiseMetricStatsAggregator<Double> agg1 = new BinaryClassificationPointwiseMetricStatsAggregator<>();
@@ -76,7 +80,9 @@ public class BinaryClassificationPointwiseMetricStatsAggregatorTest {
         assertEquals(1, res.getFalsePositive());
     }
 
-    /** */
+    /**
+     *
+     */
     @Test(expected = IllegalArgumentException.class)
     public void testMergeInequalAggreagators() {
         BinaryClassificationPointwiseMetricStatsAggregator<Double> agg1 = new BinaryClassificationPointwiseMetricStatsAggregator<>();
@@ -87,7 +93,9 @@ public class BinaryClassificationPointwiseMetricStatsAggregatorTest {
         agg1.mergeWith(agg2);
     }
 
-    /** */
+    /**
+     *
+     */
     private IgniteModel<Vector, Double> model = new IgniteModel<Vector, Double>() {
         @Override public Double predict(Vector input) {
             if (input.get(0) == 0.0)

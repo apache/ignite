@@ -37,16 +37,24 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * made as SQL select query.
  */
 public class DecisionTreeClassificationTrainerSQLInferenceExample {
-    /** Dummy cache name. */
+    /**
+     * Dummy cache name.
+     */
     private static final String DUMMY_CACHE_NAME = "dummy_cache";
 
-    /** Training data. */
+    /**
+     * Training data.
+     */
     private static final String TRAIN_DATA_RES = "examples/src/main/resources/datasets/titanik_train.csv";
 
-    /** Test data. */
+    /**
+     * Test data.
+     */
     private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/titanik_test.csv";
 
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println(">>> Decision tree classification trainer example started.");
 
@@ -133,12 +141,14 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 }
 
                 IgniteModelStorageUtil.removeModel(ignite, "titanik_model_tree");
-            } finally {
+            }
+            finally {
                 cache.query(new SqlFieldsQuery("DROP TABLE titanik_train"));
                 cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
                 cache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

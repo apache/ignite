@@ -39,8 +39,8 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it creates dataset splitter and trains the linear regression model based on the specified data using
- * this splitter.</p>
+ * After that it creates dataset splitter and trains the linear regression model based on the specified data using this
+ * splitter.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict the target value
  * and compares prediction to expected outcome (ground truth).</p>
@@ -49,7 +49,9 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * further.</p>
  */
 public class TrainTestDatasetSplitterExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over cache based dataset usage example started.");
@@ -96,10 +98,12 @@ public class TrainTestDatasetSplitterExample {
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

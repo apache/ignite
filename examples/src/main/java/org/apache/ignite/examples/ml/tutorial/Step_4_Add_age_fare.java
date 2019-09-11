@@ -46,7 +46,9 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_4_Add_age_fare {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 4 (add age and fare) example started.");
@@ -96,10 +98,12 @@ public class Step_4_Add_age_fare {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 4 (add age and fare) example completed.");
-            } catch (FileNotFoundException e) {
+            }
+            catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

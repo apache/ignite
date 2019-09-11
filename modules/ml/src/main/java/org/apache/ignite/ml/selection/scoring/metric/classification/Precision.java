@@ -17,19 +17,22 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * Precision metric class for binary classificaion.
  */
 public class Precision<L extends Serializable> extends BinaryClassificationMetric<L> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = 2112795951652050170L;
 
-    /** Precision. */
+    /**
+     * Precision.
+     */
     private Double precision = Double.NaN;
 
     /**
@@ -48,18 +51,24 @@ public class Precision<L extends Serializable> extends BinaryClassificationMetri
     public Precision() {
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Precision<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
-        precision = ((double) (aggr.getTruePositive()) / (aggr.getTruePositive() + aggr.getFalsePositive()));
+        precision = ((double)(aggr.getTruePositive()) / (aggr.getTruePositive() + aggr.getFalsePositive()));
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return precision;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.PRECISION;
     }

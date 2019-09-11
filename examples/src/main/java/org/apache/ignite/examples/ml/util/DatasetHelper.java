@@ -24,15 +24,21 @@ import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
  * Common utility code used in some ML examples to report some statistic metrics of the dataset.
  */
 public class DatasetHelper {
-    /** */
+    /**
+     *
+     */
     private final SimpleDataset dataset;
 
-    /** */
+    /**
+     *
+     */
     public DatasetHelper(SimpleDataset dataset) {
         this.dataset = dataset;
     }
 
-    /** */
+    /**
+     *
+     */
     public void describe() {
         // Calculation of the mean value. This calculation will be performed in map-reduce manner.
         double[] mean = dataset.mean();

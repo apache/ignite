@@ -36,8 +36,8 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 
 /**
- * Change classification algorithm that was used in {@link Step_5_Scaling} from decision tree to kNN
- * ({@link KNNClassificationTrainer}) because sometimes this can be beneficial.
+ * Change classification algorithm that was used in {@link Step_5_Scaling} from decision tree to kNN ({@link
+ * KNNClassificationTrainer}) because sometimes this can be beneficial.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
@@ -49,7 +49,9 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_6_KNN {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 6 (kNN) example started.");
@@ -116,10 +118,12 @@ public class Step_6_KNN {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 6 (kNN) example completed.");
-            } catch (FileNotFoundException e) {
+            }
+            catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

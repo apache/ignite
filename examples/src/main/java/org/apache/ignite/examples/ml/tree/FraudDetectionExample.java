@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.tree;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -34,18 +35,15 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
-import java.io.IOException;
-
 /**
  * Example of using classification algorithms for fraud detection problem.
- *
- * Description of models can be found in:
- *      https://en.wikipedia.org/wiki/Logistic_regression and
- *      https://en.wikipedia.org/wiki/Decision_tree_learning .
- * Original dataset can be downloaded from: https://www.kaggle.com/mlg-ulb/creditcardfraud/ .
- * Copy of dataset are stored in:  modules/ml/src/main/resources/datasets/fraud_detection.csv .
- * Score for clusterizer estimation: accuracy, recall, precision, f1-score .
- * Description of entropy can be found in: https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers .
+ * <p>
+ * Description of models can be found in: https://en.wikipedia.org/wiki/Logistic_regression and
+ * https://en.wikipedia.org/wiki/Decision_tree_learning . Original dataset can be downloaded from:
+ * https://www.kaggle.com/mlg-ulb/creditcardfraud/ . Copy of dataset are stored in:
+ * modules/ml/src/main/resources/datasets/fraud_detection.csv . Score for clusterizer estimation: accuracy, recall,
+ * precision, f1-score . Description of entropy can be found in: https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers
+ * .
  */
 public class FraudDetectionExample {
     public static void main(String[] args) throws IOException {
@@ -78,10 +76,12 @@ public class FraudDetectionExample {
                         .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(0)),
                     vectorizer, split
                 );
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
@@ -89,11 +89,11 @@ public class FraudDetectionExample {
     /**
      * Train model and estimate it.
      *
-     * @param ignite Ignite
-     * @param dataCache Data set cache.
-     * @param trainer Trainer.
+     * @param ignite     Ignite
+     * @param dataCache  Data set cache.
+     * @param trainer    Trainer.
      * @param vectorizer Upstream vectorizer.
-     * @param splitter Train test splitter.
+     * @param splitter   Train test splitter.
      */
     private static void trainAndEstimateModel(Ignite ignite,
         IgniteCache<Integer, Vector> dataCache,

@@ -17,16 +17,14 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator.context;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import java.io.Serializable;
-
 /**
- * Classes with this interface are responsible for preparatory computations before model evaluation. For example
- * if we don't know what is positive and negative label we can define it in autimatically way using
- * such evaluation context.
+ * Classes with this interface are responsible for preparatory computations before model evaluation. For example if we
+ * don't know what is positive and negative label we can define it in autimatically way using such evaluation context.
  *
- * @param <L> Type of label.
+ * @param <L>    Type of label.
  * @param <Self> Type of evaluation context.
  */
 public interface EvaluationContext<L, Self extends EvaluationContext<L, ? super Self>> extends Serializable {

@@ -40,7 +40,7 @@ import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFa
  * Example of using GMM clusterization algorithm. Gaussian Mixture Algorithm (GMM, see {@link GmmModel}, {@link
  * GmmTrainer}) can be used for input dataset data distribution representation as mixture of multivariance gaussians.
  * More info: https://en.wikipedia.org/wiki/Mixture_model#Gaussian_mixture_model .
- *
+ * <p>
  * In this example GMM are used for gaussians shape recovering - means and covariances of them.
  */
 public class GmmClusterizationExample {
@@ -106,10 +106,12 @@ public class GmmClusterizationExample {
                 }
 
                 System.out.println(">>>");
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

@@ -27,7 +27,9 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * Class represents statistics aggregator for regression estimation.
  */
 public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Double, EmptyContext<Double>, RegressionMetricStatsAggregator> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = -2459352313996869235L;
 
     /**
@@ -64,10 +66,10 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
     /**
      * Creates an instance of RegressionMetricStatsAggregator.
      *
-     * @param n Number of examples in dataset.
-     * @param absoluteError Absolute error.
-     * @param rss Rss.
-     * @param sumOfYs Sum of labels.
+     * @param n              Number of examples in dataset.
+     * @param absoluteError  Absolute error.
+     * @param rss            Rss.
+     * @param sumOfYs        Sum of labels.
      * @param sumOfSquaredYs Sum of squared labels.
      */
     public RegressionMetricStatsAggregator(long n, double absoluteError, double rss, double sumOfYs,
@@ -79,7 +81,9 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
         this.sumOfSquaredYs = sumOfSquaredYs;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void aggregate(IgniteModel<Vector, Double> model, LabeledVector<Double> vector) {
         n += 1;
         Double prediction = model.predict(vector.features());
@@ -94,7 +98,9 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
         sumOfSquaredYs = sum(Math.pow(truth, 2), sumOfSquaredYs);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public RegressionMetricStatsAggregator mergeWith(RegressionMetricStatsAggregator other) {
         long n = this.n + other.n;
         double absoluteError = sum(this.absoluteError, other.absoluteError);
@@ -105,12 +111,16 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
         return new RegressionMetricStatsAggregator(n, absoluteError, squaredError, sumOfYs, sumOfSquaredYs);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public EmptyContext createUnitializedContext() {
         return new EmptyContext();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void initByContext(EmptyContext context) {
 
     }

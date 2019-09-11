@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Model inference examples for Spark ML models.
+ * <!-- Package description. --> Model inference examples for Spark ML models.
  */
 package org.apache.ignite.examples.ml.inference.spark;

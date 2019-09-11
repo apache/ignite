@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Package for regression metrics.
+ * <!-- Package description. --> Package for regression metrics.
  */
 package org.apache.ignite.ml.selection.scoring.metric.regression;

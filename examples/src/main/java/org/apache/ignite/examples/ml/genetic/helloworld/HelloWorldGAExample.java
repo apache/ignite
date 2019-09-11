@@ -29,33 +29,30 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
- * This example demonstrates how to use the {@link GAGrid} framework. In this example, we want to evolve a string
- * of 11 characters such that the word 'HELLO WORLD' is found.
+ * This example demonstrates how to use the {@link GAGrid} framework. In this example, we want to evolve a string of 11
+ * characters such that the word 'HELLO WORLD' is found.
  * <p>
  * Code in this example launches Ignite grid, prepares simple test data (gene pool) and configures GA grid.</p>
  * <p>
  * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
  * <p>
- * You can change the test data and parameters of GA grid used in this example and re-run it to explore
- * this functionality further.</p>
- * 
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore this
+ * functionality further.</p>
+ * <p>
  * For example, you may change the some basic genetic parameters on the GAConfiguration object:
- * 
- *  Mutation Rate
- *  Crossover Rate
- *  Population Size
- *  Selection Method
- *  
+ * <p>
+ * Mutation Rate Crossover Rate Population Size Selection Method
+ *
  * <p>
  * How to run from command line:</p>
  * <p>
  * {@code mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.helloworld.HelloWorldGAExample"}</p>
  * <p>
- *  Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
  * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
  * <p>
- * Alternatively you can run ExampleNodeStartup in another JVM which will start node with
- * {@code examples/config/example-ignite.xml} configuration.</p>
+ * Alternatively you can run ExampleNodeStartup in another JVM which will start node with {@code
+ * examples/config/example-ignite.xml} configuration.</p>
  */
 public class HelloWorldGAExample {
     /**
@@ -81,19 +78,19 @@ public class HelloWorldGAExample {
 
             // Initialize gene pool.
             gaCfg.setGenePool(genes);
-             
+
             // Set CrossOver Rate.
             gaCfg.setCrossOverRate(.05);
-            
+
             // Set Mutation Rate.
             gaCfg.setMutationRate(.05);
-           
+
             // Set Selection Method.
             gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_ROULETTE_WHEEL);
-            
+
             // Set Population Size.
             gaCfg.setPopulationSize(2000);
-            
+
             // Create and set Fitness function.
             HelloWorldFitnessFunction function = new HelloWorldFitnessFunction();
             gaCfg.setFitnessFunction(function);
@@ -127,7 +124,7 @@ public class HelloWorldGAExample {
 
     /**
      * Helper routine to initialize Gene pool.
-     *
+     * <p>
      * In typical use case genes may be stored in database.
      *
      * @return List of Gene objects.

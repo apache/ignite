@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * Specificity metric class.
@@ -31,7 +30,9 @@ public class Specificity<L extends Serializable> extends BinaryClassificationMet
      */
     private static final long serialVersionUID = -2644409083604699500L;
 
-    /** Metric value. */
+    /**
+     * Metric value.
+     */
     private Double value = Double.NaN;
 
     /**
@@ -50,19 +51,25 @@ public class Specificity<L extends Serializable> extends BinaryClassificationMet
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Specificity<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         int n = aggr.getTrueNegative() + aggr.getFalsePositive();
-        value = n == 0 ? 1 : (double) aggr.getTrueNegative() / n;
+        value = n == 0 ? 1 : (double)aggr.getTrueNegative() / n;
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.SPECIFICITY;
     }

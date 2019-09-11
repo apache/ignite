@@ -17,19 +17,22 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * Recall metric class for binary classiticaion.
  */
 public class Recall<L extends Serializable> extends BinaryClassificationMetric<L> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = 8128102840736337225L;
 
-    /** Recall. */
+    /**
+     * Recall.
+     */
     private Double recall = Double.NaN;
 
     /**
@@ -48,18 +51,24 @@ public class Recall<L extends Serializable> extends BinaryClassificationMetric<L
     public Recall() {
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Recall<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
-        recall = ((double) (aggr.getTruePositive()) / (aggr.getTruePositive() + aggr.getFalseNegative()));
+        recall = ((double)(aggr.getTruePositive()) / (aggr.getTruePositive() + aggr.getFalseNegative()));
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return recall;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.RECALL;
     }

@@ -17,73 +17,130 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
-import org.apache.ignite.ml.selection.scoring.metric.classification.*;
-import org.apache.ignite.ml.selection.scoring.metric.regression.*;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.BalancedAccuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.FMeasure;
+import org.apache.ignite.ml.selection.scoring.metric.classification.FallOut;
+import org.apache.ignite.ml.selection.scoring.metric.classification.FalseNegativeAbsoluteValue;
+import org.apache.ignite.ml.selection.scoring.metric.classification.FalsePositiveAbsoluteValue;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Fdr;
+import org.apache.ignite.ml.selection.scoring.metric.classification.MissRate;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Npv;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Precision;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Recall;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Specificity;
+import org.apache.ignite.ml.selection.scoring.metric.classification.TrueNegativeAbsoluteValue;
+import org.apache.ignite.ml.selection.scoring.metric.classification.TruePositiveAbsoluteValue;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Mae;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Mse;
+import org.apache.ignite.ml.selection.scoring.metric.regression.R2;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Rmse;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Rss;
 
 /**
  * Enum for all metrics aggregation.
  */
 public enum MetricName {
     // binary classification metrics
-    /** Accuracy. */
+    /**
+     * Accuracy.
+     */
     ACCURACY("Accuracy"),
 
-    /** Precision. */
+    /**
+     * Precision.
+     */
     PRECISION("Precision"),
 
-    /** Recall. */
+    /**
+     * Recall.
+     */
     RECALL("Recall"),
 
-    /** F measure. */
+    /**
+     * F measure.
+     */
     F_MEASURE("F-measure"),
 
-    /** TP. */
+    /**
+     * TP.
+     */
     TRUE_POSITIVE("TP"),
 
-    /** TN. */
+    /**
+     * TN.
+     */
     TRUE_NEGATIVE("TN"),
 
-    /** FN. */
+    /**
+     * FN.
+     */
     FALSE_NEGATIVE("FN"),
 
-    /** FP. */
+    /**
+     * FP.
+     */
     FALSE_POSITIVE("FP"),
 
-    /** Specificity. */
+    /**
+     * Specificity.
+     */
     SPECIFICITY("Specificity"),
 
-    /** NPV. */
+    /**
+     * NPV.
+     */
     NPV("NPV"),
 
-    /** FallOut. */
+    /**
+     * FallOut.
+     */
     FALL_OUT("Fall out"),
 
-    /** FDR. */
+    /**
+     * FDR.
+     */
     FDR("FDR"),
 
-    /** Miss Rate. */
+    /**
+     * Miss Rate.
+     */
     MISS_RATE("Miss rate"),
 
-    /** Balanced accuracy. */
+    /**
+     * Balanced accuracy.
+     */
     BALANCED_ACCURACY("Balanced accuracy"),
 
     // regression metrics
-    /** Mae. */
+    /**
+     * Mae.
+     */
     MAE("MAE"),
 
-    /** R 2. */
+    /**
+     * R 2.
+     */
     R2("R2"),
 
-    /** Rmse. */
+    /**
+     * Rmse.
+     */
     RMSE("RMSE"),
 
-    /** Rss. */
+    /**
+     * Rss.
+     */
     RSS("RSS"),
 
-    /** Mse. */
+    /**
+     * Mse.
+     */
     MSE("MSE");
 
-    /** Pretty name. */
+    /**
+     * Pretty name.
+     */
     private final String prettyName;
 
     /**

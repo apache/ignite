@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * FalseNegative metric class.
@@ -31,7 +30,9 @@ public class FalseNegativeAbsoluteValue<L extends Serializable> extends BinaryCl
      */
     private static final long serialVersionUID = 1888543464986349144L;
 
-    /** FN value. */
+    /**
+     * FN value.
+     */
     private Double fn = Double.NaN;
 
     /**
@@ -50,18 +51,24 @@ public class FalseNegativeAbsoluteValue<L extends Serializable> extends BinaryCl
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public FalseNegativeAbsoluteValue<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
-        fn = (double) aggr.getFalseNegative();
+        fn = (double)aggr.getFalseNegative();
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return fn;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.FALSE_NEGATIVE;
     }

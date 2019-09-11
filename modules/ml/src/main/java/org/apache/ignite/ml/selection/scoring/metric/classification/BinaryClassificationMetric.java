@@ -16,23 +16,28 @@
  */
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.evaluator.context.BinaryClassificationEvaluationContext;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
-
-import java.io.Serializable;
 
 /**
  * Common abstract class for all binary classification metrics.
  */
 public abstract class BinaryClassificationMetric<L extends Serializable> implements Metric<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = 7549975086331141766L;
 
-    /** Truth label. */
+    /**
+     * Truth label.
+     */
     private final L truthLabel;
 
-    /** False label. */
+    /**
+     * False label.
+     */
     private final L falseLabel;
 
     /**
@@ -54,7 +59,9 @@ public abstract class BinaryClassificationMetric<L extends Serializable> impleme
         falseLabel = null;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public BinaryClassificationPointwiseMetricStatsAggregator<L> makeAggregator() {
         if (truthLabel == null && falseLabel == null)
             return new BinaryClassificationPointwiseMetricStatsAggregator<>();

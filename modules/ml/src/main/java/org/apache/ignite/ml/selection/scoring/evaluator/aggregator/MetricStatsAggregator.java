@@ -17,25 +17,24 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator.aggregator;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import java.io.Serializable;
-
 /**
- * Classes with such interface are responsible for metric statistics aggregations used for metric computations
- * over given dataset.
+ * Classes with such interface are responsible for metric statistics aggregations used for metric computations over
+ * given dataset.
  *
- * @param <L> Label class.
- * @param <Ctx> Context class.
+ * @param <L>    Label class.
+ * @param <Ctx>  Context class.
  * @param <Self> Aggregator class.
  */
 public interface MetricStatsAggregator<L, Ctx, Self extends MetricStatsAggregator<L, Ctx, ? super Self>> extends Serializable {
     /**
      * Aggregates statistics for metric computation given model and vector with answer.
      *
-     * @param model Model.
+     * @param model  Model.
      * @param vector Vector.
      */
     public void aggregate(IgniteModel<Vector, L> model, LabeledVector<L> vector);
@@ -57,6 +56,7 @@ public interface MetricStatsAggregator<L, Ctx, Self extends MetricStatsAggregato
 
     /**
      * Inits this aggtegator by evaluation context.
+     *
      * @param ctx Evaluation context.
      */
     public void initByContext(Ctx ctx);

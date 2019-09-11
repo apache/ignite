@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.io.IOException;
+import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -34,20 +36,19 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
-import java.io.IOException;
-import java.util.function.BiFunction;
-
 /**
  * Example of using Linear Regression model in Apache Ignite for house prices prediction.
- *
- * Description of model can be found in: https://en.wikipedia.org/wiki/Linear_regression .
- * Original dataset can be downloaded from: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/ .
- * Copy of dataset are stored in: modules/ml/src/main/resources/datasets/boston_housing_dataset.txt .
- * Score for regression estimation: R^2 (coefficient of determination).
- * Description of score evaluation can be found in: https://stattrek.com/statistics/dictionary.aspx?definition=coefficient_of_determination .
+ * <p>
+ * Description of model can be found in: https://en.wikipedia.org/wiki/Linear_regression . Original dataset can be
+ * downloaded from: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/ . Copy of dataset are stored in:
+ * modules/ml/src/main/resources/datasets/boston_housing_dataset.txt . Score for regression estimation: R^2 (coefficient
+ * of determination). Description of score evaluation can be found in: https://stattrek.com/statistics/dictionary.aspx?definition=coefficient_of_determination
+ * .
  */
 public class BostonHousePricesPredictionExample {
-    /** Runs example. */
+    /**
+     * Runs example.
+     */
     public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -84,17 +85,20 @@ public class BostonHousePricesPredictionExample {
 
                 System.out.println(">>> Model: " + toString(mdl));
                 System.out.println(">>> R^2 score: " + score);
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
 
     /**
      * Prepare pretty string for model.
+     *
      * @param mdl Model.
      * @return String representation of model.
      */

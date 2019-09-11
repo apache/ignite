@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * MissRate metric class.
@@ -31,7 +30,9 @@ public class MissRate<L extends Serializable> extends BinaryClassificationMetric
      */
     private static final long serialVersionUID = -8361708127709743343L;
 
-    /** Metric value. */
+    /**
+     * Metric value.
+     */
     private Double value = Double.NaN;
 
     /**
@@ -50,19 +51,26 @@ public class MissRate<L extends Serializable> extends BinaryClassificationMetric
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MissRate<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
-        int p = aggr.getTruePositive() + aggr.getFalseNegative();;
-        value = p == 0 ? 1 : (double) aggr.getFalseNegative() / p;
+        int p = aggr.getTruePositive() + aggr.getFalseNegative();
+        ;
+        value = p == 0 ? 1 : (double)aggr.getFalseNegative() / p;
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.MISS_RATE;
     }

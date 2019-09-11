@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * BalancedAccuracy metric class.
@@ -31,7 +30,9 @@ public class BalancedAccuracy<L extends Serializable> extends BinaryClassificati
      */
     private static final long serialVersionUID = 91677523635381939L;
 
-    /** Metric value. */
+    /**
+     * Metric value.
+     */
     private Double value = Double.NaN;
 
     /**
@@ -50,20 +51,28 @@ public class BalancedAccuracy<L extends Serializable> extends BinaryClassificati
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public BalancedAccuracy<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
-        int n = aggr.getTrueNegative() + aggr.getFalsePositive();;
-        int p = aggr.getTruePositive() + aggr.getFalseNegative();;
-        value = n == 0 && p == 0 ? 1 : ((double)aggr.getTruePositive() / p + (double) aggr.getTrueNegative() / n) / 2;
+        int n = aggr.getTrueNegative() + aggr.getFalsePositive();
+        ;
+        int p = aggr.getTruePositive() + aggr.getFalseNegative();
+        ;
+        value = n == 0 && p == 0 ? 1 : ((double)aggr.getTruePositive() / p + (double)aggr.getTrueNegative() / n) / 2;
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.BALANCED_ACCURACY;
     }

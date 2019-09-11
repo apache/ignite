@@ -17,18 +17,19 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.ClassificationMetricsAggregator;
 import org.apache.ignite.ml.selection.scoring.evaluator.context.EmptyContext;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
-import java.io.Serializable;
-
 /**
  * Accuracy metric class.
  */
 public class Accuracy<L extends Serializable> implements Metric<L, EmptyContext<L>, ClassificationMetricsAggregator<L>> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = -7042505196665295151L;
 
     /**
@@ -42,23 +43,31 @@ public class Accuracy<L extends Serializable> implements Metric<L, EmptyContext<
     public Accuracy() {
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Accuracy<L> initBy(ClassificationMetricsAggregator<L> aggr) {
-        accuracy = ((double) aggr.getValidAnswersCount()) / Math.max(aggr.getTotalNumberOfExamples(), 1);
+        accuracy = ((double)aggr.getValidAnswersCount()) / Math.max(aggr.getTotalNumberOfExamples(), 1);
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public ClassificationMetricsAggregator<L> makeAggregator() {
         return new ClassificationMetricsAggregator<>();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return accuracy;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.ACCURACY;
     }

@@ -29,15 +29,15 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
- * In this example, we utilize {@link GAGrid} framework to calculate an optimal set of movies based on our interests
- * in various genres (ie: Action, Comedy, and Romance).
+ * In this example, we utilize {@link GAGrid} framework to calculate an optimal set of movies based on our interests in
+ * various genres (ie: Action, Comedy, and Romance).
  * <p>
  * Code in this example launches Ignite grid, prepares simple test data (gene pool) and configures GA grid.</p>
  * <p>
  * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
  * <p>
- * You can change the test data and parameters of GA grid used in this example and re-run it to explore
- * this functionality further.</p>
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore this
+ * functionality further.</p>
  * <p>
  * How to run from command line:</p>
  * <p>
@@ -47,13 +47,13 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
  * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
  * <p>
- * Alternatively you can run ExampleNodeStartup in another JVM which will start node with
- * {@code examples/config/example-ignite.xml} configuration.</p>
+ * Alternatively you can run ExampleNodeStartup in another JVM which will start node with {@code
+ * examples/config/example-ignite.xml} configuration.</p>
  */
 public class MovieGAExample {
     /**
      * Executes example.
-     *
+     * <p>
      * Specify value for {@code -DGENRES} JVM system variable.
      *
      * @param args Command line arguments, none required.
@@ -128,7 +128,9 @@ public class MovieGAExample {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static List<Gene> getGenePool() {
         List<Gene> list = new ArrayList<>();
 

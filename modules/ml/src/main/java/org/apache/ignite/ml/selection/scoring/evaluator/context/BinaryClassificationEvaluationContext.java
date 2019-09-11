@@ -17,27 +17,32 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator.context;
 
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.structures.LabeledVector;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * This context tries to define positive and negative labels for estimation of binary classifier.
  */
 public class BinaryClassificationEvaluationContext<L extends Serializable> implements EvaluationContext<L, BinaryClassificationEvaluationContext<L>> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = 658785331349096576L;
 
-    /** First class lbl. */
+    /**
+     * First class lbl.
+     */
     private L firstClassLbl;
 
-    /** Second class lbl. */
+    /**
+     * Second class lbl.
+     */
     private L secondClassLbl;
 
     /**
@@ -51,7 +56,7 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
     /**
      * Creates an instance of BinaryClassificationEvaluationContext.
      *
-     * @param firstClassLbl First class lbl.
+     * @param firstClassLbl  First class lbl.
      * @param secondClassLbl Second class lbl.
      */
     public BinaryClassificationEvaluationContext(L firstClassLbl, L secondClassLbl) {
@@ -59,7 +64,9 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
         this.secondClassLbl = secondClassLbl;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void aggregate(LabeledVector<L> vector) {
         L label = vector.label();
         if (firstClassLbl == null)
@@ -67,7 +74,8 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
         else if (secondClassLbl == null && !label.equals(firstClassLbl)) {
             secondClassLbl = label;
             swapLabelsIfNeed();
-        } else
+        }
+        else
             checkNewLabel(label);
     }
 
@@ -76,7 +84,7 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
      */
     private void swapLabelsIfNeed() {
         if (firstClassLbl instanceof Comparable) {
-            Comparable cmp1 = (Comparable) firstClassLbl;
+            Comparable cmp1 = (Comparable)firstClassLbl;
             int res = cmp1.compareTo(secondClassLbl);
             if (res > 0) {
                 L tmp = secondClassLbl;
@@ -86,8 +94,11 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public BinaryClassificationEvaluationContext<L> mergeWith(BinaryClassificationEvaluationContext<L> other) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override public BinaryClassificationEvaluationContext<L> mergeWith(
+        BinaryClassificationEvaluationContext<L> other) {
         checkNewLabel(other.firstClassLbl);
         checkNewLabel(other.secondClassLbl);
 

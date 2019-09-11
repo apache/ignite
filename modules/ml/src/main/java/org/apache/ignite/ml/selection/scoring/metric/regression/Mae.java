@@ -26,30 +26,42 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
  * Class for mean absolute error metric.
  */
 public class Mae implements Metric<Double, EmptyContext<Double>, RegressionMetricStatsAggregator> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = -5154991220994862827L;
 
-    /** Value. */
+    /**
+     * Value.
+     */
     private double value = Double.NaN;
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public RegressionMetricStatsAggregator makeAggregator() {
         return new RegressionMetricStatsAggregator();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Mae initBy(RegressionMetricStatsAggregator aggr) {
         value = aggr.getMAE();
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.MAE;
     }

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * NPV metric class.
@@ -31,7 +30,9 @@ public class Npv<L extends Serializable> extends BinaryClassificationMetric<L> {
      */
     private static final long serialVersionUID = -2974485980038821226L;
 
-    /** Metric value. */
+    /**
+     * Metric value.
+     */
     private Double value = Double.NaN;
 
     /**
@@ -50,19 +51,25 @@ public class Npv<L extends Serializable> extends BinaryClassificationMetric<L> {
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Npv<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         int negativePredictions = aggr.getFalseNegative() + aggr.getTrueNegative();
-        value = negativePredictions == 0 ? 1 : (double) aggr.getTrueNegative() / negativePredictions;
+        value = negativePredictions == 0 ? 1 : (double)aggr.getTrueNegative() / negativePredictions;
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.NPV;
     }

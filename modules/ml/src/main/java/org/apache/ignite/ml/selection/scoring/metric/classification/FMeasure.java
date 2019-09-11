@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * F-measure metric class.
@@ -36,13 +35,19 @@ public class FMeasure<L extends Serializable> extends BinaryClassificationMetric
      */
     private final double betaSquare;
 
-    /** Precision. */
+    /**
+     * Precision.
+     */
     private final Precision<L> precision = new Precision<L>();
 
-    /** Recall. */
+    /**
+     * Recall.
+     */
     private final Recall<L> recall = new Recall<L>();
 
-    /** Fscore. */
+    /**
+     * Fscore.
+     */
     private Double fscore = Double.NaN;
 
     /**
@@ -84,7 +89,9 @@ public class FMeasure<L extends Serializable> extends BinaryClassificationMetric
         this.betaSquare = 1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public FMeasure<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         precision.initBy(aggr);
         recall.initBy(aggr);
@@ -95,12 +102,16 @@ public class FMeasure<L extends Serializable> extends BinaryClassificationMetric
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return fscore;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.F_MEASURE;
     }

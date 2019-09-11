@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Package contains aggregators for metrics computation.
+ * <!-- Package description. --> Package contains aggregators for metrics computation.
  */
 package org.apache.ignite.ml.selection.scoring.evaluator.aggregator;

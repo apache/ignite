@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -33,8 +34,6 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
-import java.io.IOException;
-
 /**
  * Run linear regression model based on  based on
  * <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient descent</a> algorithm
@@ -42,8 +41,8 @@ import java.io.IOException;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it trains the linear regression model based on stochastic gradient descent algorithm using
- * the specified data.</p>
+ * After that it trains the linear regression model based on stochastic gradient descent algorithm using the specified
+ * data.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict the target value
  * and compares prediction to expected outcome (ground truth).</p>
@@ -51,7 +50,9 @@ import java.io.IOException;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionSGDTrainerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over sparse distributed matrix API usage example started.");
@@ -85,10 +86,12 @@ public class LinearRegressionSGDTrainerExample {
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

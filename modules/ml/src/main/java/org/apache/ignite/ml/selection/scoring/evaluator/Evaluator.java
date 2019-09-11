@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -44,11 +48,6 @@ import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import javax.cache.Cache;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Evaluator that computes metrics from predictions and ground truth values.
  */
@@ -56,12 +55,12 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(IgniteCache<K, V> dataCache,
@@ -75,13 +74,13 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(IgniteCache<K, V> dataCache,
@@ -100,12 +99,12 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The metric name.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The metric name.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(IgniteCache<K, V> dataCache,
@@ -120,13 +119,13 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The metric name.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The metric name.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(IgniteCache<K, V> dataCache,
@@ -145,12 +144,12 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given local data.
-     * @param mdl The model.
+     * @param dataCache    The given local data.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The binary classification metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The binary classification metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(Map<K, V> dataCache,
@@ -165,13 +164,13 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The binary classification metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The binary classification metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(Map<K, V> dataCache, IgniteBiPredicate<K, V> filter,
@@ -184,12 +183,12 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given local data.
-     * @param mdl The model.
+     * @param dataCache    The given local data.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The binary classification metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The binary classification metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(Map<K, V> dataCache,
@@ -204,13 +203,13 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param metric The binary classification metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param metric       The binary classification metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> double evaluate(Map<K, V> dataCache, IgniteBiPredicate<K, V> filter,
@@ -223,11 +222,11 @@ public class Evaluator {
     /**
      * Evaluate binary classifier by default metrics (see package classification). TODO: IGNITE-12156
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
     public static <K, V> EvaluationResult evaluateBinaryClassification(IgniteCache<K, V> dataCache,
@@ -240,37 +239,38 @@ public class Evaluator {
     /**
      * Evaluate binary classifier by default metrics (see package classification).
      *
-     * @param dataCache The given cache.
-     * @param filter The filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
-    public static <K, V> EvaluationResult evaluateBinaryClassification(IgniteCache<K, V> dataCache, // TODO: IGNITE-12156
+    public static <K, V> EvaluationResult evaluateBinaryClassification(IgniteCache<K, V> dataCache,
+        // TODO: IGNITE-12156
         IgniteBiPredicate<K, V> filter,
         IgniteModel<Vector, Double> mdl,
         Preprocessor<K, V> preprocessor) {
 
         Metric[] metrics = merge(
-                MetricName.ACCURACY, MetricName.PRECISION, MetricName.RECALL, MetricName.F_MEASURE,
-                MetricName.BALANCED_ACCURACY, MetricName.FALL_OUT, MetricName.FDR, MetricName.MISS_RATE,
-                MetricName.NPV, MetricName.SPECIFICITY, MetricName.TRUE_POSITIVE, MetricName.FALSE_POSITIVE,
-                MetricName.TRUE_NEGATIVE, MetricName.FALSE_NEGATIVE
+            MetricName.ACCURACY, MetricName.PRECISION, MetricName.RECALL, MetricName.F_MEASURE,
+            MetricName.BALANCED_ACCURACY, MetricName.FALL_OUT, MetricName.FDR, MetricName.MISS_RATE,
+            MetricName.NPV, MetricName.SPECIFICITY, MetricName.TRUE_POSITIVE, MetricName.FALSE_POSITIVE,
+            MetricName.TRUE_NEGATIVE, MetricName.FALSE_NEGATIVE
         );
         return evaluate(new CacheBasedDatasetBuilder<>(Ignition.ignite(), dataCache, filter), mdl, preprocessor,
-                metrics);
+            metrics);
     }
 
     /**
      * Evaluate binary classifier by default metrics (see package classification).
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
     public static <K, V> EvaluationResult evaluateBinaryClassification(Map<K, V> dataCache, // TODO: IGNITE-12156
@@ -283,12 +283,12 @@ public class Evaluator {
     /**
      * Evaluate binary classifier by default metrics (see package classification).
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
     public static <K, V> EvaluationResult evaluateBinaryClassification(Map<K, V> dataCache, // TODO: IGNITE-12156
@@ -303,11 +303,11 @@ public class Evaluator {
     /**
      * Evaluate regression by default metrics (see package regression).
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
     public static <K, V> EvaluationResult evaluateRegression(IgniteCache<K, V> dataCache, // TODO: IGNITE-12156
@@ -320,12 +320,12 @@ public class Evaluator {
     /**
      * Evaluate regression by default metrics (see package regression).
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
     public static <K, V> EvaluationResult evaluateRegression(IgniteCache<K, V> dataCache, // TODO: IGNITE-12156
@@ -340,11 +340,11 @@ public class Evaluator {
     /**
      * Evaluate regression by default metrics (see package regression).
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
     public static <K, V> EvaluationResult evaluateRegression(Map<K, V> dataCache, // TODO: IGNITE-12156
@@ -357,12 +357,12 @@ public class Evaluator {
     /**
      * Evaluate regression by default metrics (see package regression).
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
      * @param preprocessor The preprocessor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metrics.
      */
     public static <K, V> EvaluationResult evaluateRegression(Map<K, V> dataCache, // TODO: IGNITE-12156
@@ -377,8 +377,8 @@ public class Evaluator {
     /**
      * Pack metric names to array of metrics.
      *
-     * @param name1 Metric 1 name.
-     * @param name2 Metric 2 name.
+     * @param name1       Metric 1 name.
+     * @param name2       Metric 2 name.
      * @param metricNames Metric Names.
      * @return Array of metrics.
      */
@@ -394,13 +394,13 @@ public class Evaluator {
     /**
      * Evaluate model.
      *
-     * @param mdl The model.
-     * @param dataCache Dataset cache.
-     * @param filter Dataset filter.
+     * @param mdl          The model.
+     * @param dataCache    Dataset cache.
+     * @param filter       Dataset filter.
      * @param preprocessor Preprocessor.
-     * @param metrics Metrics to compute.
-     * @param <K> Type of key.
-     * @param <V> Type of value.
+     * @param metrics      Metrics to compute.
+     * @param <K>          Type of key.
+     * @param <V>          Type of value.
      * @return Evaluation result.
      */
     private static <K, V> EvaluationResult evaluate(IgniteModel<Vector, Double> mdl,
@@ -414,12 +414,12 @@ public class Evaluator {
     /**
      * Evaluate model.
      *
-     * @param mdl The model.
+     * @param mdl            The model.
      * @param datasetBuilder Dataset builder.
-     * @param preprocessor Preprocessor.
-     * @param metrics Metrics to compute.
-     * @param <K> Type of key.
-     * @param <V> Type of value.
+     * @param preprocessor   Preprocessor.
+     * @param metrics        Metrics to compute.
+     * @param <K>            Type of key.
+     * @param <V>            Type of value.
      * @return Evaluation result.
      */
     public static <K, V> EvaluationResult evaluate(DatasetBuilder<K, V> datasetBuilder,
@@ -446,11 +446,11 @@ public class Evaluator {
     /**
      * Evaluate model.
      *
-     * @param mdl The model.
-     * @param dataset Dataset.
-     * @param cache Upstream cache.
+     * @param mdl          The model.
+     * @param dataset      Dataset.
+     * @param cache        Upstream cache.
      * @param preprocessor Preprocessor.
-     * @param metrics Metrics to compute.
+     * @param metrics      Metrics to compute.
      * @return Evaluation result.
      */
     @SuppressWarnings("unchecked")
@@ -610,11 +610,12 @@ public class Evaluator {
     /**
      * Inits aggregators.
      *
-     * @param ctxs Evaluation contexts.
+     * @param ctxs    Evaluation contexts.
      * @param metrics Metrics.
      * @return Aggregators map.
      */
-    private static Map<Class, MetricStatsAggregator> initAggregators(Map<Class, EvaluationContext> ctxs, Metric[] metrics) {
+    private static Map<Class, MetricStatsAggregator> initAggregators(Map<Class, EvaluationContext> ctxs,
+        Metric[] metrics) {
         Map<Class, MetricStatsAggregator> aggrs = new HashMap<>();
         for (Metric m : metrics) {
             MetricStatsAggregator aggregator = m.makeAggregator();

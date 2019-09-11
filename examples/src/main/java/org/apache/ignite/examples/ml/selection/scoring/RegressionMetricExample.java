@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.selection.scoring;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -32,8 +33,6 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
-import java.io.IOException;
-
 /**
  * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
  * <p>
@@ -47,7 +46,9 @@ import java.io.IOException;
  * further.</p>
  */
 public class RegressionMetricExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> kNN regression over cached dataset usage example started.");
@@ -75,10 +76,12 @@ public class RegressionMetricExample {
                 );
 
                 System.out.println("\n>>> Mae " + mae);
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

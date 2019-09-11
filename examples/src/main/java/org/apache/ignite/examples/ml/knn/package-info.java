@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * kNN examples.
+ * <!-- Package description. --> kNN examples.
  */
 package org.apache.ignite.examples.ml.knn;

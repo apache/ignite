@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * FDR metric class.
@@ -31,7 +30,9 @@ public class Fdr<L extends Serializable> extends BinaryClassificationMetric<L> {
      */
     private static final long serialVersionUID = 1246865138630168628L;
 
-    /** Metric value. */
+    /**
+     * Metric value.
+     */
     private Double value = Double.NaN;
 
     /**
@@ -50,19 +51,25 @@ public class Fdr<L extends Serializable> extends BinaryClassificationMetric<L> {
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public Fdr<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         int positivePredictions = aggr.getFalsePositive() + aggr.getTruePositive();
-        value = positivePredictions == 0 ? 1 : (double) aggr.getTruePositive() / positivePredictions;
+        value = positivePredictions == 0 ? 1 : (double)aggr.getTruePositive() / positivePredictions;
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.FDR;
     }

@@ -23,13 +23,19 @@ import java.io.Serializable;
  * POJO to model an Item.
  */
 public class Item implements Serializable {
-    /** Weight of item in lbs. */
+    /**
+     * Weight of item in lbs.
+     */
     private double weight;
 
-    /** Value of item. */
+    /**
+     * Value of item.
+     */
     private double val;
 
-    /** Name of item. */
+    /**
+     * Name of item.
+     */
     private String name;
 
     /**
@@ -86,7 +92,9 @@ public class Item implements Serializable {
         this.name = name;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String toString() {
         return "Item [weight=" + weight + ", value=" + val + ", name=" + name + "]";
     }

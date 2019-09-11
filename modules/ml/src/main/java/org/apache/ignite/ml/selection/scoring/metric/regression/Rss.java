@@ -26,30 +26,42 @@ import org.apache.ignite.ml.selection.scoring.metric.MetricName;
  * Class for RSS metric (residual sum of squares).
  */
 public class Rss implements Metric<Double, EmptyContext<Double>, RegressionMetricStatsAggregator> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = -8963319864310149685L;
 
-    /** Value. */
+    /**
+     * Value.
+     */
     private double value = Double.NaN;
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public RegressionMetricStatsAggregator makeAggregator() {
         return new RegressionMetricStatsAggregator();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Rss initBy(RegressionMetricStatsAggregator aggr) {
-        value  = aggr.getRss();
+        value = aggr.getRss();
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.RSS;
     }

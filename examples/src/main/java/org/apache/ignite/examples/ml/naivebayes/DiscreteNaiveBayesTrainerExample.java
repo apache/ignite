@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.naivebayes;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,8 +30,6 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.IOException;
 
 /**
  * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes">
@@ -48,7 +47,9 @@ import java.io.IOException;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class DiscreteNaiveBayesTrainerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println(">>> Discrete naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
@@ -81,11 +82,13 @@ public class DiscreteNaiveBayesTrainerExample {
                 System.out.println("\n>>> Accuracy " + accuracy);
 
                 System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

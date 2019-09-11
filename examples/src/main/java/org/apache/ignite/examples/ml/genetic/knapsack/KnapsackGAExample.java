@@ -28,16 +28,16 @@ import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 
 /**
- * This example demonstrates how to use the {@link GAGrid} framework. It shows working with Knapsack Problem:
- * Given a set of 30 items, each with a weight and a value, pack 10 items in knapsack so that the total weight
- * is less or equal 20 lbs, and the total value is maximized.
+ * This example demonstrates how to use the {@link GAGrid} framework. It shows working with Knapsack Problem: Given a
+ * set of 30 items, each with a weight and a value, pack 10 items in knapsack so that the total weight is less or equal
+ * 20 lbs, and the total value is maximized.
  * <p>
  * Code in this example launches Ignite grid, prepares simple test data (gene pool) and configures GA grid.</p>
  * <p>
  * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
  * <p>
- * You can change the test data and parameters of GA grid used in this example and re-run it to explore
- * this functionality further.</p>
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore this
+ * functionality further.</p>
  * <p>
  * How to run from command line:</p>
  * <p>
@@ -46,8 +46,8 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
  * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
  * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
  * <p>
- * Alternatively you can run ExampleNodeStartup in another JVM which will start node with
- * {@code examples/config/example-ignite.xml} configuration.</p>
+ * Alternatively you can run ExampleNodeStartup in another JVM which will start node with {@code
+ * examples/config/example-ignite.xml} configuration.</p>
  */
 public class KnapsackGAExample {
     /**
@@ -104,7 +104,7 @@ public class KnapsackGAExample {
 
     /**
      * Helper routine to initialize Gene pool.
-     *
+     * <p>
      * In typical use case genes may be stored in database.
      *
      * @return List of Gene objects.

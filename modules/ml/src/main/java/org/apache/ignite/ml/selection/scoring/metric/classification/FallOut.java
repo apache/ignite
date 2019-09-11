@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassificationPointwiseMetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.io.Serializable;
 
 /**
  * FallOut metric class.
@@ -31,7 +30,9 @@ public class FallOut<L extends Serializable> extends BinaryClassificationMetric<
      */
     private static final long serialVersionUID = -2644409083604699500L;
 
-    /** Metric value. */
+    /**
+     * Metric value.
+     */
     private Double value = Double.NaN;
 
     /**
@@ -50,19 +51,26 @@ public class FallOut<L extends Serializable> extends BinaryClassificationMetric<
         super(truthLabel, falseLabel);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public FallOut<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
-        int n = aggr.getTrueNegative() + aggr.getFalsePositive();;
-        value = n == 0 ? 1 : (double) aggr.getFalsePositive() / n;
+        int n = aggr.getTrueNegative() + aggr.getFalsePositive();
+        ;
+        value = n == 0 ? 1 : (double)aggr.getFalsePositive() / n;
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double value() {
         return value;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public MetricName name() {
         return MetricName.FALL_OUT;
     }

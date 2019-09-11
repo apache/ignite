@@ -51,7 +51,9 @@ import org.xml.sax.SAXException;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LogRegFromSparkThroughPMMLExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
         System.out.println(">>> Logistic regression model loaded from PMML over partitioned dataset usage example started.");
@@ -82,13 +84,16 @@ public class LogRegFromSparkThroughPMMLExample {
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
         }
     }
 
-    /** Util class to build the LogReg model. */
+    /**
+     * Util class to build the LogReg model.
+     */
     private static class PMMLParser {
         /**
          * @param path Path.

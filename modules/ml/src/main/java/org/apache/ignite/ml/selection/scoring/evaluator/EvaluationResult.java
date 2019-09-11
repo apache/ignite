@@ -17,19 +17,22 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-
-import java.util.Map;
 
 /**
  * Class represents an aggregation of metrics evaluation results.
  */
 public class EvaluationResult {
-    /** Default precision. */
+    /**
+     * Default precision.
+     */
     private static final int DEFAULT_PRECISION = 3;
 
-    /** Estimated values with metric names. */
+    /**
+     * Estimated values with metric names.
+     */
     private final Map<MetricName, Double> values;
 
     /**
@@ -84,7 +87,9 @@ public class EvaluationResult {
         return sb.toString();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String toString() {
         return toString(DEFAULT_PRECISION);
     }

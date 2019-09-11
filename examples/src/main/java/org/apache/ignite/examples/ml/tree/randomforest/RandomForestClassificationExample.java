@@ -40,14 +40,14 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example represents a solution for the task of wine classification based on a
- *  <a href ="https://en.wikipedia.org/wiki/Random_forest">Random Forest</a> implementation for
+ * <a href ="https://en.wikipedia.org/wiki/Random_forest">Random Forest</a> implementation for
  * multi-classification.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
  * <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/wine/">Wine recognition dataset</a>).</p>
  * <p>
- * After that it initializes the  {@link RandomForestClassifierTrainer} with thread pool for multi-thread learning
- * and trains the model based on the specified data using random forest regression algorithm.</p>
+ * After that it initializes the  {@link RandomForestClassifierTrainer} with thread pool for multi-thread learning and
+ * trains the model based on the specified data using random forest regression algorithm.</p>
  * <p>
  * Finally, this example loops over the test set of data points, compares prediction of the trained model to the
  * expected outcome (ground truth), and evaluates accuracy of the model.</p>
@@ -111,11 +111,13 @@ public class RandomForestClassificationExample {
                     System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example completed.");
                 }
 
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

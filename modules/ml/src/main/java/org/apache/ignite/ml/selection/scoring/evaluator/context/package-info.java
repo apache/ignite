@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Package for metric evaluation contexts.
+ * <!-- Package description. --> Package for metric evaluation contexts.
  */
 package org.apache.ignite.ml.selection.scoring.evaluator.context;

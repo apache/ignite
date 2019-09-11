@@ -28,7 +28,9 @@ import static org.junit.Assert.assertEquals;
  * Tests for {@link RegressionMetricStatsAggregator} class.
  */
 public class RegressionMetricStatsAggregatorTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void itShouldBeCarefulWithNaNs() {
         RegressionMetricStatsAggregator agg = new RegressionMetricStatsAggregator();
@@ -46,7 +48,9 @@ public class RegressionMetricStatsAggregatorTest {
         assertEquals(0., agg.ysRss(), 0.);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testAggregate() {
         RegressionMetricStatsAggregator agg = new RegressionMetricStatsAggregator();
@@ -61,7 +65,9 @@ public class RegressionMetricStatsAggregatorTest {
         assertEquals(8.0, agg.ysRss(), 0.1);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testMerge() {
         RegressionMetricStatsAggregator agg1 = new RegressionMetricStatsAggregator();
@@ -79,7 +85,9 @@ public class RegressionMetricStatsAggregatorTest {
         assertEquals(8.0, res.ysRss(), 0.1);
     }
 
-    /** */
+    /**
+     *
+     */
     private static IgniteModel<Vector, Double> model = new IgniteModel<Vector, Double>() {
         @Override public Double predict(Vector input) {
             return input.get(0);

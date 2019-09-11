@@ -17,38 +17,51 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator.aggregator;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.context.BinaryClassificationEvaluationContext;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import java.io.Serializable;
-
 /**
  * This class represents statistics for pointwise metrics evaluation for binary classification like TruePositive,
  * FalsePositive, TrueNegative and FalseNegative.
  */
 public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serializable> implements MetricStatsAggregator<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
-    /** Serial version uid. */
+    /**
+     * Serial version uid.
+     */
     private static final long serialVersionUID = -7677193556950322385L;
 
-    /** False label. */
+    /**
+     * False label.
+     */
     private L falseLabel;
 
-    /** Truth label. */
+    /**
+     * Truth label.
+     */
     private L truthLabel;
 
-    /** Count of true positives. */
+    /**
+     * Count of true positives.
+     */
     private int truePositive;
 
-    /** Count of false positives. */
+    /**
+     * Count of false positives.
+     */
     int falsePositive;
 
-    /** Count of true negatives. */
+    /**
+     * Count of true negatives.
+     */
     int trueNegative;
 
-    /** Count of false negatives. */
+    /**
+     * Count of false negatives.
+     */
     int falseNegative;
 
     /**
@@ -60,11 +73,11 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
     /**
      * Creates an instance of BinaryClassificationPointwiseMetricStatsAggregator.
      *
-     * @param falseLabel False label.
-     * @param truthLabel Truth label.
-     * @param truePositive True positives count.
+     * @param falseLabel    False label.
+     * @param truthLabel    Truth label.
+     * @param truePositive  True positives count.
      * @param falsePositive False positives count.
-     * @param trueNegative True negatives count.
+     * @param trueNegative  True negatives count.
      * @param falseNegative False negatives count.
      */
     public BinaryClassificationPointwiseMetricStatsAggregator(L falseLabel, L truthLabel,
@@ -78,7 +91,9 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
         this.falseNegative = falseNegative;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void aggregate(IgniteModel<Vector, L> model, LabeledVector<L> vector) {
         L modelAns = model.predict(vector.features());
         L realAns = vector.label();
@@ -93,8 +108,11 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
             falsePositive += 1;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinaryClassificationPointwiseMetricStatsAggregator<L> mergeWith(BinaryClassificationPointwiseMetricStatsAggregator other) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override public BinaryClassificationPointwiseMetricStatsAggregator<L> mergeWith(
+        BinaryClassificationPointwiseMetricStatsAggregator other) {
         A.ensure(this.falseLabel.equals(other.falseLabel), "this.falseLabel == other.falseLabel");
         A.ensure(this.truthLabel.equals(other.truthLabel), "this.truthLabel == other.truthLabel");
 
@@ -108,12 +126,16 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
         );
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public BinaryClassificationEvaluationContext<L> createUnitializedContext() {
         return new BinaryClassificationEvaluationContext<>();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public void initByContext(BinaryClassificationEvaluationContext<L> context) {
         this.falseLabel = context.getFirstClassLbl();
         this.truthLabel = context.getSecondClassLbl();
@@ -186,14 +208,19 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
      * Class represents already initialized aggregator.
      */
     public static class WithCustomLabelsAggregator<L extends Serializable> extends BinaryClassificationPointwiseMetricStatsAggregator<L> {
-        /** Truth label. */
+        /**
+         * Truth label.
+         */
         private final L truthLabel;
 
-        /** False label. */
+        /**
+         * False label.
+         */
         private final L falseLabel;
 
         /**
          * Create an instance of WithCustomLabels.
+         *
          * @param truthLabel Truth label.
          * @param falseLabel False label.
          */
@@ -202,7 +229,9 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
             this.falseLabel = falseLabel;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public BinaryClassificationEvaluationContext<L> createUnitializedContext() {
             return new BinaryClassificationEvaluationContext<L>(falseLabel, truthLabel) {
                 /**

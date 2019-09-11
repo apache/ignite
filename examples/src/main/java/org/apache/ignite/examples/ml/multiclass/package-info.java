@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Multi-class classification examples.
+ * <!-- Package description. --> Multi-class classification examples.
  */
 package org.apache.ignite.examples.ml.multiclass;

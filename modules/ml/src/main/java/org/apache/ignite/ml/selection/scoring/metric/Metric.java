@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.MetricStatsAggregator;
 import org.apache.ignite.ml.selection.scoring.evaluator.context.EvaluationContext;
 
-import java.io.Serializable;
-
 /**
- * This class represents a container with computed value of metric and it provides a factory for metric
- * statistics aggregation class.
+ * This class represents a container with computed value of metric and it provides a factory for metric statistics
+ * aggregation class.
  *
  * @param <L> Type of label.
  * @param <C> Type of evaluation context.
