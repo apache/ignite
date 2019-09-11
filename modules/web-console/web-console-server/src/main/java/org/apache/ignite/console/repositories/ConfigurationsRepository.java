@@ -89,29 +89,10 @@ public class ConfigurationsRepository {
             cachesTbl = new Table<>(ignite, "wc_cluster_caches");
             modelsTbl = new Table<>(ignite, "wc_cluster_models");
 
-            cachesIdx = new OneToManyIndex<>(
-                    ignite,
-                    "wc_cluster_caches_idx",
-                    (key) -> messages.getMessage("err.data-access-violation")
-            );
-
-            modelsIdx = new OneToManyIndex<>(
-                    ignite,
-                    "wc_cluster_models_idx",
-                    (key) -> messages.getMessage("err.data-access-violation")
-            );
-
-            clustersIdx = new OneToManyIndex<>(
-                    ignite,
-                    "wc_account_clusters_idx",
-                    (key) -> messages.getMessage("err.data-access-violation")
-            );
-
-            cfgIdx = new OneToManyIndex<>(
-                    ignite,
-                    "wc_account_configs_idx",
-                    (key) -> messages.getMessage("err.data-access-violation")
-            );
+            cachesIdx = new OneToManyIndex<>(ignite, "wc_cluster_caches_idx");
+            modelsIdx = new OneToManyIndex<>(ignite, "wc_cluster_models_idx");
+            clustersIdx = new OneToManyIndex<>(ignite, "wc_account_clusters_idx");
+            cfgIdx = new OneToManyIndex<>(ignite, "wc_account_configs_idx");
         });
     }
 

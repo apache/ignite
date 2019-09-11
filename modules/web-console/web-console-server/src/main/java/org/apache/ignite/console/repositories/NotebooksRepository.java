@@ -53,12 +53,7 @@ public class NotebooksRepository {
             MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
             notebooksTbl = new Table<>(ignite, "wc_notebooks");
-
-            notebooksIdx = new OneToManyIndex<>(
-                    ignite,
-                    "wc_account_notebooks_idx",
-                    (key) -> messages.getMessage("err.data-access-violation")
-            );
+            notebooksIdx = new OneToManyIndex<>(ignite, "wc_account_notebooks_idx");
         });
     }
 

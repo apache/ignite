@@ -18,12 +18,18 @@ package org.apache.ignite.console.db;
 
 import java.util.Collections;
 import java.util.UUID;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.console.dto.AbstractDto;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Tests for dynamic schema changes.
@@ -79,6 +85,32 @@ public class TableSelfTest extends GridCommonAbstractTest {
 
             assertTrue("Unique index should be updated with record", objTbl.loadAllByIndex(Collections.singleton("1")).isEmpty());
             assertFalse("Unique index should be created", objTbl.loadAllByIndex(Collections.singleton("2")).isEmpty());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTtleOfRecord() throws Exception {
+        try (Ignite ignite = startGrid()) {
+            Factory<ExpiryPolicy> createExpiryPlc = CreatedExpiryPolicy.factoryOf(new Duration(SECONDS, 1));
+
+            Table<TestObject> objTbl = new Table<>(
+                ignite,
+                "testObjects",
+                (ccfg) -> ccfg.setExpiryPolicyFactory(createExpiryPlc)
+            );
+
+            TestObject obj1 = new TestObject("1");
+
+            objTbl.save(obj1);
+
+            assertTrue("Object with index '1' exist", objTbl.containsKey(obj1.getId()));
+
+            Thread.sleep(1000L);
+            
+            assertFalse("Object with index '1' expire", objTbl.containsKey(obj1.getId()));
         }
     }
 

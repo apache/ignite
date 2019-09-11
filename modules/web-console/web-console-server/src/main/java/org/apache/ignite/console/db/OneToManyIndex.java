@@ -23,6 +23,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.console.dto.AbstractDto;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
@@ -44,22 +45,27 @@ public class OneToManyIndex<K, V> extends CacheHolder<K, Set<V>> {
      * Constructor.
      *
      * @param ignite Ignite.
-     * @param idxName Index name.
+     * @param cacheName Cache name.
      */
-    public OneToManyIndex(Ignite ignite, String idxName, Function<K, String> msgGenerator) {
-        super(ignite, idxName);
-
-        this.msgGenerator = msgGenerator;
+    public OneToManyIndex(Ignite ignite, String cacheName) {
+        this(ignite, cacheName, Function.identity());
     }
 
     /**
      * Constructor.
      *
      * @param ignite Ignite.
-     * @param idxName Index name.
+     * @param cacheName Cache name.
+     * @param f Cache configuration mapper.
      */
-    public OneToManyIndex(Ignite ignite, String idxName) {
-        this(ignite, idxName, (key) -> messages.getMessage("err.data-access-violation"));
+    public OneToManyIndex(
+        Ignite ignite,
+        String cacheName,
+        Function<CacheConfiguration<K, Set<V>>, CacheConfiguration<K, Set<V>>> f
+    ) {
+        super(ignite, cacheName, f);
+
+        this.msgGenerator = (key) -> messages.getMessage("err.data-access-violation");
     }
 
     /**

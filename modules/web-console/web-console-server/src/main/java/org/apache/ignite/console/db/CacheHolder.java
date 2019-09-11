@@ -16,6 +16,7 @@
 
 package org.apache.ignite.console.db;
 
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -45,6 +46,15 @@ public class CacheHolder<K, V> {
      * @param cacheName Cache name.
      */
     public CacheHolder(Ignite ignite, String cacheName) {
+        this(ignite, cacheName, Function.identity());
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name.
+     * @param f Cache configuration mapper.
+     */
+    public CacheHolder(Ignite ignite, String cacheName, Function<CacheConfiguration<K, V>, CacheConfiguration<K, V>> f) {
         this.ignite = ignite;
         this.cacheName = cacheName;
 
@@ -52,7 +62,7 @@ public class CacheHolder<K, V> {
             .setAtomicityMode(TRANSACTIONAL)
             .setCacheMode(REPLICATED);
 
-        cache = ignite.getOrCreateCache(ccfg);
+        cache = ignite.getOrCreateCache(f.apply(ccfg));
     }
 
     /**
