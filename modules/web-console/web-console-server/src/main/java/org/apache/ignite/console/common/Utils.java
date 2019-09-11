@@ -179,7 +179,7 @@ public class Utils {
         try {
             File logsDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "log", false);
 
-            log.info("Full logs is available in {}", logsDir.getAbsolutePath());
+            log.info("Full log is available in {}", logsDir.getAbsolutePath());
         }
         catch (IgniteCheckedException ignored) {
             // No-op.
