@@ -29,7 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <O> Type of an object of recommendation.
  * @param <S> Type of a subject of recommendation.
  */
-// TODO: GG-22915 Investigate ability to distribute recommendation model
 public class RecommendationModel<O extends Serializable, S extends Serializable>
     implements IgniteModel<ObjectSubjectPair<O, S>, Double> {
     /** */
