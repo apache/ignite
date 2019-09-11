@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -72,14 +73,17 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
+        //By some reasons in the compression case it is required more memory for reproducing.
+        boolean isCompression = System.getProperty(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) != null;
+
         storageCfg.setCheckpointThreads(2)
             .setFileIOFactory(interceptorIOFactory)
-            .setWalSegmentSize(5 * 1024 * 1024)
+            .setWalSegmentSize((isCompression ? 20 : 5) * 1024 * 1024)
             .setWalSegments(3);
 
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize(10L * 1024 * 1024);
+            .setMaxSize((isCompression ? 70 : 10) * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg)
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -104,7 +108,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            if(file.getName().contains("START.bin"))
+            if (file.getName().contains("START.bin"))
                 sleep();
 
             if (failPredicate.test(file)) {
@@ -171,7 +175,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
         }, 3, "LOAD-DATA");
 
         //and: Page replacement was started.
-        assertTrue(waitForCondition(pageReplacementStarted::get, 20_000));
+        assertTrue(waitForCondition(pageReplacementStarted::get, 60_000));
 
         //and: Node was failed during checkpoint after write lock was released and before checkpoint marker was stored to disk.
         interceptorIOFactory.triggerIOException((file) -> file.getName().contains("START.bin"));
@@ -188,7 +192,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Object> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         //WAL mode is 'default' so it is allowable to lost some last data(ex. last 100).
-        for(int i = 0; i < lastKey.get() - 100; i++)
+        for (int i = 0; i < lastKey.get() - 100; i++)
             assertNotNull(cache.get(i));
     }
 }

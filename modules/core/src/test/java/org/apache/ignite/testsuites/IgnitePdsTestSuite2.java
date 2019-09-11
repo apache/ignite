@@ -212,9 +212,9 @@ public class IgnitePdsTestSuite2 {
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCorruptedStoreTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, CheckpointFreeListTest.class, ignoredTests);
-
         GridTestUtils.addTestIfNeeded(suite, CheckpointFailBeforeWriteMarkTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CheckpointFreeListTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteWalIteratorSwitchSegmentTest.class, ignoredTests);
 
