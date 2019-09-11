@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.inference.storage.model;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Set;
