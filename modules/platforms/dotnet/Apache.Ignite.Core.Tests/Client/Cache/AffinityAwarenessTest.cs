@@ -279,7 +279,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = Client.CreateCache<int, int>(cfg);
 
             // Init the replicated cache and start the new one to enforce partition mapping request.
-            cache.Put(1, 1);
+            cache.PutAll(Enumerable.Range(1, 3).ToDictionary(x => x, x => x));
             Client.CreateCache<int, int>("repeat-call-test-replicated");
             ClearLoggers();
 
