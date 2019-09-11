@@ -64,4 +64,3 @@ public class ComputeTaskViewWalker implements MonitoringRowAttributeWalker<Compu
         return 11;
     }
 }
-

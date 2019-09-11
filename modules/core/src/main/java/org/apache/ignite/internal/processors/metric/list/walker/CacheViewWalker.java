@@ -168,4 +168,3 @@ public class CacheViewWalker implements MonitoringRowAttributeWalker<CacheView> 
         return 61;
     }
 }
-

@@ -62,4 +62,3 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
         return 10;
     }
 }
-

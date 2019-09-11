@@ -29,10 +29,10 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
     private final String name;
 
     /** Description of the list. */
-    private final String description;
+    private final String descr;
 
     /** Class of the row */
-    private final Class<R> rowClass;
+    private final Class<R> rowCls;
 
     /**
      * Row attribute walker.
@@ -43,17 +43,17 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
 
     /**
      * @param name Name of the list.
-     * @param description Description of the list.
-     * @param rowClass Class of the row.
+     * @param descr Description of the list.
+     * @param rowCls Class of the row.
      * @param walker Row attribute walker.
      */
-    AbstractMonitoringList(String name, String description, Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
-        assert rowClass != null;
+    AbstractMonitoringList(String name, String descr, Class<R> rowCls, MonitoringRowAttributeWalker<R> walker) {
+        assert rowCls != null;
         assert walker != null : "Please, add walker class via GridMetricManager#registerWalker";
 
         this.name = name;
-        this.description = description;
-        this.rowClass = rowClass;
+        this.descr = descr;
+        this.rowCls = rowCls;
         this.walker = walker;
     }
 
@@ -64,7 +64,7 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
 
     /** {@inheritDoc} */
     @Override public Class<R> rowClass() {
-        return rowClass;
+        return rowCls;
     }
 
     /** {@inheritDoc} */
@@ -74,6 +74,6 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return description;
+        return descr;
     }
 }

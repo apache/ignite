@@ -76,4 +76,3 @@ public class CacheGroupViewWalker implements MonitoringRowAttributeWalker<CacheG
         return 16;
     }
 }
-

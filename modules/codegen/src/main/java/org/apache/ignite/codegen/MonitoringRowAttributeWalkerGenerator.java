@@ -208,7 +208,6 @@ public class MonitoringRowAttributeWalkerGenerator {
         code.add(TAB + TAB + "return " + cnt[0] + ';');
         code.add(TAB + "}");
         code.add("}");
-        code.add("");
 
         code.addAll(2, imports);
 
