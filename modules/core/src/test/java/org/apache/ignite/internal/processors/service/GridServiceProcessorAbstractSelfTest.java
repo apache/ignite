@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -285,22 +286,18 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     @Test
-    public void testGetServicesByName() throws Exception {
+    public void testGetServicesByName() {
         final String name = "servicesByName";
 
         Ignite g = randomGrid();
 
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
-        AtomicInteger cnt = new AtomicInteger(0);
+        assertTrue(GridTestUtils.waitUntil(() -> {
+            int cnt = IntStream.range(0, nodeCount()).parallel().map(i -> grid(i).services().services(name).size()).sum();
+            return  cnt == nodeCount() * 2;
+        }, 1000));
 
-        for (int i = 0; i < nodeCount(); i++) {
-            Collection<DummyService> svcs = grid(i).services().services(name);
-
-            if (svcs != null)
-                cnt.addAndGet(svcs.size());
-        }
-        assertTrue(GridTestUtils.waitForCondition(() -> cnt.get() == nodeCount() * 2, 10000));
     }
 
     /**
