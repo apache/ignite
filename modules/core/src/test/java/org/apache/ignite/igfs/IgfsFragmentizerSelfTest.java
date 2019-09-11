@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
