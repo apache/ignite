@@ -19,7 +19,6 @@ package org.apache.ignite.examples.ml.inference.spark;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.xml.bind.JAXBException;
@@ -52,7 +51,7 @@ import org.xml.sax.SAXException;
  */
 public class LogRegFromSparkThroughPMMLExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model loaded from PMML over partitioned dataset usage example started.");
         // Start ignite grid.
