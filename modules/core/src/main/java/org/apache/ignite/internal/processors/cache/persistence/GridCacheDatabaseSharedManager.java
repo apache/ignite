@@ -189,6 +189,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -421,6 +422,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Timeout for checkpoint read lock acquisition in milliseconds. */
     private volatile long checkpointReadLockTimeout;
 
+    /** Flag allows to log additional information about partitions during recovery phases. */
+    private final boolean recoveryVerboseLogging = getBoolean(IGNITE_RECOVERY_VERBOSE_LOGGING, false);
 
     /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
     private volatile WALPointer memoryRecoveryRecordPtr;
@@ -2149,13 +2152,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Restore binary memory for all not WAL disabled cache groups.
             WALPointer restored = restoreBinaryMemory(
-                    g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g)
+                g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g)
             );
 
             if (restored != null)
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restored + ']');
 
-            if (log.isInfoEnabled()) {
+            if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after BINARY RECOVERY phase:");
 
                 dumpPartitionsInfo(cctx, log);
@@ -2179,12 +2182,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             CheckpointStatus status = readCheckpointStatus();
 
             RestoreLogicalState logicalState = applyLogicalUpdates(
-                    status,
-                    g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g),
-                    true
+                status,
+                g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g),
+                true
             );
 
-            if (log.isInfoEnabled()) {
+            if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after LOGICAL RECOVERY phase:");
 
                 dumpPartitionsInfo(cctx, log);
