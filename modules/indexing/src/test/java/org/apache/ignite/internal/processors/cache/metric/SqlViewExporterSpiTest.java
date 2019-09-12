@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.metric;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -96,7 +96,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testListRemove() throws Exception {
         GridMetricManager mmgr = ignite.context().metric();
 
-        mmgr.registerList("test", "description", CacheView.class, new ConcurrentHashMap<>(), v -> null, l -> {});
+        mmgr.registerList("test", "description", CacheView.class, Collections.emptyList(), v -> null, l -> {});
 
         List<List<?>> rows = execute(ignite, "SELECT * FROM SYS.TEST");
 

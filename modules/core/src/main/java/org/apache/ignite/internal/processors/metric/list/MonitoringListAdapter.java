@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric.list;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class MonitoringListAdapter<R extends MonitoringRow, D> extends AbstractMonitoringList<R> {
     /** Data backed by this list. */
-    private final ConcurrentMap<?, D> data;
+    private final Collection<D> data;
 
     /** Row function. */
     private final Function<D, R> rowFunc;
@@ -43,7 +44,7 @@ public class MonitoringListAdapter<R extends MonitoringRow, D> extends AbstractM
      * @param rowFunc Row function.
      */
     public MonitoringListAdapter(String name, String description, Class<R> rowClass,
-        MonitoringRowAttributeWalker<R> walker, ConcurrentMap<?, D> data, Function<D, R> rowFunc) {
+        MonitoringRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
         super(name, description, rowClass, walker);
 
         this.data = data;
@@ -52,7 +53,7 @@ public class MonitoringListAdapter<R extends MonitoringRow, D> extends AbstractM
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator() {
-        Iterator<D> data = this.data.values().iterator();
+        Iterator<D> data = this.data.iterator();
 
         return new Iterator<R>() {
             @Override public boolean hasNext() {

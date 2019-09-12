@@ -396,7 +396,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <D> Map data type.
      */
     public <R extends MonitoringRow, D> void registerList(String name, String desc,
-        Class<R> rowCls, ConcurrentMap<?, D> data, Function<D, R> rowFunc) {
+        Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
         registerList(name, desc, rowCls, data, rowFunc, d -> {});
     }
 
@@ -413,7 +413,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <D> Map data type.
      */
     public <R extends MonitoringRow, D> void registerList(String name, String desc,
-        Class<R> rowCls, ConcurrentMap<?, D> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
+        Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
 
         Runnable listCreator = () -> lists.computeIfAbsent(name, n -> {
             MonitoringList<R> list = new MonitoringListAdapter<>(name,
@@ -432,7 +432,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         listCreator.run();
 
         enableListTasks.put(name, listCreator);
-        rmvListTasks.put(name, () -> data.values().forEach(rowClearer));
+        rmvListTasks.put(name, () -> data.forEach(rowClearer));
     }
 
     /**

@@ -20,11 +20,11 @@ package org.apache.ignite.internal.metric;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -177,7 +177,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         GridMetricManager mmgr = ignite.context().metric();
 
         mmgr.registerList("test", "description", CacheView.class,
-            new ConcurrentHashMap<String, CacheView>(),
+            Collections.emptyList(),
             v -> null,
             v -> {});
 
