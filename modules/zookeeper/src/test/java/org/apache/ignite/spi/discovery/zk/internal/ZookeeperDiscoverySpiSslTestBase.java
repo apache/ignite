@@ -57,7 +57,7 @@ class ZookeeperDiscoverySpiSslTestBase extends ZookeeperDiscoverySpiTestBase {
         if (sslEnabled)
             return getSslConnectString();
 
-        return zkCluster.getConnectString();
+        return super.getTestClusterZkConnectionString();
     }
 
     /**
@@ -67,7 +67,7 @@ class ZookeeperDiscoverySpiSslTestBase extends ZookeeperDiscoverySpiTestBase {
         if (sslEnabled)
             return "localhost:2281";
 
-        return "localhost:2181";
+        return super.getRealClusterZkConnectionString();
     }
 
     /**
