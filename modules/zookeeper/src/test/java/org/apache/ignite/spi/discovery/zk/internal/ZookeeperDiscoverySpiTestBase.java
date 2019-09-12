@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
-import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -98,9 +97,6 @@ import static org.apache.zookeeper.client.ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_S
  * superclass methods to be shared by all subclasses.
  */
 class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
-    /** Zookeeper secure client port property name. */
-    public static final String ZK_SECURE_CLIENT_PORT = "secureClientPort";
-
     /** */
     protected UUID nodeId;
 
@@ -541,29 +537,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         }
         else
             zkSpi.setZkConnectionString("localhost:2181");
-    }
-
-    /**
-     * Returns the connection string to pass to the ZooKeeper constructor
-     *
-     * @return connection string
-     */
-    protected String getSslConnectString() {
-        StringBuilder str = new StringBuilder();
-
-        for (InstanceSpec spec : zkCluster.getInstances()) {
-            if (str.length() > 0)
-                str.append(",");
-
-            Object secClientPort = spec.getCustomProperties().get(ZK_SECURE_CLIENT_PORT);
-
-            if (secClientPort == null)
-                throw new IllegalArgumentException("Security client port is not configured. [spec=" + spec + ']');
-
-            str.append(spec.getHostname()).append(":").append(secClientPort);
-        }
-
-        return str.toString();
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 
 /**
@@ -26,6 +27,9 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
  * superclass methods to be shared by all subclasses.
  */
 class ZookeeperDiscoverySpiSslTestBase extends ZookeeperDiscoverySpiTestBase {
+    /** Zookeeper secure client port property name. */
+    public static final String ZK_SECURE_CLIENT_PORT = "secureClientPort";
+
     /** */
     protected boolean sslEnabled;
 
@@ -66,5 +70,28 @@ class ZookeeperDiscoverySpiSslTestBase extends ZookeeperDiscoverySpiTestBase {
             else
                 zkSpi.setZkConnectionString("localhost:2181");
         }
+    }
+
+    /**
+     * Returns the connection string to pass to the ZooKeeper constructor
+     *
+     * @return connection string
+     */
+    protected String getSslConnectString() {
+        StringBuilder str = new StringBuilder();
+
+        for (InstanceSpec spec : zkCluster.getInstances()) {
+            if (str.length() > 0)
+                str.append(",");
+
+            Object secClientPort = spec.getCustomProperties().get(ZK_SECURE_CLIENT_PORT);
+
+            if (secClientPort == null)
+                throw new IllegalArgumentException("Security client port is not configured. [spec=" + spec + ']');
+
+            str.append(spec.getHostname()).append(":").append(secClientPort);
+        }
+
+        return str.toString();
     }
 }
