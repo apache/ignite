@@ -1429,7 +1429,6 @@ public abstract class IgniteUtils {
         else
             deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
 
-
         if (deadlockedThreadsIds.isEmpty())
             warn(log, "No deadlocked threads detected.");
         else
