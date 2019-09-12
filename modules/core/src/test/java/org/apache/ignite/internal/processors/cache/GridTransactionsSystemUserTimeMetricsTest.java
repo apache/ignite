@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD;
@@ -49,6 +50,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_D
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test for transaction system/user time tracking and metrics.
@@ -82,6 +85,10 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     private static final String TRANSACTION_TIME_DUMP_REGEX = ".*?ransaction time dump .*";
 
     /** */
+    private static final String ROLLBACK_TIME_DUMP_REGEX =
+        ".*?Long transaction time dump .*?cacheOperationsTime=[0-9]{1,4}.*?rollbackTime=[0-9]{1,4}.*";
+
+    /** */
     private static final String TRANSACTION_TIME_DUMPS_SKIPPED_REGEX =
         "Transaction time dumps skipped because of log throttling: " + TX_COUNT_FOR_LOG_THROTTLING_CHECK / 2;
 
@@ -90,6 +97,9 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
     /** */
     private final TransactionDumpListener transactionDumpLsnr = new TransactionDumpListener(TRANSACTION_TIME_DUMP_REGEX);
+
+    /** */
+    private final TransactionDumpListener rollbackDumpLsnr = new TransactionDumpListener(ROLLBACK_TIME_DUMP_REGEX);
 
     /** */
     private final TransactionDumpListener transactionDumpsSkippedLsnr =
@@ -106,6 +116,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
         testLog.registerListener(logTxDumpLsnr);
         testLog.registerListener(transactionDumpLsnr);
+        testLog.registerListener(rollbackDumpLsnr);
         testLog.registerListener(transactionDumpsSkippedLsnr);
 
         cfg.setGridLogger(testLog);
@@ -203,6 +214,20 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
             assertTrue(tmMxMetricsBean.getTotalNodeUserTime() >= USER_DELAY);
             assertTrue(tmMxMetricsBean.getTotalNodeSystemTime() < LONG_TRAN_TIMEOUT);
+
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                Integer val = cache.get(1);
+
+                doSleep(USER_DELAY);
+
+                cache.put(1, val + 1);
+
+                tx.rollback();
+            }
+
+            assertEquals(2, cache.get(1).intValue());
+
+            assertTrue(rollbackDumpLsnr.check());
 
             //slow prepare
             slowPrepare = true;
