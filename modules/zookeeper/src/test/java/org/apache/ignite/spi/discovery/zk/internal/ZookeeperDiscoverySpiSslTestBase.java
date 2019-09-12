@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.curator.test.InstanceSpec;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 
 /**
  * Base class for Zookeeper SPI discovery tests in this package. It is intended to provide common overrides for
@@ -51,25 +50,24 @@ class ZookeeperDiscoverySpiSslTestBase extends ZookeeperDiscoverySpiTestBase {
         return customProps;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setupZkConnectionString(ZookeeperDiscoverySpi zkSpi) {
-        if (USE_TEST_CLUSTER) {
-            assert zkCluster != null;
+    /**
+     * @return Zookeeper cluster connection string
+     */
+    @Override protected String getTestClusterZkConnectionString() {
+        if (sslEnabled)
+            return getSslConnectString();
 
-            if (sslEnabled)
-                zkSpi.setZkConnectionString(getSslConnectString());
-            else
-                zkSpi.setZkConnectionString(zkCluster.getConnectString());
+        return zkCluster.getConnectString();
+    }
 
-            if (zkRootPath != null)
-                zkSpi.setZkRootPath(zkRootPath);
-        }
-        else {
-            if (sslEnabled)
-                zkSpi.setZkConnectionString("localhost:2281");
-            else
-                zkSpi.setZkConnectionString("localhost:2181");
-        }
+    /**
+     * @return Zookeeper cluster connection string
+     */
+    @Override protected String getRealClusterZkConnectionString() {
+        if (sslEnabled)
+            return "localhost:2281";
+
+        return "localhost:2181";
     }
 
     /**

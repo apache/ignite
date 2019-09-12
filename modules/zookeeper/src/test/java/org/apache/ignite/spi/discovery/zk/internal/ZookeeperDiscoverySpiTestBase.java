@@ -404,7 +404,16 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
         spis.put(igniteInstanceName, zkSpi);
 
-        setupZkConnectionString(zkSpi);
+        if (USE_TEST_CLUSTER) {
+            assert zkCluster != null;
+
+            zkSpi.setZkConnectionString(getTestClusterZkConnectionString());
+
+            if (zkRootPath != null)
+                zkSpi.setZkRootPath(zkRootPath);
+        }
+        else
+            zkSpi.setZkConnectionString(getRealClusterZkConnectionString());
 
         cfg.setDiscoverySpi(zkSpi);
 
@@ -524,19 +533,17 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     }
 
     /**
-     * @param zkSpi Zookeeper discovery SPI.
+     * @return Zookeeper cluster connection string
      */
-    protected void setupZkConnectionString(ZookeeperDiscoverySpi zkSpi) {
-        if (USE_TEST_CLUSTER) {
-            assert zkCluster != null;
+    protected String getTestClusterZkConnectionString() {
+        return zkCluster.getConnectString();
+    }
 
-            zkSpi.setZkConnectionString(zkCluster.getConnectString());
-
-            if (zkRootPath != null)
-                zkSpi.setZkRootPath(zkRootPath);
-        }
-        else
-            zkSpi.setZkConnectionString("localhost:2181");
+    /**
+     * @return Zookeeper cluster connection string
+     */
+    protected String getRealClusterZkConnectionString() {
+        return "localhost:2181";
     }
 
     /**
