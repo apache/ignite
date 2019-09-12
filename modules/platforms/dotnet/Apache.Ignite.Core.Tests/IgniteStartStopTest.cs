@@ -294,9 +294,9 @@ namespace Apache.Ignite.Core.Tests
             // Start remote node in a separate process
             // ReSharper disable once UnusedVariable
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
-                "-J-Xms512m", "-J-Xmx512m");
+                "-J-Xms512m",
+                "-J-Xmx512m");
 
             Assert.IsTrue(proc.Alive);
 

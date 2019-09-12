@@ -33,9 +33,9 @@ namespace Apache.Ignite.Config
         /// <param name="args">Application arguments in split form.</param>
         public static void LoadAssemblies(IEnumerable<Tuple<string, string>> args)
         {
-            IEnumerable<string> assemblies = args
+            var assemblies = args
                 .Where(x => x.Item1.StartsWith(Configurator.CmdAssembly, StringComparison.InvariantCultureIgnoreCase))
-                .Select(x => x.Item2);
+                .Select(Configurator.ValidateArgValue);
 
             Ignition.LoadAssemblies(assemblies);
         }
