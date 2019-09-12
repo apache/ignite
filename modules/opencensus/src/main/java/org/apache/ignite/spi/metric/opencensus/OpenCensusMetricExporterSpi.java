@@ -236,7 +236,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         }
 
         if (!obsoleteHistograms.isEmpty())
-            histogramNames.keySet().removeIf(obsoleteHistograms::contains);
+            obsoleteHistograms.forEach(s -> histogramNames.remove(s));
     }
 
     /** */
