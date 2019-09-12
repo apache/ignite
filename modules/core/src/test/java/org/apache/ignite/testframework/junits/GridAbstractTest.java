@@ -74,6 +74,8 @@ import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -215,6 +217,12 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** Hold system property values before test started. The properties will be restored in {@link #afterTest()} */
     private final LinkedList<IgniteBiTuple<String, String>> changedSysPropertiesInTest = new LinkedList<>();
+
+    /**
+     * Page handler wrapper for {@link BPlusTree}, it can be saved here and overrided for test purposes,
+     * then it must be restored using value of this field.
+     */
+    private transient PageHandlerWrapper<BPlusTree.Result> regularPageHndWrapper;
 
     /**
      *
@@ -579,6 +587,8 @@ public abstract class GridAbstractTest extends TestCase {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
 
         changedSysPropertiesInTestClass.clear();
+
+        regularPageHndWrapper = BPlusTree.pageHndWrapper == null ? ((tree, hnd) -> hnd) : BPlusTree.pageHndWrapper;
     }
 
     /**
@@ -594,6 +604,9 @@ public abstract class GridAbstractTest extends TestCase {
         finally {
             changedSysPropertiesInTestClass.clear();
         }
+
+        //restoring page handler wrapper
+        BPlusTree.pageHndWrapper = regularPageHndWrapper == null ? ((tree, hnd) -> hnd) : regularPageHndWrapper;
     }
 
     /**
