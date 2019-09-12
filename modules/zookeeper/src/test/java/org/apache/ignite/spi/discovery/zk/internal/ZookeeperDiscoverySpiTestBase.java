@@ -178,9 +178,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     /** */
     protected int backups = -1;
 
-    /** */
-    protected boolean sslEnabled;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -200,12 +197,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            Map<String,Object>[] customProps = new Map[ZK_SRVS];
-
-            if (sslEnabled)
-                fillSslProperties(customProps);
-
-            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS, customProps);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS, clusterCustomProperties());
 
             zkCluster.start();
 
@@ -216,19 +208,10 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     }
 
     /**
-     * @param customProps Custom properties.
+     * @return Cluster configuration custom properties.
      */
-    private void fillSslProperties(Map<String, Object>[] customProps) {
-        for (int i = 0; i < ZK_SRVS; i++) {
-            Map<String, Object> props = customProps[i];
-
-            if (props == null)
-                props = new HashMap<>();
-
-            props.put(ZK_SECURE_CLIENT_PORT, String.valueOf(2281 + i));
-
-            customProps[i] = props;
-        }
+    protected Map<String, Object>[] clusterCustomProperties() {
+        return new Map[ZK_SRVS];
     }
 
     /** {@inheritDoc} */
@@ -425,23 +408,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
         spis.put(igniteInstanceName, zkSpi);
 
-        if (USE_TEST_CLUSTER) {
-            assert zkCluster != null;
-
-            if (sslEnabled)
-                zkSpi.setZkConnectionString(getSslConnectString());
-            else
-                zkSpi.setZkConnectionString(zkCluster.getConnectString());
-
-            if (zkRootPath != null)
-                zkSpi.setZkRootPath(zkRootPath);
-        }
-        else {
-            if (sslEnabled)
-                zkSpi.setZkConnectionString("localhost:2281");
-            else
-                zkSpi.setZkConnectionString("localhost:2181");
-        }
+        setupZkConnectionString(zkSpi);
 
         cfg.setDiscoverySpi(zkSpi);
 
@@ -558,6 +525,22 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
 
         return cfg;
+    }
+
+    /**
+     * @param zkSpi Zookeeper discovery SPI.
+     */
+    protected void setupZkConnectionString(ZookeeperDiscoverySpi zkSpi) {
+        if (USE_TEST_CLUSTER) {
+            assert zkCluster != null;
+
+            zkSpi.setZkConnectionString(zkCluster.getConnectString());
+
+            if (zkRootPath != null)
+                zkSpi.setZkRootPath(zkRootPath);
+        }
+        else
+            zkSpi.setZkConnectionString("localhost:2181");
     }
 
     /**

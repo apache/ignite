@@ -18,32 +18,17 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.nio.file.Paths;
-import java.util.function.Function;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.junit.Test;
 
 /**
  * Base class for Zookeeper SPI discovery tests in this package. It is intended to provide common overrides for
  * superclass methods to be shared by all subclasses.
  */
-public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiTestBase {
-    /** Ignite home. */
-    private static final String IGNITE_HOME = U.getIgniteHome();
-
-    /** Resource path. */
-    private static final Function<String, String> rsrcPath = rsrc -> Paths.get(
-        IGNITE_HOME == null ? "." : IGNITE_HOME,
-        "modules",
-        "core",
-        "src",
-        "test",
-        "resources",
-        rsrc
-    ).toString();
-
+public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiSslTestBase {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         sslEnabled = true;
@@ -76,8 +61,8 @@ public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiTestBase 
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> startGrids(2),
-            IgniteCheckedException.class,
-            "Failed to start SPI: ZookeeperDiscoverySpi");
+            SessionExpiredException.class,
+            "KeeperErrorCode = Session expired for /apacheIgnite");
     }
 
     /**
@@ -86,24 +71,42 @@ public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiTestBase 
     private void setupSystemProperties() {
         System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
         System.setProperty("zookeeper.client.secure", "true");
-        System.setProperty("zookeeper.ssl.keyStore.location", rsrcPath.apply("/server.jks"));
+        System.setProperty("zookeeper.ssl.keyStore.location", resourcePath("/server.jks"));
         System.setProperty("zookeeper.ssl.keyStore.password", "123456");
-        System.setProperty("zookeeper.ssl.trustStore.location", rsrcPath.apply("/trust.jks"));
+        System.setProperty("zookeeper.ssl.trustStore.location", resourcePath("/trust.jks"));
         System.setProperty("zookeeper.ssl.trustStore.password", "123456");
         System.setProperty("zookeeper.ssl.hostnameVerification", "false");
+    }
+
+    /**
+     * @param rsrc Resource.
+     * @return Path to the resource.
+     */
+    private String resourcePath(String rsrc) {
+        String igniteHome = U.getIgniteHome();
+
+        return Paths.get(
+            igniteHome == null ? "." : igniteHome,
+            "modules",
+            "core",
+            "src",
+            "test",
+            "resources",
+            rsrc
+        ).toString();
     }
 
     /**
      * Cleanup system properties.
      */
     private void clearSystemProperties() {
-        System.setProperty("zookeeper.clientCnxnSocket", "");
-        System.setProperty("zookeeper.serverCnxnFactory", "");
-        System.setProperty("zookeeper.client.secure", "");
-        System.setProperty("zookeeper.ssl.keyStore.location", "");
-        System.setProperty("zookeeper.ssl.keyStore.password", "");
-        System.setProperty("zookeeper.ssl.trustStore.location", "");
-        System.setProperty("zookeeper.ssl.trustStore.password", "");
-        System.setProperty("zookeeper.ssl.hostnameVerification", "");
+        System.clearProperty("zookeeper.clientCnxnSocket");
+        System.clearProperty("zookeeper.serverCnxnFactory");
+        System.clearProperty("zookeeper.client.secure");
+        System.clearProperty("zookeeper.ssl.keyStore.location");
+        System.clearProperty("zookeeper.ssl.keyStore.password");
+        System.clearProperty("zookeeper.ssl.trustStore.location");
+        System.clearProperty("zookeeper.ssl.trustStore.password");
+        System.clearProperty("zookeeper.ssl.hostnameVerification");
     }
 }
