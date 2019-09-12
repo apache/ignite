@@ -32,12 +32,12 @@ public class ComputeTaskViewWalker implements MonitoringRowAttributeWalker<Compu
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
         v.accept(0, "affinityCacheName", String.class);
-        v.acceptInt(1, "affinityPartitionId");
-        v.acceptLong(2, "endTime");
+        v.accept(1, "affinityPartitionId", int.class);
+        v.accept(2, "endTime", long.class);
         v.accept(3, "execName", String.class);
-        v.acceptBoolean(4, "internal");
+        v.accept(4, "internal", boolean.class);
         v.accept(5, "jobId", IgniteUuid.class);
-        v.acceptLong(6, "startTime");
+        v.accept(6, "startTime", long.class);
         v.accept(7, "taskClassName", String.class);
         v.accept(8, "taskName", String.class);
         v.accept(9, "taskNodeId", UUID.class);

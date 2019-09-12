@@ -136,28 +136,10 @@ public class MonitoringRowAttributeWalkerGenerator {
 
             String line = TAB + TAB;
 
-            if (!retClazz.isPrimitive()) {
-                if (!retClazz.getName().startsWith("java.lang"))
-                    imports.add("import " + retClazz.getName() + ';');
+            if (!retClazz.isPrimitive() && !retClazz.getName().startsWith("java.lang"))
+                imports.add("import " + retClazz.getName() + ';');
 
-                line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class);";
-            }
-            else if (retClazz == boolean.class)
-                line += "v.acceptBoolean(" + i + ", \"" + name + "\");";
-            else if (retClazz == char.class)
-                line += "v.acceptChar(" + i + ", \"" + name + "\");";
-            else if (retClazz == byte.class)
-                line += "v.acceptByte(" + i + ", \"" + name + "\");";
-            else if (retClazz == short.class)
-                line += "v.acceptShort(" + i + ", \"" + name + "\");";
-            else if (retClazz == int.class)
-                line += "v.acceptInt(" + i + ", \"" + name + "\");";
-            else if (retClazz == long.class)
-                line += "v.acceptLong(" + i + ", \"" + name + "\");";
-            else if (retClazz == float.class)
-                line += "v.acceptFloat(" + i + ", \"" + name + "\");";
-            else if (retClazz == double.class)
-                line += "v.acceptDouble(" + i + ", \"" + name + "\");";
+            line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class);";
 
             code.add(line);
         });

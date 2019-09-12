@@ -93,64 +93,24 @@ public class MonitoringListMBean<R extends MonitoringRow> extends ReadOnlyDynami
                     types[idx] = SimpleType.DATE;
                 else if (clazz.isAssignableFrom(ObjectName.class))
                     types[idx] = SimpleType.OBJECTNAME;
-                else if (clazz.isAssignableFrom(Boolean.class))
+                else if (clazz == boolean.class || clazz.isAssignableFrom(Boolean.class))
                     types[idx] = SimpleType.BOOLEAN;
-                else if (clazz.isAssignableFrom(Byte.class))
+                else if (clazz == byte.class || clazz.isAssignableFrom(Byte.class))
                     types[idx] = SimpleType.BYTE;
-                else if (clazz.isAssignableFrom(Character.class))
+                else if (clazz == char.class || clazz.isAssignableFrom(Character.class))
                     types[idx] = SimpleType.CHARACTER;
-                else if (clazz.isAssignableFrom(Short.class))
+                else if (clazz == short.class || clazz.isAssignableFrom(Short.class))
                     types[idx] = SimpleType.SHORT;
-                else if (clazz.isAssignableFrom(Integer.class))
+                else if (clazz == int.class || clazz.isAssignableFrom(Integer.class))
                     types[idx] = SimpleType.INTEGER;
-                else if (clazz.isAssignableFrom(Long.class))
+                else if (clazz == long.class || clazz.isAssignableFrom(Long.class))
                     types[idx] = SimpleType.LONG;
-                else if (clazz.isAssignableFrom(Float.class))
+                else if (clazz == float.class || clazz.isAssignableFrom(Float.class))
                     types[idx] = SimpleType.FLOAT;
-                else if (clazz.isAssignableFrom(Double.class))
+                else if (clazz == double.class || clazz.isAssignableFrom(Double.class))
                     types[idx] = SimpleType.DOUBLE;
                 else
                     types[idx] = SimpleType.STRING;
-            }
-
-            @Override public void acceptBoolean(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.BOOLEAN;
-            }
-
-            @Override public void acceptChar(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.CHARACTER;
-            }
-
-            @Override public void acceptByte(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.BYTE;
-            }
-
-            @Override public void acceptShort(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.SHORT;
-            }
-
-            @Override public void acceptInt(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.INTEGER;
-            }
-
-            @Override public void acceptLong(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.LONG;
-            }
-
-            @Override public void acceptFloat(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.FLOAT;
-            }
-
-            @Override public void acceptDouble(int idx, String name) {
-                fields[idx] = name;
-                types[idx] = SimpleType.DOUBLE;
             }
         });
 

@@ -70,50 +70,14 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
 
         StringBuilder names = new StringBuilder();
 
-        ObjIntConsumer<String> appendName = (name, idx) -> {
-            if (idx != 0)
-                names.append(COL_SEPARATOR);
-
-            names.append(name);
-        };
-
         MonitoringRowAttributeWalker<R> walker = list.walker();
 
         walker.visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                appendName.accept(name, idx);
-            }
+                if (idx != 0)
+                    names.append(COL_SEPARATOR);
 
-            @Override public void acceptBoolean(int idx, String name) {
-                appendName.accept(name, idx);
-            }
-
-            @Override public void acceptChar(int idx, String name) {
-                appendName.accept(name, idx);
-            }
-
-            @Override public void acceptByte(int idx, String name) {
-                appendName.accept(name, idx);
-            }
-
-            @Override public void acceptShort(int idx, String name) {
-                appendName.accept(name, idx);
-            }
-
-            @Override public void acceptInt(int idx, String name) {
-                appendName.accept(name, idx);
-            }
-
-            @Override public void acceptLong(int idx, String name) {
-                appendName.accept(name, idx);
-            }
-
-            @Override public void acceptFloat(int idx, String name) {
-                appendName.accept(name, idx);
-            }
-
-            @Override public void acceptDouble(int idx, String name) {
-                appendName.accept(name, idx);
+                names.append(name);
             }
         });
 

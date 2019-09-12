@@ -36,11 +36,11 @@ public class ServiceViewWalker implements MonitoringRowAttributeWalker<ServiceVi
         v.accept(2, "serviceClass", Class.class);
         v.accept(3, "cacheName", String.class);
         v.accept(4, "originNodeId", UUID.class);
-        v.acceptInt(5, "totalCount");
-        v.acceptInt(6, "maxPerNodeCount");
+        v.accept(5, "totalCount", int.class);
+        v.accept(6, "maxPerNodeCount", int.class);
         v.accept(7, "affinityKeyValue", String.class);
         v.accept(8, "nodeFilter", Class.class);
-        v.acceptBoolean(9, "staticallyConfigured");
+        v.accept(9, "staticallyConfigured", boolean.class);
     }
 
     /** {@inheritDoc} */

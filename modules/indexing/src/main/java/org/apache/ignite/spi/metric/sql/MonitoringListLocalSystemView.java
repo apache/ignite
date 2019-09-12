@@ -184,58 +184,26 @@ public class MonitoringListLocalSystemView<R extends MonitoringRow> extends SqlA
                     type = Value.DECIMAL;
                 else if (clazz.isAssignableFrom(Date.class))
                     type = Value.TIMESTAMP;
-                else if (clazz.isAssignableFrom(Boolean.class))
+                else if (clazz == boolean.class || clazz.isAssignableFrom(Boolean.class))
                     type = Value.BOOLEAN;
-                else if (clazz.isAssignableFrom(Byte.class))
+                else if (clazz == byte.class || clazz.isAssignableFrom(Byte.class))
                     type = Value.BYTE;
-                else if (clazz.isAssignableFrom(Character.class))
+                else if (clazz == char.class || clazz.isAssignableFrom(Character.class))
                     type = Value.STRING;
-                else if (clazz.isAssignableFrom(Short.class))
+                else if (clazz == short.class || clazz.isAssignableFrom(Short.class))
                     type = Value.SHORT;
-                else if (clazz.isAssignableFrom(Integer.class))
+                else if (clazz == int.class || clazz.isAssignableFrom(Integer.class))
                     type = Value.INT;
-                else if (clazz.isAssignableFrom(Long.class))
+                else if (clazz == long.class || clazz.isAssignableFrom(Long.class))
                     type = Value.LONG;
-                else if (clazz.isAssignableFrom(Float.class))
+                else if (clazz == float.class || clazz.isAssignableFrom(Float.class))
                     type = Value.FLOAT;
-                else if (clazz.isAssignableFrom(Double.class))
+                else if (clazz == double.class || clazz.isAssignableFrom(Double.class))
                     type = Value.DOUBLE;
                 else
                     type = Value.STRING;
 
                 cols[idx] = newColumn(sqlName(name), type);
-            }
-
-            @Override public void acceptBoolean(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.BOOLEAN);
-            }
-
-            @Override public void acceptChar(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.STRING);
-            }
-
-            @Override public void acceptByte(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.BYTE);
-            }
-
-            @Override public void acceptShort(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.SHORT);
-            }
-
-            @Override public void acceptInt(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.INT);
-            }
-
-            @Override public void acceptLong(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.LONG);
-            }
-
-            @Override public void acceptFloat(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.FLOAT);
-            }
-
-            @Override public void acceptDouble(int idx, String name) {
-                cols[idx] = newColumn(sqlName(name), Value.DOUBLE);
             }
         });
 
