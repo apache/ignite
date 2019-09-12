@@ -33,6 +33,7 @@ import org.apache.ignite.spi.metric.list.MonitoringList;
  * HTTP servlet or JMX bean are good examples of expected implementations.
  *
  * @see ReadOnlyMetricRegistry
+ * @see ReadOnlyMonitoringListRegistry
  * @see Metric
  * @see BooleanMetric
  * @see DoubleMetric

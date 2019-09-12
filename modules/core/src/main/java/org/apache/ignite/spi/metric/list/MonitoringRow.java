@@ -22,7 +22,8 @@ import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
 
 /**
  * Monitoring list row base interface.
- * Each row idenitified by the instance of {@code Id}.
+ * All public non-static methods, except system one, will be exporter as a list columns.
+ * System methods includes: "equals", "hashCode", "toString", "getClass"
  *
  * @see MonitoringList
  * @see GridMetricManager

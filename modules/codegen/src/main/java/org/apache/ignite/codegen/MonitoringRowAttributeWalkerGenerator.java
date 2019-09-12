@@ -56,7 +56,7 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 public class MonitoringRowAttributeWalkerGenerator {
     /** Methods that should be excluded from specific {@link MonitoringRowAttributeWalker}. */
     private static final Set<String> SYS_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
-        "getClass", "monitoringRowId"));
+        "getClass"));
 
     /** Package for {@link MonitoringRowAttributeWalker} implementations. */
     public static final String WALKER_PACKAGE = "org.apache.ignite.internal.processors.metric.list.walker";

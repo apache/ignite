@@ -109,10 +109,8 @@ public class MonitoringListMBean<R extends MonitoringRow> extends ReadOnlyDynami
                     types[idx] = SimpleType.FLOAT;
                 else if (clazz.isAssignableFrom(Double.class))
                     types[idx] = SimpleType.DOUBLE;
-                else {
-                    throw new IllegalStateException(
-                        "Unsupported type [rowClass=" + mlist.rowClass().getName() + ",col=" + name + ']');
-                }
+                else
+                    types[idx] = SimpleType.STRING;
             }
 
             @Override public void acceptBoolean(int idx, String name) {

@@ -115,10 +115,8 @@ public class MonitoringListLocalSystemView<R extends MonitoringRow> extends SqlA
                             data[idx] = ValueFloat.get((Float)val);
                         else if (clazz.isAssignableFrom(Double.class))
                             data[idx] = ValueDouble.get((Double)val);
-                        else {
-                            throw new IllegalStateException
-                                ("Unsupported type [rowClass=" + mlist.rowClass().getName() + ",col=" + name);
-                        }
+                        else
+                            data[idx] = ValueString.get(val.toString());
                     }
 
                     @Override public void acceptBoolean(int idx, String name, boolean val) {
@@ -202,10 +200,8 @@ public class MonitoringListLocalSystemView<R extends MonitoringRow> extends SqlA
                     type = Value.FLOAT;
                 else if (clazz.isAssignableFrom(Double.class))
                     type = Value.DOUBLE;
-                else {
-                    throw new IllegalStateException
-                        ("Unsupported type [rowClass=" + mlist.rowClass().getName() + ",col=" + name);
-                }
+                else
+                    type = Value.STRING;
 
                 cols[idx] = newColumn(sqlName(name), type);
             }
