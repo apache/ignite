@@ -5366,6 +5366,9 @@ public abstract class IgniteUtils {
      * @param obj Object.
      */
     public static int hashCode(Object obj) {
+        if(obj == null)
+            return 0;
+
         if (obj.getClass().isArray()) {
             if (obj instanceof byte[])
                 return Arrays.hashCode((byte[])obj);
