@@ -11583,7 +11583,7 @@ public abstract class IgniteUtils {
      * @param lsnrs Listeners.
      * @param <T> Type of consumed object.
      */
-    public static <T> void notifyListeners(T t, List<Consumer<T>> lsnrs, IgniteLogger log) {
+    public static <T> void notifyListeners(T t, Collection<Consumer<T>> lsnrs, IgniteLogger log) {
         if (lsnrs == null)
             return;
 

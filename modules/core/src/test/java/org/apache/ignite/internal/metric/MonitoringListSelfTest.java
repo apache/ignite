@@ -30,7 +30,6 @@ import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -181,13 +180,16 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             g.services().deploy(srvcCfg);
 
-            assertEquals(1, F.size(srvs.iterator()));
+            assertEquals(2, F.size(srvs.iterator()));
 
-            ServiceView sview = srvs.iterator().next();
+            for (ServiceView srv : srvs) {
+                if (!srv.name().equals(srvcCfg.getName()))
+                    continue;
 
-            assertEquals(srvcCfg.getName(), sview.name());
-            assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
-            assertEquals(DummyService.class, sview.serviceClass());
+                assertEquals(srvcCfg.getName(), srv.name());
+                assertEquals(srvcCfg.getMaxPerNodeCount(), srv.maxPerNodeCount());
+                assertEquals(DummyService.class, srv.serviceClass());
+            }
         }
     }
 
@@ -253,7 +255,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            assertEquals(1, F.size(tasks.iterator()));
+            assertEquals(2, F.size(tasks.iterator()));
         }
     }
 }

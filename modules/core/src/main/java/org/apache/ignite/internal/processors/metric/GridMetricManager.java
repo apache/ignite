@@ -69,11 +69,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.function.Function.identity;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
-import static org.apache.ignite.internal.processors.metric.list.ListUtils.listenOnlyEqual;
 
 /**
  * This manager should provide {@link ReadOnlyMetricRegistry} and {@link ReadOnlyMonitoringListRegistry}
@@ -275,8 +273,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** List remove listeners. */
     private final List<Consumer<MonitoringList<?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
 
-    /** List remove listeners. */
-    private final List<Consumer<String>> listEnableLsnrs = new CopyOnWriteArrayList<>();
+    /** Internal list remove listeners. */
+    private final ConcurrentMap<String, Consumer<MonitoringList<?>>> internalRemoveLsnrs = new ConcurrentHashMap<>();
+
+    /** List enable listeners. */
+    private final ConcurrentMap<String, Consumer<String>> listEnableLsnrs = new ConcurrentHashMap<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -415,9 +416,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         // Create new instance of the list.
         listCreator.get();
 
-        ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> listCreator.get()));
-        ctx.metric().addRemoveListListener(listenOnlyEqual(name, MonitoringList::name,
-            l -> data.values().forEach(rowClearer)));
+        ctx.metric().addEnableListListener(name, n -> listCreator.get());
+        ctx.metric().addRemoveListListener(name, l -> data.values().forEach(rowClearer));
     }
 
     /**
@@ -459,8 +459,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public void removeList(String name) {
         MonitoringList<?> rmv = lists.remove(name);
 
-        if (rmv != null)
+        if (rmv != null) {
             notifyListeners(rmv, listRemoveLsnrs, log);
+
+            Consumer<MonitoringList<?>> lsnr = internalRemoveLsnrs.get(name);
+
+            if (lsnr != null)
+                lsnr.accept(rmv);
+        }
     }
 
     /**
@@ -469,16 +475,20 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param list Monitoring list.
      */
     public void enableList(String list) {
-        notifyListeners(list, listEnableLsnrs, log);
+        Consumer<String> lsnr = listEnableLsnrs.get(list);
+
+        if (lsnr != null)
+            lsnr.accept(list);
     }
 
     /**
      * Adds enable list listener.
      *
+     * @param name List name.
      * @param lsnr Listener.
      */
-    public void addEnableListListener(Consumer<String> lsnr) {
-        listEnableLsnrs.add(lsnr);
+    public void addEnableListListener(String name, Consumer<String> lsnr) {
+        listEnableLsnrs.put(name, lsnr);
     }
 
     /**
@@ -486,8 +496,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      *
      * @param lsnr Listener.
      */
-    public void addRemoveListListener(Consumer<MonitoringList<?>> lsnr) {
-        listRemoveLsnrs.add(lsnr);
+    public void addRemoveListListener(String name, Consumer<MonitoringList<?>> lsnr) {
+        internalRemoveLsnrs.put(name, lsnr);
     }
 
     /**
