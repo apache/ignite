@@ -85,6 +85,7 @@ import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.Value;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_FORCE_LAZY_RESULT_SET;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_POOL_FOR_LAZY_QUERIES;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -99,7 +100,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2V
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridMapQueryExecutor {
     /** */
-    public static final boolean USE_POOL_FOR_LAZY_STUB = IgniteSystemProperties.getBoolean("USE_POOL_FOR_LAZY");
+    public static final boolean USE_POOL_FOR_LAZY_STUB = IgniteSystemProperties.getBoolean(IGNITE_USE_POOL_FOR_LAZY_QUERIES);
 
     /** */
     public static final boolean FORCE_LAZY = IgniteSystemProperties.getBoolean(IGNITE_SQL_FORCE_LAZY_RESULT_SET);

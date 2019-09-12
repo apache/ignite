@@ -82,9 +82,11 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_POOL_FOR_LAZY_QUERIES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USE_POOL_FOR_LAZY_QUERIES;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
@@ -932,11 +934,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (node.isClient() || node.isDaemon())
             return null;
 
-        Boolean locPoolFlag = ctx.discovery().localNode().attribute("USE_POOL_FOR_LAZY");
-        Boolean rmtPoolFlag = node.attribute("USE_POOL_FOR_LAZY");
+        Boolean locPoolFlag = ctx.discovery().localNode().attribute(ATTR_USE_POOL_FOR_LAZY_QUERIES);
+        Boolean rmtPoolFlag = node.attribute(ATTR_USE_POOL_FOR_LAZY_QUERIES);
 
         if (!F.eq(locPoolFlag, rmtPoolFlag))
-            log.warning("Local USE_POOL_FOR_LAZY flag differs from remote nodeId=" + node.id());
+            log.warning("Local " + IGNITE_USE_POOL_FOR_LAZY_QUERIES + " flag differs from remote nodeId=" + node.id());
 
         if (discoData.joiningNodeData() == null) {
             if (globalState.baselineTopology() != null) {

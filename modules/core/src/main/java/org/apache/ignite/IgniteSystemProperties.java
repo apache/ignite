@@ -1136,6 +1136,9 @@ public final class IgniteSystemProperties {
      */
     public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
+    /** */
+    public static final String IGNITE_USE_POOL_FOR_LAZY_QUERIES = "IGNITE_USE_POOL_FOR_LAZY_QUERIES";
+
     /**
      * Enforces singleton.
      */

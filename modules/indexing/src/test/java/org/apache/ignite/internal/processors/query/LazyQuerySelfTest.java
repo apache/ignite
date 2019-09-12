@@ -37,6 +37,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_POOL_FOR_LAZY_QUERIES;
+
 /**
  * Tests for lazy query execution.
  */
@@ -98,11 +100,11 @@ public class LazyQuerySelfTest extends AbstractIndexingCommonTest {
     public void testDifferentLazyPoolFlag() throws Exception {
         startGrid(1);
 
-        System.setProperty("USE_POOL_FOR_LAZY", "true");
+        System.setProperty(IGNITE_USE_POOL_FOR_LAZY_QUERIES, "true");
 
         startGrid(2);
 
-        System.setProperty("USE_POOL_FOR_LAZY", "false");
+        System.setProperty(IGNITE_USE_POOL_FOR_LAZY_QUERIES, "false");
     }
 
     /**
