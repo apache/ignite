@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIter
 import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceStatisticsTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -85,7 +84,6 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(CacheRebalancingSelfTest.class);
         suite.addTestSuite(CacheManualRebalancingTest.class);
-        suite.addTestSuite(RebalanceStatisticsTest.class);
 
         // Affinity tests.
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
