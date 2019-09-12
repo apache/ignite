@@ -21,14 +21,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /**
- * Test for CacheComparators from ClusterCachesInfo.
+ * Test for CacheComparators from ClusterCachesInfo
  */
 public class CacheComparatorTest {
     /**
-     * Test if comparator not violates its general contract.
+     * Test if comparator not violates its general contract
      */
     @Test
     public void testDirect() {
@@ -42,8 +42,10 @@ public class CacheComparatorTest {
             null, true, null, true,
             false, null, new QuerySchema(), null);
 
-        assertTrue(ClusterCachesInfo.CacheComparators.DIRECT.compare(desc1, desc2) < 0);
+        assertEquals(-1,
+            ClusterCachesInfo.CacheComparators.DIRECT.compare(desc1, desc2));
 
-        assertTrue(ClusterCachesInfo.CacheComparators.DIRECT.compare(desc2, desc1) > 0);
+        assertEquals(1,
+            ClusterCachesInfo.CacheComparators.DIRECT.compare(desc2, desc1));
     }
 }
