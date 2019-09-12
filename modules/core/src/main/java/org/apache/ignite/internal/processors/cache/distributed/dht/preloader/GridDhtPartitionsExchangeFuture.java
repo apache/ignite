@@ -996,8 +996,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             // TODO Wait for tx recovery only
-            waitPartitionRelease(true, true);
-            waitPartitionRelease(false, false);
+            if (!cctx.kernalContext().clientNode()) {
+                waitPartitionRelease(true, true);
+                waitPartitionRelease(false, false);
+            }
 
             finalizePartitionCounters();
 
