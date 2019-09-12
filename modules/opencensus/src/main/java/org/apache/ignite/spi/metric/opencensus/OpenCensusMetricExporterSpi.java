@@ -301,7 +301,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         names[bounds.length] = histogramName + "_" + min + "_inf";
 
         return names;
-    };
+    }
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
