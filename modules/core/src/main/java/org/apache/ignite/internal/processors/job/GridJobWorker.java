@@ -682,7 +682,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     ctx.job().internal(false);
             }
         }
+        catch (RuntimeException e) {
+            throw e;
+        }
         catch (Exception e) {
+            if(e instanceof IgniteCheckedException)
+                throw e;
+
             throw new IgniteCheckedException(e);
         }
         finally {
