@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -58,6 +59,12 @@ public class CacheGroupMetricsImpl {
 
     /** */
     private final LongAdderMetric groupPageAllocationTracker;
+
+    /** */
+    private final LongMetric storageSize;
+
+    /** */
+    private final LongMetric sparseStorageSize;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -126,13 +133,22 @@ public class CacheGroupMetricsImpl {
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
 
-        mreg.register("StorageSize",
-            this::getStorageSize,
-            "Storage space allocated for group, in bytes.");
+        if (ctx.shared().database() instanceof GridCacheDatabaseSharedManager) {
+            mreg.register("StorageSize",
+                () -> database().forGroupPageStores(ctx, PageStore::size),
+                "Storage space allocated for group, in bytes.");
 
-        mreg.register("SparseStorageSize",
-            this::getSparseStorageSize,
-            "Storage space allocated for group adjusted for possible sparsity, in bytes.");
+            mreg.register("SparseStorageSize",
+                () -> database().forGroupPageStores(ctx, PageStore::getSparseSize),
+                "Storage space allocated for group adjusted for possible sparsity, in bytes.");
+
+            storageSize = mreg.findMetric("StorageSize");
+            sparseStorageSize = mreg.findMetric("SparseStorageSize");
+        }
+        else {
+            storageSize = new AtomicLongMetric("NO_OP", null);
+            sparseStorageSize = new AtomicLongMetric("NO_OP", null);
+        }
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
@@ -438,9 +454,6 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        if (groupPageAllocationTracker == null)
-            return 0;
-
         return groupPageAllocationTracker.value();
     }
 
@@ -451,16 +464,12 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getStorageSize() {
-        GridCacheDatabaseSharedManager dbMgr = database();
-
-        return dbMgr == null ? 0 : database().forGroupPageStores(ctx, PageStore::size);
+        return storageSize.value();
     }
 
     /** */
     public long getSparseStorageSize() {
-        GridCacheDatabaseSharedManager dbMgr = database();
-
-        return dbMgr == null ? 0 : database().forGroupPageStores(ctx, PageStore::getSparseSize);
+        return sparseStorageSize.value();
     }
 
     /** Removes all metric for cache group. */
@@ -472,9 +481,6 @@ public class CacheGroupMetricsImpl {
      * @return Database.
      */
     private GridCacheDatabaseSharedManager database() {
-        if (!(ctx.shared().database() instanceof GridCacheDatabaseSharedManager))
-            return null;
-
         return (GridCacheDatabaseSharedManager)ctx.shared().database();
     }
 
