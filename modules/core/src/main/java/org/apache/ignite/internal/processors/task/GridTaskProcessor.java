@@ -161,7 +161,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         ctx.metric().registerList(TASKS_MON_LIST, TASKS_MON_LIST_DESC,
             ComputeTaskView.class,
-            () -> tasks,
+            tasks,
             GridTaskWorker::taskView,
             GridTaskWorker::clearTaskView);
     }

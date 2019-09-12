@@ -397,21 +397,27 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <D> Map data type.
      */
     public <R extends MonitoringRow, D> void registerList(String name, String desc,
-        Class<R> rowCls, Supplier<ConcurrentMap<?, D>> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
+        Class<R> rowCls, ConcurrentMap<?, D> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
 
-        Supplier<MonitoringList<R>> listCreator = () -> registerList(name, () -> new MonitoringListAdapter<>(name,
-            desc,
-            rowCls,
-            (MonitoringRowAttributeWalker<R>)walkers.get(rowCls),
-            data.get(),
-            rowFunc));
+        Supplier<MonitoringList<R>> listCreator = () -> (MonitoringList<R>)lists.computeIfAbsent(name, n -> {
+            MonitoringList<R> list = new MonitoringListAdapter<>(name,
+                desc,
+                rowCls,
+                (MonitoringRowAttributeWalker<R>)walkers.get(rowCls),
+                data,
+                rowFunc);
+
+            notifyListeners(list, listCreationLsnrs, log);
+
+            return list;
+        });
 
         // Create new instance of the list.
         listCreator.get();
 
         ctx.metric().addEnableListListener(listenOnlyEqual(name, identity(), n -> listCreator.get()));
         ctx.metric().addRemoveListListener(listenOnlyEqual(name, MonitoringList::name,
-            l -> data.get().values().forEach(rowClearer)));
+            l -> data.values().forEach(rowClearer)));
     }
 
     /**
@@ -420,25 +426,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      */
     @Nullable public <R extends MonitoringRow> MonitoringList<R> list(String name) {
         return (MonitoringList<R>)lists.get(name);
-    }
-
-    /**
-     * Gets or creates {@link MonitoringList}.
-     *
-     * @param name Name of the list.
-     * @param listSupplier List supplier.
-     * @param <R> Type of the row.
-     * @return Monitoring list.
-     */
-    private <R extends MonitoringRow> MonitoringList<R> registerList(String name,
-        Supplier<MonitoringList<R>> listSupplier) {
-        return (MonitoringList<R>)lists.computeIfAbsent(name, n -> {
-            MonitoringList<R> list = listSupplier.get();
-
-            notifyListeners(list, listCreationLsnrs, log);
-
-            return list;
-        });
     }
 
     /**

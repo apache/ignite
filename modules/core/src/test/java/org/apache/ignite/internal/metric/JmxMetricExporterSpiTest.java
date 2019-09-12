@@ -177,7 +177,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         GridMetricManager mmgr = ignite.context().metric();
 
         mmgr.registerList("test", "description", CacheView.class,
-            () -> new ConcurrentHashMap<String, CacheView>(),
+            new ConcurrentHashMap<String, CacheView>(),
             v -> null,
             v -> {});
 
