@@ -222,7 +222,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     /**
      * {@inheritDoc}
      *
-     * @deprecated use {@link GridCacheAffinityImpl#mapKeyToPrimaryAndBackupsList(Object)} instead.
+     * @deprecated Use {@link GridCacheAffinityImpl#mapKeyToPrimaryAndBackupsList(Object)} instead.
      */
     @Deprecated
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
@@ -239,7 +239,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     /**
      * {@inheritDoc}
      *
-     * @deprecated use {@link GridCacheAffinityImpl#mapPartitionToPrimaryAndBackupsList(int)} instead.
+     * @deprecated Use {@link GridCacheAffinityImpl#mapPartitionToPrimaryAndBackupsList(int)} instead.
      */
     @Deprecated
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {

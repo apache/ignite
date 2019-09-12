@@ -106,7 +106,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     /**
      * {@inheritDoc}
      *
-     * @deprecated use {@link AffinityProcessProxy#mapKeyToPrimaryAndBackupsList(Object)} instead.
+     * @deprecated Use {@link AffinityProcessProxy#mapKeyToPrimaryAndBackupsList(Object)} instead.
      */
     @Deprecated
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
@@ -115,7 +115,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
-        return compute.call(new mapKeyToPrimaryAndBackupsListTask<>(cacheName, key));
+        return compute.call(new MapKeyToPrimaryAndBackupsListTask<>(cacheName, key));
     }
 
     /** {@inheritDoc} */
@@ -131,7 +131,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     /**
      * {@inheritDoc}
      *
-     * @deprecated use {@link AffinityProcessProxy#mapPartitionToPrimaryAndBackupsList(int)} instead.
+     * @deprecated Use {@link AffinityProcessProxy#mapPartitionToPrimaryAndBackupsList(int)} instead.
      */
     @Deprecated
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
@@ -189,7 +189,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     /**
      *
      */
-    private static class mapKeyToPrimaryAndBackupsListTask<K> extends AffinityTaskAdapter<K, List<ClusterNode>> {
+    private static class MapKeyToPrimaryAndBackupsListTask<K> extends AffinityTaskAdapter<K, List<ClusterNode>> {
         /** Key. */
         private final K key;
 
@@ -197,7 +197,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
          * @param cacheName Cache name.
          * @param key Key.
          */
-        public mapKeyToPrimaryAndBackupsListTask(String cacheName, K key) {
+        public MapKeyToPrimaryAndBackupsListTask(String cacheName, K key) {
             super(cacheName);
             this.key = key;
         }
