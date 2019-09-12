@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.job;
 
 import java.io.Serializable;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1277,7 +1279,18 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             if (onBeforeActivateJob(job)) {
                                 if (ctx.localNodeId().equals(node.id())) {
                                     // Always execute in another thread for local node.
-                                    executeAsync(job);
+                                    if (System.getSecurityManager() != null) {
+                                        final GridJobWorker jobWorker = job;
+
+                                        AccessController.doPrivileged((PrivilegedAction<Void>)
+                                            () -> {
+                                                executeAsync(jobWorker);
+
+                                                return null;
+                                            });
+                                    }
+                                    else
+                                        executeAsync(job);
 
                                     // No sync execution.
                                     job = null;

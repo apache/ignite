@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.security;
 
 import java.security.AllPermission;
 import java.security.Permissions;
+import java.security.PrivilegedActionException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -130,4 +131,13 @@ public class SecurityUtils {
             throw new SecurityException("Failed to get security context.", e);
         }
     }
+
+    /** */
+    public static void igniteCheckedException(PrivilegedActionException e) throws IgniteCheckedException {
+        if (e.getException() instanceof IgniteCheckedException)
+            throw (IgniteCheckedException)e.getException();
+
+        throw new IgniteCheckedException(e.getException());
+    }
+
 }

@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.task;
 
 import java.io.Serializable;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,6 +72,7 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.CO;
@@ -511,15 +515,29 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
-            // Inject resources.
-            ctx.resource().inject(dep, task, ses, balancer, mapper);
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = null;
 
-            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
-                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
-                        return task.map(shuffledNodes, arg);
-                    }
-                });
+            if (System.getSecurityManager() != null) {
+                try {
+                    mappedJobs = AccessController
+                        .doPrivileged((PrivilegedExceptionAction<Map<? extends ComputeJob, ClusterNode>>)
+                            () -> {
+                                // Inject resources.
+                                ctx.resource().inject(dep, task, ses, balancer, mapper);
+
+                                return mappedJobs(shuffledNodes);
+                            });
+                }
+                catch (PrivilegedActionException e) {
+                    SecurityUtils.igniteCheckedException(e);
+                }
+            }
+            else {
+                // Inject resources.
+                ctx.resource().inject(dep, task, ses, balancer, mapper);
+
+                mappedJobs = mappedJobs(shuffledNodes);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
@@ -568,6 +586,17 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (e instanceof Error)
                 throw e;
         }
+    }
+
+    /** */
+    private Map<? extends ComputeJob, ClusterNode> mappedJobs(List<ClusterNode> shuffledNodes)
+        throws IgniteCheckedException {
+        return U.wrapThreadLoader(dep.classLoader(),
+            new Callable<Map<? extends ComputeJob, ClusterNode>>() {
+                @Override public Map<? extends ComputeJob, ClusterNode> call() {
+                    return task.map(shuffledNodes, arg);
+                }
+            });
     }
 
     /**
@@ -859,7 +888,21 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                 }
 
-                ComputeJobResultPolicy plc = result(jobRes, results);
+                ComputeJobResultPolicy plc = null;
+
+                if (System.getSecurityManager() != null) {
+                    try {
+                        final GridJobResultImpl jobRslt = jobRes;
+
+                        plc = AccessController.doPrivileged((PrivilegedExceptionAction<ComputeJobResultPolicy>)
+                            () -> result(jobRslt, results));
+                    }
+                    catch (PrivilegedActionException e) {
+                        SecurityUtils.igniteCheckedException(e);
+                    }
+                }
+                else
+                    plc = result(jobRes, results);
 
                 if (plc == null) {
                     String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
@@ -1143,11 +1186,17 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         try {
             try {
                 // Reduce results.
-                reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                    @Nullable @Override public R call() {
-                        return task.reduce(results);
+                if (System.getSecurityManager() != null) {
+                    try {
+                        reduceRes = AccessController.doPrivileged((PrivilegedExceptionAction<R>)
+                            () -> reduceRes(results));
                     }
-                });
+                    catch (PrivilegedActionException e) {
+                        SecurityUtils.igniteCheckedException(e);
+                    }
+                }
+                else
+                    reduceRes = reduceRes(results);
             }
             finally {
                 synchronized (mux) {
@@ -1189,6 +1238,14 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         finally {
             finishTask(reduceRes, userE);
         }
+    }
+
+    private R reduceRes(List<ComputeJobResult> results) throws IgniteCheckedException {
+        return U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
+            @Nullable @Override public R call() {
+                return task.reduce(results);
+            }
+        });
     }
 
     /**
@@ -1388,38 +1445,18 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     try {
                         MarshallerUtils.jobReceiverVersion(node.version());
 
-                        req = new GridJobExecuteRequest(
-                            ses.getId(),
-                            res.getJobContext().getJobId(),
-                            ses.getTaskName(),
-                            ses.getUserVersion(),
-                            ses.getTaskClassName(),
-                            loc ? null : U.marshal(marsh, res.getJob()),
-                            loc ? res.getJob() : null,
-                            ses.getStartTime(),
-                            timeout,
-                            ses.getTopology(),
-                            loc ? ses.getTopologyPredicate() : null,
-                            loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
-                            loc ? null : U.marshal(marsh, ses.getJobSiblings()),
-                            loc ? ses.getJobSiblings() : null,
-                            loc ? null : U.marshal(marsh, sesAttrs),
-                            loc ? sesAttrs : null,
-                            loc ? null : U.marshal(marsh, jobAttrs),
-                            loc ? jobAttrs : null,
-                            ses.getCheckpointSpi(),
-                            dep.classLoaderId(),
-                            dep.deployMode(),
-                            continuous,
-                            dep.participants(),
-                            forceLocDep,
-                            ses.isFullSupport(),
-                            internal,
-                            subjId,
-                            affCacheIds,
-                            affPartId,
-                            mapTopVer,
-                            ses.executorName());
+                        if (System.getSecurityManager() != null) {
+                            try {
+                                req = AccessController.doPrivileged((PrivilegedExceptionAction<GridJobExecuteRequest>)
+                                    () -> gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout));
+                            }
+                            catch (PrivilegedActionException e) {
+                                SecurityUtils.igniteCheckedException(e);
+                            }
+                        }
+                        else
+                            req = gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout);
+
                     }
                     finally {
                         MarshallerUtils.jobReceiverVersion(null);
@@ -1492,6 +1529,47 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             onResponse(fakeRes);
         }
+    }
+
+    private GridJobExecuteRequest gridJobExecuteRequest(
+        boolean loc,
+        ComputeJobResult res,
+        Map<Object, Object> sesAttrs,
+        Map<? extends Serializable, ? extends Serializable> jobAttrs,
+        boolean forceLocDep,
+        long timeout) throws IgniteCheckedException {
+        return new GridJobExecuteRequest(
+            ses.getId(),
+            res.getJobContext().getJobId(),
+            ses.getTaskName(),
+            ses.getUserVersion(),
+            ses.getTaskClassName(),
+            loc ? null : U.marshal(marsh, res.getJob()),
+            loc ? res.getJob() : null,
+            ses.getStartTime(),
+            timeout,
+            ses.getTopology(),
+            loc ? ses.getTopologyPredicate() : null,
+            loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
+            loc ? null : U.marshal(marsh, ses.getJobSiblings()),
+            loc ? ses.getJobSiblings() : null,
+            loc ? null : U.marshal(marsh, sesAttrs),
+            loc ? sesAttrs : null,
+            loc ? null : U.marshal(marsh, jobAttrs),
+            loc ? jobAttrs : null,
+            ses.getCheckpointSpi(),
+            dep.classLoaderId(),
+            dep.deployMode(),
+            continuous,
+            dep.participants(),
+            forceLocDep,
+            ses.isFullSupport(),
+            internal,
+            subjId,
+            affCacheIds,
+            affPartId,
+            mapTopVer,
+            ses.executorName());
     }
 
     /**

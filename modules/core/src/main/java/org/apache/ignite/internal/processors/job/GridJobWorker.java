@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.job;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -51,6 +54,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -449,7 +453,22 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
 
             // Inject resources.
-            ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
+            if (System.getSecurityManager() != null) {
+                try {
+                    AccessController.doPrivileged((PrivilegedExceptionAction<Void>)
+                        () -> {
+                            ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
+
+                            return null;
+                        }
+                    );
+                }
+                catch (PrivilegedActionException e) {
+                    SecurityUtils.igniteCheckedException(e);
+                }
+            }
+            else
+                ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
@@ -562,20 +581,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 if (isTimedOut())
                     sndRes = false;
                 else {
-                    res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
-                        @Nullable @Override public Object call() {
-                            try {
-                                if (internal && ctx.config().isPeerClassLoadingEnabled())
-                                    ctx.job().internal(true);
-
-                                return job.execute();
-                            }
-                            finally {
-                                if (internal && ctx.config().isPeerClassLoadingEnabled())
-                                    ctx.job().internal(false);
-                            }
-                        }
-                    });
+                    res = result();
 
                     if (log.isDebugEnabled()) {
                         log.debug(S.toString("Job execution has successfully finished",
@@ -646,6 +652,46 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         finally {
             if (partsReservation != null)
                 partsReservation.release();
+        }
+    }
+
+    /** */
+    private Object result() throws IgniteCheckedException {
+        ClassLoader ldr = dep.classLoader();
+
+        Thread curThread = Thread.currentThread();
+
+        // Get original context class loader.
+        ClassLoader ctxLdr = curThread.getContextClassLoader();
+
+        try {
+            AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
+                curThread.setContextClassLoader(ldr);
+
+                return null;
+            });
+
+            try {
+                if (internal && ctx.config().isPeerClassLoadingEnabled())
+                    ctx.job().internal(true);
+
+                return job.execute();
+            }
+            finally {
+                if (internal && ctx.config().isPeerClassLoadingEnabled())
+                    ctx.job().internal(false);
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+        finally {
+            // Set the original class loader back.
+            AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
+                curThread.setContextClassLoader(ctxLdr);
+
+                return null;
+            });
         }
     }
 
