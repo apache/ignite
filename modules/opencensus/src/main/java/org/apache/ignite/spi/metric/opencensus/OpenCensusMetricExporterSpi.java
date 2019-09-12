@@ -192,27 +192,9 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         mmap.put(msr, val);
                     }
                     else if (metric instanceof HistogramMetric) {
-                        /*
-                            Histogram exports as a separate long metric for each interval.
-                            Example of metric names if bounds are 10,100:
-                                histogram_0_10 (less than 10)
-                                histogram_10_100 (between 10 and 100)
-                                histogram_100_inf (more than 100)
-                         */
+                        String[] intervalNames = createIntervalNames((HistogramMetric)metric);
+
                         long[] values = ((HistogramMetric)metric).value();
-                        long[] bounds = ((HistogramMetric)metric).bounds();
-
-                        T2<long[], String[]> tuple = histogramNames.get(metric.name());
-
-                        String[] intervalNames;
-
-                        if (tuple != null && tuple.get1() == bounds)
-                            intervalNames = tuple.get2();
-                        else {
-                            intervalNames = createIntervalNames(metric.name(), bounds);
-
-                            histogramNames.put(metric.name(), new T2<>(bounds, intervalNames));
-                        }
 
                         for (int i = 0; i < values.length; i++) {
                             String mName = intervalNames[i];
@@ -281,26 +263,43 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     }
 
     /**
-     * Create histogram interval names.
+     * Gets histogram interval names.
      *
-     * @param histogramName Histogram metric name.
-     * @param bounds Histogram bounds.
+     * Example of metric names if bounds are 10,100:
+     *  histogram_0_10 (less than 10)
+     *  histogram_10_100 (between 10 and 100)
+     *  histogram_100_inf (more than 100)
+     *
+     * @param metric Histogram metric.
      * @return Histogram intervals names.
      */
-    private static String[] createIntervalNames(String histogramName, long[] bounds) {
-        String[] names = new String[bounds.length + 1];
+    private String[] createIntervalNames(HistogramMetric metric) {
+        String mName = metric.name();
+        long[] bounds = metric.bounds();
 
-        long min = 0;
+        T2<long[], String[]> tuple = histogramNames.get(mName);
 
-        for (int i = 0; i < bounds.length; i++) {
-            names[i] = histogramName + "_" + min + "_" + bounds[i];
+        String[] intervalNames;
 
-            min = bounds[i];
+        if (tuple != null && tuple.get1() == bounds)
+            intervalNames = tuple.get2();
+        else {
+            intervalNames = new String[bounds.length + 1];
+
+            long min = 0;
+
+            for (int i = 0; i < bounds.length; i++) {
+                intervalNames[i] = mName + "_" + min + "_" + bounds[i];
+
+                min = bounds[i];
+            }
+
+            intervalNames[bounds.length] = mName + "_" + min + "_inf";
+
+            histogramNames.put(mName, new T2<>(bounds, intervalNames));
         }
 
-        names[bounds.length] = histogramName + "_" + min + "_inf";
-
-        return names;
+        return intervalNames;
     }
 
     /** {@inheritDoc} */
