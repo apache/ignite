@@ -392,6 +392,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param rowCls Row class.
      * @param data Data of the list.
      * @param rowFunc value to row function.
+     * @param <R> List row type.
+     * @param <D> Map data type.
+     */
+    public <R extends MonitoringRow, D> void registerList(String name, String desc,
+        Class<R> rowCls, ConcurrentMap<?, D> data, Function<D, R> rowFunc) {
+        registerList(name, desc, rowCls, data, rowFunc, d -> {});
+    }
+
+    /**
+     * Registers list which exports {@link ConcurrentMap} content.
+     *
+     * @param name Name of the list.
+     * @param desc Description of the list.
+     * @param rowCls Row class.
+     * @param data Data of the list.
+     * @param rowFunc value to row function.
      * @param rowClearer Function that clears data on list removal.
      * @param <R> List row type.
      * @param <D> Map data type.

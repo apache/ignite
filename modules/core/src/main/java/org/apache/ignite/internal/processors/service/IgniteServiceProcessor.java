@@ -192,8 +192,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         ctx.metric().registerList(SVCS_MON_LIST, SVCS_MON_LIST_DESC,
             ServiceView.class,
             registeredServices,
-            s -> s,
-            s -> {});
+            s -> s);
     }
 
     /** {@inheritDoc} */
