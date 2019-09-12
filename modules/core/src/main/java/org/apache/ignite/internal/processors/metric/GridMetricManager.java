@@ -431,8 +431,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         // Create new instance of the list.
         listCreator.run();
 
-        ctx.metric().addEnableListTask(name, listCreator);
-        ctx.metric().addRemoveListTask(name, () -> data.values().forEach(rowClearer));
+        enableListTasks.put(name, listCreator);
+        rmvListTasks.put(name, () -> data.values().forEach(rowClearer));
     }
 
     /**
@@ -494,25 +494,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         if (tasks != null)
             tasks.run();
-    }
-
-    /**
-     * Adds enable list task.
-     *
-     * @param name List name.
-     * @param task Task.
-     */
-    public void addEnableListTask(String name, Runnable task) {
-        enableListTasks.put(name, task);
-    }
-
-    /**
-     * Adds remove list task.
-     *
-     * @param task Task.
-     */
-    public void addRemoveListTask(String name, Runnable task) {
-        rmvListTasks.put(name, task);
     }
 
     /**
