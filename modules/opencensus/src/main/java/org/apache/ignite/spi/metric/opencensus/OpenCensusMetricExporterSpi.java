@@ -35,7 +35,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -122,7 +121,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     private Map<String, Measure> measures = new HashMap<>();
 
     /** Cached histogram metrics intervals names. */
-    private Map<String, T2<long[], String[]>> histogramNames = new HashMap<>();
+    private final Map<String, T2<long[], String[]>> histogramNames = new HashMap<>();
 
     /** */
     private static final Function<Metric, Measure> CREATE_LONG = m ->
@@ -135,8 +134,6 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** {@inheritDoc} */
     @Override public void export() {
         StatsRecorder recorder = Stats.getStatsRecorder();
-
-        HashSet<String> obsoleteHistograms = new HashSet<>(histogramNames.keySet());
 
         try (Scope globalScope = tagScope()) {
             MeasureMap mmap = recorder.newMeasureMap();
@@ -204,8 +201,6 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
                             mmap.put(msr, values[i]);
                         }
-
-                        obsoleteHistograms.remove(metric.name());
                     }
                     else if (log.isDebugEnabled()) {
                         log.debug(metric.name() +
@@ -216,9 +211,6 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
             mmap.record();
         }
-
-        if (!obsoleteHistograms.isEmpty())
-            obsoleteHistograms.forEach(s -> histogramNames.remove(s));
     }
 
     /** */
@@ -324,6 +316,8 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
             //Node consistent id will be known in #onContextInitialized0(IgniteSpiContext), after DiscoMgr started.
             consistenIdValue = TagValue.create("unknown");
         }
+
+        mreg.addMetricRegistryRemoveListener(mReg -> mReg.forEach(metric -> histogramNames.remove(metric.name())));
     }
 
     /** {@inheritDoc} */
