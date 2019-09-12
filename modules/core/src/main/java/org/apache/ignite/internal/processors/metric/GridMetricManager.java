@@ -38,7 +38,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -273,11 +272,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** List remove listeners. */
     private final List<Consumer<MonitoringList<?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
 
-    /** Internal list remove listeners. */
-    private final ConcurrentMap<String, Consumer<MonitoringList<?>>> internalRemoveLsnrs = new ConcurrentHashMap<>();
+    /** List remove tasks. */
+    private final ConcurrentMap<String, Runnable> rmvListTasks = new ConcurrentHashMap<>();
 
-    /** List enable listeners. */
-    private final ConcurrentMap<String, Consumer<String>> listEnableLsnrs = new ConcurrentHashMap<>();
+    /** List enable tasks. */
+    private final ConcurrentMap<String, Runnable> enableListTasks = new ConcurrentHashMap<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -400,7 +399,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public <R extends MonitoringRow, D> void registerList(String name, String desc,
         Class<R> rowCls, ConcurrentMap<?, D> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
 
-        Supplier<MonitoringList<R>> listCreator = () -> (MonitoringList<R>)lists.computeIfAbsent(name, n -> {
+        Runnable listCreator = () -> lists.computeIfAbsent(name, n -> {
             MonitoringList<R> list = new MonitoringListAdapter<>(name,
                 desc,
                 rowCls,
@@ -414,10 +413,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         });
 
         // Create new instance of the list.
-        listCreator.get();
+        listCreator.run();
 
-        ctx.metric().addEnableListListener(name, n -> listCreator.get());
-        ctx.metric().addRemoveListListener(name, l -> data.values().forEach(rowClearer));
+        ctx.metric().addEnableListTask(name, listCreator);
+        ctx.metric().addRemoveListTask(name, () -> data.values().forEach(rowClearer));
     }
 
     /**
@@ -462,10 +461,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         if (rmv != null) {
             notifyListeners(rmv, listRemoveLsnrs, log);
 
-            Consumer<MonitoringList<?>> lsnr = internalRemoveLsnrs.get(name);
+            Runnable rmvTask = rmvListTasks.get(name);
 
-            if (lsnr != null)
-                lsnr.accept(rmv);
+            if (rmvTask != null)
+                rmvTask.run();
         }
     }
 
@@ -475,29 +474,29 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param list Monitoring list.
      */
     public void enableList(String list) {
-        Consumer<String> lsnr = listEnableLsnrs.get(list);
+        Runnable tasks = enableListTasks.get(list);
 
-        if (lsnr != null)
-            lsnr.accept(list);
+        if (tasks != null)
+            tasks.run();
     }
 
     /**
-     * Adds enable list listener.
+     * Adds enable list task.
      *
      * @param name List name.
-     * @param lsnr Listener.
+     * @param task Task.
      */
-    public void addEnableListListener(String name, Consumer<String> lsnr) {
-        listEnableLsnrs.put(name, lsnr);
+    public void addEnableListTask(String name, Runnable task) {
+        enableListTasks.put(name, task);
     }
 
     /**
-     * Adds remove list listener.
+     * Adds remove list task.
      *
-     * @param lsnr Listener.
+     * @param task Task.
      */
-    public void addRemoveListListener(String name, Consumer<MonitoringList<?>> lsnr) {
-        internalRemoveLsnrs.put(name, lsnr);
+    public void addRemoveListTask(String name, Runnable task) {
+        rmvListTasks.put(name, task);
     }
 
     /**
