@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -54,12 +56,19 @@ public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommon
     /**
      * @throws Exception On error.
      */
-    public void test() throws Exception {
+    public void testWithoutPersistence() throws Exception {
         persistenceEnabled = false;
+
         check(true);
         check(false);
+    }
 
+    /**
+     * @throws Exception On error.
+     */
+    public void testWithPersistence() throws Exception {
         persistenceEnabled = true;
+
         check(true);
         check(false);
     }
@@ -90,10 +99,13 @@ public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommon
                 .setSqlSchema("CACHE1")
                 .setIndexedTypes(Integer.class, Integer.class));
 
-            for (int i = 0; i < KEYS; ++i) {
-                cache0.put(i, i);
-                cache1.put(i, i);
-            }
+            Map<Integer, Integer> batch = new HashMap<>();
+
+            for (int i = 0; i < KEYS; ++i)
+                batch.put(i, i);
+
+            cache0.putAll(batch);
+            cache1.putAll(batch);
 
             if (useOnlyPkHashIdx) {
                 ConcurrentMap<QueryTable, GridH2Table> dataTables = GridTestUtils.getFieldValue(
