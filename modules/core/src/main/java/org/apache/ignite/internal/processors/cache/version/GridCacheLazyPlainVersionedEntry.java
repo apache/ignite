@@ -16,7 +16,9 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -102,6 +104,42 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
             val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
 
         return val;
+    }
+
+    /**
+     * Checks the key is binary object.
+     *
+     * @return {@code true} if the key is binary object. Otherwise (key's type is a platform type) returns false.
+     */
+    public boolean isKeyBinary() {
+        return CacheObjectUtils.isBinary(keyObj);
+    }
+
+    /**
+     * Returns the key stored in the cache when this entry was created.
+     *
+     * @return the key binary object corresponding to this entry.
+     */
+    public BinaryObject keyBinary() {
+        return CacheObjectUtils.binary(keyObj);
+    }
+
+    /**
+     * Checks the value is binary object.
+     *
+     * @return {@code true} if the value is binary object. Otherwise (value's type is a platform type) returns false.
+     */
+    public boolean isValueBinary() {
+        return CacheObjectUtils.isBinary(valObj);
+    }
+
+    /**
+     * Returns the value stored in the cache when this entry was created.
+     *
+     * @return the value binary object corresponding to this entry.
+     */
+    public BinaryObject valueBinary() {
+        return CacheObjectUtils.binary(valObj);
     }
 
     /** {@inheritDoc} */
