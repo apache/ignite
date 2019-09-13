@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
  * System view backed by {@code data} {@link ConcurrentMap}.
  */
 public class SystemViewAdapter<R, D> implements SystemView<R> {
-    /** Data backed by this list. */
+    /** Data backed by this view. */
     private final Collection<D> data;
 
     /** Row function. */

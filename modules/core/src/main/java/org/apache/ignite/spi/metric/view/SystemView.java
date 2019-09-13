@@ -29,12 +29,12 @@ public interface SystemView<R> extends Iterable<R> {
     /** @return Class of the row. */
     public Class<R> rowClass();
 
-    /** @return List name. */
+    /** @return View name. */
     public String name();
 
-    /** @return List description. */
+    /** @return View description. */
     public String description();
 
-    /** @return Size of the list. */
+    /** @return Size of the view. */
     public int size();
 }

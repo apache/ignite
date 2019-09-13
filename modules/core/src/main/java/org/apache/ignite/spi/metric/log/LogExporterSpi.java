@@ -49,26 +49,26 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
             grp.forEach(m -> log.info(m.name() + " = " + m.getAsString()));
         });
 
-        log.info("Lists:");
+        log.info("Views:");
 
         mlreg.forEach(this::exportList);
     }
 
     /**
-     * Prints list data in CSV style format.
+     * Prints view data in CSV style format.
      *
-     * @param list List to print.
+     * @param view View to print.
      * @param <R> Row type.
      */
-    private <R> void exportList(SystemView<R> list) {
-        if (sviewFilter != null && !sviewFilter.test(list))
+    private <R> void exportList(SystemView<R> view) {
+        if (sviewFilter != null && !sviewFilter.test(view))
             return;
 
-        log.info(list.name());
+        log.info(view.name());
 
         StringBuilder names = new StringBuilder();
 
-        SystemViewRowAttributeWalker<R> walker = list.walker();
+        SystemViewRowAttributeWalker<R> walker = view.walker();
 
         walker.visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
@@ -81,7 +81,7 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
 
         log.info(names.toString());
 
-        for (R row : list) {
+        for (R row : view) {
             StringBuilder rowStr = new StringBuilder();
 
             walker.visitAll(row, new AttributeWithValueVisitor() {

@@ -51,17 +51,17 @@ import org.junit.Test;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
-import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_MON_LIST;
-import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_MON_LIST;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_MON_LIST;
-import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_MON_LIST;
-import static org.apache.ignite.spi.metric.jmx.SystemViewMBean.LIST;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.spi.metric.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
@@ -199,13 +199,13 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCachesList() throws Exception {
+    public void testCachesView() throws Exception {
         Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
             ignite.createCache(name);
 
-        TabularDataSupport data = systemView(CACHES_MON_LIST);
+        TabularDataSupport data = systemView(CACHES_VIEW);
 
         assertEquals(ignite.context().cache().cacheDescriptors().size(), data.size());
 
@@ -220,13 +220,13 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCacheGroupsList() throws Exception {
+    public void testCacheGroupsView() throws Exception {
         Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)
             ignite.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-        TabularDataSupport grps = systemView(CACHE_GRPS_MON_LIST);
+        TabularDataSupport grps = systemView(CACHE_GRPS_VIEW);
 
         assertEquals(ignite.context().cache().cacheGroupDescriptors().size(), grps.size());
 
@@ -250,7 +250,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         ignite.services().deploy(srvcCfg);
 
-        TabularDataSupport srvs = systemView(SVCS_MON_LIST);
+        TabularDataSupport srvs = systemView(SVCS_VIEW);
 
         assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
@@ -277,7 +277,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
             });
         }
 
-        TabularDataSupport tasks = systemView(TASKS_MON_LIST);
+        TabularDataSupport tasks = systemView(TASKS_VIEW);
 
         assertEquals(5, tasks.size());
 
@@ -297,13 +297,13 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     public TabularDataSupport systemView(String name) {
         try {
-            DynamicMBean caches = mbean(LIST, name);
+            DynamicMBean caches = mbean(VIEWS, name);
 
             MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
 
             assertEquals(1, attrs.length);
 
-            return (TabularDataSupport)caches.getAttribute(LIST);
+            return (TabularDataSupport)caches.getAttribute(VIEWS);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

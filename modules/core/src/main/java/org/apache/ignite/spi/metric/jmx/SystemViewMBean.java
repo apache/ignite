@@ -50,8 +50,8 @@ import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeW
  * @see GridMetricManager
  */
 public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
-    /** List attribute.  */
-    public static final String LIST = "list";
+    /** View attribute. */
+    public static final String VIEWS = "views";
 
     /** System view to export. */
     private final SystemView<R> sview;
@@ -127,7 +127,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
                 sview.rowClass().getName(),
                 sview.description(),
                 new OpenMBeanAttributeInfo[] {
-                    new OpenMBeanAttributeInfoSupport(LIST, LIST, rowType, true, false, false)
+                    new OpenMBeanAttributeInfoSupport(VIEWS, VIEWS, rowType, true, false, false)
                 },
                 null,
                 null,
@@ -151,7 +151,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         if ("MBeanInfo".equals(attribute))
             return getMBeanInfo();
 
-        if (attribute.equals(LIST)) {
+        if (attribute.equals(VIEWS)) {
             TabularDataSupport rows = new TabularDataSupport(sviewType);
 
             AttributeToMapVisitor visitor = new AttributeToMapVisitor();

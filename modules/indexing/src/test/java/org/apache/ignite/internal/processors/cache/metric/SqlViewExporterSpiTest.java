@@ -132,7 +132,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCachesList() throws Exception {
+    public void testCachesView() throws Exception {
         Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
@@ -150,7 +150,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCacheGroupsList() throws Exception {
+    public void testCacheGroupsView() throws Exception {
         Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)

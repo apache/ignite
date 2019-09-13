@@ -34,10 +34,10 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_MON_LIST;
-import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_MON_LIST;
-import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_MON_LIST;
-import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_MON_LIST;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 
 /** */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -46,14 +46,14 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCachesList() throws Exception {
+    public void testCachesView() throws Exception {
         try (IgniteEx g = startGrid()) {
             Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
 
             for (String name : cacheNames)
                 g.createCache(name);
 
-            SystemView<CacheView> caches = g.context().metric().list(CACHES_MON_LIST);
+            SystemView<CacheView> caches = g.context().metric().view(CACHES_VIEW);
 
             assertEquals(g.context().cache().cacheDescriptors().size(), F.size(caches.iterator()));
 
@@ -66,14 +66,14 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCacheGroupsList() throws Exception {
+    public void testCacheGroupsView() throws Exception {
         try(IgniteEx g = startGrid()) {
             Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
 
             for (String grpName : grpNames)
                 g.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-            SystemView<CacheGroupView> grps = g.context().metric().list(CACHE_GRPS_MON_LIST);
+            SystemView<CacheGroupView> grps = g.context().metric().view(CACHE_GRPS_VIEW);
 
             assertEquals(g.context().cache().cacheGroupDescriptors().size(), F.size(grps.iterator()));
 
@@ -96,7 +96,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             g.services().deploy(srvcCfg);
 
-            SystemView<ServiceView> srvs = g.context().metric().list(SVCS_MON_LIST);
+            SystemView<ServiceView> srvs = g.context().metric().view(SVCS_VIEW);
 
             assertEquals(g.context().service().serviceDescriptors().size(), F.size(srvs.iterator()));
 
@@ -114,7 +114,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         latch = new CountDownLatch(1);
 
         try(IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().metric().list(TASKS_MON_LIST);
+            SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
 
             for (int i=0; i<5; i++)
                 g1.compute().broadcastAsync(() -> {

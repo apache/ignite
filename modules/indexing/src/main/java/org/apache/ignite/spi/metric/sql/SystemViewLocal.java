@@ -52,15 +52,15 @@ import org.h2.value.ValueUuid;
 /**
  * System view to export system view data.
  */
-public class SystemViewLocalSystemView<R> extends SqlAbstractLocalSystemView {
+public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** System view for export. */
     private final SystemView<R> sview;
 
     /**
      * @param ctx Kernal context.
-     * @param sview List to export.
+     * @param sview View to export.
      */
-    public SystemViewLocalSystemView(GridKernalContext ctx, SystemView<R> sview) {
+    public SystemViewLocal(GridKernalContext ctx, SystemView<R> sview) {
         super(sqlName(sview.name()), sview.description(), ctx, columnsList(sview));
 
         this.sview = sview;

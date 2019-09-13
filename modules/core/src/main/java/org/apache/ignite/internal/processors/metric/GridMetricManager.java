@@ -220,7 +220,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     private final ReadOnlySystemViewRegistry systemViewRegistry = new ReadOnlySystemViewRegistry() {
         /** {@inheritDoc} */
         @Override public void addSystemViewCreationListener(Consumer<SystemView<?>> lsnr) {
-            listCreationLsnrs.add(lsnr);
+            viewCreationLsnrs.add(lsnr);
         }
 
         /** {@inheritDoc} */
@@ -236,7 +236,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** System views creation listeners. */
-    private final List<Consumer<SystemView<?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<SystemView<?>>> viewCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -253,7 +253,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
-    /** Registered walkers for list row. */
+    /** Registered walkers for view row. */
     private final Map<Class<?>, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
 
     /**
@@ -345,17 +345,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     }
 
     /**
-     * Registers list which exports {@link Collection} content.
+     * Registers view which exports {@link Collection} content.
      *
-     * @param name Name of the list.
-     * @param desc Description of the list.
+     * @param name Name.
+     * @param desc Description.
      * @param rowCls Row class.
-     * @param data Data of the list.
+     * @param data Data.
      * @param rowFunc value to row function.
      * @param <R> List row type.
-     * @param <D> Map data type.
+     * @param <D> Collection data type.
      */
-    public <R, D> void registerList(String name, String desc,
+    public <R, D> void registerView(String name, String desc,
         Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
 
         SystemView sview = new SystemViewAdapter<>(name,
@@ -369,14 +369,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         assert old == null;
 
-        notifyListeners(sview, listCreationLsnrs, log);
+        notifyListeners(sview, viewCreationLsnrs, log);
     }
 
     /**
-     * @param name Name of the list.
+     * @param name Name of the view.
      * @return List.
      */
-    @Nullable public <R> SystemView<R> list(String name) {
+    @Nullable public <R> SystemView<R> view(String name) {
         return (SystemView<R>)systemViews.get(name);
     }
 

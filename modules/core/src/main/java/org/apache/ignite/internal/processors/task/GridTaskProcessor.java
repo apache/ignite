@@ -104,10 +104,10 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  */
 public class GridTaskProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
-    public static final String TASKS_MON_LIST = "tasks";
+    public static final String TASKS_VIEW = "tasks";
 
     /** */
-    public static final String TASKS_MON_LIST_DESC = "Running compute tasks";
+    public static final String TASKS_VIEW_DESC = "Running compute tasks";
 
     /** Total executed tasks metric name. */
     public static final String TOTAL_EXEC_TASKS = "TotalExecutedTasks";
@@ -163,7 +163,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
-        ctx.metric().registerList(TASKS_MON_LIST, TASKS_MON_LIST_DESC,
+        ctx.metric().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
             ComputeTaskView.class,
             tasks.values(),
             ComputeTaskView::new);

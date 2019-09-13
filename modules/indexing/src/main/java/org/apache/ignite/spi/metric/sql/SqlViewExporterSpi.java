@@ -87,7 +87,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        SystemViewLocalSystemView<?> view = new SystemViewLocalSystemView<>(ctx, sview);
+        SystemViewLocal<?> view = new SystemViewLocal<>(ctx, sview);
 
         mgr.createSystemView(view);
     }

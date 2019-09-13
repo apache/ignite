@@ -40,7 +40,7 @@ import org.apache.ignite.spi.metric.view.CacheGroupView;
 import org.apache.ignite.spi.metric.view.CacheView;
 import org.apache.ignite.spi.metric.view.ComputeTaskView;
 import org.apache.ignite.spi.metric.view.ServiceView;
-import org.apache.ignite.spi.metric.sql.SystemViewLocalSystemView;
+import org.apache.ignite.spi.metric.sql.SystemViewLocal;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 
@@ -50,7 +50,7 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
  * Generated code used in {@link SystemView}.
  *
  * @see SystemViewMBean
- * @see SystemViewLocalSystemView
+ * @see SystemViewLocal
  */
 public class SystemViewRowAttributeWalkerGenerator {
     /** Methods that should be excluded from specific {@link SystemViewRowAttributeWalker}. */

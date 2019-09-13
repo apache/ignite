@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
 import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
-import static org.apache.ignite.spi.metric.jmx.SystemViewMBean.LIST;
+import static org.apache.ignite.spi.metric.jmx.SystemViewMBean.VIEWS;
 
 /**
  * This SPI implementation exports metrics as JMX beans.
@@ -91,7 +91,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
                 igniteInstanceName,
-                LIST,
+                VIEWS,
                 sview.name(),
                 mlBean,
                 SystemViewMBean.class);

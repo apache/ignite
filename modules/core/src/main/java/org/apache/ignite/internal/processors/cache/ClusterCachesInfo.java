@@ -85,16 +85,16 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  */
 public class ClusterCachesInfo {
     /** */
-    public static final String CACHES_MON_LIST = "caches";
+    public static final String CACHES_VIEW = "caches";
 
     /** */
-    public static final String CACHES_MON_LIST_DESC = "Caches";
+    public static final String CACHES_VIEW_DESC = "Caches";
 
     /** */
-    public static final String CACHE_GRPS_MON_LIST = "cacheGroups";
+    public static final String CACHE_GRPS_VIEW = "cacheGroups";
 
     /** */
-    public static final String CACHE_GRPS_MON_LIST_DESC = "Cache groups";
+    public static final String CACHE_GRPS_VIEW_DESC = "Cache groups";
 
     /** Representation of null for restarting caches map */
     private static final IgniteUuid NULL_OBJECT = new IgniteUuid();
@@ -159,12 +159,12 @@ public class ClusterCachesInfo {
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        ctx.metric().registerList(CACHES_MON_LIST, CACHES_MON_LIST_DESC,
+        ctx.metric().registerView(CACHES_VIEW, CACHES_VIEW_DESC,
             CacheView.class,
             registeredCaches.values(),
             CacheView::new);
 
-        ctx.metric().registerList(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC,
+        ctx.metric().registerView(CACHE_GRPS_VIEW, CACHE_GRPS_VIEW_DESC,
             CacheGroupView.class,
             registeredCacheGrps.values(),
             CacheGroupView::new);
