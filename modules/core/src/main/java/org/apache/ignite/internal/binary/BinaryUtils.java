@@ -123,6 +123,9 @@ public class BinaryUtils {
     @SuppressWarnings("unused")
     public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
 
+    /** Flag: object has update time. */
+    public static final short FLAG_HAS_UPDATE_TIME = 0x0080;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
@@ -321,6 +324,16 @@ public class BinaryUtils {
      */
     public static boolean isCompactFooter(short flags) {
         return isFlagSet(flags, FLAG_COMPACT_FOOTER);
+    }
+
+    /**
+     * Check if update time flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean hasUpdateTime(short flags) {
+        return isFlagSet(flags, FLAG_HAS_UPDATE_TIME);
     }
 
     /**
@@ -821,7 +834,7 @@ public class BinaryUtils {
             return in.readIntPositioned(start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
         else
             // No schema, footer start equals to object end.
-            return length(in, start);
+            return hasUpdateTime(flags) ? length(in, start) - 8 : length(in, start);
     }
 
     /**
@@ -854,6 +867,9 @@ public class BinaryUtils {
             if (hasRaw(flags))
                 footerEnd -= 4;
 
+            if (hasUpdateTime(flags))
+                footerEnd -= 8;
+
             assert footerStart <= footerEnd;
 
             return F.t(start + footerStart, start + footerEnd);
@@ -877,9 +893,15 @@ public class BinaryUtils {
 
         if (hasSchema(flags)) {
             // Schema exists.
-            if (hasRaw(flags))
-                // Raw offset is set, it is at the very end of the object.
-                return in.readIntPositioned(start + len - 4);
+            if (hasRaw(flags)) {
+                // Raw offset is set.
+                if (hasUpdateTime(flags))
+                    // Update time is set, raw offset just before it.
+                    return in.readIntPositioned(start + len - 4 - 8);
+                else
+                    // Update time is not set, raw offset is at the very end of the object.
+                    return in.readIntPositioned(start + len - 4);
+            }
             else
                 // Raw offset is not set, so just return schema offset.
                 return in.readIntPositioned(start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);

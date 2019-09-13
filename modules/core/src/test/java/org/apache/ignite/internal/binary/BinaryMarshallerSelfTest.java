@@ -2589,6 +2589,81 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws IgniteCheckedException if failed.
+     */
+    @Test
+    public void testSetUpdateTimeSimpleObject() throws IgniteCheckedException {
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singletonList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
+
+        SimpleObject expO = simpleObject();
+        BinaryObjectImpl expBo = marshal(expO, marsh);
+
+        BinaryObjectImpl actBo = (BinaryObjectImpl)expBo.toBuilder().setUpdateTime(42L).build();
+        SimpleObject actO = marsh.unmarshal(actBo.array(), null);
+
+        Assert.assertEquals("Update time should not affect equality", expBo, actBo);
+        Assert.assertEquals("Update time mismatch", 42L, actBo.toBuilder().getUpdateTime());
+        Assert.assertEquals("Update time should not affect unmarshalling", expO, actO);
+
+        BinaryObjectImpl actBo2 = (BinaryObjectImpl)actBo.toBuilder().removeUpdateTime().build();
+        SimpleObject actO2 = marsh.unmarshal(actBo.array(), null);
+
+        Assert.assertEquals("Removing update time should not affect equality", expBo, actBo2);
+        Assert.assertEquals("Update time mismatch", -1L, actBo2.toBuilder().getUpdateTime());
+        Assert.assertEquals("Removing update time should not affect unmarshalling", expO, actO2);
+    }
+
+    /**
+     * @throws IgniteCheckedException if failed.
+     */
+    @Test
+    public void testSetUpdateTimeRawObject() throws IgniteCheckedException {
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singletonList(new BinaryTypeConfiguration(ObjectRaw.class.getName())));
+
+        ObjectRaw expO = new ObjectRaw(1, 2);
+        BinaryObjectImpl expBo = marshal(expO, marsh);
+
+        BinaryObjectImpl actBo = (BinaryObjectImpl)expBo.toBuilder().setUpdateTime(42L).build();
+        ObjectRaw actO = marsh.unmarshal(actBo.array(), null);
+
+        Assert.assertEquals("Update time should not affect equality", expBo, actBo);
+        Assert.assertEquals("Update time mismatch", 42L, actBo.toBuilder().getUpdateTime());
+        Assert.assertEquals("Update time should not affect unmarshalling", expO, actO);
+
+        BinaryObjectImpl actBo2 = (BinaryObjectImpl)actBo.toBuilder().removeUpdateTime().build();
+        ObjectRaw actO2 = marsh.unmarshal(actBo.array(), null);
+
+        Assert.assertEquals("Removing update time should not affect equality", expBo, actBo2);
+        Assert.assertEquals("Update time mismatch", -1L, actBo2.toBuilder().getUpdateTime());
+        Assert.assertEquals("Removing update time should not affect unmarshalling", expO, actO2);
+    }
+
+    /**
+     * @throws IgniteCheckedException if failed.
+     */
+    @Test
+    public void testSetUpdateTimeMixedObject() throws IgniteCheckedException {
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singletonList(new BinaryTypeConfiguration(ObjectWithRaw.class.getName())));
+
+        ObjectWithRaw expO = new ObjectWithRaw(1, 2);
+        BinaryObjectImpl expBo = marshal(expO, marsh);
+
+        BinaryObjectImpl actBo = (BinaryObjectImpl)expBo.toBuilder().setUpdateTime(42L).build();
+        ObjectWithRaw actO = marsh.unmarshal(actBo.array(), null);
+
+        Assert.assertEquals("Update time should not affect equality", expBo, actBo);
+        Assert.assertEquals("Update time mismatch", 42L, actBo.toBuilder().getUpdateTime());
+        Assert.assertEquals("Update time should not affect unmarshalling", expO, actO);
+
+        BinaryObjectImpl actBo2 = (BinaryObjectImpl)actBo.toBuilder().removeUpdateTime().build();
+        ObjectWithRaw actO2 = marsh.unmarshal(actBo.array(), null);
+
+        Assert.assertEquals("Removing update time should not affect equality", expBo, actBo2);
+        Assert.assertEquals("Update time mismatch", -1L, actBo2.toBuilder().getUpdateTime());
+        Assert.assertEquals("Removing update time should not affect unmarshalling", expO, actO2);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
@@ -5556,6 +5631,25 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             rawVal = reader.rawReader().readInt();
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectWithRaw raw = (ObjectWithRaw)o;
+
+            return val == raw.val &&
+                rawVal == raw.rawVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ObjectWithRaw.class, this);
+        }
     }
 
     /** */
@@ -5593,6 +5687,25 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             val0 = rawReader.readInt();
             val1 = rawReader.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectRaw raw = (ObjectRaw)o;
+
+            return val0 == raw.val0 &&
+                val1 == raw.val1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ObjectRaw.class, this);
         }
     }
 

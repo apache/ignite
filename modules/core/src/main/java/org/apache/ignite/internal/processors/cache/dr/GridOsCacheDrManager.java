@@ -77,6 +77,12 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
     }
 
     /** {@inheritDoc} */
+    @Override public CacheObject enrich(@Nullable CacheObject val) {
+        // No-op.
+        return val;
+    }
+
+    /** {@inheritDoc} */
     @Override public void onExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException {
         // No-op.
     }

@@ -124,6 +124,28 @@ public interface BinaryObjectBuilder {
     public BinaryObjectBuilder removeField(String fieldName);
 
     /**
+     * Returns update time.
+     *
+     * @return Update time or {@code -1}, if update time is not set.
+     */
+    public long getUpdateTime();
+
+    /**
+     * Sets update time.
+     *
+     * @param updateTime Update time. Should be greater or equal to 0.
+     * @return {@code this} instance for chaining.
+     */
+    public BinaryObjectBuilder setUpdateTime(long updateTime);
+
+    /**
+     * Removes update time if present.
+     *
+     * @return {@code this} instance for chaining.
+     */
+    public BinaryObjectBuilder removeUpdateTime();
+
+    /**
      * Builds binary object.
      *
      * @return Binary object.
