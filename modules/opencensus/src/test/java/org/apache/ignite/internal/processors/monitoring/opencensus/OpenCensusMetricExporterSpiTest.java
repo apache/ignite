@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -33,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
 import org.junit.Test;
 
