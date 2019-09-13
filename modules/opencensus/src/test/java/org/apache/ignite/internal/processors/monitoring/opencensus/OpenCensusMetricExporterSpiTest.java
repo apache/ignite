@@ -130,32 +130,12 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
     public void testFilterAndExport() throws Exception {
         createAdditionalMetrics(ignite);
 
-        Set<String> expectedMetrics = new GridConcurrentHashSet<>(Arrays.asList(
+        String[] expectedMetrics = new String[] {
             "other_prefix_test\\{.*\\} 42",
             "other_prefix_test2\\{.*\\} 43",
-            "other_prefix2_test3\\{.*\\} 44"
-        ));
+            "other_prefix2_test3\\{.*\\} 44"};
 
-        boolean res = waitForCondition(() -> {
-            try {
-                String httpMetrics = metricsFromHttp();
-
-                assertFalse("Filtered prefix shouldn't export.",
-                    httpMetrics.contains(FILTERED_PREFIX.replaceAll("\\.", "_")));
-
-                for (String expMetric : expectedMetrics) {
-                    if (!Pattern.compile(expMetric).matcher(httpMetrics).find())
-                        return false;
-                }
-
-                return true;
-            }
-            catch (IOException e) {
-                return false;
-            }
-        }, EXPORT_TIMEOUT * 10);
-
-        assertTrue("Additional metrics should be exported via http", res);
+        assertTrue("Additional metrics should be exported via http", checkHttpMetrics(expectedMetrics));
     }
 
     /** */
@@ -204,6 +184,9 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         return waitForCondition(() -> {
             try {
                 String httpMetrics = metricsFromHttp();
+
+                assertFalse("Filtered prefix shouldn't export.",
+                    httpMetrics.contains(FILTERED_PREFIX.replaceAll("\\.", "_")));
 
                 for (String exp : patterns) {
                     if (!Pattern.compile(exp).matcher(httpMetrics).find())
