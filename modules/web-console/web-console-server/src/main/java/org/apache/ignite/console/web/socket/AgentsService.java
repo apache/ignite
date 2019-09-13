@@ -299,7 +299,7 @@ public class AgentsService extends AbstractSocketHandler {
 
         res.put("hasAgent", hasAgent);
         res.put("clusters", hasAgent ? clustersRepo.get(userKey) : emptySet());
-        res.put("hasDemo", !hasAgent && clustersRepo.hasDemo(userKey.getAccId()));
+        res.put("hasDemo", hasAgent && clustersRepo.hasDemo(userKey.getAccId()));
 
         return new WebSocketResponse(AGENT_STATUS, res);
     }

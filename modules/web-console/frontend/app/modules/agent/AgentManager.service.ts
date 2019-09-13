@@ -922,6 +922,9 @@ export default class AgentManager {
      * @return 'True' if feature is enabled or 'false' otherwise.
      */
     featureSupported(cluster: AgentTypes.ClusterStats, feature: AgentTypes.IgniteFeatures): boolean {
+        if (_.isNil(cluster.supportedFeatures))
+            return false;
+
         const bytes = this._base64ToArrayBuffer(cluster.supportedFeatures);
 
         const byteIdx = feature >>> 3;
