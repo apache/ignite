@@ -189,9 +189,10 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         mmap.put(msr, val);
                     }
                     else if (metric instanceof HistogramMetric) {
-                        String[] intervalNames = createIntervalNames((HistogramMetric)metric);
-
+                        String[] intervalNames = intervalNames((HistogramMetric)metric);
                         long[] values = ((HistogramMetric)metric).value();
+
+                        assert intervalNames.length == values.length;
 
                         for (int i = 0; i < values.length; i++) {
                             String mName = intervalNames[i];
@@ -265,11 +266,11 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
      * @param metric Histogram metric.
      * @return Histogram intervals names.
      */
-    private String[] createIntervalNames(HistogramMetric metric) {
-        String mName = metric.name();
+    private String[] intervalNames(HistogramMetric metric) {
+        String name = metric.name();
         long[] bounds = metric.bounds();
 
-        T2<long[], String[]> tuple = histogramNames.get(mName);
+        T2<long[], String[]> tuple = histogramNames.get(name);
 
         String[] intervalNames;
 
@@ -281,14 +282,14 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
             long min = 0;
 
             for (int i = 0; i < bounds.length; i++) {
-                intervalNames[i] = mName + "_" + min + "_" + bounds[i];
+                intervalNames[i] = name + "_" + min + "_" + bounds[i];
 
                 min = bounds[i];
             }
 
-            intervalNames[bounds.length] = mName + "_" + min + "_inf";
+            intervalNames[bounds.length] = name + "_" + min + "_inf";
 
-            histogramNames.put(mName, new T2<>(bounds, intervalNames));
+            histogramNames.put(name, new T2<>(bounds, intervalNames));
         }
 
         return intervalNames;
@@ -317,7 +318,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
             consistenIdValue = TagValue.create("unknown");
         }
 
-        mreg.addMetricRegistryRemoveListener(mReg -> mReg.forEach(metric -> histogramNames.remove(metric.name())));
+        mreg.addMetricRegistryRemoveListener(mreg -> mreg.forEach(metric -> histogramNames.remove(metric.name())));
     }
 
     /** {@inheritDoc} */

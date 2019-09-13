@@ -290,12 +290,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /**
-     * Removes group.
+     * Removes metric registry.
      *
-     * @param grpName Group name.
+     * @param regName Metric registry name.
      */
-    public void remove(String grpName) {
-        MetricRegistry mreg = registries.remove(grpName);
+    public void remove(String regName) {
+        MetricRegistry mreg = registries.remove(regName);
 
         if (mreg != null)
             notifyListeners(mreg, metricRegRemoveLsnrs);
