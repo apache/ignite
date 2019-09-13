@@ -72,6 +72,9 @@ Options:
   -c, --config
     Path to Agent property file
     Default value: default.properties
+  -dd, --disable-demo
+    Disable demo mode on this agent
+    Default: false
   -d, --driver-folder
     Path to folder with JDBC drivers
     Default value: ./jdbc-drivers
@@ -116,8 +119,13 @@ How to build:
   mvn clean package -pl :ignite-web-console-agent -am -P web-console -DskipTests=true
 
 Demo of Ignite Web Agent:
- In order to simplify evaluation, demo mode was implemented. To start demo you need to click button "Start demo".
- New tab will be opened with prepared demo data.
+ In order to simplify evaluation, demo mode was implemented.
+ To start demo you need to click button "Start demo".
+ New tab will be opened with prepared demo data and cluster of four nodes will be started
+ inside Web Agent process.
+
+ NOTE, it is recommended to disable demo mode with "-dd" or "--disable-demo" option
+ in production environment.
 
  1) Demo for importing domain model from database.
    In this mode an in-memory H2 database will be started.

@@ -91,9 +91,7 @@ public class AgentConfiguration {
     private String driversFolder;
 
     /** */
-    @Parameter(names = {"-dd", "--disable-demo"}, description = "Disable demo mode on this agent " +
-        "                             " +
-        "      Default value: false")
+    @Parameter(names = {"-dd", "--disable-demo"}, description = "Disable demo mode on this agent")
     private boolean disableDemo;
 
     /** */
