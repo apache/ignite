@@ -1680,11 +1680,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         return v;
     }
 
-    /** */
-    public void clearTaskView() {
-        taskView = null;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         if (this == obj)

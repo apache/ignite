@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.metric;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,17 +31,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
@@ -93,22 +88,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         stopAllGrids(true);
 
         cleanPersistenceDir();
-    }
-
-    /** */
-    @Test
-    public void testListRemove() throws Exception {
-        GridMetricManager mmgr = ignite.context().metric();
-
-        mmgr.registerList("test", "description", CacheView.class, Collections.emptyList(), v -> null, l -> {});
-
-        List<List<?>> rows = execute(ignite, "SELECT * FROM SYS.TEST");
-
-        assertTrue(rows.isEmpty());
-
-        mmgr.removeList("test");
-
-        assertThrowsWithCause(() -> execute(ignite, "SELECT * FROM SYS.TEST"), SQLException.class);
     }
 
     /** */

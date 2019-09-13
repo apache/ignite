@@ -451,11 +451,6 @@ public class DynamicCacheDescriptor {
         return v;
     }
 
-    /** */
-    public void clearCacheView() {
-        cacheView = null;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheDescriptor.class, this, "cacheName", U.maskName(cacheCfg.getName()));

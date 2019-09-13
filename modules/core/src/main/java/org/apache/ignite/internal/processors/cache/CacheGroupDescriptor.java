@@ -359,11 +359,6 @@ public class CacheGroupDescriptor {
         return v;
     }
 
-    /** */
-    public void clearCacheGroupView() {
-        cacheGrpView = null;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheGroupDescriptor.class, this, "cacheName", cacheCfg.getName());

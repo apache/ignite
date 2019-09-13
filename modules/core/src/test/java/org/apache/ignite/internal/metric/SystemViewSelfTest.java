@@ -45,9 +45,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     private static CountDownLatch latch;
 
     /** */
-    private static CountDownLatch latch2;
-
-    /** */
     @Test
     public void testCachesList() throws Exception {
         try (IgniteEx g = startGrid()) {

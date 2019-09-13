@@ -20,7 +20,6 @@ package org.apache.ignite.internal.metric;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -42,12 +41,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
@@ -177,25 +174,6 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         ignite.destroyCache(n);
 
         assertThrowsWithCause(() -> mbean(CACHE_METRICS, n), IgniteException.class);
-    }
-
-    /** */
-    @Test
-    public void testListRemove() throws Exception {
-        GridMetricManager mmgr = ignite.context().metric();
-
-        mmgr.registerList("test", "description", CacheView.class,
-            Collections.emptyList(),
-            v -> null,
-            v -> {});
-
-        DynamicMBean listBean = mbean(LIST, "test");
-
-        assertNotNull(listBean);
-
-        mmgr.removeList("test");
-
-        assertThrowsWithCause(() -> mbean(LIST, "test"), IgniteException.class);
     }
 
     /** */

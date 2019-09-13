@@ -154,14 +154,12 @@ class ClusterCachesInfo {
         ctx.metric().registerList(CACHES_MON_LIST, CACHES_MON_LIST_DESC,
             CacheView.class,
             registeredCaches.values(),
-            DynamicCacheDescriptor::cacheView,
-            DynamicCacheDescriptor::clearCacheView);
+            DynamicCacheDescriptor::cacheView);
 
         ctx.metric().registerList(CACHE_GRPS_MON_LIST, CACHE_GRPS_MON_LIST_DESC,
             CacheGroupView.class,
             registeredCacheGrps.values(),
-            CacheGroupDescriptor::cacheGroupView,
-            CacheGroupDescriptor::clearCacheGroupView);
+            CacheGroupDescriptor::cacheGroupView);
 
         log = ctx.log(getClass());
     }
