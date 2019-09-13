@@ -195,10 +195,10 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         assert intervalNames.length == values.length;
 
                         for (int i = 0; i < values.length; i++) {
-                            String mName = intervalNames[i];
+                            String name = intervalNames[i];
 
-                            MeasureLong msr = (MeasureLong)measures.computeIfAbsent(mName,
-                                k -> createMeasureLong(mName, metric.description()));
+                            MeasureLong msr = (MeasureLong)measures.computeIfAbsent(name,
+                                k -> createMeasureLong(name, metric.description()));
 
                             mmap.put(msr, values[i]);
                         }
