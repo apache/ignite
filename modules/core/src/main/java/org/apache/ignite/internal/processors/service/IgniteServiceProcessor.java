@@ -91,8 +91,6 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST_DESC;
 
 /**
  * Ignite service processor.
@@ -108,6 +106,12 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVC
 @SkipDaemon
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class IgniteServiceProcessor extends ServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** */
+    public static final String SVCS_MON_LIST = "services";
+
+    /** */
+    public static final String SVCS_MON_LIST_DESC = "Services";
+
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
 

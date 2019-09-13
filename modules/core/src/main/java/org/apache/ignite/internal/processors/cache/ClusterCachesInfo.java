@@ -79,15 +79,23 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST_DESC;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST_DESC;
 
 /**
  * Logic related to cache discovery data processing.
  */
-class ClusterCachesInfo {
+public class ClusterCachesInfo {
+    /** */
+    public static final String CACHES_MON_LIST = "caches";
+
+    /** */
+    public static final String CACHES_MON_LIST_DESC = "Caches";
+
+    /** */
+    public static final String CACHE_GRPS_MON_LIST = "cacheGroups";
+
+    /** */
+    public static final String CACHE_GRPS_MON_LIST_DESC = "Cache groups";
+
     /** Representation of null for restarting caches map */
     private static final IgniteUuid NULL_OBJECT = new IgniteUuid();
 

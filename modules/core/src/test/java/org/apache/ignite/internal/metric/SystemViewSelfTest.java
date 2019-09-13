@@ -34,10 +34,10 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_MON_LIST;
+import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_MON_LIST;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_MON_LIST;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_MON_LIST;
 
 /** */
 public class SystemViewSelfTest extends GridCommonAbstractTest {

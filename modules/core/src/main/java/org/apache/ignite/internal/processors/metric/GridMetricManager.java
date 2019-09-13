@@ -178,30 +178,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Histogram of blocking PME durations metric name. */
     public static final String PME_OPS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
 
-    /** */
-    public static final String CACHES_MON_LIST = "caches";
-
-    /** */
-    public static final String CACHE_GRPS_MON_LIST = "cacheGroups";
-
-    /** */
-    public static final String CACHES_MON_LIST_DESC = "Caches";
-
-    /** */
-    public static final String CACHE_GRPS_MON_LIST_DESC = "Cache groups";
-
-    /** */
-    public static final String SVCS_MON_LIST = "services";
-
-    /** */
-    public static final String SVCS_MON_LIST_DESC = "Services";
-
-    /** */
-    public static final String TASKS_MON_LIST = "tasks";
-
-    /** */
-    public static final String TASKS_MON_LIST_DESC = "Running compute tasks";
-
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 

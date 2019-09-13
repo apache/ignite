@@ -92,8 +92,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST_DESC;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
@@ -105,6 +103,12 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  * This class defines task processor.
  */
 public class GridTaskProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** */
+    public static final String TASKS_MON_LIST = "tasks";
+
+    /** */
+    public static final String TASKS_MON_LIST_DESC = "Running compute tasks";
+
     /** Total executed tasks metric name. */
     public static final String TOTAL_EXEC_TASKS = "TotalExecutedTasks";
 
