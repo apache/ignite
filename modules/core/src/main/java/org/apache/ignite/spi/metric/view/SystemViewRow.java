@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.spi.metric.view;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;

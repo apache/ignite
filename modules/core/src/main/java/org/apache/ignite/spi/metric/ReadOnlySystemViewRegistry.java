@@ -19,7 +19,7 @@ package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.view.SystemView;
 
 /**
  * Read only system view registry.

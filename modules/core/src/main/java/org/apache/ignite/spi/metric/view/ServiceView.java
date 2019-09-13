@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list.view;
+package org.apache.ignite.spi.metric.view;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.internal.processors.metric.view.walker.Order;
 import org.apache.ignite.internal.processors.service.ServiceInfo;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.SystemView;
 
 /**
  * Service representation for a {@link SystemView}.

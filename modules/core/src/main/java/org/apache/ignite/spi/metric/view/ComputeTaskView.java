@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list.view;
+package org.apache.ignite.spi.metric.view;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.task.GridTaskWorker;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.SystemView;
 
 /**
  * Compute task representation for a {@link SystemView}.

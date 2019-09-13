@@ -38,10 +38,10 @@ import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.view.SystemView;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
  * JMX bean to expose specific {@link SystemView} data.

@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.view.SystemView;
 
 /**
  * Exporter of metric information to the external recepient.

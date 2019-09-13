@@ -30,7 +30,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
-import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 /**

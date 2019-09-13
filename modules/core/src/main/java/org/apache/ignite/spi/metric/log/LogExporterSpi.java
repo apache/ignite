@@ -18,11 +18,11 @@
 package org.apache.ignite.spi.metric.log;
 
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
-import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.view.SystemView;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
-import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker;
+import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
  * This SPI implementation exports metrics to Ignite log.

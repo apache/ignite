@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.spi.metric.view;
 
 /**
  * Utility class for quick iteration over row properties.

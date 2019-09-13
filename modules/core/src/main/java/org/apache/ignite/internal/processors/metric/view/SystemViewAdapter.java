@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list;
+package org.apache.ignite.internal.processors.metric.view;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
-import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
+import org.apache.ignite.spi.metric.view.SystemView;
+import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,10 +35,10 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
     /** Row function. */
     private final Function<D, R> rowFunc;
 
-    /** Name of the list. */
+    /** Name of the view. */
     private final String name;
 
-    /** Description of the list. */
+    /** Description of the view. */
     private final String desc;
 
     /** Class of the row */

@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.list.walker;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
+package org.apache.ignite.spi.metric.view;
 
 /**
- * Annotation to set walk order for a {@link SystemViewRowAttributeWalker}.
- * Walker traverse attributes from low to high value.
+ * Implementation provides data for some internal Ignite objects.
  *
- * @see SystemViewRowAttributeWalker
- * @see CacheViewWalker
+ * @param <R> Type of the row.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Order {
-    public int value() default 0;
+public interface SystemView<R> extends Iterable<R> {
+    /** @return Helper for exporters. */
+    public SystemViewRowAttributeWalker<R> walker();
+
+    /** @return Class of the row. */
+    public Class<R> rowClass();
+
+    /** @return List name. */
+    public String name();
+
+    /** @return List description. */
+    public String description();
+
+    /** @return Size of the list. */
+    public int size();
 }
