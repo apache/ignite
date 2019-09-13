@@ -21,6 +21,9 @@ package org.apache.ignite.ml.util;
  * The names of popular datasets used in examples.
  */
 public enum MLSandboxDatasets {
+    /** Movielens dataset with ratings. */
+    MOVIELENS("modules/ml/src/main/resources/datasets/ratings.csv", true, ","),
+
     /** The full Iris dataset from Machine Learning Repository. */
     IRIS("modules/ml/src/main/resources/datasets/iris.txt", false, "\t"),
 
