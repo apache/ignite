@@ -164,8 +164,10 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         String registryName = "test_registry";
         String histogramName = "test_histogram";
         String histogramDesc = "Test histogram description.";
+
         long[] bounds = new long[] {10, 100};
         long[] testValues = new long[] {5, 50, 50, 500, 500, 500};
+
         String[] expectedValuesPtrn = new String[] {
             "test_registry_test_histogram_0_10.* 1",
             "test_registry_test_histogram_10_100.* 2",
