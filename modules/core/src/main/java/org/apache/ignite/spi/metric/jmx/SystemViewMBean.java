@@ -38,24 +38,24 @@ import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
- * JMX bean to expose specific {@link MonitoringList} data.
+ * JMX bean to expose specific {@link SystemView} data.
  *
  * @see JmxMetricExporterSpi
  * @see GridMetricManager
  */
-public class MonitoringListMBean<R extends MonitoringRow> extends ReadOnlyDynamicMBean {
+public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBean {
     /** List attribute.  */
     public static final String LIST = "list";
 
-    /** Monitoring list to export. */
-    private final MonitoringList<R> mlist;
+    /** System view to export. */
+    private final SystemView<R> mlist;
 
     /** MBean info. */
     private final MBeanInfo info;
@@ -67,9 +67,9 @@ public class MonitoringListMBean<R extends MonitoringRow> extends ReadOnlyDynami
     private final TabularType listType;
 
     /**
-     * @param mlist Monitoring list to export.
+     * @param mlist System view to export.
      */
-    public MonitoringListMBean(MonitoringList<R> mlist) {
+    public SystemViewMBean(SystemView<R> mlist) {
         this.mlist = mlist;
 
         int cnt = mlist.walker().count();
@@ -188,7 +188,7 @@ public class MonitoringListMBean<R extends MonitoringRow> extends ReadOnlyDynami
     }
 
     /**
-     * Fullfill {@code data} Map for specific {@link MonitoringRow}.
+     * Fullfill {@code data} Map for specific {@link SystemViewRow}.
      */
     private static class AttributeToMapVisitor implements AttributeWithValueVisitor {
         /** Map to store data. */

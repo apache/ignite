@@ -20,13 +20,13 @@ package org.apache.ignite.spi.metric.list.view;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.task.GridTaskWorker;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 
 /**
- * Compute task representation for a {@link MonitoringList}.
+ * Compute task representation for a {@link SystemView}.
  */
-public class ComputeTaskView implements MonitoringRow {
+public class ComputeTaskView implements SystemViewRow {
     /** Worker for task. */
     private final GridTaskWorker worker;
 

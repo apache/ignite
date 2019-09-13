@@ -18,16 +18,16 @@
 package org.apache.ignite.spi.metric.list;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
+import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
 
 /**
- * Monitoring list row base interface.
+ * System view row base interface.
  * All public non-static methods, except system one, will be exporter as a list columns.
  * System methods includes: "equals", "hashCode", "toString", "getClass"
  *
- * @see MonitoringList
+ * @see SystemView
  * @see GridMetricManager
- * @see ReadOnlyMonitoringListRegistry
+ * @see ReadOnlySystemViewRegistry
  */
-public interface MonitoringRow {
+public interface SystemViewRow {
 }

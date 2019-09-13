@@ -31,15 +31,15 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
- * Cache representation for a {@link MonitoringList}.
+ * Cache representation for a {@link SystemView}.
  */
-public class CacheView implements MonitoringRow {
+public class CacheView implements SystemViewRow {
     /** Cache descriptor. */
     private DynamicCacheDescriptor cache;
 

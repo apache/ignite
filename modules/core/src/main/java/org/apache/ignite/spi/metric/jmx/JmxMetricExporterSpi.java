@@ -32,13 +32,13 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
+import org.apache.ignite.spi.metric.list.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
 import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
-import static org.apache.ignite.spi.metric.jmx.MonitoringListMBean.LIST;
+import static org.apache.ignite.spi.metric.jmx.SystemViewMBean.LIST;
 
 /**
  * This SPI implementation exports metrics as JMX beans.
@@ -47,14 +47,14 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     /** Metric registry. */
     private ReadOnlyMetricRegistry mreg;
 
-    /** Monitoring list registry. */
-    private ReadOnlyMonitoringListRegistry mlreg;
+    /** Syste view registry. */
+    private ReadOnlySystemViewRegistry mlreg;
 
     /** Metric filter. */
     private @Nullable Predicate<MetricRegistry> metricFilter;
 
-    /** Monitoring list filter. */
-    private @Nullable Predicate<MonitoringList<?>> monListFilter;
+    /** System view filter. */
+    private @Nullable Predicate<SystemView<?>> systeViewFilter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
@@ -68,34 +68,33 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         mreg.addMetricRegistryRemoveListener(this::unregister);
 
         mlreg.addListCreationListener(this::register);
-        mlreg.addListRemoveListener(this::unregister);
     }
 
     /**
-     * Registers JMX bean for specific monitoring list.
+     * Registers JMX bean for specific system view.
      *
-     * @param mlist Monitoring list.
+     * @param sview System view
      */
-    private void register(MonitoringList<?> mlist) {
-        if (monListFilter != null && !monListFilter.test(mlist)) {
+    private void register(SystemView<?> sview) {
+        if (systeViewFilter != null && !systeViewFilter.test(sview)) {
             if (log.isDebugEnabled())
-                U.debug(log, "Monitoring list filtered and will not be registered.[name=" + mlist.name() + ']');
+                U.debug(log, "System view filtered and will not be registered.[name=" + sview.name() + ']');
 
             return;
         }
         else if (log.isDebugEnabled())
-            log.debug("Found new monitoring list [name=" + mlist.name() + ']');
+            log.debug("Found new system view [name=" + sview.name() + ']');
 
         try {
-            MonitoringListMBean mlBean = new MonitoringListMBean<>(mlist);
+            SystemViewMBean mlBean = new SystemViewMBean<>(sview);
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
                 igniteInstanceName,
                 LIST,
-                mlist.name(),
+                sview.name(),
                 mlBean,
-                MonitoringListMBean.class);
+                SystemViewMBean.class);
 
             mBeans.add(mbean);
 
@@ -103,17 +102,8 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
                 log.debug("MetricGroup JMX bean created. " + mbean);
         }
         catch (JMException e) {
-            log.error("MBean for monitoring list '" + mlist.name() + "' can't be created.", e);
+            log.error("MBean for system view '" + sview.name() + "' can't be created.", e);
         }
-    }
-
-    /**
-     * Unregister JMX bean for specific monitoring list.
-     *
-     * @param mlist Monitoring list.
-     */
-    private void unregister(MonitoringList<?> mlist) {
-        unregister(LIST, mlist.name());
     }
 
     /**
@@ -162,16 +152,8 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     private void unregister(MetricRegistry mreg) {
         MetricUtils.MetricName n = parse(mreg.name());
 
-        unregister(n.root(), n.subName());
-    }
-
-    /**
-     * @param grp MBean group.
-     * @param name MBean name.
-     */
-    private void unregister(String grp, String name) {
         try {
-            ObjectName mbeanName = makeMBeanName(igniteInstanceName, grp, name);
+            ObjectName mbeanName = makeMBeanName(igniteInstanceName, n.root(), n.subName());
 
             boolean rmv = mBeans.remove(mbeanName);
 
@@ -180,7 +162,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
             unregBean(ignite, mbeanName);
         }
         catch (MalformedObjectNameException e) {
-            log.error("MBean for metric registry '" + grp + ',' + name + "' can't be unregistered.", e);
+            log.error("MBean for metric registry '" + n.root() + ',' + n.subName() + "' can't be unregistered.", e);
         }
     }
 
@@ -215,7 +197,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry mlreg) {
+    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry mlreg) {
         this.mlreg = mlreg;
     }
 
@@ -225,7 +207,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter) {
-        this.monListFilter = filter;
+    @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
+        this.systeViewFilter = filter;
     }
 }

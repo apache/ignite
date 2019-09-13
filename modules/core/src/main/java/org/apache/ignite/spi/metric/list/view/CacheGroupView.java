@@ -28,15 +28,15 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
- * Cache group representation for the {@link MonitoringList}.
+ * Cache group representation for the {@link SystemView}.
  */
-public class CacheGroupView implements MonitoringRow {
+public class CacheGroupView implements SystemViewRow {
     /** Cache group. */
     private final CacheGroupDescriptor grp;
 

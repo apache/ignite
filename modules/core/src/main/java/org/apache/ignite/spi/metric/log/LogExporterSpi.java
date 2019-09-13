@@ -17,14 +17,13 @@
 
 package org.apache.ignite.spi.metric.log;
 
-import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
  * This SPI implementation exports metrics to Ignite log.
@@ -62,15 +61,15 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
      * @param list List to print.
      * @param <R> Row type.
      */
-    private <R extends MonitoringRow> void exportList(MonitoringList<R> list) {
-        if (mlistFilter != null && !mlistFilter.test(list))
+    private <R extends SystemViewRow> void exportList(SystemView<R> list) {
+        if (sviewFilter != null && !sviewFilter.test(list))
             return;
 
         log.info(list.name());
 
         StringBuilder names = new StringBuilder();
 
-        MonitoringRowAttributeWalker<R> walker = list.walker();
+        SystemViewRowAttributeWalker<R> walker = list.walker();
 
         walker.visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {

@@ -25,8 +25,8 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
+import org.apache.ignite.spi.metric.list.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -38,14 +38,14 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     /** Metric registry. */
     protected ReadOnlyMetricRegistry mreg;
 
-    /** Monitoring list registry. */
-    protected ReadOnlyMonitoringListRegistry mlreg;
+    /** Sytem view registry. */
+    protected ReadOnlySystemViewRegistry mlreg;
 
     /** Metric filter. */
     protected @Nullable Predicate<MetricRegistry> mregFilter;
 
-    /** Monitoring list filter. */
-    protected @Nullable Predicate<MonitoringList<?>> mlistFilter;
+    /** System view filter. */
+    protected @Nullable Predicate<SystemView<?>> sviewFilter;
 
     /** Export period. */
     private long period;
@@ -106,7 +106,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry mlreg) {
+    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry mlreg) {
         this.mlreg = mlreg;
     }
 
@@ -116,7 +116,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter) {
-        this.mlistFilter = filter;
+    @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
+        this.sviewFilter = filter;
     }
 }

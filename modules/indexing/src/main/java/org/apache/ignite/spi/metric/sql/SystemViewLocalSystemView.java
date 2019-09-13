@@ -26,12 +26,12 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -51,17 +51,17 @@ import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 
 /**
- * System view to export monitoring list data.
+ * System view to export system view data.
  */
-public class MonitoringListLocalSystemView<R extends MonitoringRow> extends SqlAbstractLocalSystemView {
-    /** Monitoring list for export. */
-    private final MonitoringList<R> mlist;
+public class SystemViewLocalSystemView<R extends SystemViewRow> extends SqlAbstractLocalSystemView {
+    /** System view for export. */
+    private final SystemView<R> mlist;
 
     /**
      * @param ctx Kernal context.
      * @param mlist List to export.
      */
-    public MonitoringListLocalSystemView(GridKernalContext ctx, MonitoringList<R> mlist) {
+    public SystemViewLocalSystemView(GridKernalContext ctx, SystemView<R> mlist) {
         super(sqlName(mlist.name()), mlist.description(), ctx, columnsList(mlist));
 
         this.mlist = mlist;
@@ -158,17 +158,17 @@ public class MonitoringListLocalSystemView<R extends MonitoringRow> extends SqlA
     }
 
     /**
-     * Extract column array for specific {@link MonitoringList}.
+     * Extract column array for specific {@link SystemView}.
      *
-     * @param mlist Monitoring list.
+     * @param sview System view.
      * @param <R> Row type.
      * @return SQL column array for {@code rowClass}.
-     * @see MonitoringList#rowClass()
+     * @see SystemView#rowClass()
      */
-    private static <R extends MonitoringRow> Column[] columnsList(MonitoringList<R> mlist) {
-        Column[] cols = new Column[mlist.walker().count()];
+    private static <R extends SystemViewRow> Column[] columnsList(SystemView<R> sview) {
+        Column[] cols = new Column[sview.walker().count()];
 
-        mlist.walker().visitAll(new AttributeVisitor() {
+        sview.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 int type;
 

@@ -44,21 +44,21 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.list.MonitoringListAdapter;
+import org.apache.ignite.internal.processors.metric.list.SystemViewAdapter;
 import org.apache.ignite.internal.processors.metric.list.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ServiceViewWalker;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
+import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
@@ -73,13 +73,13 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
- * This manager should provide {@link ReadOnlyMetricRegistry} and {@link ReadOnlyMonitoringListRegistry}
+ * This manager should provide {@link ReadOnlyMetricRegistry} and {@link ReadOnlySystemViewRegistry}
  * for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
  * @see MetricRegistry
- * @see MonitoringList
- * @see MonitoringListAdapter
+ * @see SystemView
+ * @see SystemViewAdapter
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
@@ -240,22 +240,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     };
 
     /** Registered lists. */
-    private final ConcurrentHashMap<String, MonitoringList<?>> lists = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SystemView<?>> lists = new ConcurrentHashMap<>();
 
     /** Lists registry. */
-    private final ReadOnlyMonitoringListRegistry listRegistry = new ReadOnlyMonitoringListRegistry() {
+    private final ReadOnlySystemViewRegistry listRegistry = new ReadOnlySystemViewRegistry() {
         /** {@inheritDoc} */
-        @Override public void addListCreationListener(Consumer<MonitoringList<?>> lsnr) {
+        @Override public void addListCreationListener(Consumer<SystemView<?>> lsnr) {
             listCreationLsnrs.add(lsnr);
         }
 
         /** {@inheritDoc} */
-        @Override public void addListRemoveListener(Consumer<MonitoringList<?>> lsnr) {
-            listRemoveLsnrs.add(lsnr);
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<MonitoringList<?>> iterator() {
+        @NotNull @Override public Iterator<SystemView<?>> iterator() {
             return lists.values().iterator();
         }
     };
@@ -267,16 +262,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** List creation listeners. */
-    private final List<Consumer<MonitoringList<?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
-
-    /** List remove listeners. */
-    private final List<Consumer<MonitoringList<?>>> listRemoveLsnrs = new CopyOnWriteArrayList<>();
-
-    /** List remove tasks. */
-    private final ConcurrentMap<String, Runnable> rmvListTasks = new ConcurrentHashMap<>();
-
-    /** List enable tasks. */
-    private final ConcurrentMap<String, Runnable> enableListTasks = new ConcurrentHashMap<>();
+    private final List<Consumer<SystemView<?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -294,7 +280,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     private final MemoryUsageMetrics nonHeap;
 
     /** Registered walkers for list row. */
-    private final Map<Class<?>, MonitoringRowAttributeWalker<?>> walkers = new HashMap<>();
+    private final Map<Class<?>, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -349,7 +335,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     @Override public void start() throws IgniteCheckedException {
         for (MetricExporterSpi spi : getSpis()) {
             spi.setMetricRegistry(metricsRegistry);
-            spi.setMonitoringListRegistry(listRegistry);
+            spi.setSystemViewRegistry(listRegistry);
         }
 
         startSpi();
@@ -395,31 +381,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <R> List row type.
      * @param <D> Map data type.
      */
-    public <R extends MonitoringRow, D> void registerList(String name, String desc,
+    public <R extends SystemViewRow, D> void registerList(String name, String desc,
         Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
-        registerList(name, desc, rowCls, data, rowFunc, d -> {});
-    }
-
-    /**
-     * Registers list which exports {@link ConcurrentMap} content.
-     *
-     * @param name Name of the list.
-     * @param desc Description of the list.
-     * @param rowCls Row class.
-     * @param data Data of the list.
-     * @param rowFunc value to row function.
-     * @param rowClearer Function that clears data on list removal.
-     * @param <R> List row type.
-     * @param <D> Map data type.
-     */
-    public <R extends MonitoringRow, D> void registerList(String name, String desc,
-        Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc, Consumer<D> rowClearer) {
 
         Runnable listCreator = () -> lists.computeIfAbsent(name, n -> {
-            MonitoringList<R> list = new MonitoringListAdapter<>(name,
+            SystemView<R> list = new SystemViewAdapter<>(name,
                 desc,
                 rowCls,
-                (MonitoringRowAttributeWalker<R>)walkers.get(rowCls),
+                (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
                 data,
                 rowFunc);
 
@@ -430,17 +399,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         // Create new instance of the list.
         listCreator.run();
-
-        enableListTasks.put(name, listCreator);
-        rmvListTasks.put(name, () -> data.forEach(rowClearer));
     }
 
     /**
      * @param name Name of the list.
      * @return List.
      */
-    @Nullable public <R extends MonitoringRow> MonitoringList<R> list(String name) {
-        return (MonitoringList<R>)lists.get(name);
+    @Nullable public <R extends SystemViewRow> SystemView<R> list(String name) {
+        return (SystemView<R>)lists.get(name);
     }
 
     /**
@@ -450,7 +416,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param walker Walker.
      * @param <R> Row type.
      */
-    public <R extends MonitoringRow> void registerWalker(Class<R> rowClass, MonitoringRowAttributeWalker<R> walker) {
+    public <R extends SystemViewRow> void registerWalker(Class<R> rowClass, SystemViewRowAttributeWalker<R> walker) {
         walkers.put(rowClass, walker);
     }
 
@@ -464,36 +430,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         if (rmv != null)
             notifyListeners(rmv, metricRegRemoveLsnrs, log);
-    }
-
-    /**
-     * Removes list from registry.
-     *
-     * @param name List name.
-     */
-    public void removeList(String name) {
-        MonitoringList<?> rmv = lists.remove(name);
-
-        if (rmv != null) {
-            notifyListeners(rmv, listRemoveLsnrs, log);
-
-            Runnable rmvTask = rmvListTasks.get(name);
-
-            if (rmvTask != null)
-                rmvTask.run();
-        }
-    }
-
-    /**
-     * Enables monitoring list.
-     *
-     * @param list Monitoring list.
-     */
-    public void enableList(String list) {
-        Runnable tasks = enableListTasks.get(list);
-
-        if (tasks != null)
-            tasks.run();
     }
 
     /**

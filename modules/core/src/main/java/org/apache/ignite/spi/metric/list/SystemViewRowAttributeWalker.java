@@ -18,21 +18,21 @@
 package org.apache.ignite.spi.metric.list;
 
 /**
- * Utility class for quick iteration over {@link MonitoringRow} properties.
+ * Utility class for quick iteration over {@link SystemViewRow} properties.
  */
-public interface MonitoringRowAttributeWalker<R extends MonitoringRow> {
+public interface SystemViewRowAttributeWalker<R extends SystemViewRow> {
     /** @return Count of a row properties. */
     public int count();
 
     /**
-     * Calls visitor for each {@link MonitoringRow} attribute.
+     * Calls visitor for each {@link SystemViewRow} attribute.
      *
      * @param visitor Attribute visitor.
      */
     public void visitAll(AttributeVisitor visitor);
 
     /**
-     * Calls visitor for each {@link MonitoringRow} attribute.
+     * Calls visitor for each {@link SystemViewRow} attribute.
      * Value of the attribute also provided.
      *
      * @param row Row to iterate.

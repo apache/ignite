@@ -33,32 +33,32 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
-import org.apache.ignite.spi.metric.jmx.MonitoringListMBean;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.jmx.SystemViewMBean;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
 import org.apache.ignite.spi.metric.list.view.ServiceView;
-import org.apache.ignite.spi.metric.sql.MonitoringListLocalSystemView;
+import org.apache.ignite.spi.metric.sql.SystemViewLocalSystemView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 
 /**
- * Application for code generation of {@link MonitoringRowAttributeWalker}.
+ * Application for code generation of {@link SystemViewRowAttributeWalker}.
  * Usage: simply run main method from Ignite source folder(using IDE or other way).
- * Generated code used in {@link MonitoringList}.
+ * Generated code used in {@link SystemView}.
  *
- * @see MonitoringListMBean
- * @see MonitoringListLocalSystemView
+ * @see SystemViewMBean
+ * @see SystemViewLocalSystemView
  */
-public class MonitoringRowAttributeWalkerGenerator {
-    /** Methods that should be excluded from specific {@link MonitoringRowAttributeWalker}. */
+public class SystemViewRowAttributeWalkerGenerator {
+    /** Methods that should be excluded from specific {@link SystemViewRowAttributeWalker}. */
     private static final Set<String> SYS_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
         "getClass"));
 
-    /** Package for {@link MonitoringRowAttributeWalker} implementations. */
+    /** Package for {@link SystemViewRowAttributeWalker} implementations. */
     public static final String WALKER_PACKAGE = "org.apache.ignite.internal.processors.metric.list.walker";
 
     /** */
@@ -68,7 +68,7 @@ public class MonitoringRowAttributeWalkerGenerator {
      * @throws Exception If generation failed.
      */
     public static void main(String[] args) throws Exception {
-        MonitoringRowAttributeWalkerGenerator gen = new MonitoringRowAttributeWalkerGenerator();
+        SystemViewRowAttributeWalkerGenerator gen = new SystemViewRowAttributeWalkerGenerator();
 
         gen.generateAndWrite(CacheGroupView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(CacheView.class, DFLT_SRC_DIR);
@@ -77,14 +77,14 @@ public class MonitoringRowAttributeWalkerGenerator {
     }
 
     /**
-     * Generates {@link MonitoringRowAttributeWalker} implementation and write it to the file.
+     * Generates {@link SystemViewRowAttributeWalker} implementation and write it to the file.
      *
-     * @param clazz Class to geneare {@link MonitoringRowAttributeWalker} for.
+     * @param clazz Class to geneare {@link SystemViewRowAttributeWalker} for.
      * @param srcRoot Source root folder.
-     * @param <T> type of the {@link MonitoringRow}.
+     * @param <T> type of the {@link SystemViewRow}.
      * @throws IOException If generation failed.
      */
-    private <T extends MonitoringRow> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
+    private <T extends SystemViewRow> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
         File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
             clazz.getSimpleName() + "Walker.java");
 
@@ -101,17 +101,17 @@ public class MonitoringRowAttributeWalkerGenerator {
     }
 
     /**
-     * Generates {@link MonitoringRowAttributeWalker} implementation.
+     * Generates {@link SystemViewRowAttributeWalker} implementation.
      *
-     * @param clazz Class to geneare {@link MonitoringRowAttributeWalker} for.
-     * @param <T> type of the {@link MonitoringRow}.
-     * @return Java source code of the {@link MonitoringRowAttributeWalker} implementation.
+     * @param clazz Class to geneare {@link SystemViewRowAttributeWalker} for.
+     * @param <T> type of the {@link SystemViewRow}.
+     * @return Java source code of the {@link SystemViewRowAttributeWalker} implementation.
      */
-    private <T extends MonitoringRow> Collection<String> generate(Class<T> clazz) {
+    private <T extends SystemViewRow> Collection<String> generate(Class<T> clazz) {
         final List<String> code = new ArrayList<>();
         final Set<String> imports = new TreeSet<>();
 
-        imports.add("import " + MonitoringRowAttributeWalker.class.getName() + ';');
+        imports.add("import " + SystemViewRowAttributeWalker.class.getName() + ';');
         imports.add("import " + clazz.getName() + ';');
 
         String simpleName = clazz.getSimpleName();
@@ -120,12 +120,12 @@ public class MonitoringRowAttributeWalkerGenerator {
         code.add("");
         code.add("");
         code.add("/**");
-        code.add(" * Generated by {@code " + MonitoringRowAttributeWalkerGenerator.class.getName() + "}.");
+        code.add(" * Generated by {@code " + SystemViewRowAttributeWalkerGenerator.class.getName() + "}.");
         code.add(" * {@link " + simpleName + "} attributes walker.");
         code.add(" * ");
         code.add(" * @see " + simpleName);
         code.add(" */");
-        code.add("public class " + simpleName + "Walker implements MonitoringRowAttributeWalker<" + simpleName + "> {");
+        code.add("public class " + simpleName + "Walker implements SystemViewRowAttributeWalker<" + simpleName + "> {");
         code.add(TAB + "/** {@inheritDoc} */");
         code.add(TAB + "@Override public void visitAll(AttributeVisitor v) {");
 

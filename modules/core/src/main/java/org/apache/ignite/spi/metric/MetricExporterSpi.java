@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.SystemView;
 
 /**
  * Exporter of metric information to the external recepient.
@@ -33,7 +33,7 @@ import org.apache.ignite.spi.metric.list.MonitoringList;
  * HTTP servlet or JMX bean are good examples of expected implementations.
  *
  * @see ReadOnlyMetricRegistry
- * @see ReadOnlyMonitoringListRegistry
+ * @see ReadOnlySystemViewRegistry
  * @see Metric
  * @see BooleanMetric
  * @see DoubleMetric
@@ -55,15 +55,15 @@ public interface MetricExporterSpi extends IgniteSpi {
     public void setMetricRegistry(ReadOnlyMetricRegistry registry);
 
     /**
-     * Sets monitoring list registry that SPI should export.
+     * Sets system view registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
      *
-     * So all {@link MonitoringList} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link ReadOnlyMonitoringListRegistry#addListCreationListener(Consumer)}.
+     * So all {@link SystemView} that will be created by Ignite internal components can be obtained by
+     * listeners passed to {@link ReadOnlySystemViewRegistry#addListCreationListener(Consumer)}.
      *
-     * @param registry Monitoring list registry.
+     * @param registry System view registry.
      */
-    public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry registry);
+    public void setSystemViewRegistry(ReadOnlySystemViewRegistry registry);
 
     /**
      * Sets export filter.
@@ -75,9 +75,9 @@ public interface MetricExporterSpi extends IgniteSpi {
 
     /**
      * Sets export filter.
-     * Monitoring list that not satisfy {@code filter} shouldn't be exported.
+     * System view that not satisfy {@code filter} shouldn't be exported.
      *
      * @param filter Filter.
      */
-    public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter);
+    public void setSystemViewExportFilter(Predicate<SystemView<?>> filter);
 }

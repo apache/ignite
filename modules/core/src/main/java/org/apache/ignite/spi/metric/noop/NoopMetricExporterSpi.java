@@ -24,8 +24,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.ReadOnlyMonitoringListRegistry;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
+import org.apache.ignite.spi.metric.list.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,7 +49,7 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListRegistry(ReadOnlyMonitoringListRegistry registry) {
+    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry registry) {
         // No-op.
     }
 
@@ -59,7 +59,7 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMonitoringListExportFilter(Predicate<MonitoringList<?>> filter) {
+    @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
         // No-op.
     }
 }

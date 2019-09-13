@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVC
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.spi.metric.jmx.MonitoringListMBean.LIST;
+import static org.apache.ignite.spi.metric.jmx.SystemViewMBean.LIST;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
@@ -227,7 +227,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         for (String name : cacheNames)
             ignite.createCache(name);
 
-        TabularDataSupport data = monitoringList(CACHES_MON_LIST);
+        TabularDataSupport data = systemView(CACHES_MON_LIST);
 
         assertEquals(ignite.context().cache().cacheDescriptors().size(), data.size());
 
@@ -248,7 +248,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         for (String grpName : grpNames)
             ignite.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-        TabularDataSupport grps = monitoringList(CACHE_GRPS_MON_LIST);
+        TabularDataSupport grps = systemView(CACHE_GRPS_MON_LIST);
 
         assertEquals(ignite.context().cache().cacheGroupDescriptors().size(), grps.size());
 
@@ -272,7 +272,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         ignite.services().deploy(srvcCfg);
 
-        TabularDataSupport srvs = monitoringList(SVCS_MON_LIST);
+        TabularDataSupport srvs = systemView(SVCS_MON_LIST);
 
         assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
@@ -299,7 +299,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
             });
         }
 
-        TabularDataSupport tasks = monitoringList(TASKS_MON_LIST);
+        TabularDataSupport tasks = systemView(TASKS_MON_LIST);
 
         assertEquals(5, tasks.size());
 
@@ -317,7 +317,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public TabularDataSupport monitoringList(String name) {
+    public TabularDataSupport systemView(String name) {
         try {
             DynamicMBean caches = mbean(LIST, name);
 

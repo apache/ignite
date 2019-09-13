@@ -23,8 +23,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.mxbean.IgniteMXBean;
-import org.apache.ignite.spi.metric.list.MonitoringList;
+import org.apache.ignite.spi.metric.list.SystemView;
 import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.apache.ignite.spi.metric.list.view.ComputeTaskView;
@@ -41,7 +40,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVC
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
 
 /** */
-public class MonitoringListSelfTest extends GridCommonAbstractTest {
+public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     private static CountDownLatch latch;
 
@@ -57,7 +56,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (String name : cacheNames)
                 g.createCache(name);
 
-            MonitoringList<CacheView> caches = g.context().metric().list(CACHES_MON_LIST);
+            SystemView<CacheView> caches = g.context().metric().list(CACHES_MON_LIST);
 
             assertEquals(g.context().cache().cacheDescriptors().size(), F.size(caches.iterator()));
 
@@ -70,28 +69,6 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCachesListDisableEnable() throws Exception {
-        try (IgniteEx g = startGrid()) {
-            ((IgniteMXBean)g).disableMonitoringList(CACHES_MON_LIST);
-
-            assertNull(g.context().metric().list(CACHES_MON_LIST));
-
-            g.createCache("cache-1");
-
-            ((IgniteMXBean)g).enableMonitoringList(CACHES_MON_LIST);
-
-            MonitoringList<CacheView> caches = g.context().metric().list(CACHES_MON_LIST);
-
-            assertNotNull(caches);
-
-            g.createCache("cache-2");
-
-            assertEquals(g.context().cache().cacheDescriptors().size(), F.size(caches.iterator()));
-        }
-    }
-
-    /** */
-    @Test
     public void testCacheGroupsList() throws Exception {
         try(IgniteEx g = startGrid()) {
             Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
@@ -99,7 +76,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             for (String grpName : grpNames)
                 g.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-            MonitoringList<CacheGroupView> grps = g.context().metric().list(CACHE_GRPS_MON_LIST);
+            SystemView<CacheGroupView> grps = g.context().metric().list(CACHE_GRPS_MON_LIST);
 
             assertEquals(g.context().cache().cacheGroupDescriptors().size(), F.size(grps.iterator()));
 
@@ -107,28 +84,6 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
                 grpNames.remove(row.cacheGroupName());
 
             assertTrue(grpNames.toString(), grpNames.isEmpty());
-        }
-    }
-
-    /** */
-    @Test
-    public void testCacheGroupsListDisableEnable() throws Exception {
-        try(IgniteEx g = startGrid()) {
-            ((IgniteMXBean)g).disableMonitoringList(CACHE_GRPS_MON_LIST);
-
-            assertNull(g.context().metric().list(CACHE_GRPS_MON_LIST));
-
-            g.createCache(new CacheConfiguration<>("cache-1").setGroupName("grp-1"));
-
-            ((IgniteMXBean)g).enableMonitoringList(CACHE_GRPS_MON_LIST);
-
-            MonitoringList<CacheGroupView> cachesGrp = g.context().metric().list(CACHE_GRPS_MON_LIST);
-
-            assertNotNull(cachesGrp);
-
-            g.createCache(new CacheConfiguration<>("cache-2").setGroupName("grp-2"));
-
-            assertEquals(g.context().cache().cacheGroupDescriptors().size(), F.size(cachesGrp.iterator()));
         }
     }
 
@@ -144,7 +99,7 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
             g.services().deploy(srvcCfg);
 
-            MonitoringList<ServiceView> srvs = g.context().metric().list(SVCS_MON_LIST);
+            SystemView<ServiceView> srvs = g.context().metric().list(SVCS_MON_LIST);
 
             assertEquals(g.context().service().serviceDescriptors().size(), F.size(srvs.iterator()));
 
@@ -158,54 +113,11 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testServicesDisableEnable() throws Exception {
-        try(IgniteEx g = startGrid()) {
-            ((IgniteMXBean)g).disableMonitoringList(SVCS_MON_LIST);
-
-            assertNull(g.context().metric().list(SVCS_MON_LIST));
-
-            ServiceConfiguration srvcCfg = new ServiceConfiguration();
-
-            srvcCfg.setName("service-1");
-            srvcCfg.setMaxPerNodeCount(1);
-            srvcCfg.setService(new DummyService());
-
-            g.services().deploy(srvcCfg);
-
-            ((IgniteMXBean)g).enableMonitoringList(SVCS_MON_LIST);
-
-            MonitoringList<ServiceView> srvs = g.context().metric().list(SVCS_MON_LIST);
-
-            assertNotNull(srvs);
-
-            srvcCfg = new ServiceConfiguration();
-
-            srvcCfg.setName("service-2");
-            srvcCfg.setMaxPerNodeCount(1);
-            srvcCfg.setService(new DummyService());
-
-            g.services().deploy(srvcCfg);
-
-            assertEquals(g.context().service().serviceDescriptors().size(), F.size(srvs.iterator()));
-
-            for (ServiceView srv : srvs) {
-                if (!srv.name().equals(srvcCfg.getName()))
-                    continue;
-
-                assertEquals(srvcCfg.getName(), srv.name());
-                assertEquals(srvcCfg.getMaxPerNodeCount(), srv.maxPerNodeCount());
-                assertEquals(DummyService.class, srv.serviceClass());
-            }
-        }
-    }
-
-    /** */
-    @Test
     public void testComputeBroadcast() throws Exception {
         latch = new CountDownLatch(1);
 
         try(IgniteEx g1 = startGrid(0)) {
-            MonitoringList<ComputeTaskView> tasks = g1.context().metric().list(TASKS_MON_LIST);
+            SystemView<ComputeTaskView> tasks = g1.context().metric().list(TASKS_MON_LIST);
 
             for (int i=0; i<5; i++)
                 g1.compute().broadcastAsync(() -> {
@@ -230,46 +142,6 @@ public class MonitoringListSelfTest extends GridCommonAbstractTest {
             assertEquals("0", t.userVersion());
 
             latch.countDown();
-        }
-    }
-
-    /** */
-    @Test
-    public void testComputeBroadcastEnableDisable() throws Exception {
-        latch2 = new CountDownLatch(1);
-
-        try(IgniteEx g = startGrid(0)) {
-            ((IgniteMXBean)g).disableMonitoringList(TASKS_MON_LIST);
-
-            assertNull(g.context().metric().list(TASKS_MON_LIST));
-
-            g.compute().broadcastAsync(() -> {
-                try {
-                    latch2.await();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            ((IgniteMXBean)g).enableMonitoringList(TASKS_MON_LIST);
-
-            MonitoringList<ComputeTaskView> tasks = g.context().metric().list(TASKS_MON_LIST);
-
-            assertNotNull(tasks);
-
-            g.compute().broadcastAsync(() -> {
-                try {
-                    latch2.await();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            assertEquals(2, F.size(tasks.iterator()));
-
-            latch2.countDown();
         }
     }
 }

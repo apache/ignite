@@ -21,14 +21,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Monitoring list backed by {@code data} {@link ConcurrentMap}.
+ * System view backed by {@code data} {@link ConcurrentMap}.
  */
-public class MonitoringListAdapter<R extends MonitoringRow, D> extends AbstractMonitoringList<R> {
+public class SystemViewAdapter<R extends SystemViewRow, D> extends AbstractSystemView<R> {
     /** Data backed by this list. */
     private final Collection<D> data;
 
@@ -43,8 +43,8 @@ public class MonitoringListAdapter<R extends MonitoringRow, D> extends AbstractM
      * @param data Data.
      * @param rowFunc Row function.
      */
-    public MonitoringListAdapter(String name, String description, Class<R> rowClass,
-        MonitoringRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
+    public SystemViewAdapter(String name, String description, Class<R> rowClass,
+        SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
         super(name, description, rowClass, walker);
 
         this.data = data;

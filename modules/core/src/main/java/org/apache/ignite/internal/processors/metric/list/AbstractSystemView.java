@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.metric.list;
 
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
-import org.apache.ignite.spi.metric.list.MonitoringRowAttributeWalker;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
+import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
 
 /**
  *
  */
-abstract class AbstractMonitoringList<R extends MonitoringRow> implements MonitoringList<R> {
+abstract class AbstractSystemView<R extends SystemViewRow> implements SystemView<R> {
     /** Name of the list. */
     private final String name;
 
@@ -39,7 +39,7 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
      *
      * @see "org.apache.ignite.codegen.MonitoringRowAttributeWalkerGenerator"
      */
-    private final MonitoringRowAttributeWalker<R> walker;
+    private final SystemViewRowAttributeWalker<R> walker;
 
     /**
      * @param name Name of the list.
@@ -47,7 +47,7 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
      * @param rowCls Class of the row.
      * @param walker Row attribute walker.
      */
-    AbstractMonitoringList(String name, String descr, Class<R> rowCls, MonitoringRowAttributeWalker<R> walker) {
+    AbstractSystemView(String name, String descr, Class<R> rowCls, SystemViewRowAttributeWalker<R> walker) {
         assert rowCls != null;
         assert walker != null : "Please, add walker class via GridMetricManager#registerWalker";
 
@@ -58,7 +58,7 @@ abstract class AbstractMonitoringList<R extends MonitoringRow> implements Monito
     }
 
     /** {@inheritDoc} */
-    @Override public MonitoringRowAttributeWalker<R> walker() {
+    @Override public SystemViewRowAttributeWalker<R> walker() {
         return walker;
     }
 

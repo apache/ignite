@@ -15,26 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.list;
+package org.apache.ignite.spi.metric;
+
+import java.util.function.Consumer;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.list.SystemView;
 
 /**
- * Implementation provides data for some internal Ignite objects.
+ * Read only system view registry.
  *
- * @param <R> Type of the row.
+ * @see GridMetricManager
+ * @see SystemView
+ * @see MetricExporterSpi
  */
-public interface MonitoringList<R extends MonitoringRow> extends Iterable<R> {
-    /** @return Helper for exporters. */
-    public MonitoringRowAttributeWalker<R> walker();
-
-    /** @return Class of the row. */
-    public Class<R> rowClass();
-
-    /** @return List name. */
-    public String name();
-
-    /** @return List description. */
-    public String description();
-
-    /** @return Size of the list. */
-    public int size();
+public interface ReadOnlySystemViewRegistry extends Iterable<SystemView<?>> {
+    /**
+     * Adds listener of list creation events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addListCreationListener(Consumer<SystemView<?>> lsnr);
 }

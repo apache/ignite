@@ -20,13 +20,13 @@ package org.apache.ignite.spi.metric.list.view;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.MonitoringList;
-import org.apache.ignite.spi.metric.list.MonitoringRow;
+import org.apache.ignite.spi.metric.list.SystemView;
+import org.apache.ignite.spi.metric.list.SystemViewRow;
 
 /**
- * Service representation for a {@link MonitoringList}.
+ * Service representation for a {@link SystemView}.
  */
-public interface ServiceView extends MonitoringRow {
+public interface ServiceView extends SystemViewRow {
     /** @return Service name. */
     @Order(1)
     public String name();
