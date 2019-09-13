@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -53,11 +54,15 @@ import org.junit.Test;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHES_MON_LIST;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CACHE_GRPS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SVCS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TASKS_MON_LIST;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.spi.metric.jmx.MonitoringListMBean.LIST;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -66,6 +71,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
+
+    /** */
+    private static CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -219,11 +227,11 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         for (String name : cacheNames)
             ignite.createCache(name);
 
-        TabularDataSupport data = monitoringList("caches");
+        TabularDataSupport data = monitoringList(CACHES_MON_LIST);
 
-        assertEquals(3, data.size());
+        assertEquals(ignite.context().cache().cacheDescriptors().size(), data.size());
 
-        for(int i=0; i<data.size(); i++) {
+        for (int i = 0; i < data.size(); i++) {
             CompositeData row = data.get(new Object[] {i});
 
             cacheNames.remove(row.get("cacheName"));
@@ -240,9 +248,9 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         for (String grpName : grpNames)
             ignite.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-        TabularDataSupport grps = monitoringList("cacheGroups");
+        TabularDataSupport grps = monitoringList(CACHE_GRPS_MON_LIST);
 
-        assertEquals("ignite-sys, grp-1, grp-2", 3, grps.size());
+        assertEquals(ignite.context().cache().cacheGroupDescriptors().size(), grps.size());
 
         for (Map.Entry entry : grps.entrySet()) {
             CompositeData row = (CompositeData)entry.getValue();
@@ -264,9 +272,9 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         ignite.services().deploy(srvcCfg);
 
-        TabularDataSupport srvs = monitoringList("services");
+        TabularDataSupport srvs = monitoringList(SVCS_MON_LIST);
 
-        assertEquals(1, srvs.size());
+        assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
         CompositeData sview = srvs.get(new Object[] {0});
 
@@ -278,10 +286,12 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testComputeBroadcast() throws Exception {
+        latch = new CountDownLatch(1);
+
         for (int i = 0; i < 5; i++) {
             ignite.compute().broadcastAsync(() -> {
                 try {
-                    Thread.sleep(3_000L);
+                    latch.await();
                 }
                 catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -289,7 +299,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
             });
         }
 
-        TabularDataSupport tasks = monitoringList("tasks");
+        TabularDataSupport tasks = monitoringList(TASKS_MON_LIST);
 
         assertEquals(5, tasks.size());
 
@@ -302,6 +312,8 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(t.get("taskName").toString().startsWith(getClass().getName()));
         assertEquals(ignite.localNode().id().toString(), t.get("taskNodeId"));
         assertEquals("0", t.get("userVersion"));
+
+        latch.countDown();
     }
 
     /** */

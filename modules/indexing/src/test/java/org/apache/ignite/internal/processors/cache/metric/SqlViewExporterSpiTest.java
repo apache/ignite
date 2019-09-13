@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -48,6 +49,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
+
+    /** */
+    private static CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -157,7 +161,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         List<List<?>> caches = execute(ignite, "SELECT CACHE_NAME FROM SYS.CACHES");
 
-        assertEquals(3, caches.size());
+        assertEquals(ignite.context().cache().cacheDescriptors().size(), caches.size());
 
         for (List<?> row : caches)
             cacheNames.remove(row.get(0));
@@ -175,7 +179,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         List<List<?>> grps = execute(ignite, "SELECT CACHE_GROUP_NAME FROM SYS.CACHE_GROUPS");
 
-        assertEquals(3, grps.size());
+        assertEquals(ignite.context().cache().cacheGroupDescriptors().size(), grps.size());
 
         for (List<?> row : grps)
             grpNames.remove(row.get(0));
@@ -186,10 +190,12 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testComputeBroadcast() throws Exception {
+        latch = new CountDownLatch(1);
+
         for (int i = 0; i < 5; i++) {
             ignite.compute().broadcastAsync(() -> {
                 try {
-                    Thread.sleep(3_000L);
+                    latch.await();
                 }
                 catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -219,6 +225,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(t.get(4).toString().startsWith(getClass().getName()));
         assertEquals(ignite.localNode().id(), t.get(5));
         assertEquals("0", t.get(6));
+
+        latch.countDown();
     }
 
     /** */
@@ -246,7 +254,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 "  ORIGIN_NODE_ID " +
                 "FROM SYS.SERVICES");
 
-        assertEquals(1, srvs.size());
+        assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
         List<?> sview = srvs.iterator().next();
 
