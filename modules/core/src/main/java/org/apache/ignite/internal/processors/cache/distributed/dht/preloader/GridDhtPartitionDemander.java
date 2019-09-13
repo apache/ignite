@@ -82,8 +82,8 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -1561,13 +1561,13 @@ public class GridDhtPartitionDemander {
      *
      * @return List demanders.
      * */
-    private List<GridDhtPartitionDemander> demanders(){
+    private Set<GridDhtPartitionDemander> demanders(){
         return ctx.cacheContexts().stream()
             .map(GridCacheContext::preloader)
             .filter(GridDhtPreloader.class::isInstance)
             .map(GridDhtPreloader.class::cast)
             .map(GridDhtPreloader::demander)
-            .collect(toList());
+            .collect(toSet());
     }
 
     /**
@@ -1610,10 +1610,10 @@ public class GridDhtPartitionDemander {
                 return;
         }
 
-        List<GridDhtPartitionDemander> demanders = demanders();
+        Set<GridDhtPartitionDemander> demanders = demanders();
 
-        Map<CacheGroupContext, Collection<RebalanceFuture>> rebFutrs =
-            demanders.stream().collect(toMap(demander -> demander.grp, demander -> demander.lastStatFutures));
+        Map<CacheGroupContext, Collection<RebalanceFuture>> rebFutrs = demanders.stream()
+            .collect(toMap(demander -> demander.grp, demander -> demander.lastStatFutures));
 
         try {
             log.info(rebalanceStatistics(true, rebFutrs));
