@@ -159,6 +159,7 @@
     <Compile Include="Client\IgniteClientConfigurationTest.cs" />
     <Compile Include="Common\IgniteProductVersionTests.cs" />
     <Compile Include="Compute\ComputeApiTest.JavaTask.cs" />
+    <Compile Include="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
@@ -205,6 +206,7 @@
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
     <Compile Include="Common\IgniteGuidTest.cs" />
     <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
+    <Compile Include="EnvVar.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
     <Compile Include="Impl\Compute\ComputeImplTest.cs" />
@@ -406,6 +408,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Client\server-with-ssl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Compute\compute-grid-custom-executor.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Compute\compute-grid1.xml">

@@ -951,11 +951,6 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="metricExporterSpi" minOccurs="0">
-                    <xs:annotation>
-                        <xs:documentation>Metrics exporter spi. Null for NoOp implementation.</xs:documentation>
-                    </xs:annotation>
-                </xs:element>
                 <xs:element name="discoverySpi" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Discovery service provider. Null for default discovery.</xs:documentation>
@@ -2135,6 +2130,32 @@
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="executorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Custom executor configuration for compute tasks.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="executorConfiguration" maxOccurs="unbounded" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Thread pool configuration for compute tasks.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute type="xs:string" name="name" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Thread pool name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute type="xs:int" name="size" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Thread pool size.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>

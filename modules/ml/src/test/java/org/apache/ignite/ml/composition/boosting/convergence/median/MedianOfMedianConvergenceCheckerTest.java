@@ -53,7 +53,8 @@ public class MedianOfMedianConvergenceCheckerTest extends ConvergenceCheckerTest
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             envBuilder,
-            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer))) {
+            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer),
+            TestUtils.testEnvBuilder().buildForTrainer())) {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(1.6, onDSError, 0.01);

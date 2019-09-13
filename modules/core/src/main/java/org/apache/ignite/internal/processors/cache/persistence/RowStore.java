@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -26,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -51,6 +52,9 @@ public class RowStore {
     /** Row cache cleaner. */
     private GridQueryRowCacheCleaner rowCacheCleaner;
 
+    /** */
+    protected final CacheGroupContext grp;
+
     /**
      * @param grp Cache group.
      * @param freeList Free list.
@@ -59,6 +63,7 @@ public class RowStore {
         assert grp != null;
         assert freeList != null;
 
+        this.grp = grp;
         this.freeList = freeList;
 
         ctx = grp.shared();
@@ -97,8 +102,11 @@ public class RowStore {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (!persistenceEnabled)
+        if (!persistenceEnabled) {
+            ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), row.size());
+
             freeList.insertDataRow(row, statHolder);
+        }
         else {
             ctx.database().checkpointReadLock();
 
@@ -115,6 +123,18 @@ public class RowStore {
         assert row.key().partition() == PageIdUtils.partId(row.link()) :
             "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
                 ", link=" + U.hexLong(row.link()) + ']';
+    }
+
+    /**
+     * @param rows Rows.
+     * @param statHolder Statistics holder to track IO operations.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void addRows(Collection<? extends CacheDataRow> rows,
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        assert ctx.database().checkpointLockIsHeldByThread();
+
+        freeList.insertDataRows(rows, statHolder);
     }
 
     /**

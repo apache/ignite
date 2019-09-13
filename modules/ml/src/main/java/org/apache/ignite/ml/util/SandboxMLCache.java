@@ -17,11 +17,13 @@
 
 package org.apache.ignite.ml.util;
 
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.UUID;
@@ -29,10 +31,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 
 /**
  * Common utility code used in some ML examples to set up test cache.
@@ -40,6 +45,10 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 public class SandboxMLCache {
     /** */
     private final Ignite ignite;
+
+    /** Resource resolver. */
+    private static final ResourcePatternResolver RESOURCE_RESOLVER =
+        new PathMatchingResourcePatternResolver(SandboxMLCache.class.getClassLoader());
 
     /** */
     public SandboxMLCache(Ignite ignite) {
@@ -66,29 +75,50 @@ public class SandboxMLCache {
     }
 
     /**
+     * Loads dataset as a list of rows.
+     *
+     * @param dataset The chosen dataset.
+     * @return List of rows.
+     * @throws IOException If file not found.
+     */
+    public List<String> loadDataset(MLSandboxDatasets dataset) throws IOException {
+        List<String> res = new ArrayList<>();
+
+        Resource[] resources = RESOURCE_RESOLVER.getResources("classpath*:*/" + dataset.getFileName());
+        A.ensure(resources.length == 1, "Cannot find resource");
+
+        Scanner scanner = new Scanner(resources[0].getInputStream());
+        if (dataset.hasHeader() && scanner.hasNextLine())
+            scanner.nextLine();
+
+        while (scanner.hasNextLine()) {
+            String row = scanner.nextLine();
+            res.add(row);
+        }
+
+        return res;
+    }
+
+    /**
      * Fills cache with data and returns it.
      *
      * @param dataset The chosen dataset.
      * @return Filled Ignite Cache.
      * @throws FileNotFoundException If file not found.
      */
-    public IgniteCache<Integer, Vector> fillCacheWith(MLSandboxDatasets dataset) throws FileNotFoundException {
-
+    public IgniteCache<Integer, Vector> fillCacheWith(MLSandboxDatasets dataset) throws IOException {
         IgniteCache<Integer, Vector> cache = getCache();
 
         String fileName = dataset.getFileName();
+        Resource[] resources = RESOURCE_RESOLVER.getResources("classpath*:*/" + fileName);
+        A.ensure(resources.length == 1, "Cannot find resource");
 
-        File file = IgniteUtils.resolveIgnitePath(fileName);
-
-        if (file == null)
-            throw new FileNotFoundException(fileName);
-
-        Scanner scanner = new Scanner(file);
+        Scanner scanner = new Scanner(resources[0].getInputStream());
 
         int cnt = 0;
         while (scanner.hasNextLine()) {
             String row = scanner.nextLine();
-            if(dataset.hasHeader() && cnt == 0) {
+            if (dataset.hasHeader() && cnt == 0) {
                 cnt++;
                 continue;
             }
@@ -99,9 +129,11 @@ public class SandboxMLCache {
             NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
 
             for (int i = 0; i < cells.length; i++)
-                try{
-                    if(cells[i].equals("")) data[i] = Double.NaN;
-                    else data[i] = Double.valueOf(cells[i]);
+                try {
+                    if (cells[i].equals(""))
+                        data[i] = Double.NaN;
+                    else
+                        data[i] = Double.valueOf(cells[i]);
                 } catch (java.lang.NumberFormatException e) {
                     try {
                         data[i] = format.parse(cells[i]).doubleValue();
