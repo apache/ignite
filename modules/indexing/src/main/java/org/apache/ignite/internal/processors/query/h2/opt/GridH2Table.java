@@ -490,7 +490,7 @@ public class GridH2Table extends TableBase {
         }
 
         // Acquire the lock.
-        lock(exclusive);
+        lock(exclusive, true);
 
         if (destroyed) {
             unlock(exclusive);
@@ -553,13 +553,27 @@ public class GridH2Table extends TableBase {
      *
      * @param exclusive Exclusive flag.
      */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "CallToThreadYield"})
     private void lock(boolean exclusive) {
+        lock(exclusive, false);
+    }
+
+    /**
+     * Acquire table lock.
+     *
+     * @param exclusive Exclusive flag.
+     * @param interruptibly Acquires interruptibly lock or not interruplible lock flag.
+     */
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "CallToThreadYield"})
+    private void lock(boolean exclusive, boolean interruptibly) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (!exclusive)
-                l.lockInterruptibly();
+            if (!exclusive) {
+                if (interruptibly)
+                    l.lockInterruptibly();
+                else
+                    l.lock();
+            }
             else {
                 for (;;) {
                     if (l.tryLock(200, TimeUnit.MILLISECONDS))
