@@ -262,9 +262,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      *
      * @param userType User type flag.
      * @param registered Whether type is registered.
-     * @param updateTime Update time.
      */
-    public void postWrite(boolean userType, boolean registered, long updateTime) {
+    public void postWrite(boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
 
@@ -319,11 +318,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 finalSchemaId = 0;
                 offset = 0;
             }
-        }
-
-        if (updateTime >= 0) {
-            flags |= BinaryUtils.FLAG_HAS_UPDATE_TIME;
-            out.writeLong(updateTime);
         }
 
         // Actual write.

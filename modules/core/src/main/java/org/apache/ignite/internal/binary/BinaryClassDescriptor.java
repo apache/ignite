@@ -935,7 +935,7 @@ public class BinaryClassDescriptor {
      * @param writer Writer.
      */
     private void postWrite(BinaryWriterExImpl writer) {
-        writer.postWrite(userType, registered, -1);
+        writer.postWrite(userType, registered);
     }
 
     /**

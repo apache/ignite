@@ -55,19 +55,6 @@ public interface GridCacheDrManager extends GridCacheManager {
         AffinityTopologyVersion topVer)throws IgniteCheckedException;
 
     /**
-     * Enrich value with dr specific data.
-     * <p>
-     * Here you can update cache object with additional data which may be
-     * used later within dr process (e.g. value can be updated with timestamp
-     * which can be used to resolve conflicts on a receiver side).
-     *<p>
-     * Note: the method is called just before the cache object is persisted.
-     *
-     * @param val Value, may be {@code null}.
-     */
-    public CacheObject enrich(@Nullable CacheObject val);
-
-    /**
      * Process partitions exchange event.
      *
      * @param topVer Topology version.

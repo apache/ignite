@@ -158,13 +158,6 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     }
 
     /**
-     * @return Read long value.
-     */
-    public long readLong() {
-        return BinaryPrimitives.readLong(arr, pos);
-    }
-
-    /**
      * @param pos Position in the source array.
      * @return Read byte value.
      */

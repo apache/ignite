@@ -88,9 +88,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** Affinity key field name. */
     private String affFieldName;
 
-    /** Update time. */
-    private long updateTime = -1;
-
     /**
      * @param clsName Class name.
      * @param ctx Binary context.
@@ -142,18 +139,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
         int typeId = reader.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
         ctx = reader.binaryContext();
-
-        if (BinaryUtils.hasUpdateTime(flags)) {
-            int mark = reader.position();
-
-            int totalLen = reader.readInt(start + GridBinaryMarshaller.TOTAL_LEN_POS);
-
-            reader.position(start + totalLen - 8);
-
-            updateTime = reader.readLong();
-
-            reader.position(mark);
-        }
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int mark = reader.position();
@@ -351,7 +336,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            writer.postWrite(true, registeredType, updateTime);
+            writer.postWrite(true, registeredType);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -609,27 +594,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     @Override public BinaryObjectBuilderImpl removeField(String name) {
         assignedValues().put(name, REMOVED_FIELD_MARKER);
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getUpdateTime() {
-        return updateTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder setUpdateTime(long updateTime) {
-        assert updateTime >= 0;
-
-        this.updateTime = updateTime;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder removeUpdateTime() {
-        updateTime = -1;
 
         return this;
     }
