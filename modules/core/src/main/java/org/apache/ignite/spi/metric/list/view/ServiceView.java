@@ -24,12 +24,11 @@ import org.apache.ignite.internal.processors.service.ServiceInfo;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 
 /**
  * Service representation for a {@link SystemView}.
  */
-public class ServiceView implements SystemViewRow {
+public class ServiceView {
     private final ServiceInfo serviceInfo;
 
     public ServiceView(ServiceInfo serviceInfo) {

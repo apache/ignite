@@ -22,14 +22,13 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * System view backed by {@code data} {@link ConcurrentMap}.
  */
-public class SystemViewAdapter<R extends SystemViewRow, D> implements SystemView<R> {
+public class SystemViewAdapter<R, D> implements SystemView<R> {
     /** Data backed by this list. */
     private final Collection<D> data;
 

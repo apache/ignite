@@ -39,7 +39,6 @@ import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
 import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
@@ -50,7 +49,7 @@ import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeW
  * @see JmxMetricExporterSpi
  * @see GridMetricManager
  */
-public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBean {
+public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** List attribute.  */
     public static final String LIST = "list";
 
@@ -188,7 +187,7 @@ public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBe
     }
 
     /**
-     * Fullfill {@code data} Map for specific {@link SystemViewRow}.
+     * Fullfill {@code data} Map for specific row.
      */
     private static class AttributeToMapVisitor implements AttributeWithValueVisitor {
         /** Map to store data. */

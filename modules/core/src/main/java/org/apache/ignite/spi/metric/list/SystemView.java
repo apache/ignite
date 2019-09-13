@@ -22,7 +22,7 @@ package org.apache.ignite.spi.metric.list;
  *
  * @param <R> Type of the row.
  */
-public interface SystemView<R extends SystemViewRow> extends Iterable<R> {
+public interface SystemView<R> extends Iterable<R> {
     /** @return Helper for exporters. */
     public SystemViewRowAttributeWalker<R> walker();
 

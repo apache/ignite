@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.metric.list.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.processors.metric.list.walker.ServiceViewWalker;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -356,7 +355,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param <R> List row type.
      * @param <D> Map data type.
      */
-    public <R extends SystemViewRow, D> void registerList(String name, String desc,
+    public <R, D> void registerList(String name, String desc,
         Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
 
         SystemView sview = new SystemViewAdapter<>(name,
@@ -377,7 +376,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param name Name of the list.
      * @return List.
      */
-    @Nullable public <R extends SystemViewRow> SystemView<R> list(String name) {
+    @Nullable public <R> SystemView<R> list(String name) {
         return (SystemView<R>)systemViews.get(name);
     }
 
@@ -388,7 +387,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param walker Walker.
      * @param <R> Row type.
      */
-    public <R extends SystemViewRow> void registerWalker(Class<R> rowClass, SystemViewRowAttributeWalker<R> walker) {
+    public <R> void registerWalker(Class<R> rowClass, SystemViewRowAttributeWalker<R> walker) {
         walkers.put(rowClass, walker);
     }
 

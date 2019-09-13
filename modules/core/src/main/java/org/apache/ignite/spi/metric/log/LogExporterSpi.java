@@ -19,7 +19,6 @@ package org.apache.ignite.spi.metric.log;
 
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
@@ -61,7 +60,7 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
      * @param list List to print.
      * @param <R> Row type.
      */
-    private <R extends SystemViewRow> void exportList(SystemView<R> list) {
+    private <R> void exportList(SystemView<R> list) {
         if (sviewFilter != null && !sviewFilter.test(list))
             return;
 

@@ -21,12 +21,11 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.task.GridTaskWorker;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 
 /**
  * Compute task representation for a {@link SystemView}.
  */
-public class ComputeTaskView implements SystemViewRow {
+public class ComputeTaskView {
     /** Worker for task. */
     private final GridTaskWorker worker;
 

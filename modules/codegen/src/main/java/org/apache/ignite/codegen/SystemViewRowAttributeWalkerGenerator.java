@@ -35,7 +35,6 @@ import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
 import org.apache.ignite.spi.metric.jmx.SystemViewMBean;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.metric.list.view.CacheGroupView;
 import org.apache.ignite.spi.metric.list.view.CacheView;
@@ -81,10 +80,10 @@ public class SystemViewRowAttributeWalkerGenerator {
      *
      * @param clazz Class to geneare {@link SystemViewRowAttributeWalker} for.
      * @param srcRoot Source root folder.
-     * @param <T> type of the {@link SystemViewRow}.
+     * @param <T> type of the row.
      * @throws IOException If generation failed.
      */
-    private <T extends SystemViewRow> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
+    private <T> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
         File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
             clazz.getSimpleName() + "Walker.java");
 
@@ -104,10 +103,10 @@ public class SystemViewRowAttributeWalkerGenerator {
      * Generates {@link SystemViewRowAttributeWalker} implementation.
      *
      * @param clazz Class to geneare {@link SystemViewRowAttributeWalker} for.
-     * @param <T> type of the {@link SystemViewRow}.
+     * @param <T> type of the row.
      * @return Java source code of the {@link SystemViewRowAttributeWalker} implementation.
      */
-    private <T extends SystemViewRow> Collection<String> generate(Class<T> clazz) {
+    private <T> Collection<String> generate(Class<T> clazz) {
         final List<String> code = new ArrayList<>();
         final Set<String> imports = new TreeSet<>();
 

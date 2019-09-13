@@ -27,7 +27,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.spi.metric.list.SystemView;
-import org.apache.ignite.spi.metric.list.SystemViewRow;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.list.SystemViewRowAttributeWalker.AttributeVisitor;
@@ -53,7 +52,7 @@ import org.h2.value.ValueUuid;
 /**
  * System view to export system view data.
  */
-public class SystemViewLocalSystemView<R extends SystemViewRow> extends SqlAbstractLocalSystemView {
+public class SystemViewLocalSystemView<R> extends SqlAbstractLocalSystemView {
     /** System view for export. */
     private final SystemView<R> sview;
 
@@ -165,7 +164,7 @@ public class SystemViewLocalSystemView<R extends SystemViewRow> extends SqlAbstr
      * @return SQL column array for {@code rowClass}.
      * @see SystemView#rowClass()
      */
-    private static <R extends SystemViewRow> Column[] columnsList(SystemView<R> sview) {
+    private static <R> Column[] columnsList(SystemView<R> sview) {
         Column[] cols = new Column[sview.walker().count()];
 
         sview.walker().visitAll(new AttributeVisitor() {
