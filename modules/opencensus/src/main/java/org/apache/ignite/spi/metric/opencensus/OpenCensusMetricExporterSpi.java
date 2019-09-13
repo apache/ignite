@@ -272,25 +272,22 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
         T2<long[], String[]> tuple = histogramNames.get(name);
 
-        String[] intervalNames;
-
         if (tuple != null && tuple.get1() == bounds)
-            intervalNames = tuple.get2();
-        else {
-            intervalNames = new String[bounds.length + 1];
+            return tuple.get2();
 
-            long min = 0;
+        String[] intervalNames = new String[bounds.length + 1];
 
-            for (int i = 0; i < bounds.length; i++) {
-                intervalNames[i] = name + "_" + min + "_" + bounds[i];
+        long min = 0;
 
-                min = bounds[i];
-            }
+        for (int i = 0; i < bounds.length; i++) {
+            intervalNames[i] = name + "_" + min + "_" + bounds[i];
 
-            intervalNames[bounds.length] = name + "_" + min + "_inf";
-
-            histogramNames.put(name, new T2<>(bounds, intervalNames));
+            min = bounds[i];
         }
+
+        intervalNames[bounds.length] = name + "_" + min + "_inf";
+
+        histogramNames.put(name, new T2<>(bounds, intervalNames));
 
         return intervalNames;
     }
