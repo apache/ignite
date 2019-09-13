@@ -67,7 +67,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
 
         mlreg.forEach(this::register);
-        mlreg.addListCreationListener(this::register);
+        mlreg.addSystemViewCreationListener(this::register);
     }
 
     /**

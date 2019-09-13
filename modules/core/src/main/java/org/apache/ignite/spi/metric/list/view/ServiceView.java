@@ -18,7 +18,10 @@
 package org.apache.ignite.spi.metric.list.view;
 
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
+import org.apache.ignite.internal.processors.service.ServiceInfo;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.list.SystemView;
 import org.apache.ignite.spi.metric.list.SystemViewRow;
@@ -26,41 +29,72 @@ import org.apache.ignite.spi.metric.list.SystemViewRow;
 /**
  * Service representation for a {@link SystemView}.
  */
-public interface ServiceView extends SystemViewRow {
+public class ServiceView implements SystemViewRow {
+    private final ServiceInfo serviceInfo;
+
+    public ServiceView(ServiceInfo serviceInfo) {
+        this.serviceInfo = serviceInfo;
+    }
+
     /** @return Service name. */
     @Order(1)
-    public String name();
+    public String name() {
+        return serviceInfo.name();
+    }
 
     /** @return Service id. */
     @Order
-    public IgniteUuid serviceId();
+    public IgniteUuid serviceId() {
+        return serviceInfo.serviceId();
+    }
 
     /** @return Service class. */
     @Order(2)
-    public Class<?> serviceClass();
+    public Class<?> serviceClass() {
+        return serviceInfo.serviceClass();
+    }
 
     /** @return Total count of service instances. */
     @Order(5)
-    public int totalCount();
+    public int totalCount() {
+        return serviceInfo.totalCount();
+    }
 
     /** @return Maximum instance count per node. */
     @Order(6)
-    public int maxPerNodeCount();
+    public int maxPerNodeCount() {
+        return serviceInfo.maxPerNodeCount();
+    }
 
     /** @return Cache name. */
     @Order(3)
-    public String cacheName();
+    public String cacheName() {
+        return serviceInfo.cacheName();
+    }
 
     /** @return Affininty key value. */
-    public String affinityKeyValue();
+    public String affinityKey() {
+        Object affKey = serviceInfo.configuration().getAffinityKey();
+
+        return affKey == null ? null : affKey.toString();
+
+    }
 
     /** @return Node filter. */
-    public Class<?> nodeFilter();
+    public Class<?> nodeFilter() {
+        IgnitePredicate<ClusterNode> filter = serviceInfo.configuration().getNodeFilter();
+
+        return filter == null ? null : filter.getClass();
+    }
 
     /** @return {@code True} if statically configured. */
-    public boolean staticallyConfigured();
+    public boolean staticallyConfigured() {
+        return serviceInfo.staticallyConfigured();
+    }
 
     /** @return Origin node id. */
     @Order(4)
-    public UUID originNodeId();
+    public UUID originNodeId() {
+        return serviceInfo.originNodeId();
+    }
 }

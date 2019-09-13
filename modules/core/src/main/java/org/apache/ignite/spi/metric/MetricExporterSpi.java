@@ -59,7 +59,7 @@ public interface MetricExporterSpi extends IgniteSpi {
      * This method called before {@link #spiStart(String)}.
      *
      * So all {@link SystemView} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link ReadOnlySystemViewRegistry#addListCreationListener(Consumer)}.
+     * listeners passed to {@link ReadOnlySystemViewRegistry#addSystemViewCreationListener(Consumer)}.
      *
      * @param registry System view registry.
      */

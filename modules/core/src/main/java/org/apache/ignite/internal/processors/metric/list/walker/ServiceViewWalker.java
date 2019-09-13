@@ -38,7 +38,7 @@ public class ServiceViewWalker implements SystemViewRowAttributeWalker<ServiceVi
         v.accept(4, "originNodeId", UUID.class);
         v.accept(5, "totalCount", int.class);
         v.accept(6, "maxPerNodeCount", int.class);
-        v.accept(7, "affinityKeyValue", String.class);
+        v.accept(7, "affinityKey", String.class);
         v.accept(8, "nodeFilter", Class.class);
         v.accept(9, "staticallyConfigured", boolean.class);
     }
@@ -52,7 +52,7 @@ public class ServiceViewWalker implements SystemViewRowAttributeWalker<ServiceVi
         v.accept(4, "originNodeId", UUID.class, row.originNodeId());
         v.acceptInt(5, "totalCount", row.totalCount());
         v.acceptInt(6, "maxPerNodeCount", row.maxPerNodeCount());
-        v.accept(7, "affinityKeyValue", String.class, row.affinityKeyValue());
+        v.accept(7, "affinityKey", String.class, row.affinityKey());
         v.accept(8, "nodeFilter", Class.class, row.nodeFilter());
         v.acceptBoolean(9, "staticallyConfigured", row.staticallyConfigured());
     }

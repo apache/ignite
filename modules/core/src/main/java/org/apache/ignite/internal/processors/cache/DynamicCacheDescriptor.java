@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.list.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -102,9 +101,6 @@ public class DynamicCacheDescriptor {
 
     /** Cache config enriched. */
     private volatile boolean cacheCfgEnriched;
-
-    /** Cache view. */
-    private volatile CacheView cacheView;
 
     /**
      * @param ctx Context.
@@ -439,16 +435,6 @@ public class DynamicCacheDescriptor {
      */
     public void configurationEnriched(boolean cacheCfgEnriched) {
         this.cacheCfgEnriched = cacheCfgEnriched;
-    }
-
-    /** @return Cache view. */
-    public CacheView cacheView() {
-        CacheView v = cacheView;
-
-        if (v == null)
-            cacheView = v = new CacheView(this);
-
-        return v;
     }
 
     /** {@inheritDoc} */

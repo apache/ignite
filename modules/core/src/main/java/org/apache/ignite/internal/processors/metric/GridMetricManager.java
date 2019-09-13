@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -245,7 +244,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Lists registry. */
     private final ReadOnlySystemViewRegistry listRegistry = new ReadOnlySystemViewRegistry() {
         /** {@inheritDoc} */
-        @Override public void addListCreationListener(Consumer<SystemView<?>> lsnr) {
+        @Override public void addSystemViewCreationListener(Consumer<SystemView<?>> lsnr) {
             listCreationLsnrs.add(lsnr);
         }
 
@@ -371,7 +370,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     }
 
     /**
-     * Registers list which exports {@link ConcurrentMap} content.
+     * Registers list which exports {@link Collection} content.
      *
      * @param name Name of the list.
      * @param desc Description of the list.
@@ -384,21 +383,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public <R extends SystemViewRow, D> void registerList(String name, String desc,
         Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
 
-        Runnable listCreator = () -> lists.computeIfAbsent(name, n -> {
-            SystemView<R> list = new SystemViewAdapter<>(name,
-                desc,
-                rowCls,
-                (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
-                data,
-                rowFunc);
+        assert !lists.containsKey(name);
 
-            notifyListeners(list, listCreationLsnrs, log);
+        SystemView sview = lists.put(name, new SystemViewAdapter<>(name,
+            desc,
+            rowCls,
+            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            data,
+            rowFunc));
 
-            return list;
-        });
-
-        // Create new instance of the list.
-        listCreator.run();
+        notifyListeners(sview, listCreationLsnrs, log);
     }
 
     /**

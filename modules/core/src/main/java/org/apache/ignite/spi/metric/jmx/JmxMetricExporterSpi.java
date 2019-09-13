@@ -67,7 +67,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         mreg.addMetricRegistryCreationListener(this::register);
         mreg.addMetricRegistryRemoveListener(this::unregister);
 
-        mlreg.addListCreationListener(this::register);
+        mlreg.addSystemViewCreationListener(this::register);
     }
 
     /**

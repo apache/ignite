@@ -227,7 +227,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 "  TOTAL_COUNT, " +
                 "  MAX_PER_NODE_COUNT, " +
                 "  CACHE_NAME, " +
-                "  AFFINITY_KEY_VALUE, " +
+                "  AFFINITY_KEY, " +
                 "  NODE_FILTER, " +
                 "  STATICALLY_CONFIGURED, " +
                 "  ORIGIN_NODE_ID " +

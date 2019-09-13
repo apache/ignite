@@ -34,5 +34,5 @@ public interface ReadOnlySystemViewRegistry extends Iterable<SystemView<?>> {
      *
      * @param lsnr Listener.
      */
-    public void addListCreationListener(Consumer<SystemView<?>> lsnr);
+    public void addSystemViewCreationListener(Consumer<SystemView<?>> lsnr);
 }

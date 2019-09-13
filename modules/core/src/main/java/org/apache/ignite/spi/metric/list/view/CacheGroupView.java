@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.metric.list.view;
 
+import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -26,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.metric.list.walker.Order;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.metric.list.SystemView;
 import org.apache.ignite.spi.metric.list.SystemViewRow;
@@ -70,7 +70,9 @@ public class CacheGroupView implements SystemViewRow {
     /** @return Cache count. */
     @Order(1)
     public int cacheCount() {
-        return F.size(grp.caches());
+        Map<String, Integer> caches = grp.caches();
+
+        return caches == null ? 0 : caches.size();
     }
 
     /** @return Cache mode. */
