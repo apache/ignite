@@ -21,51 +21,48 @@ package org.apache.ignite.ml.util;
  * The names of popular datasets used in examples.
  */
 public enum MLSandboxDatasets {
-    /** Movielens dataset with ratings. */
-    MOVIELENS("ratings.csv", true, ","),
-
     /** The full Iris dataset from Machine Learning Repository. */
-    IRIS("iris.txt", false, "\t"),
+    IRIS("modules/ml/src/main/resources/datasets/iris.txt", false, "\t"),
 
     /** The Titanic dataset from Kaggle competition. */
-    TITANIC("titanic.csv", true, ";"),
+    TITANIC("modules/ml/src/main/resources/datasets/titanic.csv", true, ";"),
 
     /** The 1st and 2nd classes from the Iris dataset. */
-    TWO_CLASSED_IRIS("two_classed_iris.csv", false, "\t"),
+    TWO_CLASSED_IRIS("modules/ml/src/main/resources/datasets/two_classed_iris.csv", false, "\t"),
 
     /** The dataset is about different computers' properties based on https://archive.ics.uci.edu/ml/datasets/Computer+Hardware. */
-    CLEARED_MACHINES("cleared_machines.csv", false, ";"),
+    CLEARED_MACHINES("modules/ml/src/main/resources/datasets/cleared_machines.csv", false, ";"),
 
     /**
      * The health data is related to death rate based on; doctor availability, hospital availability,
      * annual per capita income, and population density people per square mile.
      */
-    MORTALITY_DATA("mortalitydata.csv", false, ";"),
+    MORTALITY_DATA("modules/ml/src/main/resources/datasets/mortalitydata.csv", false, ";"),
 
     /**
      * The preprocessed Glass dataset from the Machine Learning Repository https://archive.ics.uci.edu/ml/datasets/Glass+Identification
      * There are 3 classes with labels: 1 {building_windows_float_processed}, 3 {vehicle_windows_float_processed}, 7 {headlamps}.
      * Feature names: 'Na-Sodium', 'Mg-Magnesium', 'Al-Aluminum', 'Ba-Barium', 'Fe-Iron'.
      */
-    GLASS_IDENTIFICATION("glass_identification.csv", false, ";"),
+    GLASS_IDENTIFICATION("modules/ml/src/main/resources/datasets/glass_identification.csv", false, ";"),
 
     /** The Wine recognition data. Could be found <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/wine/">here</a>. */
-    WINE_RECOGNITION("wine.txt", false, ","),
+    WINE_RECOGNITION("modules/ml/src/main/resources/datasets/wine.txt", false, ","),
 
     /** The Boston house-prices dataset. Could be found <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/housing/">here</a>. */
-    BOSTON_HOUSE_PRICES("boston_housing_dataset.txt", false, ","),
+    BOSTON_HOUSE_PRICES("modules/ml/src/main/resources/datasets/boston_housing_dataset.txt", false, ","),
 
     /** Example from book Barber D. Bayesian reasoning and machine learning. Chapter 10. */
-    ENGLISH_VS_SCOTTISH("english_vs_scottish_binary_dataset.csv", true, ","),
+    ENGLISH_VS_SCOTTISH("modules/ml/src/main/resources/datasets/english_vs_scottish_binary_dataset.csv", true, ","),
 
     /** Wholesale customers dataset. Could be found <a href="https://archive.ics.uci.edu/ml/datasets/Wholesale+customers">here</a>. */
-    WHOLESALE_CUSTOMERS("wholesale_customers.csv", true, ","),
+    WHOLESALE_CUSTOMERS("modules/ml/src/main/resources/datasets/wholesale_customers.csv", true, ","),
 
     /** Fraud detection problem [part of whole dataset]. Could be found <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud/">here</a>. */
-    FRAUD_DETECTION("fraud_detection.csv", false, ","),
+    FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ","),
 
     /** A dataset with discrete and continious features. */
-    MIXED_DATASET("mixed_dataset.csv", true, ",");
+    MIXED_DATASET("modules/ml/src/main/resources/datasets/mixed_dataset.csv", true, ",");
 
     /** Filename. */
     private final String filename;
