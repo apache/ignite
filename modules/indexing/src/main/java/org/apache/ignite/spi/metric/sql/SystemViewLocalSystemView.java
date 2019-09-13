@@ -55,21 +55,21 @@ import org.h2.value.ValueUuid;
  */
 public class SystemViewLocalSystemView<R extends SystemViewRow> extends SqlAbstractLocalSystemView {
     /** System view for export. */
-    private final SystemView<R> mlist;
+    private final SystemView<R> sview;
 
     /**
      * @param ctx Kernal context.
-     * @param mlist List to export.
+     * @param sview List to export.
      */
-    public SystemViewLocalSystemView(GridKernalContext ctx, SystemView<R> mlist) {
-        super(sqlName(mlist.name()), mlist.description(), ctx, columnsList(mlist));
+    public SystemViewLocalSystemView(GridKernalContext ctx, SystemView<R> sview) {
+        super(sqlName(sview.name()), sview.description(), ctx, columnsList(sview));
 
-        this.mlist = mlist;
+        this.sview = sview;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        Iterator<R> rows = mlist.iterator();
+        Iterator<R> rows = sview.iterator();
 
         return new Iterator<Row>() {
             @Override public boolean hasNext() {
@@ -79,9 +79,9 @@ public class SystemViewLocalSystemView<R extends SystemViewRow> extends SqlAbstr
             @Override public Row next() {
                 R row = rows.next();
 
-                Value[] data = new Value[mlist.walker().count()];
+                Value[] data = new Value[sview.walker().count()];
 
-                mlist.walker().visitAll(row, new AttributeWithValueVisitor() {
+                sview.walker().visitAll(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;
@@ -212,7 +212,7 @@ public class SystemViewLocalSystemView<R extends SystemViewRow> extends SqlAbstr
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return mlist.size();
+        return sview.size();
     }
 
     /** {@inheritDoc} */

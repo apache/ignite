@@ -44,13 +44,13 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     private @Nullable Predicate<MetricRegistry> mregFilter;
 
     /** Sytem view filter. */
-    private @Nullable Predicate<SystemView<?>> mlistFilter;
+    private @Nullable Predicate<SystemView<?>> sviewFilter;
 
     /** Metric Registry. */
     private ReadOnlyMetricRegistry mreg;
 
     /** System view registry. */
-    private ReadOnlySystemViewRegistry mlreg;
+    private ReadOnlySystemViewRegistry svreg;
 
     /** Schema manager. */
     private SchemaManager mgr;
@@ -66,8 +66,8 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
         if (log.isDebugEnabled())
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
 
-        mlreg.forEach(this::register);
-        mlreg.addSystemViewCreationListener(this::register);
+        svreg.forEach(this::register);
+        svreg.addSystemViewCreationListener(this::register);
     }
 
     /**
@@ -76,7 +76,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
      * @param sview System view.
      */
     private void register(SystemView<?> sview) {
-        if (mlistFilter != null && !mlistFilter.test(sview)) {
+        if (sviewFilter != null && !sviewFilter.test(sview)) {
             if (log.isDebugEnabled())
                 U.debug(log, "System view filtered and will not be registered.[name=" + sview.name() + ']');
 
@@ -109,7 +109,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
     /** {@inheritDoc} */
     @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry mlreg) {
-        this.mlreg = mlreg;
+        this.svreg = mlreg;
     }
 
     /** {@inheritDoc} */
@@ -119,6 +119,6 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
     /** {@inheritDoc} */
     @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
-        this.mlistFilter = filter;
+        this.sviewFilter = filter;
     }
 }

@@ -238,11 +238,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         }
     };
 
-    /** Registered lists. */
-    private final ConcurrentHashMap<String, SystemView<?>> lists = new ConcurrentHashMap<>();
+    /** Registered system views. */
+    private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
 
-    /** Lists registry. */
-    private final ReadOnlySystemViewRegistry listRegistry = new ReadOnlySystemViewRegistry() {
+    /** System view registry. */
+    private final ReadOnlySystemViewRegistry systemViewRegistry = new ReadOnlySystemViewRegistry() {
         /** {@inheritDoc} */
         @Override public void addSystemViewCreationListener(Consumer<SystemView<?>> lsnr) {
             listCreationLsnrs.add(lsnr);
@@ -250,7 +250,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<SystemView<?>> iterator() {
-            return lists.values().iterator();
+            return systemViews.values().iterator();
         }
     };
 
@@ -260,7 +260,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Metric registry remove listeners. */
     private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
 
-    /** List creation listeners. */
+    /** System views creation listeners. */
     private final List<Consumer<SystemView<?>>> listCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
@@ -334,7 +334,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     @Override public void start() throws IgniteCheckedException {
         for (MetricExporterSpi spi : getSpis()) {
             spi.setMetricRegistry(metricsRegistry);
-            spi.setSystemViewRegistry(listRegistry);
+            spi.setSystemViewRegistry(systemViewRegistry);
         }
 
         startSpi();
@@ -383,14 +383,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public <R extends SystemViewRow, D> void registerList(String name, String desc,
         Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
 
-        assert !lists.containsKey(name);
-
-        SystemView sview = lists.put(name, new SystemViewAdapter<>(name,
+        SystemView sview = new SystemViewAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             data,
-            rowFunc));
+            rowFunc);
+
+        SystemView<?> old = systemViews.putIfAbsent(name, sview);
+
+        assert old == null;
 
         notifyListeners(sview, listCreationLsnrs, log);
     }
@@ -400,7 +402,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @return List.
      */
     @Nullable public <R extends SystemViewRow> SystemView<R> list(String name) {
-        return (SystemView<R>)lists.get(name);
+        return (SystemView<R>)systemViews.get(name);
     }
 
     /**

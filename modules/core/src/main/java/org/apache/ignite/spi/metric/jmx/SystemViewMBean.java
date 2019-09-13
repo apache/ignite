@@ -55,7 +55,7 @@ public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBe
     public static final String LIST = "list";
 
     /** System view to export. */
-    private final SystemView<R> mlist;
+    private final SystemView<R> sview;
 
     /** MBean info. */
     private final MBeanInfo info;
@@ -63,21 +63,21 @@ public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBe
     /** Row type */
     private final CompositeType rowType;
 
-    /** List type. */
-    private final TabularType listType;
+    /** System view type. */
+    private final TabularType sviewType;
 
     /**
-     * @param mlist System view to export.
+     * @param sview System view to export.
      */
-    public SystemViewMBean(SystemView<R> mlist) {
-        this.mlist = mlist;
+    public SystemViewMBean(SystemView<R> sview) {
+        this.sview = sview;
 
-        int cnt = mlist.walker().count();
+        int cnt = sview.walker().count();
 
         String[] fields = new String[cnt+1];
         OpenType[] types = new OpenType[cnt+1];
 
-        mlist.walker().visitAll(new AttributeVisitor() {
+        sview.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 fields[idx] = name;
 
@@ -118,15 +118,15 @@ public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBe
         types[cnt] = SimpleType.INTEGER;
 
         try {
-            rowType = new CompositeType(mlist.rowClass().getName(),
-                mlist.description(),
+            rowType = new CompositeType(sview.rowClass().getName(),
+                sview.description(),
                 fields,
                 fields,
                 types);
 
             info = new OpenMBeanInfoSupport(
-                mlist.rowClass().getName(),
-                mlist.description(),
+                sview.rowClass().getName(),
+                sview.description(),
                 new OpenMBeanAttributeInfo[] {
                     new OpenMBeanAttributeInfoSupport(LIST, LIST, rowType, true, false, false)
                 },
@@ -135,9 +135,9 @@ public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBe
                 null
             );
 
-            listType = new TabularType(
-                mlist.rowClass().getName(),
-                mlist.description(),
+            sviewType = new TabularType(
+                sview.rowClass().getName(),
+                sview.description(),
                 rowType,
                 new String[] {"monitoringRowId"}
             );
@@ -153,19 +153,19 @@ public class SystemViewMBean<R extends SystemViewRow> extends ReadOnlyDynamicMBe
             return getMBeanInfo();
 
         if (attribute.equals(LIST)) {
-            TabularDataSupport rows = new TabularDataSupport(listType);
+            TabularDataSupport rows = new TabularDataSupport(sviewType);
 
             AttributeToMapVisitor visitor = new AttributeToMapVisitor();
 
             try {
                 int idx = 0;
 
-                for (R row : mlist) {
+                for (R row : sview) {
                     Map<String, Object> data = new HashMap<>();
 
                     visitor.data(data);
 
-                    mlist.walker().visitAll(row, visitor);
+                    sview.walker().visitAll(row, visitor);
 
                     data.put("monitoringRowId", idx++);
 
