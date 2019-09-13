@@ -43,7 +43,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     /** Metric filter. */
     private @Nullable Predicate<MetricRegistry> mregFilter;
 
-    /** Sytem view filter. */
+    /** System view filter. */
     private @Nullable Predicate<SystemView<?>> sviewFilter;
 
     /** Metric Registry. */
@@ -71,7 +71,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /**
-     * Registers list as SQL View.
+     * Registers system view as SQL View.
      *
      * @param sview System view.
      */
