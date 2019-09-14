@@ -47,6 +47,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
+import static org.apache.ignite.console.utils.Utils.extractErrorMessage;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 import static org.apache.ignite.console.websocket.AgentHandshakeRequest.SUPPORTED_VERS;
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENT_HANDSHAKE;
@@ -121,8 +122,11 @@ public class AgentsService extends AbstractSocketHandler {
 
                     log.info("Agent connected: " + req);
                 }
-                catch (Exception e) {
-                    log.warn("Failed to establish connection in handshake: " + evt, e);
+                catch (Throwable e) {
+                    if (e instanceof IllegalArgumentException)
+                        log.warn("Handshake failed: " + evt + extractErrorMessage(", reason", e));
+                    else
+                        log.error("Handshake failed: " + evt, e);
 
                     sendResponse(ses, evt, new AgentHandshakeResponse(e));
 
@@ -342,6 +346,7 @@ public class AgentsService extends AbstractSocketHandler {
 
     /**
      * @param req Agent handshake.
+     * @throws IllegalArgumentException if request does not contain tokens or has unsupported version.
      */
     private void validateAgentHandshake(AgentHandshakeRequest req) {
         if (F.isEmpty(req.getTokens()))
@@ -353,6 +358,8 @@ public class AgentsService extends AbstractSocketHandler {
 
     /**
      * @param tokens Tokens.
+     * @return Accounts for specified tokens.
+     * @throws IllegalArgumentException if accounts not found.
      */
     private Collection<Account> loadAccounts(Set<String> tokens) {
         Collection<Account> accounts = accRepo.getAllByTokens(tokens);

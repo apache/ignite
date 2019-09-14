@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Handshake request for Web Console Agent.
+ * Handshake response for Web Console Agent.
  */
 public class AgentHandshakeResponse {
     /** */
@@ -37,6 +37,7 @@ public class AgentHandshakeResponse {
     /**
      * Constructor for deserialization.
      *
+     * @param err Optional error message.
      * @param tokens Tokens.
      */
     @JsonCreator
@@ -46,9 +47,9 @@ public class AgentHandshakeResponse {
     }
 
     /**
-     * @param err Error message.
+     * @param err Error to take message from.
      */
-    public AgentHandshakeResponse(Exception err) {
+    public AgentHandshakeResponse(Throwable err) {
         this(err.getMessage(), null);
     }
 
@@ -67,7 +68,7 @@ public class AgentHandshakeResponse {
     }
 
     /**
-     * @return value of tokens
+     * @return Tokens.
      */
     public Collection<String> getTokens() {
         return tokens;
