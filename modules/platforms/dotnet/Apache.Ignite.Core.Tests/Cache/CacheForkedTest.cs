@@ -38,7 +38,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             
             // ReSharper disable once UnusedVariable
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(springConfigUrl),
                 "-J-ea",
                 "-J-Xcheck:jni",

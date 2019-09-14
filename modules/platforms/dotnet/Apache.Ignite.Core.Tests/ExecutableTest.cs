@@ -98,9 +98,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath()
-                );
+            var proc = new IgniteProcess();
 
             Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
@@ -124,7 +122,6 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-2.dll");
 
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-assembly=test-1.dll",
                 "-assembly=test-2.dll"
@@ -145,7 +142,6 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmOptsCmd()
         {
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-DOPT1",
                 "-J-DOPT2"
@@ -166,7 +162,6 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmMemoryOptsCmdRaw()
         {
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-Xms506m",
                 "-J-Xmx607m"
@@ -189,7 +184,6 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmMemoryOptsCmdCustom()
         {
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-JvmInitialMemoryMB=616",
                 "-JvmMaxMemoryMB=866"
@@ -217,7 +211,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
+            var proc = new IgniteProcess();
 
             Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
@@ -234,8 +228,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Command line options overwrite config file options
             // ReSharper disable once RedundantAssignment
-            proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "-J-Xms606m", "-J-Xmx706m");
+            proc = new IgniteProcess("-J-Xms606m", "-J-Xmx706m");
 
             Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
@@ -254,7 +247,6 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmMemoryOptsCmdCombined()
         {
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-Xms556m",
                 "-J-Xmx666m",
@@ -281,7 +273,7 @@ namespace Apache.Ignite.Core.Tests
         {
             IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test3");
 
-            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
+            var proc = new IgniteProcess();
 
             Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
@@ -300,8 +292,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestXmlConfigurationCmd()
         {
-            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "-configFileName=config\\ignite-dotnet-cfg.xml");
+            var proc = new IgniteProcess("-configFileName=config\\ignite-dotnet-cfg.xml");
 
             Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
@@ -354,9 +345,8 @@ namespace Apache.Ignite.Core.Tests
             checkError("assembly=", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
                                  "'assembly'. See 'Apache.Ignite.exe /help'");
 
-            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: Failed to start " +
-                                         "Ignite.NET, check inner exception for details ---> Apache.Ignite.Core." +
-                                         "Common.IgniteException: Failed to load assembly: x.dll");
+            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                         "Failed to load assembly: x.dll");
 
             checkError("configFileName=wrong.config", "ERROR: System.Configuration.ConfigurationErrorsException: " +
                                                       "Specified config file does not exist: wrong.config");
