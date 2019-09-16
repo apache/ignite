@@ -362,10 +362,10 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      * Count total number of holding locks on local node.
      */
     private long txHoldingLockNum() {
-        long holdingLockCounter = 0;
-
         if (gridKernalCtx.cache().context() == null)
             return 0;
+
+        long holdingLockCounter = 0;
 
         IgniteTxManager tm = gridKernalCtx.cache().context().tm();
 
