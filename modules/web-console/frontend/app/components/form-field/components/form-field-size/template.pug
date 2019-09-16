@@ -30,7 +30,7 @@ include /app/helpers/jade/mixins
         type='number'
         id='{{::$ctrl.id}}Input'
         ng-model='$ctrl.value'
-        ng-model-options='{allowInvalid: true}'
+        ng-model-options='{allowInvalid: true, debounce: $ctrl.inputDebounce}'
         ng-change='$ctrl.onValueChange()'
         name='numberInput'
         placeholder='{{$ctrl.placeholder}}'

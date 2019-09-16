@@ -42,6 +42,7 @@ export default class PCFormFieldSizeController<T> implements IInputErrorNotifier
     sizesMenu?: Array<ISizeTypeOption>;
     private _sizeScale: ISizeTypeOption;
     value: number;
+    inputDebounce = 0;
 
     static $inject = ['$element', '$attrs'];
 
