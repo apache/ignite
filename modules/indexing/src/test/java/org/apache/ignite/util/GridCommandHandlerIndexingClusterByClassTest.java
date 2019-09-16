@@ -20,6 +20,8 @@ package org.apache.ignite.util;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
@@ -53,6 +55,11 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
         super.beforeTest();
 
         createAndFillCache(client, CACHE_NAME, GROUP_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
     }
 
     /**
