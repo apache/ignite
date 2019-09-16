@@ -280,12 +280,12 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         long min = 0;
 
         for (int i = 0; i < bounds.length; i++) {
-            names[i] = name + "_" + min + "_" + bounds[i];
+            names[i] = name + '_' + min + '_' + bounds[i];
 
             min = bounds[i];
         }
 
-        names[bounds.length] = name + "_" + min + "_inf";
+        names[bounds.length] = name + '_' + min + "_inf";
 
         histogramNames.put(name, new T2<>(bounds, names));
 
