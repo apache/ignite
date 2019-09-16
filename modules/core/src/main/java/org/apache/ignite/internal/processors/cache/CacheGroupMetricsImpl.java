@@ -225,14 +225,14 @@ public class CacheGroupMetricsImpl {
         if (!ctx.isTopologyStarted())
             return 0;
 
-        int parts = ctx.topology().partitions();
-
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
-
-        int res = -1;
 
         if (partFullMap == null)
             return 0;
+
+        int parts = ctx.topology().partitions();
+
+        int res = -1;
 
         for (int part = 0; part < parts; part++) {
             int cnt = 0;
@@ -372,12 +372,12 @@ public class CacheGroupMetricsImpl {
         if (!ctx.isTopologyStarted())
             return Collections.emptyMap();
 
-        int parts = ctx.topology().partitions();
-
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
 
         if (partFullMap == null)
             return Collections.emptyMap();
+
+        int parts = ctx.topology().partitions();
 
         Map<Integer, Set<String>> partsMap = new LinkedHashMap<>();
 
