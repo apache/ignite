@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
@@ -70,7 +69,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -403,8 +401,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             return (H2CacheRow)tree.put(row);
         }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
+        catch (Throwable t) {
+            ctx.failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw DbException.convert(t);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
@@ -425,8 +425,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             return tree.putx(row);
         }
         catch (Throwable t) {
-            if (X.hasCause(t, CorruptedTreeException.class) || t instanceof Error)
-                ctx.failure().process(new FailureContext(CRITICAL_ERROR, t));
+            ctx.failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw DbException.convert(t);
         }
@@ -450,8 +449,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             return tree.removex((H2Row)row);
         }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
+        catch (Throwable t) {
+            ctx.failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw DbException.convert(t);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
