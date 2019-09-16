@@ -215,11 +215,6 @@ public class CacheGroupMetricsImpl {
         return ctx.topology().partitions();
     }
 
-    /** @return {@code True} if persistent is enabled. */
-    private boolean isPDSEnabled() {
-        return ctx.shared().database() instanceof GridCacheDatabaseSharedManager;
-    }
-
     /**
      * Calculates the number of partition copies for all partitions of this cache group and filter values by the
      * predicate.
@@ -487,6 +482,11 @@ public class CacheGroupMetricsImpl {
      */
     private GridCacheDatabaseSharedManager database() {
         return (GridCacheDatabaseSharedManager)ctx.shared().database();
+    }
+
+    /** @return {@code True} if persistent is enabled. */
+    private boolean isPDSEnabled() {
+        return ctx.shared().database() instanceof GridCacheDatabaseSharedManager;
     }
 
     /** @return Metric group name. */
