@@ -805,7 +805,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      */
-    private static class AttributeFilter implements IgnitePredicate<ClusterNode> {
+    public static class AttributeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
