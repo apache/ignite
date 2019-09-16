@@ -16,6 +16,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains APIs for OpenCensus framework integration (Metrics & Tracing SPIs).
+ * Contains API for OpenCensus Tracing framework integration.
  */
-package org.apache.ignite.opencensus.spi;
+package org.apache.ignite.spi.tracing.opencensus;

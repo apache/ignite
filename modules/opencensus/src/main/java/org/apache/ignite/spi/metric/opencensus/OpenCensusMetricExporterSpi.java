@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.opencensus.spi.metric;
+package org.apache.ignite.spi.metric.opencensus;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
 import io.opencensus.common.Scope;
 import io.opencensus.stats.Aggregation.LastValue;
 import io.opencensus.stats.Measure;

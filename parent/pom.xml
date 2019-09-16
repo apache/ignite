@@ -540,8 +540,12 @@
                                 <packages>org.apache.ignite.spi.encryption*</packages>
                             </group>
                             <group>
-                                <title>OpenCensus Integration</title>
-                                <packages>org.apache.ignite.opencensus.spi*</packages>
+                                <title>OpenCensus Metric Integration</title>
+                                <packages>org.apache.ignite.spi.metric.opencensus*</packages>
+                            </group>
+                            <group>
+                                <title>OpenCensus Tracing Integration</title>
+                                <packages>org.apache.ignite.spi.tracing.opencensus*</packages>
                             </group>
                         </groups>
                         <bottom>

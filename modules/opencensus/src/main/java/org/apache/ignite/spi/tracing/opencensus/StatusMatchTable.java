@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.opencensus.spi.tracing;
+package org.apache.ignite.spi.tracing.opencensus;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
