@@ -5,17 +5,20 @@ Apache Ignite In-Memory Database and Caching Platform 2.7.6
 -----------------------------------------------------------
 
 Ignite:
-* Ignite work directory is now set to the current user's home directory by default, native persistence files will not be stored in the Temp directory anymore
+* Changed default persistence directory location when IGNITE_HOME is not set, native persistence files will not be stored in the temp directory anymore
 * Fixed a bug that caused a SELECT query with an equality predicate on a part of the primary compound key to return a single row even if the query matched multiple rows
 * Fixed an issue that could cause data corruption during checkpointing
 * Fixed an issue where a row size was calculated incorrectly for shared cache groups, which caused a tree corruption
 * Reduced java heap footprint by optimizing GridDhtPartitionsFullMessage maps in exchange history
-* .NET: Native persistence now works with a custom affinity function
 * Fixed an issue where an outdated node with a destroyed cache caused the cluster to hang
 * Fixed a bug that made it impossible to change the inline_size property of an existing index after it was dropped and recreated with a different value
 * Fixed an issue causing silent control.sh script fail when JAVA_HOME is not set
-* Fixed an issue casuing sporadic node failure when persistence is enabled and WAL mmap is disabled
+* Fixed an issue causing sporadic node failure when persistence is enabled and WAL mmap is disabled
 * Fixed an issue causing potential PDS corruption when a node is killed during checkpoint mark phase
+
+Ignite .NET:
+* Native persistence now works with a custom affinity function
+* Fixed missing CacheEntryEventType.Removed event
 
 Apache Ignite In-Memory Database and Caching Platform 2.7.5
 -----------------------------------------------------------
