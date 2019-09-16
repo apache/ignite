@@ -61,10 +61,10 @@ public class CacheGroupMetricsImpl {
     private final LongAdderMetric groupPageAllocationTracker;
 
     /** */
-    private LongMetric storageSize;
+    private final LongMetric storageSize;
 
     /** */
-    private LongMetric sparseStorageSize;
+    private final LongMetric sparseStorageSize;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -144,6 +144,9 @@ public class CacheGroupMetricsImpl {
 
             storageSize = mreg.findMetric("StorageSize");
             sparseStorageSize = mreg.findMetric("SparseStorageSize");
+        } else {
+            storageSize = null;
+            sparseStorageSize = null;
         }
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
