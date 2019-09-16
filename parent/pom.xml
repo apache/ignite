@@ -213,7 +213,7 @@
             </snapshots>
             <id>h2database.com</id>
             <name>Snapshot repository on h2database.com</name>
-            <url>http://h2database.com/m2-repo</url>
+            <url>https://h2database.com/m2-repo</url>
             <layout>default</layout>
         </repository>
     </repositories>
@@ -312,7 +312,7 @@
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
-                            <link>http://hadoop.apache.org/docs/current/api/</link>
+                            <link>https://hadoop.apache.org/docs/current/api/</link>
                         </links>
                         <groups>
                             <group>
