@@ -468,6 +468,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
+     * Test baseline set nodes with baseline offline node works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    public void testBaselineSetWithOfflineNode() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        //It is important to set consistent id to null for force autogeneration.
+        Ignite ignite1 = startGrid(optimize(getConfiguration(getTestIgniteInstanceName(1)).setConsistentId(null)));
+
+        assertFalse(ignite0.cluster().active());
+
+        ignite0.cluster().active(true);
+
+        Ignite other = startGrid(2);
+
+        String consistentIds = consistentIds(ignite0, ignite1, other);
+
+        ignite1.close();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "set", consistentIds));
+
+        assertEquals(3, ignite0.cluster().currentBaselineTopology().size());
+    }
+
+    /**
      * Test baseline set by topology version works via control.sh
      *
      * @throws Exception If failed.
