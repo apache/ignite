@@ -133,7 +133,7 @@ public class CacheGroupMetricsImpl {
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
 
-        if (ctx.shared().database() instanceof GridCacheDatabaseSharedManager) {
+        if (isPDSEnabled()) {
             mreg.register("StorageSize",
                 () -> database().forGroupPageStores(ctx, PageStore::size),
                 "Storage space allocated for group, in bytes.");
@@ -213,6 +213,11 @@ public class CacheGroupMetricsImpl {
     /** */
     public int getPartitions() {
         return ctx.topology().partitions();
+    }
+
+    /** @return {@code True} if persistent is enabled. */
+    private boolean isPDSEnabled() {
+        return ctx.shared().database() instanceof GridCacheDatabaseSharedManager;
     }
 
     /**
