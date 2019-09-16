@@ -286,30 +286,6 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRemove() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
-
-        AtomicLongMetric cntr = mreg.longMetric("my.name", null);
-        AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);
-
-        assertNotNull(cntr);
-        assertNotNull(cntr2);
-
-        assertNotNull(mreg.findMetric("my.name"));
-        assertNotNull(mreg.findMetric("my.name.x"));
-
-        mreg.remove("my.name");
-
-        assertNull(mreg.findMetric("my.name"));
-        assertNotNull(mreg.findMetric("my.name.x"));
-
-        cntr = mreg.longMetric("my.name", null);
-
-        assertNotNull(mreg.findMetric("my.name"));
-    }
-
-    /** */
-    @Test
     public void testHitRateMetric() throws Exception {
         long rateTimeInterval = 500;
 
