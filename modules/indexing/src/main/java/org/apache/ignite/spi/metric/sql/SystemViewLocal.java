@@ -54,21 +54,21 @@ import org.h2.value.ValueUuid;
  */
 public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** System view for export. */
-    private final SystemView<R> sview;
+    private final SystemView<R> sysView;
 
     /**
      * @param ctx Kernal context.
-     * @param sview View to export.
+     * @param sysView View to export.
      */
-    public SystemViewLocal(GridKernalContext ctx, SystemView<R> sview) {
-        super(sqlName(sview.name()), sview.description(), ctx, columnsList(sview));
+    public SystemViewLocal(GridKernalContext ctx, SystemView<R> sysView) {
+        super(sqlName(sysView.name()), sysView.description(), ctx, columnsList(sysView));
 
-        this.sview = sview;
+        this.sysView = sysView;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        Iterator<R> rows = sview.iterator();
+        Iterator<R> rows = sysView.iterator();
 
         return new Iterator<Row>() {
             @Override public boolean hasNext() {
@@ -78,9 +78,9 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
             @Override public Row next() {
                 R row = rows.next();
 
-                Value[] data = new Value[sview.walker().count()];
+                Value[] data = new Value[sysView.walker().count()];
 
-                sview.walker().visitAll(row, new AttributeWithValueVisitor() {
+                sysView.walker().visitAll(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
                         if (val == null)
                             data[idx] = ValueNull.INSTANCE;
@@ -159,15 +159,15 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /**
      * Extract column array for specific {@link SystemView}.
      *
-     * @param sview System view.
+     * @param sysView System view.
      * @param <R> Row type.
      * @return SQL column array for {@code rowClass}.
      * @see SystemView#rowClass()
      */
-    private static <R> Column[] columnsList(SystemView<R> sview) {
-        Column[] cols = new Column[sview.walker().count()];
+    private static <R> Column[] columnsList(SystemView<R> sysView) {
+        Column[] cols = new Column[sysView.walker().count()];
 
-        sview.walker().visitAll(new AttributeVisitor() {
+        sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 int type;
 
@@ -211,7 +211,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return sview.size();
+        return sysView.size();
     }
 
     /** {@inheritDoc} */

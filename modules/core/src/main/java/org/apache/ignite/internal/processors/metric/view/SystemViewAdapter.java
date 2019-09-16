@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.metric.view;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.metric.view.SystemView;
 import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * System view backed by {@code data} {@link ConcurrentMap}.
+ * System view backed by {@code data} {@link Collection}.
  */
 public class SystemViewAdapter<R, D> implements SystemView<R> {
     /** Data backed by this view. */
@@ -61,8 +61,8 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
      */
     public SystemViewAdapter(String name, String desc, Class<R> rowCls,
         SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
-        assert rowCls != null;
-        assert walker != null : "Please, add walker class via GridMetricManager#registerWalker";
+        A.notNull(rowCls, "rowCls");
+        A.notNull(walker, "walker");
 
         this.name = name;
         this.desc = desc;

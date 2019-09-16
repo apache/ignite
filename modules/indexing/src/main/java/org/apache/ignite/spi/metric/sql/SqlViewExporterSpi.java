@@ -44,7 +44,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     private @Nullable Predicate<MetricRegistry> mregFilter;
 
     /** System view filter. */
-    private @Nullable Predicate<SystemView<?>> sviewFilter;
+    private @Nullable Predicate<SystemView<?>> sysViewFilter;
 
     /** Metric Registry. */
     private ReadOnlyMetricRegistry mreg;
@@ -73,21 +73,21 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     /**
      * Registers system view as SQL View.
      *
-     * @param sview System view.
+     * @param sysView System view.
      */
-    private void register(SystemView<?> sview) {
-        if (sviewFilter != null && !sviewFilter.test(sview)) {
+    private void register(SystemView<?> sysView) {
+        if (sysViewFilter != null && !sysViewFilter.test(sysView)) {
             if (log.isDebugEnabled())
-                U.debug(log, "System view filtered and will not be registered.[name=" + sview.name() + ']');
+                U.debug(log, "System view filtered and will not be registered.[name=" + sysView.name() + ']');
 
             return;
         }
         else if (log.isDebugEnabled())
-            log.debug("Found new system view [name=" + sview.name() + ']');
+            log.debug("Found new system view [name=" + sysView.name() + ']');
 
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        SystemViewLocal<?> view = new SystemViewLocal<>(ctx, sview);
+        SystemViewLocal<?> view = new SystemViewLocal<>(ctx, sysView);
 
         mgr.createSystemView(view);
     }
@@ -119,6 +119,6 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
     /** {@inheritDoc} */
     @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
-        this.sviewFilter = filter;
+        this.sysViewFilter = filter;
     }
 }

@@ -235,11 +235,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
-        List<?> sview = srvs.iterator().next();
+        List<?> sysView = srvs.iterator().next();
 
-        assertEquals(srvcCfg.getName(), sview.get(0));
-        assertEquals(DummyService.class.getName(), sview.get(2));
-        assertEquals(srvcCfg.getMaxPerNodeCount(), sview.get(4));
+        assertEquals(srvcCfg.getName(), sysView.get(0));
+        assertEquals(DummyService.class.getName(), sysView.get(2));
+        assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get(4));
     }
 
     /**

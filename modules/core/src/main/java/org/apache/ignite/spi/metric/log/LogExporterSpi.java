@@ -61,7 +61,7 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
      * @param <R> Row type.
      */
     private <R> void exportList(SystemView<R> view) {
-        if (sviewFilter != null && !sviewFilter.test(view))
+        if (sysViewFilter != null && !sysViewFilter.test(view))
             return;
 
         log.info(view.name());

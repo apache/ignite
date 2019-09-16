@@ -254,11 +254,11 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
-        CompositeData sview = srvs.get(new Object[] {0});
+        CompositeData sysView = srvs.get(new Object[] {0});
 
-        assertEquals(srvcCfg.getName(), sview.get("name"));
-        assertEquals(srvcCfg.getMaxPerNodeCount(), sview.get("maxPerNodeCount"));
-        assertEquals(DummyService.class.getName(), sview.get("serviceClass"));
+        assertEquals(srvcCfg.getName(), sysView.get("name"));
+        assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get("maxPerNodeCount"));
+        assertEquals(DummyService.class.getName(), sysView.get("serviceClass"));
     }
 
     /** */

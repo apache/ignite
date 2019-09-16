@@ -54,7 +54,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     public static final String VIEWS = "views";
 
     /** System view to export. */
-    private final SystemView<R> sview;
+    private final SystemView<R> sysView;
 
     /** MBean info. */
     private final MBeanInfo info;
@@ -63,20 +63,20 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     private final CompositeType rowType;
 
     /** System view type. */
-    private final TabularType sviewType;
+    private final TabularType sysViewType;
 
     /**
-     * @param sview System view to export.
+     * @param sysView System view to export.
      */
-    public SystemViewMBean(SystemView<R> sview) {
-        this.sview = sview;
+    public SystemViewMBean(SystemView<R> sysView) {
+        this.sysView = sysView;
 
-        int cnt = sview.walker().count();
+        int cnt = sysView.walker().count();
 
         String[] fields = new String[cnt+1];
         OpenType[] types = new OpenType[cnt+1];
 
-        sview.walker().visitAll(new AttributeVisitor() {
+        sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 fields[idx] = name;
 
@@ -117,15 +117,15 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         types[cnt] = SimpleType.INTEGER;
 
         try {
-            rowType = new CompositeType(sview.rowClass().getName(),
-                sview.description(),
+            rowType = new CompositeType(sysView.rowClass().getName(),
+                sysView.description(),
                 fields,
                 fields,
                 types);
 
             info = new OpenMBeanInfoSupport(
-                sview.rowClass().getName(),
-                sview.description(),
+                sysView.rowClass().getName(),
+                sysView.description(),
                 new OpenMBeanAttributeInfo[] {
                     new OpenMBeanAttributeInfoSupport(VIEWS, VIEWS, rowType, true, false, false)
                 },
@@ -134,9 +134,9 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
                 null
             );
 
-            sviewType = new TabularType(
-                sview.rowClass().getName(),
-                sview.description(),
+            sysViewType = new TabularType(
+                sysView.rowClass().getName(),
+                sysView.description(),
                 rowType,
                 new String[] {"monitoringRowId"}
             );
@@ -152,19 +152,19 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
             return getMBeanInfo();
 
         if (attribute.equals(VIEWS)) {
-            TabularDataSupport rows = new TabularDataSupport(sviewType);
+            TabularDataSupport rows = new TabularDataSupport(sysViewType);
 
             AttributeToMapVisitor visitor = new AttributeToMapVisitor();
 
             try {
                 int idx = 0;
 
-                for (R row : sview) {
+                for (R row : sysView) {
                     Map<String, Object> data = new HashMap<>();
 
                     visitor.data(data);
 
-                    sview.walker().visitAll(row, visitor);
+                    sysView.walker().visitAll(row, visitor);
 
                     data.put("monitoringRowId", idx++);
 
@@ -210,7 +210,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
                 data.put(name, ((Class<?>)val).getName());
             else if (clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
                 clazz.isAssignableFrom(InetSocketAddress.class))
-                data.put(name, val == null ? "null" : val.toString());
+                data.put(name, String.valueOf(val));
             else
                 data.put(name, val);
         }

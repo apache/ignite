@@ -31,12 +31,12 @@ import org.apache.ignite.IgniteException;
 abstract class ReadOnlyDynamicMBean implements DynamicMBean {
     /** {@inheritDoc} */
     @Override public void setAttribute(Attribute attribute) {
-        throw new UnsupportedOperationException("setAttribute not supported.");
+        throw new UnsupportedOperationException("setAttribute is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public AttributeList setAttributes(AttributeList attributes) {
-        throw new UnsupportedOperationException("setAttributes not supported.");
+        throw new UnsupportedOperationException("setAttributes is not supported.");
     }
 
     /** {@inheritDoc} */
@@ -50,7 +50,7 @@ abstract class ReadOnlyDynamicMBean implements DynamicMBean {
             throw new MBeanException(e);
         }
 
-        throw new UnsupportedOperationException("invoke not supported.");
+        throw new UnsupportedOperationException("invoke is not supported.");
     }
 
     /** {@inheritDoc} */

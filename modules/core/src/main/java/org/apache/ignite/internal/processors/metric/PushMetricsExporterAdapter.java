@@ -45,7 +45,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     protected @Nullable Predicate<MetricRegistry> mregFilter;
 
     /** System view filter. */
-    protected @Nullable Predicate<SystemView<?>> sviewFilter;
+    protected @Nullable Predicate<SystemView<?>> sysViewFilter;
 
     /** Export period. */
     private long period;
@@ -117,6 +117,6 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
 
     /** {@inheritDoc} */
     @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
-        this.sviewFilter = filter;
+        this.sysViewFilter = filter;
     }
 }

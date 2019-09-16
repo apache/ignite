@@ -73,26 +73,26 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     /**
      * Registers JMX bean for specific system view.
      *
-     * @param sview System view
+     * @param sysView System view.
      */
-    private void register(SystemView<?> sview) {
-        if (systeViewFilter != null && !systeViewFilter.test(sview)) {
+    private void register(SystemView<?> sysView) {
+        if (systeViewFilter != null && !systeViewFilter.test(sysView)) {
             if (log.isDebugEnabled())
-                U.debug(log, "System view filtered and will not be registered.[name=" + sview.name() + ']');
+                U.debug(log, "System view filtered and will not be registered.[name=" + sysView.name() + ']');
 
             return;
         }
         else if (log.isDebugEnabled())
-            log.debug("Found new system view [name=" + sview.name() + ']');
+            log.debug("Found new system view [name=" + sysView.name() + ']');
 
         try {
-            SystemViewMBean mlBean = new SystemViewMBean<>(sview);
+            SystemViewMBean mlBean = new SystemViewMBean<>(sysView);
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
                 igniteInstanceName,
                 VIEWS,
-                sview.name(),
+                sysView.name(),
                 mlBean,
                 SystemViewMBean.class);
 
@@ -102,7 +102,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
                 log.debug("MetricGroup JMX bean created. " + mbean);
         }
         catch (JMException e) {
-            log.error("MBean for system view '" + sview.name() + "' can't be created.", e);
+            log.error("MBean for system view '" + sysView.name() + "' can't be created.", e);
         }
     }
 

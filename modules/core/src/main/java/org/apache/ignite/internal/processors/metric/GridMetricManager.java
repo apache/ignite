@@ -358,18 +358,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public <R, D> void registerView(String name, String desc,
         Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
 
-        SystemView sview = new SystemViewAdapter<>(name,
+        SystemView sysView = new SystemViewAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             data,
             rowFunc);
 
-        SystemView<?> old = systemViews.putIfAbsent(name, sview);
+        SystemView<?> old = systemViews.putIfAbsent(name, sysView);
 
         assert old == null;
 
-        notifyListeners(sview, viewCreationLsnrs, log);
+        notifyListeners(sysView, viewCreationLsnrs, log);
     }
 
     /**
