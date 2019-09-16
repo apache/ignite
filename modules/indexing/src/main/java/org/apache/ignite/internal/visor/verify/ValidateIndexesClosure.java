@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
@@ -626,8 +627,16 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
      */
     private Future<Map<String, ValidateIndexesPartitionResult>> processIndexAsync(GridCacheContext ctx, Index idx) {
         return calcExecutor.submit(new Callable<Map<String, ValidateIndexesPartitionResult>>() {
-            @Override public Map<String, ValidateIndexesPartitionResult> call() throws Exception {
-                return processIndex(ctx, idx);
+            /** {@inheritDoc} */
+            @Override public Map<String, ValidateIndexesPartitionResult> call() {
+                BPlusTree.suspendFailureDiagnostic.set(true);
+
+                try {
+                    return processIndex(ctx, idx);
+                }
+                finally {
+                    BPlusTree.suspendFailureDiagnostic.set(false);
+                }
             }
         });
     }
