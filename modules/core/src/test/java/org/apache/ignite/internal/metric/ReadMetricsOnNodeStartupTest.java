@@ -45,10 +45,16 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
 
         PushMetricsExporterAdapter adapter = new PushMetricsExporterAdapter() {
             @Override public void export() {
-                mreg.forEach(metrics -> {
-                    // Read metric value.
-                    metrics.forEach(Metric::getAsString);
-                });
+                try {
+                    mreg.forEach(metrics -> {
+                        // Read metric value.
+                        metrics.forEach(Metric::getAsString);
+                    });
+                } catch (Throwable e) {
+                    log.error("Exception on metric export", e);
+
+                    throw e;
+                }
 
                 exportLatch.countDown();
             }
@@ -64,7 +70,7 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testReadMetricsOnNodeStartup() throws Exception {
-        LogListener lsnr = LogListener.matches(s -> s.contains("Exception in supplier")).atLeast(1).build();
+        LogListener lsnr = LogListener.matches(s -> s.contains("Exception")).atLeast(1).build();
 
         listeningLog.registerListener(lsnr);
 

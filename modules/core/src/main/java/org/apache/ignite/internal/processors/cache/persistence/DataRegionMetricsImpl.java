@@ -223,7 +223,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
-        assert pageMem != null;
+        if (pageMem == null)
+            return 0;
 
         return getTotalAllocatedPages() * (persistenceEnabled ? pageMem.pageSize() : pageMem.systemPageSize());
     }
@@ -295,10 +296,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!persistenceEnabled)
             return getTotalAllocatedPages();
 
-        if (!metricsEnabled)
+        if (!metricsEnabled || pageMem == null)
             return 0;
-
-        assert pageMem != null;
 
         return pageMem.loadedPages();
     }
@@ -313,10 +312,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getUsedCheckpointBufferPages() {
-        if (!metricsEnabled || !persistenceEnabled)
+        if (!metricsEnabled || !persistenceEnabled || pageMem == null)
             return 0;
-
-        assert pageMem != null;
 
         return pageMem.checkpointBufferPagesCount();
     }
@@ -339,10 +336,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public int getPageSize() {
-        if (!metricsEnabled)
+        if (!metricsEnabled || pageMem == null)
             return 0;
-
-        assert pageMem != null;
 
         return pageMem.pageSize();
     }
@@ -378,7 +373,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffheapUsedSize() {
-        if (!metricsEnabled)
+        if (!metricsEnabled || pageMem == null)
             return 0;
 
         return pageMem.loadedPages() * pageMem.systemPageSize();

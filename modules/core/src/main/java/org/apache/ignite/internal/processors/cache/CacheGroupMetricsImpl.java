@@ -129,10 +129,6 @@ public class CacheGroupMetricsImpl {
             List.class,
             "Local partition ids.");
 
-        mreg.register("TotalAllocatedSize",
-            this::getTotalAllocatedSize,
-            "Total size of memory allocated for group, in bytes.");
-
         if (isPDSEnabled()) {
             mreg.register("StorageSize",
                 () -> database().forGroupPageStores(ctx, PageStore::size),
@@ -164,6 +160,10 @@ public class CacheGroupMetricsImpl {
         }
         else
             this.groupPageAllocationTracker = new LongAdderMetric("NO_OP", null);
+
+        mreg.register("TotalAllocatedSize",
+            this::getTotalAllocatedSize,
+            "Total size of memory allocated for group, in bytes.");
     }
 
     /** */
