@@ -42,6 +42,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -118,6 +120,9 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
      */
     private Map<String, Measure> measures = new HashMap<>();
 
+    /** Cached histogram metrics intervals names. */
+    private final Map<String, T2<long[], String[]>> histogramNames = new HashMap<>();
+
     /** */
     private static final Function<Metric, Measure> CREATE_LONG = m ->
         MeasureLong.create(m.name(), m.description() == null ? m.name() : m.description(), "");
@@ -183,6 +188,21 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
                         mmap.put(msr, val);
                     }
+                    else if (metric instanceof HistogramMetric) {
+                        String[] names = names((HistogramMetric)metric);
+                        long[] vals = ((HistogramMetric)metric).value();
+
+                        assert names.length == vals.length;
+
+                        for (int i = 0; i < vals.length; i++) {
+                            String name = names[i];
+
+                            MeasureLong msr = (MeasureLong)measures.computeIfAbsent(name,
+                                k -> createMeasureLong(name, metric.description()));
+
+                            mmap.put(msr, vals[i]);
+                        }
+                    }
                     else if (log.isDebugEnabled()) {
                         log.debug(metric.name() +
                             "[" + metric.getClass() + "] not supported by Opencensus exporter");
@@ -220,10 +240,56 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     }
 
     /** */
+    private MeasureLong createMeasureLong(String name, String desc) {
+        MeasureLong msr = MeasureLong.create(name, desc == null ? name : desc, "");
+
+        addView(msr);
+
+        return msr;
+    }
+
+    /** */
     private void addView(Measure msr) {
         View v = View.create(Name.create(msr.getName()), msr.getDescription(), msr, LastValue.create(), tags);
 
         Stats.getViewManager().registerView(v);
+    }
+
+    /**
+     * Gets histogram interval names.
+     *
+     * Example of metric names if bounds are 10,100:
+     *  histogram_0_10 (less than 10)
+     *  histogram_10_100 (between 10 and 100)
+     *  histogram_100_inf (more than 100)
+     *
+     * @param metric Histogram metric.
+     * @return Histogram intervals names.
+     */
+    private String[] names(HistogramMetric metric) {
+        String name = metric.name();
+        long[] bounds = metric.bounds();
+
+        T2<long[], String[]> tuple = histogramNames.get(name);
+
+        if (tuple != null && tuple.get1() == bounds)
+            return tuple.get2();
+
+        String[] names = new String[bounds.length + 1];
+
+        long min = 0;
+
+        for (int i = 0; i < bounds.length; i++) {
+            names[i] = name + '_' + min + '_' + bounds[i];
+
+            min = bounds[i];
+        }
+
+        names[bounds.length] = name + '_' + min + "_inf";
+
+        histogramNames.put(name, new T2<>(bounds, names));
+
+        return names;
     }
 
     /** {@inheritDoc} */
@@ -248,6 +314,8 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
             //Node consistent id will be known in #onContextInitialized0(IgniteSpiContext), after DiscoMgr started.
             consistenIdValue = TagValue.create("unknown");
         }
+
+        mreg.addMetricRegistryRemoveListener(mreg -> mreg.forEach(metric -> histogramNames.remove(metric.name())));
     }
 
     /** {@inheritDoc} */
