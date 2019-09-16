@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -882,6 +882,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void blockGateways() {
         for (IgniteCacheProxyImpl<?, ?> proxy : jCacheProxies.values())
             proxy.context0().gate().onStopped();
+    }
+
+    /**
+     * Blocks (stops) cache gateway for caches according to given {@code cacheGroupIds}.
+     *
+     * @param cacheGrpIds Cache group ids for which cache gateway should be stopped.
+     * @return Caches for which cache gateway is blocked (stopped).
+     */
+    public List<GridCacheAdapter> blockGateways(Collection<Integer> cacheGrpIds) {
+        List<GridCacheAdapter> affectedCaches = internalCaches().stream()
+            .filter(cache -> cacheGrpIds.contains(cache.context().groupId()))
+            .collect(Collectors.toList());
+
+        affectedCaches.forEach(cache -> {
+            // Add proxy if it's not initialized.
+            addjCacheProxy(cache.context().name(), new IgniteCacheProxyImpl(cache.context(), cache));
+
+            // Stop proxy.
+            blockGateway(cache.context().name(), true, false);
+        });
+
+        return affectedCaches;
     }
 
     /** {@inheritDoc} */
@@ -2562,7 +2584,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param stop {@code True} for stop cache, {@code false} for close cache.
      * @param restart Restart flag.
      */
-    void blockGateway(String cacheName, boolean stop, boolean restart) {
+    public void blockGateway(String cacheName, boolean stop, boolean restart) {
         // Break the proxy before exchange future is done.
         IgniteCacheProxyImpl<?, ?> proxy = jcacheProxy(cacheName, false);
 
