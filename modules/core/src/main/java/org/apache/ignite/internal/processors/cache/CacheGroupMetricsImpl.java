@@ -61,10 +61,10 @@ public class CacheGroupMetricsImpl {
     private final LongAdderMetric groupPageAllocationTracker;
 
     /** */
-    private volatile LongMetric storageSize;
+    private LongMetric storageSize;
 
     /** */
-    private volatile LongMetric sparseStorageSize;
+    private LongMetric sparseStorageSize;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
