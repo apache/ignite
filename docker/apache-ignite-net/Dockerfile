@@ -30,4 +30,7 @@ WORKDIR /app
 COPY libs ./libs
 COPY publish ./
 
+# Container port exposure
+EXPOSE 11211 47100 47500 49112 10800 8080
+
 ENTRYPOINT ["dotnet", "Apache.Ignite.dll"]
