@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.spi.metric.Metric;
@@ -29,6 +30,9 @@ import org.junit.Test;
 public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
     /** */
     public static final int EXPORT_TIMEOUT = 10;
+
+    /** */
+    private final CountDownLatch exportLatch = new CountDownLatch(1);
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
@@ -45,6 +49,8 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
                     // Read metric value.
                     metrics.forEach(Metric::getAsString);
                 });
+
+                exportLatch.countDown();
             }
         };
 
@@ -63,6 +69,8 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
         listeningLog.registerListener(lsnr);
 
         startGrid(0);
+
+        exportLatch.await();
 
         stopGrid(0);
 
