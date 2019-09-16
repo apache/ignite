@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -139,17 +138,20 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @return New baseline.
          */
         private VisorBaselineTaskResult set(List<String> consistentIds) {
+            Map<String, BaselineNode> baseline = currentBaseLine();
             Map<String, BaselineNode> srvrs = currentServers();
 
             Collection<BaselineNode> baselineTop = new ArrayList<>();
 
             for (String consistentId : consistentIds) {
-                BaselineNode node = srvrs.get(consistentId);
+                if (srvrs.containsKey(consistentId))
+                    baselineTop.add(srvrs.get(consistentId));
 
-                if (node != null)
-                    baselineTop.add(node);
+                else if (baseline.containsKey(consistentId))
+                    baselineTop.add(baseline.get(consistentId));
+
                 else
-                    baselineTop.add(new DetachedClusterNode(consistentId, null));
+                    throw new VisorIllegalStateException("Check arguments. Node not found for consistent ID: " + consistentId);
             }
 
             return set0(baselineTop);
