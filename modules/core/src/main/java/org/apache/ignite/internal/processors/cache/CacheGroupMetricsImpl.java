@@ -144,7 +144,8 @@ public class CacheGroupMetricsImpl {
 
             storageSize = mreg.findMetric("StorageSize");
             sparseStorageSize = mreg.findMetric("SparseStorageSize");
-        } else {
+        }
+        else {
             storageSize = null;
             sparseStorageSize = null;
         }
