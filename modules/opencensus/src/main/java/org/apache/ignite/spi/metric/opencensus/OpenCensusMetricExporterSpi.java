@@ -189,18 +189,18 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         mmap.put(msr, val);
                     }
                     else if (metric instanceof HistogramMetric) {
-                        String[] intervalNames = intervalNames((HistogramMetric)metric);
-                        long[] values = ((HistogramMetric)metric).value();
+                        String[] names = names((HistogramMetric)metric);
+                        long[] vals = ((HistogramMetric)metric).value();
 
-                        assert intervalNames.length == values.length;
+                        assert names.length == vals.length;
 
-                        for (int i = 0; i < values.length; i++) {
-                            String name = intervalNames[i];
+                        for (int i = 0; i < vals.length; i++) {
+                            String name = names[i];
 
                             MeasureLong msr = (MeasureLong)measures.computeIfAbsent(name,
                                 k -> createMeasureLong(name, metric.description()));
 
-                            mmap.put(msr, values[i]);
+                            mmap.put(msr, vals[i]);
                         }
                     }
                     else if (log.isDebugEnabled()) {
@@ -266,7 +266,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
      * @param metric Histogram metric.
      * @return Histogram intervals names.
      */
-    private String[] intervalNames(HistogramMetric metric) {
+    private String[] names(HistogramMetric metric) {
         String name = metric.name();
         long[] bounds = metric.bounds();
 
@@ -275,21 +275,21 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         if (tuple != null && tuple.get1() == bounds)
             return tuple.get2();
 
-        String[] intervalNames = new String[bounds.length + 1];
+        String[] names = new String[bounds.length + 1];
 
         long min = 0;
 
         for (int i = 0; i < bounds.length; i++) {
-            intervalNames[i] = name + "_" + min + "_" + bounds[i];
+            names[i] = name + "_" + min + "_" + bounds[i];
 
             min = bounds[i];
         }
 
-        intervalNames[bounds.length] = name + "_" + min + "_inf";
+        names[bounds.length] = name + "_" + min + "_inf";
 
-        histogramNames.put(name, new T2<>(bounds, intervalNames));
+        histogramNames.put(name, new T2<>(bounds, names));
 
-        return intervalNames;
+        return names;
     }
 
     /** {@inheritDoc} */
