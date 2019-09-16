@@ -56,7 +56,7 @@ test('Show stack trace on query failure.', async(t) => {
     await t.click(notebooks.getNotebookByName('Foo'));
     await paragraph.enterQuery(query, {replace: true});
     await t
-        .click(paragraph.executeButton)
+        .click(paragraph.bottomExecuteButton)
         .pressKey('pagedown')
         .click(paragraph.showStacktraceButton)
         .expect(showStacktraceDialog.rootCause.innerText).contains('Outer error message')
