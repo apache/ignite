@@ -35,13 +35,16 @@ __all__ = [
 
 class ObjectArrayObject(GridGainDataType):
     """
-    Array of objects of any type. Its Python representation is
-    tuple(type_id, iterable of any type).
+    Array of Ignite objects of any consistent type. Its Python representation
+    is tuple(type_id, iterable of any type). The only type ID that makes sense
+    in Python client is :py:attr:`~OBJECT`, that corresponds directly to
+    the root object type in Java type hierarchy (`java.lang.Object`).
     """
+    OBJECT = -1
+
     _type_name = NAME_OBJ_ARR
     _type_id = TYPE_OBJ_ARR
     type_code = TC_OBJECT_ARRAY
-    type_or_id_name = 'type_id'
 
     @staticmethod
     def hashcode(value: Iterable) -> int:
@@ -95,7 +98,7 @@ class ObjectArrayObject(GridGainDataType):
                     *args, **kwargs
                 )
             )
-        return getattr(ctype_object, cls.type_or_id_name), result
+        return ctype_object.type_id, result
 
     @classmethod
     def from_python(cls, value):
@@ -112,7 +115,7 @@ class ObjectArrayObject(GridGainDataType):
             value = [value]
             length = 1
         header.length = length
-        setattr(header, cls.type_or_id_name, type_or_id)
+        header.type_id = type_or_id
         buffer = bytearray(header)
 
         for x in value:
@@ -176,18 +179,45 @@ class WrappedDataObject(GridGainDataType):
         raise ParseError('Send unwrapped data.')
 
 
-class CollectionObject(ObjectArrayObject):
+class CollectionObject(GridGainDataType):
     """
-    Just like object array, but contains deserialization type hint instead of
-    type id. This hint is also useless in Python, because the list type along
-    covers all the use cases.
+    Similar to object array, but contains platform-agnostic deserialization
+    type hint instead of type ID.
 
-    Also represented as tuple(type_id, iterable of any type) in Python.
+    Represented as tuple(hint, iterable of any type) in Python. Hints are:
+
+    * :py:attr:`~pygridgain.datatypes.complex.CollectionObject.USER_SET` −
+      a set of unique Ignite thin data objects. The exact Java type of a set
+      is undefined,
+    * :py:attr:`~pygridgain.datatypes.complex.CollectionObject.USER_COL` −
+      a collection of Ignite thin data objects. The exact Java type
+      of a collection is undefined,
+    * :py:attr:`~pygridgain.datatypes.complex.CollectionObject.ARR_LIST` −
+      represents the `java.util.ArrayList` type,
+    * :py:attr:`~pygridgain.datatypes.complex.CollectionObject.LINKED_LIST` −
+      represents the `java.util.LinkedList` type,
+    * :py:attr:`~pygridgain.datatypes.complex.CollectionObject.HASH_SET`−
+      represents the `java.util.HashSet` type,
+    * :py:attr:`~pygridgain.datatypes.complex.CollectionObject.LINKED_HASH_SET` −
+      represents the `java.util.LinkedHashSet` type,
+    * :py:attr:`~pygridgain.datatypes.complex.CollectionObject.SINGLETON_LIST` −
+      represents the return type of the `java.util.Collection.singletonList`
+      method.
+
+    It is safe to say that `USER_SET` (`set` in Python) and `USER_COL` (`list`)
+    can cover all the imaginable use cases from Python perspective.
     """
+    USER_SET = -1
+    USER_COL = 0
+    ARR_LIST = 1
+    LINKED_LIST = 2
+    HASH_SET = 3
+    LINKED_HASH_SET = 4
+    SINGLETON_LIST = 5
+
     _type_name = NAME_COL
     _type_id = TYPE_COL
     type_code = TC_COLLECTION
-    type_or_id_name = 'type'
     pythonic = list
     default = []
 
@@ -211,13 +241,69 @@ class CollectionObject(ObjectArrayObject):
             }
         )
 
+    @classmethod
+    def parse(cls, client: 'Client'):
+        header_class = cls.build_header()
+        buffer = client.recv(ctypes.sizeof(header_class))
+        header = header_class.from_buffer_copy(buffer)
+        fields = []
+
+        for i in range(header.length):
+            c_type, buffer_fragment = AnyDataObject.parse(client)
+            buffer += buffer_fragment
+            fields.append(('element_{}'.format(i), c_type))
+
+        final_class = type(
+            cls.__name__,
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': fields,
+            }
+        )
+        return final_class, buffer
+
+    @classmethod
+    def to_python(cls, ctype_object, *args, **kwargs):
+        result = []
+        for i in range(ctype_object.length):
+            result.append(
+                AnyDataObject.to_python(
+                    getattr(ctype_object, 'element_{}'.format(i)),
+                    *args, **kwargs
+                )
+            )
+        return ctype_object.type, result
+
+    @classmethod
+    def from_python(cls, value):
+        type_or_id, value = value
+        header_class = cls.build_header()
+        header = header_class()
+        header.type_code = int.from_bytes(
+            cls.type_code,
+            byteorder=PROTOCOL_BYTE_ORDER
+        )
+        try:
+            length = len(value)
+        except TypeError:
+            value = [value]
+            length = 1
+        header.length = length
+        header.type = type_or_id
+        buffer = bytearray(header)
+
+        for x in value:
+            buffer += infer_from_python(x)
+        return bytes(buffer)
+
 
 class Map(GridGainDataType):
     """
     Dictionary type, payload-only.
 
-    GridGain does not track the order of key-value pairs in its caches, hence
-    the ordinary Python dict type, not the collections.OrderedDict.
+    Keys and values in map are independent data objects, but `count`
+    counts pairs. Very annoying.
     """
     _type_name = NAME_MAP
     _type_id = TYPE_MAP
@@ -304,11 +390,12 @@ class Map(GridGainDataType):
 
 class MapObject(Map):
     """
-    This is a dictionary type. Type conversion hint can be a `HASH_MAP`
-    (ordinary dict) or `LINKED_HASH_MAP` (collections.OrderedDict).
+    This is a dictionary type.
 
-    Keys and values in map are independent data objects, but `count`
-    counts pairs. Very annoying.
+    Represented as tuple(type_id, value).
+
+    Type ID can be a :py:attr:`~HASH_MAP` (corresponds to an ordinary `dict`
+    in Python) or a :py:attr:`~LINKED_HASH_MAP` (`collections.OrderedDict`).
     """
     _type_name = NAME_MAP
     _type_id = TYPE_MAP

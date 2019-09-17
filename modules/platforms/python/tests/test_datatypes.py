@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from collections import OrderedDict
 import ctypes
 from datetime import datetime, timedelta
 import decimal
@@ -118,14 +119,14 @@ from pygridgain.utils import unsigned
         ((-1, [(6001, 1), (6002, 2), (6003, 3)]), BinaryEnumArrayObject),
 
         # object array
-        ((-1, [1, 2, decimal.Decimal('3')]), None),
+        ((ObjectArrayObject.OBJECT, [1, 2, decimal.Decimal('3')]), ObjectArrayObject),
 
         # collection
-        ((3, [1, 2, 3]), CollectionObject),
+        ((CollectionObject.LINKED_LIST, [1, 2, 3]), None),
 
         # map
-        ((1, {'key': 4, 5: 6.0}), None),
-        ((2, {'key': 4, 5: 6.0}), None),
+        ((MapObject.HASH_MAP, {'key': 4, 5: 6.0}), None),
+        ((MapObject.LINKED_HASH_MAP, OrderedDict([('key', 4), (5, 6.0)])), None),
     ]
 )
 def test_put_get_data(client, cache, value, value_hint):

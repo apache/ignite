@@ -348,7 +348,7 @@ class AnyDataObject:
     @classmethod
     def map_python_type(cls, value):
         from pygridgain.datatypes import (
-            MapObject, ObjectArrayObject, BinaryObject,
+            MapObject, CollectionObject, BinaryObject,
         )
 
         if cls._python_map is None:
@@ -362,7 +362,7 @@ class AnyDataObject:
             if value_subtype in cls._python_array_map:
                 return cls._python_array_map[value_subtype]
 
-            # a little heuristics (order may be important)
+            # a little heuristics (order is important)
             if all([
                 value_subtype is None,
                 len(value) == 2,
@@ -377,7 +377,9 @@ class AnyDataObject:
                 isinstance(value[0], int),
                 is_iterable(value[1]),
             ]):
-                return ObjectArrayObject
+                return CollectionObject
+
+            # no default for ObjectArrayObject, sorry
 
             raise TypeError(
                 'Type `array of {}` is invalid'.format(value_subtype)
