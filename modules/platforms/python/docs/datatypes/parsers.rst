@@ -122,17 +122,17 @@ with your data, in to some API function as a *type conversion hint*.
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
 |*Object collections, special types, and complex object*                                                                            |
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
-|0x17       |`Object array`_     |iterable/list                  |:class:`~pygridgain.datatypes.complex.ObjectArrayObject`          |
+|0x17       |`Object array`_     |tuple[int, iterable/list]      |:class:`~pygridgain.datatypes.complex.ObjectArrayObject`          |
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
-|0x18       |`Collection`_       |tuple                          |:class:`~pygridgain.datatypes.complex.CollectionObject`           |
+|0x18       |`Collection`_       |tuple[int, iterable/list]      |:class:`~pygridgain.datatypes.complex.CollectionObject`           |
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
-|0x19       |`Map`_              |dict, collections.OrderedDict  |:class:`~pygridgain.datatypes.complex.MapObject`                  |
+|0x19       |`Map`_              |tuple[int, dict/OrderedDict]   |:class:`~pygridgain.datatypes.complex.MapObject`                  |
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
 |0x1d       |`Enum array`_       |iterable/list                  |:class:`~pygridgain.datatypes.standard.EnumArrayObject`           |
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
 |0x67       |`Complex object`_   |object                         |:class:`~pygridgain.datatypes.complex.BinaryObject`               |
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
-|0x1b       |`Wrapped data`_     |tuple                          |:class:`~pygridgain.datatypes.complex.WrappedDataObject`          |
+|0x1b       |`Wrapped data`_     |tuple[int, bytes]              |:class:`~pygridgain.datatypes.complex.WrappedDataObject`          |
 +-----------+--------------------+-------------------------------+------------------------------------------------------------------+
 
 .. _Byte: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-byte

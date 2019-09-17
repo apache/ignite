@@ -120,6 +120,62 @@ Destroy created cache and close connection.
 
 .. _sql_examples:
 
+Object collections
+------------------
+
+File: `get_and_put_complex.py`_.
+
+GridGain collection types are represented in `pygridgain` as two-tuples.
+First comes collection type ID or deserialization hint, which is specific for
+each of the collection type. Second comes the data value.
+
+.. literalinclude:: ../examples/get_and_put_complex.py
+  :language: python
+  :lines: 19-21
+
+Map
+===
+
+For Python prior to 3.6, it might be important to distinguish between ordered
+(`collections.OrderedDict`) and unordered (`dict`) dictionary types, so you
+could use :py:attr:`~pygridgain.datatypes.complex.Map.LINKED_HASH_MAP`
+for the former and :py:attr:`~pygridgain.datatypes.complex.Map.HASH_MAP`
+for the latter.
+
+Since CPython 3.6 all dictionaries became de facto ordered. You can always use
+`LINKED_HASH_MAP` as a safe default.
+
+.. literalinclude:: ../examples/get_and_put_complex.py
+  :language: python
+  :lines: 29-41
+
+Collection
+==========
+
+See :class:`~pygridgain.datatypes.complex.CollectionObject` and GridGain
+documentation on `Collection`_ type for the description of various Java
+collection types. Note that not all of them have a direct Python
+representative. For example, Python do not have ordered sets (it is indeed
+recommended to use `OrderedDict`'s keys and disregard its values).
+
+As for the `pygridgain`, the rules are simple: pass any iterable as a data,
+and you always get `list` back.
+
+.. literalinclude:: ../examples/get_and_put_complex.py
+  :language: python
+  :lines: 43-57
+
+Object array
+============
+
+:class:`~pygridgain.datatypes.complex.ObjectArrayObject` has a very limited
+functionality in `pygridgain`, since no type checks can be enforced on its
+contents. But it still can be used for interoperability with Java.
+
+.. literalinclude:: ../examples/get_and_put_complex.py
+  :language: python
+  :lines: 59-68
+
 SQL
 ---
 File: `sql.py`_.
@@ -611,4 +667,6 @@ with the following message:
 .. _openssl: https://www.openssl.org/docs/manmaster/man1/openssl.html
 .. _Authentication: https://apacheignite.readme.io/docs/advanced-security#section-authentication
 .. _attrs: https://pypi.org/project/attrs/
+.. _get_and_put_complex.py: https://github.com/gridgain/gridgain/tree/master/modules/platforms/python/examples/get_and_put_complex.py
+.. _Collection: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-collection
 .. _simple class names: https://apacheignite.readme.io/docs/binary-marshaller#binary-name-mapper-and-binary-id-mapper
