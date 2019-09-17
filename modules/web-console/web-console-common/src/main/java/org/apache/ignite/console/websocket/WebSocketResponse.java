@@ -19,6 +19,7 @@ package org.apache.ignite.console.websocket;
 import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -32,6 +33,7 @@ public class WebSocketResponse implements WebSocketEvent<Object> {
     private String evtType;
 
     /** */
+    @GridToStringInclude
     private Object payload;
 
     /**

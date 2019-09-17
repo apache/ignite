@@ -21,6 +21,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.ignite.console.json.RawContentDeserializer;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.console.utils.Utils.extractErrorMessage;
@@ -37,6 +38,7 @@ public class WebSocketRequest implements WebSocketEvent<String> {
     private String evtType;
 
     /** */
+    @GridToStringInclude
     private String payload;
 
     /** {@inheritDoc} */
