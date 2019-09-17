@@ -116,10 +116,6 @@ public class CacheGroupMetricsImpl {
         }
         else
             this.groupPageAllocationTracker = new LongAdderMetric("NO_OP", null);
-
-        mreg.register("TotalAllocatedSize",
-            this::getTotalAllocatedSize,
-            "Total size of memory allocated for group, in bytes.");
     }
 
     /** */
@@ -160,15 +156,19 @@ public class CacheGroupMetricsImpl {
             Map.class,
             "Allocation map of partitions with state MOVING in the cluster.");
 
+        mreg.register("AffinityPartitionsAssignmentMap",
+            this::getAffinityPartitionsAssignmentMap,
+            Map.class,
+            "Affinity partitions assignment map.");
+
         mreg.register("PartitionIds",
             this::getPartitionIds,
             List.class,
             "Local partition ids.");
 
-        mreg.register("AffinityPartitionsAssignmentMap",
-            this::getAffinityPartitionsAssignmentMap,
-            Map.class,
-            "Affinity partitions assignment map.");
+        mreg.register("TotalAllocatedSize",
+            this::getTotalAllocatedSize,
+            "Total size of memory allocated for group, in bytes.");
     }
 
     /** */
