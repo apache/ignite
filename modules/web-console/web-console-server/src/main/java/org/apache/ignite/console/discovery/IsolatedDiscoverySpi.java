@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -72,7 +72,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
     private DiscoverySpiListener lsnr;
 
     /** */
-    private Executor exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     /** {@inheritDoc} */
     @Override public Serializable consistentId() throws IgniteSpiException {
@@ -197,7 +197,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        // No-op.
+        exec.shutdownNow();
     }
 
     /** {@inheritDoc} */

@@ -67,7 +67,8 @@ public class ApplicationConfiguration {
     /**
      * Thread pool task executor.
      */
-    private Executor getThreadPoolTaskExecutor() {
+    @Bean(name = "applicationEventMulticasterThreadPool")
+    public Executor getThreadPoolTaskExecutor() {
         ThreadPoolTaskExecutor pool = new ThreadPoolTaskExecutor();
         pool.setMaxPoolSize(Math.max(8, Runtime.getRuntime().availableProcessors()));
         pool.initialize();
