@@ -57,7 +57,7 @@ class SqlQuery extends Query
      *
      * @param string $type name of a type or SQL table.
      * @param string $sql SQL query string.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function __construct(?string $type, string $sql)
@@ -92,9 +92,9 @@ class SqlQuery extends Query
 
     /**
      * Set SQL query string.
-     * 
+     *
      * @param string $sql SQL query string.
-     * 
+     *
      * @return SqlQuery the same instance of the SqlQuery.
      */
     public function setSql(string $sql): SqlQuery
@@ -110,9 +110,9 @@ class SqlQuery extends Query
      * If type of an argument is not specified then during operations the GridGain client
      * will try to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
-     * 
+     *
      * @param mixed ...$args Query arguments.
-     * 
+     *
      * @return SqlQuery the same instance of the SqlQuery.
      */
     public function setArgs(...$args): SqlQuery
@@ -128,14 +128,14 @@ class SqlQuery extends Query
      * By default, a type of every argument is not specified that means during operations the GridGain client
      * will try to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
-     * 
+     *
      * @param int|ObjectType|null ...$argTypes types of Query arguments.
      *   The order of types must follow the order of arguments in the setArgs() method.
      *   A type of every argument can be:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
-     * 
+     *
      * @return SqlQuery the same instance of the SqlQuery.
      *
      * @throws ClientException if error.
@@ -151,9 +151,9 @@ class SqlQuery extends Query
 
     /**
      * Set distributed joins flag.
-     * 
+     *
      * @param bool $distributedJoins distributed joins flag: true or false.
-     * 
+     *
      * @return SqlQuery the same instance of the SqlQuery.
      */
     public function setDistributedJoins(bool $distributedJoins): SqlQuery
@@ -164,9 +164,9 @@ class SqlQuery extends Query
 
     /**
      * Set replicated only flag.
-     * 
+     *
      * @param bool $replicatedOnly replicated only flag: true or false.
-     * 
+     *
      * @return SqlQuery the same instance of the SqlQuery.
      */
     public function setReplicatedOnly(bool $replicatedOnly): SqlQuery
@@ -177,10 +177,10 @@ class SqlQuery extends Query
 
     /**
      * Set timeout.
-     * 
+     *
      * @param float $timeout timeout value in milliseconds.
      *   Must be non-negative. Zero value disables timeout.
-     * 
+     *
      * @return SqlQuery the same instance of the SqlQuery.
      */
     public function setTimeout(float $timeout): SqlQuery

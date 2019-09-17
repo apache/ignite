@@ -32,7 +32,7 @@ final class BinaryObjectTestCase extends TestCase
     const DOUBLE_VALUE = 123.45;
     const BOOL_VALUE = false;
     const INT_VALUE = 456;
-    
+
     private static $cache;
 
     public static function setUpBeforeClass(): void
@@ -47,7 +47,7 @@ final class BinaryObjectTestCase extends TestCase
         self::cleanUp();
         TestingHelper::cleanUp();
     }
-    
+
     public function testBinaryObjectSetGetFields(): void
     {
         $cache = self::$cache;

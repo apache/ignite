@@ -26,23 +26,23 @@ class BinarySchema
     const FNV1_OFFSET_BASIS = 0x811C9DC5;
     /** FNV1 hash prime. */
     const FNV1_PRIME = 0x01000193;
-    
+
     private $id;
     private $fieldIds;
     private $isValid;
-    
+
     public function __construct()
     {
         $this->id = BinarySchema::FNV1_OFFSET_BASIS;
         $this->fieldIds = [];
         $this->isValid = true;
     }
-    
+
     public function getId(): int
     {
         return $this->id;
     }
-    
+
     public function getFieldIds(): array
     {
         return array_keys($this->fieldIds);
@@ -70,7 +70,7 @@ class BinarySchema
         $result->isValid = $this->isValid;
         return $result;
     }
-    
+
     public function addField(int $fieldId): void
     {
         if (!$this->hasField($fieldId)) {

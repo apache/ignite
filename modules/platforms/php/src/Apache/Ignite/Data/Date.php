@@ -19,7 +19,7 @@ namespace Apache\Ignite\Data;
 
 use \DateTime;
 
-/** 
+/**
  * Class representing GridGain Date type
  * (number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC).
  */
@@ -29,19 +29,19 @@ class Date
 
     /**
      * Public constructor.
-     * 
+     *
      * @param float $millis integer number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
      */
     public function __construct(float $millis)
     {
         $this->millis = $millis;
     }
-    
+
     /**
      * Creates Date instance from DateTime instance.
-     * 
+     *
      * @param DateTime $dateTime DateTime instance.
-     * 
+     *
      * @return Date new Date instance.
      */
     public static function fromDateTime(DateTime $dateTime)
@@ -49,10 +49,10 @@ class Date
         $millis = intval($dateTime->format('u') / 1000);
         return new Date($dateTime->getTimestamp() * 1000 + $millis);
     }
-    
+
     /**
      * Returns the date value as DateTime instance.
-     * 
+     *
      * @return DateTime new DateTime instance.
      */
     public function toDateTime(): DateTime
@@ -62,17 +62,17 @@ class Date
 
     /**
      * Returns the date value as number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
-     * 
+     *
      * @return float number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
      */
     public function getMillis(): float
     {
         return $this->millis;
     }
-    
+
     /**
      * Returns the date value as number of seconds elapsed since January 1, 1970, 00:00:00 UTC.
-     * 
+     *
      * @return float number of seconds elapsed since January 1, 1970, 00:00:00 UTC.
      */
     public function getSeconds(): float

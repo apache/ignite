@@ -28,7 +28,7 @@ use Apache\Ignite\Internal\Binary\BinaryUtils;
 class ObjectArrayType extends ObjectType
 {
     private $elementType;
-    
+
     /**
      * Public constructor.
      *
@@ -37,12 +37,12 @@ class ObjectArrayType extends ObjectType
      * If GridGain type of elements is not specified then during operations the GridGain client
      * tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
-     * 
+     *
      * @param int|ObjectType|null $elementType GridGain type of the array element:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
-     * 
+     *
      * @throws ClientException if error.
      */
     public function __construct($elementType = null)
@@ -51,10 +51,10 @@ class ObjectArrayType extends ObjectType
         BinaryUtils::checkObjectType($elementType, 'elementType');
         $this->elementType = $elementType;
     }
-    
+
     /**
      * Returns GridGain type of the array element.
-     * 
+     *
      * @return int|ObjectType|null GridGain type of the array element:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type

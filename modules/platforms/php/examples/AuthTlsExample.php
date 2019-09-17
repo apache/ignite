@@ -50,12 +50,12 @@ class AuthTlsExample
                 'local_cert' => AuthTlsExample::TLS_CLIENT_CERT_FILE_NAME,
                 'cafile' => AuthTlsExample::TLS_CA_FILE_NAME
             ];
-            
+
             $config = (new ClientConfiguration(AuthTlsExample::ENDPOINT))->
                 setUserName(AuthTlsExample::USER_NAME)->
                 setPassword(AuthTlsExample::PASSWORD)->
                 setTLSOptions($tlsOptions);
-                    
+
             $client->connect($config);
 
             echo("Client connected successfully (with TLS and authentication enabled)" . PHP_EOL);

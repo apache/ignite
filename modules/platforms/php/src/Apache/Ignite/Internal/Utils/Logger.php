@@ -23,31 +23,31 @@ use Apache\Ignite\Internal\Binary\MessageBuffer;
 class Logger
 {
     private static $debug = false;
-    
+
     public static function isDebug(): bool
     {
         return Logger::$debug;
     }
-    
+
     public static function setDebug(bool $debug): void
     {
         Logger::$debug = $debug;
     }
-    
+
     public static function logDebug($data, ...$args): void
     {
         if (Logger::$debug) {
             echo(sprintf($data, ...$args) . PHP_EOL);
         }
     }
-    
+
     public static function logError($data, ...$args): void
     {
         if (Logger::$debug) {
             echo(sprintf("ERROR: $data", ...$args) . PHP_EOL);
         }
     }
-    
+
     public static function logBuffer(MessageBuffer $buffer, int $startPos = 0, int $length = -1): void
     {
         if (Logger::$debug) {

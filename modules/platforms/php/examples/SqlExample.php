@@ -213,7 +213,7 @@ class SqlExample {
         $cursor = $cityCache->query($query);
 
         $fieldNames = $cursor->getFieldNames();
-        
+
         foreach ($cursor->getAll() as $city) {
             echo('City Info:' . PHP_EOL);
             for ($i = 0; $i < count($fieldNames); $i++) {
@@ -227,7 +227,7 @@ class SqlExample {
         $cache->query(new SqlFieldsQuery('DROP TABLE IF EXISTS Country'))->getAll();
         $cache->query(new SqlFieldsQuery('DROP TABLE IF EXISTS City'))->getAll();
         $cache->query(new SqlFieldsQuery('DROP TABLE IF EXISTS CountryLanguage'))->getAll();
-        
+
         echo('Database objects dropped' . PHP_EOL);
     }
 }

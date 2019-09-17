@@ -24,10 +24,10 @@ class CacheEntry
 {
     private $key;
     private $value;
-    
+
     /**
      * Public constructor.
-     * 
+     *
      * @param mixed $key key corresponding to this entry.
      * @param mixed $value value associated with the key.
      */
@@ -39,7 +39,7 @@ class CacheEntry
 
     /**
      * Returns the key corresponding to this entry.
-     * 
+     *
      * @return mixed the key corresponding to this entry.
      */
     public function getKey()

@@ -34,7 +34,7 @@ class Cache implements CacheInterface
     private $keyType;
     private $valueType;
     private $communicator;
-    
+
     public function __construct(string $name, BinaryCommunicator $communicator)
     {
         $this->name = $name;
@@ -43,7 +43,7 @@ class Cache implements CacheInterface
         $this->keyType = null;
         $this->valueType = null;
     }
-    
+
     public static function calculateId(string $name)
     {
         return BinaryUtils::hashCode($name);
@@ -62,12 +62,12 @@ class Cache implements CacheInterface
         $this->valueType = $type;
         return $this;
     }
-    
+
     public function get($key)
     {
         return $this->writeKeyReadValueOp(ClientOperation::CACHE_GET, $key);
     }
-    
+
     public function getAll(array $keys): array
     {
         ArgumentChecker::notEmpty($keys, 'keys');
@@ -90,10 +90,10 @@ class Cache implements CacheInterface
             });
         return $result;
     }
-    
+
     public function put($key, $value): void
     {
-        $this->writeKeyValueOp(ClientOperation::CACHE_PUT, $key, $value);        
+        $this->writeKeyValueOp(ClientOperation::CACHE_PUT, $key, $value);
     }
 
     public function putAll(array $entries): void
@@ -111,17 +111,17 @@ class Cache implements CacheInterface
                 }
             });
     }
-    
+
     public function containsKey($key): bool
     {
         return $this->writeKeyReadBooleanOp(ClientOperation::CACHE_CONTAINS_KEY, $key);
     }
-    
+
     public function containsKeys(array $keys): bool
     {
         return $this->writeKeysReadBooleanOp(ClientOperation::CACHE_CONTAINS_KEYS, $keys);
     }
-    
+
     public function getAndPut($key, $value)
     {
         return $this->writeKeyValueReadValueOp(ClientOperation::CACHE_GET_AND_PUT, $key, $value);
@@ -131,7 +131,7 @@ class Cache implements CacheInterface
     {
         return $this->writeKeyValueReadValueOp(ClientOperation::CACHE_GET_AND_REPLACE, $key, $value);
     }
-    
+
     public function getAndRemove($key)
     {
         return $this->writeKeyReadValueOp(ClientOperation::CACHE_GET_AND_REMOVE, $key);
@@ -141,12 +141,12 @@ class Cache implements CacheInterface
     {
         return $this->writeKeyValueReadBooleanOp(ClientOperation::CACHE_PUT_IF_ABSENT, $key, $value);
     }
-    
+
     public function getAndPutIfAbsent($key, $value)
     {
         return $this->writeKeyValueReadValueOp(ClientOperation::CACHE_GET_AND_PUT_IF_ABSENT, $key, $value);
     }
-    
+
     public function replace($key, $value): bool
     {
         return $this->writeKeyValueReadBooleanOp(ClientOperation::CACHE_REPLACE, $key, $value);
@@ -172,7 +172,7 @@ class Cache implements CacheInterface
             });
         return $result;
     }
-    
+
     public function clear(): void
     {
         $this->communicator->send(
@@ -182,32 +182,32 @@ class Cache implements CacheInterface
                 $this->writeCacheInfo($payload);
             });
     }
-    
+
     public function clearKey($key): void
     {
         $this->writeKeyOp(ClientOperation::CACHE_CLEAR_KEY, $key);
     }
-    
+
     public function clearKeys($keys): void
     {
         $this->writeKeysOp(ClientOperation::CACHE_CLEAR_KEYS, $keys);
     }
-    
+
     public function removeKey($key): bool
     {
         return $this->writeKeyReadBooleanOp(ClientOperation::CACHE_REMOVE_KEY, $key);
     }
-    
+
     public function removeIfEquals($key, $value): bool
     {
         return $this->writeKeyValueReadBooleanOp(ClientOperation::CACHE_REMOVE_IF_EQUALS, $key, $value);
     }
-    
+
     public function removeKeys($keys): void
     {
         $this->writeKeysOp(ClientOperation::CACHE_REMOVE_KEYS, $keys);
     }
-            
+
     public function removeAll(): void
     {
         $this->communicator->send(
@@ -217,7 +217,7 @@ class Cache implements CacheInterface
                 $this->writeCacheInfo($payload);
             });
     }
-    
+
     public function getSize(int ...$peekModes): int
     {
         ArgumentChecker::hasValueFrom($peekModes, 'peekModes', true, [
@@ -243,7 +243,7 @@ class Cache implements CacheInterface
             });
         return $result;
     }
-    
+
     public function query(Query $query): CursorInterface
     {
         $value = null;
@@ -341,7 +341,7 @@ class Cache implements CacheInterface
                 $result = $payload->readBoolean();
             });
         return $result;
-        
+
     }
 
     private function writeKeys(MessageBuffer $payload, array $keys): void

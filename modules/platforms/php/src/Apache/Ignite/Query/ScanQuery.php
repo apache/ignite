@@ -32,7 +32,7 @@ use Apache\Ignite\Internal\Query\Cursor;
 class ScanQuery extends Query
 {
     private $partitionNumber;
-    
+
     /**
      * Public constructor.
      *
@@ -55,10 +55,10 @@ class ScanQuery extends Query
     /**
      * Sets a partition number over which this query should iterate.
      *
-     * If negative, the query will iterate over all partitions in the cache. 
-     * 
+     * If negative, the query will iterate over all partitions in the cache.
+     *
      * @param int $partitionNumber partition number over which this query should iterate.
-     * 
+     *
      * @return ScanQuery the same instance of the ScanQuery.
      */
     public function setPartitionNumber(int $partitionNumber): ScanQuery

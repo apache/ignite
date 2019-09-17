@@ -40,7 +40,7 @@ class TestingHelper
     public static $client;
     public static $primitiveValues;
     public static $arrayValues;
-    
+
     /**
      * Initializes testing environment: creates and starts the library client, sets default jasmine test timeout.
      * Should be called from any test case setUpBeforeClass method.
@@ -52,7 +52,7 @@ class TestingHelper
         TestingHelper::$client->connect(new ClientConfiguration(...TestConfig::$endpoints));
         TestingHelper::initValues();
     }
-    
+
     /**
      * Cleans up testing environment.
      * Should be called from any test case tearDownAfterClass method.
@@ -70,7 +70,7 @@ class TestingHelper
             //expected exception
         }
     }
-    
+
     public static function executeExample(string $name, TestCase $testCase, array $outputChecker): void
     {
         $output = null;
@@ -82,7 +82,7 @@ class TestingHelper
             call_user_func($outputChecker, $output);
         }
     }
-    
+
     public static function compare($value1, $value2): bool
     {
         TestingHelper::logDebug(sprintf('compare: %s and %s', TestingHelper::printValue($value1), TestingHelper::printValue($value2)));
@@ -222,7 +222,7 @@ class TestingHelper
             return true;
         }
     }
-    
+
     private static function initValues(): void
     {
         TestingHelper::$primitiveValues = [
@@ -319,7 +319,7 @@ class TestingHelper
                 'typeOptional' => true
             ],
         ];
-        
+
         TestingHelper::$arrayValues = [
             ObjectType::BYTE_ARRAY => [ 'elemType' => ObjectType::BYTE ],
             ObjectType::SHORT_ARRAY => [ 'elemType' => ObjectType::SHORT ],
@@ -347,12 +347,12 @@ class TestingHelper
     {
         return $value1 === $value2;
     }
-    
+
     public static function printValue($value)
     {
         return print_r($value, true);
     }
-    
+
     private static function logDebug($message): void
     {
         if (TestConfig::$debug) {

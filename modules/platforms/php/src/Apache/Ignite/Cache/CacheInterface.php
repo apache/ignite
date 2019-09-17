@@ -41,22 +41,22 @@ interface CacheInterface
      *  @anchor PeekMode
      *  @{
      */
-    
+
     /**
      * Peek mode ALL
      */
     const PEEK_MODE_ALL = 0;
-    
+
     /**
      * Peek mode NEAR
      */
     const PEEK_MODE_NEAR = 1;
-    
+
     /**
      * Peek mode PRIMARY
      */
     const PEEK_MODE_PRIMARY = 2;
-    
+
     /**
      * Peek mode BACKUP
      */
@@ -89,7 +89,7 @@ interface CacheInterface
      * @throws ClientException if error.
      */
     public function setKeyType($type): CacheInterface;
-    
+
     /**
      * Specifies a type of the cache value.
      *
@@ -116,18 +116,18 @@ interface CacheInterface
     public function setValueType($type): CacheInterface;
 
     /* Methods to operate with the cache using Key-Value Queries */
-    
+
     /**
      * Retrieves a value associated with the specified key from the cache.
-     * 
+     *
      * @param mixed $key key.
-     * 
+     *
      * @return mixed value associated with the specified key, or null if it does not exist.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function get($key);
-    
+
     /**
      * Retrieves entries associated with the specified keys from the cache.
      *
@@ -139,13 +139,13 @@ interface CacheInterface
      * @throws ClientException if error.
      */
     public function getAll(array $keys): array;
-    
+
     /**
      * Associates the specified value with the specified key in the cache.
      *
      * Overwrites the previous value if the key exists in the cache,
      * otherwise creates new entry (key-value pair).
-     * 
+     *
      * @param mixed $key key
      * @param mixed $value value to be associated with the specified key.
      *
@@ -164,42 +164,42 @@ interface CacheInterface
      * @throws ClientException if error.
      */
     public function putAll(array $entries): void;
-    
+
     /**
      * Checks if the specified key exists in the cache.
-     * 
+     *
      * @param mixed $key key to check.
-     * 
+     *
      * @return bool true if the key exists, false otherwise.
      *
      * @throws ClientException if error.
      */
     public function containsKey($key): bool;
-    
+
     /**
      * Checks if all the specified keys exist in the cache.
-     * 
+     *
      * @param array $keys keys to check.
-     * 
+     *
      * @return bool true if all the keys exist,
      *   false if at least one of the keys does not exist in the cache.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function containsKeys(array $keys): bool;
-    
+
     /**
      * Associates the specified value with the specified key in the cache
      * and returns the previous associated value, if any.
      *
      * Overwrites the previous value if the key exists in the cache,
      * otherwise creates new entry (key-value pair).
-     * 
+     *
      * @param mixed $key key.
      * @param mixed $value value to be associated with the specified key.
-     * 
+     *
      * @return mixed the previous value associated with the specified key, or null if it did not exist.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getAndPut($key, $value);
@@ -208,23 +208,23 @@ interface CacheInterface
      * Associates the specified value with the specified key in the cache
      * and returns the previous associated value, if the key exists in the cache.
      * Otherwise does nothing and returns null.
-     * 
+     *
      * @param mixed $key key.
      * @param mixed $value value to be associated with the specified key.
-     * 
+     *
      * @return mixed the previous value associated with the specified key, or null if it did not exist.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getAndReplace($key, $value);
-    
+
     /**
      * Removes the cache entry with the specified key and returns the last associated value, if any.
-     * 
+     *
      * @param mixed $key key of the entry to be removed.
-     * 
+     *
      * @return mixed the last value associated with the specified key, or null if it did not exist.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getAndRemove($key);
@@ -232,39 +232,39 @@ interface CacheInterface
     /**
      * Creates new entry (key-value pair) if the specified key does not exist in the cache.
      * Otherwise does nothing.
-     * 
+     *
      * @param mixed $key key.
      * @param mixed $value value to be associated with the specified key.
-     * 
+     *
      * @return true if the operation has been done, false otherwise.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function putIfAbsent($key, $value): bool;
-    
+
     /**
      * Creates new entry (key-value pair) if the specified key does not exist in the cache.
      * Otherwise returns the current value associated with the existing key.
-     * 
+     *
      * @param mixed $key key.
      * @param mixed $value value to be associated with the specified key.
-     * 
+     *
      * @return mixed the current value associated with the key if it already exists in the cache,
      *   null if the new entry is created.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getAndPutIfAbsent($key, $value);
-    
+
     /**
      * Associates the specified value with the specified key, if the key exists in the cache.
      * Otherwise does nothing.
-     * 
+     *
      * @param mixed $key key.
      * @param mixed $value value to be associated with the specified key.
-     * 
+     *
      * @return bool true if the operation has been done, false otherwise.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function replace($key, $value): bool;
@@ -273,89 +273,89 @@ interface CacheInterface
      * Associates the new value with the specified key, if the key exists in the cache
      * and the current value equals to the provided one.
      * Otherwise does nothing.
-     * 
+     *
      * @param mixed $key key.
      * @param mixed $value value to be compared with the current value associated with the specified key.
      * @param mixed $newValue new value to be associated with the specified key.
-     * 
+     *
      * @return bool true if the operation has been done, false otherwise.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function replaceIfEquals($key, $value, $newValue): bool;
-    
+
     /**
      * Removes all entries from the cache, without notifying listeners and cache writers.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function clear(): void;
-    
+
     /**
      * Removes entry with the specified key from the cache, without notifying listeners and cache writers.
-     * 
+     *
      * @param mixed $key key to be removed.
      *
      * @throws ClientException if error.
      */
     public function clearKey($key): void;
-    
+
     /**
      * Removes entries with the specified keys from the cache, without notifying listeners and cache writers.
-     * 
+     *
      * @param array $keys keys to be removed.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function clearKeys($keys): void;
-    
+
     /**
      * Removes entry with the specified key from the cache, notifying listeners and cache writers.
-     * 
+     *
      * @param mixed $key key to be removed.
-     * 
+     *
      * @return bool true if the operation has been done, false otherwise.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function removeKey($key): bool;
-    
+
     /**
      * Removes entry with the specified key from the cache, if the current value equals to the provided one.
      * Notifies listeners and cache writers.
-     * 
+     *
      * @param mixed $key key to be removed.
      * @param mixed $value value to be compared with the current value associated with the specified key.
-     * 
+     *
      * @return bool true if the operation has been done, false otherwise.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function removeIfEquals($key, $value): bool;
-    
+
     /**
      * Removes entries with the specified keys from the cache, notifying listeners and cache writers.
-     * 
+     *
      * @param array $keys keys to be removed.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function removeKeys($keys): void;
-            
+
     /**
      * Removes all entries from the cache, notifying listeners and cache writers.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function removeAll(): void;
-    
+
     /**
      * Returns the number of the entries in the cache.
-     * 
+     *
      * @param int ...$peekModes peek modes, values from @ref PeekMode constants.
-     * 
+     *
      * @return int the number of the entries in the cache.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getSize(int ...$peekModes): int;
@@ -364,9 +364,9 @@ interface CacheInterface
 
     /**
      * Starts an SQL, SQL Fields or Scan query operation.
-     * 
+     *
      * @param Query $query query to be executed.
-     * 
+     *
      * @return CursorInterface new instance of the class with interface representing a cursor
      * to obtain the results of the query operation:
      *   - SqlFieldsCursorInterface in case of SqlFieldsQuery query

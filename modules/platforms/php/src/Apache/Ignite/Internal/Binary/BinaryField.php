@@ -22,14 +22,14 @@ class BinaryField
     private $name;
     private $id;
     private $typeCode;
-    
+
     public function __construct(string $name = null, int $typeCode = 0)
     {
         $this->name = $name;
         $this->id = BinaryField::calculateId($name);
         $this->typeCode = $typeCode;
     }
-    
+
     public static function calculateId(?string $name): int
     {
         return BinaryUtils::hashCodeLowerCase($name);

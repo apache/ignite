@@ -310,12 +310,12 @@ class BinaryUtils
         }
         return $info->getElementTypeCode();
     }
-    
+
     public static function getTypeCode($objectType): int
     {
         return $objectType instanceof ObjectType ? $objectType->getTypeCode() : $objectType;
     }
-    
+
     public static function getTypeName($objectType): string
     {
         if (is_string($objectType)) {
@@ -341,7 +341,7 @@ class BinaryUtils
         }
         ArgumentChecker::hasValueFrom($type, $argName, false, TypeInfo::getPrimitiveTypes());
     }
-    
+
     public static function floatEquals(float $val1, float $val2): bool
     {
         return abs($val1 - $val2) < BinaryUtils::FLOAT_EPSILON;
@@ -368,7 +368,7 @@ class BinaryUtils
         }
         return BinaryUtils::intVal32($hash);
     }
-    
+
     public static function hashCodeLowerCase(?string $str): int
     {
         return BinaryUtils::hashCode($str ? strtolower($str) : $str);
@@ -385,7 +385,7 @@ class BinaryUtils
         }
         return BinaryUtils::intVal32($hash);
     }
-    
+
     public static function intVal32(int $value): int
     {
         if (!BinaryUtils::$is32BitInt) {

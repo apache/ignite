@@ -59,7 +59,7 @@ class BinaryTypeStorage
         }
         return $storageType;
     }
-    
+
     public static function getByComplexObjectType(ComplexObjectType $complexObjectType): ?array
     {
         return BinaryTypeStorage::getComplexObjectTypes()->get($complexObjectType, null);

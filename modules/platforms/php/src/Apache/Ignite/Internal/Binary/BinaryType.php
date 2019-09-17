@@ -25,7 +25,7 @@ class BinaryType
     private $schemas;
     private $isEnum;
     private $enumValues;
-    
+
     public function __construct(?string $name)
     {
         $this->name = $name;
@@ -35,7 +35,7 @@ class BinaryType
         $this->isEnum = false;
         $this->enumValues = null;
     }
-    
+
     public static function calculateId($name)
     {
         return BinaryUtils::hashCodeLowerCase($name);
@@ -45,12 +45,12 @@ class BinaryType
     {
         return $this->id;
     }
-    
+
     public function setId(int $id): void
     {
         $this->id = $id;
     }
-    
+
     public function getName(): string
     {
         return $this->name;
@@ -99,12 +99,12 @@ class BinaryType
     {
         return $this->hasSchema($schemaId) ? $this->schemas[$schemaId] : null;
     }
-    
+
     public function isEnum(): bool
     {
         return $this->isEnum;
     }
-    
+
     public function getEnumValues(): ?array
     {
         return $this->enumValues;

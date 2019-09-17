@@ -29,7 +29,7 @@ class Class1
     public $field_1_1;
     public $field_1_2;
     public $field_1_3;
-    
+
     public function __construct()
     {
         $this->field_1_1 = null;
@@ -45,7 +45,7 @@ class SubClass1 extends Class1
     public $field_1_6;
     public $field_1_7;
     public $field_1_8;
-    
+
     public function __construct()
     {
         parent::__construct();
@@ -71,7 +71,7 @@ class Class3 {
 final class ComplexObjectTestCase extends TestCase
 {
     const CACHE_NAME = '__php_test_compl_obj_cache';
-    
+
     private static $cache;
 
     public static function setUpBeforeClass(): void
@@ -86,7 +86,7 @@ final class ComplexObjectTestCase extends TestCase
         self::cleanUp();
         TestingHelper::cleanUp();
     }
-    
+
     public function testPutGetComplexObjects(): void
     {
         $value1 = new Class1();
@@ -135,7 +135,7 @@ final class ComplexObjectTestCase extends TestCase
         $this->putGetComplexObjectsWithDifferentTypes(
             $value1, $value2, $valueType1, $valueType2, Class1::class, SubClass1::class);
     }
-    
+
     public function testPutGetComplexObjectsWithArrays(): void
     {
         $value1 = new Class1();
@@ -267,7 +267,7 @@ final class ComplexObjectTestCase extends TestCase
                 setPhpClassName(Class2::class));
         $this->putGetBinaryObjects($defaultValueType);
     }
-    
+
     private function putGetComplexObjectsWithDifferentTypes(
         $key, $value, $keyType, $valueType, $keyClass, $valueClass, $isNullable = false)
     {
@@ -313,7 +313,7 @@ final class ComplexObjectTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private function putGetBinaryObjects($valueType): void
     {
         $value1 = new Class1();
@@ -378,7 +378,7 @@ final class ComplexObjectTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private function binaryObjectEquals(BinaryObject $binaryObj, $valuePattern, $valueType): void
     {
         $strBinObj = TestingHelper::printValue($binaryObj);
@@ -394,17 +394,17 @@ final class ComplexObjectTestCase extends TestCase
                 "values are not equal: put value={$strValue}, get value={$strObject}");
         }
     }
-    
+
     private function getPrimitiveValue(int $typeCode)
     {
         return TestingHelper::$primitiveValues[$typeCode]['values'][0];
     }
-    
+
     private function getArrayValues(int $typeCode)
     {
         return TestingHelper::$primitiveValues[TestingHelper::$arrayValues[$typeCode]['elemType']]['values'];
     }
-    
+
     private function getMapValue(int $typeCode)
     {
         $map = new Map();
@@ -419,7 +419,7 @@ final class ComplexObjectTestCase extends TestCase
         }
         return $map;
     }
-    
+
     private static function cleanUp(): void
     {
         TestingHelper::destroyCache(self::CACHE_NAME);

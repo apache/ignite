@@ -44,7 +44,7 @@ final class ScanQueryTestCase extends TestCase
         self::cleanUp();
         TestingHelper::cleanUp();
     }
-    
+
     public function testGetAll(): void
     {
         $cache = self::$cache;

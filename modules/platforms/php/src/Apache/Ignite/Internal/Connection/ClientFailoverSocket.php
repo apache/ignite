@@ -34,7 +34,7 @@ class ClientFailoverSocket
     private $endpointsNumber;
     private $endpointIndex;
     private $reconnectRequired;
-            
+
     public function __construct()
     {
         $this->socket = null;

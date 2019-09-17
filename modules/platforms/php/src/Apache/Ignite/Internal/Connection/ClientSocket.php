@@ -65,7 +65,7 @@ class ClientSocket
     {
         $this->disconnect();
     }
-    
+
     public static function init(): void
     {
         ClientSocket::$currentVersion = ProtocolVersion::$V_1_2_0;
@@ -73,7 +73,7 @@ class ClientSocket
             ProtocolVersion::$V_1_2_0
         ];
     }
-    
+
     public function getEndpoint(): string
     {
         return $this->endpoint;
@@ -113,7 +113,7 @@ class ClientSocket
             $this->socket = null;
         }
     }
-    
+
     private function getHandshakeRequest($version): Request
     {
         $this->protocolVersion = $version;
@@ -233,7 +233,7 @@ class ClientSocket
         }
         return false;
     }
-    
+
     private function logMessage(int $requestId, bool $isRequest, MessageBuffer $buffer): void
     {
         if (Logger::isDebug()) {

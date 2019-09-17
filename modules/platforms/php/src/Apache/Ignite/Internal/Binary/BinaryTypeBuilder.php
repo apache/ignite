@@ -24,14 +24,14 @@ class BinaryTypeBuilder
     private $type;
     private $schema;
     private $fromStorage;
-    
+
     private function __construct()
     {
         $this->type = null;
         $this->schema = null;
         $this->fromStorage = false;
     }
-            
+
     public static function fromTypeName(string $typeName): BinaryTypeBuilder
     {
         $result = new BinaryTypeBuilder();
@@ -88,7 +88,7 @@ class BinaryTypeBuilder
         }
         return $result;
     }
-    
+
     public static function calcTypeName(ComplexObjectType $complexObjectType, object $object): string
     {
         $typeName = $complexObjectType->getIgniteTypeName();
@@ -117,7 +117,7 @@ class BinaryTypeBuilder
     {
         return $this->schema;
     }
-    
+
     public function getSchemaId(): int
     {
         return $this->schema->getId();
