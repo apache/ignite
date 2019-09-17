@@ -34,9 +34,9 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.metric.view.SystemView;
 import org.apache.ignite.spi.metric.view.CacheGroupView;
@@ -112,6 +112,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 srvcCfg.setName("service");
                 srvcCfg.setMaxPerNodeCount(1);
                 srvcCfg.setService(new DummyService());
+                srvcCfg.setNodeFilter(new TestNodeFilter());
 
                 g.services().deploy(srvcCfg);
 
@@ -128,7 +129,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
                 assertNull(sview.cacheName());
                 assertNull(sview.affinityKey());
-                assertEquals(ClusterGroupAdapter.AttributeFilter.class, sview.nodeFilter());
+                assertEquals(TestNodeFilter.class, sview.nodeFilter());
                 assertFalse(sview.staticallyConfigured());
                 assertEquals(g.localNode().id(), sview.originNodeId());
             }
@@ -141,6 +142,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 srvcCfg.setName("service-2");
                 srvcCfg.setMaxPerNodeCount(2);
                 srvcCfg.setService(new DummyService());
+                srvcCfg.setNodeFilter(new TestNodeFilter());
                 srvcCfg.setCacheName("test-cache");
                 srvcCfg.setAffinityKey(1L);
 
@@ -160,7 +162,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(srvcCfg.getMaxPerNodeCount(), sview[0].maxPerNodeCount());
                 assertEquals("test-cache", sview[0].cacheName());
                 assertEquals("1", sview[0].affinityKey());
-                assertEquals(ClusterGroupAdapter.AttributeFilter.class, sview[0].nodeFilter());
+                assertEquals(TestNodeFilter.class, sview[0].nodeFilter());
                 assertFalse(sview[0].staticallyConfigured());
                 assertEquals(g.localNode().id(), sview[0].originNodeId());
             }
@@ -374,6 +376,14 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals("0", t.userVersion());
 
             latch.countDown();
+        }
+    }
+
+    /** Test node filter. */
+    public static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return true;
         }
     }
 }

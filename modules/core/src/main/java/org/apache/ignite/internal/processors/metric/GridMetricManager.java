@@ -352,7 +352,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param rowCls Row class.
      * @param data Data.
      * @param rowFunc value to row function.
-     * @param <R> List row type.
+     * @param <R> View row type.
      * @param <D> Collection data type.
      */
     public <R, D> void registerView(String name, String desc,

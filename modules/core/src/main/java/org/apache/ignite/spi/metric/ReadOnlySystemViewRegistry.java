@@ -30,7 +30,7 @@ import org.apache.ignite.spi.metric.view.SystemView;
  */
 public interface ReadOnlySystemViewRegistry extends Iterable<SystemView<?>> {
     /**
-     * Adds listener of list creation events.
+     * Adds listener of view creation events.
      *
      * @param lsnr Listener.
      */
