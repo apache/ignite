@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -120,6 +119,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             METRIC_TIME_BUCKETS,
             "Transactions user times on node represented as histogram."
         );
+    }
+
+    /** */
+    public void onTxManagerStarted() {
+        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
         mreg.register("AllOwnerTransactions",
             this::getAllOwnerTransactions,
@@ -322,9 +326,6 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      *
      */
     private Collection<GridNearTxLocal> nearTxs(long duration) {
-        if (gridKernalCtx.cache().context() == null)
-            return Collections.emptyList();
-
         final long start = System.currentTimeMillis();
 
         IgniteClosure<IgniteInternalTx, GridNearTxLocal> c = new IgniteClosure<IgniteInternalTx, GridNearTxLocal>() {
@@ -346,9 +347,6 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      *
      */
     private long nearTxNum() {
-        if (gridKernalCtx.cache().context() == null)
-            return 0;
-
         IgnitePredicate<IgniteInternalTx> pred = new IgnitePredicate<IgniteInternalTx>() {
             @Override public boolean apply(IgniteInternalTx tx) {
                 return tx.local() && tx.near();
@@ -362,9 +360,6 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      * Count total number of holding locks on local node.
      */
     private long txHoldingLockNum() {
-        if (gridKernalCtx.cache().context() == null)
-            return 0;
-
         long holdingLockCounter = 0;
 
         IgniteTxManager tm = gridKernalCtx.cache().context().tm();
@@ -383,9 +378,6 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      * Count total number of locked keys on local node.
      */
     private long txLockedKeysNum() {
-        if (gridKernalCtx.cache().context() == null)
-            return 0;
-
         GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
 
         if (mvccManager == null)
