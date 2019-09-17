@@ -16,18 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.commons.lang3.SerializationUtils;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -51,6 +39,17 @@ import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -75,8 +74,8 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
         checkBasicCacheOperations(
             Byte.MIN_VALUE,
             Byte.MAX_VALUE,
-            0,
-            1);
+            (byte)0,
+            (byte)1);
     }
 
     /**
@@ -87,8 +86,8 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
         checkBasicCacheOperations(
             Short.MIN_VALUE,
             Short.MAX_VALUE,
-            0,
-            1);
+            (short)0,
+            (short)1);
     }
 
     /**
@@ -111,8 +110,8 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
         checkBasicCacheOperations(
             Long.MIN_VALUE,
             Long.MAX_VALUE,
-            0,
-            1);
+            0L,
+            1L);
     }
 
     /**
@@ -126,10 +125,10 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
             Float.NaN,
             Float.NEGATIVE_INFINITY,
             Float.POSITIVE_INFINITY,
-            0,
-            0.0,
-            1,
-            1.1);
+            0F,
+            0.0F,
+            1F,
+            1.1F);
     }
 
     /**
@@ -143,10 +142,10 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
             Double.NaN,
             Double.NEGATIVE_INFINITY,
             Double.POSITIVE_INFINITY,
-            0,
-            0.0,
-            1,
-            1.1);
+            0D,
+            0.0D,
+            1D,
+            1.1D);
     }
 
     /**
@@ -166,8 +165,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
     public void testCharacterDataType() throws Exception {
         checkBasicCacheOperations(
             'a',
-            'A',
-            0);
+            'A');
     }
 
     /**
@@ -398,7 +396,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
      * @param valsToCheck Array of values to check.
      */
     @SuppressWarnings("unchecked")
-    private void checkBasicCacheOperations(Serializable... valsToCheck) throws Exception {
+    protected void checkBasicCacheOperations(Serializable... valsToCheck) throws Exception {
         assert valsToCheck.length > 0;
 
         // In case of BigDecimal, cache internally changes bitLength of BigDecimal's intValue,
