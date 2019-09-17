@@ -26,7 +26,9 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/** */
+/**
+ * Test checks that metrics will be export without exceptions during node start.
+ */
 public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
     /** */
     public static final int EXPORT_TIMEOUT = 10;
