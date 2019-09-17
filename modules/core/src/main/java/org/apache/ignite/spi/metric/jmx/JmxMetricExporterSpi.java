@@ -54,7 +54,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     private @Nullable Predicate<MetricRegistry> metricFilter;
 
     /** System view filter. */
-    private @Nullable Predicate<SystemView<?>> systemViewFilter;
+    private @Nullable Predicate<SystemView<?>> sysViewFilter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
@@ -76,7 +76,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
      * @param sysView System view.
      */
     private void register(SystemView<?> sysView) {
-        if (systemViewFilter != null && !systemViewFilter.test(sysView)) {
+        if (sysViewFilter != null && !sysViewFilter.test(sysView)) {
             if (log.isDebugEnabled())
                 U.debug(log, "System view filtered and will not be registered.[name=" + sysView.name() + ']');
 
@@ -208,6 +208,6 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
 
     /** {@inheritDoc} */
     @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
-        this.systemViewFilter = filter;
+        this.sysViewFilter = filter;
     }
 }
