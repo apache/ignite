@@ -43,6 +43,7 @@ import static org.junit.Assert.assertThat;
 public class InMemoryCachedDistributedMetaStorageBridgeTest {
     /** */
     private JdkMarshaller marshaller;
+
     /** */
     private InMemoryCachedDistributedMetaStorageBridge bridge;
 
