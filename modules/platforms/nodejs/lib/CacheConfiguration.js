@@ -35,8 +35,8 @@ class CacheKeyConfiguration {
     /**
      * Public constructor.
      *
-     * @param {string} [typeName=null]
-     * @param {string} [affinityKeyFieldName=null]
+     * @param {string} [typeName=null] - Type name for which affinity field name is being defined.
+     * @param {string} [affinityKeyFieldName=null] - Affinity key field name.
      *
      * @return {CacheKeyConfiguration} - new CacheKeyConfiguration instance.
      */
@@ -46,9 +46,9 @@ class CacheKeyConfiguration {
     }
 
     /**
+     * Sets type name for which affinity field name is being defined.
      *
-     *
-     * @param {string} typeName
+     * @param {string} typeName - Type name for which affinity field name is being defined.
      *
      * @return {CacheKeyConfiguration} - the same instance of the CacheKeyConfiguration.
      */
@@ -58,18 +58,18 @@ class CacheKeyConfiguration {
     }
 
     /**
+     * Gets type name for which affinity field name is being defined.
      *
-     *
-     * @return {string}
+     * @return {string} - Type name for which affinity field name is being defined.
      */
     getTypeName() {
         return this._typeName;
     }
 
     /**
+     * Sets affinity key field name.
      *
-     *
-     * @param {string} affinityKeyFieldName
+     * @param {string} affinityKeyFieldName - Affinity key field name.
      *
      * @return {CacheKeyConfiguration} - the same instance of the CacheKeyConfiguration.
      */
@@ -79,9 +79,9 @@ class CacheKeyConfiguration {
     }
 
     /**
+     * Gets affinity key field name.
      *
-     *
-     * @return {string}
+     * @return {string} - Affinity key field name.
      */
     getAffinityKeyFieldName() {
         return this._affinityKeyFieldName;
@@ -132,9 +132,9 @@ class QueryEntity {
     }
 
     /**
+     * Sets key type name for this query entity.
      *
-     *
-     * @param {string} keyTypeName
+     * @param {string} keyTypeName - Key type name.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -144,18 +144,18 @@ class QueryEntity {
     }
 
     /**
+     * Gets key type name for this query entity.
      *
-     *
-     * @return {string}
+     * @return {string} - Key type name.
      */
     getKeyTypeName() {
         return this._keyTypeName;
     }
 
     /**
+     * Sets value type name for this query entity.
      *
-     *
-     * @param {string} valueTypeName
+     * @param {string} valueTypeName - Value type name.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -165,18 +165,18 @@ class QueryEntity {
     }
 
     /**
+     * Gets value type name for this query entity.
      *
-     *
-     * @return {string}
+     * @return {string} - Value type name.
      */
     getValueTypeName() {
         return this._valueTypeName;
     }
 
     /**
+     * Sets table name for this query entity.
      *
-     *
-     * @param {string} tableName
+     * @param {string} tableName - Table name.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -186,18 +186,18 @@ class QueryEntity {
     }
 
     /**
+     * Gets table name for this query entity.
      *
-     *
-     * @return {string}
+     * @return {string} - Table name.
      */
     getTableName() {
         return this._tableName;
     }
 
     /**
+     * Sets key field name.
      *
-     *
-     * @param {string} keyFieldName
+     * @param {string} keyFieldName - Key name.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -207,18 +207,18 @@ class QueryEntity {
     }
 
     /**
+     * Gets key field name.
      *
-     *
-     * @return {string}
+     * @return {string} - Key name.
      */
     getKeyFieldName() {
         return this._keyFieldName;
     }
 
     /**
+     * Sets value field name.
      *
-     *
-     * @param {string} valueFieldName
+     * @param {string} valueFieldName - Value name.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -228,18 +228,19 @@ class QueryEntity {
     }
 
     /**
+     * Gets value field name.
      *
-     *
-     * @return {string}
+     * @return {string} - Value name.
      */
     getValueFieldName() {
         return this._valueFieldName;
     }
 
     /**
+     * Sets query fields for this query pair. The order of the fields is important as it
+     * defines the order of columns returned by the 'select *' queries.
      *
-     *
-     * @param {Array<QueryField>} fields
+     * @param {Array<QueryField>} fields - Array of query fields.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -249,18 +250,20 @@ class QueryEntity {
     }
 
     /**
+     * Gets query fields for this query pair. The order of the fields is
+     * defines the order of columns returned by the 'select *' queries.
      *
-     *
-     * @return {Array<QueryField>}
+     * @return {Array<QueryField>} - Array of query fields.
      */
     getFields() {
         return this._fields;
     }
 
     /**
+     * Sets mapping from a full property name in dot notation to an alias that will be
+     * used as SQL column name. Example: {"parent.name" -> "parentName"}.
      *
-     *
-     * @param {Map<string, string>} aliases
+     * @param {Map<string, string>} aliases - Aliases map.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -270,18 +273,18 @@ class QueryEntity {
     }
 
     /**
+     * Gets aliases map.
      *
-     *
-     * @return {Map<string, string>}
+     * @return {Map<string, string>} - Aliases map.
      */
     getAliases() {
         return this._aliases;
     }
 
     /**
+     * Sets a collection of index entities.
      *
-     *
-     * @param {Array<QueryIndex>} indexes
+     * @param {Array<QueryIndex>} indexes - Collection (array) of index entities.
      *
      * @return {QueryEntity} - the same instance of the QueryEntity.
      */
@@ -291,9 +294,9 @@ class QueryEntity {
     }
 
     /**
+     * Gets a collection of index entities.
      *
-     *
-     * @return {Array<QueryIndex>}
+     * @return {Array<QueryIndex>} - Collection (array) of index entities.
      */
     getIndexes() {
         return this._indexes;
@@ -400,8 +403,8 @@ class QueryField {
     /**
      * Public constructor.
      *
-     * @param {string} [name=null]
-     * @param {string} [typeName=null]
+     * @param {string} [name=null] - Query field name.
+     * @param {string} [typeName=null] - Query field type name.
      *
      * @return {QueryField} - new QueryField instance.
      */
@@ -420,9 +423,9 @@ class QueryField {
     }
 
     /**
+     * Sets query field name.
      *
-     *
-     * @param {string} name
+     * @param {string} name - Query field name.
      *
      * @return {QueryField} - the same instance of the QueryField.
      */
@@ -432,18 +435,18 @@ class QueryField {
     }
 
     /**
+     * Gets query field name.
      *
-     *
-     * @return {string}
+     * @return {string} - Query field name.
      */
     getName() {
         return this._name;
     }
 
     /**
+     * Sets query field type name.
      *
-     *
-     * @param {string} typeName
+     * @param {string} typeName - Query field type name.
      *
      * @return {QueryField} - the same instance of the QueryField.
      */
@@ -453,18 +456,18 @@ class QueryField {
     }
 
     /**
+     * Gets query field type name.
      *
-     *
-     * @return {string}
+     * @return {string} - Query field type name.
      */
     getTypeName() {
         return this._typeName;
     }
 
     /**
+     * Sets if it is a key query field or not.
      *
-     *
-     * @param {boolean} isKeyField
+     * @param {boolean} isKeyField - True to make this query field a key field. False otherwise.
      *
      * @return {QueryField} - the same instance of the QueryField.
      */
@@ -474,18 +477,18 @@ class QueryField {
     }
 
     /**
+     * Gets if it is a key query field or not.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - True if this query field is a key field. False otherwise.
      */
     getIsKeyField() {
         return this._isKeyField;
     }
 
     /**
+     * Sets if this query field must be checked for null.
      *
-     *
-     * @param {boolean} isNotNull
+     * @param {boolean} isNotNull - True if this query field must be checked for null. False otherwise.
      *
      * @return {QueryField} - the same instance of the QueryField.
      */
@@ -495,18 +498,18 @@ class QueryField {
     }
 
     /**
+     * Gets if this query field must be checked for null.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - True if this query field must be checked for null. False otherwise.
      */
     getIsNotNull() {
         return this._isNotNull;
     }
 
     /**
+     * Sets query field default value.
      *
-     *
-     * @param {*} defaultValue
+     * @param {*} defaultValue - Query field default value.
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [valueType=null] - type of the default value:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
@@ -521,7 +524,7 @@ class QueryField {
     }
 
     /**
-     *
+     * Gets query field default value.
      *
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [valueType=null] - type of the default value:
      *   - either a type code of primitive (simple) type
@@ -530,7 +533,7 @@ class QueryField {
      *
      * @async
      *
-     * @return {*}
+     * @return {*} - Query field default value.
      */
     async getDefaultValue(valueType = null) {
         if (this._defaultValue === undefined) {
@@ -551,9 +554,9 @@ class QueryField {
     }
 
     /**
+     * Sets query field precision.
      *
-     *
-     * @param {number} precision
+     * @param {number} precision - Query field precision.
      *
      * @return {QueryField} - the same instance of the QueryField.
      */
@@ -564,18 +567,18 @@ class QueryField {
     }
 
     /**
+     * Gets query field precision.
      *
-     *
-     * @return {number}
+     * @return {number} - Query field precision.
      */
     getPrecision() {
         return this._precision;
     }
 
     /**
+     * Sets query field scale.
      *
-     *
-     * @param {number} scale
+     * @param {number} scale - Query field scale.
      *
      * @return {QueryField} - the same instance of the QueryField.
      */
@@ -586,9 +589,9 @@ class QueryField {
     }
 
     /**
+     * Gets query field scale.
      *
-     *
-     * @return {number}
+     * @return {number} - Query field scale.
      */
     getScale() {
         return this._scale;
@@ -654,8 +657,8 @@ class QueryIndex {
     /**
      * Public constructor.
      *
-     * @param {string} [name=null]
-     * @param {string} [typeName=QueryIndex.INDEX_TYPE.SORTED]
+     * @param {string} [name=null] - Query index name.
+     * @param {string} [typeName=QueryIndex.INDEX_TYPE.SORTED] - Query index type name.
      *
      * @return {QueryIndex} - new QueryIndex instance.
      */
@@ -671,9 +674,9 @@ class QueryIndex {
     }
 
     /**
+     * Sets query index name. Will be automatically set if not provided by a user.
      *
-     *
-     * @param {string} name
+     * @param {string} name - Query index name.
      *
      * @return {QueryIndex} - the same instance of the QueryIndex.
      */
@@ -683,18 +686,18 @@ class QueryIndex {
     }
 
     /**
+     * Gets query index name.
      *
-     *
-     * @return {string}
+     * @return {string} - Query index name.
      */
     getName() {
         return this._name;
     }
 
     /**
+     * Sets query index type.
      *
-     *
-     * @param {QueryIndex.INDEX_TYPE} type
+     * @param {QueryIndex.INDEX_TYPE} type - Query index type.
      *
      * @return {QueryIndex} - the same instance of the QueryIndex.
      *
@@ -707,18 +710,26 @@ class QueryIndex {
     }
 
     /**
+     * Gets query index type.
      *
-     *
-     * @return {QueryIndex.INDEX_TYPE}
+     * @return {QueryIndex.INDEX_TYPE} - Query index type.
      */
     getType() {
         return this._type;
     }
 
     /**
+     * Sets index inline size in bytes. When enabled, a part of the indexed value is placed directly
+     * to the index pages, thus minimizing data page accesses and increasing query performance. Allowed values:
+     *   - -1 (default) - determine inline size automatically (see below)
+     *   - 0 - index inline is disabled (not recommended)
+     *   - positive value - fixed index inline
      *
+     * When set to -1, Ignite will try to detect inline size automatically. It will be no more than
+     * CacheConfiguration.getSqlIndexInlineMaxSize(). Index inline will be enabled for all fixed-length types,
+     * but will not be enabled for String.
      *
-     * @param {number} inlineSize
+     * @param {number} inlineSize - Index inline size in bytes.
      *
      * @return {QueryIndex} - the same instance of the QueryIndex.
      */
@@ -728,18 +739,18 @@ class QueryIndex {
     }
 
     /**
+     * Gets index inline size in bytes.
      *
-     *
-     * @return {number}
+     * @return {number} - Index inline size in bytes.
      */
     getInlineSize() {
         return this._inlineSize;
     }
 
     /**
+     * Sets fields included in the index.
      *
-     *
-     * @param {Map<string, boolean>} fields
+     * @param {Map<string, boolean>} fields - Map of the index fields.
      *
      * @return {QueryIndex} - the same instance of the QueryIndex.
      */
@@ -749,9 +760,9 @@ class QueryIndex {
     }
 
     /**
+     * Gets fields included in the index.
      *
-     *
-     * @return {Map<string, boolean>}
+     * @return {Map<string, boolean>} - Map of the index fields.
      */
     getFields() {
         return this._fields;
@@ -976,9 +987,9 @@ class CacheConfiguration {
     }
 
     /**
+     * Sets cache atomicity mode.
      *
-     *
-     * @param {CacheConfiguration.CACHE_ATOMICITY_MODE} atomicityMode
+     * @param {CacheConfiguration.CACHE_ATOMICITY_MODE} atomicityMode - Cache atomicity mode.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      *
@@ -991,18 +1002,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets cache atomicity mode.
      *
-     *
-     * @return {CacheConfiguration.CACHE_ATOMICITY_MODE}
+     * @return {CacheConfiguration.CACHE_ATOMICITY_MODE} - Cache atomicity mode.
      */
     getAtomicityMode() {
         return this._properties.get(PROP_ATOMICITY_MODE);
     }
 
     /**
+     * Sets number of nodes used to back up single partition for {@link CacheConfiguration.CACHE_MODE}.PARTITIONED cache.
      *
-     *
-     * @param {number} backups
+     * @param {number} backups - Number of backup nodes for one partition.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1012,18 +1023,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets number of nodes used to back up single partition for {@link CacheConfiguration.CACHE_MODE}.PARTITIONED cache.
      *
-     *
-     * @return {number}
+     * @return {number} - Number of backup nodes for one partition.
      */
     getBackups() {
         return this._properties.get(PROP_BACKUPS);
     }
 
     /**
+     * Sets caching mode.
      *
-     *
-     * @param {CacheConfiguration.CACHE_MODE} cacheMode
+     * @param {CacheConfiguration.CACHE_MODE} cacheMode - Caching mode.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      *
@@ -1036,18 +1047,21 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets caching mode.
      *
-     *
-     * @return {CacheConfiguration.CACHE_MODE}
+     * @return {CacheConfiguration.CACHE_MODE} - Caching mode.
      */
     getCacheMode() {
         return this._properties.get(PROP_CACHE_MODE);
     }
 
     /**
+     * Sets the flag indicating whether a copy of the value stored in the on-heap cache
+     * should be created for a cache operation return the value. Also, if this flag
+     * is set, copies are created for values passed to CacheInterceptor and to CacheEntryProcessor.
+     * If the on-heap cache is disabled then this flag is of no use.
      *
-     *
-     * @param {boolean} copyOnRead
+     * @param {boolean} copyOnRead - Copy on read flag.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1057,18 +1071,19 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets copy on read flag.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - Copy on read flag.
      */
     getCopyOnRead() {
         return this._properties.get(PROP_COPY_ON_READ);
     }
 
     /**
+     * Sets a name of DataRegionConfiguration for this cache.
      *
-     *
-     * @param {string} dataRegionName
+     * @param {string} dataRegionName - DataRegionConfiguration name. Can be null
+     *  (default DataRegionConfiguration will be used) but should not be empty.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1078,18 +1093,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets the name of DataRegionConfiguration for this cache.
      *
-     *
-     * @return {string}
+     * @return {string} - DataRegionConfiguration name.
      */
     getDataRegionName() {
         return this._properties.get(PROP_DATA_REGION_NAME);
     }
 
     /**
+     * Sets eager ttl flag. If there is at least one cache configured with this flag set to true,
+     * GridGain will create a single thread to clean up expired entries in background.
+     * When flag is set to false, expired entries will be removed on next entry access.
      *
-     *
-     * @param {boolean} eagerTtl
+     * @param {boolean} eagerTtl - True if GridGain should eagerly remove expired cache entries.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1099,18 +1116,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets eager ttl flag. If there is at least one cache configured with this flag set to true,
+     * GridGain will create a single thread to clean up expired entries in background.
+     * When flag is set to false, expired entries will be removed on next entry access.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - Flag indicating whether GridGain will eagerly remove expired entries.
      */
     getEagerTtl() {
         return this._properties.get(PROP_EAGER_TTL);
     }
 
     /**
+     * Enables or disables statistics for this cache.
      *
-     *
-     * @param {boolean} statisticsEnabled
+     * @param {boolean} statisticsEnabled - True to enable, false to disable.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1120,18 +1139,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets if statistics are enabled for this cache.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - True if enabled, false if disabled.
      */
     getStatisticsEnabled() {
         return this._properties.get(PROP_STATISTICS_ENABLED);
     }
 
     /**
+     * Sets the cache group name. Caches with the same group name share single underlying 'physical' cache
+     * (partition set), but are logically isolated. Grouping caches reduces overall overhead, since
+     * internal data structures are shared.
      *
-     *
-     * @param {string} groupName
+     * @param {string} groupName - Cache group name.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1141,18 +1162,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets the cache group name.
      *
-     *
-     * @return {string}
+     * @return {string} - Cache group name.
      */
     getGroupName() {
         return this._properties.get(PROP_GROUP_NAME);
     }
 
     /**
+     * Sets default lock timeout in milliseconds.
      *
-     *
-     * @param {number} lockTimeout
+     * @param {number} lockTimeout - Default lock timeout.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1162,18 +1183,19 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets default lock acquisition timeout.
      *
-     *
-     * @return {number}
+     * @return {number} - Default lock timeout.
      */
     getDefaultLockTimeout() {
         return this._properties.get(PROP_DEFAULT_LOCK_TIMEOUT);
     }
 
     /**
+     * Sets maximum number of allowed concurrent asynchronous operations. 0 - the number of concurrent asynchronous
+     * operations is unlimited.
      *
-     *
-     * @param {number} maxConcurrentAsyncOperations
+     * @param {number} maxConcurrentAsyncOperations - Maximum number of concurrent asynchronous operations.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1183,18 +1205,21 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets maximum number of allowed concurrent asynchronous operations.
+     * If 0 returned then number of concurrent asynchronous operations is unlimited.
      *
-     *
-     * @return {number}
+     * @return {number} - Maximum number of concurrent asynchronous operations or 0 if unlimited.
      */
     getMaxConcurrentAsyncOperations() {
         return this._properties.get(PROP_MAX_CONCURRENT_ASYNC_OPS);
     }
 
     /**
+     * Sets maximum number of query iterators that can be stored. Iterators are stored to support query
+     * pagination when each page of data is sent to user's node only on demand. Increase this property
+     * if you are running and processing lots of queries in parallel.
      *
-     *
-     * @param {number} maxQueryIterators
+     * @param {number} maxQueryIterators - Maximum number of query iterators that can be stored.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1204,18 +1229,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets maximum number of query iterators that can be stored.
      *
-     *
-     * @return {number}
+     * @return {number} - Maximum number of query iterators that can be stored.
      */
     getMaxQueryIterators() {
         return this._properties.get(PROP_MAX_QUERY_ITERATORS);
     }
 
     /**
+     * Enables/disables on-heap cache for the off-heap based page memory.
      *
-     *
-     * @param {boolean} isOnheapCacheEnabled
+     * @param {boolean} isOnheapCacheEnabled - On-heap cache enabled flag.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1225,18 +1250,19 @@ class CacheConfiguration {
     }
 
     /**
+     * Checks if the on-heap cache is enabled for the off-heap based page memory.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - On-heap cache enabled flag.
      */
     getIsOnheapCacheEnabled() {
         return this._properties.get(PROP_IS_ONHEAP_CACHE_ENABLED);
     }
 
     /**
+     * Sets partition loss policy. This policy defines how Ignite will react to a situation when
+     * all nodes for some partition leave the cluster.
      *
-     *
-     * @param {CacheConfiguration.PARTITION_LOSS_POLICY} partitionLossPolicy
+     * @param {CacheConfiguration.PARTITION_LOSS_POLICY} partitionLossPolicy - Partition loss policy.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      *
@@ -1249,18 +1275,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets partition loss policy. This policy defines how Ignite will react to a situation when
+     * all nodes for some partition leave the cluster.
      *
-     *
-     * @return {CacheConfiguration.PARTITION_LOSS_POLICY}
+     * @return {CacheConfiguration.PARTITION_LOSS_POLICY} - Partition loss policy.
      */
     getPartitionLossPolicy() {
         return this._properties.get(PROP_PARTITION_LOSS_POLICY);
     }
 
     /**
+     * Sets size of queries detail metrics that will be stored in memory for monitoring purposes.
+     * If 0, then history will not be collected. Note, larger number may lead to higher memory consumption.
      *
-     *
-     * @param {number} queryDetailMetricsSize
+     * @param {number} queryDetailMetricsSize - Maximum number of latest queries metrics that will be stored in memory.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1270,18 +1298,21 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets size of queries detail metrics that will be stored in memory for monitoring purposes.
+     * If 0, then history will not be collected. Note, larger number may lead to higher memory consumption.
      *
-     *
-     * @return {number}
+     * @return {number} - Maximum number of query metrics that will be stored in memory.
      */
     getQueryDetailMetricsSize() {
         return this._properties.get(PROP_QUERY_DETAIL_METRICS_SIZE);
     }
 
     /**
+     * Defines a hint to query execution engine on desired degree of parallelism within a single node.
+     * Query executor may or may not use this hint depending on estimated query costs.
+     * Query executor may define certain restrictions on parallelism depending on query type and/or cache type.
      *
-     *
-     * @param {number} queryParallelism
+     * @param {number} queryParallelism - Query parallelism.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1291,18 +1322,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets query parallelism parameter which is a hint to query execution engine on desired degree of
+     * parallelism within a single node.
      *
-     *
-     * @return {number}
+     * @return {number} - Query parallelism.
      */
     getQueryParallelism() {
         return this._properties.get(PROP_QUERY_PARALLELISM);
     }
 
     /**
+     * Sets read from backup flag.
      *
-     *
-     * @param {boolean} readFromBackup
+     * @param {boolean} readFromBackup - True to allow reads from backups. False - data always
+     * should be read from primary node and never from backup.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1312,18 +1345,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets flag indicating whether data can be read from backup.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - true if data can be read from backup node or false if data always
+     *  should be read from primary node and never from backup.
      */
     getReadFromBackup() {
         return this._properties.get(PROP_READ_FROM_BACKUP);
     }
 
     /**
+     * Sets rebalance batch size (to be loaded within a single rebalance message). Rebalancing algorithm will split
+     * total data set on every node into multiple batches prior to sending data.
      *
-     *
-     * @param {number} rebalanceBatchSize
+     * @param {number} rebalanceBatchSize - Rebalance batch size (size in bytes of a single rebalance message).
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1333,18 +1368,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets size (in number bytes) to be loaded within a single rebalance message.
      *
-     *
-     * @return {number}
+     * @return {number} - Size in bytes of a single rebalance message.
      */
     getRebalanceBatchSize() {
         return this._properties.get(PROP_REBALANCE_BATCH_SIZE);
     }
 
     /**
+     * To gain better rebalancing performance supplier node can provide more than one batch at rebalancing start
+     * and provide one new to each next demand request. Sets number of batches generated by supply node at
+     * rebalancing start. Minimum is 1.
      *
-     *
-     * @param {number} rebalanceBatchesPrefetchCount
+     * @param {number} rebalanceBatchesPrefetchCount - Batches count.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1354,18 +1391,25 @@ class CacheConfiguration {
     }
 
     /**
+     * To gain better rebalancing performance supplier node can provide more than one batch at rebalancing start
+     * and provide one new to each next demand request. Gets number of batches generated by supply node at
+     * rebalancing start. Minimum is 1.
      *
-     *
-     * @return {number}
+     * @return {number} - Batches count.
      */
     getRebalanceBatchesPrefetchCount() {
         return this._properties.get(PROP_REBALANCE_BATCHES_PREFETCH_COUNT);
     }
 
     /**
+     * Sets delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing should be
+     * started automatically. Rebalancing should be delayed if you plan to restart nodes after they leave topology,
+     * or if you plan to start multiple nodes at once or one after another and don't want to repartition and rebalance
+     * until all nodes are started.
      *
-     *
-     * @param {number} rebalanceDelay
+     * @param {number} rebalanceDelay - Rebalance delay to set. 0 to start rebalancing immediately,
+     *  -1 to start rebalancing manually, or positive value to specify delay in milliseconds after which rebalancing
+     *  should start automatically.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1375,18 +1419,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets rebalance delay.
      *
-     *
-     * @return {number}
+     * @return {number} - Rebalance delay.
      */
     getRebalanceDelay() {
         return this._properties.get(PROP_REBALANCE_DELAY);
     }
 
     /**
+     * Sets rebalance mode for distributed cache.
      *
-     *
-     * @param {CacheConfiguration.REABALANCE_MODE} rebalanceMode
+     * @param {CacheConfiguration.REABALANCE_MODE} rebalanceMode - Rebalance mode.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      *
@@ -1399,18 +1443,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets rebalance mode for distributed cache.
      *
-     *
-     * @return {CacheConfiguration.REABALANCE_MODE}
+     * @return {CacheConfiguration.REABALANCE_MODE} - Rebalance mode.
      */
     getRebalanceMode() {
         return this._properties.get(PROP_REBALANCE_MODE);
     }
 
     /**
+     * Sets cache rebalance order. Rebalance order can be set to non-zero value for caches with SYNC or
+     * ASYNC rebalance modes only. If cache rebalance order is positive, rebalancing for this cache will be started
+     * only when rebalancing for all caches with smaller rebalance order will be completed.
      *
-     *
-     * @param {number} rebalanceOrder
+     * @param {number} rebalanceOrder - Cache rebalance order.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1420,18 +1466,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets cache rebalance order.
      *
-     *
-     * @return {number}
+     * @return {number} - Cache rebalance order.
      */
     getRebalanceOrder() {
         return this._properties.get(PROP_REBALANCE_ORDER);
     }
 
     /**
+     * Sets time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network. This parameter
+     * helps tune the amount of time to wait between rebalance messages to make sure that rebalancing process does not
+     * have any negative performance impact.
      *
-     *
-     * @param {number} rebalanceThrottle
+     * @param {number} rebalanceThrottle - Time in millis to wait between rebalance messages, 0 to disable throttling.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1441,18 +1489,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
      *
-     *
-     * @return {number}
+     * @return {number} - Time in millis to wait between rebalance messages, 0 - throttling disabled.
      */
     getRebalanceThrottle() {
         return this._properties.get(PROP_REBALANCE_THROTTLE);
     }
 
     /**
+     * Sets rebalance timeout (ms).
      *
-     *
-     * @param {number} rebalanceTimeout
+     * @param {number} rebalanceTimeout - Rebalance timeout (ms).
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1462,18 +1510,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets rebalance timeout (ms).
      *
-     *
-     * @return {number}
+     * @return {number} - Rebalance timeout (ms).
      */
     getRebalanceTimeout() {
         return this._properties.get(PROP_REBALANCE_TIMEOUT);
     }
 
     /**
+     * Sets sqlEscapeAll flag. If true all the SQL table and field names will be escaped with double quotes like
+     * ("tableName"."fieldsName"). This enforces case sensitivity for field names and also allows having special
+     * characters in table and field names.
      *
-     *
-     * @param {boolean} sqlEscapeAll
+     * @param {boolean} sqlEscapeAll - Flag value.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1483,18 +1533,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets sqlEscapeAll flag.
      *
-     *
-     * @return {boolean}
+     * @return {boolean} - Flag value.
      */
     getSqlEscapeAll() {
         return this._properties.get(PROP_SQL_ESCAPE_ALL);
     }
 
     /**
+     * Sets maximum inline size for sql indexes.
      *
-     *
-     * @param {number} sqlIndexInlineMaxSize
+     * @param {number} sqlIndexInlineMaxSize - Maximum payload size for offheap indexes.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1504,18 +1554,22 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets maximum inline size for sql indexes.
      *
-     *
-     * @return {number}
+     * @return {number} - Maximum payload size for offheap indexes.
      */
     getSqlIndexInlineMaxSize() {
         return this._properties.get(PROP_SQL_INDEX_INLINE_MAX_SIZE);
     }
 
     /**
+     * Sets sql schema to be used for current cache. This name will correspond to SQL ANSI-99 standard. Nonquoted
+     * identifiers are not case sensitive. Quoted identifiers are case sensitive. Be aware of using the same string
+     * in case sensitive and case insensitive manner simultaneously, since behaviour for such case is not specified.
+     * When sqlSchema is not specified, quoted cacheName is used instead. sqlSchema could not be an empty string.
+     * Has to be "\"\"" (quoted empty string) instead.
      *
-     *
-     * @param {string} sqlSchema
+     * @param {string} sqlSchema - Schema name for current cache according to SQL ANSI-99. Should not be null.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
@@ -1525,18 +1579,20 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets custom name of the sql schema. If custom sql schema is not set then undefined will be returned and quoted
+     * case sensitive name will be used as sql schema.
      *
-     *
-     * @return {string}
+     * @return {string} - Schema name for current cache according to SQL ANSI-99. Could be undefined.
      */
     getSqlSchema() {
         return this._properties.get(PROP_SQL_SCHEMA);
     }
 
     /**
+     * Sets write synchronization mode. Default synchronization mode is
+     * {@link CacheConfiguration.WRITE_SYNCHRONIZATION_MODE}.PRIMARY_SYNC.
      *
-     *
-     * @param {CacheConfiguration.WRITE_SYNCHRONIZATION_MODE} writeSynchronizationMode
+     * @param {CacheConfiguration.WRITE_SYNCHRONIZATION_MODE} writeSynchronizationMode - Write synchronization mode
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      *
@@ -1549,18 +1605,19 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets write synchronization mode. This mode controls whether the main caller should wait for update on
+     * other nodes to complete or not.
      *
-     *
-     * @return {CacheConfiguration.WRITE_SYNCHRONIZATION_MODE}
+     * @return {CacheConfiguration.WRITE_SYNCHRONIZATION_MODE} - Write synchronization mode.
      */
     getWriteSynchronizationMode() {
         return this._properties.get(PROP_WRITE_SYNCHRONIZATION_MODE);
     }
 
     /**
+     * Sets cache key configurations.
      *
-     *
-     * @param {...CacheKeyConfiguration} keyConfigurations
+     * @param {...CacheKeyConfiguration} keyConfigurations - Cache key configurations.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      *
@@ -1573,18 +1630,18 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets cache key configurations.
      *
-     *
-     * @return {Array<CacheKeyConfiguration>}
+     * @return {Array<CacheKeyConfiguration>} - Array of cache key configurations.
      */
     getKeyConfigurations() {
         return this._properties.get(PROP_CACHE_KEY_CONFIGURATION);
     }
 
     /**
+     * Sets query entities configuration.
      *
-     *
-     * @param {...QueryEntity} queryEntities
+     * @param {...QueryEntity} queryEntities - Query entities configuration.
      *
      * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      *
@@ -1597,9 +1654,9 @@ class CacheConfiguration {
     }
 
     /**
+     * Gets a collection (array) of configured query entities.
      *
-     *
-     * @return {Array<QueryEntity>}
+     * @return {Array<QueryEntity>} - Array of query entities configurations.
      */
     getQueryEntities() {
         return this._properties.get(PROP_QUERY_ENTITY);
