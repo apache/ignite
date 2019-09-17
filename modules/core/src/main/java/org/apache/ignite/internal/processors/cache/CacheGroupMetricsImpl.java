@@ -85,50 +85,6 @@ public class CacheGroupMetricsImpl {
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
-        mreg.register("MinimumNumberOfPartitionCopies",
-            this::getMinimumNumberOfPartitionCopies,
-            "Minimum number of partition copies for all partitions of this cache group.");
-
-        mreg.register("MaximumNumberOfPartitionCopies",
-            this::getMaximumNumberOfPartitionCopies,
-            "Maximum number of partition copies for all partitions of this cache group.");
-
-        mreg.register("LocalNodeOwningPartitionsCount",
-            this::getLocalNodeOwningPartitionsCount,
-            "Count of partitions with state OWNING for this cache group located on this node.");
-
-        mreg.register("LocalNodeMovingPartitionsCount",
-            this::getLocalNodeMovingPartitionsCount,
-            "Count of partitions with state MOVING for this cache group located on this node.");
-
-        mreg.register("LocalNodeRentingPartitionsCount",
-            this::getLocalNodeRentingPartitionsCount,
-            "Count of partitions with state RENTING for this cache group located on this node.");
-
-        mreg.register("LocalNodeRentingEntriesCount",
-            this::getLocalNodeRentingEntriesCount,
-            "Count of entries remains to evict in RENTING partitions located on this node for this cache group.");
-
-        mreg.register("OwningPartitionsAllocationMap",
-            this::getOwningPartitionsAllocationMap,
-            Map.class,
-            "Allocation map of partitions with state OWNING in the cluster.");
-
-        mreg.register("MovingPartitionsAllocationMap",
-            this::getMovingPartitionsAllocationMap,
-            Map.class,
-            "Allocation map of partitions with state MOVING in the cluster.");
-
-        mreg.register("AffinityPartitionsAssignmentMap",
-            this::getAffinityPartitionsAssignmentMap,
-            Map.class,
-            "Affinity partitions assignment map.");
-
-        mreg.register("PartitionIds",
-            this::getPartitionIds,
-            List.class,
-            "Local partition ids.");
-
         if (isPDSEnabled()) {
             mreg.register("StorageSize",
                 () -> database().forGroupPageStores(ctx, PageStore::size),
@@ -164,6 +120,55 @@ public class CacheGroupMetricsImpl {
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
+    }
+
+    /** */
+    public void onTopologyInitialized() {
+        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
+
+        mreg.register("MinimumNumberOfPartitionCopies",
+            this::getMinimumNumberOfPartitionCopies,
+            "Minimum number of partition copies for all partitions of this cache group.");
+
+        mreg.register("MaximumNumberOfPartitionCopies",
+            this::getMaximumNumberOfPartitionCopies,
+            "Maximum number of partition copies for all partitions of this cache group.");
+
+        mreg.register("LocalNodeOwningPartitionsCount",
+            this::getLocalNodeOwningPartitionsCount,
+            "Count of partitions with state OWNING for this cache group located on this node.");
+
+        mreg.register("LocalNodeMovingPartitionsCount",
+            this::getLocalNodeMovingPartitionsCount,
+            "Count of partitions with state MOVING for this cache group located on this node.");
+
+        mreg.register("LocalNodeRentingPartitionsCount",
+            this::getLocalNodeRentingPartitionsCount,
+            "Count of partitions with state RENTING for this cache group located on this node.");
+
+        mreg.register("LocalNodeRentingEntriesCount",
+            this::getLocalNodeRentingEntriesCount,
+            "Count of entries remains to evict in RENTING partitions located on this node for this cache group.");
+
+        mreg.register("OwningPartitionsAllocationMap",
+            this::getOwningPartitionsAllocationMap,
+            Map.class,
+            "Allocation map of partitions with state OWNING in the cluster.");
+
+        mreg.register("MovingPartitionsAllocationMap",
+            this::getMovingPartitionsAllocationMap,
+            Map.class,
+            "Allocation map of partitions with state MOVING in the cluster.");
+
+        mreg.register("PartitionIds",
+            this::getPartitionIds,
+            List.class,
+            "Local partition ids.");
+
+        mreg.register("AffinityPartitionsAssignmentMap",
+            this::getAffinityPartitionsAssignmentMap,
+            Map.class,
+            "Affinity partitions assignment map.");
     }
 
     /** */
@@ -222,9 +227,6 @@ public class CacheGroupMetricsImpl {
      * @param pred Predicate.
      */
     private int numberOfPartitionCopies(IntBiPredicate pred) {
-        if (!ctx.isTopologyStarted())
-            return 0;
-
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
 
         if (partFullMap == null)
@@ -309,9 +311,6 @@ public class CacheGroupMetricsImpl {
      * @param state State.
      */
     private int localNodePartitionsCountByState(GridDhtPartitionState state) {
-        if (!ctx.isTopologyStarted())
-            return 0;
-
         int cnt = 0;
 
         for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
@@ -339,9 +338,6 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getLocalNodeRentingEntriesCount() {
-        if (!ctx.isTopologyStarted())
-            return 0;
-
         long entriesCnt = 0;
 
         for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
@@ -369,9 +365,6 @@ public class CacheGroupMetricsImpl {
      * @return Partitions allocation map.
      */
     private Map<Integer, Set<String>> clusterPartitionsMapByState(GridDhtPartitionState state) {
-        if (!ctx.isTopologyStarted())
-            return Collections.emptyMap();
-
         GridDhtPartitionFullMap partFullMap = ctx.topology().partitionMap(false);
 
         if (partFullMap == null)
@@ -407,7 +400,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap() {
-        if (ctx.affinity() == null || ctx.affinity().lastVersion().topologyVersion() < 0)
+        if (ctx.affinity().lastVersion().topologyVersion() < 0)
             return Collections.EMPTY_MAP;
 
         AffinityAssignment assignment = ctx.affinity().cachedAffinity(AffinityTopologyVersion.NONE);
@@ -439,9 +432,6 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public List<Integer> getPartitionIds() {
-        if (!ctx.isTopologyStarted())
-            return Collections.emptyList();
-
         List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
 
         List<Integer> partsRes = new ArrayList<>(parts.size());

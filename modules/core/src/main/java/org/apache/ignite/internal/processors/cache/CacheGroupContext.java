@@ -668,11 +668,6 @@ public class CacheGroupContext {
         return top;
     }
 
-    /** @return {@code True} if topology started. */
-    public boolean isTopologyStarted() {
-        return top != null;
-    }
-
     /**
      * @return {@code True} if current thread holds lock on topology.
      */
@@ -1087,8 +1082,11 @@ public class CacheGroupContext {
                 ccfg.getCacheMode() == LOCAL
             );
 
-        if (ccfg.getCacheMode() != LOCAL)
+        if (ccfg.getCacheMode() != LOCAL) {
             top = new GridDhtPartitionTopologyImpl(ctx, this);
+
+            metrics.onTopologyInitialized();
+        }
 
         try {
             offheapMgr = persistenceEnabled
