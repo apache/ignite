@@ -12,17 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Service\**" />
-    <EmbeddedResource Remove="Service\**" />
-    <None Remove="Service\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="IgniteRunner.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Service\IgniteService.cs" />
+    <Compile Remove="Service\IgniteServiceInstaller.cs" />
   </ItemGroup>
 
 </Project>

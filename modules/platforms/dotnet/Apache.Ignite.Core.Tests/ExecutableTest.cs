@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
@@ -48,12 +49,17 @@ namespace Apache.Ignite.Core.Tests
         /** Grid. */
         private IIgnite _grid;
 
+        /** Temp dir for assemblies. */
+        private string _tempDir;
+
         /// <summary>
         /// Set-up routine.
         /// </summary>
         [SetUp]
         public void SetUp()
         {
+            _tempDir = TestUtils.GetTempDirectoryName();
+
             TestUtils.KillProcesses();
 
             _grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -85,6 +91,8 @@ namespace Apache.Ignite.Core.Tests
             TestUtils.KillProcesses();
 
             IgniteProcess.RestoreConfigurationBackup();
+
+            Directory.Delete(_tempDir, true);
         }
 
         /// <summary>
@@ -106,10 +114,15 @@ namespace Apache.Ignite.Core.Tests
             var cfg = RemoteConfig();
 
             Assert.AreEqual(SpringCfgPath, cfg.SpringConfigUrl);
-            Assert.IsTrue(cfg.JvmOptions.Contains("-DOPT1") && cfg.JvmOptions.Contains("-DOPT2"));
-            Assert.IsTrue(cfg.Assemblies.Contains("test-1.dll") && cfg.Assemblies.Contains("test-2.dll"));
             Assert.AreEqual(602, cfg.JvmInitialMemoryMb);
             Assert.AreEqual(702, cfg.JvmMaxMemoryMb);
+
+            CollectionAssert.Contains(cfg.LoadedAssemblies, "test-1");
+            CollectionAssert.Contains(cfg.LoadedAssemblies, "test-2");
+            Assert.Null(cfg.Assemblies);
+
+            CollectionAssert.Contains(cfg.JvmOptions, "-DOPT1");
+            CollectionAssert.Contains(cfg.JvmOptions, "-DOPT2");
         }
 
         /// <summary>
@@ -118,21 +131,21 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAssemblyCmd()
         {
-            GenerateDll("test-1.dll");
-            GenerateDll("test-2.dll");
+            var dll1 = GenerateDll("test-1.dll", true);
+            var dll2 = GenerateDll("test-2.dll", true);
 
             var proc = new IgniteProcess(
                 "-springConfigUrl=" + SpringCfgPath,
-                "-assembly=test-1.dll",
-                "-assembly=test-2.dll"
-                );
+                "-assembly=" + dll1,
+                "-assembly=" + dll2);
 
             Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
 
-            Assert.IsTrue(cfg.Assemblies.Contains("test-1.dll") && cfg.Assemblies.Contains("test-2.dll"));
+            CollectionAssert.Contains(cfg.LoadedAssemblies, "test-1");
+            CollectionAssert.Contains(cfg.LoadedAssemblies, "test-2");
         }
 
         /// <summary>
@@ -365,6 +378,35 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests a scenario where XML config has references to types from dynamically loaded assemblies.
+        /// </summary>
+        [Test]
+        public void TestXmlConfigurationReferencesTypesFromDynamicallyLoadedAssemblies()
+        {
+            const string code = @"
+                using System;
+                using Apache.Ignite.Core.Log;
+                namespace CustomNs { 
+                    class CustomLogger : ILogger { 
+                        public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, 
+                                        string category, string nativeErrorInfo, Exception ex) {} 
+                        public bool IsEnabled(LogLevel level) { return true; } 
+                } }";
+
+            var dllPath = GenerateDll("CustomAsm.dll", true, code);
+
+            var proc = new IgniteProcess(
+                "-configFileName=config\\ignite-dotnet-cfg-logger.xml",
+                "-assembly=" + dllPath);
+
+            Assert.IsTrue(proc.Alive);
+            Assert.IsTrue(_grid.WaitTopology(2));
+
+            var remoteCfg = RemoteConfig();
+            Assert.AreEqual("CustomNs.CustomLogger", remoteCfg.LoggerTypeName);
+        }
+
+        /// <summary>
         /// Get remote node configuration.
         /// </summary>
         /// <returns>Configuration.</returns>
@@ -374,22 +416,32 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// 
+        /// Generates a DLL dynamically.
         /// </summary>
-        /// <param name="outputPath"></param>
-        private static void GenerateDll(string outputPath)
+        /// <param name="outputPath">Target path.</param>
+        /// <param name="randomPath">Whether to use random path.</param>
+        /// <param name="code">Code to compile.</param>
+        private string GenerateDll(string outputPath, bool randomPath = false, string code = null)
         {
+            // Put resulting DLLs to the random temp dir to make sure they are not resolved from current dir.
+            var resPath = randomPath ? Path.Combine(_tempDir, outputPath) : outputPath;
+
             var parameters = new CompilerParameters
             {
                 GenerateExecutable = false,
-                OutputAssembly = outputPath
+                OutputAssembly = resPath,
+                ReferencedAssemblies = { typeof(IIgnite).Assembly.Location }
             };
 
-            var src = "namespace Apache.Ignite.Client.Test { public class Foo {}}";
+            var src = code ?? "namespace Apache.Ignite.Client.Test { public class Foo {}}";
 
             var results = CodeDomProvider.CreateProvider("CSharp").CompileAssemblyFromSource(parameters, src);
 
-            Assert.False(results.Errors.HasErrors);
+            Assert.False(
+                results.Errors.HasErrors,
+                string.Join(Environment.NewLine, results.Errors.Cast<CompilerError>().Select(e => e.ToString())));
+
+            return resPath;
         }
 
         /// <summary>
@@ -431,8 +483,10 @@ namespace Apache.Ignite.Core.Tests
                     JvmClasspath = cfg.JvmClasspath,
                     JvmOptions = cfg.JvmOptions,
                     Assemblies = cfg.Assemblies,
+                    LoadedAssemblies = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name).ToArray(),
                     JvmInitialMemoryMb = cfg.JvmInitialMemoryMb,
-                    JvmMaxMemoryMb = cfg.JvmMaxMemoryMb
+                    JvmMaxMemoryMb = cfg.JvmMaxMemoryMb,
+                    LoggerTypeName = cfg.Logger == null ? null : cfg.Logger.GetType().FullName
                 };
 
                 Console.WriteLine("RETURNING CFG: " + cfg);
@@ -477,6 +531,11 @@ namespace Apache.Ignite.Core.Tests
             public ICollection<string> Assemblies { get; set; }
 
             /// <summary>
+            /// Assemblies.
+            /// </summary>
+            public ICollection<string> LoadedAssemblies { get; set; }
+
+            /// <summary>
             /// Minimum JVM memory (Xms).
             /// </summary>
             public int JvmInitialMemoryMb { get; set; }
@@ -485,6 +544,11 @@ namespace Apache.Ignite.Core.Tests
             /// Maximum JVM memory (Xms).
             /// </summary>
             public int JvmMaxMemoryMb { get; set; }
+
+            /// <summary>
+            /// Logger type name.
+            /// </summary>
+            public string LoggerTypeName { get; set; }
         }
     }
 }

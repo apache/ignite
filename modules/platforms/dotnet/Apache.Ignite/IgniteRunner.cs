@@ -20,7 +20,6 @@ namespace Apache.Ignite
     using System.Collections.Generic;
     using System.Configuration;
     using System.Linq;
-    using System.ServiceProcess;
     using System.Threading;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
@@ -90,21 +89,25 @@ namespace Apache.Ignite
                 {
                     // Pick application configuration first, command line arguments second.
                     var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
-                        .Concat(ArgsConfigurator.GetArgs(args)).ToArray();
-
-                    // load additional assemblies if required
-                    ArgsAssemblyLoader.LoadAssemblies(allArgs);
+                        .Concat(ArgsConfigurator.GetArgs(args))
+                        .ToArray();
 
                     if (install)
                         IgniteService.DoInstall(allArgs);
                     else
                     {
-                        var ignite = Ignition.Start(Configurator.GetConfiguration(allArgs));
+                        // Load assemblies before instantiating IgniteConfiguration,
+                        // it can reference types from those assemblies.
+                        allArgs = allArgs.LoadAssemblies().ToArray();
 
-                        // Wait until stopped.
-                        var evt = new ManualResetEventSlim(false);
-                        ignite.Stopped += (s, a) => evt.Set();
-                        evt.Wait();
+                        using (var ignite = Ignition.Start(Configurator.GetConfiguration(allArgs)))
+                        {
+                            // Wait until stopped.
+                            var evt = new ManualResetEventSlim(false);
+                            ignite.Stopped += (s, a) => evt.Set();
+                            Console.CancelKeyPress += (s, a) => evt.Set();
+                            evt.Wait();
+                        }
                     }
 
                     return;
@@ -120,8 +123,7 @@ namespace Apache.Ignite
             // If we are here, then this is a service call.
             // Use only arguments, not app.config.
             var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args).ToArray());
-
-            ServiceBase.Run(new IgniteService(cfg));
+            IgniteService.Run(cfg);
         }
 
         /// <summary>

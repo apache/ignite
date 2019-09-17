@@ -18,7 +18,6 @@ namespace Apache.Ignite.Config
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using Apache.Ignite.Core;
 
     /// <summary>
@@ -27,17 +26,23 @@ namespace Apache.Ignite.Config
     internal static class ArgsAssemblyLoader
     {
         /// <summary>
-        /// Load assemblies if assembly key is present in arguments.
-        /// This is useful for plugin configuration before parsing the app.config file.
+        /// Load assemblies from matching arguments and returns other items.
         /// </summary>
-        /// <param name="args">Application arguments in split form.</param>
-        public static void LoadAssemblies(IEnumerable<Tuple<string, string>> args)
+        /// <param name="args">Application arguments.</param>
+        public static IEnumerable<Tuple<string, string>> LoadAssemblies(this IEnumerable<Tuple<string, string>> args)
         {
-            var assemblies = args
-                .Where(x => x.Item1.StartsWith(Configurator.CmdAssembly, StringComparison.InvariantCultureIgnoreCase))
-                .Select(Configurator.ValidateArgValue);
-
-            Ignition.LoadAssemblies(assemblies);
+            foreach (var arg in args)
+            {
+                if (arg.Item1.StartsWith(Configurator.CmdAssembly, StringComparison.OrdinalIgnoreCase))
+                {
+                    var asm = Configurator.ValidateArgValue(arg);
+                    Ignition.LoadAssembly(asm);
+                }
+                else
+                {
+                    yield return arg;
+                }
+            }
         }
     }
 }
