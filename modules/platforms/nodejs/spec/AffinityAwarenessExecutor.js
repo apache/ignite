@@ -28,5 +28,4 @@ jasmine.loadConfig({
     // We want to stop immediately if there are not enough nodes in cluster, for example
     "stopOnSpecFailure": true
 });
-// We exclude the "scan query test suite > scan query settings" spec because sometimes it fails with more than one node cluster
-jasmine.execute(null, "(?!^scan query test suite > scan query settings$)(^.*$)");
+jasmine.execute();

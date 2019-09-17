@@ -16,6 +16,7 @@
 
 'use strict';
 
+const Util = require('util');
 const Cursor = require('./Cursor').Cursor;
 const SqlFieldsCursor = require('./Cursor').SqlFieldsCursor;
 const ArgumentChecker = require('./internal/ArgumentChecker');
@@ -23,6 +24,8 @@ const BinaryCommunicator = require('./internal/BinaryCommunicator');
 const BinaryUtils = require('./internal/BinaryUtils');
 
 const PAGE_SIZE_DEFAULT = 1024;
+
+const DeprecateSetLocal = Util.deprecate(() => {}, "Query.setLocal is deprecated. It will be removed in later versions.");
 
 /**
  * Base class representing a GridGain SQL or Scan query.
@@ -39,8 +42,11 @@ class Query {
      * @param {boolean} local - local query flag: true or false.
      *
      * @return {Query} - the same instance of the Query.
+     *
+     * @deprecated Will be removed in later versions.
      */
     setLocal(local) {
+        DeprecateSetLocal();
         this._local = local;
         return this;
     }
