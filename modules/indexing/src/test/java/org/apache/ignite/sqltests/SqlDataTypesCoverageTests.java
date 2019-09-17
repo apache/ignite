@@ -16,7 +16,11 @@
 
 package org.apache.ignite.sqltests;
 
-import org.apache.commons.codec.binary.Hex;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -31,15 +35,6 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
-
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -519,158 +514,6 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
         /** */
         SqlDataType(Object javaType) {
             this.javaType = javaType;
-        }
-    }
-
-    /**
-     * Holder for both original value and value to be used as part of sql string.
-     */
-    private interface SqlStrConvertedValHolder {
-
-        /**
-         * @return Original value that might be used as expected result.
-         */
-        Object originalVal();
-
-        /**
-         * @return Value converted to sql string representation.
-         */
-        String sqlStrVal();
-    }
-
-    /**
-     * Holder for quoted values. E.g. Double.NEGATIVE_INFINITY -> 'INFINITY'.
-     */
-    private static class Quoted implements SqlStrConvertedValHolder {
-        /** Original value. */
-        private Object val;
-
-        /** Converted value. */
-        private String sqlStrVal;
-
-        /**
-         * Constructor.
-         *
-         * @param val Original value.
-         */
-        Quoted(Object val) {
-            this.val = val;
-            sqlStrVal = "\'" + val + "\'";
-        }
-
-        /** @inheritDoc */
-        @Override public Object originalVal() {
-            return val;
-        }
-
-        /** @inheritDoc */
-        @Override public String sqlStrVal() {
-            return sqlStrVal;
-        }
-    }
-
-    /**
-     * Holder for Sql Time values.
-     */
-    private static class Timed implements SqlStrConvertedValHolder {
-        /** */
-        private static final String PATTERN = "HH:mm:ss.SSS";
-
-        /** */
-        private static final SimpleDateFormat TIME_DATE_FORMAT = new SimpleDateFormat(PATTERN);
-
-        /** Original value. */
-        private Object val;
-
-        /** Converted value. */
-        private String sqlStrVal;
-
-        /**
-         * Constructor.
-         *
-         * @param time Original value.
-         */
-        Timed(Time time) {
-            val = time;
-            sqlStrVal = "PARSEDATETIME('" + TIME_DATE_FORMAT.format(time) + "', '" + PATTERN + "')";
-        }
-
-        /** @inheritDoc */
-        @Override public Object originalVal() {
-            return val;
-        }
-
-        /** @inheritDoc */
-        @Override public String sqlStrVal() {
-            return sqlStrVal;
-        }
-    }
-
-    /**
-     * Holder for Date and Timestamp values.
-     */
-    private static class Dated implements SqlStrConvertedValHolder {
-        /** */
-        private static final String PATTERN = "yyyy-MM-dd HH:mm:ss.SSS";
-
-        /** */
-        private static final SimpleDateFormat DATE_TIME_DATE_FORMAT = new SimpleDateFormat(PATTERN);
-
-        /** Original value. */
-        private Object val;
-
-        /** Converted value. */
-        private String sqlStrVal;
-
-        /**
-         * Constructor.
-         *
-         * @param date Original value.
-         */
-        Dated(Date date) {
-            val = date;
-            sqlStrVal = "PARSEDATETIME('" + DATE_TIME_DATE_FORMAT.format(date) + "', '" + PATTERN + "')";
-        }
-
-        /** @inheritDoc */
-        @Override public Object originalVal() {
-            return val;
-        }
-
-        /** @inheritDoc */
-        @Override public String sqlStrVal() {
-            return sqlStrVal;
-        }
-    }
-
-    /**
-     * Holder for byte array values.
-     */
-    private static class ByteArrayed implements SqlStrConvertedValHolder {
-        /** Original value. */
-        private Object val;
-
-        /** Converted value. */
-        private String sqlStrVal;
-
-        /**
-         * Constructor.
-         *
-         * @param byteArr Original value.
-         */
-        ByteArrayed(byte[] byteArr) {
-            val = byteArr;
-            sqlStrVal = "x'" + Hex.encodeHexString(byteArr) + "'";
-        }
-
-        /** @inheritDoc */
-        @Override public Object originalVal() {
-            return val;
-        }
-
-        /** @inheritDoc */
-        @Override public String sqlStrVal() {
-            return sqlStrVal;
         }
     }
 }
