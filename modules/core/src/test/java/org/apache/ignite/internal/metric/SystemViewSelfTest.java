@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -34,6 +35,9 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.metric.view.SystemView;
 import org.apache.ignite.spi.metric.view.CacheGroupView;
 import org.apache.ignite.spi.metric.view.CacheView;
@@ -53,12 +57,12 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 
-/** */
+/** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     private static CountDownLatch latch;
 
-    /** */
+    /** Tests work of {@link SystemView} for caches. */
     @Test
     public void testCachesView() throws Exception {
         try (IgniteEx g = startGrid()) {
@@ -78,7 +82,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** Tests work of {@link SystemView} for cache groups. */
     @Test
     public void testCacheGroupsView() throws Exception {
         try (IgniteEx g = startGrid()) {
@@ -98,7 +102,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** Tests work of {@link SystemView} for services. */
     @Test
     public void testServices() throws Exception {
         try (IgniteEx g = startGrid()) {
@@ -163,7 +167,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#broadcastAsync(IgniteRunnable)} call. */
     @Test
     public void testComputeBroadcast() throws Exception {
         latch = new CountDownLatch(1);
@@ -197,7 +201,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#runAsync(IgniteRunnable)} call. */
     @Test
     public void testComputeRunnable() throws Exception {
         latch = new CountDownLatch(1);
@@ -230,7 +234,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#apply(IgniteClosure, Object)} call. */
     @Test
     public void testComputeApply() throws Exception {
         latch = new CountDownLatch(1);
@@ -269,7 +273,10 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * Tests work of {@link SystemView} for compute grid
+     * {@link IgniteCompute#affinityCallAsync(String, Object, IgniteCallable)} call.
+     */
     @Test
     public void testComputeAffinityCall() throws Exception {
         latch = new CountDownLatch(1);

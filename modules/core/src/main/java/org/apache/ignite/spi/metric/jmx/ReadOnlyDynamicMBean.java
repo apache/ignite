@@ -26,7 +26,7 @@ import javax.management.ReflectionException;
 import org.apache.ignite.IgniteException;
 
 /**
- * Read only parent for {@link DynamicMBean} implementations.
+ * Base class for read only {@link DynamicMBean} implementations.
  */
 abstract class ReadOnlyDynamicMBean implements DynamicMBean {
     /** {@inheritDoc} */
