@@ -40,10 +40,10 @@ class EnumItem
     private $ordinal;
     private $name;
     private $value;
-    
+
     /**
      * Public constructor.
-     * 
+     *
      * @param int $typeId Id of the GridGain enum type.
      */
     public function __construct(int $typeId)
@@ -66,9 +66,9 @@ class EnumItem
 
     /**
      * Updates Id of the GridGain enum type.
-     * 
+     *
      * @param int $typeId new Id of the GridGain enum type.
-     * 
+     *
      * @return EnumItem the same instance of EnumItem.
      */
     public function setTypeId(int $typeId): EnumItem

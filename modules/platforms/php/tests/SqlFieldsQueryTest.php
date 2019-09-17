@@ -50,7 +50,7 @@ final class SqlFieldsQueryTestCase extends TestCase
         self::cleanUp();
         TestingHelper::cleanUp();
     }
-    
+
     public function testGetAll(): void
     {
         $cache = self::$cache;

@@ -65,10 +65,10 @@ class ClientConfiguration
         $this->receiveChunkSize = 0;
         $this->tcpNoDelay = true;
     }
-    
+
     /**
      * Returns GridGain node endpoints specified in the constructor.
-     * 
+     *
      * @return string[] endpoints
      */
     public function getEndpoints(): array
@@ -80,9 +80,9 @@ class ClientConfiguration
      * Sets username which will be used for authentication during the client's connection.
      *
      * If username is not set, the client does not use authentication during connection.
-     * 
+     *
      * @param string|null $userName username. If null, authentication is disabled.
-     * 
+     *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
     public function setUserName(?string $userName): ClientConfiguration
@@ -90,25 +90,25 @@ class ClientConfiguration
         $this->userName = $userName;
         return $this;
     }
-    
+
     /**
      * Returns the current username.
-     * 
+     *
      * @return string|null username or null (if authentication is disabled).
      */
     public function getUserName(): ?string
     {
         return $this->userName;
     }
-    
+
     /**
      * Sets password which will be used for authentication during the client's connection.
      *
      * Password is ignored, if username is not set.
      * If password is not set, it is considered empty.
-     * 
+     *
      * @param string|null $password password. If null, password is empty.
-     * 
+     *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
     public function setPassword(?string $password): ClientConfiguration
@@ -116,17 +116,17 @@ class ClientConfiguration
         $this->password = $password;
         return $this;
     }
-    
+
     /**
      * Returns the current password.
-     * 
+     *
      * @return string|null password or null (if password is empty).
      */
     public function getPassword(): ?string
     {
         return $this->password;
     }
-    
+
     /**
      * Enables and setup TLS connection.
      *
@@ -142,10 +142,10 @@ class ClientConfiguration
         $this->tlsOptions = $tlsOptions;
         return $this;
     }
-    
+
     /**
      * Returns the current TLS connection options.
-     * 
+     *
      * @return array|null TLS connection options or null (if secure connection is not used).
      */
     public function getTLSOptions(): ?array

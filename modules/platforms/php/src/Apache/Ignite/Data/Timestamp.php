@@ -19,7 +19,7 @@ namespace Apache\Ignite\Data;
 
 use \DateTime;
 
-/** 
+/**
  * Class representing GridGain Timestamp type
  * (GridGain Date with additional nanoseconds fraction of the last millisecond).
  */
@@ -29,7 +29,7 @@ class Timestamp extends Date
 
     /**
      * Public constructor.
-     * 
+     *
      * @param float $millis integer number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
      * @param int $nanos nanoseconds of the last millisecond, should be in the range from 0 to 999999.
      */
@@ -38,12 +38,12 @@ class Timestamp extends Date
         parent::__construct($millis);
         $this->nanos = $nanos;
     }
-    
+
     /**
      * Creates Timestamp instance from DateTime instance.
-     * 
+     *
      * @param DateTime $dateTime DateTime instance.
-     * 
+     *
      * @return Timestamp new Timestamp instance.
      */
     public static function fromDateTime(DateTime $dateTime)
@@ -52,10 +52,10 @@ class Timestamp extends Date
         $millis = intval($micros / 1000);
         return new Timestamp($dateTime->getTimestamp() * 1000 + $millis, ($micros % 1000) * 1000);
     }
-    
+
     /**
      * Returns the nanoseconds of the last millisecond from the timestamp.
-     * 
+     *
      * @return int nanoseconds of the last millisecond.
      */
     public function getNanos(): int

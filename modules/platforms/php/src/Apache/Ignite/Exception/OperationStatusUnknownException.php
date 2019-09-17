@@ -18,13 +18,13 @@
 namespace Apache\Ignite\Exception;
 
 /**
- * Status of the requested operation is unknown (eg. due to a connection problem during the operation). 
+ * Status of the requested operation is unknown (eg. due to a connection problem during the operation).
  */
 class OperationStatusUnknownException extends ClientException
 {
     /**
      * Constructs an OperationStatusUnknownException with the specified detail message.
-     * 
+     *
      * @param string $message the detail message.
      */
     public function __construct(string $message)

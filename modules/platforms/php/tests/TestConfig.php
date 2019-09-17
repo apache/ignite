@@ -21,7 +21,7 @@ class TestConfig
 {
     public static $endpoints = ['127.0.0.1:10800'];
     public static $debug = false;
-    
+
     public static function init(): void
     {
         $endpoints = getenv('APACHE_IGNITE_CLIENT_ENDPOINTS');

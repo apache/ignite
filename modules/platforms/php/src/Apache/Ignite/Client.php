@@ -46,7 +46,7 @@ class Client
 {
     private $socket;
     private $communicator;
-    
+
     /**
      * Public Client constructor.
      */
@@ -55,21 +55,21 @@ class Client
         $this->socket = new ClientFailoverSocket();
         $this->communicator = new BinaryCommunicator($this->socket);
     }
-    
+
     /**
      * Connects the client.
      *
      * Reconnects if the client already connected.
      *
      * @param ClientConfiguration $config the client configuration.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function connect(ClientConfiguration $config): void
     {
         $this->socket->connect($config);
     }
-    
+
     /**
      * Disconnects the client.
      *
@@ -79,15 +79,15 @@ class Client
     {
         $this->socket->disconnect();
     }
-    
+
     /**
      * Creates new cache with the provided name and optional configuration.
-     * 
+     *
      * @param string $name cache name.
      * @param CacheConfiguration $cacheConfig optional cache configuration.
-     * 
+     *
      * @return CacheInterface new instance of the class with interface representing the created cache.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function createCache(
@@ -105,17 +105,17 @@ class Client
             });
         return new Cache($name, $this->communicator);
     }
-    
+
     /**
      * Gets existing cache with the provided name
      * or creates new one with the provided name and optional configuration.
-     * 
+     *
      * @param string $name cache name.
      * @param CacheConfiguration $cacheConfig cache configuration (ignored if cache
      *   with the provided name already exists).
-     * 
+     *
      * @return CacheInterface new instance of the class with interface representing the existing or created cache.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getOrCreateCache(
@@ -133,15 +133,15 @@ class Client
             });
         return new Cache($name, $this->communicator);
     }
-    
+
     /**
      * Gets instance of the class with interface representing the cache with the provided name.
      * The method does not check if the cache with the provided name exists.
-     * 
+     *
      * @param string $name cache name.
-     * 
+     *
      * @return CacheInterface new instance of the class with interface representing the cache.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getCache(string $name): CacheInterface
@@ -149,12 +149,12 @@ class Client
         ArgumentChecker::notEmpty($name, 'name');
         return new Cache($name, $this->communicator);
     }
-    
+
     /**
      * Destroys cache with the provided name.
      *
      * @param string $name cache name.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function destroyCache(string $name): void
@@ -167,14 +167,14 @@ class Client
                 $payload->writeInteger(Cache::calculateId($name));
             });
     }
-    
+
     /**
      * Returns configuration of cache with the provided name.
-     * 
+     *
      * @param string $name cache name.
-     * 
+     *
      * @return CacheConfiguration cache configuration.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function getCacheConfiguration(string $name): CacheConfiguration
@@ -195,13 +195,13 @@ class Client
             });
         return $config;
     }
-    
+
     /**
      * Gets existing cache names.
-     * 
+     *
      * @return array array with the existing cache names.
      *     The array is empty if no caches exist.
-     * 
+     *
      * @throws ClientException if error.
      */
     public function cacheNames(): array
@@ -216,11 +216,11 @@ class Client
             });
         return $names;
     }
-    
+
     /**
      * Enables/disables the GridGain client's debug output (including errors logging).
      * Disabled by default.
-     * 
+     *
      * @param bool $value true to enable, false to disable.
      */
     public function setDebug(bool $value): void

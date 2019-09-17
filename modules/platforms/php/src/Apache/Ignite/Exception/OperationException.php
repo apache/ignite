@@ -24,7 +24,7 @@ class OperationException extends ClientException
 {
     /**
      * Constructs an OperationException with the specified detail message.
-     * 
+     *
      * @param string $message the detail message.
      */
     public function __construct(string $message)

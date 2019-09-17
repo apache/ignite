@@ -44,12 +44,12 @@ class BinaryObjectField
         }
         $this->typeCode = $this->type ? BinaryUtils::getTypeCode($this->type) : 0;
     }
-    
+
     public function getId(): int
     {
         return $this->id;
     }
-    
+
     public function getTypeCode(): int
     {
         return $this->typeCode;

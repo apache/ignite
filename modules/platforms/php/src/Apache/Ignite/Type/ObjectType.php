@@ -17,7 +17,7 @@
 
 namespace Apache\Ignite\Type;
 
-/** 
+/**
  * Base class representing a type of GridGain object.
  *
  * The class is abstract and has no public constructor. Only subclasses may be instantiated.
@@ -228,27 +228,27 @@ abstract class ObjectType
      *  @anchor PrimitiveTypeCodes
      *  @{
      */
-    
+
     /**
      * Single byte value. Can also represent small signed integer value.
      */
     const BYTE = 1;
-    
+
     /**
      * 2-bytes long signed integer number.
      */
     const SHORT = 2;
-    
+
     /**
      * 4-bytes long signed integer number.
      */
     const INTEGER = 3;
-    
+
     /**
      * 8-bytes long signed integer number.
      */
     const LONG = 4;
-    
+
     /**
      * 4-byte long floating-point number.
      */
@@ -258,123 +258,123 @@ abstract class ObjectType
      * 8-byte long floating-point number.
      */
     const DOUBLE = 6;
-    
+
     /**
      * Single UTF-16 code unit.
      */
     const CHAR = 7;
-    
+
     /**
      * Boolean value.
      */
     const BOOLEAN = 8;
-    
+
     /**
      * String in UTF-8 encoding.
      */
     const STRING = 9;
-    
+
     /**
      * A universally unique identifier (UUID) is a 128-bit number used to identify information in computer systems.
      */
     const UUID = 10;
-    
+
     /**
      * Date, represented as a number of milliseconds elapsed since 00:00:00 1 Jan 1970 UTC.
      */
     const DATE = 11;
-    
+
     /**
      * Array of bytes.
      */
     const BYTE_ARRAY = 12;
-    
+
     /**
      * Array of short signed integer numbers.
      */
     const SHORT_ARRAY = 13;
-    
+
     /**
      * Array of signed integer numbers.
      */
     const INTEGER_ARRAY = 14;
-    
+
     /**
      * Array of long signed integer numbers.
      */
     const LONG_ARRAY = 15;
-    
+
     /**
      * Array of floating point numbers.
      */
     const FLOAT_ARRAY = 16;
-    
+
     /**
      * Array of floating point numbers with double precision.
      */
     const DOUBLE_ARRAY = 17;
-    
+
     /**
      * Array of UTF-16 code units.
      */
     const CHAR_ARRAY = 18;
-    
+
     /**
      * Array of boolean values.
      */
     const BOOLEAN_ARRAY = 19;
-    
+
     /**
      * Array of UTF-8 string values.
      */
     const STRING_ARRAY = 20;
-    
+
     /**
      * Array of UUIDs.
      */
     const UUID_ARRAY = 21;
-    
+
     /**
      * Array of dates.
      */
     const DATE_ARRAY = 22;
-    
+
     /**
      * Value of an enumerable type. For such types defined only a finite number of named values.
      */
     const ENUM = 28;
-    
+
     /**
      * Array of enumerable type value.
      */
     const ENUM_ARRAY = 29;
-    
+
     /**
      * Numeric value of any desired precision and scale.
      */
     const DECIMAL = 30;
-    
+
     /**
      * Array of decimal values.
      */
     const DECIMAL_ARRAY = 31;
-    
+
     /**
      * More precise than a Date data type. Except for a milliseconds since epoch, contains a nanoseconds
-     * fraction of a last millisecond, which value could be in a range from 0 to 999999. 
+     * fraction of a last millisecond, which value could be in a range from 0 to 999999.
      */
     const TIMESTAMP = 33;
-    
+
     /**
      * Array of timestamp values.
      */
     const TIMESTAMP_ARRAY = 34;
-    
+
     /**
      * Time, represented as a number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
      */
     const TIME = 36;
-    
+
     /**
      * Array of time values.
      */
@@ -389,27 +389,27 @@ abstract class ObjectType
      * Array of objects of any type.
      */
     const OBJECT_ARRAY = 23;
-    
+
     /**
      * General collection type.
      */
     const COLLECTION = 24;
-    
+
     /**
      * Map-like collection type. Contains pairs of key and value objects.
      */
     const MAP = 25;
-    
+
     /**
      * Wrapped binary object type.
      */
     const BINARY_OBJECT = 27;
-    
+
     /**
      * Wrapped enumerable type.
      */
     const BINARY_ENUM = 38;
-    
+
     /**
      * null value.
      */
@@ -420,12 +420,12 @@ abstract class ObjectType
      */
     const COMPLEX_OBJECT = 103;
     /** @} */ // end of CompositeTypeCodes
-    
+
     private $typeCode;
-    
+
     /**
      * Gets GridGain type code of this GridGain object type.
-     * 
+     *
      * @return int GridGain type code
      */
     public function getTypeCode(): int

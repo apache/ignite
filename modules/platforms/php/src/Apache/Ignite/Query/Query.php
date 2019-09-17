@@ -25,11 +25,11 @@ namespace Apache\Ignite\Query;
 abstract class Query
 {
     const PAGE_SIZE_DEFAULT = 1024;
-    
+
     protected $local;
     protected $operation;
     protected $pageSize;
-    
+
     protected function __construct(int $operation)
     {
         $this->operation = $operation;
@@ -39,7 +39,7 @@ abstract class Query
 
     /**
      * Set local query flag.
-     * 
+     *
      * @param bool $local local query flag: true or false.
      * @return Query the same instance of the Query.
      */
@@ -51,7 +51,7 @@ abstract class Query
 
     /**
      * Set cursor page size.
-     * 
+     *
      * @param int $pageSize cursor page size.
      * @return Query the same instance of the Query.
      */

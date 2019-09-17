@@ -29,12 +29,12 @@ use Apache\Ignite\Type\ComplexObjectType;
 class Person
 {
     private static $personId = 0;
-    
+
     public $id;
     public $firstName;
     public $lastName;
     public $salary;
-            
+
     public function __construct(string $firstName = null, string $lastName = null, float $salary = 0)
     {
         $this->id = Person::generateId();
@@ -58,7 +58,7 @@ class Person
         Person::$personId++;
         return $id;
     }
-    
+
     public static function printField(string $fieldName, $fieldValue): void
     {
         echo(sprintf('      %s : %s%s', $fieldName, $fieldValue, PHP_EOL));
@@ -80,11 +80,11 @@ class CachePutGetExample
 {
     const ENDPOINT = '127.0.0.1:10800';
     const CACHE_NAME = 'CachePutGetExample_person';
-    
+
     private $personCache;
-    private $binaryObjectCache; 
+    private $binaryObjectCache;
     private $personObjectType;
-    
+
     public function start(): void
     {
         $client = new Client();
@@ -116,7 +116,7 @@ class CachePutGetExample
             $client->disconnect();
         }
     }
-    
+
     private function putComplexObjects(): void
     {
         $person1 = new Person('John', 'Doe', 1000);
@@ -127,7 +127,7 @@ class CachePutGetExample
 
         echo('Complex Objects put successfully' . PHP_EOL);
     }
-    
+
     private function putAllBinaryObjects(): void
     {
         // create binary object from scratch
@@ -145,7 +145,7 @@ class CachePutGetExample
             new CacheEntry($personBinaryObject1->getField('id'), $personBinaryObject1),
             new CacheEntry($personBinaryObject2->getField('id'), $personBinaryObject2)
         ]);
-        
+
         echo('Binary Objects put successfully using putAll()' . PHP_EOL);
     }
 
@@ -157,7 +157,7 @@ class CachePutGetExample
             $person->getValue()->printObject();
         }
     }
-    
+
     private function getBinaryObjects(): void
     {
         $personBinaryObject = $this->binaryObjectCache->get(2);
@@ -165,7 +165,7 @@ class CachePutGetExample
         echo(sprintf("  %s%s", $personBinaryObject->getTypeName(), PHP_EOL));
         foreach ($personBinaryObject->getFieldNames() as $fieldName) {
             $fieldValue = $personBinaryObject->getField($fieldName);
-            Person::printField($fieldName, $fieldValue); 
+            Person::printField($fieldName, $fieldValue);
         }
     }
 

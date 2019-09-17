@@ -50,7 +50,7 @@ interface SqlFieldsCursorInterface extends CursorInterface
      *   Every element of the array is an array with values of the fields requested by the query.
      */
     public function getAll(): array;
-    
+
     /**
      * Returns names of the fields which were requested in the SQL Fields query.
      *

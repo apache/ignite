@@ -45,7 +45,7 @@ final class CacheTestCase extends TestCase
         self::cleanUp();
         TestingHelper::cleanUp();
     }
-    
+
     public function testCreateCache(): void
     {
         $client = TestingHelper::$client;
@@ -57,7 +57,7 @@ final class CacheTestCase extends TestCase
         $this->checkCache($cache, true);
         $client->destroyCache(self::CACHE_NAME);
     }
-    
+
     public function testCreateCacheTwice(): void
     {
         $client = TestingHelper::$client;
@@ -69,7 +69,7 @@ final class CacheTestCase extends TestCase
             $client->destroyCache(self::CACHE_NAME);
         }
     }
-    
+
     public function testGetOrCreateCache(): void
     {
         $client = TestingHelper::$client;
@@ -93,17 +93,17 @@ final class CacheTestCase extends TestCase
         $client->destroyCache(self::CACHE_NAME);
         $client->destroyCache(self::CACHE_NAME2);
     }
-    
+
     public function testDestroyCache(): void
     {
         $client = TestingHelper::$client;
         $client->getOrCreateCache(self::CACHE_NAME);
         $client->destroyCache(self::CACHE_NAME);
-        
+
         $this->expectException(OperationException::class);
         $client->destroyCache(self::CACHE_NAME);
     }
-    
+
     public function testCreateCacheWithConfiguration(): void
     {
         $client = TestingHelper::$client;
@@ -199,7 +199,7 @@ final class CacheTestCase extends TestCase
         $client->destroyCache(self::CACHE_NAME4);
         $this->assertTrue(true);
     }
-    
+
     public function testCreateCacheWithWrongArgs(): void
     {
         $client = TestingHelper::$client;
@@ -213,14 +213,14 @@ final class CacheTestCase extends TestCase
         $this->expectException(ClientException::class);
         $client->getOrCreateCache('');
     }
-    
+
     public function testGetCacheWithWrongArgs(): void
     {
         $client = TestingHelper::$client;
         $this->expectException(ClientException::class);
         $client->getCache('');
     }
-    
+
     private function checkCache(CacheInterface $cache, bool $cacheExists): void
     {
         if (!$cacheExists) {
@@ -228,7 +228,7 @@ final class CacheTestCase extends TestCase
         }
         $cache->put(0, 0);
     }
-    
+
     private static function cleanUp(): void
     {
         TestingHelper::destroyCache(self::CACHE_NAME);

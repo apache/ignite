@@ -36,7 +36,7 @@ class ComplexObjectType extends ObjectType
     private $phpClassName;
     private $typeName;
     private $fieldTypes;
-    
+
     /**
      * Public constructor.
      *
@@ -51,7 +51,7 @@ class ComplexObjectType extends ObjectType
         $this->typeName = null;
         $this->fieldTypes = [];
     }
-    
+
     /**
      * Sets the name of the PHP class.
      *
@@ -66,7 +66,7 @@ class ComplexObjectType extends ObjectType
      * The PHP Class must have a constructor without parameters or with optional parameters only.
      *
      * @param string|null $phpClassName name of the PHP class or null (the name is not specified).
-     * 
+     *
      * @return ComplexObjectType the same instance of the ComplexObjectType.
      */
     public function setPhpClassName(?string $phpClassName): ComplexObjectType
@@ -74,7 +74,7 @@ class ComplexObjectType extends ObjectType
         $this->phpClassName = $phpClassName;
         return $this;
     }
-    
+
     /**
      * Gets the name of the PHP class.
      *
@@ -84,7 +84,7 @@ class ComplexObjectType extends ObjectType
     {
         return $this->phpClassName;
     }
-    
+
     /**
      * Sets the name of the GridGain complex type.
      *
@@ -96,7 +96,7 @@ class ComplexObjectType extends ObjectType
      * is taken from the name of the PHP class which instance is provided in a data writing operation.
      *
      * @param string|null $typeName name of the GridGain complex type or null (the name is not specified).
-     * 
+     *
      * @return ComplexObjectType the same instance of the ComplexObjectType.
      */
     public function setIgniteTypeName(?string $typeName): ComplexObjectType
@@ -107,7 +107,7 @@ class ComplexObjectType extends ObjectType
 
     /**
      * Gets the name of the GridGain complex type.
-     * 
+     *
      * @return string|null name of the GridGain complex type or null (the name is not specified).
      */
     public function getIgniteTypeName(): ?string
@@ -126,7 +126,7 @@ class ComplexObjectType extends ObjectType
      * By default (if the type of the field is not specified),
      * GridGain client tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
-     * 
+     *
      * @param string $fieldName name of the field.
      * @param int|ObjectType|null $fieldType GridGain type of the field:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)

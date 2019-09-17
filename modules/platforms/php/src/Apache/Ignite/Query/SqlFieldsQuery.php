@@ -36,7 +36,7 @@ class SqlFieldsQuery extends SqlQuery
     const STATEMENT_TYPE_SELECT = 1;
     const STATEMENT_TYPE_UPDATE = 2;
     /** @} */ // end of SqlFieldsQueryStatementType
-    
+
     private $schema;
     private $maxRows;
     private $statementType;
@@ -44,7 +44,7 @@ class SqlFieldsQuery extends SqlQuery
     private $collocated;
     private $lazy;
     private $includeFieldNames;
-    
+
     /**
      * Public constructor.
      *
@@ -67,7 +67,7 @@ class SqlFieldsQuery extends SqlQuery
      *     Include field names flag  :    false
      * </pre>
      * Every setting may be changed using set methods.
-     * 
+     *
      * @param string $sql SQL query string.
      *
      * @throws ClientException if error.
@@ -87,9 +87,9 @@ class SqlFieldsQuery extends SqlQuery
 
     /**
      * Set schema for the query.
-     * 
+     *
      * @param string $schema schema for the query.
-     * 
+     *
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
     public function setSchema(string $schema): SqlFieldsQuery
@@ -100,9 +100,9 @@ class SqlFieldsQuery extends SqlQuery
 
     /**
      * Set max rows.
-     * 
+     *
      * @param int $maxRows max rows.
-     * 
+     *
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
     public function setMaxRows(int $maxRows): SqlFieldsQuery
@@ -113,9 +113,9 @@ class SqlFieldsQuery extends SqlQuery
 
     /**
      * Set statement type.
-     * 
+     *
      * @param int $type statement type, one of @ref SqlFieldsQueryStatementType constants.
-     * 
+     *
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
     public function setStatementType(int $type): SqlFieldsQuery
@@ -126,9 +126,9 @@ class SqlFieldsQuery extends SqlQuery
 
     /**
      * Set enforce join order flag.
-     * 
+     *
      * @param bool $enforceJoinOrder enforce join order flag: true or false.
-     * 
+     *
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
     public function setEnforceJoinOrder(bool $enforceJoinOrder): SqlFieldsQuery
@@ -139,9 +139,9 @@ class SqlFieldsQuery extends SqlQuery
 
     /**
      * Set collocated flag.
-     * 
+     *
      * @param bool $collocated collocated flag: true or false.
-     * 
+     *
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
     public function setCollocated(bool $collocated): SqlFieldsQuery
@@ -152,9 +152,9 @@ class SqlFieldsQuery extends SqlQuery
 
     /**
      * Set lazy query execution flag.
-     * 
+     *
      * @param bool $lazy lazy query execution flag: true or false.
-     * 
+     *
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
     public function setLazy(bool $lazy): SqlFieldsQuery
@@ -165,9 +165,9 @@ class SqlFieldsQuery extends SqlQuery
 
     /**
      * Set include field names flag.
-     * 
+     *
      * @param bool $includeFieldNames include field names flag: true or false.
-     * 
+     *
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
     public function setIncludeFieldNames(bool $includeFieldNames): SqlFieldsQuery

@@ -31,7 +31,7 @@ use Apache\Ignite\Internal\Utils\ArgumentChecker;
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
- * See Apache Ignite documentation for details of every configuration setting. 
+ * See Apache Ignite documentation for details of every configuration setting.
  */
 class CacheConfiguration
 {

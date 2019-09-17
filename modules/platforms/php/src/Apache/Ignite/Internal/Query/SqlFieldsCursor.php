@@ -28,7 +28,7 @@ class SqlFieldsCursor extends Cursor implements SqlFieldsCursorInterface
     private $fieldCount;
     private $fieldNames;
     private $fieldTypes;
-    
+
     public function __construct(BinaryCommunicator $communicator, MessageBuffer $buffer)
     {
         parent::__construct($communicator, ClientOperation::QUERY_SQL_FIELDS_CURSOR_GET_PAGE, $buffer);

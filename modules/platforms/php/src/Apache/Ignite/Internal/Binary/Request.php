@@ -26,9 +26,9 @@ class Request
     private $payloadWriter;
     private $payloadReader;
     private $isHandshake;
-    
+
     private static $requestId = 0;
-            
+
     public function __construct(int $opCode, ?callable $payloadWriter, callable $payloadReader = null, bool $isHandshake = false)
     {
         $this->id = Request::getRequestId();
@@ -37,12 +37,12 @@ class Request
         $this->payloadReader = $payloadReader;
         $this->isHandshake = $isHandshake;
     }
-    
+
     public function getId(): int
     {
         return $this->id;
     }
-    
+
     public function isHandshake(): bool
     {
         return $this->isHandshake;
@@ -69,12 +69,12 @@ class Request
         $message->writeInteger($message->getLength() - $messageStartPos);
         return $message;
     }
-    
+
     public function getPayloadReader(): ?callable
     {
         return $this->payloadReader;
     }
-    
+
     private static function getRequestId(): int
     {
         $result = Request::$requestId;

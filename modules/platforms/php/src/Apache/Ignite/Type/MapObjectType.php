@@ -21,7 +21,7 @@ use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Internal\Utils\ArgumentChecker;
 use Apache\Ignite\Internal\Binary\BinaryUtils;
 
-/** 
+/**
  * Class representing a map type of GridGain object.
  *
  * It is described by ObjectType::MAP and one of @ref MapSubType.
@@ -37,14 +37,14 @@ class MapObjectType extends ObjectType
      * Basic hash map.
      */
     const HASH_MAP = 1;
-    
+
     /**
      * Hash map, which maintains element order.
      */
     const LINKED_HASH_MAP = 2;
-    
+
     /** @} */ // end of MapSubType
-    
+
     private $subType;
     private $keyType;
     private $valueType;
@@ -59,7 +59,7 @@ class MapObjectType extends ObjectType
      * If GridGain type is not specified for the key and/or value then during operations the GridGain client
      * tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
-     * 
+     *
      * @param int $subType map subtype, one of @ref MapSubType constants.
      * @param int|ObjectType|null $keyType GridGain type of the keys in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
@@ -69,7 +69,7 @@ class MapObjectType extends ObjectType
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
-     * 
+     *
      * @throws ClientException if error.
      */
     public function __construct(int $subType = MapObjectType::HASH_MAP, $keyType = null, $valueType = null)
@@ -86,17 +86,17 @@ class MapObjectType extends ObjectType
 
     /**
      * Returns the map subtype, one of @ref MapSubType constants.
-     * 
+     *
      * @return int map subtype, one of @ref MapSubType constants.
      */
     public function getSubType(): int
     {
         return $this->subType;
     }
-    
+
     /**
      * Returns GridGain type of the keys in the map.
-     * 
+     *
      * @return int|ObjectType|null type of the keys in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
@@ -109,7 +109,7 @@ class MapObjectType extends ObjectType
 
     /**
      * Returns GridGain type of the values in the map.
-     * 
+     *
      * @return int|ObjectType|null type of the values in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type

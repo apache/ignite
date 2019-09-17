@@ -32,10 +32,10 @@ class TypeInfo
     const MAX_INT_VALUE = 2147483647;
 
     private $properties;
-    
+
     private static $info;
     private static $primitiveTypes;
-    
+
     public static function init(): void
     {
         TypeInfo::$info = array(
@@ -212,7 +212,7 @@ class TypeInfo
                 TypeInfo::NULLABLE => true,
             ])
         );
-        
+
         TypeInfo::$primitiveTypes = [
             ObjectType::BYTE,
             ObjectType::SHORT,
@@ -251,17 +251,17 @@ class TypeInfo
     {
         return array_key_exists($typeCode, TypeInfo::$info) ? TypeInfo::$info[$typeCode] : null;
     }
-    
+
     public static function getPrimitiveTypes(): array
     {
         return TypeInfo::$primitiveTypes;
     }
-    
+
     private function __construct(array $properties)
     {
         $this->properties = $properties;
     }
-    
+
     public function getName(): string
     {
         return $this->getProperty(TypeInfo::NAME, null);
@@ -271,27 +271,27 @@ class TypeInfo
     {
         return $this->getProperty(TypeInfo::SIZE, 0);
     }
-    
+
     public function isNullable(): bool
     {
         return $this->getProperty(TypeInfo::NULLABLE, false);
     }
-    
+
     public function getElementTypeCode(): int
     {
         return $this->getProperty(TypeInfo::ELEMENT_TYPE_CODE, 0);
     }
-    
+
     public function keepElementType(): bool
     {
         return $this->getProperty(TypeInfo::KEEP_ELEMENT_TYPE, false);
     }
-    
+
     public function getMinValue()
     {
         return $this->getProperty(TypeInfo::MIN_VALUE, null);
     }
-    
+
     public function getMaxValue()
     {
         return $this->getProperty(TypeInfo::MAX_VALUE, null);

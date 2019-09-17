@@ -40,7 +40,7 @@ class MessageBuffer
         MessageBuffer::$isLittleEndian = pack('L', 1) === pack('V', 1);
         MessageBuffer::$defaultEncoding = ini_get('default_charset');
     }
-    
+
     public function __construct(int $capacity = MessageBuffer::BUFFER_CAPACITY_DEFAULT)
     {
         $this->buffer = '';
@@ -48,33 +48,33 @@ class MessageBuffer
         $this->length = 0;
         $this->ensureCapacity($capacity);
     }
-    
+
     public function getLength(): int
     {
         return $this->length;
     }
-    
+
     public function getBuffer(): string
     {
         return $this->getSlice(0, $this->getLength());
     }
-    
+
     public function getSlice(int $startPos, int $length): string
     {
         return substr($this->buffer, $startPos, $length);
     }
-    
+
     public function getPosition(): int
     {
         return $this->position;
     }
-    
+
     public function setPosition(int $position): void
     {
         $this->ensureCapacity($position);
         $this->position = $position;
     }
-    
+
     public function append(string &$buffer): void
     {
         $this->buffer .= $buffer;
@@ -149,7 +149,7 @@ class MessageBuffer
             $this->writeStr($value);
         }
     }
-    
+
     public function writeBuffer(MessageBuffer $buffer, int $startPos, int $length): void
     {
         $this->writeStr($buffer->buffer, $startPos, $length);
@@ -264,7 +264,7 @@ class MessageBuffer
             $value = strrev($value);
         }
     }
-    
+
     private function writeStr(string &$buffer, int $startPos = 0, int $length = -1): void
     {
         if ($length < 0) {
@@ -279,7 +279,7 @@ class MessageBuffer
         }
         $this->position += $length;
     }
-    
+
     private function ensureCapacity(int $size): void
     {
         if ($size <= 0) {

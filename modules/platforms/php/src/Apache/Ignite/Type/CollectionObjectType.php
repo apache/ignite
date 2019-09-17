@@ -21,7 +21,7 @@ use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Internal\Utils\ArgumentChecker;
 use Apache\Ignite\Internal\Binary\BinaryUtils;
 
-/** 
+/**
  * Class representing a collection type of GridGain object.
  *
  * It is described by ObjectType::COLLECTION and one of @ref CollectionSubType.
@@ -32,37 +32,37 @@ class CollectionObjectType extends ObjectType
      *  @anchor CollectionSubType
      *  @{
      */
-    
+
     /**
      * General set type, which can not be mapped to more specific set type.
      */
     const USER_SET = -1;
-    
+
     /**
      * General collection type, which can not be mapped to any specific collection type.
      */
     const USER_COL = 0;
-    
+
     /**
      * Resizeable array type.
      */
     const ARRAY_LIST = 1;
-    
+
     /**
      * Linked list type.
      */
     const LINKED_LIST = 2;
-    
+
     /**
      * Basic hash set type.
      */
     const HASH_SET = 3;
-    
+
     /**
      * Hash set type, which maintains element order.
      */
     const LINKED_HASH_SET = 4;
-    
+
     /**
      * This is a collection that only contains a single element, but behaves as a collection.
      */
@@ -72,7 +72,7 @@ class CollectionObjectType extends ObjectType
 
     private $subType;
     private $elementType;
-    
+
     /**
      * Public constructor.
      *
@@ -81,20 +81,20 @@ class CollectionObjectType extends ObjectType
      * If GridGain type of elements is not specified then during operations the GridGain client
      * tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
-     * 
+     *
      * @param int $subType collection subtype, one of @ref CollectionSubType constants.
      * @param int|ObjectType|null $elementType GridGain type of elements in the collection:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
-     * 
+     *
      * @throws ClientException if error.
      */
     public function __construct(int $subType, $elementType = null)
     {
         parent::__construct(ObjectType::COLLECTION);
         ArgumentChecker::hasValueFrom(
-            $subType, 'subType', false, 
+            $subType, 'subType', false,
             [
                 CollectionObjectType::USER_SET,
                 CollectionObjectType::USER_COL,
@@ -111,17 +111,17 @@ class CollectionObjectType extends ObjectType
 
     /**
      * Returns collection subtype, one of @ref CollectionSubType constants.
-     * 
+     *
      * @return int collection subtype, one of @ref CollectionSubType constants.
      */
     public function getSubType(): int
     {
         return $this->subType;
     }
-    
+
     /**
      * Returns GridGain type of elements in the collection.
-     * 
+     *
      * @return int|ObjectType|null type of elements in the collection:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
@@ -131,7 +131,7 @@ class CollectionObjectType extends ObjectType
     {
         return $this->elementType;
     }
-    
+
     public static function isSet($subType): bool
     {
         return $subType === CollectionObjectType::USER_SET ||

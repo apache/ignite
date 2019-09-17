@@ -39,7 +39,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
         self::cleanUp();
         TestingHelper::cleanUp();
     }
-    
+
     public function testCacheGet(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -53,7 +53,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function cacheWrongKeys(): array
     {
         return array(
@@ -74,7 +74,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testCacheGetAll(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -94,7 +94,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function cacheGetAllWrongKeys(): array
     {
         return array(
@@ -183,7 +183,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function cachePutAllWrongArgs(): array
     {
         return array(
@@ -205,7 +205,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testContainsKey(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -219,7 +219,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     /**
      * @dataProvider cacheWrongKeys
      */
@@ -233,7 +233,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-  
+
     public function testCacheContainsKeys(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -250,7 +250,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     /**
      * @dataProvider cacheGetAllWrongKeys
      */
@@ -264,7 +264,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testCacheGetAndPut(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -327,7 +327,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testCacheGetAndRemove(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -343,7 +343,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     /**
      * @dataProvider cacheWrongKeys
      */
@@ -388,7 +388,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-  
+
     public function testCacheGetAndPutIfAbsent(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -453,7 +453,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testCacheReplaceIfEquals(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -498,7 +498,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-  
+
     public function testCacheClear(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -538,7 +538,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     /**
      * @dataProvider cacheGetAllWrongKeys
      */
@@ -574,7 +574,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     /**
      * @dataProvider cacheWrongKeys
      */
@@ -614,7 +614,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     /**
      * @dataProvider cacheWrongKeys
      */
@@ -628,7 +628,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testRemoveIfEquals(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -660,7 +660,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testCacheRemoveKeys(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -680,7 +680,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     /**
      * @dataProvider cacheGetAllWrongKeys
      */
@@ -714,7 +714,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function testCacheGetSize(): void
     {
         $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
@@ -732,7 +732,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     public function getSizeWrongArgs(): array
     {
         return array(
@@ -754,7 +754,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
             $cache->removeAll();
         }
     }
-    
+
     private static function cleanUp(): void
     {
         TestingHelper::destroyCache(self::CACHE_NAME);
