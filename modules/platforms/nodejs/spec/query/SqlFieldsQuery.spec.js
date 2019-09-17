@@ -185,7 +185,6 @@ describe('sql fields query test suite >', () => {
                 let cache = igniteClient.getCache(CACHE_NAME);
                 const cursor = await cache.query(new SqlFieldsQuery(`SELECT * FROM ${TABLE_NAME}`).
                     setPageSize(2).
-                    setLocal(false).
                     setSql(`INSERT INTO ${TABLE_NAME} (field1, field2) VALUES (?, ?)`).
                     setArgTypes(ObjectType.PRIMITIVE_TYPE.INTEGER, ObjectType.PRIMITIVE_TYPE.STRING).
                     setArgs(50, 'test').

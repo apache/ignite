@@ -154,8 +154,7 @@ describe('scan query test suite >', () => {
                 let cache = igniteClient.getCache(CACHE_NAME);
                 const cursor = await cache.query(new ScanQuery().
                     setPartitionNumber(0).
-                    setPageSize(2).
-                    setLocal(true));
+                    setPageSize(2));
                 await cursor.getAll();
                 await cursor.close();
             }).
