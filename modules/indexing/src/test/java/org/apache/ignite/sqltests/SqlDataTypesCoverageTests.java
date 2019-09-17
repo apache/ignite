@@ -43,7 +43,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
     /** */
-    private static final int TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE = 10_000;
+    protected static final int TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE = 10_000;
 
     /** {@inheritDoc} */
     @Before
@@ -302,7 +302,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      * @throws Exception If Failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkBasicSqlOperations(SqlDataType dataType, Object... valsToCheck) throws Exception {
+    protected void checkBasicSqlOperations(SqlDataType dataType, Object... valsToCheck) throws Exception {
         assert valsToCheck.length > 0;
 
         IgniteEx ignite = grid(new Random().nextInt(NODES_CNT));
@@ -455,7 +455,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      * Supported sql data types with corresponding java mappings.
      * https://apacheignite-sql.readme.io/docs/data-types
      */
-    private enum SqlDataType {
+    protected enum SqlDataType {
         /** */
         BOOLEAN(Boolean.class),
 
