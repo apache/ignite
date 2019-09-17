@@ -489,13 +489,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             this::getPagesFillFactor,
             "The percentage of the used space.");
 
-        mreg.register("TotalAllocatedSize",
-            this::getTotalAllocatedSize,
-            "Gets a total size of memory allocated in the data region, in bytes");
-
         mreg.register("PhysicalMemoryPages",
             this::getPhysicalMemoryPages,
             "Number of pages residing in physical RAM.");
+
+        mreg.register("OffheapUsedSize",
+            this::getOffheapUsedSize,
+            "Offheap used size in bytes.");
+
+        mreg.register("TotalAllocatedSize",
+            this::getTotalAllocatedSize,
+            "Gets a total size of memory allocated in the data region, in bytes");
 
         mreg.register("PhysicalMemorySize",
             this::getPhysicalMemorySize,
@@ -504,10 +508,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         mreg.register("UsedCheckpointBufferSize",
             this::getUsedCheckpointBufferSize,
             "Gets used checkpoint buffer size in bytes");
-
-        mreg.register("OffheapUsedSize",
-            this::getOffheapUsedSize,
-            "Offheap used size in bytes.");
     }
 
     /**
