@@ -16,7 +16,9 @@
 
 package org.apache.ignite.console.web.controller;
 
+import java.util.List;
 import java.util.UUID;
+import com.google.common.collect.Lists;
 import io.swagger.annotations.ApiOperation;
 import javax.validation.Valid;
 import org.apache.ignite.console.dto.Account;
@@ -30,6 +32,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
@@ -39,6 +42,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.apache.ignite.console.common.Utils.getAuthority;
 import static org.apache.ignite.console.common.Utils.isBecomeUsed;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.security.web.authentication.switchuser.SwitchUserFilter.ROLE_PREVIOUS_ADMINISTRATOR;
@@ -101,11 +105,16 @@ public class AccountController {
      */
     public Account saveAndAuth(UUID accId, ChangeUserRequest changes) {
         Account acc = accountsSrvc.save(accId, changes);
+        List<GrantedAuthority> authorities = Lists.newArrayList(acc.getAuthorities());
+
+        GrantedAuthority becomeUserAuthority = getAuthority(SecurityContextHolder.getContext().getAuthentication(), ROLE_PREVIOUS_ADMINISTRATOR);
+        if (becomeUserAuthority != null)
+            authorities.add(becomeUserAuthority);
 
         Authentication authentication = new PreAuthenticatedAuthenticationToken(
             acc,
             acc.getPassword(),
-            acc.getAuthorities()
+            authorities
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);

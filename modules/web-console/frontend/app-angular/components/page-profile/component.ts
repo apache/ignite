@@ -96,6 +96,7 @@ export class PageProfile implements OnInit, OnDestroy {
         return {
             ...omit(['password', 'passwordPanelOpened'])(form.value),
             token: form.controls.token.value,
+            becomeUsed: this.user.becomeUsed,
             ...form.value.passwordPanelOpened ? {password: form.value.password.new} : {}
         };
     }

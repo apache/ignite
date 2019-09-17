@@ -29,17 +29,17 @@ const testUser = {
     industry: 'Banking'
 };
 
-const insertTestUser = () => {
+const insertTestUser = (user = testUser) => {
     return request({
         method: 'PUT',
         uri: resolveUrl('/api/v1/test/admins'),
-        body: testUser,
+        body: user,
         json: true
     })
         .catch((err) => {throw err.message;});
 };
 
-const dropTestDB = () => {
+const dropTestDB = (user) => {
     return request({
         method: 'DELETE',
         uri: resolveUrl('/api/v1/test/users/@example.com')

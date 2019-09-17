@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestWrapper;
 import org.springframework.util.StopWatch;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -147,6 +149,15 @@ public class Utils {
      */
     public static boolean isBecomeUsed(SecurityContextHolderAwareRequestWrapper req) {
         return req.isUserInRole(ROLE_PREVIOUS_ADMINISTRATOR);
+    }
+
+    /**
+     * @param auth Auth.
+     * @param role Role.
+     * @return Authority by name.
+     */
+    public static GrantedAuthority getAuthority(Authentication auth, String role) {
+        return auth.getAuthorities().stream().filter(a -> role.equals(a.getAuthority())).findFirst().orElse(null);
     }
 
     /**

@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe';
+import {Selector} from 'testcafe';
 
-const _selector = Selector('user-menu');
-
-export const userMenu = {
-    _selector,
-    button: _selector.find('[bs-dropdown]'),
-    /** 
-     * Clicks on user menu option.
-     * @param {'Profile'|'Admin panel'|'Log out'} label Menu option label to click on
-     */
-    async clickOption(label) {
-        return t
-            .hover(this.button)
-            .click(_selector.find(`[role="menuitem"]`).withText(label));
-    }
-};
+export const assumedIdentityNotification = Selector('permanent-notifications .wch-notification').withText('You are currently viewing user');
+export const assumedUserFullName = assumedIdentityNotification.find('strong');
+export const revertIdentityButton = assumedIdentityNotification.find('a').withText('Revert to your identity?');

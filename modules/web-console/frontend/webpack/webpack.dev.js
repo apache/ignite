@@ -86,3 +86,8 @@ module.exports = merge(commonCfg, {
         port: webpackDevServerPort
     }
 });
+
+// Prevents Webpack crashes on WS connection errors
+process.addListener('uncaughtException', (e) => {
+    console.warn(e);
+});
