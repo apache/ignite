@@ -67,6 +67,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinEmptyCacheSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinErrorsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinJdbcToCacheDataTypesCoverageTest;
 import org.apache.ignite.jdbc.thin.JdbcThinLocalQueriesSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSkipReducerOnUpdateSelfTest;
@@ -239,7 +240,8 @@ import org.junit.runners.Suite;
     JdbcThinQueryMemoryTrackerSelfTest.class,
 
     // Data types coverage.
-    JdbcThinCacheToJdbcDataTypesCoverageTest.class
+    JdbcThinCacheToJdbcDataTypesCoverageTest.class,
+    JdbcThinJdbcToCacheDataTypesCoverageTest.class
 })
 public class IgniteJdbcDriverTestSuite {
 }
