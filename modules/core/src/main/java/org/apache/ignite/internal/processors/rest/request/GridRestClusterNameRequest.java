@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Grid command request of log file.
+ * Grid command request of cluster name.
  */
 public class GridRestClusterNameRequest extends GridRestRequest {
     /**
