@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollectionAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,9 +50,6 @@ public class GridCacheReplicatedQueueRemoveSelfTest extends IgniteCollectionAbst
 
     /** */
     public static final int THREADS_CNT = 8;
-
-    /** */
-    private static final Random RAND = new Random();
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -94,7 +93,19 @@ public class GridCacheReplicatedQueueRemoveSelfTest extends IgniteCollectionAbst
 
         rp.process(entry);
 
-        rp.writeExternal(new ObjectOutputStream(new GridByteArrayOutputStream()));
+        GridCacheQueueAdapter.RemoveProcessor externalRP = new GridCacheQueueAdapter.RemoveProcessor();
+
+        GridByteArrayOutputStream output = new GridByteArrayOutputStream();
+
+        rp.writeExternal(new ObjectOutputStream(output));
+
+        externalRP.readExternal(new ObjectInputStream(new GridByteArrayInputStream(output.toByteArray())));
+
+        assertEquals(id, GridTestUtils.getFieldValue(externalRP, "id"));
+
+        // idx should be null, cause entry was already removed, see GridCacheQueueAdapter.RemoveProcessor.code
+        // for more details.
+        assertNull(GridTestUtils.getFieldValue(externalRP, "idx"));
     }
 
     /**
@@ -117,7 +128,7 @@ public class GridCacheReplicatedQueueRemoveSelfTest extends IgniteCollectionAbst
             ArrayList dataToRmv = new ArrayList();
 
             for (int i = 0; i < CACHE_SIZE / 10; i++)
-                dataToRmv.add(RAND.nextInt(CACHE_SIZE));
+                dataToRmv.add(ThreadLocalRandom.current().nextInt(CACHE_SIZE));
 
             latch.countDown();
             latch.await();
