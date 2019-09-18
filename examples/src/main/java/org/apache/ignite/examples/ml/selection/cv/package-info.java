@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML cross validation examples.
+ * <!-- Package description. --> ML cross validation examples.
  */
 package org.apache.ignite.examples.ml.selection.cv;

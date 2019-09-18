@@ -41,16 +41,24 @@ import org.tensorflow.Tensor;
  * threads.
  */
 public class TensorFlowThreadedInferenceExample {
-    /** Path to the directory with saved TensorFlow model. */
+    /**
+     * Path to the directory with saved TensorFlow model.
+     */
     private static final String MODEL_PATH = "examples/src/main/resources/models/mnist_tf_model";
 
-    /** Path to the MNIST images data. */
+    /**
+     * Path to the MNIST images data.
+     */
     private static final String MNIST_IMG_PATH = "examples/src/main/resources/datasets/t10k-images-idx3-ubyte";
 
-    /** Path to the MNIST labels data. */
+    /**
+     * Path to the MNIST labels data.
+     */
     private static final String MNIST_LBL_PATH = "examples/src/main/resources/datasets/t10k-labels-idx1-ubyte";
 
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
         File mdlRsrc = IgniteUtils.resolveIgnitePath(MODEL_PATH);
         if (mdlRsrc == null)
