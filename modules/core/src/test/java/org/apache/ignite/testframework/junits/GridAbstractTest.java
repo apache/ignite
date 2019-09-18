@@ -249,7 +249,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Page handler wrapper for {@link BPlusTree}, it can be saved here and overrided for test purposes,
      * then it must be restored using value of this field.
      */
-    private PageHandlerWrapper<BPlusTree.Result> regularPageHndWrapper;
+    private transient PageHandlerWrapper<BPlusTree.Result> regularPageHndWrapper;
 
     /** */
     static {
