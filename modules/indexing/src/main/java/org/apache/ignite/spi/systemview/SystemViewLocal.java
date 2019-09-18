@@ -50,7 +50,7 @@ import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 
 /**
- * System view to export system view data.
+ * SQL system view to export {@link SystemView} data.
  */
 public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** System view for export. */

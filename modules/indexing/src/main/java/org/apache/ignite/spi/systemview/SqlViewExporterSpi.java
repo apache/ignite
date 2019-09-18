@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
  */
 public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
     /** System view filter. */
-    private @Nullable Predicate<SystemView<?>> filter;
+    @Nullable private Predicate<SystemView<?>> filter;
 
     /** System view registry. */
     private ReadOnlySystemViewRegistry sysViewReg;

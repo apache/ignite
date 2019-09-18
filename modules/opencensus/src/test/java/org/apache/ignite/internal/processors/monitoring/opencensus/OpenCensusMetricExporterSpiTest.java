@@ -61,7 +61,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         OpenCensusMetricExporterSpi ocSpi = new OpenCensusMetricExporterSpi();
 
-        ocSpi.setMetricExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+        ocSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
         ocSpi.setPeriod(EXPORT_TIMEOUT);
         ocSpi.setSendConsistentId(true);
         ocSpi.setSendInstanceName(true);
@@ -106,7 +106,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
                     return false;
 
                 String consistentId = CONSISTENT_ID_TAG.getName() + "=\"" + ignite.localNode().consistentId() + '\"';
-
                 if (!httpMetrics.contains(consistentId))
                     return false;
 

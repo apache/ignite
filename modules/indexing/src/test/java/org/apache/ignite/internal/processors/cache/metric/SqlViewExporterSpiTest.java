@@ -22,7 +22,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -45,9 +46,6 @@ import static org.apache.ignite.internal.util.lang.GridFunc.t;
 public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
-
-    /** */
-    private static CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -171,18 +169,21 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testComputeBroadcast() throws Exception {
-        latch = new CountDownLatch(1);
+        CyclicBarrier barrier = new CyclicBarrier(6);
 
         for (int i = 0; i < 5; i++) {
             ignite.compute().broadcastAsync(() -> {
                 try {
-                    latch.await();
+                    barrier.await();
+                    barrier.await();
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException | BrokenBarrierException e) {
                     throw new RuntimeException(e);
                 }
             });
         }
+
+        barrier.await();
 
         List<List<?>> tasks = execute(ignite,
             "SELECT " +
@@ -207,7 +208,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(ignite.localNode().id(), t.get(5));
         assertEquals("0", t.get(6));
 
-        latch.countDown();
+        barrier.await();
     }
 
     /** */
