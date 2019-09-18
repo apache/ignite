@@ -119,8 +119,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     protected Map<String, Object> userAttrs;
 
     /**
-     * Map for checking discovery events per test. The {@link EVT_NODE_JOINED}, {@link EVT_NODE_FAILED}, {@link
-     * EVT_NODE_LEFT} events should be handled only once per topology version.
+     * Map for checking discovery events per test. The
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_JOINED EVT_NODE_JOINED},
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_FAILED EVT_NODE_FAILED},
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_LEFT EVT_NODE_LEFT}
+     * events should be handled only once per topology version.
      *
      * Need to be cleaned in case of cluster restart.
      */
@@ -501,7 +504,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             }
         }, new int[]{EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT});
 
-        cfg.setLocalEventListeners(lsnrs);
+        if (!isMultiJvm())
+            cfg.setLocalEventListeners(lsnrs);
 
         if (persistence) {
             DataStorageConfiguration memCfg = new DataStorageConfiguration()

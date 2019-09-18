@@ -20,6 +20,8 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.curator.test.InstanceSpec;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 
 /**
  * Base class for Zookeeper SPI discovery tests in this package. It is intended to provide common overrides for
@@ -68,6 +70,17 @@ class ZookeeperDiscoverySpiSslTestBase extends ZookeeperDiscoverySpiTestBase {
             return "localhost:2281";
 
         return super.getRealClusterZkConnectionString();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected DiscoverySpi cloneDiscoverySpi(DiscoverySpi discoverySpi) throws Exception {
+        ZookeeperDiscoverySpi clone = (ZookeeperDiscoverySpi) super.cloneDiscoverySpi(discoverySpi);
+
+        String connStr = ((ZookeeperDiscoverySpi) discoverySpi).getZkConnectionString();
+
+        clone.setZkConnectionString(connStr);
+
+        return clone;
     }
 
     /**
