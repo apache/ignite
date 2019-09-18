@@ -23,7 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -56,7 +58,6 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -173,24 +174,26 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#broadcastAsync(IgniteRunnable)} call. */
     @Test
     public void testComputeBroadcast() throws Exception {
-        latch = new CountDownLatch(1);
+        CyclicBarrier barrier = new CyclicBarrier(6);
 
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++) {
                 g1.compute().broadcastAsync(() -> {
                     try {
-                        latch.await();
+                        barrier.await();
+                        barrier.await();
                     }
-                    catch (InterruptedException e) {
+                    catch (InterruptedException | BrokenBarrierException e) {
                         throw new RuntimeException(e);
                     }
                 });
+            }
 
-            boolean res = waitForCondition(() -> tasks.size() == 5, 5_000);
+            barrier.await();
 
-            assertTrue(res);
+            assertEquals(5, tasks.size());
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -202,30 +205,31 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(g1.localNode().id(), t.taskNodeId());
             assertEquals("0", t.userVersion());
 
-            latch.countDown();
+            barrier.await();
         }
     }
 
     /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#runAsync(IgniteRunnable)} call. */
     @Test
     public void testComputeRunnable() throws Exception {
-        latch = new CountDownLatch(1);
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
 
             g1.compute().runAsync(() -> {
                 try {
-                    latch.await();
+                    barrier.await();
+                    barrier.await();
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException | BrokenBarrierException e) {
                     throw new RuntimeException(e);
                 }
             });
 
-            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
+            barrier.await();
 
-            assertTrue(res);
+            assertEquals(1, tasks.size());
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -237,14 +241,14 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(g1.localNode().id(), t.taskNodeId());
             assertEquals("0", t.userVersion());
 
-            latch.countDown();
+            barrier.await();
         }
     }
 
     /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#apply(IgniteClosure, Object)} call. */
     @Test
     public void testComputeApply() throws Exception {
-        latch = new CountDownLatch(1);
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
@@ -252,9 +256,10 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             GridTestUtils.runAsync(() -> {
                 g1.compute().apply(x -> {
                     try {
-                        latch.await();
+                        barrier.await();
+                        barrier.await();
                     }
-                    catch (InterruptedException e) {
+                    catch (InterruptedException | BrokenBarrierException e) {
                         throw new RuntimeException(e);
                     }
 
@@ -262,9 +267,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 }, 1);
             });
 
-            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
+            barrier.await();
 
-            assertTrue(res);
+            assertEquals(1, tasks.size());
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -276,7 +281,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(g1.localNode().id(), t.taskNodeId());
             assertEquals("0", t.userVersion());
 
-            latch.countDown();
+            barrier.await();
         }
     }
 
@@ -286,7 +291,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testComputeAffinityCall() throws Exception {
-        latch = new CountDownLatch(1);
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
@@ -297,7 +302,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             g1.compute().affinityCallAsync("test-cache", 1, () -> {
                 try {
-                    latch.await();
+                    barrier.await();
+                    barrier.await();
                 }
                 catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -306,9 +312,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 return 0;
             });
 
-            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
+            barrier.await();
 
-            assertTrue(res);
+            assertEquals(1, tasks.size());
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -320,15 +326,14 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(g1.localNode().id(), t.taskNodeId());
             assertEquals("0", t.userVersion());
 
-            latch.countDown();
+            barrier.await();
         }
     }
-
 
     /** */
     @Test
     public void testComputeTask() throws Exception {
-        latch = new CountDownLatch(1);
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
@@ -342,10 +347,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     @Nullable Object arg) throws IgniteException {
                     return Collections.singletonMap(new ComputeJob() {
                         @Override public void cancel() {
+                            System.out.println("SystemViewSelfTest.cancel");
                             // No-op.
                         }
 
                         @Override public Object execute() throws IgniteException {
+                            System.out.println("SystemViewSelfTest.execute");
                             return 1;
                         }
                     }, subgrid.get(0));
@@ -353,24 +360,26 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 @Override public ComputeJobResultPolicy result(ComputeJobResult res,
                     List<ComputeJobResult> rcvd) throws IgniteException {
+                    try {
+                        barrier.await();
+                        barrier.await();
+                    }
+                    catch (InterruptedException | BrokenBarrierException e) {
+                        throw new RuntimeException(e);
+                    }
+
                     return null;
                 }
 
                 @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
-                    try {
-                        latch.await();
-                    }
-                    catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
 
                     return 1;
                 }
             }, 1);
 
-            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
+            barrier.await();
 
-            assertTrue(res);
+            assertEquals(1, tasks.size());
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -382,7 +391,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(g1.localNode().id(), t.taskNodeId());
             assertEquals("0", t.userVersion());
 
-            latch.countDown();
+            barrier.await();
         }
     }
 
