@@ -502,10 +502,21 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             String s0 = sqlIns;
 
             for (int f = 0; f < reqFlds.length; ++f)
-                s0 += i + ((f < reqFlds.length - 1) ? ", " : ")");
+                s0 += (i + f) + ((f < reqFlds.length - 1) ? ", " : ")");
 
             qryProc.querySqlFields(new SqlFieldsQuery(s0), true).getAll();
         }
+    }
+
+    /**
+     * Checks index usage instead of full scan.
+     * @param res Result set.
+     * @return {@code True} if index usage found.
+     */
+    private boolean checkIdxUsage(List<List<?>> res, String idx) {
+        String plan = res.get(0).get(0).toString();
+
+        return idx != null ? plan.contains(idx) : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
     }
 
     /**
@@ -654,6 +665,80 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(checkIdxAlreadyExistLog(
             qryProcCl, "idx6", TEST_TBL_NAME, "c1", "c2"));
+    }
+
+    /**
+     * Tests IN with EQUALS index usage .
+     */
+    @Test
+    public void testInWithEqualsIdxUsage() throws Exception {
+        inlineSize = 10;
+
+        isPersistenceEnabled = false;
+
+        String idxName = "idx2";
+
+        IgniteEx ig0 = startGrid(0);
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        populateTable(qryProc, TEST_TBL_NAME, 2, "FIRST_NAME", "LAST_NAME",
+            "ADDRESS", "LANG");
+
+        String sqlIdx2 = String.format("create index \"%s\" on %s(LANG)", idxName, TEST_TBL_NAME);
+
+        qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx2), true).getAll();
+
+        List<List<?>> res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and (ADDRESS = ?1 or ADDRESS = ?2)").setArgs(3, 4), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (select ADDRESS from " + TEST_TBL_NAME + " where ADDRESS in(?1, ?2)) " +
+            "and (ADDRESS = ?1 or ADDRESS = ?2)").setArgs(3, 4), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and (ADDRESS = ?3 or ADDRESS = ?3)").setArgs(3, 4, 5), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and ADDRESS = ?3").setArgs(3, 4, 5), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("explain select * from " + TEST_TBL_NAME +
+            " where LANG in (3, 4) and ADDRESS = 5"), true).getAll();
+
+        assertTrue(checkIdxUsage(res, idxName));
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (?1, ?2) and (ADDRESS = ?3 or ADDRESS = ?4) ORDER BY LAST_NAME")
+            .setArgs(3, 4, 5, 6), true).getAll();
+
+        assertEquals(res.size(), 0);
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (?3, ?4) and (ADDRESS = ?1 or ADDRESS = ?2) ORDER BY LAST_NAME")
+            .setArgs(3, 4, 5, 6), true).getAll();
+
+        assertEquals(res.size(), 1);
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (?2, ?3) and (ADDRESS = ?1 or ADDRESS = ?2) ORDER BY LAST_NAME")
+            .setArgs(3, 4, 5), true).getAll();
+
+        assertEquals(res.size(), 2);
+
+        assertEquals(res.get(0).get(0), "1");
+
+        res = qryProc.querySqlFields(new SqlFieldsQuery("select * from " + TEST_TBL_NAME +
+            " where LANG in (4, 5) and (ADDRESS = 3 or ADDRESS = 4) ORDER BY LAST_NAME"), true).getAll();
+
+        assertEquals(res.size(), 2);
     }
 
     /**
