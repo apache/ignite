@@ -32,15 +32,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
-import org.apache.ignite.internal.processors.metric.view.walker.Order;
-import org.apache.ignite.spi.metric.jmx.SystemViewMBean;
-import org.apache.ignite.spi.metric.view.SystemView;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker;
-import org.apache.ignite.spi.metric.view.CacheGroupView;
-import org.apache.ignite.spi.metric.view.CacheView;
-import org.apache.ignite.spi.metric.view.ComputeTaskView;
-import org.apache.ignite.spi.metric.view.ServiceView;
-import org.apache.ignite.spi.metric.sql.SystemViewLocal;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
+import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.SystemViewLocal;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 
@@ -58,7 +58,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         "getClass"));
 
     /** Package for {@link SystemViewRowAttributeWalker} implementations. */
-    public static final String WALKER_PACKAGE = "org.apache.ignite.internal.processors.metric.view.walker";
+    public static final String WALKER_PACKAGE = "org.apache.ignite.internal.managers.systemview.walker";
 
     /** */
     public static final String TAB = "    ";

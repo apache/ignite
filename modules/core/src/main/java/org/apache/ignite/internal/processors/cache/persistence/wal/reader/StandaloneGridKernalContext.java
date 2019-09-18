@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -122,6 +123,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Metrics manager. */
     private final GridMetricManager metricMgr;
 
+    /** Metrics manager. */
+    private final GridSystemViewManager sysViewMgr;
+
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
      * convert is configured. All entries in this case will be lazy data entries.
@@ -157,6 +161,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
         this.metricMgr = new GridMetricManager(this);
+        this.sysViewMgr = new GridSystemViewManager(this);
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
@@ -304,6 +309,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public GridMetricManager metric() {
         return metricMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSystemViewManager systemView() {
+        return sysViewMgr;
     }
 
     /** {@inheritDoc} */

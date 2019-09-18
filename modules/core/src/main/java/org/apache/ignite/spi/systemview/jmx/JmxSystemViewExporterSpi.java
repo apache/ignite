@@ -15,106 +15,78 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.jmx;
+package org.apache.ignite.spi.systemview.jmx;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import javax.management.JMException;
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
+import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
-import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
+import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 
 /**
  * This SPI implementation exports metrics as JMX beans.
  */
-public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
-    /** Metric registry. */
-    private ReadOnlyMetricRegistry mreg;
+public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
+    /** Syste view registry. */
+    private ReadOnlySystemViewRegistry sysViewReg;
 
-    /** Metric filter. */
-    private @Nullable Predicate<MetricRegistry> filter;
+    /** System view filter. */
+    private @Nullable Predicate<SystemView<?>> filter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        mreg.forEach(this::register);
+        sysViewReg.forEach(this::register);
 
-        mreg.addMetricRegistryCreationListener(this::register);
-        mreg.addMetricRegistryRemoveListener(this::unregister);
+        sysViewReg.addSystemViewCreationListener(this::register);
     }
 
     /**
-     * Registers JMX bean for specific metric registry.
+     * Registers JMX bean for specific system view.
      *
-     * @param mreg Metric registry.
+     * @param sysView System view.
      */
-    private void register(MetricRegistry mreg) {
-        if (filter != null && !filter.test(mreg)) {
+    private void register(SystemView<?> sysView) {
+        if (filter != null && !filter.test(sysView)) {
             if (log.isDebugEnabled())
-                U.debug(log, "Metric registry filtered and will not be registered.[registry=" + mreg.name() + ']');
+                U.debug(log, "System view filtered and will not be registered.[name=" + sysView.name() + ']');
 
             return;
         }
         else if (log.isDebugEnabled())
-            log.debug("Found new metric registry [name=" + mreg.name() + ']');
-
-        MetricUtils.MetricName n = parse(mreg.name());
+            log.debug("Found new system view [name=" + sysView.name() + ']');
 
         try {
-            MetricRegistryMBean mregBean = new MetricRegistryMBean(mreg);
+            SystemViewMBean mlBean = new SystemViewMBean<>(sysView);
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
                 igniteInstanceName,
-                n.root(),
-                n.subName(),
-                mregBean,
-                MetricRegistryMBean.class);
+                VIEWS,
+                sysView.name(),
+                mlBean,
+                SystemViewMBean.class);
 
             mBeans.add(mbean);
 
             if (log.isDebugEnabled())
-                log.debug("MetricGroup JMX bean created. " + mbean);
+                log.debug("MetricRegistry MBean created [mbean=" + mbean + ']');
         }
         catch (JMException e) {
-            log.error("MBean for metric registry '" + mreg.name() + "' can't be created.", e);
-        }
-    }
-
-    /**
-     * Unregister JMX bean for specific metric registry.
-     *
-     * @param mreg Metric registry.
-     */
-    private void unregister(MetricRegistry mreg) {
-        MetricUtils.MetricName n = parse(mreg.name());
-
-        try {
-            ObjectName mbeanName = makeMBeanName(igniteInstanceName, n.root(), n.subName());
-
-            boolean rmv = mBeans.remove(mbeanName);
-
-            assert rmv;
-
-            unregBean(ignite, mbeanName);
-        }
-        catch (MalformedObjectNameException e) {
-            log.error("MBean for metric registry '" + n.root() + ',' + n.subName() + "' can't be unregistered.", e);
+            log.error("MBean for system view '" + sysView.name() + "' can't be created.", e);
         }
     }
 
@@ -144,12 +116,12 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(ReadOnlyMetricRegistry reg) {
-        this.mreg = reg;
+    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry sysViewReg) {
+        this.sysViewReg = sysViewReg;
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
+    @Override public void setExportFilter(Predicate<SystemView<?>> filter) {
         this.filter = filter;
     }
 }

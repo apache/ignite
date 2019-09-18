@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.view;
+package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.task.GridTaskWorker;

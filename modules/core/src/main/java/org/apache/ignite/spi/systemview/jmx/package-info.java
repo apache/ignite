@@ -15,26 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.view;
-
 /**
- * Implementation provides data for some internal Ignite objects.
- *
- * @param <R> Type of the row.
+ * <!-- Package description. -->
+ * Contains implementations of the {@link org.apache.ignite.spi.systemview.SystemViewExporterSpi}
+ * that exports system vies as a JMX beans.
  */
-public interface SystemView<R> extends Iterable<R> {
-    /** @return Helper for exporters. */
-    public SystemViewRowAttributeWalker<R> walker();
-
-    /** @return Class of the row. */
-    public Class<R> rowClass();
-
-    /** @return View name. */
-    public String name();
-
-    /** @return View description. */
-    public String description();
-
-    /** @return Size of the view. */
-    public int size();
-}
+package org.apache.ignite.spi.systemview.jmx;

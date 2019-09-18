@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.view;
+package org.apache.ignite.spi.systemview.view;
 
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -26,7 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.metric.view.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;

@@ -406,7 +406,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     private Stream<MetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
         GridMetricManager mmgr = ignite.context().metric();
 
-        return StreamSupport.stream(mmgr.metricRegistry().spliterator(), false)
+        return StreamSupport.stream(mmgr.spliterator(), false)
             .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
     }
 

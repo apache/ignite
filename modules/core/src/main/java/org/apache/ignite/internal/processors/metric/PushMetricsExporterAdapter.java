@@ -25,8 +25,6 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
-import org.apache.ignite.spi.metric.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -38,14 +36,8 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     /** Metric registry. */
     protected ReadOnlyMetricRegistry mreg;
 
-    /** Sytem view registry. */
-    protected ReadOnlySystemViewRegistry mlreg;
-
     /** Metric filter. */
-    protected @Nullable Predicate<MetricRegistry> mregFilter;
-
-    /** System view filter. */
-    protected @Nullable Predicate<SystemView<?>> sysViewFilter;
+    protected  @Nullable Predicate<MetricRegistry> filter;
 
     /** Export period. */
     private long period;
@@ -106,17 +98,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry mlreg) {
-        this.mlreg = mlreg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMetricExportFilter(Predicate<MetricRegistry> filter) {
-        this.mregFilter = filter;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSystemViewExportFilter(Predicate<SystemView<?>> filter) {
-        this.sysViewFilter = filter;
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
+        this.filter = filter;
     }
 }

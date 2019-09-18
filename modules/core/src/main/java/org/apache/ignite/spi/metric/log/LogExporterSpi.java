@@ -18,19 +18,12 @@
 package org.apache.ignite.spi.metric.log;
 
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
-import org.apache.ignite.spi.metric.view.SystemView;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
  * This SPI implementation exports metrics to Ignite log.
  */
 public class LogExporterSpi extends PushMetricsExporterAdapter {
-    /** Column separator. */
-    public static final char COL_SEPARATOR = ',';
-
     /** {@inheritDoc} */
     @Override public void export() {
         if (!log.isInfoEnabled()) {
@@ -43,113 +36,10 @@ public class LogExporterSpi extends PushMetricsExporterAdapter {
         log.info("Metrics:");
 
         mreg.forEach(grp -> {
-            if (mregFilter != null && !mregFilter.test(grp))
+            if (filter != null && !filter.test(grp))
                 return;
 
             grp.forEach(m -> log.info(m.name() + " = " + m.getAsString()));
         });
-
-        log.info("Views:");
-
-        mlreg.forEach(this::exportList);
-    }
-
-    /**
-     * Prints view data in CSV style format.
-     *
-     * @param view View to print.
-     * @param <R> Row type.
-     */
-    private <R> void exportList(SystemView<R> view) {
-        if (sysViewFilter != null && !sysViewFilter.test(view))
-            return;
-
-        log.info(view.name());
-
-        StringBuilder names = new StringBuilder();
-
-        SystemViewRowAttributeWalker<R> walker = view.walker();
-
-        walker.visitAll(new AttributeVisitor() {
-            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
-                if (idx != 0)
-                    names.append(COL_SEPARATOR);
-
-                names.append(name);
-            }
-        });
-
-        log.info(names.toString());
-
-        for (R row : view) {
-            StringBuilder rowStr = new StringBuilder();
-
-            walker.visitAll(row, new AttributeWithValueVisitor() {
-                @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptBoolean(int idx, String name, boolean val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptChar(int idx, String name, char val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptByte(int idx, String name, byte val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptShort(int idx, String name, short val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptInt(int idx, String name, int val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptLong(int idx, String name, long val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptFloat(int idx, String name, float val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-
-                @Override public void acceptDouble(int idx, String name, double val) {
-                    if (idx != 0)
-                        rowStr.append(COL_SEPARATOR);
-
-                    rowStr.append(val);
-                }
-            });
-
-            log.info(rowStr.toString());
-        }
     }
 }

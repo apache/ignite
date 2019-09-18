@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.view;
+package org.apache.ignite.internal.managers.systemview;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.spi.metric.view.SystemView;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**

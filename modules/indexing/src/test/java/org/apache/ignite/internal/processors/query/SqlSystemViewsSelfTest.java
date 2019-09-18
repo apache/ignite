@@ -883,7 +883,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration()
             .setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME))
-            .setMetricExporterSpi(new SqlViewExporterSpi());
+            .setMetricExporterSpi(new SqlViewExporterSpi())
+            .setSystemViewExporterSpi(new org.apache.ignite.spi.systemview.SqlViewExporterSpi());
 
         return cfg;
     }

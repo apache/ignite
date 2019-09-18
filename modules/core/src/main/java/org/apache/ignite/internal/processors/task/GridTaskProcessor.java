@@ -80,7 +80,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.spi.metric.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
@@ -163,7 +163,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
-        ctx.metric().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
+        ctx.systemView().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
             ComputeTaskView.class,
             tasks.values(),
             ComputeTaskView::new);

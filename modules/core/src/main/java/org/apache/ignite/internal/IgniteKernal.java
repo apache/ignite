@@ -121,6 +121,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1168,6 +1169,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
             startManager(new GridMetricManager(ctx));
+            startManager(new GridSystemViewManager(ctx));
             startManager(new GridIoManager(ctx));
             startManager(new GridCheckpointManager(ctx));
 

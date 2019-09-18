@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteException;
 /**
  * Base class for read only {@link DynamicMBean} implementations.
  */
-abstract class ReadOnlyDynamicMBean implements DynamicMBean {
+public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
     /** {@inheritDoc} */
     @Override public void setAttribute(Attribute attribute) {
         throw new UnsupportedOperationException("setAttribute is not supported.");

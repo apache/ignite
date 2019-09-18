@@ -39,11 +39,11 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.metric.view.SystemView;
-import org.apache.ignite.spi.metric.view.CacheGroupView;
-import org.apache.ignite.spi.metric.view.CacheView;
-import org.apache.ignite.spi.metric.view.ComputeTaskView;
-import org.apache.ignite.spi.metric.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -69,7 +69,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             for (String name : cacheNames)
                 g.createCache(name);
 
-            SystemView<CacheView> caches = g.context().metric().view(CACHES_VIEW);
+            SystemView<CacheView> caches = g.context().systemView().view(CACHES_VIEW);
 
             assertEquals(g.context().cache().cacheDescriptors().size(), F.size(caches.iterator()));
 
@@ -89,7 +89,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             for (String grpName : grpNames)
                 g.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-            SystemView<CacheGroupView> grps = g.context().metric().view(CACHE_GRPS_VIEW);
+            SystemView<CacheGroupView> grps = g.context().systemView().view(CACHE_GRPS_VIEW);
 
             assertEquals(g.context().cache().cacheGroupDescriptors().size(), F.size(grps.iterator()));
 
@@ -114,7 +114,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 g.services().deploy(srvcCfg);
 
-                SystemView<ServiceView> srvs = g.context().metric().view(SVCS_VIEW);
+                SystemView<ServiceView> srvs = g.context().systemView().view(SVCS_VIEW);
 
                 assertEquals(g.context().service().serviceDescriptors().size(), F.size(srvs.iterator()));
 
@@ -148,7 +148,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 final ServiceView[] sview = {null};
 
-                g.context().metric().<ServiceView>view(SVCS_VIEW).forEach(sv -> {
+                g.context().systemView().<ServiceView>view(SVCS_VIEW).forEach(sv -> {
                     if (sv.name().equals(srvcCfg.getName()))
                         sview[0] = sv;
                 });
@@ -173,7 +173,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         CyclicBarrier barrier = new CyclicBarrier(6);
 
         try (IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
+            SystemView<ComputeTaskView> tasks = g1.context().systemView().view(TASKS_VIEW);
 
             for (int i = 0; i < 5; i++) {
                 g1.compute().broadcastAsync(() -> {
@@ -211,7 +211,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
+            SystemView<ComputeTaskView> tasks = g1.context().systemView().view(TASKS_VIEW);
 
             g1.compute().runAsync(() -> {
                 try {
@@ -247,7 +247,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
+            SystemView<ComputeTaskView> tasks = g1.context().systemView().view(TASKS_VIEW);
 
             GridTestUtils.runAsync(() -> {
                 g1.compute().apply(x -> {
@@ -290,7 +290,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
+            SystemView<ComputeTaskView> tasks = g1.context().systemView().view(TASKS_VIEW);
 
             IgniteCache<Integer, Integer> cache = g1.createCache("test-cache");
 
@@ -332,7 +332,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         try (IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().metric().view(TASKS_VIEW);
+            SystemView<ComputeTaskView> tasks = g1.context().systemView().view(TASKS_VIEW);
 
             IgniteCache<Integer, Integer> cache = g1.createCache("test-cache");
 
@@ -368,7 +368,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 }
 
                 @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
-
                     return 1;
                 }
             }, 1);

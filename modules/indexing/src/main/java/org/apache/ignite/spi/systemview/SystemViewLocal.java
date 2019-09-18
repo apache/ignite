@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.sql;
+package org.apache.ignite.spi.systemview;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -26,11 +26,11 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.spi.metric.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;

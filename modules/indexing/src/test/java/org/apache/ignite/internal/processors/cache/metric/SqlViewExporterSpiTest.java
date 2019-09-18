@@ -59,9 +59,10 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         SqlViewExporterSpi sqlSpi = new SqlViewExporterSpi();
 
-        sqlSpi.setMetricExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+        sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(sqlSpi);
+        cfg.setSystemViewExporterSpi(new org.apache.ignite.spi.systemview.SqlViewExporterSpi());
 
         return cfg;
     }

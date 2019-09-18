@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.spi.metric.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -193,7 +193,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.metric().registerView(SVCS_VIEW, SVCS_VIEW_DESC,
+        ctx.systemView().registerView(SVCS_VIEW, SVCS_VIEW_DESC,
             ServiceView.class,
             registeredServices.values(),
             ServiceView::new);

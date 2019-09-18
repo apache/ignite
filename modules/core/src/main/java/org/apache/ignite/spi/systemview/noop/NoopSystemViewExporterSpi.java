@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.noop;
+package org.apache.ignite.spi.systemview.noop;
 
 import java.util.function.Predicate;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
-import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
+import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op implementation of metric exporter SPI.
  */
 @IgniteSpiNoop
-public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
+public class NoopSystemViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         // No-op.
@@ -42,12 +42,13 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(ReadOnlyMetricRegistry registry) {
+    @Override public void setSystemViewRegistry(ReadOnlySystemViewRegistry registry) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
+    @Override public void setExportFilter(Predicate<SystemView<?>> filter) {
         // No-op.
     }
+
 }

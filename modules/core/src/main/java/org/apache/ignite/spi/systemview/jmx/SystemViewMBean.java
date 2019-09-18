@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.jmx;
+package org.apache.ignite.spi.systemview.jmx;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -38,10 +38,12 @@ import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.spi.metric.view.SystemView;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.ReadOnlyDynamicMBean;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeVisitor;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 
 /**
  * JMX bean to expose specific {@link SystemView} data.

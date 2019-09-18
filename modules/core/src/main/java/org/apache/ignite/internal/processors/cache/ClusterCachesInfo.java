@@ -53,8 +53,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.spi.metric.view.CacheGroupView;
-import org.apache.ignite.spi.metric.view.CacheView;
+import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -159,12 +159,12 @@ public class ClusterCachesInfo {
     public ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
 
-        ctx.metric().registerView(CACHES_VIEW, CACHES_VIEW_DESC,
+        ctx.systemView().registerView(CACHES_VIEW, CACHES_VIEW_DESC,
             CacheView.class,
             registeredCaches.values(),
             CacheView::new);
 
-        ctx.metric().registerView(CACHE_GRPS_VIEW, CACHE_GRPS_VIEW_DESC,
+        ctx.systemView().registerView(CACHE_GRPS_VIEW, CACHE_GRPS_VIEW_DESC,
             CacheGroupView.class,
             registeredCacheGrps.values(),
             CacheGroupView::new);

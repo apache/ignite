@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
@@ -61,11 +62,11 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
-import static org.apache.ignite.spi.metric.jmx.SystemViewMBean.VIEWS;
+import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
-public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
+public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
 
@@ -83,9 +84,10 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
 
-        jmxSpi.setMetricExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+        jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
+        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
         return cfg;
     }

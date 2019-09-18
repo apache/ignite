@@ -25,7 +25,6 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -36,31 +35,18 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.view.SystemViewAdapter;
-import org.apache.ignite.internal.processors.metric.view.walker.CacheGroupViewWalker;
-import org.apache.ignite.internal.processors.metric.view.walker.CacheViewWalker;
-import org.apache.ignite.internal.processors.metric.view.walker.ComputeTaskViewWalker;
-import org.apache.ignite.internal.processors.metric.view.walker.ServiceViewWalker;
-import org.apache.ignite.spi.metric.view.SystemView;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.ReadOnlySystemViewRegistry;
-import org.apache.ignite.spi.metric.view.CacheGroupView;
-import org.apache.ignite.spi.metric.view.CacheView;
-import org.apache.ignite.spi.metric.view.ComputeTaskView;
-import org.apache.ignite.spi.metric.view.ServiceView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -71,15 +57,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
- * This manager should provide {@link ReadOnlyMetricRegistry} and {@link ReadOnlySystemViewRegistry}
- * for each configured {@link MetricExporterSpi}.
+ * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
  * @see MetricRegistry
- * @see SystemView
- * @see SystemViewAdapter
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -195,48 +178,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
-    /** Metrics registry. */
-    private final ReadOnlyMetricRegistry metricsRegistry = new ReadOnlyMetricRegistry() {
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<MetricRegistry> iterator() {
-            return registries.values().iterator();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
-            metricRegCreationLsnrs.add(lsnr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr) {
-            metricRegRemoveLsnrs.add(lsnr);
-        }
-    };
-
-    /** Registered system views. */
-    private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
-
-    /** System view registry. */
-    private final ReadOnlySystemViewRegistry systemViewRegistry = new ReadOnlySystemViewRegistry() {
-        /** {@inheritDoc} */
-        @Override public void addSystemViewCreationListener(Consumer<SystemView<?>> lsnr) {
-            viewCreationLsnrs.add(lsnr);
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<SystemView<?>> iterator() {
-            return systemViews.values().iterator();
-        }
-    };
-
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metric registry remove listeners. */
     private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
-
-    /** System views creation listeners. */
-    private final List<Consumer<SystemView<?>>> viewCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -252,9 +198,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
-
-    /** Registered walkers for view row. */
-    private final Map<Class<?>, SystemViewRowAttributeWalker<?>> walkers = new HashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -293,11 +236,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
-
-        registerWalker(CacheGroupView.class, new CacheGroupViewWalker());
-        registerWalker(CacheView.class, new CacheViewWalker());
-        registerWalker(ServiceView.class, new ServiceViewWalker());
-        registerWalker(ComputeTaskView.class, new ComputeTaskViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -307,10 +245,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        for (MetricExporterSpi spi : getSpis()) {
-            spi.setMetricRegistry(metricsRegistry);
-            spi.setSystemViewRegistry(systemViewRegistry);
-        }
+        for (MetricExporterSpi spi : getSpis())
+            spi.setMetricRegistry(this);
 
         startSpi();
     }
@@ -321,11 +257,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
-    }
-
-    /** @return Metric registry. */
-    public ReadOnlyMetricRegistry metricRegistry() {
-        return metricsRegistry;
     }
 
     /**
@@ -344,63 +275,31 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         });
     }
 
-    /**
-     * Registers view which exports {@link Collection} content.
-     *
-     * @param name Name.
-     * @param desc Description.
-     * @param rowCls Row class.
-     * @param data Data.
-     * @param rowFunc value to row function.
-     * @param <R> View row type.
-     * @param <D> Collection data type.
-     */
-    public <R, D> void registerView(String name, String desc,
-        Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<MetricRegistry> iterator() {
+        return registries.values().iterator();
+    }
 
-        SystemView sysView = new SystemViewAdapter<>(name,
-            desc,
-            rowCls,
-            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
-            data,
-            rowFunc);
+    /** {@inheritDoc} */
+    @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
+        metricRegCreationLsnrs.add(lsnr);
+    }
 
-        SystemView<?> old = systemViews.putIfAbsent(name, sysView);
-
-        assert old == null;
-
-        notifyListeners(sysView, viewCreationLsnrs, log);
+    /** {@inheritDoc} */
+    @Override public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr) {
+        metricRegRemoveLsnrs.add(lsnr);
     }
 
     /**
-     * @param name Name of the view.
-     * @return List.
-     */
-    @Nullable public <R> SystemView<R> view(String name) {
-        return (SystemView<R>)systemViews.get(name);
-    }
-
-    /**
-     * Registers walker for specified class.
+     * Removes metric registry.
      *
-     * @param rowClass Row class.
-     * @param walker Walker.
-     * @param <R> Row type.
+     * @param regName Metric registry name.
      */
-    public <R> void registerWalker(Class<R> rowClass, SystemViewRowAttributeWalker<R> walker) {
-        walkers.put(rowClass, walker);
-    }
+    public void remove(String regName) {
+        MetricRegistry mreg = registries.remove(regName);
 
-    /**
-     * Removes registry.
-     *
-     * @param regName Registry name.
-     */
-    public void removeMetricRegistry(String regName) {
-        MetricRegistry rmv = registries.remove(regName);
-
-        if (rmv != null)
-            notifyListeners(rmv, metricRegRemoveLsnrs, log);
+        if (mreg != null)
+            notifyListeners(mreg, metricRegRemoveLsnrs, log);
     }
 
     /**
