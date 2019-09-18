@@ -121,9 +121,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         );
     }
 
-    /**
-     * Callback invoked when {@link IgniteTxManager} started.
-     */
+    /** Callback invoked when {@link IgniteTxManager} started. */
     public void onTxManagerStarted() {
         MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
