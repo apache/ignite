@@ -52,7 +52,7 @@ public class CommonArgParser {
     static final String CMD_USER = "--user";
 
     /** Option is used for auto confirmation. */
-    static final String CMD_AUTO_CONFIRMATION = "--yes";
+    public static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** */
     static final String CMD_PING_INTERVAL = "--ping-interval";

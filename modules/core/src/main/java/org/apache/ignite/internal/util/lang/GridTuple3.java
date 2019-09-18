@@ -170,6 +170,15 @@ public class GridTuple3<V1, V2, V3> implements Iterable<Object>, Externalizable,
         };
     }
 
+    /**
+     * Convert tuple to array.
+     *
+     * @return Array with three elements from the tuple.
+     */
+    public Object[] toArray() {
+        return new Object[]{val1, val2, val3};
+    }
+
     /** {@inheritDoc} */
     @Override public Object clone() {
         try {

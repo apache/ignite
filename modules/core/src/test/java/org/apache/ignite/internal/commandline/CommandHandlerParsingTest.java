@@ -255,7 +255,7 @@ public class CommandHandlerParsingTest {
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
             if (skipCommand(cmd))
-                continue; // --cache, --wal, --rolling-upgrade and --change-tag commands require its own specific arguments.
+                continue; // --cache, --wal, --rolling-upgrade, --dr and --change-tag commands require its own specific arguments.
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
@@ -281,7 +281,8 @@ public class CommandHandlerParsingTest {
         return cmd == CommandList.CACHE ||
             cmd == CommandList.WAL ||
             cmd == CommandList.ROLLING_UPGRADE ||
-            cmd == CommandList.CLUSTER_CHANGE_TAG;
+            cmd == CommandList.CLUSTER_CHANGE_TAG ||
+            cmd == CommandList.DATA_CENTER_REPLICATION;
     }
 
 

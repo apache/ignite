@@ -50,11 +50,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.ClassRule;
-import org.junit.rules.TestRule;
 
 import static java.lang.String.join;
 import static java.lang.System.lineSeparator;
@@ -77,9 +74,6 @@ import static org.apache.ignite.testframework.GridTestUtils.cleanIdleVerifyLogFi
 @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
-    /** */
-    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
-
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
 

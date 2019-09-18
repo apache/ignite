@@ -18,6 +18,7 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
+import org.apache.ignite.internal.commandline.dr.DrCommand;
 import org.apache.ignite.internal.commandline.ru.RollingUpgradeCommand;
 
 /**
@@ -53,6 +54,9 @@ public enum CommandList {
 
     /** */
     CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand()),
+
+    /** */
+    DATA_CENTER_REPLICATION("--dr", new DrCommand()),
 
     /** */
     READ_ONLY_ENABLE("--read-only-on", new ClusterReadOnlyModeEnableCommand()),

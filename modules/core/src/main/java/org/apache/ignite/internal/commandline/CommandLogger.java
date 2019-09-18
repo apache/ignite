@@ -40,7 +40,7 @@ public class CommandLogger {
      * @param params Other input parameter.
      * @return Joined paramaters with specified {@code delimeter}.
      */
-    public static String join(String delimeter, Object... params) {
+    public static <T> String join(String delimeter, T... params) {
         return join(new SB(), "", delimeter, params).toString();
     }
 
@@ -53,7 +53,7 @@ public class CommandLogger {
      * @param params Other input parameter.
      * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
      */
-    public static SB join(SB sb, String sbDelimeter, String delimeter, Object... params) {
+    public static <T> SB join(SB sb, String sbDelimeter, String delimeter, T... params) {
         if (!F.isEmpty(params)) {
             sb.a(sbDelimeter);
 
@@ -72,7 +72,7 @@ public class CommandLogger {
      * @param params Other input parameter.
      * @return Joined parameters wrapped optional braces.
      */
-    public static String optional(Object... params) {
+    public static <T> String optional(Object... params) {
         return join(new SB(), "[", " ", params).a("]").toString();
     }
 

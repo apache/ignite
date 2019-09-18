@@ -61,6 +61,9 @@ import org.jetbrains.annotations.NotNull;
  * </pre>
  */
 public abstract class LogListener implements Consumer<String> {
+    /** Name of the listener. */
+    private String name;
+
     /**
      * Checks that all conditions are met.
      *
@@ -80,10 +83,25 @@ public abstract class LogListener implements Consumer<String> {
             if (check())
                 return true;
 
-            Thread.sleep(1000);
+            Thread.sleep(100);
         }
 
         return check();
+    }
+
+    /**
+     * @param name String representation of the listener.
+     * @return {@code this}
+     */
+    private LogListener setName(String name) {
+        this.name = name;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
     }
 
     /**
@@ -252,9 +270,21 @@ public abstract class LogListener implements Consumer<String> {
          * @return Log message listener.
          */
         public LogListener build() {
+            return build(null);
+        }
+
+        /**
+         * Constructs message listener.
+         *
+         * @param lsnrName String representation of the listener.
+         * @return Log message listener.
+         */
+        public LogListener build(String lsnrName) {
             addLast(null);
 
-            return lsnr.lsnrs.size() == 1 ? lsnr.lsnrs.get(0) : lsnr;
+            LogListener lsnr = this.lsnr.lsnrs.size() == 1 ? this.lsnr.lsnrs.get(0) : this.lsnr;
+
+            return lsnr.setName(lsnrName);
         }
 
         /**
