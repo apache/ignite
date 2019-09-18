@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.partstorage;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
@@ -56,9 +57,10 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        PageLockListener lsnr
+        PageLockListener lsnr,
+        GridKernalContext ctx
     ) throws IgniteCheckedException {
-        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr);
+        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx);
     }
 
     /**
