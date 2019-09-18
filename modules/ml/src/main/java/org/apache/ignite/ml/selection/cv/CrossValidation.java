@@ -22,8 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.pipeline.PipelineMdl;
-import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
 
 /**
  * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the
@@ -36,11 +34,10 @@ import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
  * </ul>
  *
  * @param <M> Type of model.
- * @param <L> Type of a label (truth or prediction).
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends AbstractCrossValidation<M, L, K, V> {
+public class CrossValidation<M extends IgniteModel<Vector, Double>, K, V> extends AbstractCrossValidation<M, K, V> {
     /** Ignite. */
     private Ignite ignite;
 
@@ -69,12 +66,6 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends 
                 ignite,
                 upstreamCache,
                 (k, v) -> filter.apply(k, v) && predicate.apply(k, v)
-            ),
-            (predicate, mdl) -> new CacheBasedLabelPairCursor<>(
-                upstreamCache,
-                (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
-                ((PipelineMdl<K, V>) mdl).getPreprocessor(),
-                mdl
             )
         );
     }
@@ -90,12 +81,6 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends 
                 ignite,
                 upstreamCache,
                 (k, v) -> filter.apply(k, v) && predicate.apply(k, v)
-            ),
-            (predicate, mdl) -> new CacheBasedLabelPairCursor<>(
-                upstreamCache,
-                (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
-                preprocessor,
-                mdl
             )
         );
     }
@@ -103,7 +88,7 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends 
     /**
      * @param ignite Ignite.
      */
-    public CrossValidation<M, L, K, V> withIgnite(Ignite ignite) {
+    public CrossValidation<M, K, V> withIgnite(Ignite ignite) {
         this.ignite = ignite;
         return this;
     }
@@ -111,7 +96,7 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> extends 
     /**
      * @param upstreamCache Upstream cache.
      */
-    public CrossValidation<M, L, K, V> withUpstreamCache(IgniteCache<K, V> upstreamCache) {
+    public CrossValidation<M, K, V> withUpstreamCache(IgniteCache<K, V> upstreamCache) {
         this.upstreamCache = upstreamCache;
         return this;
     }

@@ -437,6 +437,9 @@
     <Content Include="Config\full-config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\ignite-dotnet-cfg-logger.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\ignite-halthandler-dotnet-cfg.xml" />
     <Content Include="Config\ignite-stophandler-dotnet-cfg.xml" />
     <Content Include="Config\Lifecycle\lifecycle-beans.xml">

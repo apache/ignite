@@ -17,17 +17,6 @@
 
 package org.apache.ignite.ml.selection.cv;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.function.BiFunction;
-import java.util.function.DoubleConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -39,20 +28,22 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.pipeline.Pipeline;
 import org.apache.ignite.ml.pipeline.PipelineMdl;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
-import org.apache.ignite.ml.selection.paramgrid.BruteForceStrategy;
-import org.apache.ignite.ml.selection.paramgrid.EvolutionOptimizationStrategy;
-import org.apache.ignite.ml.selection.paramgrid.HyperParameterTuningStrategy;
-import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
-import org.apache.ignite.ml.selection.paramgrid.ParameterSetGenerator;
-import org.apache.ignite.ml.selection.paramgrid.RandomStrategy;
-import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
+import org.apache.ignite.ml.selection.paramgrid.*;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.apache.ignite.ml.selection.split.mapper.UniformMapper;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.genetic.Chromosome;
 import org.apache.ignite.ml.util.genetic.GeneticAlgorithm;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.DoubleConsumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the
@@ -65,11 +56,10 @@ import org.jetbrains.annotations.NotNull;
  * </ul>
  *
  * @param <M> Type of model.
- * @param <L> Type of a label (truth or prediction).
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
+public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Double>, K, V> {
     /** Learning environment builder. */
     protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
@@ -77,13 +67,13 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     protected LearningEnvironment environment = envBuilder.buildForTrainer();
 
     /** Trainer. */
-    protected DatasetTrainer<M, L> trainer;
+    protected DatasetTrainer<M, Double> trainer;
 
     /** Pipeline. */
     protected Pipeline<K, V, Integer, Double> pipeline;
 
     /** Metric. */
-    protected Metric<L> metric;
+    protected Metric metric;
 
     /** Preprocessor. */
     protected Preprocessor<K, V> preprocessor;
@@ -325,11 +315,9 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
      * Computes cross-validated metrics.
      *
      * @param datasetBuilderSupplier Dataset builder supplier.
-     * @param testDataIterSupplier   Test data iterator supplier.
      * @return Array of scores of the estimator for each run of the cross validation.
      */
-    protected double[] score(Function<IgniteBiPredicate<K, V>, DatasetBuilder<K, V>> datasetBuilderSupplier,
-                             BiFunction<IgniteBiPredicate<K, V>, M, LabelPairCursor<L>> testDataIterSupplier) {
+    protected double[] score(Function<IgniteBiPredicate<K, V>, DatasetBuilder<K, V>> datasetBuilderSupplier) {
         double[] scores = new double[amountOfFolds];
 
         double foldSize = 1.0 / amountOfFolds;
@@ -342,14 +330,13 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
                 return pnt < from || pnt > to;
             };
 
-            DatasetBuilder<K, V> datasetBuilder = datasetBuilderSupplier.apply(trainSetFilter);
-            M mdl = trainer.fit(datasetBuilder, preprocessor); //TODO: IGNITE-11580
+            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k,v);
 
-            try (LabelPairCursor<L> cursor = testDataIterSupplier.apply(trainSetFilter, mdl)) {
-                scores[i] = metric.score(cursor.iterator());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            DatasetBuilder<K, V> trainSet = datasetBuilderSupplier.apply(trainSetFilter);
+            M mdl = trainer.fit(trainSet, preprocessor); //TODO: IGNITE-11580
+
+            DatasetBuilder<K, V> testSet = datasetBuilderSupplier.apply(testSetFilter);
+            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSignle();
         }
 
         return scores;
@@ -359,11 +346,9 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
      * Computes cross-validated metrics.
      *
      * @param datasetBuilderSupplier Dataset builder supplier.
-     * @param testDataIterSupplier   Test data iterator supplier.
      * @return Array of scores of the estimator for each run of the cross validation.
      */
-    protected double[] scorePipeline(Function<IgniteBiPredicate<K, V>, DatasetBuilder<K, V>> datasetBuilderSupplier,
-                                     BiFunction<IgniteBiPredicate<K, V>, M, LabelPairCursor<L>> testDataIterSupplier) {
+    protected double[] scorePipeline(Function<IgniteBiPredicate<K, V>, DatasetBuilder<K, V>> datasetBuilderSupplier) {
         double[] scores = new double[amountOfFolds];
 
         double foldSize = 1.0 / amountOfFolds;
@@ -376,14 +361,13 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
                 return pnt < from || pnt > to;
             };
 
+            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k,v);
+
             DatasetBuilder<K, V> datasetBuilder = datasetBuilderSupplier.apply(trainSetFilter);
             PipelineMdl<K, V> mdl = pipeline.fit(datasetBuilder);
 
-            try (LabelPairCursor<L> cursor = testDataIterSupplier.apply(trainSetFilter, (M) mdl)) {
-                scores[i] = metric.score(cursor.iterator());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            DatasetBuilder<K, V> testSet = datasetBuilderSupplier.apply(testSetFilter);
+            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSignle();
         }
 
         return scores;
@@ -392,7 +376,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param trainer Trainer.
      */
-    public AbstractCrossValidation<M, L, K, V> withTrainer(DatasetTrainer<M, L> trainer) {
+    public AbstractCrossValidation<M, K, V> withTrainer(DatasetTrainer<M, Double> trainer) {
         this.trainer = trainer;
         return this;
     }
@@ -400,15 +384,15 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param metric Metric.
      */
-    public AbstractCrossValidation<M, L, K, V> withMetric(Metric<L> metric) {
-        this.metric = metric;
+    public AbstractCrossValidation<M, K, V> withMetric(MetricName metric) {
+        this.metric = metric.create();
         return this;
     }
 
     /**
      * @param preprocessor Preprocessor.
      */
-    public AbstractCrossValidation<M, L, K, V> withPreprocessor(Preprocessor<K, V> preprocessor) {
+    public AbstractCrossValidation<M, K, V> withPreprocessor(Preprocessor<K, V> preprocessor) {
         this.preprocessor = preprocessor;
         return this;
     }
@@ -416,7 +400,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param filter Filter.
      */
-    public AbstractCrossValidation<M, L, K, V> withFilter(IgniteBiPredicate<K, V> filter) {
+    public AbstractCrossValidation<M, K, V> withFilter(IgniteBiPredicate<K, V> filter) {
         this.filter = filter;
         return this;
     }
@@ -424,7 +408,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param amountOfFolds Amount of folds.
      */
-    public AbstractCrossValidation<M, L, K, V> withAmountOfFolds(int amountOfFolds) {
+    public AbstractCrossValidation<M, K, V> withAmountOfFolds(int amountOfFolds) {
         this.amountOfFolds = amountOfFolds;
         return this;
     }
@@ -432,7 +416,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param paramGrid Parameter grid.
      */
-    public AbstractCrossValidation<M, L, K, V> withParamGrid(ParamGrid paramGrid) {
+    public AbstractCrossValidation<M, K, V> withParamGrid(ParamGrid paramGrid) {
         this.paramGrid = paramGrid;
         return this;
     }
@@ -440,7 +424,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param runningOnPipeline Running on pipeline.
      */
-    public AbstractCrossValidation<M, L, K, V> isRunningOnPipeline(boolean runningOnPipeline) {
+    public AbstractCrossValidation<M, K, V> isRunningOnPipeline(boolean runningOnPipeline) {
         isRunningOnPipeline = runningOnPipeline;
         return this;
     }
@@ -451,7 +435,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
      * @param envBuilder Learning environment builder.
      */
     // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
-    public AbstractCrossValidation<M, L, K, V> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+    public AbstractCrossValidation<M, K, V> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder = envBuilder;
         environment = envBuilder.buildForTrainer();
 
@@ -461,7 +445,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param pipeline Pipeline.
      */
-    public AbstractCrossValidation<M, L, K, V> withPipeline(Pipeline<K, V, Integer, Double> pipeline) {
+    public AbstractCrossValidation<M, K, V> withPipeline(Pipeline<K, V, Integer, Double> pipeline) {
         this.pipeline = pipeline;
         return this;
     }
@@ -469,7 +453,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, L>, 
     /**
      * @param mapper Mapper.
      */
-    public AbstractCrossValidation<M, L, K, V> withMapper(UniformMapper<K, V> mapper) {
+    public AbstractCrossValidation<M, K, V> withMapper(UniformMapper<K, V> mapper) {
         this.mapper = mapper;
         return this;
     }

@@ -43,15 +43,16 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using KMeans clusterization to determine the optimal count of clusters in data.
- *
- * Description of model can be found in: https://en.wikipedia.org/wiki/Kmeans .
- * Original dataset can be downloaded from: https://archive.ics.uci.edu/ml/datasets/Wholesale+customers .
- * Copy of dataset are stored in:  modules/ml/src/main/resources/datasets/wholesale_customers.csv .
- * Score for clusterizer estimation: mean of entropy in clusters.
- * Description of entropy can be found in: https://en.wikipedia.org/wiki/Entropy_(information_theory) .
+ * <p>
+ * Description of model can be found in: https://en.wikipedia.org/wiki/Kmeans . Original dataset can be downloaded from:
+ * https://archive.ics.uci.edu/ml/datasets/Wholesale+customers . Copy of dataset are stored in:
+ * modules/ml/src/main/resources/datasets/wholesale_customers.csv . Score for clusterizer estimation: mean of entropy in
+ * clusters. Description of entropy can be found in: https://en.wikipedia.org/wiki/Entropy_(information_theory) .
  */
 public class CustomersClusterizationExample {
-    /** Runs example. */
+    /**
+     * Runs example.
+     */
     public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -62,7 +63,7 @@ public class CustomersClusterizationExample {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.WHOLESALE_CUSTOMERS);
 
                 System.out.println(">>> Start traininig and scoring.");
-                for(int amountOfClusters = 1; amountOfClusters < 10; amountOfClusters++) {
+                for (int amountOfClusters = 1; amountOfClusters < 10; amountOfClusters++) {
                     KMeansTrainer trainer = new KMeansTrainer()
                         .withAmountOfClusters(amountOfClusters)
                         .withDistance(new EuclideanDistance())
@@ -85,10 +86,12 @@ public class CustomersClusterizationExample {
                     double entropy = computeMeanEntropy(dataCache, split.getTestFilter(), vectorizer, mdl);
                     System.out.println(String.format(">> Clusters mean entropy [%d clusters]: %.2f", amountOfClusters, entropy));
                 }
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
@@ -96,10 +99,10 @@ public class CustomersClusterizationExample {
     /**
      * Computes mean entropy in clusters.
      *
-     * @param cache Dataset cache.
-     * @param filter Test dataset filter.
+     * @param cache      Dataset cache.
+     * @param filter     Test dataset filter.
      * @param vectorizer Upstream vectorizer.
-     * @param model KMeans model.
+     * @param model      KMeans model.
      * @return Score.
      */
     private static double computeMeanEntropy(IgniteCache<Integer, Vector> cache,
