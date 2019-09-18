@@ -56,6 +56,7 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -187,7 +188,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     }
                 });
 
-            assertEquals(5, tasks.size());
+            boolean res = waitForCondition(() -> tasks.size() == 5, 5_000);
+
+            assertTrue(res);
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -220,7 +223,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            assertEquals(1, tasks.size());
+            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
+
+            assertTrue(res);
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -257,7 +262,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 }, 1);
             });
 
-            boolean res = GridTestUtils.waitForCondition(() -> tasks.size() == 1, 5_000);
+            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
 
             assertTrue(res);
 
@@ -301,7 +306,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 return 0;
             });
 
-            assertEquals(1, tasks.size());
+            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
+
+            assertTrue(res);
 
             ComputeTaskView t = tasks.iterator().next();
 
@@ -361,7 +368,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 }
             }, 1);
 
-            boolean res = GridTestUtils.waitForCondition(() -> tasks.size() == 1, 5_000);
+            boolean res = waitForCondition(() -> tasks.size() == 1, 5_000);
 
             assertTrue(res);
 
