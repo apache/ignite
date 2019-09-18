@@ -58,7 +58,7 @@ public class CacheGroupMetricsImpl {
     private final CacheGroupContext ctx;
 
     /** */
-    private final LongAdderMetric groupPageAllocationTracker;
+    private final LongAdderMetric grpPageAllocationTracker;
 
     /** */
     private final LongMetric storageSize;
@@ -85,7 +85,7 @@ public class CacheGroupMetricsImpl {
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
-        if (isPDSEnabled()) {
+        if (isPersistenceEnabled()) {
             mreg.register("StorageSize",
                 () -> database().forGroupPageStores(ctx, PageStore::size),
                 "Storage space allocated for group, in bytes.");
@@ -111,11 +111,11 @@ public class CacheGroupMetricsImpl {
         if (region != null) {
             DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
 
-            this.groupPageAllocationTracker =
+            this.grpPageAllocationTracker =
                 dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.cacheOrGroupName());
         }
         else
-            this.groupPageAllocationTracker = new LongAdderMetric("NO_OP", null);
+            this.grpPageAllocationTracker = new LongAdderMetric("NO_OP", null);
     }
 
     /** Callback for initializing metrics after topology was initialized. */
@@ -444,7 +444,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        return groupPageAllocationTracker.value();
+        return grpPageAllocationTracker.value();
     }
 
     /** */
@@ -475,8 +475,8 @@ public class CacheGroupMetricsImpl {
     }
 
     /** @return {@code True} if persistent is enabled. */
-    private boolean isPDSEnabled() {
-        return ctx.shared().database() instanceof GridCacheDatabaseSharedManager;
+    private boolean isPersistenceEnabled() {
+        return ctx.dataRegion().config().isPersistenceEnabled();
     }
 
     /** @return Metric group name. */
