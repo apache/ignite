@@ -99,8 +99,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <R, D> void registerView(String name, String desc,
-        Class<R> rowCls, Collection<D> data, Function<D, R> rowFunc) {
+    public <R, D> void registerView(String name, String desc, Class<R> rowCls, Collection<D> data,
+        Function<D, R> rowFunc) {
 
         SystemView sysView = new SystemViewAdapter<>(name,
             desc,
