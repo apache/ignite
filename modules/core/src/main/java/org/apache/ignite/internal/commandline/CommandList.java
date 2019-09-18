@@ -22,6 +22,7 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
+import org.apache.ignite.internal.commandline.dr.DrCommand;
 
 /**
  * High-level commands.
@@ -50,6 +51,9 @@ public enum CommandList {
 
     /** */
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
+
+    /** */
+    DATA_CENTER_REPLICATION("--dr", new DrCommand()),
 
     /** */
     READ_ONLY_ENABLE("--read-only-on", new ClusterReadOnlyModeEnableCommand()),

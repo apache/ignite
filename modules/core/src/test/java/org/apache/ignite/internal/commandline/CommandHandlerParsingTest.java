@@ -253,7 +253,7 @@ public class CommandHandlerParsingTest extends TestCase {
      */
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.DATA_CENTER_REPLICATION)
                 continue; // --cache subcommand requires its own specific arguments.
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
@@ -281,7 +281,7 @@ public class CommandHandlerParsingTest extends TestCase {
      */
     public void testParseAndValidateUserAndPassword() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.DATA_CENTER_REPLICATION)
                 continue; // --cache subcommand requires its own specific arguments.
 
             assertParseArgsThrows("Expected user name", "--user");
@@ -399,7 +399,7 @@ public class CommandHandlerParsingTest extends TestCase {
      */
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.DATA_CENTER_REPLICATION)
                 continue; // --cache subcommand requires its own specific arguments.
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));

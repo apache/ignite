@@ -255,6 +255,15 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
             Collections.<Entry<V1, V2>>singleton(this);
     }
 
+    /**
+     * Convert tuple to array.
+     *
+     * @return Array with two elements from the tuple.
+     */
+    public Object[] toArray() {
+        return new Object[]{val1, val2};
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
