@@ -29,6 +29,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
+
 /**
  * This SPI implementation exports metrics as SQL views.
  */
@@ -71,7 +73,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewEx
 
         SystemViewLocal<?> view = new SystemViewLocal<>(ctx, sysView);
 
-        mgr.createSystemView(view);
+        mgr.createSystemView(SCHEMA_SYS, view);
     }
 
     /** {@inheritDoc} */

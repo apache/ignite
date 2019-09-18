@@ -42,7 +42,7 @@ public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements System
     private ReadOnlySystemViewRegistry sysViewReg;
 
     /** System view filter. */
-    private @Nullable Predicate<SystemView<?>> filter;
+    @Nullable private Predicate<SystemView<?>> filter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();

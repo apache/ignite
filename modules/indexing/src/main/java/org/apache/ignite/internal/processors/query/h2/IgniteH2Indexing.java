@@ -330,7 +330,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery qry)
-        throws IgniteSQLException {
+        throws IgniteSQLException{
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         if (parsed.remainingQuery() != null)
@@ -356,7 +356,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow, prevRowAvailable);
+        tbl.table().update(row, prevRow,  prevRowAvailable);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -398,7 +398,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists)
-        throws IgniteCheckedException {
+        throws IgniteCheckedException{
         schemaMgr.dropIndex(schemaName, idxName, ifExists);
     }
 
@@ -907,7 +907,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     + e.getMessage());
             }
 
-            throw e;
+            throw  e;
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);
@@ -1778,7 +1778,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> schemasNames() {
+    @Override public Set<String> schemasNames(){
         return schemaMgr.schemaNames();
     }
 
@@ -1822,7 +1822,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
                 .filter(t -> matches(t.getTableName(), tblNamePtrn))
-                .map(v -> new TableInformation(v.getSchemaName(), v.getTableName(), TableType.VIEW.name()))
+                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, v.getTableName(), TableType.VIEW.name()))
                 .forEach(infos::add);
         }
 
@@ -1875,7 +1875,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             .filter(c -> matches(c.getName(), colNamePtrn))
                             .map(c -> new ColumnInformation(
                                 c.getColumnId() + 1,
-                                view.getSchemaName(),
+                                QueryUtils.SCHEMA_SYS,
                                 view.getTableName(),
                                 c.getName(),
                                 IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
@@ -1891,7 +1891,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException {
+    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException{
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         return parsed.isDml() && parsed.dml().streamable() && parsed.remainingQuery() == null;
@@ -1904,7 +1904,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
-        assert cctx.group().persistenceEnabled() : cctx;
+        assert cctx.group().persistenceEnabled(): cctx;
 
         markIndexRebuild(cctx.name(), true);
     }
@@ -2607,7 +2607,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         ress.add(res);
                     }
-                    catch (Exception e) {
+                    catch (Exception e ) {
                         SQLException sqlEx = QueryUtils.toSqlException(e);
 
                         batchException = DmlUtils.chainException(batchException, sqlEx);
@@ -3007,7 +3007,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-            if (sqlEx != null)
+            if(sqlEx != null)
                 throw sqlEx;
 
             Exception ex = IgniteUtils.convertExceptionNoWrap(e);

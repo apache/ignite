@@ -191,9 +191,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         return info;
     }
 
-    /**
-     * Fullfill {@code data} Map for specific row.
-     */
+    /** Fullfill {@code data} Map for specific row. */
     private static class AttributeToMapVisitor implements AttributeWithValueVisitor {
         /** Map to store data. */
         private Map<String, Object> data;

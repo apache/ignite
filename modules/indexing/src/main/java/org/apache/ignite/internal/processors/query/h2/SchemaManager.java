@@ -136,9 +136,11 @@ public class SchemaManager {
     /**
      * Registers new system view.
      *
+     * @param schema Schema to create view in.
      * @param view System view.
      */
-    public void createSystemView(SqlSystemView view) {
+    public void createSystemView(String schema, SqlSystemView view) {
+
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
@@ -150,13 +152,13 @@ public class SchemaManager {
 
         try {
             synchronized (schemaMux) {
-                createSchema(view.getSchemaName(), true);
+                createSchema(schema, true);
             }
 
-            try (Connection c = connMgr.connectionNoCache(view.getSchemaName())) {
+            try (Connection c = connMgr.connectionNoCache(schema)) {
                 SqlSystemTableEngine.registerView(c, view);
 
-                systemViews.add(view);
+                    systemViews.add(view);
             }
         }
         catch (IgniteCheckedException | SQLException e) {
@@ -169,7 +171,7 @@ public class SchemaManager {
      */
     private void createSystemViews() throws IgniteCheckedException {
         for (SqlSystemView view : systemViews(ctx))
-            createSystemView(view);
+            createSystemView(QueryUtils.SCHEMA_SYS, view);
     }
 
     /**

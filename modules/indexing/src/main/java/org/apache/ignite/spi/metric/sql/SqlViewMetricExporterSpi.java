@@ -30,6 +30,8 @@ import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
+
 /**
  * This SPI implementation exports metrics as SQL views.
  */
@@ -49,7 +51,7 @@ public class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements Metric
 
         SchemaManager mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-        mgr.createSystemView(new MetricRegistryLocalSystemView(ctx, mreg, filter));
+        mgr.createSystemView(SCHEMA_SYS, new MetricRegistryLocalSystemView(ctx, mreg, filter));
 
         if (log.isDebugEnabled())
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
