@@ -224,6 +224,7 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgPropsExcl.add("autoActivationEnabled");
         igniteCfgPropsExcl.add("igniteHome");
         igniteCfgPropsExcl.add("platformConfiguration");
+        igniteCfgPropsExcl.add("tracingSpi");
 
         metadata.put(IgniteConfiguration.class,
             new MetadataInfo(igniteCfgProps, igniteCfgPropsDep, igniteCfgPropsExcl));
