@@ -55,7 +55,9 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_9_Scaling_With_Stacking {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 5 (scaling) example started.");
@@ -130,10 +132,12 @@ public class Step_9_Scaling_With_Stacking {
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
                 System.out.println(">>> Tutorial step 5 (scaling) example completed.");
-            } catch (FileNotFoundException e) {
+            }
+            catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

@@ -91,6 +91,8 @@ import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
+import org.apache.ignite.internal.util.collection.IntHashMapTest;
+import org.apache.ignite.internal.util.collection.IntRWHashMapTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.MarshallerContextSelfTest;
@@ -201,6 +203,8 @@ import org.junit.runners.Suite;
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,
     ImmutableIntSetTest.class,
+    IntHashMapTest.class,
+    IntRWHashMapTest.class,
 
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,

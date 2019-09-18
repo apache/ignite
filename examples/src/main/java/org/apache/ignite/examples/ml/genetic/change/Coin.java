@@ -23,28 +23,42 @@ import java.io.Serializable;
  * POJO to model a coin.
  */
 public class Coin implements Serializable {
-    /** Define Coin Type. */
+    /**
+     * Define Coin Type.
+     */
     public enum CoinType {
-        /** */
+        /**
+         *
+         */
         PENNY,
-        /** */
+        /**
+         *
+         */
         QUARTER,
-        /** */
+        /**
+         *
+         */
         NICKEL,
-        /** */
+        /**
+         *
+         */
         DIME
     }
 
-    /** Number of coins. */
+    /**
+     * Number of coins.
+     */
     private int numOfCoins;
 
-    /** Coin type. */
+    /**
+     * Coin type.
+     */
     private CoinType coinType;
 
     /**
      * Create instance.
      *
-     * @param coinType Type of coin.
+     * @param coinType   Type of coin.
      * @param numOfCoins Number of coins.
      */
     Coin(CoinType coinType, int numOfCoins) {
@@ -88,7 +102,9 @@ public class Coin implements Serializable {
         this.coinType = coinType;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String toString() {
         return "Coin [numOfCoins=" + numOfCoins + ", coinType=" + coinType + "]";
     }

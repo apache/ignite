@@ -75,6 +75,7 @@
     <Compile Include="Client\IgniteClientException.cs" />
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Configuration\ExecutorConfiguration.cs" />
     <Compile Include="Failure\IFailureHandler.cs" />
     <Compile Include="Failure\NoOpFailureHandler.cs" />
     <Compile Include="Failure\StopNodeFailureHandler.cs" />

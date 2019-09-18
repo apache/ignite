@@ -50,7 +50,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     private double[][] bucketThresholds;
 
     /** {@inheritDoc} */
-    @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> DiscreteNaiveBayesModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                         Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -112,10 +112,10 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     }
                 }
                 return res;
-            })) {
+            }, learningEnvironment())) {
             DiscreteNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
                 if (a == null)
-                    return b == null ? new DiscreteNaiveBayesSumsHolder() : b;
+                    return b;
                 if (b == null)
                     return a;
                 return a.merge(b);

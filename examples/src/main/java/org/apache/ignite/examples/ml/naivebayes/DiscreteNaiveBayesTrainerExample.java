@@ -27,6 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -46,7 +47,9 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class DiscreteNaiveBayesTrainerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println(">>> Discrete naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
@@ -72,17 +75,20 @@ public class DiscreteNaiveBayesTrainerExample {
                 double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    vectorizer
-                ).accuracy();
+                    vectorizer,
+                    MetricName.ACCURACY
+                );
 
                 System.out.println("\n>>> Accuracy " + accuracy);
 
                 System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

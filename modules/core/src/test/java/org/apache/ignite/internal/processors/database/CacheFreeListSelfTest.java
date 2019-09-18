@@ -526,7 +526,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             regionMetrics,
             dataRegion,
             null,
-            null,
             metaPageId,
             true,
             null

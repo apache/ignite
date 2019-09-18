@@ -30,7 +30,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <O1> Type of output of the first model (and input of second).
  * @param <O2> Type of output of the second model.
  */
-public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2> {
+public final class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2> {
     /** First model. */
     private IgniteModel<I, O1> mdl1;
 

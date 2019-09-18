@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -668,9 +669,7 @@ public class PlatformConfigurationUtils {
 
         int sqlSchemasCnt = in.readInt();
 
-        if (sqlSchemasCnt == -1)
-            cfg.setSqlSchemas((String[])null);
-        else {
+        if (sqlSchemasCnt >= 0) {
             String[] sqlSchemas = new String[sqlSchemasCnt];
 
             for (int i = 0; i < sqlSchemasCnt; i++)
@@ -839,6 +838,20 @@ public class PlatformConfigurationUtils {
 
                     break;
             }
+        }
+
+        int execCfgCnt = in.readInt();
+
+        if (execCfgCnt > 0) {
+            ExecutorConfiguration[] execCfgs = new ExecutorConfiguration[execCfgCnt];
+
+            for (int i = 0; i < execCfgCnt; i++) {
+                execCfgs[i] = new ExecutorConfiguration()
+                        .setName(in.readString())
+                        .setSize(in.readInt());
+            }
+
+            cfg.setExecutorConfiguration(execCfgs);
         }
 
         readPluginConfiguration(cfg, in);
@@ -1259,7 +1272,7 @@ public class PlatformConfigurationUtils {
         w.writeInt(cfg.getSqlQueryHistorySize());
 
         if (cfg.getSqlSchemas() == null)
-            w.writeInt(-1);
+            w.writeInt(0);
         else {
             w.writeInt(cfg.getSqlSchemas().length);
 
@@ -1438,6 +1451,18 @@ public class PlatformConfigurationUtils {
             w.writeLong(((StopNodeOrHaltFailureHandler)failureHnd).timeout());
         } else
             w.writeBoolean(false);
+
+        ExecutorConfiguration[] execCfgs = cfg.getExecutorConfiguration();
+
+        if (execCfgs != null) {
+            w.writeInt(execCfgs.length);
+
+            for (ExecutorConfiguration execCfg : execCfgs) {
+                w.writeString(execCfg.getName());
+                w.writeInt(execCfg.getSize());
+            }
+        } else
+            w.writeInt(0);
 
         w.writeString(cfg.getIgniteHome());
 

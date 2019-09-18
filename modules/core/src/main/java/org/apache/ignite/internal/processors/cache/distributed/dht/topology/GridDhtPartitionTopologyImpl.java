@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,6 +74,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.ExchangeType.ALL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -766,7 +766,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                if (!ctx.localNode().isClient()) {
+                // Skip partition updates in case of not real exchange.
+                if (!ctx.localNode().isClient() && exchFut.exchangeType() == ALL) {
                     for (int p = 0; p < partitions; p++) {
                         GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
 
@@ -796,9 +797,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     // Node1 removes k2 but update has not been delivered to Node1 because of failure.
                                     // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
                                     // NOTE: avoid calling clearAsync for partition twice per topology version.
-                                    // TODO FIXME clearing is not always needed see IGNITE-11799
-                                    if (grp.persistenceEnabled() && !exchFut.isHistoryPartition(grp, locPart.id()) &&
-                                        !locPart.isClearing() && !locPart.isEmpty() && !grp.mvccEnabled())
+                                    if (grp.persistenceEnabled() &&
+                                            exchFut.isClearingPartition(grp, locPart.id()) &&
+                                            !locPart.isClearing() &&
+                                            !locPart.isEmpty())
                                         locPart.clearAsync();
                                 }
                                 else
@@ -871,7 +873,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param p Partition number.
      * @return Partition.
      */
-    private GridDhtLocalPartition getOrCreatePartition(int p) {
+    public GridDhtLocalPartition getOrCreatePartition(int p) {
         assert lock.isWriteLockedByCurrentThread();
 
         assert ctx.database().checkpointLockIsHeldByThread();
@@ -1171,9 +1173,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             AffinityTopologyVersion diffVer = diffFromAffinityVer;
 
             if (!diffVer.equals(topVer)) {
-                LT.warn(log, "Requested topology version does not match calculated diff, need to check if " +
-                    "affinity has changed [grp=" + grp.cacheOrGroupName() + ", topVer=" + topVer +
-                    ", diffVer=" + diffVer + "]");
+                if (log.isDebugEnabled()) {
+                    log.debug("Requested topology version does not match calculated diff, need to check if " +
+                        "affinity has changed [grp=" + grp.cacheOrGroupName() + ", topVer=" + topVer +
+                        ", diffVer=" + diffVer + "]");
+                }
 
                 boolean affChanged;
 
@@ -1183,9 +1187,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     affChanged = ctx.exchange().affinityChanged(topVer, diffVer);
 
                 if (affChanged) {
-                    LT.warn(log, "Requested topology version does not match calculated diff, will require full iteration to" +
-                        "calculate mapping [grp=" + grp.cacheOrGroupName() + ", topVer=" + topVer +
-                        ", diffVer=" + diffVer + "]");
+                    if (log.isDebugEnabled()) {
+                        log.debug("Requested topology version does not match calculated diff, will require full iteration to" +
+                            "calculate mapping [grp=" + grp.cacheOrGroupName() + ", topVer=" + topVer +
+                            ", diffVer=" + diffVer + "]");
+                    }
 
                     nodes = new ArrayList<>();
 
@@ -1616,7 +1622,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
                         else if (state == MOVING) {
-                            rebalancePartition(p, partsToReload.contains(p), exchFut);
+                            GridDhtLocalPartition locPart = locParts.get(p);
+
+                            rebalancePartition(p, partsToReload.contains(p) ||
+                                locPart != null && locPart.state() == MOVING && exchFut.localJoinExchange(), exchFut);
 
                             changed = true;
                         }
@@ -2368,8 +2377,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        if (!clear)
-            exchFut.addHistoryPartition(grp, part.id());
+        if (clear)
+            exchFut.addClearingPartition(grp, part.id());
 
         assert part.state() == MOVING : part;
 
