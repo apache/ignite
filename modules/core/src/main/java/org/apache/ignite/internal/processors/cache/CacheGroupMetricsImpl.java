@@ -118,7 +118,7 @@ public class CacheGroupMetricsImpl {
             this.groupPageAllocationTracker = new LongAdderMetric("NO_OP", null);
     }
 
-    /** */
+    /** Callback for initializing metrics after topology was initialized. */
     public void onTopologyInitialized() {
         MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
