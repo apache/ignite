@@ -1084,8 +1084,11 @@ public class CacheGroupContext {
                 ccfg.getCacheMode() == LOCAL
             );
 
-        if (ccfg.getCacheMode() != LOCAL)
+        if (ccfg.getCacheMode() != LOCAL) {
             top = new GridDhtPartitionTopologyImpl(ctx, this);
+
+            metrics.onTopologyInitialized();
+        }
 
         try {
             offheapMgr = persistenceEnabled

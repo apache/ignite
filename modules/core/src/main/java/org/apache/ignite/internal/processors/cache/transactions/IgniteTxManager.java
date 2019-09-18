@@ -369,6 +369,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         // todo gg-13416 unhardcode
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+
+        cctx.txMetrics().onTxManagerStarted();
     }
 
     /**
