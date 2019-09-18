@@ -74,7 +74,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
-            .setMetricExporterSpi(new SqlViewExporterSpi());
+            .setMetricExporterSpi(new SqlViewExporterSpi())
+            .setSystemViewExporterSpi(new org.apache.ignite.spi.systemview.SqlViewExporterSpi());
     }
 
     /**
@@ -740,7 +741,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SERVICES.ORIGIN_NODE_ID.null.2147483647",
                 "SYS.SERVICES.TOTAL_COUNT.null.10",
                 "SYS.SERVICES.MAX_PER_NODE_COUNT.null.10",
-                "SYS.SERVICES.AFFINITY_KEY_VALUE.null.2147483647",
+                "SYS.SERVICES.AFFINITY_KEY.null.2147483647",
                 "SYS.SERVICES.NODE_FILTER.null.2147483647",
                 "SYS.SERVICES.STATICALLY_CONFIGURED.null.1",
                 "SYS.SERVICES.SERVICE_ID.null.2147483647",

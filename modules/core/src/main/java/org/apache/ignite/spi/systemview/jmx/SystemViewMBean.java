@@ -37,7 +37,7 @@ import javax.management.openmbean.SimpleType;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.ReadOnlyDynamicMBean;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -49,11 +49,14 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.Attrib
  * JMX bean to expose specific {@link SystemView} data.
  *
  * @see JmxMetricExporterSpi
- * @see GridMetricManager
+ * @see GridSystemViewManager
  */
 public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** View attribute. */
     public static final String VIEWS = "views";
+
+    /** Row id attribute name. */
+    public static final String ID = "systemViewRowId";
 
     /** System view to export. */
     private final SystemView<R> sysView;
@@ -61,7 +64,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** MBean info. */
     private final MBeanInfo info;
 
-    /** Row type */
+    /** Row type. */
     private final CompositeType rowType;
 
     /** System view type. */
@@ -115,7 +118,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
             }
         });
 
-        fields[cnt] = "monitoringRowId";
+        fields[cnt] = ID;
         types[cnt] = SimpleType.INTEGER;
 
         try {
@@ -140,7 +143,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
                 sysView.rowClass().getName(),
                 sysView.description(),
                 rowType,
-                new String[] {"monitoringRowId"}
+                new String[] {ID}
             );
         }
         catch (OpenDataException e) {
@@ -168,7 +171,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
 
                     sysView.walker().visitAll(row, visitor);
 
-                    data.put("monitoringRowId", idx++);
+                    data.put(ID, idx++);
 
                     rows.put(new CompositeDataSupport(rowType, data));
                 }

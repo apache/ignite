@@ -123,7 +123,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Metrics manager. */
     private final GridMetricManager metricMgr;
 
-    /** Metrics manager. */
+    /** System view manager. */
     private final GridSystemViewManager sysViewMgr;
 
     /**

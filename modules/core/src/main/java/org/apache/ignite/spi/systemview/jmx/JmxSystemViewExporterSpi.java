@@ -35,10 +35,10 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 
 /**
- * This SPI implementation exports metrics as JMX beans.
+ * This SPI implementation exports system views as JMX beans.
  */
 public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
-    /** Syste view registry. */
+    /** System view registry. */
     private ReadOnlySystemViewRegistry sysViewReg;
 
     /** System view filter. */

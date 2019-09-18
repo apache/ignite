@@ -47,10 +47,13 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
+ * This manager should provide {@link ReadOnlySystemViewRegistry} for each configured {@link SystemViewExporterSpi}.
+ *
  * @see SystemView
  * @see SystemViewAdapter
  */
-public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi> implements ReadOnlySystemViewRegistry {
+public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
+    implements ReadOnlySystemViewRegistry {
     /** Registered system views. */
     private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.metric;
 
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
@@ -44,9 +43,6 @@ public interface MetricExporterSpi extends IgniteSpi {
     /**
      * Sets metrics registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
-     *
-     * So all {@link MetricRegistry} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link ReadOnlyMetricRegistry#addMetricRegistryCreationListener(Consumer)}.
      *
      * @param registry Metric registry.
      */

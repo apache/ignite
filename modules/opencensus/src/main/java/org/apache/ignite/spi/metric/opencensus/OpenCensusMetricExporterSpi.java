@@ -145,7 +145,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
             MeasureMap mmap = recorder.newMeasureMap();
 
             mreg.forEach(mreg -> {
-                if (mregFilter != null && !mregFilter.test(mreg))
+                if (filter != null && !filter.test(mreg))
                     return;
 
                 mreg.forEach(metric -> {

@@ -24,7 +24,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -69,9 +70,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
-
-    /** */
-    private static CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -266,18 +264,21 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testComputeBroadcast() throws Exception {
-        latch = new CountDownLatch(1);
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         for (int i = 0; i < 5; i++) {
             ignite.compute().broadcastAsync(() -> {
                 try {
-                    latch.await();
+                    barrier.await();
+                    barrier.await();
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException | BrokenBarrierException e) {
                     throw new RuntimeException(e);
                 }
             });
         }
+
+        barrier.await();
 
         TabularDataSupport tasks = systemView(TASKS_VIEW);
 
@@ -293,7 +294,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(ignite.localNode().id().toString(), t.get("taskNodeId"));
         assertEquals("0", t.get("userVersion"));
 
-        latch.countDown();
+        barrier.await();
     }
 
     /** */
