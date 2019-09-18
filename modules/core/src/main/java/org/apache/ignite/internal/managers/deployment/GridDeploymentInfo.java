@@ -27,6 +27,11 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public interface GridDeploymentInfo {
     /**
+     * Default number of tries to get response.
+     */
+    public int DFLT_TRY_GET_RESPONSE_NUMBER = 5;
+
+    /**
      * @return Class loader ID.
      */
     public IgniteUuid classLoaderId();
