@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -155,14 +154,15 @@ public class MetricRegistry implements Iterable<Metric> {
     }
 
     /**
-     * Registers {@link LongMetric} which value will be queried from the specified supplier.
+     * Registers {@link LongGauge} which value will be queried from the specified supplier.
      *
      * @param name Name.
      * @param supplier Supplier.
      * @param desc Description.
+     * @return Metric of type {@link LongGauge}.
      */
-    public void register(String name, LongSupplier supplier, @Nullable String desc) {
-        addMetric(name, new LongGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
+    public LongGauge register(String name, LongSupplier supplier, @Nullable String desc) {
+        return addMetric(name, new LongGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
