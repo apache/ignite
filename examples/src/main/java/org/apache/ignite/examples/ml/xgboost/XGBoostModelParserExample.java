@@ -40,19 +40,29 @@ import org.apache.ignite.ml.xgboost.parser.XGModelParser;
  * Ignite.
  */
 public class XGBoostModelParserExample {
-    /** Test model resource name. */
+    /**
+     * Test model resource name.
+     */
     private static final String TEST_MODEL_RES = "examples/src/main/resources/models/xgboost/agaricus-model.txt";
 
-    /** Test data. */
+    /**
+     * Test data.
+     */
     private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/agaricus-test-data.txt";
 
-    /** Test expected results. */
+    /**
+     * Test expected results.
+     */
     private static final String TEST_ER_RES = "examples/src/main/resources/datasets/agaricus-test-expected-results.txt";
 
-    /** Parser. */
+    /**
+     * Parser.
+     */
     private static final XGModelParser parser = new XGModelParser();
 
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String... args) throws ExecutionException, InterruptedException, FileNotFoundException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             File mdlRsrc = IgniteUtils.resolveIgnitePath(TEST_MODEL_RES);
@@ -95,7 +105,8 @@ public class XGBoostModelParserExample {
                     System.out.println("Expected: " + expPrediction + ", prediction: " + prediction);
                 }
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
