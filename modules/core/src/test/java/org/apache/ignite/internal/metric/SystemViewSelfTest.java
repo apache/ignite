@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
@@ -61,9 +60,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static CountDownLatch latch;
-
     /** Tests work of {@link SystemView} for caches. */
     @Test
     public void testCachesView() throws Exception {
