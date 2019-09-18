@@ -31,16 +31,20 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Class terminates Genetic algorithm when fitness score is more than 32.</p>
  */
 public class MovieTerminateCriteria implements ITerminateCriteria {
-    /** Ignite instance. */
+    /**
+     * Ignite instance.
+     */
     private final Ignite ignite;
 
-    /** */
+    /**
+     *
+     */
     private final Consumer<String> logConsumer;
 
     /**
      * Create class instance.
      *
-     * @param ignite Ignite instance.
+     * @param ignite      Ignite instance.
      * @param logConsumer Logging consumer.
      */
     MovieTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
@@ -49,7 +53,9 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
 
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
         boolean isTerminate = true;

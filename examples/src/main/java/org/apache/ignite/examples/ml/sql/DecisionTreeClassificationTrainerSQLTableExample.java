@@ -36,16 +36,24 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * Example of using distributed {@link DecisionTreeClassificationTrainer} on a data stored in SQL table.
  */
 public class DecisionTreeClassificationTrainerSQLTableExample {
-    /** Dummy cache name. */
+    /**
+     * Dummy cache name.
+     */
     private static final String DUMMY_CACHE_NAME = "dummy_cache";
 
-    /** Training data. */
+    /**
+     * Training data.
+     */
     private static final String TRAIN_DATA_RES = "examples/src/main/resources/datasets/titanik_train.csv";
 
-    /** Test data. */
+    /**
+     * Test data.
+     */
     private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/titanik_test.csv";
 
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println(">>> Decision tree classification trainer example started.");
 
@@ -136,12 +144,14 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
                 }
 
                 System.out.println(">>> Example completed.");
-            } finally {
+            }
+            finally {
                 cache.query(new SqlFieldsQuery("DROP TABLE titanik_train"));
                 cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
                 cache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
@@ -158,7 +168,7 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             return null;
 
         if (obj instanceof Number) {
-            Number num = (Number) obj;
+            Number num = (Number)obj;
 
             return num.doubleValue();
         }

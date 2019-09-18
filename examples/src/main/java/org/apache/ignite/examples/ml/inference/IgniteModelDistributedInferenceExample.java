@@ -46,7 +46,9 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * implemented in {@link org.apache.ignite.ml.inference} package.
  */
 public class IgniteModelDistributedInferenceExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String... args) throws IOException, ExecutionException, InterruptedException {
         System.out.println();
         System.out.println(">>> Linear regression model over cache based dataset usage example started.");
@@ -97,10 +99,12 @@ public class IgniteModelDistributedInferenceExample {
                 System.out.println(">>> ---------------------------------");
 
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
