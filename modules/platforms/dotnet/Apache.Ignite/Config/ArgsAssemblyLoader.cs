@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,25 +18,32 @@
 namespace Apache.Ignite.Config
 {
     using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
 
     /// <summary>
-    /// Parses Ignite config values.
+    /// Loads required assemblies at runtime.
     /// </summary>
-    internal static class ConfigValueParser
+    internal static class ArgsAssemblyLoader
     {
         /// <summary>
-        /// Parses provided string to int. Throws a custom exception if failed.
+        /// Load assemblies from matching arguments and returns other items.
         /// </summary>
-        public static int ParseInt(string value, string propertyName)
+        /// <param name="args">Application arguments.</param>
+        public static IEnumerable<Tuple<string, string>> LoadAssemblies(this IEnumerable<Tuple<string, string>> args)
         {
-            int result;
-
-            if (int.TryParse(value, out result))
-                return result;
-
-            throw new InvalidOperationException(
-                string.Format("Failed to configure Ignite: property '{0}' has value '{1}', which is not an integer.",
-                    propertyName, value));
+            foreach (var arg in args)
+            {
+                if (arg.Item1.StartsWith(Configurator.CmdAssembly, StringComparison.OrdinalIgnoreCase))
+                {
+                    var asm = Configurator.ValidateArgValue(arg);
+                    Ignition.LoadAssembly(asm);
+                }
+                else
+                {
+                    yield return arg;
+                }
+            }
         }
     }
 }
