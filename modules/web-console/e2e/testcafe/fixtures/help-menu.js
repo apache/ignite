@@ -37,8 +37,8 @@ test.page(resolveUrl('/'))('Help menu items', async(t) => {
         {label: 'Documentation', href: 'https://docs.gridgain.com/docs/web-console'},
         {label: 'Forums', href: 'https://forums.gridgain.com/home'},
         {label: 'Support', href: 'https://gridgain.freshdesk.com/support/login'},
-        {label: 'Webinars', href: 'https://www.gridgain.com/resources/webinars'},
-        {label: 'Whitepapers', href: 'https://www.gridgain.com/resources/literature/white-papers'}
+        {label: 'Webinars', href: 'https://www.gridgain.com/resources/webinars/search?combine=web+console&field_personas_target_id=All'},
+        {label: 'Whitepapers', href: 'https://www.gridgain.com/resources/literature/white-papers?combine=web+console&field_personas_target_id=All'}
     ];
     await t.hover(helpMenu.trigger);
     for await (const link of links) {
