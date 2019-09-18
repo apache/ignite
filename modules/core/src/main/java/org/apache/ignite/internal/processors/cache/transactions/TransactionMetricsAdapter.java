@@ -118,6 +118,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             METRIC_TIME_BUCKETS,
             "Transactions user times on node represented as histogram."
         );
+    }
+
+    /** Callback invoked when {@link IgniteTxManager} started. */
+    public void onTxManagerStarted() {
+        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
         mreg.register("AllOwnerTransactions",
             this::getAllOwnerTransactions,
@@ -321,6 +326,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      */
     private Collection<GridNearTxLocal> nearTxs(long duration) {
         final long start = System.currentTimeMillis();
+
         IgniteClosure<IgniteInternalTx, GridNearTxLocal> c = new IgniteClosure<IgniteInternalTx, GridNearTxLocal>() {
             @Override public GridNearTxLocal apply(IgniteInternalTx tx) {
                 return ((GridNearTxLocal)tx);
@@ -356,6 +362,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         long holdingLockCounter = 0;
 
         IgniteTxManager tm = gridKernalCtx.cache().context().tm();
+
         for (IgniteInternalTx tx : tm.activeTransactions()) {
             if ((tx.optimistic() && tx.state() == TransactionState.ACTIVE) || tx.empty() || !tx.local())
                 continue;
@@ -371,6 +378,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      */
     private long txLockedKeysNum() {
         GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccManager == null)
+            return 0;
 
         return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
     }
