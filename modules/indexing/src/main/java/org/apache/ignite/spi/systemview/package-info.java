@@ -16,10 +16,6 @@
  */
 
 /**
- *
- */
-
-/**
  * <!-- Package description. -->
  * Contains Sql view exporter implementation for {@link org.apache.ignite.spi.systemview.view.SystemView}.
  */
