@@ -27,9 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -77,14 +75,14 @@ public class CrossValidationExample {
 
                 LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
 
-                CrossValidation<DecisionTreeNode, Double, Integer, LabeledVector<Double>> scoreCalculator
+                CrossValidation<DecisionTreeNode, Integer, LabeledVector<Double>> scoreCalculator
                     = new CrossValidation<>();
 
                 double[] accuracyScores = scoreCalculator
                     .withIgnite(ignite)
                     .withUpstreamCache(trainingSet)
                     .withTrainer(trainer)
-                    .withMetric(new Accuracy<>())
+                    .withMetric(MetricName.ACCURACY)
                     .withPreprocessor(vectorizer)
                     .withAmountOfFolds(4)
                     .isRunningOnPipeline(false)
@@ -92,22 +90,19 @@ public class CrossValidationExample {
 
                 System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
 
-                BinaryClassificationMetrics metrics = (BinaryClassificationMetrics)new BinaryClassificationMetrics()
-                    .withNegativeClsLb(0.0)
-                    .withPositiveClsLb(1.0)
-                    .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
-
                 double[] balancedAccuracyScores = scoreCalculator
-                    .withMetric(metrics)
+                    .withMetric(MetricName.ACCURACY)
                     .scoreByFolds();
 
                 System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
                 System.out.println(">>> Cross validation score calculator example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
