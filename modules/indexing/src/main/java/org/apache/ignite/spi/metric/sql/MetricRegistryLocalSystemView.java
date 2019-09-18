@@ -48,7 +48,7 @@ public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
      */
     public MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricRegistry mreg,
         @Nullable Predicate<MetricRegistry> filter) {
-        super(SqlViewExporterSpi.SYS_VIEW_NAME, "Ignite metrics",
+        super(SqlViewMetricExporterSpi.SYS_VIEW_NAME, "Ignite metrics",
             ctx,
             newColumn("NAME", Value.STRING),
             newColumn("VALUE", Value.STRING),

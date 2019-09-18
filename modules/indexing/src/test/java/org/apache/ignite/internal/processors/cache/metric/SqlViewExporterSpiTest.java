@@ -34,7 +34,8 @@ import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
+import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.SqlViewExporterSpi;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
@@ -57,12 +58,12 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        SqlViewExporterSpi sqlSpi = new SqlViewExporterSpi();
+        SqlViewMetricExporterSpi sqlSpi = new SqlViewMetricExporterSpi();
 
         sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(sqlSpi);
-        cfg.setSystemViewExporterSpi(new org.apache.ignite.spi.systemview.SqlViewExporterSpi());
+        cfg.setSystemViewExporterSpi(new SqlViewExporterSpi());
 
         return cfg;
     }

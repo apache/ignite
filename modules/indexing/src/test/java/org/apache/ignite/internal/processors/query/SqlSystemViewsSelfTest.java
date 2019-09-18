@@ -73,7 +73,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
+import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.SqlViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -876,15 +877,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setMetricExporterSpi(new SqlViewExporterSpi());
+            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration()
             .setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME))
-            .setMetricExporterSpi(new SqlViewExporterSpi())
-            .setSystemViewExporterSpi(new org.apache.ignite.spi.systemview.SqlViewExporterSpi());
+            .setMetricExporterSpi(new SqlViewMetricExporterSpi())
+            .setSystemViewExporterSpi(new SqlViewExporterSpi());
 
         return cfg;
     }

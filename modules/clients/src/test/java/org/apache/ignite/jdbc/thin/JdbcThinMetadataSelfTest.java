@@ -48,7 +48,8 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.sql.SqlViewExporterSpi;
+import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.SqlViewExporterSpi;
 import org.junit.Assert;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -74,8 +75,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
-            .setMetricExporterSpi(new SqlViewExporterSpi())
-            .setSystemViewExporterSpi(new org.apache.ignite.spi.systemview.SqlViewExporterSpi());
+            .setMetricExporterSpi(new SqlViewMetricExporterSpi())
+            .setSystemViewExporterSpi(new SqlViewExporterSpi());
     }
 
     /**
