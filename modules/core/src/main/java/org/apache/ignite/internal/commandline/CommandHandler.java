@@ -78,7 +78,7 @@ public class CommandHandler {
     public static final String CONFIRM_MSG = "y";
 
     /** */
-    static final String DELIM = "--------------------------------------------------------------------------------";
+    public static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -104,14 +104,14 @@ public class CommandHandler {
     /** */
     private static final long DFLT_PING_TIMEOUT = 30_000L;
 
-    /** */
-    private final Scanner in = new Scanner(System.in);
-
     /** Utility name. */
     public static final String UTILITY_NAME = "control.(sh|bat)";
 
     /** */
     public static final String NULL = "null";
+
+    /** */
+    private final Scanner in = new Scanner(System.in);
 
     /** JULs logger. */
     private final Logger logger;

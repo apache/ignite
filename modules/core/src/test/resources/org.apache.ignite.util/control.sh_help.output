@@ -65,6 +65,30 @@ This utility can do the following commands:
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 
+  Print data center replication command help:
+    control.(sh|bat) --dr help
+
+  Print state of data center replication:
+    control.(sh|bat) --dr state [--verbose]
+
+  Print topology of the cluster with the data center replication related details:
+    control.(sh|bat) --dr topology [--sender-hubs] [--receiver-hubs] [--data-nodes] [--other-nodes]
+
+  Print node specific data center replication related details and clear node's DR store:
+    control.(sh|bat) --dr node <nodeId> [--config] [--metrics] [--clear-store] [--yes]
+
+  Print cache specific data center replication related details about caches and maybe change replication state on them:
+    control.(sh|bat) --dr cache <regExp> [--config] [--metrics] [--cache-filter ALL|SENDING|RECEIVING|PAUSED|ERROR] [--sender-group <groupName>|ALL|DEFAULT|NONE] [--action stop|start|full-state-transfer] [--yes]
+
+  Execute full state transfer on all caches in cluster if data center replication is configured:
+    control.(sh|bat) --dr full-state-transfer [--yes]
+
+  Stop data center replication on all caches in cluster:
+    control.(sh|bat) --dr pause <remoteDataCenterId> [--yes]
+
+  Start data center replication on all caches in cluster:
+    control.(sh|bat) --dr resume <remoteDataCenterId> [--yes]
+
   Enable read-only mode on active cluster:
     control.(sh|bat) --read-only-on [--yes]
 

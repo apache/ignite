@@ -115,6 +115,25 @@ public class CommandArgIterator {
     }
 
     /**
+     * @return Numeric value.
+     */
+    public byte nextByteArg(String argName) {
+        String str = nextArg("Expecting " + argName);
+
+        try {
+            byte val = Byte.parseByte(str);
+
+            if (val < 0)
+                throw new IllegalArgumentException("Invalid value for " + argName + ": " + val);
+
+            return val;
+        }
+        catch (NumberFormatException ignored) {
+            throw new IllegalArgumentException("Invalid value for " + argName + ": " + str);
+        }
+    }
+
+    /**
      * @param argName Name of argument.
      */
     public Set<String> nextStringSet(String argName) {

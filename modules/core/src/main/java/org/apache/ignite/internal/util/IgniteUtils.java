@@ -232,7 +232,12 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T4;
+import org.apache.ignite.internal.util.typedef.T5;
+import org.apache.ignite.internal.util.typedef.T6;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -7399,6 +7404,102 @@ public abstract class IgniteUtils {
             m.put(t.get1(), t.get2());
 
         return m;
+    }
+
+    /**
+     * Create one-element tuple.
+     *
+     * @param v0 First element.
+     * @param <V0> Type of first element.
+     * @return Tuple.
+     */
+    public static <V0> T1<V0> tuple(V0 v0) {
+        return new T1<>(v0);
+    }
+
+    /**
+     * Create two-elements tuple.
+     *
+     * @param v0 First element.
+     * @param v1 Second element.
+     * @param <V0> Type of first element.
+     * @param <V1> Type of second element.
+     * @return Tuple.
+     */
+    public static <V0, V1> T2<V0, V1> tuple(V0 v0, V1 v1) {
+        return new T2<>(v0, v1);
+    }
+
+    /**
+     * Create three-elements tuple.
+     *
+     * @param v0 First element.
+     * @param v1 Second element.
+     * @param v2 Third element.
+     * @param <V0> Type of first element.
+     * @param <V1> Type of second element.
+     * @param <V2> Type of third element.
+     * @return Tuple.
+     */
+    public static <V0, V1, V2> T3<V0, V1, V2> tuple(V0 v0, V1 v1, V2 v2) {
+        return new T3<>(v0, v1, v2);
+    }
+
+    /**
+     * Create four-elements tuple.
+     *
+     * @param v0 First element.
+     * @param v1 Second element.
+     * @param v2 Third element.
+     * @param v3 Fourth element.
+     * @param <V0> Type of first element.
+     * @param <V1> Type of second element.
+     * @param <V2> Type of third element.
+     * @param <V3> Type of fourth element.
+     * @return Tuple.
+     */
+    public static <V0, V1, V2, V3> T4<V0, V1, V2, V3> tuple(V0 v0, V1 v1, V2 v2, V3 v3) {
+        return new T4<>(v0, v1, v2, v3);
+    }
+
+    /**
+     * Create five-elements tuple.
+     *
+     * @param v0 First element.
+     * @param v1 Second element.
+     * @param v2 Third element.
+     * @param v3 Fourth element.
+     * @param v4 Fifth element.
+     * @param <V0> Type of first element.
+     * @param <V1> Type of second element.
+     * @param <V2> Type of third element.
+     * @param <V3> Type of fourth element.
+     * @param <V4> Type of fifth element.
+     * @return Tuple.
+     */
+    public static <V0, V1, V2, V3, V4> T5<V0, V1, V2, V3, V4> tuple(V0 v0, V1 v1, V2 v2, V3 v3, V4 v4) {
+        return new T5<>(v0, v1, v2, v3, v4);
+    }
+
+    /**
+     * Create six-elements tuple.
+     *
+     * @param v0 First element.
+     * @param v1 Second element.
+     * @param v2 Third element.
+     * @param v3 Fourth element.
+     * @param v4 Fifth element.
+     * @param v5 Sixth element.
+     * @param <V0> Type of first element.
+     * @param <V1> Type of second element.
+     * @param <V2> Type of third element.
+     * @param <V3> Type of fourth element.
+     * @param <V4> Type of fifth element.
+     * @param <V5> Type of sixth element.
+     * @return Tuple.
+     */
+    public static <V0, V1, V2, V3, V4, V5> T6<V0, V1, V2, V3, V4, V5> tuple(V0 v0, V1 v1, V2 v2, V3 v3, V4 v4, V5 v5) {
+        return new T6<>(v0, v1, v2, v3, v4, v5);
     }
 
     /**
