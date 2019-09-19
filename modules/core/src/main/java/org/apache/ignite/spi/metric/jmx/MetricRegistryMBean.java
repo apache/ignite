@@ -211,8 +211,8 @@ public class MetricRegistryMBean implements DynamicMBean {
 
         //If `highBound` not presented this can be last interval `[max]_inf`.
         if (!sc.hasNextLong()) {
-            if (sc.hasNext() && INF.equals(sc.next()) && bounds[bounds.length-1] == lowBound)
-                return values[values.length-1];
+            if (sc.hasNext() && INF.equals(sc.next()) && bounds[bounds.length - 1] == lowBound)
+                return values[values.length - 1];
 
             return null;
         }
@@ -224,7 +224,7 @@ public class MetricRegistryMBean implements DynamicMBean {
         if (idx < 0)
             return null;
 
-        if ((idx == 0 && lowBound != 0) || (idx != 0 && bounds[idx-1] != lowBound))
+        if ((idx == 0 && lowBound != 0) || (idx != 0 && bounds[idx - 1] != lowBound))
             return null;
 
         return values[idx];
