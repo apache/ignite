@@ -165,13 +165,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private static class NativeMethodsLinux
         {
-            [DllImport("libuv.so")]
+            [DllImport("libcoreclr.so")]
             public static extern int pthread_key_create(IntPtr key, IntPtr destructorCallback);
 
-            [DllImport("libuv.so")]
+            [DllImport("libcoreclr.so")]
             public static extern int pthread_key_delete(int key);
 
-            [DllImport("libuv.so")]
+            [DllImport("libcoreclr.so")]
             public static extern int pthread_setspecific(int key, IntPtr value);
 
             /// <summary>
