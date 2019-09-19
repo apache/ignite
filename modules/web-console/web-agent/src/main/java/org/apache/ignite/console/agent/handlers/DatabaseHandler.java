@@ -217,6 +217,11 @@ public class DatabaseHandler {
      * @throws SQLException If failed to connect.
      */
     private Connection connect(JsonObject args) throws SQLException {
+        String jdbcUrl = args.getString("jdbcUrl", "");
+
+        if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl))
+            return AgentMetadataDemo.testDrive();
+
         String jdbcDriverJarPath = args.getString("jdbcDriverJar", "");
 
         if (F.isEmpty(jdbcDriverJarPath))
@@ -227,8 +232,6 @@ public class DatabaseHandler {
         if (F.isEmpty(jdbcDriverCls))
             throw new IllegalArgumentException("JDBC driver class not found in arguments");
 
-        String jdbcUrl = args.getString("jdbcUrl", "");
-
         if (F.isEmpty(jdbcUrl))
             throw new IllegalArgumentException("JDBC URL not found in arguments");
 
@@ -238,9 +241,6 @@ public class DatabaseHandler {
         Properties jdbcInfo = new Properties();
 
         jdbcInfo.putAll((Map)args.get("info"));
-
-        if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl))
-            return AgentMetadataDemo.testDrive();
 
         if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();

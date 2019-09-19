@@ -41,9 +41,12 @@ public class AgentMetadataDemo {
     /** */
     private static final AtomicBoolean initLatch = new AtomicBoolean();
 
+    /** */
+    private static final String DEMO_SCRIPT_PATH = "demo/db-init.sql";
+
     /**
-     * @param jdbcUrl Connection url.
-     * @return true if url is used for test-drive.
+     * @param jdbcUrl Connection URL.
+     * @return {@code true} if URL is used for test-drive.
      */
     public static boolean isTestDriveUrl(String jdbcUrl) {
         return "jdbc:h2:mem:demo-db".equals(jdbcUrl);
@@ -61,9 +64,11 @@ public class AgentMetadataDemo {
 
                 Connection conn = DriverManager.getConnection("jdbc:h2:mem:demo-db;DB_CLOSE_DELAY=-1", "sa", "");
 
-                File sqlScript = resolvePath("demo/db-init.sql");
+                File sqlScript = resolvePath(DEMO_SCRIPT_PATH);
 
-                //noinspection ConstantConditions
+                if (sqlScript == null)
+                    throw new FileNotFoundException(DEMO_SCRIPT_PATH);
+
                 RunScript.execute(conn, new FileReader(sqlScript));
 
                 log.info("DEMO: Sample tables created.");
@@ -86,8 +91,8 @@ public class AgentMetadataDemo {
 
                 throw e;
             }
-            catch (FileNotFoundException | NullPointerException e) {
-                log.error("DEMO: Failed to find demo database init script file: demo/db-init.sql");
+            catch (FileNotFoundException e) {
+                log.error("DEMO: Failed to find demo database initialization script file: " + DEMO_SCRIPT_PATH);
 
                 throw new SQLException("Failed to start demo for metadata", e);
             }

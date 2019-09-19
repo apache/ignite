@@ -408,7 +408,7 @@ public class WebSocketRouter implements AutoCloseable {
                 return;
             }
             
-            log.error("Failed to send response: " + evt, e);
+            log.error("Failed to process message: " + evt, e);
 
             try {
                 send(ses, evt.withError(ERROR_MSGS.get(evt.getEventType()), e));
