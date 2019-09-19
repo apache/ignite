@@ -146,7 +146,7 @@ public class TestSecuritySubject implements SecuritySubject {
 
     /** */
     public TestSecuritySubject sandboxPermissions(Permissions perms) {
-        this.sandboxPerms = perms;
+        sandboxPerms = perms;
 
         return this;
     }
