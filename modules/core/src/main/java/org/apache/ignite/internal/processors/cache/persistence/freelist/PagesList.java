@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -75,7 +75,7 @@ public abstract class PagesList extends DataStructure {
             Math.max(8, Runtime.getRuntime().availableProcessors()));
 
     /** */
-    protected final AtomicLong[] bucketsSize;
+    protected final AtomicLongArray bucketsSize;
 
     /** */
     protected volatile boolean changed;
@@ -148,10 +148,7 @@ public abstract class PagesList extends DataStructure {
         this.buckets = buckets;
         this.metaPageId = metaPageId;
 
-        bucketsSize = new AtomicLong[buckets];
-
-        for (int i = 0; i < buckets; i++)
-            bucketsSize[i] = new AtomicLong();
+        bucketsSize = new AtomicLongArray(buckets);
     }
 
     /**
@@ -249,7 +246,7 @@ public abstract class PagesList extends DataStructure {
 
                     assert ok;
 
-                    bucketsSize[bucket].set(bucketSize);
+                    bucketsSize.set(bucket, bucketSize);
                 }
             }
         }
@@ -643,7 +640,7 @@ public abstract class PagesList extends DataStructure {
             }
         }
 
-        assert res == bucketsSize[bucket].get() : "Wrong bucket size counter [exp=" + res + ", cntr=" + bucketsSize[bucket].get() + ']';
+        assert res == bucketsSize.get(bucket) : "Wrong bucket size counter [exp=" + res + ", cntr=" + bucketsSize.get(bucket) + ']';
 
         return res;
     }
@@ -1014,7 +1011,7 @@ public abstract class PagesList extends DataStructure {
     private Stripe getPageForTake(int bucket) {
         Stripe[] tails = getBucket(bucket);
 
-        if (tails == null || bucketsSize[bucket].get() == 0)
+        if (tails == null || bucketsSize.get(bucket) == 0)
             return null;
 
         int len = tails.length;
@@ -1120,7 +1117,7 @@ public abstract class PagesList extends DataStructure {
                     // Another thread took the last page.
                     writeUnlock(tailId, tailPage, tailAddr, false);
 
-                    if (bucketsSize[bucket].get() > 0) {
+                    if (bucketsSize.get(bucket) > 0) {
                         lockAttempt--; // Ignore current attempt.
 
                         continue;
@@ -1535,7 +1532,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket number.
      */
     private void incrementBucketSize(int bucket) {
-        bucketsSize[bucket].incrementAndGet();
+        bucketsSize.incrementAndGet(bucket);
     }
 
     /**
@@ -1544,7 +1541,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket number.
      */
     private void decrementBucketSize(int bucket) {
-        bucketsSize[bucket].decrementAndGet();
+        bucketsSize.decrementAndGet(bucket);
     }
 
     /**
