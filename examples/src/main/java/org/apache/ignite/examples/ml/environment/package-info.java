@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * This package contains examples of learning environment features.
+ * <!-- Package description. --> This package contains examples of learning environment features.
  */
 package org.apache.ignite.examples.ml.environment;

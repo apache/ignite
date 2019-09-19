@@ -30,6 +30,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -49,7 +50,9 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LogisticRegressionSGDTrainerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model over partitioned dataset usage example started.");
@@ -81,20 +84,20 @@ public class LogisticRegressionSGDTrainerExample {
 
                 System.out.println(">>> Logistic regression model: " + mdl);
 
-                double accuracy = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    vectorizer
-                ).accuracy();
+                double accuracy = Evaluator.evaluate(dataCache,
+                    mdl, vectorizer, MetricName.ACCURACY
+                );
 
                 System.out.println("\n>>> Accuracy " + accuracy);
 
                 System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

@@ -29,8 +29,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -39,15 +38,17 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using Linear Regression model in Apache Ignite for house prices prediction.
- *
- * Description of model can be found in: https://en.wikipedia.org/wiki/Linear_regression .
- * Original dataset can be downloaded from: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/ .
- * Copy of dataset are stored in: modules/ml/src/main/resources/datasets/boston_housing_dataset.txt .
- * Score for regression estimation: R^2 (coefficient of determination).
- * Description of score evaluation can be found in: https://stattrek.com/statistics/dictionary.aspx?definition=coefficient_of_determination .
+ * <p>
+ * Description of model can be found in: https://en.wikipedia.org/wiki/Linear_regression . Original dataset can be
+ * downloaded from: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/ . Copy of dataset are stored in:
+ * modules/ml/src/main/resources/datasets/boston_housing_dataset.txt . Score for regression estimation: R^2 (coefficient
+ * of determination). Description of score evaluation can be found in: https://stattrek.com/statistics/dictionary.aspx?definition=coefficient_of_determination
+ * .
  */
 public class BostonHousePricesPredictionExample {
-    /** Runs example. */
+    /**
+     * Runs example.
+     */
     public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -79,22 +80,25 @@ public class BostonHousePricesPredictionExample {
                     split.getTestFilter(),
                     mdl,
                     vectorizer,
-                    new RegressionMetrics().withMetric(RegressionMetricValues::r2)
+                    MetricName.R2
                 );
 
                 System.out.println(">>> Model: " + toString(mdl));
                 System.out.println(">>> R^2 score: " + score);
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
 
     /**
      * Prepare pretty string for model.
+     *
      * @param mdl Model.
      * @return String representation of model.
      */
