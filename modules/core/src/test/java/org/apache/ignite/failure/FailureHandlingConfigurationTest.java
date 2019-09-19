@@ -111,60 +111,6 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed
-     */
-    @Test
-    public void testGetorCreateLongCacheNameExceed235() throws Exception{
-        IgniteEx ignite = startGrid(0);
-        ignite.cluster().active(true);
-        final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-        String cacheName = GridTestUtils.randomString(250);
-        cfg.setName(cacheName);
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return ignite.getOrCreateCache(cfg);
-            }
-        }, IllegalArgumentException.class, "Ouch! Argument is invalid: Length of cache name can not exceed 235.");
-    }
-
-    /**
-     * @throws Exception If failed
-     */
-    @Test
-    public void testGetorCreateLongCacheGroupNameExceed235() throws Exception{
-        IgniteEx ignite = startGrid(0);
-        ignite.cluster().active(true);
-        final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-        String cacheName = GridTestUtils.randomString(30);
-        cfg.setName(cacheName);
-        cfg.setGroupName(GridTestUtils.randomString(236));
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return ignite.getOrCreateCache(cfg);
-            }
-        }, IllegalArgumentException.class, "Ouch! Argument is invalid: Length of cache group name can not exceed 235.");
-    }
-
-    /**
-     * @throws Exception If failed
-     */
-    @Test
-    public void testGetorCreateLongCacheNameLessThan235() throws Exception{
-        IgniteEx ignite = startGrid(0);
-        ignite.cluster().active(true);
-        final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-        String cacheName = GridTestUtils.randomString(235);
-        cfg.setName(cacheName);
-        IgniteCache<String,String> cache = ignite.getOrCreateCache(cfg);
-        String randomKey = GridTestUtils.randomString(30);
-        String randomValue = GridTestUtils.randomString(30);
-        cache.put(randomKey, randomValue);
-        Assert.assertEquals(randomValue, cache.get(randomKey));
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test

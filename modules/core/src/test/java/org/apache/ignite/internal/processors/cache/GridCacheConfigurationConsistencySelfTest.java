@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -857,6 +858,43 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 return startGrid(2);
             }
         }, IgniteCheckedException.class, "Affinity partitions count mismatch");
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    @Test
+    public void testCreateLongCacheName() throws Exception{
+        IgniteEx ignite = startGrid(0);
+        ignite.cluster().active(true);
+        final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        String cacheName = GridTestUtils.randomString(250);
+        cfg.setName(cacheName);
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                return ignite.getOrCreateCache(cfg);
+            }
+        }, IllegalArgumentException.class, "Ouch! Argument is invalid: Length of cache name can not exceed 235.");
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    @Test
+    public void testCreateLongCacheGroupName() throws Exception{
+        IgniteEx ignite = startGrid(0);
+        ignite.cluster().active(true);
+        final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        String cacheName = GridTestUtils.randomString(30);
+        cfg.setName(cacheName);
+        cfg.setGroupName(GridTestUtils.randomString(236));
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                return ignite.getOrCreateCache(cfg);
+            }
+        }, IllegalArgumentException.class, "Ouch! Argument is invalid: Length of cache group name can not exceed 235.");
     }
 
     /**

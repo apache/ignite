@@ -56,7 +56,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -871,43 +870,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopGrid(nodeCount());
-        }
-    }
-
-    /** */
-    @Test
-    public void testGetorCreateLongCacheNameExceed235() throws Exception {
-        try {
-            final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-            String cacheName = GridTestUtils.randomString(250);
-            cfg.setName(cacheName);
-            cfg.setNodeFilter(NODE_FILTER);
-
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return grid(0).getOrCreateCache(cfg);
-                }
-            }, IllegalArgumentException.class, "Ouch! Argument is invalid: Length of cache name can not exceed 235.");
-        } finally {
-            grid(0).destroyCache(DYNAMIC_CACHE_NAME);
-        }
-    }
-
-    /** */
-    @Test
-    public void testGetorCreateLongCacheNameLessThan236() throws Exception {
-        try {
-            final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-            String cacheName = GridTestUtils.randomString(235);
-            cfg.setName(cacheName);
-            cfg.setNodeFilter(NODE_FILTER);
-            IgniteCache<String,String> cache = grid(0).getOrCreateCache(cfg);
-            String randomKey = GridTestUtils.randomString(30);
-            String randomValue = GridTestUtils.randomString(30);
-            cache.put(randomKey, randomValue);
-            Assert.assertEquals(randomValue, cache.get(randomKey));
-        } finally {
-            grid(0).destroyCache(DYNAMIC_CACHE_NAME);
         }
     }
 
