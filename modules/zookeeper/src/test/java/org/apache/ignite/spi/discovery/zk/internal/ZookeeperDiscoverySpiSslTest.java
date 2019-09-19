@@ -147,7 +147,7 @@ public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiSslTestBa
 
     /** {@inheritDoc} */
     @Override protected List<String> additionalRemoteJvmArgs() {
-        ArrayList<String> args = new ArrayList<>(5);
+        ArrayList<String> args = new ArrayList<>(7);
 
         if (invalidKeystore) {
             args.add("-D" + ZOOKEEPER_SSL_KEYSTORE_LOCATION + '=' + resourcePath2("/node01.jks"));
@@ -160,7 +160,6 @@ public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiSslTestBa
 
         args.add("-D" + ZOOKEEPER_SSL_KEYSTORE_PASSWORD + "=123456");
         args.add("-D" + ZOOKEEPER_SSL_TRUSTSTORE_PASSWORD + "=123456");
-
         args.add("-D" + ZOOKEEPER_CLIENT_CNXN_SOCKET + "=org.apache.zookeeper.ClientCnxnSocketNetty");
         args.add("-D" + SECURE_CLIENT + "=true");
         args.add("-D" + ZOOKEEPER_SSL_HOSTNAME_VERIFICATION + "=false");
