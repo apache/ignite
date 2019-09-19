@@ -316,7 +316,6 @@ public class CommandHandler {
 
                 }
 
-
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 return EXIT_CODE_CONNECTION_FAILED;
