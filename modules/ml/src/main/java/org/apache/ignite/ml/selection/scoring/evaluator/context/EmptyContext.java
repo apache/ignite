@@ -15,32 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric.classification;
+package org.apache.ignite.ml.selection.scoring.evaluator.context;
 
-import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
-import org.junit.Test;
-
-import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
+import java.io.Serializable;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- * Tests for {@link Fmeasure}.
+ * Class represents context stub for metrics that don't require such context preparations.
  */
-public class FmeasureTest {
-    /** */
-    @Test
-    public void testScore() {
-        Fmeasure<Integer> scoreCalculator = new Fmeasure<>(1);
+public class EmptyContext<L extends Serializable> implements EvaluationContext<L, EmptyContext<L>> {
+    /**
+     * Serial version uid.
+     */
+    private static final long serialVersionUID = 1439494372470803212L;
 
-        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1, 0, 1, 0, 1, 0),
-            Arrays.asList(1, 0, 0, 1, 1, 0)
-        );
+    /**
+     * {@inheritDoc}
+     */
+    @Override public void aggregate(LabeledVector<L> vector) {
 
-        double score = scoreCalculator.score(cursor.iterator());
+    }
 
-        assertEquals((double)2/3, score, 1e-12);
+    /**
+     * {@inheritDoc}
+     */
+    @Override public EmptyContext<L> mergeWith(EmptyContext<L> other) {
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean needToCompute() {
+        return false;
     }
 }

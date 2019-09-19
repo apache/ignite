@@ -30,4 +30,11 @@ public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
      * @param lsnr Listener.
      */
     public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
+
+    /**
+     * Adds listener of metrics group remove events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr);
 }

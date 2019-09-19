@@ -15,23 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.scoring.metric.exceptions;
-
-import org.apache.ignite.IgniteException;
-
 /**
- * Indicates an unknown class label for metric calculator.
+ * <!-- Package description. --> Package contains aggregators for metrics computation.
  */
-public class UnknownClassLabelException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param incorrectVal Incorrect value.
-     * @param positiveClsLb Positive class label.
-     * @param negativeClsLb Negative class label.
-     */
-    public UnknownClassLabelException(double incorrectVal, double positiveClsLb, double negativeClsLb) {
-        super("The next class label: " + incorrectVal + " is not positive class label: " + positiveClsLb + " or negative class label: " + negativeClsLb);
-    }
-}
+package org.apache.ignite.ml.selection.scoring.evaluator.aggregator;

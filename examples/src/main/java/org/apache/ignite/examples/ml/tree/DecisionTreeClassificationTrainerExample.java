@@ -100,10 +100,12 @@ public class DecisionTreeClassificationTrainerExample {
 
                 System.out.println(">>> Accuracy: " + correctPredictions / 10.0 + "%");
                 System.out.println(">>> Decision tree classification trainer example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
@@ -120,6 +122,6 @@ public class DecisionTreeClassificationTrainerExample {
         double x = rnd.nextDouble() - 0.5;
         double y = rnd.nextDouble() - 0.5;
 
-        return new LabeledVector<>(VectorUtils.of(x,y), x * y > 0 ? 1. : 0.);
+        return new LabeledVector<>(VectorUtils.of(x, y), x * y > 0 ? 1. : 0.);
     }
 }

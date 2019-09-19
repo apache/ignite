@@ -24,11 +24,13 @@ import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_13_Genet
 import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_14_Parallel_Genetic_Programming_Search;
 
 /**
- * Run all the tutorial examples step by step with primary purpose to provide
- * automatic execution from {@code IgniteExamplesMLTestSuite}.
+ * Run all the tutorial examples step by step with primary purpose to provide automatic execution from {@code
+ * IgniteExamplesMLTestSuite}.
  */
 public class TutorialStepByStepExample {
-    /** Run examples with default settings. */
+    /**
+     * Run examples with default settings.
+     */
     public static void main(String[] args) {
         Step_1_Read_and_Learn.main(args);
         Step_2_Imputing.main(args);

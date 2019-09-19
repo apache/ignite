@@ -17,6 +17,8 @@
 
 package org.apache.ignite.util;
 
+import java.io.Serializable;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -26,9 +28,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-
-import java.io.Serializable;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
