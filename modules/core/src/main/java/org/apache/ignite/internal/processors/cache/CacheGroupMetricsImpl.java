@@ -54,6 +54,21 @@ public class CacheGroupMetricsImpl {
     /** Number of partitions need processed for finished indexes create or rebuilding. */
     private final AtomicLongMetric idxBuildCntPartitionsLeft;
 
+    /** */
+    private final AtomicLongMetric rebalancingPartitionsLeft;
+
+    /** */
+    private final AtomicLongMetric rebalancingReceivedKeys;
+
+    /** */
+    private final AtomicLongMetric rebalancingReceivedBytes;
+
+    /** */
+    private final AtomicLongMetric rebalancingStartTime;
+
+    /** */
+    private final AtomicLongMetric rebalancingFinishTime;
+
     /** Cache group context. */
     private final CacheGroupContext ctx;
 
@@ -104,6 +119,16 @@ public class CacheGroupMetricsImpl {
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
+        rebalancingPartitionsLeft = mreg.longMetric("rebalancingPartitionsLeft",
+                "Description for rebalancingPartitionsLeft.");
+        rebalancingReceivedKeys = mreg.longMetric("rebalancingReceivedKeys",
+                "Description for rebalancingReceivedKeys.");
+        rebalancingReceivedBytes = mreg.longMetric("rebalancingReceivedBytes",
+                "Description for rebalancingReceivedBytes.");
+        rebalancingStartTime = mreg.longMetric("rebalancingStartTime",
+                "Description for rebalancingStartTime.");
+        rebalancingFinishTime = mreg.longMetric("rebalancingFinishTime",
+                "Description for rebalancingFinishTime.");
 
         DataRegion region = ctx.dataRegion();
 
@@ -186,6 +211,56 @@ public class CacheGroupMetricsImpl {
      */
     public void decrementIndexBuildCountPartitionsLeft() {
         idxBuildCntPartitionsLeft.decrement();
+    }
+
+    /** */
+    public long getRebalancingPartitionsLeft() {
+        return rebalancingPartitionsLeft.value();
+    }
+
+    /** */
+    public void setRebalancingPartitionsLeft(long rebalancingPartitionsLeft) {
+        this.rebalancingPartitionsLeft.value(rebalancingPartitionsLeft);
+    }
+
+    /** */
+    public long getRebalancingReceivedKeys() {
+        return rebalancingReceivedKeys.value();
+    }
+
+    /** */
+    public void setRebalancingReceivedKeys(long rebalancingReceivedKeys) {
+        this.rebalancingReceivedKeys.value(rebalancingReceivedKeys);
+    }
+
+    /** */
+    public long getRebalancingReceivedBytes() {
+        return rebalancingReceivedBytes.value();
+    }
+
+    /** */
+    public void setRebalancingReceivedBytes(long rebalancingReceivedBytes) {
+        this.rebalancingReceivedBytes.value(rebalancingReceivedBytes);
+    }
+
+    /** */
+    public long getRebalancingStartTime() {
+        return rebalancingStartTime.value();
+    }
+
+    /** */
+    public void setRebalancingStartTime(long rebalancingStartTime) {
+        this.rebalancingStartTime.value(rebalancingStartTime);
+    }
+
+    /** */
+    public long getRebalancingFinishTime() {
+        return rebalancingFinishTime.value();
+    }
+
+    /** */
+    public void setRebalancingFinishTime(long rebalancingFinishTime) {
+        this.rebalancingFinishTime.value(rebalancingFinishTime);
     }
 
     /** */
