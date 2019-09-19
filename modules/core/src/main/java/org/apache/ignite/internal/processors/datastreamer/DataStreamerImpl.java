@@ -2210,14 +2210,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         @Override public void receive(
             IgniteCache<KeyCacheObject, CacheObject> cache,
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
-            if (System.getSecurityManager() != null)
-                AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
-                    body(cache, entries);
-
-                    return null;
-                });
-            else
+            AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
                 body(cache, entries);
+
+                return null;
+            });
         }
 
         /**

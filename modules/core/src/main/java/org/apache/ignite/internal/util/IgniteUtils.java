@@ -1420,14 +1420,8 @@ public abstract class IgniteUtils {
     public static void dumpThreads(@Nullable IgniteLogger log) {
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
-        final Set<Long> deadlockedThreadsIds;
-
-        if (System.getSecurityManager() != null) {
-            deadlockedThreadsIds = AccessController.doPrivileged((PrivilegedAction<Set<Long>>)
+        final Set<Long> deadlockedThreadsIds = AccessController.doPrivileged((PrivilegedAction<Set<Long>>)
                 () -> getDeadlockedThreadIds(mxBean));
-        }
-        else
-            deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
 
         if (deadlockedThreadsIds.isEmpty())
             warn(log, "No deadlocked threads detected.");

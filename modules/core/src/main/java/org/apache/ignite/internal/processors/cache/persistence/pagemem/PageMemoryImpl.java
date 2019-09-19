@@ -874,21 +874,17 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long actualPageId = 0;
 
                 try {
-                    if (System.getSecurityManager() != null) {
-                        try {
-                            AccessController.doPrivileged((PrivilegedExceptionAction<Void>)
-                                () -> {
-                                    storeMgr.read(grpId, pageId, buf);
+                    try {
+                        AccessController.doPrivileged((PrivilegedExceptionAction<Void>)
+                            () -> {
+                                storeMgr.read(grpId, pageId, buf);
 
-                                    return null;
-                                });
-                        }
-                        catch (PrivilegedActionException e) {
-                            SecurityUtils.igniteCheckedException(e);
-                        }
+                                return null;
+                            });
                     }
-                    else
-                        storeMgr.read(grpId, pageId, buf);
+                    catch (PrivilegedActionException e) {
+                        SecurityUtils.igniteCheckedException(e);
+                    }
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 

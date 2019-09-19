@@ -38,6 +38,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -249,23 +250,16 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         final Object target = unwrapTarget(obj);
 
         try {
-            if (System.getSecurityManager() != null) {
-                AccessController.doPrivileged(
-                    (PrivilegedExceptionAction<Void>)() -> {
-                        inject(target, annSet, null, null, params);
+            AccessController.doPrivileged(
+                (PrivilegedExceptionAction<Void>)() -> {
+                    inject(target, annSet, null, null, params);
 
-                        return null;
-                    }
-                );
-            }
-            else
-                inject(target, annSet, null, null, params);
+                    return null;
+                }
+            );
         }
         catch (PrivilegedActionException e) {
-            if (e.getException() instanceof IgniteCheckedException)
-                throw (IgniteCheckedException)e.getException();
-
-            throw new IgniteCheckedException(e.getException());
+            SecurityUtils.igniteCheckedException(e);
         }
     }
 
