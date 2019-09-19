@@ -804,7 +804,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                     .collect(Collectors.toList());
 
-                                cctx.wal().log(new DataRecord(entriesWithCounters));
+                                ptr = cctx.wal().log(new DataRecord(entriesWithCounters));
                             }
 
                             if (ptr != null && !cctx.tm().logTxRecords())
