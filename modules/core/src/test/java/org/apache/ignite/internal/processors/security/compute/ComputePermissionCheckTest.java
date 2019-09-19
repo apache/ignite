@@ -36,7 +36,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.impl.FutureAdapter;
+import org.apache.ignite.internal.processors.security.impl.TestFutureAdapter;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -166,11 +166,11 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /** */
     private Stream<Supplier<Future>> asyncOperations(Ignite... nodes) {
         Function<Ignite, Stream<Supplier<Future>>> nodeOps = (node) -> Stream.of(
-            () -> new FutureAdapter<>(node.compute().executeAsync(TEST_COMPUTE_TASK, 0)),
-            () -> new FutureAdapter<>(node.compute().broadcastAsync(TEST_CALLABLE)),
-            () -> new FutureAdapter<>(node.compute().callAsync(TEST_CALLABLE)),
-            () -> new FutureAdapter<>(node.compute().runAsync(TEST_RUNNABLE)),
-            () -> new FutureAdapter<>(node.compute().applyAsync(TEST_CLOSURE, new Object())),
+            () -> new TestFutureAdapter<>(node.compute().executeAsync(TEST_COMPUTE_TASK, 0)),
+            () -> new TestFutureAdapter<>(node.compute().broadcastAsync(TEST_CALLABLE)),
+            () -> new TestFutureAdapter<>(node.compute().callAsync(TEST_CALLABLE)),
+            () -> new TestFutureAdapter<>(node.compute().runAsync(TEST_RUNNABLE)),
+            () -> new TestFutureAdapter<>(node.compute().applyAsync(TEST_CLOSURE, new Object())),
             () -> node.executorService().submit(TEST_CALLABLE)
         );
 

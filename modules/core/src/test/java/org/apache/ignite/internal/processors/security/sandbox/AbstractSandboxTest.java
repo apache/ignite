@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityManager;
-import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
+import org.apache.ignite.internal.processors.security.impl.TestPermissionsBuilder;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -115,7 +115,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
         startGrid(CLNT_ALLOWED, ALLOW_ALL,
-            PermissionsBuilder.create()
+            TestPermissionsBuilder.create()
                 .add(MODIFY_THREAD_PERMISSION)
                 .add(MODIFY_THREADGROUP_PERMISSION).get(), true);
 

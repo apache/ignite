@@ -473,7 +473,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
 
-            job = ctx.security().sandbox().wrapper(job);
+            job = ctx.security().sandbox().wrap(job);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);

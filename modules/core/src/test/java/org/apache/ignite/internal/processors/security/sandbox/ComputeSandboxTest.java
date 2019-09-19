@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.security.sandbox;
 import java.security.AccessControlException;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.security.impl.FutureAdapter;
+import org.apache.ignite.internal.processors.security.impl.TestFutureAdapter;
 import org.apache.ignite.internal.processors.security.impl.TestComputeTask;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -76,11 +76,11 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
             () -> node.compute().run(START_THREAD_RUNNABLE),
             () -> node.compute().apply(CLOSURE, new Object()),
 
-            () -> new FutureAdapter<>(node.compute().executeAsync(COMPUTE_TASK, 0)).get(),
-            () -> new FutureAdapter<>(node.compute().broadcastAsync(CALLABLE)).get(),
-            () -> new FutureAdapter<>(node.compute().callAsync(CALLABLE)).get(),
-            () -> new FutureAdapter<>(node.compute().runAsync(START_THREAD_RUNNABLE)).get(),
-            () -> new FutureAdapter<>(node.compute().applyAsync(CLOSURE, new Object())).get()
+            () -> new TestFutureAdapter<>(node.compute().executeAsync(COMPUTE_TASK, 0)).get(),
+            () -> new TestFutureAdapter<>(node.compute().broadcastAsync(CALLABLE)).get(),
+            () -> new TestFutureAdapter<>(node.compute().callAsync(CALLABLE)).get(),
+            () -> new TestFutureAdapter<>(node.compute().runAsync(START_THREAD_RUNNABLE)).get(),
+            () -> new TestFutureAdapter<>(node.compute().applyAsync(CLOSURE, new Object())).get()
         );
     }
 

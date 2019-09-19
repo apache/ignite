@@ -6692,8 +6692,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private IgniteBiTuple<Object, Exception> runEntryProcessor(CacheInvokeEntry<Object, Object> invokeEntry) {
             IgniteSecurity sec = entry.context().kernalContext().security();
 
-            EntryProcessor<Object, Object, ?> entryProcessor = sec.sandbox()
-                .wrapper((EntryProcessor<Object, Object, ?>)writeObj);
+            EntryProcessor<Object, Object, ?> entryProcessor =
+                sec.sandbox().wrap((EntryProcessor<Object, Object, ?>)writeObj);
 
             IgniteThread.onEntryProcessorEntered(true);
 

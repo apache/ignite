@@ -842,8 +842,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             IgniteSecurity sec = cctx.kernalContext().security();
 
-            return new ScanQueryIterator(it, qry, topVer, locPart, sec.sandbox().wrapper(keyValFilter),
-                sec.sandbox().wrapper(transformer), locNode, cctx, log);
+            return new ScanQueryIterator(it, qry, topVer, locPart, sec.sandbox().wrap(keyValFilter),
+                sec.sandbox().wrap(transformer), locNode, cctx, log);
         }
         catch (IgniteCheckedException | RuntimeException e) {
             if (intFilter != null)

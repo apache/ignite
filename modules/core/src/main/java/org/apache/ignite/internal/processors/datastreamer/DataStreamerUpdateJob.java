@@ -127,7 +127,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
             }
 
-            StreamReceiver receiver = ctx.security().sandbox().wrapper(rcvr);
+            StreamReceiver receiver = ctx.security().sandbox().wrap(rcvr);
 
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {

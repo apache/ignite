@@ -22,10 +22,10 @@ import java.security.Permission;
 import java.security.Permissions;
 
 /** */
-public class PermissionsBuilder {
+public class TestPermissionsBuilder {
     /** */
-    public static PermissionsBuilder create() {
-        return new PermissionsBuilder();
+    public static TestPermissionsBuilder create() {
+        return new TestPermissionsBuilder();
     }
 
     /** */
@@ -41,12 +41,12 @@ public class PermissionsBuilder {
     private final Permissions perms;
 
     /** */
-    private PermissionsBuilder() {
+    private TestPermissionsBuilder() {
         perms = new Permissions();
     }
 
     /** */
-    public PermissionsBuilder add(Permission perm) {
+    public TestPermissionsBuilder add(Permission perm) {
         perms.add(perm);
 
         return this;

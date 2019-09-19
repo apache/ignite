@@ -84,27 +84,27 @@ public class AccessControllerSandbox implements IgniteSandbox {
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJob wrapper(ComputeJob job) {
+    @Override public ComputeJob wrap(ComputeJob job) {
         return job != null ? new SandboxAwareComputeJob(this, job) : job;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, T> EntryProcessor<K, V, T> wrapper(EntryProcessor<K, V, T> prc) {
+    @Override public <K, V, T> EntryProcessor<K, V, T> wrap(EntryProcessor<K, V, T> prc) {
         return prc != null ? new SandboxAwareEntryProcessor<>(this, prc) : prc;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteBiPredicate<K, V> wrapper(IgniteBiPredicate<K, V> p) {
+    @Override public <K, V> IgniteBiPredicate<K, V> wrap(IgniteBiPredicate<K, V> p) {
         return p != null ? new SandboxAwareIgniteBiPredicate<>(this, p) : p;
     }
 
     /** {@inheritDoc} */
-    @Override public <E, R> IgniteClosure<E, R> wrapper(IgniteClosure<E, R> c) {
+    @Override public <E, R> IgniteClosure<E, R> wrap(IgniteClosure<E, R> c) {
         return c != null ? new SandboxAwareIgniteClosure<>(this, c) : c;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> StreamReceiver<K, V> wrapper(StreamReceiver<K, V> r) {
+    @Override public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r) {
         return r != null ? new SandboxAwareStreamReceiver<>(this, r) : r;
     }
 }

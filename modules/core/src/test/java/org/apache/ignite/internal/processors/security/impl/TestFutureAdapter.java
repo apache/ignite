@@ -25,12 +25,12 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public class FutureAdapter<T> implements Future<T> {
+public class TestFutureAdapter<T> implements Future<T> {
     /** */
     private final IgniteFuture<T> igniteFut;
 
     /** */
-    public FutureAdapter(IgniteFuture<T> igniteFut) {
+    public TestFutureAdapter(IgniteFuture<T> igniteFut) {
         this.igniteFut = igniteFut;
     }
 

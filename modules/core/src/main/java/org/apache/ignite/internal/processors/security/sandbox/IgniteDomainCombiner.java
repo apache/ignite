@@ -43,22 +43,18 @@ public class IgniteDomainCombiner implements DomainCombiner {
         if (currDomains == null || currDomains.length == 0)
             return assignedDomains;
 
-        currDomains = optimize(currDomains);
-
         if (currDomains == null && assignedDomains == null)
             return null;
 
-        int cLen = currDomains == null ? 0 : currDomains.length;
+        ProtectionDomain[] newDomains = null;
 
-        ProtectionDomain[] newDomains = new ProtectionDomain[cLen];
+        if (currDomains != null && currDomains.length > 0) {
+            newDomains = new ProtectionDomain[1];
 
-        synchronized (cachedPDs) {
-            ProtectionDomain subjectPd;
+            synchronized (cachedPDs) {
+                ProtectionDomain pd = currDomains[0];
 
-            for (int i = 0; i < cLen; i++) {
-                ProtectionDomain pd = currDomains[i];
-
-                subjectPd = cachedPDs.getValue(pd);
+                ProtectionDomain subjectPd = cachedPDs.getValue(pd);
 
                 if (subjectPd == null) {
                     subjectPd = new ProtectionDomain(pd.getCodeSource(), perms);
@@ -66,46 +62,11 @@ public class IgniteDomainCombiner implements DomainCombiner {
                     cachedPDs.putValue(pd, subjectPd);
                 }
 
-                newDomains[i] = subjectPd;
+                newDomains[0] = subjectPd;
             }
         }
 
         return newDomains == null || newDomains.length == 0 ? null : newDomains;
-    }
-
-    /** */
-    private static ProtectionDomain[] optimize(ProtectionDomain[] domains) {
-        if (domains == null || domains.length == 0)
-            return null;
-
-        ProtectionDomain[] optimized = new ProtectionDomain[domains.length];
-
-        ProtectionDomain pd;
-
-        int num = 0;
-
-        for (int i = 0; i < domains.length; i++) {
-            if ((pd = domains[i]) != null) {
-                boolean found = false;
-
-                for (int j = 0; j < num && !found; j++)
-                    found = (optimized[j] == pd);
-
-                if (!found)
-                    optimized[num++] = pd;
-            }
-        }
-
-        // resize the array if necessary
-        if (num > 0 && num < domains.length) {
-            ProtectionDomain[] downSize = new ProtectionDomain[num];
-
-            System.arraycopy(optimized, 0, downSize, 0, downSize.length);
-
-            optimized = downSize;
-        }
-
-        return num == 0 || optimized.length == 0 ? null : optimized;
     }
 
     /** */

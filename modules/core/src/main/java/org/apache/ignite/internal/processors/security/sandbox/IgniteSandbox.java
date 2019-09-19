@@ -66,7 +66,7 @@ public interface IgniteSandbox {
      * @param job ComputeJob to wrap.
      * @return Wrapped ComputeJob.
      */
-    public ComputeJob wrapper(ComputeJob job);
+    public ComputeJob wrap(ComputeJob job);
 
     /**
      * Wraps EntryProcessor to execute with restriction.
@@ -74,7 +74,7 @@ public interface IgniteSandbox {
      * @param prc EntryProcessor to wrap.
      * @return Wrapped EntryProcessor.
      */
-    public <K, V, T> EntryProcessor<K, V, T> wrapper(EntryProcessor<K, V, T> prc);
+    public <K, V, T> EntryProcessor<K, V, T> wrap(EntryProcessor<K, V, T> prc);
 
     /**
      * Wraps IgniteBiPredicate to execute with restriction.
@@ -82,7 +82,7 @@ public interface IgniteSandbox {
      * @param p IgniteBiPredicate to wrap.
      * @return Wrapped IgniteBiPredicate.
      */
-    public <K, V> IgniteBiPredicate<K, V> wrapper(IgniteBiPredicate<K, V> p);
+    public <K, V> IgniteBiPredicate<K, V> wrap(IgniteBiPredicate<K, V> p);
 
     /**
      * Wraps IgniteClosure to execute with restriction.
@@ -90,7 +90,7 @@ public interface IgniteSandbox {
      * @param c IgniteClosure to wrap.
      * @return Wrapped IgniteClosure.
      */
-    public <E, R> IgniteClosure<E, R> wrapper(IgniteClosure<E, R> c);
+    public <E, R> IgniteClosure<E, R> wrap(IgniteClosure<E, R> c);
 
     /**
      * Wraps StreamReceiver to execute with restriction.
@@ -98,5 +98,5 @@ public interface IgniteSandbox {
      * @param r StreamReceiver to wrap.
      * @return Wrapped StreamReceiver.
      */
-    public <K, V> StreamReceiver<K, V> wrapper(StreamReceiver<K, V> r);
+    public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r);
 }
