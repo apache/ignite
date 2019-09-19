@@ -34,21 +34,20 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
- * This example demostrates an ability of using custom client classes in cluster in case of absence of
- * these classes on server nodes. Preprocessors (see {@link Preprocessor}, preprocessor trainers
- * (see {@link PreprocessingTrainer} and vectorizers (see {@link Vectorizer}) can be defined in client code and
- * deployed to server nodes during training phase.
- *
- * For demonstrating of deployment abilities of ml-related classes you can run this example with binary build.
- * NOTE: This binary build should be run with copied basic ml libs from optional directory (ignite-ml at least).
+ * This example demostrates an ability of using custom client classes in cluster in case of absence of these classes on
+ * server nodes. Preprocessors (see {@link Preprocessor}, preprocessor trainers (see {@link PreprocessingTrainer} and
+ * vectorizers (see {@link Vectorizer}) can be defined in client code and deployed to server nodes during training
+ * phase.
+ * <p>
+ * For demonstrating of deployment abilities of ml-related classes you can run this example with binary build. NOTE:
+ * This binary build should be run with copied basic ml libs from optional directory (ignite-ml at least).
  */
 public class TrainingWithCustomPreprocessorsExample {
     /**
@@ -88,11 +87,8 @@ public class TrainingWithCustomPreprocessorsExample {
                 .fit(ignite, trainingSet);
 
             System.out.println(">>> Perform scoring.");
-            double score = Evaluator.evaluate(
-                trainingSet,
-                mdl,
-                mdl.getPreprocessor(),
-                new RegressionMetrics().withMetric(RegressionMetricValues::r2)
+            double score = Evaluator.evaluate(trainingSet,
+                mdl, mdl.getPreprocessor(), MetricName.R2
             );
 
             System.out.println(">>> R^2 score: " + score);
@@ -100,8 +96,8 @@ public class TrainingWithCustomPreprocessorsExample {
     }
 
     /**
-     * Custom trainer for preprocessor. This trainer just returns custom preprocessor based on given
-     * preprocessor. Such trainers could be used for injecting custom preprocessors to Pipelines.
+     * Custom trainer for preprocessor. This trainer just returns custom preprocessor based on given preprocessor. Such
+     * trainers could be used for injecting custom preprocessors to Pipelines.
      *
      * @return Trainer for preprocessor that normalizes given vectors.
      */
@@ -119,11 +115,13 @@ public class TrainingWithCustomPreprocessorsExample {
     }
 
     /**
-     * Custom vectorizer based on preprocessor. This vectorizer extends given vectors by values equal to
-     * log(feature) for each feature in vector.
+     * Custom vectorizer based on preprocessor. This vectorizer extends given vectors by values equal to log(feature)
+     * for each feature in vector.
      */
     private static class Vectorizer9000 extends Vectorizer.VectorizerAdapter<Integer, Vector, Integer, Double> {
-        /** Base preprocessor. */
+        /**
+         * Base preprocessor.
+         */
         private final Preprocessor<Integer, Vector> basePreprocessor;
 
         /**
@@ -135,11 +133,13 @@ public class TrainingWithCustomPreprocessorsExample {
             this.basePreprocessor = basePreprocessor;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public LabeledVector<Double> apply(Integer key, Vector value) {
             LabeledVector<Double> baseVec = basePreprocessor.apply(key, value);
             double[] features = new double[baseVec.size() * 2];
-            for(int i = 0; i < baseVec.size(); i++) {
+            for (int i = 0; i < baseVec.size(); i++) {
                 features[i] = baseVec.get(i);
                 double logValue = Math.log(baseVec.get(i));
                 features[i + baseVec.size()] = Double.isInfinite(logValue) || Double.isNaN(logValue) ? -1. : logValue;

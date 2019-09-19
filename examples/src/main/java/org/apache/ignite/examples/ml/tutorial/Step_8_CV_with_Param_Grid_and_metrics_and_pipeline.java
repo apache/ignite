@@ -32,8 +32,7 @@ import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -44,11 +43,11 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
- * After that it defines how to split the data to train and test sets and configures preprocessors that extract
- * features from an upstream data and perform other desired changes over the extracted data.</p>
+ * After that it defines how to split the data to train and test sets and configures preprocessors that extract features
+ * from an upstream data and perform other desired changes over the extracted data.</p>
  * <p>
- * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
- * the processed data using decision tree classification and the obtained hyperparams.</p>
+ * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on the
+ * processed data using decision tree classification and the obtained hyperparams.</p>
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  * <p>
@@ -58,13 +57,15 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * They differ in that {@code 1/(k-1)}th of the training data is exchanged against other cases.</p>
  * <p>
- * These models are sometimes called surrogate models because the (average) performance measured for these models
- * is taken as a surrogate of the performance of the model trained on all cases.</p>
+ * These models are sometimes called surrogate models because the (average) performance measured for these models is
+ * taken as a surrogate of the performance of the model trained on all cases.</p>
  * <p>
  * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
 public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
@@ -90,23 +91,18 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
 
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
-                CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
+                CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
-                    .addHyperParam("maxDeep", trainer::withMaxDeep, new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", trainer::withMinImpurityDecrease, new Double[]{0.0, 0.25, 0.5});
-
-                BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
-                    .withNegativeClsLb(0.0)
-                    .withPositiveClsLb(1.0)
-                    .withMetric(BinaryClassificationMetricValues::accuracy);
+                    .addHyperParam("maxDeep", trainer::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", trainer::withMinImpurityDecrease, new Double[] {0.0, 0.25, 0.5});
 
                 scoreCalculator
                     .withIgnite(ignite)
                     .withUpstreamCache(dataCache)
                     .withPipeline(pipeline)
-                    .withMetric(metrics)
+                    .withMetric(MetricName.ACCURACY)
                     .withFilter(split.getTrainFilter())
                     .withPreprocessor(vectorizer)
                     .withAmountOfFolds(3)
@@ -126,10 +122,12 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
                 crossValidationRes.getScoringBoard().forEach((hyperParams, score)
                     -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
-            } catch (FileNotFoundException e) {
+            }
+            catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

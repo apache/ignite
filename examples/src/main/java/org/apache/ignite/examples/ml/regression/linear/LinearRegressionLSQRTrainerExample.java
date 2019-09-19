@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -45,7 +45,9 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionLSQRTrainerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over cache based dataset usage example started.");
@@ -75,20 +77,20 @@ public class LinearRegressionLSQRTrainerExample {
                     .labeled(Vectorizer.LabelCoordinate.FIRST));
 
                 double rmse = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    new DummyVectorizer<Integer>()
-                        .labeled(Vectorizer.LabelCoordinate.FIRST),
-                    new RegressionMetrics()
+                    dataCache, mdl,
+                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST),
+                    MetricName.RMSE
                 );
 
                 System.out.println("\n>>> Rmse = " + rmse);
 
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
