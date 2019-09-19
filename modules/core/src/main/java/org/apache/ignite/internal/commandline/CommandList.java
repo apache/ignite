@@ -22,6 +22,7 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
+import org.apache.ignite.internal.commandline.dr.DrCommand;
 
 /**
  * High-level commands.
@@ -49,7 +50,10 @@ public enum CommandList {
     WAL("--wal", new WalCommands()),
 
     /** */
-    DIAGNOSTIC("--diagnostic", new DiagnosticCommand());
+    DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
+
+    /** */
+    DATA_CENTER_REPLICATION("--dr", new DrCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
