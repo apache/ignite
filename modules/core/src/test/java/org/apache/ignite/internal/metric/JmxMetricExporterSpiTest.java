@@ -182,6 +182,10 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         DynamicMBean bean = metricRegistry(ignite.name(), null, "histogramTest");
 
+        MBeanAttributeInfo[] attrs = bean.getMBeanInfo().getAttributes();
+
+        assertEquals(3, attrs.length);
+
         assertEquals(1L, bean.getAttribute("histogram_0_50"));
         assertEquals(2L, bean.getAttribute("histogram_50_500"));
         assertEquals(3L, bean.getAttribute("histogram_500_inf"));
@@ -189,7 +193,7 @@ public class JmxMetricExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     private void createTestHistogram(MetricRegistry mreg) {
-        long[] bounds = new long[] {0, 50, 500};
+        long[] bounds = new long[] {50, 500};
 
         HistogramMetric histogram = mreg.histogram("histogram", bounds, null);
 

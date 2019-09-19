@@ -40,6 +40,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
+import static java.util.Arrays.binarySearch;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.INF;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 
@@ -97,10 +98,12 @@ public class MetricRegistryMBean implements DynamicMBean {
                 assert names.length == ((HistogramMetric)metric).value().length;
 
                 for (String name : names) {
+                    String n = name.substring(mreg.name().length() + 1);
+
                     attributes.add(new MBeanAttributeInfo(
-                        name,
+                        n,
                         Long.class.getName(),
-                        metric.description() != null ? metric.description() : name,
+                        metric.description() != null ? metric.description() : n,
                         true,
                         false,
                         false));
@@ -216,15 +219,14 @@ public class MetricRegistryMBean implements DynamicMBean {
 
         long highBound = sc.nextLong();
 
-        for (int i=0; i<bounds.length; i++) {
-            if (bounds[i] == highBound) {
-                if ((i == 0 && lowBound != 0) || bounds[i-1] != lowBound)
-                    return null;
+        int idx = binarySearch(bounds, highBound);
 
-                return values[i];
-            }
-        }
+        if (idx < 0)
+            return null;
 
-        return null;
+        if ((idx == 0 && lowBound != 0) || (idx != 0 && bounds[idx-1] != lowBound))
+            return null;
+
+        return values[idx];
     }
 }

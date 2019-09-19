@@ -147,6 +147,7 @@ public class MetricUtils {
      *  histogram_100_inf (more than 100)
      *
      * @param metric Histogram metric.
+     * @param cache Map that caches computed bucket names.
      * @return Histogram intervals names.
      */
     public static String[] histogramBucketNames(HistogramMetric metric, Map<String, T2<long[], String[]>> cache) {
