@@ -383,7 +383,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         for (int b = BUCKETS - 2; b > 0; b--) {
             long perPageFreeSpace = b << shift;
 
-            long pages = bucketsSize[b].longValue();
+            long pages = bucketsSize.get(b);
 
             freeSpace += pages * perPageFreeSpace;
         }
@@ -398,7 +398,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         final boolean dumpBucketsInfo = false;
 
         for (int b = 0; b < BUCKETS; b++) {
-            long size = bucketsSize[b].longValue();
+            long size = bucketsSize.get(b);
 
             if (!isReuseBucket(b))
                 dataPages += size;
@@ -431,7 +431,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 log.info("FreeList [name=" + name +
                     ", buckets=" + BUCKETS +
                     ", dataPages=" + dataPages +
-                    ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+                    ", reusePages=" + bucketsSize.get(REUSE_BUCKET) + "]");
         }
     }
 
@@ -595,7 +595,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @return Number of empty data pages in free list.
      */
     public int emptyDataPages() {
-        return bucketsSize[emptyDataPagesBucket].intValue();
+        return (int)bucketsSize.get(emptyDataPagesBucket);
     }
 
     /** {@inheritDoc} */
