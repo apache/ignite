@@ -85,22 +85,13 @@ public class CacheGroupMetricsImpl {
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
-        if (isPersistenceEnabled()) {
-            mreg.register("StorageSize",
-                () -> database().forGroupPageStores(ctx, PageStore::size),
-                "Storage space allocated for group, in bytes.");
+        storageSize = mreg.register("StorageSize",
+            () -> database().forGroupPageStores(ctx, PageStore::size),
+            "Storage space allocated for group, in bytes.");
 
-            mreg.register("SparseStorageSize",
-                () -> database().forGroupPageStores(ctx, PageStore::getSparseSize),
-                "Storage space allocated for group adjusted for possible sparsity, in bytes.");
-
-            storageSize = mreg.findMetric("StorageSize");
-            sparseStorageSize = mreg.findMetric("SparseStorageSize");
-        }
-        else {
-            storageSize = null;
-            sparseStorageSize = null;
-        }
+        sparseStorageSize = mreg.register("SparseStorageSize",
+            () -> database().forGroupPageStores(ctx, PageStore::getSparseSize),
+            "Storage space allocated for group adjusted for possible sparsity, in bytes.");
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
@@ -111,11 +102,11 @@ public class CacheGroupMetricsImpl {
         if (region != null) {
             DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
 
-            this.grpPageAllocationTracker =
+            grpPageAllocationTracker =
                 dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.cacheOrGroupName());
         }
         else
-            this.grpPageAllocationTracker = new LongAdderMetric("NO_OP", null);
+            grpPageAllocationTracker = new LongAdderMetric("NO_OP", null);
     }
 
     /** Callback for initializing metrics after topology was initialized. */
@@ -401,7 +392,7 @@ public class CacheGroupMetricsImpl {
     /** */
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap() {
         if (ctx.affinity().lastVersion().topologyVersion() < 0)
-            return Collections.EMPTY_MAP;
+            return Collections.emptyMap();
 
         AffinityAssignment assignment = ctx.affinity().cachedAffinity(AffinityTopologyVersion.NONE);
 
@@ -472,11 +463,6 @@ public class CacheGroupMetricsImpl {
      */
     private GridCacheDatabaseSharedManager database() {
         return (GridCacheDatabaseSharedManager)ctx.shared().database();
-    }
-
-    /** @return {@code True} if persistent is enabled. */
-    private boolean isPersistenceEnabled() {
-        return ctx.dataRegion().config().isPersistenceEnabled();
     }
 
     /** @return Metric group name. */
