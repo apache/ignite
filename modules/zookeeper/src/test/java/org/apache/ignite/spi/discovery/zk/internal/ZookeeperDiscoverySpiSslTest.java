@@ -150,8 +150,8 @@ public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiSslTestBa
         ArrayList<String> args = new ArrayList<>(7);
 
         if (invalidKeystore) {
-            args.add("-D" + ZOOKEEPER_SSL_KEYSTORE_LOCATION + '=' + resourcePath2("/node01.jks"));
-            args.add("-D" + ZOOKEEPER_SSL_TRUSTSTORE_LOCATION + '=' + resourcePath2("/trust-one.jks"));
+            args.add("-D" + ZOOKEEPER_SSL_KEYSTORE_LOCATION + '=' + resourcePathForKeystore("/node01.jks"));
+            args.add("-D" + ZOOKEEPER_SSL_TRUSTSTORE_LOCATION + '=' + resourcePathForKeystore("/trust-one.jks"));
         }
         else {
             args.add("-D" + ZOOKEEPER_SSL_KEYSTORE_LOCATION + '=' + resourcePath("/server.jks"));
@@ -189,7 +189,7 @@ public class ZookeeperDiscoverySpiSslTest extends ZookeeperDiscoverySpiSslTestBa
      * @param rsrc Resource.
      * @return Path to the resource.
      */
-    private String resourcePath2(String rsrc) {
+    private String resourcePathForKeystore(String rsrc) {
         String igniteHome = U.getIgniteHome();
 
         return Paths.get(
