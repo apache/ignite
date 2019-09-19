@@ -55,6 +55,8 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
+
 /**
  * <a href="https://opencensus.io">OpenCensus</a> monitoring exporter. <br>
  * <br>
@@ -189,7 +191,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         mmap.put(msr, val);
                     }
                     else if (metric instanceof HistogramMetric) {
-                        String[] names = names((HistogramMetric)metric);
+                        String[] names = histogramBucketNames((HistogramMetric)metric, histogramNames);
                         long[] vals = ((HistogramMetric)metric).value();
 
                         assert names.length == vals.length;
@@ -253,43 +255,6 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         View v = View.create(Name.create(msr.getName()), msr.getDescription(), msr, LastValue.create(), tags);
 
         Stats.getViewManager().registerView(v);
-    }
-
-    /**
-     * Gets histogram interval names.
-     *
-     * Example of metric names if bounds are 10,100:
-     *  histogram_0_10 (less than 10)
-     *  histogram_10_100 (between 10 and 100)
-     *  histogram_100_inf (more than 100)
-     *
-     * @param metric Histogram metric.
-     * @return Histogram intervals names.
-     */
-    private String[] names(HistogramMetric metric) {
-        String name = metric.name();
-        long[] bounds = metric.bounds();
-
-        T2<long[], String[]> tuple = histogramNames.get(name);
-
-        if (tuple != null && tuple.get1() == bounds)
-            return tuple.get2();
-
-        String[] names = new String[bounds.length + 1];
-
-        long min = 0;
-
-        for (int i = 0; i < bounds.length; i++) {
-            names[i] = name + '_' + min + '_' + bounds[i];
-
-            min = bounds[i];
-        }
-
-        names[bounds.length] = name + '_' + min + "_inf";
-
-        histogramNames.put(name, new T2<>(bounds, names));
-
-        return names;
     }
 
     /** {@inheritDoc} */

@@ -2641,7 +2641,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return MX bean.
      * @throws Exception If failed.
      */
-    public DynamicMBean metricSet(
+    public DynamicMBean metricRegistry(
         String igniteInstanceName,
         String grp,
         String metrics

@@ -187,7 +187,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
                 return null;
             };
 
-            DynamicMBean tranMBean = metricSet(CLIENT, null, TX_METRICS);
+            DynamicMBean tranMBean = metricRegistry(CLIENT, null, TX_METRICS);
 
             //slow user
             slowPrepare = false;
