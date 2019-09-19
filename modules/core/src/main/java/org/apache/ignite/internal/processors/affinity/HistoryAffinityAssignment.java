@@ -17,158 +17,22 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 /**
- *
+ * Interface for historical calculated affinity assignment.
  */
-@SuppressWarnings("ForLoopReplaceableByForEach")
-public class HistoryAffinityAssignment implements AffinityAssignment {
-    /** */
-    private final AffinityTopologyVersion topVer;
-
-    /** */
-    private final List<List<ClusterNode>> assignment;
-
-    /** */
-    private final List<List<ClusterNode>> idealAssignment;
+public interface HistoryAffinityAssignment extends AffinityAssignment {
+    /**
+     * Should return true if instance is "heavy" and should be taken into account during history size management.
+     *
+     * @return <code>true</code> if adding this instance to history should trigger size check and possible cleanup.
+     */
+    public boolean requiresHistoryCleanup();
 
     /**
-     * @param assign Assignment.
+     * In case this instance is lightweight wrapper of another instance, this method should return reference
+     * to an original one. Otherwise, it should return <code>this</code> reference.
+     *
+     * @return Original instance of <code>this</code> if not applicable.
      */
-    HistoryAffinityAssignment(GridAffinityAssignment assign) {
-        this.topVer = assign.topologyVersion();
-        this.assignment = assign.assignment();
-        this.idealAssignment = assign.idealAssignment();
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<List<ClusterNode>> idealAssignment() {
-        return idealAssignment;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<List<ClusterNode>> assignment() {
-        return assignment;
-    }
-
-    /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<ClusterNode> get(int part) {
-        assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
-            " [part=" + part + ", partitions=" + assignment.size() + ']';
-
-        return assignment.get(part);
-    }
-
-    /** {@inheritDoc} */
-    @Override public HashSet<UUID> getIds(int part) {
-        assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
-            " [part=" + part + ", partitions=" + assignment.size() + ']';
-
-        List<ClusterNode> nodes = assignment.get(part);
-
-        HashSet<UUID> ids = U.newHashSet(nodes.size());
-
-        for (int i = 0; i < nodes.size(); i++)
-            ids.add(nodes.get(i).id());
-
-        return ids;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<ClusterNode> nodes() {
-        Set<ClusterNode> res = new HashSet<>();
-
-        for (int p = 0; p < assignment.size(); p++) {
-            List<ClusterNode> nodes = assignment.get(p);
-
-            if (!F.isEmpty(nodes))
-                res.addAll(nodes);
-        }
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<ClusterNode> primaryPartitionNodes() {
-        Set<ClusterNode> res = new HashSet<>();
-
-        for (int p = 0; p < assignment.size(); p++) {
-            List<ClusterNode> nodes = assignment.get(p);
-
-            if (!F.isEmpty(nodes))
-                res.add(nodes.get(0));
-        }
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Integer> primaryPartitions(UUID nodeId) {
-        Set<Integer> res = new HashSet<>();
-
-        for (int p = 0; p < assignment.size(); p++) {
-            List<ClusterNode> nodes = assignment.get(p);
-
-            if (!F.isEmpty(nodes) && nodes.get(0).id().equals(nodeId))
-                res.add(p);
-        }
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Integer> backupPartitions(UUID nodeId) {
-        Set<Integer> res = new HashSet<>();
-
-        for (int p = 0; p < assignment.size(); p++) {
-            List<ClusterNode> nodes = assignment.get(p);
-
-            for (int i = 1; i < nodes.size(); i++) {
-                ClusterNode node = nodes.get(i);
-
-                if (node.id().equals(nodeId)) {
-                    res.add(p);
-
-                    break;
-                }
-            }
-        }
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return topVer.hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
-    @Override public boolean equals(Object o) {
-        if (o == this)
-            return true;
-
-        if (o == null || !(o instanceof AffinityAssignment))
-            return false;
-
-        return topVer.equals(((AffinityAssignment)o).topologyVersion());
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(HistoryAffinityAssignment.class, this);
-    }
+    public HistoryAffinityAssignment origin();
 }
