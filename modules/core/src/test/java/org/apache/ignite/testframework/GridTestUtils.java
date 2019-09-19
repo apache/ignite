@@ -2092,6 +2092,16 @@ public final class GridTestUtils {
         return b.toString();
     }
 
+    /** */
+    public static String randomString(int len) {
+        StringBuilder builder = new StringBuilder(len);
+        Random random = new Random(System.currentTimeMillis());
+        for (int i = 0; i < len; i++)
+            builder.append(ALPHABETH.charAt(random.nextInt(ALPHABETH.length())));
+
+        return builder.toString();
+    }
+
     /**
      * @param node Node.
      * @param topVer Ready exchange version to wait for before trying to merge exchanges.

@@ -139,6 +139,9 @@ public class GridCacheUtils {
     /** */
     public static final int UNDEFINED_CACHE_ID = 0;
 
+    /** */
+    public static final int MAX_CACHE_NAME_LENGTH = 235;
+
     /*
      *
      */
@@ -1578,6 +1581,7 @@ public class GridCacheUtils {
      */
     public static void validateCacheName(String name) throws IllegalArgumentException {
         A.ensure(name != null && !name.isEmpty(), "Cache name must not be null or empty.");
+        A.ensure(name.length() <= MAX_CACHE_NAME_LENGTH, "Length of cache name can not exceed "+ MAX_CACHE_NAME_LENGTH+".");
     }
 
     /**

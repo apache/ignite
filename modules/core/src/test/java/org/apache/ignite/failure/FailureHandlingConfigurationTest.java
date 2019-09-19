@@ -18,11 +18,14 @@
 package org.apache.ignite.failure;
 
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -32,8 +35,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
@@ -103,6 +108,41 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    @Test
+    public void testGetorCreateLongCacheNameExceed235() throws Exception{
+        IgniteEx ignite = startGrid(0);
+        ignite.cluster().active(true);
+        final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        String cacheName = GridTestUtils.randomString(250);
+        cfg.setName(cacheName);
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                return ignite.getOrCreateCache(cfg);
+            }
+        }, IllegalArgumentException.class, "Ouch! Argument is invalid: Length of cache name can not exceed 235.");
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    @Test
+    public void testGetorCreateLongCacheNameLessThan235() throws Exception{
+        IgniteEx ignite = startGrid(0);
+        ignite.cluster().active(true);
+        final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        String cacheName = GridTestUtils.randomString(235);
+        cfg.setName(cacheName);
+        IgniteCache<String,String> cache = ignite.getOrCreateCache(cfg);
+        String randomKey = GridTestUtils.randomString(30);
+        String randomValue = GridTestUtils.randomString(30);
+        cache.put(randomKey, randomValue);
+        Assert.assertEquals(randomValue, cache.get(randomKey));
     }
 
     /**
