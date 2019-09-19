@@ -21,7 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -107,14 +108,14 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
         offheap.cacheDataStores().forEach(cacheData -> {
             PagesList list = (PagesList)cacheData.rowStore().freeList();
 
-            AtomicLong[] bucketsSize = list.bucketsSize;
+            AtomicLongArray bucketsSize = list.bucketsSize;
 
             // All buckets except reuse bucket must be empty after puts and removes of the same key.
-            for (int i = 0; i < bucketsSize.length; i++) {
+            for (int i = 0; i < bucketsSize.length(); i++) {
                 if (list.isReuseBucket(i))
-                    assertTrue(bucketsSize[i].get() > 0);
+                    assertTrue(bucketsSize.get(i) > 0);
                 else
-                    assertEquals(0, bucketsSize[i].get());
+                    assertEquals(0, bucketsSize.get(i));
             }
         });
 
@@ -133,23 +134,23 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
         offheap.cacheDataStores().forEach(cacheData -> {
             PagesList list = (PagesList)cacheData.rowStore().freeList();
 
-            AtomicLong[] bucketsSize = list.bucketsSize;
+            AtomicLongArray bucketsSize = list.bucketsSize;
 
-            List<Long> bucketsSizeList = new ArrayList<>(bucketsSize.length);
+            List<Long> bucketsSizeList = new ArrayList<>(bucketsSize.length());
 
             partsBucketsSize.put(cacheData.partId(), bucketsSizeList);
 
             long notReuseSize = 0;
 
-            for (int i = 0; i < bucketsSize.length; i++) {
-                bucketsSizeList.add(bucketsSize[i].get());
+            for (int i = 0; i < bucketsSize.length(); i++) {
+                bucketsSizeList.add(bucketsSize.get(i));
 
                 PagesList.Stripe[] bucket = list.getBucket(i);
 
                 // All buckets are expected to be cached onheap except reuse bucket, since reuse bucket is also used
                 // by indexes bypassing caching.
                 if (!list.isReuseBucket(i)) {
-                    notReuseSize += bucketsSize[i].get();
+                    notReuseSize += bucketsSize.get(i);
 
                     assertNull("Expected null bucket [partId=" + cacheData.partId() + ", i=" + i + ", bucket=" +
                         bucket + ']', bucket);
@@ -157,7 +158,7 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
                     PagesList.PagesCache pagesCache = list.getBucketCache(i, false);
 
                     assertEquals("Wrong pages cache size [partId=" + cacheData.partId() + ", i=" + i + ']',
-                        bucketsSize[i].get(), pagesCache == null ? 0 : pagesCache.size());
+                        bucketsSize.get(i), pagesCache == null ? 0 : pagesCache.size());
                 }
             }
 
@@ -171,10 +172,10 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
         offheap.cacheDataStores().forEach(cacheData -> {
             PagesList list = (PagesList)cacheData.rowStore().freeList();
 
-            AtomicLong[] bucketsSize = list.bucketsSize;
+            AtomicLongArray bucketsSize = list.bucketsSize;
 
-            for (int i = 0; i < bucketsSize.length; i++) {
-                long bucketSize = bucketsSize[i].get();
+            for (int i = 0; i < bucketsSize.length(); i++) {
+                long bucketSize = bucketsSize.get(i);
 
                 PagesList.Stripe[] bucket = list.getBucket(i);
 
@@ -206,7 +207,7 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
 
             int totalCacheSize = 0;
 
-            for (int i = 0; i < list.bucketsSize.length; i++) {
+            for (int i = 0; i < list.bucketsSize.length(); i++) {
                 PagesList.PagesCache pagesCache = list.getBucketCache(i, false);
 
                 totalCacheSize += pagesCache == null ? 0 : pagesCache.size();
