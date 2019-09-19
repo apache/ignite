@@ -19,13 +19,13 @@
 <Configuration status="INFO" shutdownTimeout="5">
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p] %logger{36} %m%n"/>
-            <!-- Matches only DEBUG level -->
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <!-- Matches only WARN and INFO level -->
             <LevelRangeFilter minLevel="WARN" maxLevel="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
         </Console>
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p] %m%n"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
             <!-- Matches only ERROR level -->
             <LevelRangeFilter minLevel="ERROR" maxLevel="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
         </Console>
@@ -61,10 +61,14 @@
         <Logger name="org.springframework" level="WARN"/>
 
         <Logger name="org.springframework" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE_ERR"/>
             <AppenderRef ref="FILE"/>
         </Logger>
 
         <Logger name="org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter" level="OFF"/>
+
+        <Logger name="org.hibernate.validator.internal.util.Version" level="OFF"/>
+
         <Logger name="springfox.documentation.spring.web" level="WARN"/>
 
         <Root level="INFO">

@@ -14,6 +14,9 @@
 # limitations under the License.
 #
 
+# Use logger settings for Spring same as for Ignite.
+logging.config: classpath:META-INF/log4j2.xml
+
 # Uncomment for migration of user data from MongoDB.
 #migration.mongo.db.url: mongodb://localhost:27017/console
 
