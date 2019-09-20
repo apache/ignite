@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
@@ -88,7 +87,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
-        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
         return cfg;
     }

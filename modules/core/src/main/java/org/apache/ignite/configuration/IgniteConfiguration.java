@@ -79,7 +79,6 @@ import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -2377,7 +2376,7 @@ public class IgniteConfiguration {
     /**
      * Gets fully configured system view SPI implementations.
      *
-     * @return Metric exporter SPI implementations.
+     * @return System view exporter SPI implementations.
      */
     public SystemViewExporterSpi[] getSystemViewExporterSpi() {
         return sysViewExporterSpi;

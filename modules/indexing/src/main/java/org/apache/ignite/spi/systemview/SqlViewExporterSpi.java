@@ -20,6 +20,7 @@ package org.apache.ignite.spi.systemview;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,6 +34,9 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 
 /**
  * This SPI implementation exports metrics as SQL views.
+ *
+ * Note, instance of this class created with reflection.
+ * @see IgnitionEx#SYSTEM_VIEW_SQL_SPI
  */
 public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewExporterSpi {
     /** System view filter. */

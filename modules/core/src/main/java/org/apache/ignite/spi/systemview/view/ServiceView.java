@@ -28,8 +28,12 @@ import org.apache.ignite.lang.IgniteUuid;
  * Service representation for a {@link SystemView}.
  */
 public class ServiceView {
+    /** Service descriptor. */
     private final ServiceInfo serviceInfo;
 
+    /**
+     * @param serviceInfo Service descriptor.
+     */
     public ServiceView(ServiceInfo serviceInfo) {
         this.serviceInfo = serviceInfo;
     }
@@ -75,7 +79,6 @@ public class ServiceView {
         Object affKey = serviceInfo.configuration().getAffinityKey();
 
         return affKey == null ? null : affKey.toString();
-
     }
 
     /** @return Node filter. */

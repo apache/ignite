@@ -74,7 +74,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
-import org.apache.ignite.spi.systemview.SqlViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -884,8 +883,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration()
             .setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME))
-            .setMetricExporterSpi(new SqlViewMetricExporterSpi())
-            .setSystemViewExporterSpi(new SqlViewExporterSpi());
+            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
 
         return cfg;
     }

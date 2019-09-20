@@ -343,12 +343,10 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     @Nullable Object arg) throws IgniteException {
                     return Collections.singletonMap(new ComputeJob() {
                         @Override public void cancel() {
-                            System.out.println("SystemViewSelfTest.cancel");
                             // No-op.
                         }
 
                         @Override public Object execute() throws IgniteException {
-                            System.out.println("SystemViewSelfTest.execute");
                             return 1;
                         }
                     }, subgrid.get(0));

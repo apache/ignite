@@ -1690,6 +1690,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Check whether class is in classpath.
+     *
+     * @return {@code True} if in classpath.
+     */
+    public static boolean inClassPath(String clsName) {
+        try {
+            Class.forName(clsName);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
+        }
+    }
+
+    /**
      * Creates new instance of a class even if it does not have public constructor.
      *
      * @param cls Class to instantiate.
