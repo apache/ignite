@@ -101,7 +101,7 @@ public class RowStore {
      */
     public void addRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled) {
-            ctx.database().ensureFreeSpaceForInsert(grp.dataRegion());
+            ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), row);
 
             freeList.insertDataRow(row, statHolder);
         }

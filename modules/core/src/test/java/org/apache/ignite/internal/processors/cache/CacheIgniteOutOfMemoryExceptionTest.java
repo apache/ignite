@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -28,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -40,8 +42,11 @@ import static org.apache.ignite.configuration.DataPageEvictionMode.DISABLED;
  * Tests behavior of IgniteCache when {@link IgniteOutOfMemoryException} is thrown.
  */
 public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest {
-    /** */
-    private static final long DATA_REGION_SIZE = 20L * 1024 * 1024;
+    /** Minimal region size. */
+    private static final long DATA_REGION_SIZE = 10L * 1024 * 1024;
+
+    /** Page size. */
+    private static final long PAGE_SIZE = 4 * 1024;
 
     /** */
     private static final int ATTEMPTS_NUM = 3;
@@ -54,11 +59,13 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setPageSize(4096)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setMaxSize(DATA_REGION_SIZE)
                     .setPageEvictionMode(DISABLED)
-                    .setPersistenceEnabled(false)));
+                    .setPersistenceEnabled(false)
+                    .setMetricsEnabled(true)));
 
         cfg.setFailureHandler(new AbstractFailureHandler() {
             /** {@inheritDoc} */
@@ -127,7 +134,7 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
         for (int i = 0; i < attempts; ++i) {
             try {
                 for (int key = 0; key < 500_000; ++key)
-                    cache.put(key, new byte[4096]);
+                    cache.put(key, new byte[4000]);
 
                 fail("OutOfMemoryException hasn't been thrown");
             }
@@ -151,5 +158,52 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
 
             assertFalse("Failure handler should not be called during clearing the cache.", failure.get());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHugeEntry() throws Exception {
+        // The maximum number of pages that can be allocated.
+        long maxPages = ((DATA_REGION_SIZE / (PAGE_SIZE + PageMemoryNoStoreImpl.PAGE_OVERHEAD)));
+
+        // The number of pages that can be hypothetically allocated by user excluding overhead.
+        long possibleAvailablePages = maxPages - getDefaultRegionMetrics().getTotalUsedPages() - 42;
+
+        IgniteCache<Object, Object> cache = grid(0).cache(ATOMIC.name());
+
+        try {
+            grid(0).cache(ATOMIC.name()).put(0, new byte[(int)(possibleAvailablePages * PAGE_SIZE)]);
+
+            fail("The implementation should reserve at least 256 pages for internal needs " +
+                    "[maxPages=" + maxPages + ", totalUsed=" + getDefaultRegionMetrics().getTotalUsedPages() + ']');
+        }
+        catch (Exception e) {
+            assertTrue(
+                "Exception has been thrown, but the exception type is unexpected [exc=" + e + ']',
+                X.hasCause(e, IgniteOutOfMemoryException.class));
+
+            assertTrue("Failure handler should be called due to IOOM.", failure.get());
+        }
+
+        // Let's check that the cache can be cleared without any errors.
+        failure.set(false);
+
+        try {
+            cache.clear();
+        }
+        catch (Exception e) {
+            fail("Clearing the cache should not trigger any exception [exc=" + e + ']');
+        }
+
+        assertFalse("Failure handler should not be called during clearing the cache.", failure.get());
+    }
+
+    /**
+     * @return DataRegionMetrics for the default data region.
+     */
+    private DataRegionMetrics getDefaultRegionMetrics() {
+        return grid(0).dataRegionMetrics().stream().filter(d -> d.getName().equals("default")).findFirst().get();
     }
 }
