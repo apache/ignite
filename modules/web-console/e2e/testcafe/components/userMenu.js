@@ -17,17 +17,20 @@
 import {Selector, t} from 'testcafe';
 
 const _selector = Selector('user-menu');
+const button = _selector.find('[bs-dropdown]');
+const menuItem = _selector.find('[role="menuitem"]');
 
 export const userMenu = {
     _selector,
-    button: _selector.find('[bs-dropdown]'),
+    button,
+    menuItem,
     /** 
      * Clicks on user menu option.
      * @param {'Profile'|'Admin panel'|'Log out'} label Menu option label to click on
      */
     async clickOption(label) {
         return t
-            .hover(this.button)
-            .click(_selector.find(`[role="menuitem"]`).withText(label));
+            .hover(button)
+            .click(menuItem.withText(label));
     }
 };

@@ -47,10 +47,19 @@ test('Become user', async(t) => {
     await t.navigateTo(resolveUrl('/settings/admin'));
     await t.click(admin.userNameCell.withText('User Name'));
     await admin.usersTable.performAction('Become this user');
+    await t
+        .hover(userMenu.button)
+        // See https://ggsystems.atlassian.net/browse/GG-24068
+        .expect(userMenu.menuItem.withText('Admin panel').exists).notOk()
+        .expect(userMenu.menuItem.withText('Log out').exists).notOk();
     await userMenu.clickOption('Profile');
     await t
         .expect(notifications.assumedUserFullName.innerText).eql('User Name')
         .typeText(profile.firstName.control, '1')
         .click(profile.saveChangesButton)
-        .expect(notifications.assumedIdentityNotification.visible).ok();
+        .expect(notifications.assumedIdentityNotification.visible).ok()
+        .click(notifications.revertIdentityButton)
+        .hover(userMenu.button)
+        // See https://ggsystems.atlassian.net/browse/GG-24068
+        .expect(userMenu.menuItem.withText('Admin panel').count).eql(1);
 });

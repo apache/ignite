@@ -16,7 +16,7 @@
 div.user-menu__trigger(
     ng-class='{active: $ctrl.$state.includes("base.settings")}'
     ng-click='$event.stopPropagation()'
-    bs-dropdown='$ctrl.items'
+    bs-dropdown='$ctrl.menu$|async:this'
     data-placement='bottom-right'
     data-trigger='hover focus'
     data-container='self'

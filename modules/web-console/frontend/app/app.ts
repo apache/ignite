@@ -36,7 +36,6 @@ import './modules/states/settings.state';
 import './core';
 import './modules/user/user.module';
 import './modules/branding/branding.module';
-import './modules/navbar/navbar.module';
 import './modules/getting-started/GettingStarted.provider';
 import './modules/ace.module';
 import './modules/loading/loading.module';
@@ -194,7 +193,6 @@ export default angular
         'ignite-console.states.errors',
         'ignite-console.states.settings',
         // Common modules.
-        'ignite-console.navbar',
         'ignite-console.getting-started',
         'ignite-console.loading',
         // Ignite configuration module.

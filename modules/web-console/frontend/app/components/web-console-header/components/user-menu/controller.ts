@@ -15,37 +15,24 @@
  */
 
 import {UserService} from 'app/modules/user/User.service';
-import {tap} from 'rxjs/operators';
+import {map} from 'rxjs/operators';
 
 export default class UserMenu {
-    static $inject = ['User', 'IgniteUserbar', 'AclService', '$state'];
+    static $inject = ['User', 'AclService', '$state'];
 
     constructor(
         private User: UserService,
-        private IgniteUserbar: any,
         private AclService: any,
         private $state: any
     ) {}
 
-    items = [
-        {text: 'Profile', sref: 'base.settings.profile'}
-    ];
-
     user$ = this.User.current$;
 
-    subscriber = this.user$.pipe(tap(() => {
-        this.items.splice(2);
-
-        if (this.AclService.can('admin_page'))
-            this.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
-
-        this.items.push(...this.IgniteUserbar);
-
-        if (this.AclService.can('logout'))
-            this.items.push({text: 'Log out', sref: 'logout'});
-    })).subscribe();
-
-    $onDestroy() {
-        if (this.subscriber) this.subscriber.unsubscribe();
-    }
+    menu$ = this.user$.pipe(map(() => {
+        return [
+            {text: 'Profile', sref: 'base.settings.profile'},
+            this.AclService.can('admin_page') ? {text: 'Admin panel', sref: 'base.settings.admin'} : null,
+            this.AclService.can('logout') ? {text: 'Log out', sref: 'logout'} : null
+        ].filter((v) => !!v);
+    }));
 }
