@@ -45,6 +45,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -93,6 +94,10 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(isPersistent())
             .setMaxSize(500L * 1024 * 1024);
+
+        storageCfg
+            .setWalSegments(3)
+            .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
 
@@ -420,6 +425,10 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
      */
     @Test
     public void shouldNodeWithPersistenceSuccessfullyJoinedToClusterWhenAutoAdjustDisabled() throws Exception {
+        assumeFalse(isPersistent());
+
+        cleanPersistenceDir();
+
         IgniteEx ignite0 = startGrid(inMemoryConfiguration(0));
 
         ignite0.cluster().active(true);
