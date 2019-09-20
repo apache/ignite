@@ -91,6 +91,8 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 

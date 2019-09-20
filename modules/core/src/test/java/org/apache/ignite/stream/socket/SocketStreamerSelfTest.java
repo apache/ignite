@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -70,6 +71,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -129,9 +132,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     Marshaller marsh = new JdkMarshaller();
 
                     int[] values = new int[CNT];
-                    for (int i = 0; i < CNT; i++) {
+                    for (int i = 0; i < CNT; i++)
                         values[i] = i;
-                    }
 
                     byte[] msg = marsh.marshal(new Message(values));
 

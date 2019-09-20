@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
@@ -99,6 +100,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         }
         else
             cfg.setCacheConfiguration();
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

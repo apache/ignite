@@ -37,6 +37,7 @@ import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -80,6 +81,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
 
         cfg.setPeerClassLoadingLocalClassPathExclude(
             "org.apache.ignite.internal.GridMultipleVersionsDeploymentSelfTest*");
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
