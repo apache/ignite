@@ -55,6 +55,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         mreg.addMetricRegistryCreationListener(this::register);
     }
 
+    /** @param grp Metric group to register as JMX bean. */
     private void register(MetricRegistry grp) {
         if (filter != null && !filter.test(grp))
             return;
