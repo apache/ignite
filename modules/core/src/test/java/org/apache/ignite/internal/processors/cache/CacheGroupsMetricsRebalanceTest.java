@@ -116,6 +116,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cfg1, cfg2, cfg3);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -236,7 +238,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 CacheMetrics snapshot = ig.cache(CACHE1).metrics();
 
                 return snapshot.getRebalancedKeys() > snapshot.getEstimatedRebalancingKeys()
-                    && res.getRebalance().get(ignite.cluster().localNode().id()) == 1.0
+                    && Double.compare(res.getRebalance().get(ignite.cluster().localNode().id()), 1.0) == 0
                     && snapshot.getRebalancingPartitionsCount() == 0;
             }
         }, 5000);

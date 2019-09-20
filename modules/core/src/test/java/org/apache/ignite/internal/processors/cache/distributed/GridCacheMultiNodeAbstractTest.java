@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
@@ -81,6 +82,8 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         disco.setIpFinder(ipFinder);
 
         c.setDiscoverySpi(disco);
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }

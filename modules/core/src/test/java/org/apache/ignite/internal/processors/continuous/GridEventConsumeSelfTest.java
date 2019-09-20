@@ -37,6 +37,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -105,6 +106,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         disc.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disc);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 

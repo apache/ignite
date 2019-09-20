@@ -27,6 +27,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -87,6 +88,8 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
                 .setAffinity(new RendezvousAffinityFunction(false, 16)));
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

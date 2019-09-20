@@ -59,7 +59,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1800,8 +1799,6 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setCheckpointSpi(cpSpi);
 
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
 

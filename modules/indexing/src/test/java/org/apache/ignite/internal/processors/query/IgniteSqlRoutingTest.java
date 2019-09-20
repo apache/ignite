@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
@@ -49,6 +48,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.events.EventType;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -104,6 +104,8 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
             c.setClientMode(true);
 
         c.setCacheKeyConfiguration(new CacheKeyConfiguration(CallKey.class));
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
