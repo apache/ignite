@@ -82,6 +82,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         );
 
         c.setCacheConfiguration(cc);
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
