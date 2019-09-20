@@ -25,6 +25,10 @@ import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
@@ -42,6 +46,10 @@ public class GBTFromSparkExample {
      * Path to Spark LogReg model.
      */
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/gbt";
+
+    /** Learning environment. */
+    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+        .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
      * Run example.
@@ -61,7 +69,8 @@ public class GBTFromSparkExample {
 
                 ModelsComposition mdl = (ModelsComposition)SparkModelParser.parse(
                     SPARK_MDL_PATH,
-                    SupportedSparkModels.GRADIENT_BOOSTED_TREES
+                    SupportedSparkModels.GRADIENT_BOOSTED_TREES,
+                    env
                 );
 
                 System.out.println(">>> GBT: " + mdl.toString(true));

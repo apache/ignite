@@ -50,7 +50,7 @@ public class EvaluatorExample {
      */
     public static void main(String[] args) throws IOException {
         System.out.println();
-        System.out.println(">>> kNN multi-class classification algorithm over cached dataset usage example started.");
+        System.out.println(">>> Evaluation of SVM binary classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
