@@ -28,6 +28,10 @@ import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
@@ -44,6 +48,10 @@ public class KMeansFromSparkExample {
      * Path to Spark KMeans model.
      */
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/kmeans";
+
+    /** Learning environment. */
+    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+        .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
      * Run example.
@@ -63,7 +71,8 @@ public class KMeansFromSparkExample {
 
                 KMeansModel mdl = (KMeansModel)SparkModelParser.parse(
                     SPARK_MDL_PATH,
-                    SupportedSparkModels.KMEANS
+                    SupportedSparkModels.KMEANS,
+                    env
                 );
 
                 System.out.println(">>> K-Means model: " + mdl);
