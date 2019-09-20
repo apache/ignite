@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import javax.management.InstanceNotFoundException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
@@ -1016,10 +1016,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Therefore, inserting a new entry should be prevented in case of some threshold is exceeded.
      *
      * @param region Data region to be checked.
+     * @param row Data row to be inserted.
      * @throws IgniteOutOfMemoryException In case of the given data region does not have enough free space
      * for putting a new entry.
+     * @throws IgniteCheckedException If size of the given {@code row} cannot be calculated.
      */
-    public void ensureFreeSpaceForInsert(DataRegion region) throws IgniteOutOfMemoryException {
+    public void ensureFreeSpaceForInsert(
+        DataRegion region,
+        CacheDataRow row
+    ) throws IgniteOutOfMemoryException, IgniteCheckedException {
         if (region == null)
             return;
 
@@ -1037,14 +1042,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         long nonEmptyPages = (pageMem.loadedPages() - freeList.emptyDataPages());
 
         // The maximum number of pages that can be allocated (memorySize / systemPageSize)
-        // should be greater or equal to the current number of non-empty pages plus
-        // the number of pages that may be required in order to move all pages to a reuse bucket,
-        // that is equal to nonEmptyPages * 8 / pageSize, where 8 is the size of a link.
-        // Note that not the whole page can be used to storing links,
+        // should be greater or equal to pages required for inserting a new entry plus
+        // the current number of non-empty pages plus the number of pages that may be required in order to move
+        // all pages to a reuse bucket, that is equal to nonEmptyPages * 8 / pageSize, where 8 is the size of a link.
+        // Note that the whole page cannot be used to storing links (there is obvious overhead),
         // see PagesListNodeIO and PagesListMetaIO#getCapacity(), so we pessimistically multiply the result on 1.5,
         // in any way, the number of required pages is less than 1 percent.
         boolean oomThreshold = (memorySize / pageMem.systemPageSize()) <
-            (nonEmptyPages * (8.0 / pageMem.pageSize() + 1) * 1.5 + 256 /*one page per bucket*/);
+            ((double)row.size() / pageMem.pageSize() + nonEmptyPages * (8.0 * 1.5 / pageMem.pageSize() + 1) + 256 /*one page per bucket*/);
 
         if (oomThreshold) {
             IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
@@ -1289,7 +1294,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         String igniteHomeStr = U.getIgniteHome();
 
         File workDir = igniteHomeStr == null ? new File(path) : U.resolveWorkDirectory(igniteHomeStr, path, false);
-
 
         return new File(workDir, consId);
     }
