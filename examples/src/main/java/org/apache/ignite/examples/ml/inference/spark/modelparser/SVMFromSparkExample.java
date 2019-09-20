@@ -24,6 +24,10 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
@@ -43,6 +47,10 @@ public class SVMFromSparkExample {
      */
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/svm";
 
+    /** Learning environment. */
+    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+        .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
+
     /**
      * Run example.
      */
@@ -61,7 +69,8 @@ public class SVMFromSparkExample {
 
                 SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)SparkModelParser.parse(
                     SPARK_MDL_PATH,
-                    SupportedSparkModels.LINEAR_SVM
+                    SupportedSparkModels.LINEAR_SVM,
+                    env
                 );
 
                 System.out.println(">>> SVM: " + mdl);
