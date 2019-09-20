@@ -872,7 +872,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 try {
                     SecurityUtils.privilegedExceptionRunnable(
-                        ()->storeMgr.read(grpId, pageId, buf));
+                        () -> storeMgr.read(grpId, pageId, buf));
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 

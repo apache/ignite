@@ -103,6 +103,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteSandbox sandbox() {
         return sandbox;
     }

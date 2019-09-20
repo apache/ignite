@@ -140,7 +140,7 @@ public class SecurityUtils {
     }
 
     /**
-     * Computes a result with a privileged action.
+     * Computes a result in a privileged action.
      *
      * @param c Instance of Callable.
      * @param <T> Type of result.

@@ -213,6 +213,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -1420,7 +1421,7 @@ public abstract class IgniteUtils {
     public static void dumpThreads(@Nullable IgniteLogger log) {
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
-        final Set<Long> deadlockedThreadsIds = AccessController.doPrivileged((PrivilegedAction<Set<Long>>)
+        final Set<Long> deadlockedThreadsIds = SecurityUtils.privileged(
                 () -> getDeadlockedThreadIds(mxBean));
 
         if (deadlockedThreadsIds.isEmpty())
