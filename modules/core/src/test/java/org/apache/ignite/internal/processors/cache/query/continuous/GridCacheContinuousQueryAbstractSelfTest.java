@@ -88,6 +88,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.CONTINUOUS;
@@ -135,7 +136,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         else
             cfg.setClientMode(true);
 
-        cfg.setIncludeEventTypes(org.apache.ignite.events.EventType.EVTS_ALL);
+        cfg.setIncludeEventTypes(EVTS_ALL);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 

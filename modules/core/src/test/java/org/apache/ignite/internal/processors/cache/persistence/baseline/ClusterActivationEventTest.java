@@ -35,11 +35,7 @@ import org.junit.Test;
 public class ClusterActivationEventTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /**
