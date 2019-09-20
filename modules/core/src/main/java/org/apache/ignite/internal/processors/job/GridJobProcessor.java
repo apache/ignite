@@ -1279,14 +1279,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             if (onBeforeActivateJob(job)) {
                                 if (ctx.localNodeId().equals(node.id())) {
                                     // Always execute in another thread for local node.
-                                    final GridJobWorker jobWorker = job;
-
-                                    AccessController.doPrivileged((PrivilegedAction<Void>)
-                                        () -> {
-                                            executeAsync(jobWorker);
-
-                                            return null;
-                                        });
+                                    executeAsync(job);
 
                                     // No sync execution.
                                     job = null;
