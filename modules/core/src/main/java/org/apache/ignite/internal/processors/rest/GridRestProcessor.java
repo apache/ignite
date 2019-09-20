@@ -425,9 +425,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param fut Result of REST request processing.
      */
     private void notifyCommandListeners(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
-        if (req == null)
-            return;
-
         Set<IgniteBiPredicate<GridRestRequest, IgniteInternalFuture<GridRestResponse>>> cmdLsnrs =
             lsnrs.get(req.command());
 

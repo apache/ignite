@@ -83,8 +83,6 @@ public class RestProcessedCommandListenerTest extends GridCommonAbstractTest {
         catch (GridClientException e) {
             throw new RuntimeException(e);
         }
-
-        assertTrue(grid(1).cluster().active());
     }
 
     /** */
