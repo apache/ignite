@@ -23,61 +23,42 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
-import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_INACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_NAME;
 
 /**
  *
  */
-public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter {
+public class GridClusterNameCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
-    private static final Collection<GridRestCommand> commands =
-        U.sealList(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE, CLUSTER_CURRENT_STATE, CLUSTER_ACTIVE, CLUSTER_INACTIVE);
+    private static final Collection<GridRestCommand> COMMANDS = U.sealList(CLUSTER_NAME);
 
     /**
      * @param ctx Context.
      */
-    public GridChangeStateCommandHandler(GridKernalContext ctx) {
+    public GridClusterNameCommandHandler(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridRestCommand> supportedCommands() {
-        return commands;
+        return COMMANDS;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restRest) {
-        GridRestChangeStateRequest req = (GridRestChangeStateRequest)restRest;
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restReq) {
+        assert restReq instanceof GridRestClusterNameRequest : restReq;
 
         final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 
         final GridRestResponse res = new GridRestResponse();
 
         try {
-            switch (req.command()) {
-                case CLUSTER_CURRENT_STATE:
-                    Boolean currentState = ctx.state().publicApiActiveState(false);
-
-                    res.setResponse(currentState);
-                    break;
-                case CLUSTER_ACTIVE:
-                case CLUSTER_INACTIVE:
-                    log.warning(req.command().key() + " is deprecated. Use newer commands.");
-                default:
-                    ctx.grid().cluster().active(req.active());
-
-                    res.setResponse(req.command().key() + " started");
-                    break;
-            }
+            res.setResponse(ctx.cluster().clusterName());
 
             fut.onDone(res);
         }
