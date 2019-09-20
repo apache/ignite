@@ -29,6 +29,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -67,11 +68,13 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -80,6 +83,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -142,6 +146,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** */
     private final Thread sesTimeoutCheckerThread;
 
+    /** Listeners of a REST command processing completion. */
+    private final Map<GridRestCommand, Set<IgniteBiPredicate<GridRestRequest, IgniteInternalFuture<GridRestResponse>>>>
+        lsnrs = new ConcurrentHashMap<>();
+
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
         @Override public GridRestResponse handle(GridRestRequest req) throws IgniteCheckedException {
@@ -149,7 +157,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
-            return handleAsync0(req);
+            IgniteInternalFuture<GridRestResponse> fut = handleAsync0(req);
+
+            fut.listen(f -> notifyCommandListeners(req, f));
+
+            return fut;
         }
     };
 
@@ -384,6 +396,45 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 return res;
             }
         });
+    }
+
+    /**
+     * Adds a listener which will be notified when processing of the REST command is complete.
+     *
+     * @param lsnr Predicate that is called on each processed REST command. If predicate returns {@code false},
+     *      it will be unregistered.
+     * @param cmds {@link GridRestCommand} types for which this listener will be notified.
+     * @throws NullPointerException If any of passed arguments are {@code null}.
+     * @throws IllegalArgumentException If {@code cmds} is empty.
+     */
+    public void listenProcessedCommands(IgniteBiPredicate<GridRestRequest, IgniteInternalFuture<GridRestResponse>> lsnr,
+        GridRestCommand... cmds) {
+        A.notNull(lsnr, "lsnr");
+        A.notEmpty(cmds, "cmds");
+
+        for (GridRestCommand cmd : cmds)
+            lsnrs.computeIfAbsent(cmd, k -> new GridConcurrentLinkedHashSet<>()).add(lsnr);
+    }
+
+
+    /**
+     * Notifies all REST command listeners which are subscribed for specified by
+     * {@link GridRestRequest#command()} command type.
+     *
+     * @param req Received REST request.
+     * @param fut Result of REST request processing.
+     */
+    private void notifyCommandListeners(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
+        if (req == null)
+            return;
+
+        Set<IgniteBiPredicate<GridRestRequest, IgniteInternalFuture<GridRestResponse>>> cmdLsnrs =
+            lsnrs.get(req.command());
+
+        if (cmdLsnrs == null)
+            return;
+
+        cmdLsnrs.removeIf(lsnr -> !lsnr.apply(req, fut));
     }
 
     /**
