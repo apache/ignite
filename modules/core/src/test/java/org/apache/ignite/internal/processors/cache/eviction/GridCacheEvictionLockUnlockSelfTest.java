@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -91,6 +92,8 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
         discoSpi.setIpFinder(ipFinder);
 
         c.setDiscoverySpi(discoSpi);
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }

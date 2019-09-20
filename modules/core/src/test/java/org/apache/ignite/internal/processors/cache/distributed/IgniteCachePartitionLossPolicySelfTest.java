@@ -120,6 +120,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                         .setPersistenceEnabled(isPersistenceEnabled)
                 ));
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 

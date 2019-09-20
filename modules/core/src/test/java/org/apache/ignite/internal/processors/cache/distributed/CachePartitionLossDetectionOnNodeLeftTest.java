@@ -50,6 +50,8 @@ public class CachePartitionLossDetectionOnNodeLeftTest extends GridCommonAbstrac
             setPartitionLossPolicy(IGNORE). // If default will ever change...
             setBackups(0));
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
