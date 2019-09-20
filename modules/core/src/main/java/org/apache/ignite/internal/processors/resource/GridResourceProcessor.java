@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -249,18 +246,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Unwrap Proxy object.
         final Object target = unwrapTarget(obj);
 
-        try {
-            AccessController.doPrivileged(
-                (PrivilegedExceptionAction<Void>)() -> {
-                    inject(target, annSet, null, null, params);
-
-                    return null;
-                }
-            );
-        }
-        catch (PrivilegedActionException e) {
-            SecurityUtils.igniteCheckedException(e);
-        }
+        SecurityUtils.privilegedExceptionRunnable(
+            () -> inject(target, annSet, null, null, params));
     }
 
     /**

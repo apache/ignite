@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -874,17 +871,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long actualPageId = 0;
 
                 try {
-                    try {
-                        AccessController.doPrivileged((PrivilegedExceptionAction<Void>)
-                            () -> {
-                                storeMgr.read(grpId, pageId, buf);
-
-                                return null;
-                            });
-                    }
-                    catch (PrivilegedActionException e) {
-                        SecurityUtils.igniteCheckedException(e);
-                    }
+                    SecurityUtils.privilegedExceptionRunnable(
+                        ()->storeMgr.read(grpId, pageId, buf));
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 

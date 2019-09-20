@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -191,8 +190,7 @@ public class GridResourceIoc {
         assert target != null;
         assert annCls != null;
 
-        ClassDescriptor desc = AccessController.doPrivileged((PrivilegedAction<ClassDescriptor>)
-                () -> descriptor(dep, target.getClass()));
+        ClassDescriptor desc = SecurityUtils.privileged(() -> descriptor(dep, target.getClass()));
 
         return desc.recursiveFields().length > 0 || desc.annotatedMembers(annCls) != null;
     }
@@ -209,8 +207,7 @@ public class GridResourceIoc {
         assert target != null;
         assert annSet != null;
 
-        return AccessController.doPrivileged((PrivilegedAction<Boolean>)
-            () -> descriptor(dep, target.getClass()).isAnnotated(annSet) != 0);
+        return SecurityUtils.privileged(() -> descriptor(dep, target.getClass()).isAnnotated(annSet) != 0);
     }
 
     /**

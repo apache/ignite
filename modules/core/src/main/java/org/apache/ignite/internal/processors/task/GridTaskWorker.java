@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.task;
 
 import java.io.Serializable;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -515,21 +512,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
-            Map<? extends ComputeJob, ClusterNode> mappedJobs = null;
+            // Inject resources.
+            SecurityUtils.privilegedExceptionRunnable(
+                () -> ctx.resource().inject(dep, task, ses, balancer, mapper));
 
-            try {
-                mappedJobs = AccessController
-                    .doPrivileged((PrivilegedExceptionAction<Map<? extends ComputeJob, ClusterNode>>)
-                        () -> {
-                            // Inject resources.
-                            ctx.resource().inject(dep, task, ses, balancer, mapper);
-
-                            return mappedJobs(shuffledNodes);
-                        });
-            }
-            catch (PrivilegedActionException e) {
-                SecurityUtils.igniteCheckedException(e);
-            }
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = SecurityUtils.privilegedExceptionCallable(
+                () -> mappedJobs(shuffledNodes));
 
             if (log.isDebugEnabled())
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
@@ -880,17 +868,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                 }
 
-                ComputeJobResultPolicy plc = null;
+                final GridJobResultImpl jobRslt = jobRes;
 
-                try {
-                    final GridJobResultImpl jobRslt = jobRes;
-
-                    plc = AccessController.doPrivileged((PrivilegedExceptionAction<ComputeJobResultPolicy>)
-                        () -> result(jobRslt, results));
-                }
-                catch (PrivilegedActionException e) {
-                    SecurityUtils.igniteCheckedException(e);
-                }
+                ComputeJobResultPolicy plc = SecurityUtils.privilegedExceptionCallable(
+                    () -> result(jobRslt, results));
 
                 if (plc == null) {
                     String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
@@ -1174,11 +1155,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         try {
             try {
                 // Reduce results.
-                reduceRes = AccessController.doPrivileged((PrivilegedExceptionAction<R>)
-                    () -> reduceRes(results));
-            }
-            catch (PrivilegedActionException e) {
-                SecurityUtils.igniteCheckedException(e);
+                reduceRes = SecurityUtils.privilegedExceptionCallable(() -> reduceRes(results));
             }
             finally {
                 synchronized (mux) {
@@ -1427,11 +1404,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     try {
                         MarshallerUtils.jobReceiverVersion(node.version());
 
-                        req = AccessController.doPrivileged((PrivilegedExceptionAction<GridJobExecuteRequest>)
+                        req = SecurityUtils.privilegedExceptionCallable(
                             () -> gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout));
-                    }
-                    catch (PrivilegedActionException e) {
-                        SecurityUtils.igniteCheckedException(e);
                     }
                     finally {
                         MarshallerUtils.jobReceiverVersion(null);

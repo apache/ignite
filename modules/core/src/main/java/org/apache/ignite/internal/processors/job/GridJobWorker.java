@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.job;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -453,18 +449,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
 
             // Inject resources.
-            try {
-                AccessController.doPrivileged((PrivilegedExceptionAction<Void>)
-                    () -> {
-                        ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
-
-                        return null;
-                    }
-                );
-            }
-            catch (PrivilegedActionException e) {
-                SecurityUtils.igniteCheckedException(e);
-            }
+            SecurityUtils.privilegedExceptionRunnable(() -> ctx.resource().inject(dep, taskCls, job, ses, jobCtx));
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
@@ -661,11 +646,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         ClassLoader ctxLdr = curThread.getContextClassLoader();
 
         try {
-            AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
-                curThread.setContextClassLoader(ldr);
-
-                return null;
-            });
+            SecurityUtils.privileged(() -> curThread.setContextClassLoader(ldr));
 
             try {
                 if (internal && ctx.config().isPeerClassLoadingEnabled())
@@ -689,11 +670,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         }
         finally {
             // Set the original class loader back.
-            AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
-                curThread.setContextClassLoader(ctxLdr);
-
-                return null;
-            });
+            SecurityUtils.privileged(() -> curThread.setContextClassLoader(ctxLdr));
         }
     }
 

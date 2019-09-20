@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.reflect.Field;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -86,15 +83,7 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
             return IgniteUtils.hashCode(key);
 
         try {
-            Object o = null;
-
-            try {
-                o = AccessController.doPrivileged((PrivilegedExceptionAction<Object>)
-                    () -> reflectCache.firstFieldValue(key));
-            }
-            catch (PrivilegedActionException e) {
-                SecurityUtils.igniteCheckedException(e);
-            }
+            Object o = SecurityUtils.privilegedExceptionCallable(() -> reflectCache.firstFieldValue(key));
 
             if (o != null)
                 return o;

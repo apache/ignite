@@ -53,8 +53,21 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
             "public class TestDoPrivilegedIgniteCallable implements IgniteCallable<String> {\n" +
             "    public String call() throws Exception {\n" +
             "        return AccessController.doPrivileged(\n" +
-            "            (PrivilegedAction<String>)() -> System.getProperty(\"java.home\")\n" +
+            "            (PrivilegedAction<String>)() -> System.getProperty(\"user.home\")\n" +
             "        );\n" +
+            "    }\n" +
+            "}";
+
+    /** */
+    private static final String CALLABLE_SECURITY_UTILS_SRC =
+        "import org.apache.ignite.internal.processors.security.SecurityUtils;\n" +
+            "import org.apache.ignite.lang.IgniteCallable;\n" +
+            "\n" +
+            "public class TestSecurityUtilsCallable implements IgniteCallable<String> {\n" +
+            "    @Override public String call() throws Exception {\n" +
+            "        return SecurityUtils.privileged(() ->{\n" +
+            "            return System.getProperty(\"user.home\");\n" +
+            "        });\n" +
             "    }\n" +
             "}";
 
@@ -90,8 +103,14 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
 
         IgniteCompute compute = clnt.compute(clnt.cluster().forRemotes());
 
+        assertNotNull(System.getProperty("user.home"));
+
         assertThrowsWithCause(
             () -> compute.broadcast(callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC)),
+            AccessControlException.class);
+
+        assertThrowsWithCause(
+            () -> compute.broadcast(callable("TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC)),
             AccessControlException.class);
     }
 
