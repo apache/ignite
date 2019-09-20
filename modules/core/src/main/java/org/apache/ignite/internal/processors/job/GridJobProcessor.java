@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.job;
 
 import java.io.Serializable;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
