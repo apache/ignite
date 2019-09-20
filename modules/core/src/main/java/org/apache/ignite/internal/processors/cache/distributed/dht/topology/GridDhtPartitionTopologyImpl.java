@@ -2436,42 +2436,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         "[grp=" + grp.cacheOrGroupName() + ", p=" + part.id() + ", prevState=" + state0 + ", state=" + part.state() + "]");
                 }
             }
-            else {
-                int ownerCnt = nodeIds.size();
-                int affCnt = affNodes.size();
-
-                if (ownerCnt > affCnt) { //TODO !!! we could loss all owners in such case. Should be fixed by GG-13223
-                    // Sort by node orders in ascending order.
-                    Collections.sort(nodes, CU.nodeComparator(true));
-
-                    int diff = nodes.size() - affCnt;
-
-                    for (int i = 0; i < diff; i++) {
-                        ClusterNode n = nodes.get(i);
-
-                        if (locId.equals(n.id())) {
-                            GridDhtPartitionState state0 = part.state();
-
-                            IgniteInternalFuture<?> rentFut = part.rent(false);
-
-                            rentingFutures.add(rentFut);
-
-                            updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
-
-                            boolean stateChanged = state0 != part.state();
-
-                            hasEvictedPartitions |= stateChanged;
-
-                            if (stateChanged && log.isDebugEnabled()) {
-                                log.debug("Partition has been scheduled for eviction (this node is oldest non-affinity node) " +
-                                    "[grp=" + grp.cacheOrGroupName() + ", p=" + part.id() + ", prevState=" + state0 + ", state=" + part.state() + "]");
-                            }
-
-                            break;
-                        }
-                    }
-                }
-            }
         }
 
         // After all rents are finished resend partitions.
