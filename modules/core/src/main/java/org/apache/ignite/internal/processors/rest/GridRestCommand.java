@@ -176,6 +176,9 @@ public enum GridRestCommand {
     /** */
     CLUSTER_CURRENT_STATE("currentstate"),
 
+    /** Current cluster name. */
+    CLUSTER_NAME("clustername"),
+
     /** */
     CLUSTER_CURRENT_READ_ONLY_MODE("currentreadonlymode"),
 
