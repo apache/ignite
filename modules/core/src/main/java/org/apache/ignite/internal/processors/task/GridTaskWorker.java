@@ -513,10 +513,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
             // Inject resources.
-            SecurityUtils.privilegedExceptionRunnable(
-                () -> ctx.resource().inject(dep, task, ses, balancer, mapper));
+            SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, task, ses, balancer, mapper));
 
-            Map<? extends ComputeJob, ClusterNode> mappedJobs = SecurityUtils.privilegedExceptionCallable(
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = SecurityUtils.doPrivileged(
                 () -> mappedJobs(shuffledNodes));
 
             if (log.isDebugEnabled())
@@ -870,8 +869,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                 final GridJobResultImpl jobRslt = jobRes;
 
-                ComputeJobResultPolicy plc = SecurityUtils.privilegedExceptionCallable(
-                    () -> result(jobRslt, results));
+                ComputeJobResultPolicy plc = SecurityUtils.doPrivileged(() -> result(jobRslt, results));
 
                 if (plc == null) {
                     String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
@@ -1155,7 +1153,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         try {
             try {
                 // Reduce results.
-                reduceRes = SecurityUtils.privilegedExceptionCallable(() -> reduceRes(results));
+                reduceRes = SecurityUtils.doPrivileged(() -> reduceRes(results));
             }
             finally {
                 synchronized (mux) {
@@ -1404,7 +1402,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     try {
                         MarshallerUtils.jobReceiverVersion(node.version());
 
-                        req = SecurityUtils.privilegedExceptionCallable(
+                        req = SecurityUtils.doPrivileged(
                             () -> gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout));
                     }
                     finally {

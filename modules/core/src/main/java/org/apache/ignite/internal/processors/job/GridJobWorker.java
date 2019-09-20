@@ -449,7 +449,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
 
             // Inject resources.
-            SecurityUtils.privilegedExceptionRunnable(() -> ctx.resource().inject(dep, taskCls, job, ses, jobCtx));
+            SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, taskCls, job, ses, jobCtx));
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
@@ -646,7 +646,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         ClassLoader ctxLdr = curThread.getContextClassLoader();
 
         try {
-            SecurityUtils.privileged(() -> curThread.setContextClassLoader(ldr));
+            SecurityUtils.doPrivileged(() -> curThread.setContextClassLoader(ldr));
 
             try {
                 if (internal && ctx.config().isPeerClassLoadingEnabled())
@@ -670,7 +670,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         }
         finally {
             // Set the original class loader back.
-            SecurityUtils.privileged(() -> curThread.setContextClassLoader(ctxLdr));
+            SecurityUtils.doPrivileged(() -> curThread.setContextClassLoader(ctxLdr));
         }
     }
 

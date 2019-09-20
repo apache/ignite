@@ -871,8 +871,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long actualPageId = 0;
 
                 try {
-                    SecurityUtils.privilegedExceptionRunnable(
-                        () -> storeMgr.read(grpId, pageId, buf));
+                    SecurityUtils.doPrivileged(() -> storeMgr.read(grpId, pageId, buf));
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 

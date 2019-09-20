@@ -83,7 +83,7 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
             return IgniteUtils.hashCode(key);
 
         try {
-            Object o = SecurityUtils.privilegedExceptionCallable(() -> reflectCache.firstFieldValue(key));
+            Object o = SecurityUtils.doPrivileged(() -> reflectCache.firstFieldValue(key));
 
             if (o != null)
                 return o;

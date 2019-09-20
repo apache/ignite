@@ -65,7 +65,7 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
             "\n" +
             "public class TestSecurityUtilsCallable implements IgniteCallable<String> {\n" +
             "    @Override public String call() throws Exception {\n" +
-            "        return SecurityUtils.privileged(() ->{\n" +
+            "        return SecurityUtils.doPrivileged(() ->{\n" +
             "            return System.getProperty(\"user.home\");\n" +
             "        });\n" +
             "    }\n" +

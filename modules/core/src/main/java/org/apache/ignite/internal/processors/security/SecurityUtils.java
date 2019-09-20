@@ -20,16 +20,13 @@ package org.apache.ignite.internal.processors.security;
 import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permissions;
-import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -142,29 +139,13 @@ public class SecurityUtils {
     /**
      * Computes a result in a privileged action.
      *
-     * @param c Instance of Callable.
-     * @param <T> Type of result.
-     * @return Computed result.
-     */
-    public static <T> T privileged(Callable<T> c) {
-        try {
-            return AccessController.doPrivileged((PrivilegedExceptionAction<T>)c::call);
-        }
-        catch (PrivilegedActionException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * Computes a result in a privileged action.
-     *
      * @param c Instance of SandboxCallable.
      * @param <T> Type of result.
      * @param <E> Type of Exception.
      * @return Computed result.
      * @throws E if unable to compute a result.
      */
-    public static <T, E extends Exception> T privilegedExceptionCallable(SandboxCallable<T, E> c) throws E {
+    public static <T, E extends Exception> T doPrivileged(SandboxCallable<T, E> c) throws E {
         try {
             return AccessController.doPrivileged((PrivilegedExceptionAction<T>)c::call);
         }
@@ -174,28 +155,13 @@ public class SecurityUtils {
     }
 
     /**
-     * Calls the method <code>run</code> of Runnable in a privileged action.
-     *
-     * @param r Instance of Runnable.
-     */
-    public static void privileged(Runnable r) {
-        AccessController.doPrivileged((PrivilegedAction<Void>)
-            () -> {
-                r.run();
-
-                return null;
-            }
-        );
-    }
-
-    /**
      * Calls the method <code>run</code> of SandboxRunnable in a privileged action.
      *
      * @param r Instance of SandboxRunnable.
      * @param <E> Type of Exception.
      * @throws E if the run method is failed.
      */
-    public static <E extends Exception> void privilegedExceptionRunnable(SandboxRunnable<E> r) throws E {
+    public static <E extends Exception> void doPrivileged(SandboxRunnable<E> r) throws E {
         try {
             AccessController.doPrivileged((PrivilegedExceptionAction<Void>)
                 () -> {
