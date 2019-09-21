@@ -141,7 +141,7 @@ public class QueryParser {
      * @param qry Query.
      * @return Parameters.
      */
-    public QueryParameters fromQuery(SqlFieldsQuery qry) {
+    public QueryParameters queryParameters(SqlFieldsQuery qry) {
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
         boolean autoCommit = true;
         List<Object[]> batchedArgs = null;
@@ -157,7 +157,7 @@ public class QueryParser {
             batchedArgs = qry0.batchedArguments();
         }
 
-        int timeout = 0;
+        int timeout;
 
         if (qry.getTimeout() > 0)
             timeout = qry.getTimeout();
@@ -194,7 +194,7 @@ public class QueryParser {
         if (cached != null)
             return new QueryParserResult(
                 qryDesc,
-                fromQuery(qry),
+                queryParameters(qry),
                 null,
                 cached.parametersMeta(),
                 cached.select(),
@@ -275,7 +275,7 @@ public class QueryParser {
 
             return new QueryParserResult(
                 newPlanKey,
-                fromQuery(newQry),
+                queryParameters(newQry),
                 remainingQry,
                 Collections.emptyList(), // Currently none of native statements supports parameters.
                 null,
@@ -415,7 +415,7 @@ public class QueryParser {
 
                 return new QueryParserResult(
                     newQryDesc,
-                    fromQuery(newQry),
+                    queryParameters(newQry),
                     remainingQry,
                     paramsMeta,
                     null,
@@ -428,7 +428,7 @@ public class QueryParser {
 
                 return new QueryParserResult(
                     newQryDesc,
-                    fromQuery(newQry),
+                    queryParameters(newQry),
                     remainingQry,
                     paramsMeta,
                     null,
@@ -441,7 +441,7 @@ public class QueryParser {
 
                 return new QueryParserResult(
                     newQryDesc,
-                    fromQuery(newQry),
+                    queryParameters(newQry),
                     remainingQry,
                     paramsMeta,
                     null,
@@ -570,7 +570,7 @@ public class QueryParser {
 
             return new QueryParserResult(
                 newQryDesc,
-                fromQuery(newQry),
+                queryParameters(newQry),
                 remainingQry,
                 paramsMeta,
                 select,
