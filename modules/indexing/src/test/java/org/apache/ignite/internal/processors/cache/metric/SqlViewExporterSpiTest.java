@@ -23,8 +23,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -36,10 +40,16 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** */
 public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
@@ -241,6 +251,50 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(srvcCfg.getName(), sysView.get(0));
         assertEquals(DummyService.class.getName(), sysView.get(2));
         assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get(4));
+    }
+
+    /** */
+    @Test
+    public void testTransactions() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        try {
+            AtomicInteger cntr = new AtomicInteger();
+
+            GridTestUtils.runMultiThreadedAsync(() -> {
+                try (Transaction tx = ignite.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 5, "xxx");
+
+            GridTestUtils.runMultiThreadedAsync(() -> {
+                try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                    cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 5, "yyy");
+
+            List<List<?>> txs = execute(ignite, "SELECT * FROM SYS.TRANSACTIONS");
+
+            assertEquals(10, txs.size());
+        }
+        finally {
+            latch.countDown();
+        }
     }
 
     /**

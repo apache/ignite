@@ -342,7 +342,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.LOCAL_CACHE_GROUPS_IO",
                 "SYS.LOCAL_SQL_RUNNING_QUERIES",
                 "SYS.NODE_ATTRIBUTES",
-                "SYS.TABLES"
+                "SYS.TABLES",
+                "SYS.TRANSACTIONS"
             ))
         );
     }
@@ -754,7 +755,26 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TASKS.JOB_ID.null.2147483647",
                 "SYS.TASKS.AFFINITY_PARTITION_ID.null.10",
                 "SYS.TASKS.TASK_CLASS_NAME.null.2147483647",
-                "SYS.TASKS.EXEC_NAME.null.2147483647"
+                "SYS.TASKS.EXEC_NAME.null.2147483647",
+                "SYS.TRANSACTIONS.NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.STATE.null.2147483647",
+                "SYS.TRANSACTIONS.XID.null.2147483647",
+                "SYS.TRANSACTIONS.LABEL.null.2147483647",
+                "SYS.TRANSACTIONS.START_TIME.null.19",
+                "SYS.TRANSACTIONS.ISOLATION.null.2147483647",
+                "SYS.TRANSACTIONS.CONCURRENCY.null.2147483647",
+                "SYS.TRANSACTIONS.COLOCATED.null.1",
+                "SYS.TRANSACTIONS.DHT.null.1",
+                "SYS.TRANSACTIONS.IMPLICIT.null.1",
+                "SYS.TRANSACTIONS.IMPLICIT_SINGLE.null.1",
+                "SYS.TRANSACTIONS.INTERNAL.null.1",
+                "SYS.TRANSACTIONS.LOCAL.null.1",
+                "SYS.TRANSACTIONS.NEAR.null.1",
+                "SYS.TRANSACTIONS.ONE_PHASE_COMMIT.null.1",
+                "SYS.TRANSACTIONS.SUBJECT_ID.null.2147483647",
+                "SYS.TRANSACTIONS.SYSTEM.null.1",
+                "SYS.TRANSACTIONS.THREAD_ID.null.19",
+                "SYS.TRANSACTIONS.TIMEOUT.null.19"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);

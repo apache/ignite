@@ -333,7 +333,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "SCHEMAS",
             "TABLES",
             "TASKS",
-            "SERVICES"
+            "SERVICES",
+            "TRANSACTIONS"
         ));
 
         Set<String> actViews = new HashSet<>();

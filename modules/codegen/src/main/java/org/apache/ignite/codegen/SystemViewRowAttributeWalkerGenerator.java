@@ -41,6 +41,7 @@ import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.SystemViewLocal;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 
@@ -73,6 +74,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CacheView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
     }
 
     /**

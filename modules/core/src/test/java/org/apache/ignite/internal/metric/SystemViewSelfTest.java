@@ -24,10 +24,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -47,16 +50,26 @@ import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -385,6 +398,84 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals("0", t.userVersion());
 
             barrier.await();
+        }
+    }
+
+    /** */
+    @Test
+    public void testTransactions() throws Exception {
+        try(IgniteEx g = startGrid(0)) {
+            IgniteCache<Integer, Integer> cache = g.createCache(new CacheConfiguration<Integer, Integer>("c")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+            SystemView<TransactionView> txs = g.context().systemView().view(TXS_MON_LIST);
+
+            assertEquals(0, F.size(txs.iterator(), alwaysTrue()));
+
+            CountDownLatch latch = new CountDownLatch(1);
+
+            try {
+                AtomicInteger cntr = new AtomicInteger();
+
+                GridTestUtils.runMultiThreadedAsync(() -> {
+                    try(Transaction tx = g.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                        latch.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, 5, "xxx");
+
+                boolean res = waitForCondition(() -> txs.size() == 5, 5_000L);
+
+                assertTrue(res);
+
+                TransactionView txv = txs.iterator().next();
+
+                assertEquals(g.localNode().id(), txv.nodeId());
+                assertEquals(txv.isolation(), REPEATABLE_READ);
+                assertEquals(txv.concurrency(), PESSIMISTIC);
+                assertEquals(txv.state(), ACTIVE);
+                assertNotNull(txv.xid());
+                assertFalse(txv.system());
+                assertFalse(txv.implicit());
+                assertFalse(txv.implicitSingle());
+                assertTrue(txv.near());
+                assertFalse(txv.dht());
+                assertTrue(txv.colocated());
+                assertTrue(txv.local());
+                assertEquals("test", txv.label());
+                assertFalse(txv.onePhaseCommit());
+                assertFalse(txv.internal());
+                assertEquals(0, txv.timeout());
+                assertTrue(txv.startTime() <= System.currentTimeMillis());
+
+                GridTestUtils.runMultiThreadedAsync(() -> {
+                    try(Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                        latch.await();
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, 5, "xxx");
+
+                res = waitForCondition(() -> txs.size() == 10, 5_000L);
+
+                assertTrue(res);
+            }
+            finally {
+                latch.countDown();
+            }
+
+            boolean res = waitForCondition(() -> txs.size() == 0, 5_000L);
+
+            assertTrue(res);
         }
     }
 
