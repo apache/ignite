@@ -506,7 +506,6 @@ public interface IgniteMXBean {
     @MXBeanParametersDescriptions("Metrics registry.")
     public void resetMetrics(String registry);
 
-
     /**
      * Gets cluster read-only mode status.
      *
