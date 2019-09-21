@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -445,6 +448,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         // Catch Throwable to secure against any errors resulted from
         // corrupted class definitions or other user errors.
         catch (Exception e) {
+            if (X.hasCause(e, TimeoutException.class))
+                throw e;
+
             throw new ClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
         }
 
@@ -581,6 +587,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         IgniteCheckedException err = null;
 
+        TimeoutException te = null;
+
         for (UUID nodeId : nodeListCp) {
             if (nodeId.equals(ctx.discovery().localNode().id()))
                 // Skip local node as it is already used as parent class loader.
@@ -598,7 +606,14 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
 
             try {
-                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
+                GridDeploymentResponse res = null;
+
+                try {
+                    res = comm.sendResourceRequest(path, ldrId, node, endTime);
+                }
+                catch (TimeoutException e) {
+                    te = e;
+                }
 
                 if (res == null) {
                     String msg = "Failed to send class-loading request to node (is node alive?) [node=" +
@@ -657,12 +672,28 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
         }
 
+        if (te != null) {
+            err.addSuppressed(te);
+
+            throw new IgniteException(err);
+        }
+
         throw new ClassNotFoundException("Failed to peer load class [class=" + name + ", nodeClsLdrs=" +
             nodeLdrMapCp + ", parentClsLoader=" + getParent() + ']', err);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public InputStream getResourceAsStream(String name) {
+        try {
+            return getResourceAsStreamEx(name);
+        }
+        catch (TimeoutException ignore) {
+            return null;
+        }
+    }
+
+    /** */
+    @Nullable public InputStream getResourceAsStreamEx(String name) throws TimeoutException {
         assert !Thread.holdsLock(mux);
 
         if (byteMap != null && name.endsWith(".class")) {
@@ -702,7 +733,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param name Resource name.
      * @return InputStream for resource or {@code null} if resource could not be found.
      */
-    @Nullable private InputStream sendResourceRequest(String name) {
+    @Nullable private InputStream sendResourceRequest(String name) throws TimeoutException {
         assert !Thread.holdsLock(mux);
 
         long endTime = computeEndTime(p2pTimeout);

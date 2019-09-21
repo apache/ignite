@@ -33,6 +33,8 @@ import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
 import org.apache.ignite.internal.GridMBeansTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
+import org.apache.ignite.internal.GridPeerDeploymentRetryModifiedTest;
+import org.apache.ignite.internal.GridPeerDeploymentRetryTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
 import org.apache.ignite.internal.GridReduceSelfTest;
 import org.apache.ignite.internal.GridReleaseTypeSelfTest;
@@ -85,12 +87,16 @@ import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
+import org.apache.ignite.internal.util.collection.IntHashMapTest;
+import org.apache.ignite.internal.util.collection.IntRWHashMapTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.MarshallerContextSelfTest;
@@ -191,6 +197,9 @@ import org.junit.runners.Suite;
 
     WALRecordTest.class,
 
+    GridPeerDeploymentRetryTest.class,
+    GridPeerDeploymentRetryModifiedTest.class,
+
     // Basic DB data structures.
     BPlusTreeSelfTest.class,
     BPlusTreeFakeReuseSelfTest.class,
@@ -201,6 +210,8 @@ import org.junit.runners.Suite;
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,
     ImmutableIntSetTest.class,
+    IntHashMapTest.class,
+    IntRWHashMapTest.class,
 
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,
@@ -237,6 +248,8 @@ import org.junit.runners.Suite;
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
     DistributedMetaStorageHistoryCacheTest.class,
+    DmsDataWriterWorkerTest.class,
+    InMemoryCachedDistributedMetaStorageBridgeTest.class,
     DistributedConfigurationInMemoryTest.class,
     BaselineAutoAdjustMXBeanTest.class,
 

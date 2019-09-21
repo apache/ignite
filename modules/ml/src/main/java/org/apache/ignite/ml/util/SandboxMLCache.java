@@ -19,9 +19,12 @@ package org.apache.ignite.ml.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.UUID;
@@ -64,6 +67,38 @@ public class SandboxMLCache {
 
         return cache;
     }
+
+
+    /**
+     * Loads dataset as a list of rows.
+     *
+     * @param dataset The chosen dataset.
+     * @return List of rows.
+     * @throws IOException If file not found.
+     */
+    public List<String> loadDataset(MLSandboxDatasets dataset) throws IOException {
+        List<String> res = new ArrayList<>();
+
+        String fileName = dataset.getFileName();
+
+        File file = IgniteUtils.resolveIgnitePath(fileName);
+
+        if (file == null)
+            throw new FileNotFoundException(fileName);
+
+        Scanner scanner = new Scanner(file);
+
+        if (dataset.hasHeader() && scanner.hasNextLine())
+            scanner.nextLine();
+
+        while (scanner.hasNextLine()) {
+            String row = scanner.nextLine();
+            res.add(row);
+        }
+
+        return res;
+    }
+
 
     /**
      * Fills cache with data and returns it.

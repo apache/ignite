@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 
@@ -29,7 +32,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class BinarizationPreprocessor<K, V> implements Preprocessor<K, V> {
+public final class BinarizationPreprocessor<K, V> implements Preprocessor<K, V>, DeployableObject {
     /** */
     private static final long serialVersionUID = 6877811577892621239L;
 
@@ -71,5 +74,10 @@ public class BinarizationPreprocessor<K, V> implements Preprocessor<K, V> {
     /** Get the threshold parameter. */
     public double getThreshold() {
         return threshold;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

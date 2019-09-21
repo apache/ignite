@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Decision tree conditional (non-leaf) node.
  */
-public class DecisionTreeConditionalNode implements DecisionTreeNode {
+public final class DecisionTreeConditionalNode implements DecisionTreeNode {
     /** */
     private static final long serialVersionUID = 981630737007982172L;
 

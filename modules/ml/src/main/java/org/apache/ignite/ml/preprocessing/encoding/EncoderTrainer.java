@@ -76,7 +76,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 }
                 return new EncoderPartitionData()
                     .withCategoryFrequencies(categoryFrequencies);
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
             switch (encoderType) {
                 case ONE_HOT_ENCODER:
