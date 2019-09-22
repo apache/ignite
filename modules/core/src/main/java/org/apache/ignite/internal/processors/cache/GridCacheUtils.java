@@ -1153,6 +1153,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean isIgfsCache(@Nullable String cacheName) {
+        return IgfsUtils.isIgfsCache(cacheName);
+    }
+
+    /**
      * Convert TTL to expire time.
      *
      * @param ttl TTL.

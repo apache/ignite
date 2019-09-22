@@ -387,6 +387,14 @@ public class IgfsUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean isIgfsCache(@Nullable String cacheName) {
+        return matchIgfsCacheName(cacheName);
+    }
+
+    /**
      * Prepare cache configuration if this is IGFS meta or data cache.
      *
      * @param cfg Configuration.
