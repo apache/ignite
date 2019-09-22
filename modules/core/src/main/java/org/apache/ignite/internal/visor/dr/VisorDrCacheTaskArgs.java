@@ -20,7 +20,10 @@ package org.apache.ignite.internal.visor.dr;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 public class VisorDrCacheTaskArgs extends IgniteDataTransferObject {
     /** Serial version uid. */
@@ -71,6 +74,10 @@ public class VisorDrCacheTaskArgs extends IgniteDataTransferObject {
     private int action;
     /** Remote data center id. */
     private byte remoteDataCenterId;
+    /** Cache names map. */
+    private Map<String, UUID> cacheNamesMap;
+    /** Action coordinator. */
+    private UUID actionCoordinator;
 
     /** */
     public String getRegex() {
@@ -112,6 +119,16 @@ public class VisorDrCacheTaskArgs extends IgniteDataTransferObject {
         return remoteDataCenterId;
     }
 
+    /** */
+    public Map<String, UUID> getCacheNamesMap() {
+        return cacheNamesMap;
+    }
+
+    /** */
+    public UUID getActionCoordinator() {
+        return actionCoordinator;
+    }
+
     /**
      * Default constructor.
      */
@@ -128,7 +145,9 @@ public class VisorDrCacheTaskArgs extends IgniteDataTransferObject {
         int senderGroup,
         String senderGroupName,
         int action,
-        byte remoteDataCenterId
+        byte remoteDataCenterId,
+        Map<String, UUID> cacheNamesMap,
+        UUID actionCoordinator
     ) {
         this.regex = regex;
         this.config = config;
@@ -138,6 +157,8 @@ public class VisorDrCacheTaskArgs extends IgniteDataTransferObject {
         this.senderGroupName = senderGroupName;
         this.action = action;
         this.remoteDataCenterId = remoteDataCenterId;
+        this.cacheNamesMap = cacheNamesMap;
+        this.actionCoordinator = actionCoordinator;
     }
 
     /** {@inheritDoc} */
@@ -150,6 +171,8 @@ public class VisorDrCacheTaskArgs extends IgniteDataTransferObject {
         out.writeObject(senderGroupName);
         out.writeInt(action);
         out.writeByte(remoteDataCenterId);
+        U.writeMap(out, cacheNamesMap);
+        U.writeUuid(out, actionCoordinator);
     }
 
     /** {@inheritDoc} */
@@ -163,5 +186,7 @@ public class VisorDrCacheTaskArgs extends IgniteDataTransferObject {
         senderGroupName = (String)in.readObject();
         action = in.readInt();
         remoteDataCenterId = in.readByte();
+        cacheNamesMap = U.readMap(in);
+        actionCoordinator = U.readUuid(in);
     }
 }
