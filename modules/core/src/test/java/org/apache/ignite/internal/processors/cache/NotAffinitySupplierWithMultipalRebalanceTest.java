@@ -49,6 +49,10 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED
 public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbstractTest {
     /** Start cluster nodes. */
     public static final int NODES_CNT = 3;
+    /** Count of backup partitions. */
+    public static final int BACKUPS = 2;
+    /** New nodes count. */
+    public static final int NEW_NODES = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -60,7 +64,7 @@ public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbst
                     .setPersistenceEnabled(true)))
             .setCacheConfiguration(
                 new CacheConfiguration(DEFAULT_CACHE_NAME)
-                    .setBackups(2)
+                    .setBackups(BACKUPS)
                     .setAffinity(new TestAffinity(4)));
     }
 
@@ -82,7 +86,7 @@ public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbst
             TestRecordingCommunicationSpi testCommunicationSpi0 = (TestRecordingCommunicationSpi)ignite0
                 .configuration().getCommunicationSpi();
 
-            laodData(ignite0, DEFAULT_CACHE_NAME);
+            loadData(ignite0, DEFAULT_CACHE_NAME);
 
             awaitPartitionMapExchange();
 
@@ -159,7 +163,7 @@ public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbst
      * @param ignite Ignite.
      * @param cacheName Cache name.
      */
-    private void laodData(Ignite ignite, String cacheName) {
+    private void loadData(Ignite ignite, String cacheName) {
         try (IgniteDataStreamer streamer = ignite.dataStreamer(cacheName)) {
             streamer.allowOverwrite(true);
 
@@ -170,6 +174,9 @@ public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbst
 
     /** The test's affinity which mowing all partitions. */
     private static class TestAffinity extends RendezvousAffinityFunction {
+        /** Count of whole partitions copy - primary and backups. */
+        private static int WHOLE_PARTITIONS_COPY = BACKUPS + 1;
+
         /**
          * @param parts Partitions.
          */
@@ -180,23 +187,26 @@ public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public List<ClusterNode> assignPartition(int part, List<ClusterNode> nodes, int backups,
             @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
-            if (backups == 2 && nodes.size() == NODES_CNT + 3) {
-                ClusterNode[] list = new ClusterNode[3];
+            if (backups == BACKUPS && nodes.size() == NODES_CNT + NEW_NODES) {
+                ClusterNode[] list = new ClusterNode[WHOLE_PARTITIONS_COPY];
+
+                int ownerPosition = part % WHOLE_PARTITIONS_COPY;
 
                 for (ClusterNode node : nodes) {
                     if (node.consistentId().equals("new_1"))
-                        list[part % 3] = node;
+                        list[ownerPosition] = node;
                     else if (node.consistentId().equals("new_2"))
-                        list[part % 3] = node;
+                        list[ownerPosition] = node;
                     else if (node.consistentId().equals("new_3"))
-                        list[part % 3] = node;
+                        list[ownerPosition] = node;
                 }
 
-                if (list[0] != null && list[1] != null && list[2] != null)
+                if (isNodesCorrectAssigned(list))
                     return Arrays.asList(list);
 
-            } else if (backups == 2 && nodes.size() == NODES_CNT) {
-                ClusterNode[] list = new ClusterNode[3];
+            }
+            else if (backups == BACKUPS && nodes.size() == NODES_CNT) {
+                ClusterNode[] list = new ClusterNode[WHOLE_PARTITIONS_COPY];
 
                 for (ClusterNode node : nodes) {
                     if (node.consistentId().equals("cache.NotAffinitySupplierWithMultipalRebalanceTest2"))
@@ -207,11 +217,24 @@ public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbst
                         list[2] = node;
                 }
 
-                if (list[0] != null && list[1] != null && list[2] != null)
+                if (isNodesCorrectAssigned(list))
                     return Arrays.asList(list);
             }
 
             return super.assignPartition(part, nodes, backups, neighborhoodCache);
+        }
+
+        /**
+         * @param list List of assigned nodes.
+         * @return True is all nodes assignment, false otherwise.
+         */
+        private boolean isNodesCorrectAssigned(ClusterNode[] list) {
+            for (int i = 0; i < list.length; i++) {
+                if (list[i] == null)
+                    return false;
+            }
+
+            return true;
         }
     }
 }
