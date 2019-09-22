@@ -17,55 +17,47 @@
 
 package org.apache.ignite.internal.managers.systemview;
 
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * System view backed by {@code data} {@link Collection}.
+ * System view implementation.
+ * Data stored in the internal {@link ConcurrentMap}.
+ * Owner of the list is responsible for the list fullfill and cleanup.
  */
-public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
-    /** Data backed by this view. */
-    private final Collection<D> data;
-
-    /** Row function. */
-    private final Function<D, R> rowFunc;
+public class SystemViewMap<K, R> extends AbstractSystemView<R> {
+    /** List data */
+    private final ConcurrentMap<K, R> data = new ConcurrentHashMap<>();
 
     /**
      * @param name Name.
      * @param desc Description.
      * @param rowCls Row class.
      * @param walker Walker.
-     * @param data Data.
-     * @param rowFunc Row function.
      */
-    public SystemViewAdapter(String name, String desc, Class<R> rowCls,
-        SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
+    public SystemViewMap(String name, String desc, Class<R> rowCls,
+        SystemViewRowAttributeWalker<R> walker) {
         super(name, desc, rowCls, walker);
-
-        this.data = data;
-        this.rowFunc = rowFunc;
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<R> iterator() {
-        Iterator<D> data = this.data.iterator();
-
-        return new Iterator<R>() {
-            @Override public boolean hasNext() {
-                return data.hasNext();
-            }
-
-            @Override public R next() {
-                return rowFunc.apply(data.next());
-            }
-        };
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
         return data.size();
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<R> iterator() {
+        return data.values().iterator();
+    }
+
+    public void add(K key, R row) {
+        data.put(key, row);
+    }
+
+    public void remove(K key) {
+        data.remove(key);
     }
 }

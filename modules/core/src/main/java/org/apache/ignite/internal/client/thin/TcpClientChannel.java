@@ -75,9 +75,11 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.DEFAULT_VER;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -85,6 +87,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
 class TcpClientChannel implements ClientChannel {
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_4_0,
         V1_2_0,
         V1_1_0, 
         V1_0_0
@@ -94,7 +97,7 @@ class TcpClientChannel implements ClientChannel {
     private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
 
     /** Protocol version agreed with the server. */
-    private ProtocolVersion ver = V1_2_0;
+    private ProtocolVersion ver = DEFAULT_VER;
 
     /** Channel. */
     private final Socket sock;

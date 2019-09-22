@@ -32,6 +32,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+
+import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.THIN;
 
 /**
  * Thin Client connection context.
@@ -76,9 +80,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Max cursors. */
     private final int maxCursors;
 
-    /** Current protocol version. */
-    private ClientListenerProtocolVersion currentVer;
-
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
 
@@ -87,13 +88,14 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /**
      * Ctor.
-     *
-     * @param ctx Kernal context.
+     *  @param ctx Kernal context.
      * @param connId Connection ID.
      * @param maxCursors Max active cursors.
+     * @param ses Network session.
      */
-    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors) {
-        super(ctx, connId);
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors,
+        GridNioSession ses) {
+        super(ctx, connId, ses);
 
         this.maxCursors = maxCursors;
     }
@@ -115,13 +117,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion defaultVersion() {
         return DEFAULT_VER;
-    }
-
-    /**
-     * @return Currently used protocol version.
-     */
-    public ClientListenerProtocolVersion currentVersion() {
-        return currentVer;
     }
 
     /** {@inheritDoc} */
@@ -148,11 +143,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         AuthorizationContext authCtx = authenticate(user, pwd);
 
-        currentVer = ver;
+        version(ver);
 
         handler = new ClientRequestHandler(this, authCtx, ver);
 
         parser = new ClientMessageParser(this, ver);
+
+        connMonList.add(connectionId(), new ClientConnectionView(this, THIN));
     }
 
     /** {@inheritDoc} */

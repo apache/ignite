@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -36,8 +35,10 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
+import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.JDBC;
 
 /**
  * JDBC Connection Context.
@@ -65,13 +66,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
-
-    /** Session. */
-    private final GridNioSession ses;
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -112,9 +110,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
-        super(ctx, connId);
+        super(ctx, connId, ses);
 
-        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 
@@ -136,6 +133,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
 
+        version(ver);
+
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
@@ -146,7 +145,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean skipReducerOnUpdate = false;
 
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
@@ -190,7 +188,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(user, passwd);
+            authenticate(user, passwd);
         }
 
         parser = new JdbcMessageParser(ctx, ver);
@@ -210,9 +208,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, updateBatchSize, actx, ver, this);
+            dataPageScanEnabled, updateBatchSize, authorizationContext(), ver, this);
 
         handler.start();
+
+        connMonList.add(connectionId(), new ClientConnectionView(this, JDBC));
     }
 
     /** {@inheritDoc} */

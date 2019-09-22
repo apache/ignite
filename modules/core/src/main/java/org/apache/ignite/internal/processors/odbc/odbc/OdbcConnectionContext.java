@@ -33,6 +33,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+
+import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.ODBC;
 
 /**
  * ODBC Connection Context.
@@ -98,7 +101,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * @param maxCursors Maximum allowed cursors.
      */
     public OdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId, int maxCursors) {
-        super(ctx, connId);
+        super(ctx, connId, ses);
 
         this.ses = ses;
         this.busyLock = busyLock;
@@ -121,6 +124,8 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
+
+        version(ver);
 
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
@@ -174,6 +179,8 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         parser = new OdbcMessageParser(ctx, ver);
 
         handler.start();
+
+        connMonList.add(connectionId(), new ClientConnectionView(this, ODBC));
     }
 
     /** {@inheritDoc} */
