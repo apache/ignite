@@ -17,6 +17,9 @@
 package org.apache.ignite.internal.commandline.dr.subcommands;
 
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.dr.DrSubCommandsList;
 import org.apache.ignite.internal.visor.dr.VisorDrCacheTaskArgs;
@@ -30,13 +33,14 @@ public class DrResumeCommand extends
 {
     /** {@inheritDoc} */
     @Override protected String visorTaskName() {
-        return "org.gridgain.grid.internal.visor.dr.console.VisorDrCacheTask";
+        throw new UnsupportedOperationException("visorTaskName");
     }
 
     /** {@inheritDoc} */
     @Override public DrCacheCommand.DrCacheArguments parseArguments0(CommandArgIterator argIter) {
         return new DrCacheCommand.DrCacheArguments(
             ".*",
+            Pattern.compile(".*"),
             false,
             false,
             DrCacheCommand.CacheFilter.ALL,
@@ -50,6 +54,12 @@ public class DrResumeCommand extends
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
         return "Warning: this command will resume data center replication for all caches.";
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected VisorDrCacheTaskResult execute0(GridClientConfiguration clientCfg, GridClient client) throws Exception {
+        return DrCacheCommand.execute0(client, arg());
     }
 
     /** {@inheritDoc} */
