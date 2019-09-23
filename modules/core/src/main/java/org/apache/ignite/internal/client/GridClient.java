@@ -31,7 +31,7 @@ import java.util.UUID;
  * can have multiple instances of {@code GridClient} running in the same VM. For
  * information on how to start or stop Grid please refer to {@link GridClientFactory} class.
  * <p>
- * Use following methods to get access to remote cache functionality:
+ * Use the following method to get access to remote cache functionality:
  * <ul>
  * <li>{@link #data(String)}</li>
  * </ul>
