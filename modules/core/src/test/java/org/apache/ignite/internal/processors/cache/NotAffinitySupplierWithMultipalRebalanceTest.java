@@ -49,8 +49,10 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED
 public class NotAffinitySupplierWithMultipalRebalanceTest extends GridCommonAbstractTest {
     /** Start cluster nodes. */
     public static final int NODES_CNT = 3;
+
     /** Count of backup partitions. */
     public static final int BACKUPS = 2;
+
     /** New nodes count. */
     public static final int NEW_NODES = 3;
 
