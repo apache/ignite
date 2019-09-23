@@ -449,7 +449,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
 
             // Inject resources.
-            SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, taskCls, job, ses, jobCtx));
+            if (SecurityUtils.isSandboxEnabled())
+                SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, taskCls, job, ses, jobCtx));
+            else
+                ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
@@ -646,7 +649,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         ClassLoader ctxLdr = curThread.getContextClassLoader();
 
         try {
-            SecurityUtils.doPrivileged(() -> curThread.setContextClassLoader(ldr));
+            setCtxClassLoader(curThread, ldr);
 
             try {
                 if (internal && ctx.config().isPeerClassLoadingEnabled())
@@ -670,8 +673,16 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         }
         finally {
             // Set the original class loader back.
-            SecurityUtils.doPrivileged(() -> curThread.setContextClassLoader(ctxLdr));
+            setCtxClassLoader(curThread, ctxLdr);
         }
+    }
+
+    /** */
+    private void setCtxClassLoader(final Thread thread, final ClassLoader ldr) {
+        if (SecurityUtils.isSandboxEnabled())
+            SecurityUtils.doPrivileged(() -> thread.setContextClassLoader(ldr));
+        else
+            thread.setContextClassLoader(ldr);
     }
 
     /**

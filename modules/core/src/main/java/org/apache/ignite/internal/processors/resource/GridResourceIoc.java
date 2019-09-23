@@ -190,7 +190,9 @@ public class GridResourceIoc {
         assert target != null;
         assert annCls != null;
 
-        ClassDescriptor desc = SecurityUtils.doPrivileged(() -> descriptor(dep, target.getClass()));
+        ClassDescriptor desc = SecurityUtils.isSandboxEnabled()
+            ? SecurityUtils.doPrivileged(() -> descriptor(dep, target.getClass()))
+            : descriptor(dep, target.getClass());
 
         return desc.recursiveFields().length > 0 || desc.annotatedMembers(annCls) != null;
     }
@@ -207,7 +209,9 @@ public class GridResourceIoc {
         assert target != null;
         assert annSet != null;
 
-        return SecurityUtils.doPrivileged(() -> descriptor(dep, target.getClass()).isAnnotated(annSet) != 0);
+        return SecurityUtils.isSandboxEnabled()
+            ? SecurityUtils.doPrivileged(() -> descriptor(dep, target.getClass()).isAnnotated(annSet) != 0)
+            : descriptor(dep, target.getClass()).isAnnotated(annSet) != 0;
     }
 
     /**

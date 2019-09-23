@@ -88,7 +88,7 @@ public class TestSecurityData {
 
     /** */
     public TestSecurityData sandboxPermissions(Permissions perms) {
-        this.sandboxPerms = perms;
+        sandboxPerms = perms;
 
         return this;
     }

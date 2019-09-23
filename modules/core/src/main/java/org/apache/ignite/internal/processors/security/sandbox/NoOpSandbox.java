@@ -63,4 +63,9 @@ public class NoOpSandbox implements IgniteSandbox {
     @Override public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r) {
         return r;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean enabled() {
+        return false;
+    }
 }

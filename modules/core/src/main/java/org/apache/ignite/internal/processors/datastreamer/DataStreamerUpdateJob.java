@@ -168,5 +168,4 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         if (ctx.security().enabled())
             ctx.security().authorize(cacheName, perm);
     }
-
 }

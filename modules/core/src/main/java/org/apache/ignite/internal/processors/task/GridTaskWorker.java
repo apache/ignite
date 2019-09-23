@@ -512,11 +512,18 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
-            // Inject resources.
-            SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, task, ses, balancer, mapper));
+            final Map<? extends ComputeJob, ClusterNode> mappedJobs;
 
-            Map<? extends ComputeJob, ClusterNode> mappedJobs = SecurityUtils.doPrivileged(
-                () -> mappedJobs(shuffledNodes));
+            if (SecurityUtils.isSandboxEnabled()) {
+                SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, task, ses, balancer, mapper));
+
+                mappedJobs = SecurityUtils.doPrivileged(() -> mappedJobs(shuffledNodes));
+            }
+            else {
+                ctx.resource().inject(dep, task, ses, balancer, mapper);
+
+                mappedJobs = mappedJobs(shuffledNodes);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
@@ -869,7 +876,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                 final GridJobResultImpl jobRslt = jobRes;
 
-                ComputeJobResultPolicy plc = SecurityUtils.doPrivileged(() -> result(jobRslt, results));
+                ComputeJobResultPolicy plc = SecurityUtils.isSandboxEnabled()
+                    ? SecurityUtils.doPrivileged(() -> result(jobRslt, results))
+                    : result(jobRslt, results);
 
                 if (plc == null) {
                     String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
@@ -1153,7 +1162,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         try {
             try {
                 // Reduce results.
-                reduceRes = SecurityUtils.doPrivileged(() -> reduceRes(results));
+                reduceRes = SecurityUtils.isSandboxEnabled()
+                    ? SecurityUtils.doPrivileged(() -> reduceRes(results))
+                    : reduceRes(results);
             }
             finally {
                 synchronized (mux) {
@@ -1402,8 +1413,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     try {
                         MarshallerUtils.jobReceiverVersion(node.version());
 
-                        req = SecurityUtils.doPrivileged(
-                            () -> gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout));
+                        req = SecurityUtils.isSandboxEnabled() ? SecurityUtils.doPrivileged(
+                            () -> gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout))
+                            : gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout);
                     }
                     finally {
                         MarshallerUtils.jobReceiverVersion(null);

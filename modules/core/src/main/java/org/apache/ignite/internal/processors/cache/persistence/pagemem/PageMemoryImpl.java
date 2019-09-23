@@ -871,7 +871,10 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long actualPageId = 0;
 
                 try {
-                    SecurityUtils.doPrivileged(() -> storeMgr.read(grpId, pageId, buf));
+                    if (SecurityUtils.isSandboxEnabled())
+                        SecurityUtils.doPrivileged(() -> storeMgr.read(grpId, pageId, buf));
+                    else
+                        storeMgr.read(grpId, pageId, buf);
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 

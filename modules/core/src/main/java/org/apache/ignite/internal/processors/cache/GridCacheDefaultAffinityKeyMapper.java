@@ -83,7 +83,9 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
             return IgniteUtils.hashCode(key);
 
         try {
-            Object o = SecurityUtils.doPrivileged(() -> reflectCache.firstFieldValue(key));
+            Object o = SecurityUtils.isSandboxEnabled()
+                ? SecurityUtils.doPrivileged(() -> reflectCache.firstFieldValue(key))
+                : reflectCache.firstFieldValue(key);
 
             if (o != null)
                 return o;
