@@ -20,16 +20,18 @@ package org.apache.ignite.ml.math.exceptions.preprocessing;
 import org.apache.ignite.IgniteException;
 
 /**
- * Indicates an unknown categorial feature value for Encoder.
+ * Indicates an illegal label type and value.
  */
-public class UnknownCategorialFeatureValue extends IgniteException {
+public class IllegalLabelTypeException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param unknownStr Categorial value that caused this exception.
+     * @param illegalClass The illegal type.
+     * @param illegalVal The illegal value.
+     * @param desiredClass The desired type.
      */
-    public UnknownCategorialFeatureValue(String unknownStr) {
-        super("This categorial value is unknown for Encoder: " + unknownStr);
+    public IllegalLabelTypeException(Class illegalClass, Object illegalVal, Class desiredClass) {
+        super("The type of label " + illegalClass + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredClass);
     }
 }

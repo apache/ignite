@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValueException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
@@ -172,7 +172,7 @@ public class OneHotEncoderPreprocessorTest {
      *
      * The reason is missed information in encodingValues.
      *
-     * @see UnknownCategorialFeatureValue
+     * @see UnknownCategorialFeatureValueException
      */
     @Test
     public void testApplyWithUnknownGategorialValues() {
@@ -219,7 +219,8 @@ public class OneHotEncoderPreprocessorTest {
                 assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
 
             fail("UnknownCategorialFeatureValue");
-        } catch (UnknownCategorialFeatureValue e) {
+        }
+        catch (UnknownCategorialFeatureValueException e) {
             return;
         }
         fail("UnknownCategorialFeatureValue");

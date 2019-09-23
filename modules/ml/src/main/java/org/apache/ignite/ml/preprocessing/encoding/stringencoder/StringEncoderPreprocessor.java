@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValueException;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
@@ -82,9 +82,9 @@ public final class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
                 else if (encodingValues[i].containsKey(tmpObj))
                     res[i] = encodingValues[i].get(tmpObj);
                 else
-                    throw new UnknownCategorialFeatureValue(tmpObj.toString());
+                    throw new UnknownCategorialFeatureValueException(tmpObj.toString());
             } else
-                res[i] = (double) tmpObj;
+                res[i] = (double)tmpObj; // TODO: should be handled if contains String with categorial feature but wasn't in handled indices
         }
         return new LabeledVector(VectorUtils.of(res), tmp.label());
     }

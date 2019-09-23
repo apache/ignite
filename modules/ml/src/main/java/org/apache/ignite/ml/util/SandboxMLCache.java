@@ -154,12 +154,109 @@ public class SandboxMLCache {
     /**
      * Fills cache with data and returns it.
      *
+     * @param dataset The chosen dataset.
+     * @return Filled Ignite Cache.
+     * @throws FileNotFoundException If file not found.
+     */
+    public IgniteCache<Integer, Object[]> fillObjectCacheWith(MLSandboxDatasets dataset) throws FileNotFoundException {
+
+        IgniteCache<Integer, Object[]> cache = getCache2();
+
+        String fileName = dataset.getFileName();
+
+        File file = IgniteUtils.resolveIgnitePath(fileName);
+
+        if (file == null)
+            throw new FileNotFoundException(fileName);
+
+        Scanner scanner = new Scanner(file);
+
+        int cnt = 0;
+        while (scanner.hasNextLine()) {
+            String row = scanner.nextLine();
+            if (dataset.hasHeader() && cnt == 0) {
+                cnt++;
+                continue;
+            }
+
+            String[] cells = row.split(dataset.getSeparator());
+
+            // TODO_ZALESLAW: for debug purposes
+            Object[] res = new Object[cells.length];
+
+            if ("p".equals(cells[0]))
+                res[0] = 0.0;
+            else
+                res[0] = 1.0;
+
+            for (int i = 1; i < cells.length; i++)
+                res[i] = cells[i];
+            // TODO_ZALESLAW: for debug purposes
+
+            cache.put(cnt++, res);
+        }
+        return cache;
+
+    }
+
+    /**
+     * Fills cache with data and returns it.
+     *
+     * @param dataset The chosen dataset.
+     * @return Filled Ignite Cache.
+     * @throws FileNotFoundException If file not found.
+     */
+    public IgniteCache<Integer, Object[]> fillObjectCacheWith2(MLSandboxDatasets dataset) throws FileNotFoundException {
+
+        IgniteCache<Integer, Object[]> cache = getCache2();
+
+        String fileName = dataset.getFileName();
+
+        File file = IgniteUtils.resolveIgnitePath(fileName);
+
+        if (file == null)
+            throw new FileNotFoundException(fileName);
+
+        Scanner scanner = new Scanner(file);
+
+        int cnt = 0;
+        while (scanner.hasNextLine()) {
+            String row = scanner.nextLine();
+            if (dataset.hasHeader() && cnt == 0) {
+                cnt++;
+                continue;
+            }
+
+            String[] cells = row.split(dataset.getSeparator());
+            cache.put(cnt++, cells);
+        }
+        return cache;
+
+    }
+
+    /**
+     * Fills cache with data and returns it.
+     *
      * @return Filled Ignite Cache.
      */
     private IgniteCache<Integer, Vector> getCache() {
 
         CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TUTORIAL_" + UUID.randomUUID());
+        cacheConfiguration.setName("ML_EXAMPLE_" + UUID.randomUUID());
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
+
+        return ignite.createCache(cacheConfiguration);
+    }
+
+    /**
+     * Fills cache with data and returns it.
+     *
+     * @return Filled Ignite Cache.
+     */
+    private IgniteCache<Integer, Object[]> getCache2() {
+
+        CacheConfiguration<Integer, Object[]> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("ML_EXAMPLE_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
 
         return ignite.createCache(cacheConfiguration);

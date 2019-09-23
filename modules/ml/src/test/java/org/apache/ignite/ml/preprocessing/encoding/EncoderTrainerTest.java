@@ -26,7 +26,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValueException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -126,7 +126,8 @@ public class EncoderTrainerTest extends TrainerTest {
         try {
             preprocessor.apply(7, new DenseVector(new Serializable[]{"Monday", "September"})).features().asArray();
             fail("UnknownCategorialFeatureValue");
-        } catch (UnknownCategorialFeatureValue e) {
+        }
+        catch (UnknownCategorialFeatureValueException e) {
             return;
         }
         fail("UnknownCategorialFeatureValue");
