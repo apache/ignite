@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -69,6 +70,7 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
      *
      * @throws Exception In case of any exception.
      */
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-24138")
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "10")
     public void testAffinityProcessor() throws Exception {
