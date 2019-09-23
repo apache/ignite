@@ -36,9 +36,12 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_SYS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /** */
@@ -242,6 +245,31 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(DummyService.class.getName(), sysView.get(2));
         assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get(4));
     }
+
+    /** */
+    @Test
+    public void testSchemas() throws Exception {
+        try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
+            SystemView<SqlSchemaView> schemasSysView = g.context().systemView().view(SQL_SCHEMA_SYS_VIEW);
+
+            Set<String> schemaFromSysView = new HashSet<>();
+
+            schemasSysView.forEach(v -> schemaFromSysView.add(v.name()));
+
+            HashSet<String> expSchemas = new HashSet<>(Arrays.asList("MY_SCHEMA", "ANOTHER_SCHEMA", "SYS", "PUBLIC"));
+
+            assertEquals(schemaFromSysView, expSchemas);
+
+            List<List<?>> schemas = execute(g, "SELECT * FROM SYS.SQL_SCHEMAS");
+
+            schemaFromSysView.clear();
+            schemas.forEach(s -> schemaFromSysView.add(s.get(0).toString()));
+
+            assertEquals(schemaFromSysView, expSchemas);
+        }
+    }
+
+    //TODO: add sql.tables, sql.views, sql.column, sql.indexes tests.
 
     /**
      * Execute query on given node.

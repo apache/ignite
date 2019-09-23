@@ -34,6 +34,9 @@ import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
+import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SqlTableView;
+import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
@@ -43,6 +46,7 @@ import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.SystemViewLocal;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
+import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
 
 /**
  * Application for code generation of {@link SystemViewRowAttributeWalker}.
@@ -73,6 +77,10 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CacheView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
+
+        gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(SqlViewView.class, INDEXING_SRC_DIR);
     }
 
     /**

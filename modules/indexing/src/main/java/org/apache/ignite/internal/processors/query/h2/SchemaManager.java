@@ -65,13 +65,36 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SqlTableView;
+import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.index.Index;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
  */
 public class SchemaManager {
+    /** */
+    public static final String SQL_SCHEMA_SYS_VIEW = metricName("sql", "schemas");
+
+    /** */
+    public static final String SQL_SCHEMA_SYS_VIEW_DESC = "SQL schemas";
+
+    /** */
+    public static final String SQL_TBLS_SYS_VIEW = metricName("sql", "tables");
+
+    /** */
+    public static final String SQL_TBLS_SYS_VIEW_DESC = "SQL tables";
+
+    /** */
+    public static final String SQL_VIEWS_SYS_VIEW = metricName("sql", "views");
+
+    /** */
+    public static final String SQL_VIEWS_SYS_VIEW_DESC = "SQL view";
+
     /** Connection manager. */
     private final ConnectionManager connMgr;
 
@@ -107,6 +130,21 @@ public class SchemaManager {
         this.connMgr = connMgr;
 
         log = ctx.log(SchemaManager.class);
+
+        ctx.systemView().registerView(SQL_SCHEMA_SYS_VIEW, SQL_SCHEMA_SYS_VIEW_DESC,
+            SqlSchemaView.class,
+            schemas.values(),
+            SqlSchemaView::new);
+
+        ctx.systemView().registerView(SQL_TBLS_SYS_VIEW, SQL_TBLS_SYS_VIEW_DESC,
+            SqlTableView.class,
+            dataTables.values(),
+            SqlTableView::new);
+
+        ctx.systemView().registerView(SQL_VIEWS_SYS_VIEW, SQL_VIEWS_SYS_VIEW_DESC,
+            SqlViewView.class,
+            systemViews,
+            SqlViewView::new);
     }
 
     /**
