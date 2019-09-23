@@ -325,13 +325,33 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that multiple client events won't fail transactions due to affinity assignment history expiration.
+     * Checks case when number of client events is greater than affinity history size.
      *
      * @throws Exception If failed.
      */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "10")
     public void testMulipleClientLeaveJoin() throws Exception {
+        doTestMulipleClientLeaveJoin();
+    }
+
+    /**
+     * Checks case when number of client events is so big that history consists only from client event versions.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "2")
+    public void testMulipleClientLeaveJoinLinksLimitOverflow() throws Exception {
+        doTestMulipleClientLeaveJoin();
+    }
+
+    /**
+     * Tests that multiple client events won't fail transactions due to affinity assignment history expiration.
+     *
+     * @throws Exception If failed.
+     */
+    public void doTestMulipleClientLeaveJoin() throws Exception {
         Ignite ig = startGrids(2);
 
         ig.cluster().active(true);
