@@ -534,6 +534,10 @@
                                 <title>Metric SPI</title>
                                 <packages>org.apache.ignite.spi.metric*</packages>
                             </group>
+                            <group>
+                                <title>System view SPI</title>
+                                <packages>org.apache.ignite.spi.systemview*</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
