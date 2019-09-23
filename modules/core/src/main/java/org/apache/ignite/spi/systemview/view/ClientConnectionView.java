@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
  * Client connection system view row.
  */
 public class ClientConnectionView {
+    /** Type of the connection. */
     public enum ConnectionType {
         ODBC, JDBC, THIN;
     }
