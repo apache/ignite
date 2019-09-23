@@ -216,7 +216,12 @@ export default class IgniteUiGrid {
         }
     };
 
-    onRowsSelectionChange = debounce((rows, e = {}) => {
+    onRowsSelectionChange = (rows, e = {}) => {
+        this.selectGroupHeaders(this.gridApi.grid.treeBase && this.gridApi.grid.treeBase.tree || []);
+        this.debounceSelectionChange(rows, e);
+    };
+
+    debounceSelectionChange = debounce((rows, e) => {
         if (e.ignore)
             return;
 
@@ -224,7 +229,20 @@ export default class IgniteUiGrid {
 
         if (this.onSelectionChange)
             this.onSelectionChange({ $event: this._selected });
-    });
+    })
+
+    selectGroupHeaders = (rows) => {
+        const groupHeaders = rows.filter((row) => row.row.groupHeader);
+        if (!groupHeaders.length) return;
+
+        groupHeaders.forEach((groupHeader) => {
+            const allChildrenSelected = groupHeader.children.every((child) => {
+                if (child.row.groupHeader) this.selectGroupHeaders(child.children);
+                return child.row.isSelected;
+            });
+            if (groupHeader.row.isSelected !== allChildrenSelected) groupHeader.row.setSelected(allChildrenSelected);
+        });
+    }
 
     onFilterChange = debounce((column) => {
         if (!this.gridApi.selection)
