@@ -15,29 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+package org.apache.ignite.client;
 
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.client.thin.ClientServerError;
 
 /**
- * Cache removeAll request.
+ * Thin client transaction.
  */
-public class ClientCacheRemoveAllRequest extends ClientCacheDataRequest {
+public interface ClientTransaction extends AutoCloseable {
     /**
-     * Constructor.
+     * Commits this transaction.
      *
-     * @param reader Reader.
+     * @throws ClientException If the transaction is already closed or transaction was started by another thread.
+     * @throws ClientServerError If commit failed.
      */
-    public ClientCacheRemoveAllRequest(BinaryRawReader reader) {
-        super(reader);
-    }
+    public void commit() throws ClientServerError, ClientException;
 
-    /** {@inheritDoc} */
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        cache(ctx).removeAll();
+    /**
+     * Rolls back this transaction.
+     *
+     * @throws ClientServerError If rollback failed.
+     */
+    public void rollback() throws ClientServerError, ClientException;
 
-        return super.process(ctx);
-    }
+    /**
+     * Ends the transaction. Transaction will be rolled back if it has not been committed.
+     */
+    @Override public void close();
 }
