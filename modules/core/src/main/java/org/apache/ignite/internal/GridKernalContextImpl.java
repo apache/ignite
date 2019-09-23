@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
@@ -208,6 +209,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridMetricManager metricMgr;
+
+    /** */
+    @GridToStringInclude
+    private GridSystemViewManager sysViewMgr;
 
     /** */
     @GridToStringInclude
@@ -631,6 +636,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             jobMetricsProc = (GridJobMetricsProcessor)comp;
         else if (comp instanceof GridMetricManager)
             metricMgr = (GridMetricManager)comp;
+        else if (comp instanceof GridSystemViewManager)
+            sysViewMgr = (GridSystemViewManager)comp;
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
@@ -785,6 +792,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridMetricManager metric() {
         return metricMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSystemViewManager systemView() {
+        return sysViewMgr;
     }
 
     /** {@inheritDoc} */
