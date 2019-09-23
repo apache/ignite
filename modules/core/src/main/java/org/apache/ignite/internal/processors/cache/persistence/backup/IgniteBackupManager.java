@@ -214,7 +214,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             }
 
             @Override public void onCheckpointBegin(Context ctx) {
-                final FilePageStoreManager pageMgr = (FilePageStoreManager)cctx.pageStore();
+                final FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
                 // TODO move under the checkpoint write lock
                 for (BackupContext bctx0 : backupCtxs.values()) {
@@ -232,7 +232,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
                             assert allocRange != null : "Pages not allocated [pairId=" + pair + ", ctx=" + bctx0 + ']';
 
-                            PageStore store = pageMgr.getStore(pair.getGroupId(), pair.getPartitionId());
+                            PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
 
                             bctx0.partAllocLengths.put(pair,
                                 allocRange.getCurrAllocatedPageCnt() == 0 ? 0L :
@@ -243,7 +243,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                         }
 
                         // Submit all tasks for partitions and deltas processing.
-                        submitTasks(bctx0, pageMgr.workDir());
+                        submitTasks(bctx0, storeMgr.workDir());
 
                         bctx0.started = true;
                     }
@@ -396,14 +396,13 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
 
             CompletableFuture<File> fut0 = CompletableFuture.supplyAsync(
-                bctx.partSuppFactory
-                    .apply(
-                        getPartitionFile(
-                            cacheWorkDir(cacheWorkDir, ccfg),
-                            pair.getPartitionId()),
-                        new File(bctx.backupDir,
-                            cacheDirName(ccfg)),
-                        bctx.partAllocLengths.get(pair)),
+                bctx.partSuppFactory.apply(
+                    getPartitionFile(
+                        cacheWorkDir(cacheWorkDir, ccfg),
+                        pair.getPartitionId()),
+                    new File(bctx.backupDir,
+                        cacheDirName(ccfg)),
+                    bctx.partAllocLengths.get(pair)),
                 bctx.execSvc)
                 .thenApply(file -> {
                     bctx.partDeltaWriters.get(pair).partProcessed = true;
@@ -415,7 +414,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                         assert res;
 
                         // Call the factory which creates tasks for page delta processing.
-                        return bctx.deltaTaskFactory.apply(from,
+                        return bctx.deltaSuppFactory.apply(from,
                             bctx.partDeltaWriters
                                 .get(pair)
                                 .serial)
@@ -717,7 +716,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         /** Factory to create executable tasks for partition delta pages processing. */
         @GridToStringExclude
-        private final IgniteBiClosure<File, FileSerialPageStore, Supplier<File>> deltaTaskFactory;
+        private final IgniteBiClosure<File, FileSerialPageStore, Supplier<File>> deltaSuppFactory;
 
         /** Collection of partition to be backuped. */
         private final Map<Integer, Set<Integer>> parts;
@@ -740,21 +739,21 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             Map<Integer, Set<Integer>> parts,
             ExecutorService execSvc,
             IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory,
-            IgniteBiClosure<File, FileSerialPageStore, Supplier<File>> deltaTaskFactory
+            IgniteBiClosure<File, FileSerialPageStore, Supplier<File>> deltaSuppFactory
         ) {
             A.notNull(name, "Backup name cannot be empty or null");
             A.notNull(backupDir, "You must secify correct backup directory");
             A.ensure(backupDir.isDirectory(), "Specified path is not a directory");
             A.notNull(execSvc, "Executor service must be not null");
             A.notNull(partSuppFactory, "Factory which procudes backup tasks to execute must be not null");
-            A.notNull(deltaTaskFactory, "Factory which processes delta pages storage must be not null");
+            A.notNull(deltaSuppFactory, "Factory which processes delta pages storage must be not null");
 
             this.name = name;
             this.backupDir = backupDir;
             this.parts = parts;
             this.execSvc = execSvc;
             this.partSuppFactory = partSuppFactory;
-            this.deltaTaskFactory = deltaTaskFactory;
+            this.deltaSuppFactory = deltaSuppFactory;
 
             result.listen(f -> {
                 if (f.error() != null)
