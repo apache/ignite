@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -145,6 +146,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean skipReducerOnUpdate = false;
 
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
@@ -188,7 +190,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            authenticate(user, passwd);
+            actx = authenticate(user, passwd);
         }
 
         parser = new JdbcMessageParser(ctx, ver);
@@ -208,7 +210,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, updateBatchSize, authorizationContext(), ver, this);
+            dataPageScanEnabled, updateBatchSize, actx, ver, this);
 
         handler.start();
 
