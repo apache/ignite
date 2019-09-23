@@ -26,13 +26,14 @@ import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessorTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.internal.visor.VisorCacheRebalanceCollectorTaskSelfTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.plugin.PluginNodeValidationTest;
-import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
+import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.jetbrains.annotations.Nullable;
@@ -66,6 +67,7 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(FailureHandlingConfigurationTest.class);
         suite.addTestSuite(SystemWorkersBlockingTest.class);
         suite.addTestSuite(CheckpointReadLockFailureTest.class);
+        suite.addTestSuite(PdsConsistentIdProcessorTest.class);
 
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridCommandHandlerClusterByClassTest.class);
