@@ -135,13 +135,12 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         if (settings == null) {
             settings = prepareNewSettings();
 
-            if (!settings.isCompatible()) {
-                if (log.isInfoEnabled())
-                    log.info("Consistent ID used for local node is [" + settings.consistentId() + "] " +
-                        "according to persistence data storage folders");
-
+            if (!settings.isCompatible())
                 ctx.discovery().consistentId(settings.consistentId());
-            }
+
+            if (log.isInfoEnabled())
+                log.info("Consistent ID used for local node is [" + settings.consistentId() + "] " +
+                    "according to persistence data storage folders");
         }
         return settings;
     }
