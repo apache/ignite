@@ -427,7 +427,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(cliConn.localAddress().getHostName(), cliConn.remoteAddress().getHostName());
                 assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                     cliConn.localAddress().getPort());
-                assertEquals(cliConn.version(), ClientConnectionContext.DEFAULT_VER.asString());
+                assertEquals(cliConn.version(), ClientConnectionContext.VER_1_2_0.asString());
 
                 try (Connection conn =
                          new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {

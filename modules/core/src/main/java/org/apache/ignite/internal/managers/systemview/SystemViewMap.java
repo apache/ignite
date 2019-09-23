@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
  * Owner of the list is responsible for the list fullfill and cleanup.
  */
 public class SystemViewMap<K, R> extends AbstractSystemView<R> {
-    /** List data */
+    /** List data. */
     private final ConcurrentMap<K, R> data = new ConcurrentHashMap<>();
 
     /**

@@ -135,7 +135,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls)));
     }
 
-    /** Puts view to the registry and notifies listeners */
+    /** Puts view to the registry and notifies listeners. */
     private void doRegister(String name, SystemView sysView) {
         SystemView<?> old = systemViews.putIfAbsent(name, sysView);
 

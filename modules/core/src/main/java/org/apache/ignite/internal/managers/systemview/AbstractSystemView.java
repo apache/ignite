@@ -22,7 +22,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 /**
- *
+ * Base class for a {@link SystemView} implementations.
  */
 abstract class AbstractSystemView<R> implements SystemView<R> {
     /** Name of the view. */
@@ -31,7 +31,7 @@ abstract class AbstractSystemView<R> implements SystemView<R> {
     /** Description of the view. */
     private final String desc;
 
-    /** Class of the row */
+    /** Class of the row. */
     private final Class<R> rowCls;
 
     /**
