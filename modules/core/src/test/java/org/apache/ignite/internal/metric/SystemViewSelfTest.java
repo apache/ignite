@@ -43,7 +43,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -66,6 +65,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
@@ -427,7 +427,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(cliConn.localAddress().getHostName(), cliConn.remoteAddress().getHostName());
                 assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                     cliConn.localAddress().getPort());
-                assertEquals(cliConn.version(), ClientConnectionContext.VER_1_2_0.asString());
+                assertEquals(cliConn.version(), DEFAULT_VER.asString());
 
                 try (Connection conn =
                          new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {

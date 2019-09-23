@@ -82,10 +82,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     private final int maxCursors;
 
     /** Message parser. */
-    private JdbcMessageParser parser = null;
+    private JdbcMessageParser parser;
 
     /** Request handler. */
-    private JdbcRequestHandler handler = null;
+    private JdbcRequestHandler handler;
 
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
