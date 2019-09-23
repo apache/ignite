@@ -47,6 +47,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import javax.cache.expiry.ExpiryPolicy;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -128,6 +129,7 @@ public class MockConfiguration {
                 IgniteCache<K, V> mockedCache = mock(IgniteCache.class);
 
                 when(mockedCache.spliterator()).thenReturn(Spliterators.emptySpliterator());
+                when(mockedCache.withExpiryPolicy(any(ExpiryPolicy.class))).thenReturn(mockedCache);
 
                 return mockedCache;
             }

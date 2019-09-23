@@ -18,6 +18,7 @@ package org.apache.ignite.console.repositories;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.console.TestGridConfiguration;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.AfterClass;
@@ -35,7 +36,7 @@ import static org.apache.ignite.console.utils.TestUtils.stopAllGrids;
  * Accounts repository test.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = TestGridConfiguration.class)
 public class AccountsRepositoryTest {
     /** Accounts repository. */
     @Autowired

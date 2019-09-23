@@ -18,18 +18,12 @@ package org.apache.ignite.console.db;
 
 import java.util.Collections;
 import java.util.UUID;
-import javax.cache.configuration.Factory;
-import javax.cache.expiry.CreatedExpiryPolicy;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.console.dto.AbstractDto;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Tests for dynamic schema changes.
@@ -94,12 +88,10 @@ public class TableSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTtleOfRecord() throws Exception {
         try (Ignite ignite = startGrid()) {
-            Factory<ExpiryPolicy> createExpiryPlc = CreatedExpiryPolicy.factoryOf(new Duration(SECONDS, 1));
-
             Table<TestObject> objTbl = new Table<>(
                 ignite,
                 "testObjects",
-                (ccfg) -> ccfg.setExpiryPolicyFactory(createExpiryPlc)
+                1000
             );
 
             TestObject obj1 = new TestObject("1");

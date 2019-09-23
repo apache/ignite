@@ -16,12 +16,16 @@
 
 package org.apache.ignite.console.db;
 
-import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.transactions.TransactionException;
 
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -39,30 +43,36 @@ public class CacheHolder<K, V> {
     protected final String cacheName;
 
     /** */
-    protected IgniteCache cache;
+    private IgniteCache cache;
+
+    /** */
+    protected ExpiryPolicy expiryPlc;
 
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
      */
     public CacheHolder(Ignite ignite, String cacheName) {
-        this(ignite, cacheName, Function.identity());
+        this(ignite, cacheName, -1);
     }
 
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
-     * @param f Cache configuration mapper.
+     * @param expirationTimeout Cache expiration timeout.
      */
-    public CacheHolder(Ignite ignite, String cacheName, Function<CacheConfiguration<K, V>, CacheConfiguration<K, V>> f) {
+    public CacheHolder(Ignite ignite, String cacheName, long expirationTimeout) {
         this.ignite = ignite;
         this.cacheName = cacheName;
+
+        if (expirationTimeout > 0)
+            expiryPlc = CreatedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, expirationTimeout)).create();
 
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<K, V>(cacheName)
             .setAtomicityMode(TRANSACTIONAL)
             .setCacheMode(REPLICATED);
 
-        cache = ignite.getOrCreateCache(f.apply(ccfg));
+        cache = ignite.getOrCreateCache(ccfg);
     }
 
     /**
@@ -102,6 +112,6 @@ public class CacheHolder<K, V> {
      * @return Underlying cache
      */
     public IgniteCache<K, V> cache() {
-        return cache;
+        return expiryPlc  == null ? cache : cache.withExpiryPolicy(expiryPlc);
     }
 }

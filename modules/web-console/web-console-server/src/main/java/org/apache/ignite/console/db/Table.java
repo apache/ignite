@@ -27,10 +27,10 @@ import java.util.UUID;
 import java.util.function.Function;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.console.dto.AbstractDto;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -57,10 +57,10 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
-     * @param f Cache configuration mapper.
+     * @param expirationTimeout Cache expiration time.
      */
-    public Table(Ignite ignite, String cacheName, Function<CacheConfiguration<UUID, T>, CacheConfiguration<UUID, T>> f) {
-        super(ignite, cacheName, f);
+    public Table(Ignite ignite, String cacheName, long expirationTimeout) {
+        super(ignite, cacheName, expirationTimeout);
     }
 
     /**
@@ -78,6 +78,8 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @return DTO.
      */
     @Nullable public T getByIndex(Object key) {
+        IgniteCache cache = cache();
+
         Object id = cache.get(key);
 
         if (id == null)
@@ -90,7 +92,7 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @return Collection of DTOs.
      */
     public List<T> loadAll() {
-        try(QueryCursor<Cache.Entry<String, Object>> cursor = cache.query(new ScanQuery())) {
+        try(QueryCursor<Cache.Entry<String, Object>> cursor = cache().query(new ScanQuery())) {
             ArrayList<T> res = new ArrayList<>();
 
             cursor.forEach(item -> {
@@ -109,7 +111,7 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @return Collection of DTOs.
      */
     public Collection<T> loadAllByIndex(Set<?> keys) {
-        Map ids = cache.getAll(keys);
+        Map ids = ((IgniteCache)cache()).getAll(keys);
 
         if (ids.isEmpty())
             return Collections.emptyList();
@@ -122,7 +124,7 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @return Collection of DTOs.
      */
     public Collection<T> loadAll(Set<?> ids) {
-        Map<?, T> res = cache.getAll(ids);
+        Map<?, T> res = ((IgniteCache)cache()).getAll(ids);
 
         return F.isEmpty(res) ? Collections.emptyList() : res.values();
     }
@@ -133,6 +135,8 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @param oldVal Old value.
      */
     public void saveUniqueIndexValue(UniqueIndex<T> idx, T newVal, T oldVal) {
+        IgniteCache cache = cache();
+
         Object newIdxKey = idx.key(newVal);
         UUID newId = newVal.getId();
 
@@ -180,7 +184,7 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
         T val = cache().getAndRemove(id);
 
         if (val != null)
-            cache.removeAll(uniqueIndexes.stream().map(idx -> idx.key(val)).collect(toSet()));
+            ((IgniteCache)cache()).removeAll(uniqueIndexes.stream().map(idx -> idx.key(val)).collect(toSet()));
 
         return val;
     }
@@ -194,7 +198,7 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
             .flatMap((payload) -> uniqueIndexes.stream().map(idx -> idx.key(payload)))
             .collect(toSet());
 
-        cache.removeAll(idxIds);
+        ((IgniteCache)cache()).removeAll(idxIds);
     }
 
     /**
