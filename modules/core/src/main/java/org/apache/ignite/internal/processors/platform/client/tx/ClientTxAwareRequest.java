@@ -15,29 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
-
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+package org.apache.ignite.internal.processors.platform.client.tx;
 
 /**
- * Cache removeAll request.
+ * Interface for transaction aware requests.
  */
-public class ClientCacheRemoveAllRequest extends ClientCacheDataRequest {
+public interface ClientTxAwareRequest {
     /**
-     * Constructor.
-     *
-     * @param reader Reader.
+     * Gets transaction ID.
      */
-    public ClientCacheRemoveAllRequest(BinaryRawReader reader) {
-        super(reader);
-    }
+    public int txId();
 
-    /** {@inheritDoc} */
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        cache(ctx).removeAll();
-
-        return super.process(ctx);
-    }
+    /**
+     * Request was made under transaction.
+     */
+    public boolean isTransactional();
 }

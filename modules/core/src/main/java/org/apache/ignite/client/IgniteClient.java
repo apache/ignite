@@ -88,4 +88,11 @@ public interface IgniteClient extends AutoCloseable {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
+
+    /**
+     * Gets client transactions facade.
+     *
+     * @return Client transactions facade.
+     */
+    public ClientTransactions transactions();
 }
