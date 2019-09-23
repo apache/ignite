@@ -29,12 +29,15 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Constants;
 import org.h2.result.Row;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
@@ -361,7 +364,8 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
 
         v = valueWrapped();
-        sb.a(", val: ").a(v == null ? "nil" : v.getString());
+        sb.a(", val: ").a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() :
+            "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
 
         sb.a(" ][ ");
 
@@ -373,7 +377,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
                     sb.a(", ");
 
                 if (!desc.isKeyValueOrVersionColumn(i))
-                    sb.a(v == null ? "nil" : v.getString());
+                    sb.a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() : "data hidden"));
             }
         }
 
