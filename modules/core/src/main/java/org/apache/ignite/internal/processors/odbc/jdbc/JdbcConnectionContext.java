@@ -36,10 +36,9 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
-import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.JDBC;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 
 /**
  * JDBC Connection Context.
@@ -213,8 +212,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled, updateBatchSize, actx, ver, this);
 
         handler.start();
-
-        connMonList.add(connectionId(), new ClientConnectionView(this, JDBC));
     }
 
     /** {@inheritDoc} */
@@ -232,6 +229,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte type() {
+        return JDBC_CLIENT;
     }
 
     /**

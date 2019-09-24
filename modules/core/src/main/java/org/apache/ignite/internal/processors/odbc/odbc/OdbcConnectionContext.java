@@ -33,9 +33,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 
-import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.ODBC;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 
 /**
  * ODBC Connection Context.
@@ -179,8 +178,6 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         parser = new OdbcMessageParser(ctx, ver);
 
         handler.start();
-
-        connMonList.add(connectionId(), new ClientConnectionView(this, ODBC));
     }
 
     /** {@inheritDoc} */
@@ -198,5 +195,10 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte type() {
+        return ODBC_CLIENT;
     }
 }

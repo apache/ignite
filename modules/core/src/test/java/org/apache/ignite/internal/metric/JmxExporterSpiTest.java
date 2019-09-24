@@ -71,13 +71,11 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
 import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
-import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.JDBC;
-import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.THIN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
@@ -329,13 +327,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 TabularDataSupport conns = systemView(CLI_CONN_SYS_VIEW);
 
                 Consumer<CompositeData> checkThin = c -> {
-                    assertEquals(THIN.name(), c.get("type"));
+                    assertEquals("THIN", c.get("type"));
                     assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
                     assertEquals(c.get("version"), ClientConnectionContext.DEFAULT_VER.asString());
                 };
 
                 Consumer<CompositeData> checkJdbc = c -> {
-                    assertEquals(JDBC.name(), c.get("type"));
+                    assertEquals("JDBC", c.get("type"));
                     assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
                     assertEquals(c.get("version"), JdbcConnectionContext.CURRENT_VER.asString());
                 };

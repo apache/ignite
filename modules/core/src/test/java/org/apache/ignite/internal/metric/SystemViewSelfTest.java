@@ -64,14 +64,12 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
-import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.JDBC;
-import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.THIN;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -423,7 +421,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 ClientConnectionView cliConn = conns.iterator().next();
 
-                assertEquals(THIN, cliConn.type());
+                assertEquals("THIN", cliConn.type());
                 assertEquals(cliConn.localAddress().getHostName(), cliConn.remoteAddress().getHostName());
                 assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                     cliConn.localAddress().getPort());
@@ -436,7 +434,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                     ClientConnectionView jdbcConn = jdbcConnectionsIterator(conns).next();
 
-                    assertEquals(JDBC, jdbcConn.type());
+                    assertEquals("JDBC", jdbcConn.type());
                     assertEquals(jdbcConn.localAddress().getHostName(), jdbcConn.remoteAddress().getHostName());
                     assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                         jdbcConn.localAddress().getPort());
@@ -449,7 +447,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     private Iterator<ClientConnectionView> jdbcConnectionsIterator(
         SystemView<ClientConnectionView> conns) {
-        return F.iterator(conns.iterator(), identity(), true, v -> JDBC == v.type());
+        return F.iterator(conns.iterator(), identity(), true, v -> "JDBC".equals(v.type()));
     }
 
 

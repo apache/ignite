@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,8 +46,6 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.CLI_CONN_SYS_VIEW;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext.CLI_CONN_SYS_VIEW_DESC;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
@@ -56,7 +53,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  *
  * @see SystemView
  * @see SystemViewAdapter
- * @see SystemViewMap
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
@@ -88,8 +84,6 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             spi.setSystemViewRegistry(this);
 
         startSpi();
-
-        registerMapView(CLI_CONN_SYS_VIEW, CLI_CONN_SYS_VIEW_DESC, ClientConnectionView.class);
     }
 
     /** {@inheritDoc} */
@@ -110,33 +104,14 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <R, D> void registerView(String name, String desc, Class<R> rowCls, Collection<D> data,
         Function<D, R> rowFunc) {
-        doRegister(name, new SystemViewAdapter<>(name,
+
+        SystemView sysView = new SystemViewAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             data,
-            rowFunc));
-    }
+            rowFunc);
 
-    /**
-     * Creates system view which exports underlying {@link ConcurrentMap#values()} content.
-     *
-     * @param name Name of the view.
-     * @param desc Description of the view.
-     * @param rowCls Row class.
-     * @param <K> Type of the key.
-     * @param <R> Type of the row.
-     * @return System view.
-     */
-    public <K, R> void registerMapView(String name, String desc, Class<R> rowCls) {
-        doRegister(name, new SystemViewMap<K, R>(name,
-            desc,
-            rowCls,
-            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls)));
-    }
-
-    /** Puts view to the registry and notifies listeners. */
-    private void doRegister(String name, SystemView sysView) {
         SystemView<?> old = systemViews.putIfAbsent(name, sysView);
 
         assert old == null;

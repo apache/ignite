@@ -44,6 +44,11 @@ public interface ClientListenerConnectionContext {
     ClientListenerProtocolVersion defaultVersion();
 
     /**
+     * @return Client protocol version.
+     */
+    ClientListenerProtocolVersion clientVersion();
+
+    /**
      * Initialize from handshake message.
      *
      * @param ver Protocol version.
@@ -82,4 +87,9 @@ public interface ClientListenerConnectionContext {
      * @return Security context.
      */
     @Nullable SecurityContext securityContext();
+
+    /**
+     * @return Connection type.
+     */
+    byte type();
 }

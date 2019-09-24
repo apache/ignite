@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.systemview.walker;
 
 import java.net.InetSocketAddress;
-import org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -34,7 +33,7 @@ public class ClientConnectionViewWalker implements SystemViewRowAttributeWalker<
         v.accept(0, "connectionId", long.class);
         v.accept(1, "localAddress", InetSocketAddress.class);
         v.accept(2, "remoteAddress", InetSocketAddress.class);
-        v.accept(3, "type", ConnectionType.class);
+        v.accept(3, "type", String.class);
         v.accept(4, "user", String.class);
         v.accept(5, "version", String.class);
     }
@@ -44,7 +43,7 @@ public class ClientConnectionViewWalker implements SystemViewRowAttributeWalker<
         v.acceptLong(0, "connectionId", row.connectionId());
         v.accept(1, "localAddress", InetSocketAddress.class, row.localAddress());
         v.accept(2, "remoteAddress", InetSocketAddress.class, row.remoteAddress());
-        v.accept(3, "type", ConnectionType.class, row.type());
+        v.accept(3, "type", String.class, row.type());
         v.accept(4, "user", String.class, row.user());
         v.accept(5, "version", String.class, row.version());
     }

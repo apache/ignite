@@ -37,14 +37,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 
-import static org.apache.ignite.spi.systemview.view.ClientConnectionView.ConnectionType.THIN;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 
 /**
  * Thin Client connection context.
@@ -175,8 +170,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         handler = new ClientRequestHandler(this, authCtx, ver);
 
         parser = new ClientMessageParser(this, ver);
-
-        connMonList.add(connectionId(), new ClientConnectionView(this, THIN));
     }
 
     /** {@inheritDoc} */
@@ -196,6 +189,11 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         cleanupTxs();
 
         super.onDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte type() {
+        return THIN_CLIENT;
     }
 
     /**
