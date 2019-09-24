@@ -82,9 +82,4 @@ public interface ClientListenerConnectionContext {
      * @return Security context.
      */
     @Nullable SecurityContext securityContext();
-
-    /**
-     * @return Connection type.
-     */
-    byte type();
 }

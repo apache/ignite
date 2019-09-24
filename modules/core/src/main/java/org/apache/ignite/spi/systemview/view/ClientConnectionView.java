@@ -22,13 +22,13 @@ import org.apache.ignite.internal.processors.authentication.AuthorizationContext
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 
 /**
  * Client connection system view row.
@@ -59,19 +59,14 @@ public class ClientConnectionView {
         if (ctx == null)
             return null;
 
-        switch (ctx.type()) {
-            case ODBC_CLIENT:
-                return "ODBC";
+        if (ctx instanceof OdbcConnectionContext)
+            return "ODBC";
+        else if (ctx instanceof JdbcConnectionContext)
+            return "JDBC";
+        else if (ctx instanceof ClientConnectionContext)
+            return "THIN";
 
-            case JDBC_CLIENT:
-                return "JDBC";
-
-            case THIN_CLIENT:
-                return "THIN";
-
-            default:
-                return "unknown";
-        }
+        return "unknown";
     }
 
     /** @return Connection local address. */

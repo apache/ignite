@@ -34,8 +34,6 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
-
 /**
  * ODBC Connection Context.
  */
@@ -193,10 +191,5 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte type() {
-        return ODBC_CLIENT;
     }
 }

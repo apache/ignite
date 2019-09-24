@@ -233,11 +233,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         super.onDisconnected();
     }
 
-    /** {@inheritDoc} */
-    @Override public byte type() {
-        return JDBC_CLIENT;
-    }
-
     /**
      * @return Retrieves current affinity topology version and sets it as a last if it was changed, false otherwise.
      */

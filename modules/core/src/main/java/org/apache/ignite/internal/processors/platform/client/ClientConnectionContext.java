@@ -37,8 +37,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
-
 /**
  * Thin Client connection context.
  */
@@ -196,11 +194,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         cleanupTxs();
 
         super.onDisconnected();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte type() {
-        return THIN_CLIENT;
     }
 
     /**
