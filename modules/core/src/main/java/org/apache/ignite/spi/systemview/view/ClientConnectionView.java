@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
@@ -38,10 +39,10 @@ public class ClientConnectionView {
     /** Connection context. */
     @Nullable private final ClientListenerConnectionContext ctx;
 
-    /** @param ctx Connection context. */
-    public ClientConnectionView(GridNioSession ses, ClientListenerConnectionContext ctx) {
+    /** @param ses Nio session. */
+    public ClientConnectionView(GridNioSession ses) {
         this.ses = ses;
-        this.ctx = ctx;
+        this.ctx = ses.meta(CONN_CTX_META_KEY);
     }
 
     /** @return Connection id. */

@@ -203,7 +203,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 ctx.systemView().registerView(CLI_CONN_SYS_VIEW, CLI_CONN_SYS_VIEW_DESC,
                     ClientConnectionView.class,
                     srv.sessions(),
-                    ses -> new ClientConnectionView(ses, ses.<ClientListenerConnectionContext>meta(CONN_CTX_META_KEY)));
+                    ClientConnectionView::new);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
