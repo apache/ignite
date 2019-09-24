@@ -27,6 +27,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -47,6 +48,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
@@ -233,8 +235,11 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
 
         toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
             Stream.iterate(0, n -> n + 1)
-                .limit(CACHE_PARTS_COUNT)
+                .limit(CACHE_PARTS_COUNT) // With index partition
                 .collect(Collectors.toSet()));
+
+        toBackup.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), p -> new HashSet<>())
+            .add(PageIdAllocator.INDEX_PARTITION);
 
         File cacheWorkDir = ((FilePageStoreManager)ig.context()
             .cache()

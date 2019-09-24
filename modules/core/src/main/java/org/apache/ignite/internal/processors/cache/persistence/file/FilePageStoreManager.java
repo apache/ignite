@@ -96,6 +96,8 @@ import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 
 /**
  * File page store manager.
@@ -499,7 +501,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
-        assert partId <= PageIdAllocator.MAX_PARTITION_ID;
+        assert partId <= MAX_PARTITION_ID;
 
         PageStore store = getStore(grpId, partId);
 
@@ -763,6 +765,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
     }
 
+    /**
+     * @param cacheWorkDir Cache work directory.
+     * @param partId Partition id.
+     */
+    @NotNull public static File getPartitionFileEx(File cacheWorkDir, int partId) {
+        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
+
+        return partId == INDEX_PARTITION ? new File(cacheWorkDir, INDEX_FILE_NAME) :
+            new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
+    }
+
     /** {@inheritDoc} */
     @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
         return checkAndInitCacheWorkDir(cacheWorkDir(cacheCfg));
@@ -877,7 +890,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
-        assert partId <= PageIdAllocator.MAX_PARTITION_ID || partId == PageIdAllocator.INDEX_PARTITION;
+        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         PageStore store = getStore(grpId, partId);
 
@@ -1217,10 +1230,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             throw new IgniteCheckedException("Failed to get page store for the given cache ID " +
                 "(cache has not been started): " + grpId);
 
-        if (partId == PageIdAllocator.INDEX_PARTITION)
+        if (partId == INDEX_PARTITION)
             return holder.idxStore;
 
-        if (partId > PageIdAllocator.MAX_PARTITION_ID)
+        if (partId > MAX_PARTITION_ID)
             throw new IgniteCheckedException("Partition ID is reserved: " + partId);
 
         PageStore store = holder.partStores[partId];

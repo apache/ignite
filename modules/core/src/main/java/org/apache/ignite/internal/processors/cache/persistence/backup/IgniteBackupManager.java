@@ -81,7 +81,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileEx;
 
 /** */
 public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
@@ -139,21 +139,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      */
     private static File getPartionDeltaFile(File tmpDir, int partId) {
         return new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @param partId Partiton identifier.
-     * @return The cache partiton file.
-     */
-    public static File resolvePartitionFileCfg(
-        FilePageStoreManager storeMgr,
-        CacheConfiguration ccfg,
-        int partId
-    ) {
-        File cacheDir = storeMgr.cacheWorkDir(ccfg);
-
-        return getPartitionFile(cacheDir, partId);
     }
 
     /** {@inheritDoc} */
@@ -420,7 +405,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
             CompletableFuture<File> fut0 = CompletableFuture.supplyAsync(
                 bctx.partSuppFactory.apply(
-                    getPartitionFile(
+                    getPartitionFileEx(
                         cacheWorkDir(cacheWorkDir, ccfg),
                         pair.getPartitionId()),
                     new File(bctx.backupDir,
