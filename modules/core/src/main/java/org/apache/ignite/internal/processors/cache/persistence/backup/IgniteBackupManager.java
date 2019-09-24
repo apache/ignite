@@ -347,16 +347,14 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 for (int partId : e.getValue()) {
                     final GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
 
-                    final PageStore pageStore = dbMgr.getPageStore(e.getKey(), partId);
-
                     bctx.partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(
                             new FileSerialPageStore(log,
                                 () -> getPartionDeltaFile(grpDir, partId).toPath(),
                                 ioFactory,
-                                pageStore.getPageSize()),
+                                pageSize),
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
-                            pageStore.getPageSize()));
+                            pageSize));
                 }
             }
 
