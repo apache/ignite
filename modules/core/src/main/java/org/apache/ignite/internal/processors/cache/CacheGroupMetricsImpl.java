@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -81,16 +84,22 @@ public class CacheGroupMetricsImpl {
     public CacheGroupMetricsImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
 
+        CacheConfiguration cacheCfg = ctx.config();
+
+        DataStorageConfiguration dsCfg = ctx.shared().kernalContext().config().getDataStorageConfiguration();
+
+        boolean persistentEnabled = CU.isPersistentCache(cacheCfg, dsCfg);
+
         MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
         storageSize = mreg.register("StorageSize",
-            () -> database().forGroupPageStores(ctx, PageStore::size),
+            () -> persistentEnabled ? database().forGroupPageStores(ctx, PageStore::size) : 0,
             "Storage space allocated for group, in bytes.");
 
         sparseStorageSize = mreg.register("SparseStorageSize",
-            () -> database().forGroupPageStores(ctx, PageStore::getSparseSize),
+            () -> persistentEnabled ? database().forGroupPageStores(ctx, PageStore::getSparseSize) : 0,
             "Storage space allocated for group adjusted for possible sparsity, in bytes.");
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
