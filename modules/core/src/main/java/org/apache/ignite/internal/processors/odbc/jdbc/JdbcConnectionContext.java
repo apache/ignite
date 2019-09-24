@@ -137,8 +137,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
 
-        version(ver);
-
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();

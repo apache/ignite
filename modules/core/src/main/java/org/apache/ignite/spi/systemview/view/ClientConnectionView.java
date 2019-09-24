@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
@@ -98,7 +99,12 @@ public class ClientConnectionView {
         if (ctx == null)
             return null;
 
-        ClientListenerProtocolVersion ver = ctx.currentVersion();
+        ClientListenerRequestHandler hnd = ctx.handler();
+
+        if (hnd == null)
+            return null;
+
+        ClientListenerProtocolVersion ver = hnd.protocolVersion();
 
         return ver == null ? null : ver.asString();
     }

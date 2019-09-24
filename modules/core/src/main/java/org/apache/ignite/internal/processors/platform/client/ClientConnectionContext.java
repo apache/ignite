@@ -86,6 +86,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Max cursors. */
     private final int maxCursors;
 
+    /** Current protocol version. */
+    private ClientListenerProtocolVersion currentVer;
+
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
 
@@ -138,6 +141,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         return DEFAULT_VER;
     }
 
+    /**
+     * @return Currently used protocol version.
+     */
+    public ClientListenerProtocolVersion currentVersion() {
+        return currentVer;
+    }
+
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
@@ -162,7 +172,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         AuthorizationContext authCtx = authenticate(user, pwd);
 
-        version(ver);
+        currentVer = ver;
 
         handler = new ClientRequestHandler(this, authCtx, ver);
 

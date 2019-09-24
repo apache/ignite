@@ -67,4 +67,7 @@ public interface ClientListenerRequestHandler {
      * @param reqId Request Id.
      */
     void unregisterRequest(long reqId);
+
+    /** @return Protocol version. */
+    ClientListenerProtocolVersion protocolVersion();
 }

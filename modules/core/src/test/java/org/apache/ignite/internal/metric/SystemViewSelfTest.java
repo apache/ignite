@@ -68,7 +68,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionCont
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
-import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
 
 /** Tests for {@link SystemView}. */
@@ -412,11 +411,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             int port = g0.configuration().getClientConnectorConfiguration().getPort();
 
-            try (IgniteClient client =
-                     Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+            SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_SYS_VIEW);
 
-                SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_SYS_VIEW);
-
+            try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
                 assertEquals(1, conns.size());
 
                 ClientConnectionView cliConn = conns.iterator().next();
@@ -430,7 +427,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 try (Connection conn =
                          new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
                     assertEquals(2, conns.size());
-                    assertEquals(1, F.size(jdbcConnectionsIterator(conns), alwaysTrue()));
+                    assertEquals(1, F.size(jdbcConnectionsIterator(conns)));
 
                     ClientConnectionView jdbcConn = jdbcConnectionsIterator(conns).next();
 
@@ -441,6 +438,10 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertEquals(jdbcConn.version(), CURRENT_VER.asString());
                 }
             }
+
+            boolean res = GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000);
+
+            assertTrue(res);
         }
     }
 

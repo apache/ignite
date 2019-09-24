@@ -45,9 +45,6 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** Connection ID. */
     private long connId;
 
-    /** Client version. */
-    private ClientListenerProtocolVersion ver;
-
     /** Authorization context. */
     protected AuthorizationContext authCtx;
 
@@ -135,19 +132,5 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     @Override public void onDisconnected() {
         if (ctx.security().enabled())
             ctx.security().onSessionExpired(secCtx.subject().id());
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClientListenerProtocolVersion currentVersion() {
-        return ver;
-    }
-
-    /**
-     * Sets client version.
-     *
-     * @param ver Client version.
-     */
-    protected void version(ClientListenerProtocolVersion ver) {
-        this.ver = ver;
     }
 }

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
@@ -318,12 +319,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         int port = ignite.configuration().getClientConnectorConfiguration().getPort();
 
-        try (IgniteClient client =
-                 Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
-
-            try (Connection conn =
-                     new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
-
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+            try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
                 TabularDataSupport conns = systemView(CLI_CONN_SYS_VIEW);
 
                 Consumer<CompositeData> checkThin = c -> {
@@ -353,6 +350,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 assertEquals(2, conns.size());
             }
         }
+
+        boolean res = GridTestUtils.waitForCondition(() -> systemView(CLI_CONN_SYS_VIEW).isEmpty(), 5_000);
+
+        assertTrue(res);
     }
 
     /** */

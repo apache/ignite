@@ -124,8 +124,6 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
 
-        version(ver);
-
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
         boolean replicatedOnly = reader.readBoolean();
