@@ -25,9 +25,16 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
  */
 public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
     /**
-     * Adds listener of metrics group creation events.
+     * Adds listener of metrics registry creation events.
      *
      * @param lsnr Listener.
      */
     public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
+
+    /**
+     * Adds listener of metrics registry remove events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr);
 }

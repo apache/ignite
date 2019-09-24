@@ -48,10 +48,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
+import static org.apache.ignite.internal.processors.query.h2.database.H2Tree.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -135,6 +137,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         if (createStaticCache)
             igniteCfg.setCacheConfiguration(ccfg);
+
+        if (srvLog != null)
+            igniteCfg.setGridLogger(srvLog);
 
         if (isPersistenceEnabled) {
             igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -759,6 +764,81 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             cleanPersistenceDir();
         }
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, value = "1")
+    public void testInlineSizeChange() throws Exception {
+        isPersistenceEnabled = true;
+
+        indexes = Collections.singletonList(new QueryIndex("valStr"));
+
+        inlineSize = 33;
+
+        srvLog = new ListeningTestLogger(false, log);
+
+        String msg1 = "curSize=1";
+
+        String msg2 = "curSize=2";
+
+        String msg3 = "curSize=3";
+
+        LogListener lstn1 = LogListener.matches(msg1).build();
+
+        LogListener lstn2 = LogListener.matches(msg2).build();
+
+        LogListener lstn3 = LogListener.matches(msg3).build();
+
+        srvLog.registerListener(lstn1);
+
+        srvLog.registerListener(lstn2);
+
+        srvLog.registerListener(lstn3);
+
+        IgniteEx ig0 = startGrid(0);
+
+        ig0.cluster().active(true);
+
+        populateCache();
+
+        IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 1 PARALLEL 28"));
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+
+        log.info("exp: " + res.get(0).get(0));
+
+        assertTrue(lstn1.check());
+
+        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
+
+        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 2 PARALLEL 28"));
+
+        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+
+        assertTrue(lstn2.check());
+
+        cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
+
+        stopAllGrids();
+
+        ig0 = startGrid(0);
+
+        ig0.cluster().active(true);
+
+        cache = ig0.cache(DEFAULT_CACHE_NAME);
+
+        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 3 PARALLEL 28"));
+
+        cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+
+        assertTrue(lstn3.check());
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */

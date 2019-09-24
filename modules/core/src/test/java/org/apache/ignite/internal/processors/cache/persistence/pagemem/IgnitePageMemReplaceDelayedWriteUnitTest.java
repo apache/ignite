@@ -41,9 +41,11 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointWritePr
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
@@ -92,7 +94,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         AtomicInteger totalEvicted = new AtomicInteger();
 
-        ReplacedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
+        PageStoreWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
             log.info("Evicting " + fullPageId);
 
             assert getLockedPages(fullPageId).contains(fullPageId);
@@ -116,7 +118,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             memory.releasePage(1, pageId, ptr);
         }
 
-        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint();
+        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint(new GridFinishedFuture());
         int cpPages = ids.size();
         log.info("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
 
@@ -149,7 +151,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         AtomicInteger totalEvicted = new AtomicInteger();
 
-        ReplacedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
+        PageStoreWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
             log.info("Evicting " + fullPageId);
 
             assert getSegment(fullPageId).writeLock().isHeldByCurrentThread();
@@ -179,7 +181,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             memory.releasePage(1, pageId, ptr);
         }
 
-        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint();
+        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint(new GridFinishedFuture());
         int cpPages = ids.size();
         log.info("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
 
@@ -214,7 +216,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      * @return implementation for test
      */
     @NotNull
-    private PageMemoryImpl createPageMemory(IgniteConfiguration cfg, ReplacedPageWriter pageWriter, int pageSize) {
+    private PageMemoryImpl createPageMemory(IgniteConfiguration cfg, PageStoreWriter pageWriter, int pageSize) {
         IgniteCacheDatabaseSharedManager db = mock(GridCacheDatabaseSharedManager.class);
 
         when(db.checkpointLockIsHeldByThread()).thenReturn(true);

@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="ICacheMetrics"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class CacheMetricsParityTest
     {
         /** Known name mappings. */

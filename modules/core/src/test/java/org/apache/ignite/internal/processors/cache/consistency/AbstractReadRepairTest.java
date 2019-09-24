@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -146,6 +147,8 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -158,7 +161,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         while (!evtDeq.isEmpty()) {
             CacheConsistencyViolationEvent evt = evtDeq.remove();
 
-            fixed.putAll(evt.getFixedEntries()); // Optimistic and read commited transactions produce per key fixes.
+            fixed.putAll(evt.getRepairedEntries()); // Optimistic and read committed transactions produce per key fixes.
         }
 
         int misses = 0;

@@ -180,30 +180,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             dataRegionMetricsProvider::emptyDataPages,
             "Calculates empty data pages count for region. It counts only totally free pages that can be reused " +
                 "(e. g. pages that are contained in reuse bucket of free list).");
-
-        mreg.register("PagesFillFactor",
-            this::getPagesFillFactor,
-            "The percentage of the used space.");
-
-        mreg.register("PhysicalMemoryPages",
-            this::getPhysicalMemoryPages,
-            "Number of pages residing in physical RAM.");
-
-        mreg.register("OffheapUsedSize",
-            this::getOffheapUsedSize,
-            "Offheap used size in bytes.");
-
-        mreg.register("TotalAllocatedSize",
-            this::getTotalAllocatedSize,
-            "Gets a total size of memory allocated in the data region, in bytes");
-
-        mreg.register("PhysicalMemorySize",
-            this::getPhysicalMemorySize,
-            "Gets total size of pages loaded to the RAM, in bytes");
-
-        mreg.register("UsedCheckpointBufferSize",
-            this::getUsedCheckpointBufferSize,
-            "Gets used checkpoint buffer size in bytes");
     }
 
     /** {@inheritDoc} */
@@ -213,7 +189,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return totalAllocatedPages.longValue();
+        return totalAllocatedPages.value();
     }
 
     /** {@inheritDoc} */
@@ -223,8 +199,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
-        assert pageMem != null;
-
         return getTotalAllocatedPages() * (persistenceEnabled ? pageMem.pageSize() : pageMem.systemPageSize());
     }
 
@@ -249,23 +223,19 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return totalAllocatedPages.longValue() != 0 ?
-                (float) largeEntriesPages.longValue() / totalAllocatedPages.longValue()
-                : 0;
+        return totalAllocatedPages.value() != 0 ? (float)largeEntriesPages.value() / totalAllocatedPages.value() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
-        if (!metricsEnabled || dataRegionMetricsProvider == null)
+        if (!metricsEnabled)
             return 0;
 
         long freeSpace = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
 
-        long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
+        long totalAllocated = getPageSize() * totalAllocatedPages.value();
 
-        return totalAllocated != 0 ?
-            (float) (totalAllocated - freeSpace) / totalAllocated
-            : 0f;
+        return totalAllocated != 0 ? (float)(totalAllocated - freeSpace) / totalAllocated : 0f;
     }
 
     /** {@inheritDoc} */
@@ -273,7 +243,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled || !persistenceEnabled)
             return 0;
 
-        return dirtyPages.longValue();
+        return dirtyPages.value();
     }
 
     /** {@inheritDoc} */
@@ -302,8 +272,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        assert pageMem != null;
-
         return pageMem.loadedPages();
     }
 
@@ -316,8 +284,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     @Override public long getUsedCheckpointBufferPages() {
         if (!metricsEnabled || !persistenceEnabled)
             return 0;
-
-        assert pageMem != null;
 
         return pageMem.checkpointBufferPagesCount();
     }
@@ -332,15 +298,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled || !persistenceEnabled)
             return 0;
 
-        return checkpointBufferSize.get();
+        return checkpointBufferSize.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getPageSize() {
         if (!metricsEnabled)
             return 0;
-
-        assert pageMem != null;
 
         return pageMem.pageSize();
     }
@@ -350,7 +314,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return readPages.longValue();
+        return readPages.value();
     }
 
     /** {@inheritDoc} */
@@ -358,7 +322,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return writtenPages.longValue();
+        return writtenPages.value();
     }
 
     /** {@inheritDoc} */
@@ -366,12 +330,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return replacedPages.longValue();
+        return replacedPages.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapSize() {
-        return offHeapSize.get();
+        return offHeapSize.value();
     }
 
     /** {@inheritDoc} */
@@ -518,6 +482,32 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public void pageMemory(PageMemory pageMem) {
         this.pageMem = pageMem;
+
+        MetricRegistry mreg = mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
+
+        mreg.register("PagesFillFactor",
+            this::getPagesFillFactor,
+            "The percentage of the used space.");
+
+        mreg.register("PhysicalMemoryPages",
+            this::getPhysicalMemoryPages,
+            "Number of pages residing in physical RAM.");
+
+        mreg.register("OffheapUsedSize",
+            this::getOffheapUsedSize,
+            "Offheap used size in bytes.");
+
+        mreg.register("TotalAllocatedSize",
+            this::getTotalAllocatedSize,
+            "Gets a total size of memory allocated in the data region, in bytes");
+
+        mreg.register("PhysicalMemorySize",
+            this::getPhysicalMemorySize,
+            "Gets total size of pages loaded to the RAM, in bytes");
+
+        mreg.register("UsedCheckpointBufferSize",
+            this::getUsedCheckpointBufferSize,
+            "Gets used checkpoint buffer size in bytes");
     }
 
     /**

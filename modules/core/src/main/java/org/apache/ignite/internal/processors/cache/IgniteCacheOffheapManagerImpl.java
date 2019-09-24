@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -102,24 +104,28 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
+import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.collection.IntRWHashMap;
+import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
@@ -143,6 +149,9 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
  *
  */
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
+    /** The maximum number of entries that can be preloaded under checkpoint read lock. */
+    public static final int PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK = 100;
+
     /** */
     private final boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
         IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY);
@@ -412,27 +421,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         else {
             final Iterator<GridDhtLocalPartition> it = grp.topology().currentLocalPartitions().iterator();
 
-            if (primary && backup) {
-                return F.iterator(it, new IgniteClosure<GridDhtLocalPartition, CacheDataStore>() {
-                    @Override public CacheDataStore apply(GridDhtLocalPartition part) {
-                        return part.dataStore();
-                    }
-                }, true);
-            }
+            if (primary && backup)
+                return F.iterator(it, GridDhtLocalPartition::dataStore, true);
 
-            final Set<Integer> parts = primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
-                grp.affinity().backupPartitions(ctx.localNodeId(), topVer);
+            final IntSet parts = ImmutableIntSet.wrap(primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
+                grp.affinity().backupPartitions(ctx.localNodeId(), topVer));
 
-            return F.iterator(it, new IgniteClosure<GridDhtLocalPartition, CacheDataStore>() {
-                    @Override public CacheDataStore apply(GridDhtLocalPartition part) {
-                        return part.dataStore();
-                    }
-                }, true,
-                new IgnitePredicate<GridDhtLocalPartition>() {
-                    @Override public boolean apply(GridDhtLocalPartition part) {
-                        return parts.contains(part.id());
-                    }
-                });
+            return F.iterator(it, GridDhtLocalPartition::dataStore, true, part -> parts.contains(part.id()));
         }
     }
 
@@ -1219,6 +1214,37 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+        CacheDataStore dataStore = dataStore(partId);
+
+        List<DataRowCacheAware> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
+
+        while (infos.hasNext()) {
+            GridCacheEntryInfo info = infos.next();
+
+            assert info.ttl() == TTL_ETERNAL : info.ttl();
+
+            batch.add(new DataRowCacheAware(info.key(),
+                info.value(),
+                info.version(),
+                partId,
+                info.expireTime(),
+                info.cacheId(),
+                grp.storeCacheIdInDataPage()));
+
+            if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK) {
+                dataStore.insertRows(batch, initPred);
+
+                batch.clear();
+            }
+        }
+
+        if (!batch.isEmpty())
+            dataStore.insertRows(batch, initPred);
+    }
+
+    /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
         CacheDataStore dataStore;
 
@@ -1418,7 +1444,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final AtomicLong storageSize = new AtomicLong();
 
         /** */
-        private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
+        private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap();
 
         /** Mvcc remove handler. */
         private final PageHandler<MvccUpdateDataRow, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
@@ -1494,8 +1520,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             Map<Integer, Long> res = new HashMap<>();
 
-            for (Map.Entry<Integer, AtomicLong> e : cacheSizes.entrySet())
-                res.put(e.getKey(), e.getValue().longValue());
+            cacheSizes.forEach((key, val) -> res.put(key, val.longValue()));
 
             return res;
         }
@@ -1724,6 +1749,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void insertRows(Collection<DataRowCacheAware> rows,
+            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            try {
+                rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
+
+                boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
+
+                for (DataRowCacheAware row : rows) {
+                    row.storeCacheId(cacheIdAwareGrp);
+
+                    if (!initPred.apply(row) && row.value() != null)
+                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
 
         /**

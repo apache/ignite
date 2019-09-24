@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Model inference examples.
+ * <!-- Package description. --> Model inference examples.
  */
 package org.apache.ignite.examples.ml.inference;

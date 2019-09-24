@@ -325,6 +325,39 @@ public abstract class GridClientConnection {
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
+     * Get current read-only mode status. If future contains {@code true} - read-only mode enabled, if {@code false} -
+     * read-only mode disabled.
+     *
+     * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<Boolean> readOnlyState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Change read-only mode. Cluster must be activated.
+     *
+     * @param readOnly Read-only mode enabled flag.
+     * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<?> changeReadOnlyState(boolean readOnly, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Get a cluster name.
+     *
+     * @param destNodeId Destination node id.
+     * @return Future to get the cluster name.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<String> clusterName(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
      * Gets node by node ID.
      *
      * @param id Node ID.

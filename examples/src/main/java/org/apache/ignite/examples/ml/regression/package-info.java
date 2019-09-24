@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML regression examples.
+ * <!-- Package description. --> ML regression examples.
  */
 package org.apache.ignite.examples.ml.regression;
