@@ -35,7 +35,7 @@ import org.yardstickframework.BenchmarkProbePoint;
 import org.yardstickframework.BenchmarkTotalsOnlyProbe;
 
 /**
- * WAL size probe.
+ * WAL size probe. Should only be used if driver starts server Ignite node.
  */
 public class WalSizeProbe implements BenchmarkTotalsOnlyProbe {
     /** WAL manager. */
