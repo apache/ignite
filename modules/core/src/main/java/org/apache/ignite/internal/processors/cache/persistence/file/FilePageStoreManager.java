@@ -720,7 +720,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     allocatedTracker);
 
             if (cctx.backup() != null)
-                idxStore.setListener(new BackupPageStoreListener(grpId, partitions, cctx.backup(), idxStore));
+                idxStore.setListener(new BackupPageStoreListener(grpId, INDEX_PARTITION, cctx.backup(), idxStore));
 
             PageStore[] partStores = new PageStore[partitions];
 
