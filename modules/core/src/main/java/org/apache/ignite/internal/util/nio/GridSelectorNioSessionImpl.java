@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -86,7 +86,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     private Object sysMsg;
 
     /** Outbound messages queue size metric. */
-    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+    @Nullable private final AtomicLongMetric outboundMessagesQueueSizeMetric;
 
     /**
      * Creates session instance.
@@ -141,7 +141,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
             this.readBuf = readBuf;
         }
 
-        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longMetric(
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         );

@@ -18,7 +18,7 @@ package org.apache.ignite.internal.util.nio;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -42,10 +42,10 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     private final int connIdx;
 
     /** Received bytes count metric. */
-    @Nullable protected final LongAdderMetric rcvdBytesCntMetric;
+    @Nullable protected final AtomicLongMetric rcvdBytesCntMetric;
 
     /** Sent bytes count metric. */
-    @Nullable protected final LongAdderMetric sentBytesCntMetric;
+    @Nullable protected final AtomicLongMetric sentBytesCntMetric;
 
     /**
      * @param connIdx Connection index.
@@ -55,10 +55,10 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
         this.connIdx = connIdx;
 
         rcvdBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+            null : mreg.longMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
 
         sentBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+            null : mreg.longMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
     }
 
     /** {@inheritDoc} */
