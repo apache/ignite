@@ -49,10 +49,6 @@ public class FileSerialPageStore implements Closeable {
     /** Configuration file path provider. */
     private final Supplier<Path> cfgPath;
 
-    /** Factory to produce an IO interface over underlying file. */
-    @GridToStringExclude
-    private final FileIOFactory factory;
-
     /** Storage size. */
     private final AtomicLong pages = new AtomicLong();
 
@@ -71,24 +67,20 @@ public class FileSerialPageStore implements Closeable {
      * @param factory Factory to produce an IO interface over underlying file.
      * @param pageSize Page size of stored pages.
      */
-    public FileSerialPageStore(IgniteLogger log, Supplier<Path> cfgPath, FileIOFactory factory, int pageSize) {
+    public FileSerialPageStore(
+        IgniteLogger log,
+        Supplier<Path> cfgPath,
+        FileIOFactory factory,
+        int pageSize
+    ) throws IOException {
         A.notNull(cfgPath, "Configurations path cannot be empty");
         A.notNull(factory, "File configuration factory cannot be empty");
 
         this.log = log.getLogger(FileSerialPageStore.class);
         this.cfgPath = cfgPath;
-        this.factory = factory;
         this.pageSize = pageSize;
-    }
 
-    /**
-     * @throws IOException If failed to initialize store file.
-     */
-    public FileSerialPageStore init() throws IOException {
-        if (fileIo == null)
-            fileIo = factory.create(cfgPath.get().toFile());
-
-        return this;
+        fileIo = factory.create(cfgPath.get().toFile());
     }
 
     /**
@@ -167,6 +159,13 @@ public class FileSerialPageStore implements Closeable {
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /**
+     * @return Size of page.
+     */
+    public int pageSize() {
+        return pageSize;
     }
 
     /**

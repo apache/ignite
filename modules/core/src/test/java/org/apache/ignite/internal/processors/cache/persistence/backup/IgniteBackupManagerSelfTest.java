@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -31,10 +30,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -46,17 +48,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -67,6 +68,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
 /** */
 public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
@@ -85,11 +87,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         .setWalMode(WALMode.LOG_ONLY);
 
     /** */
-    private static final FilePageStoreFactory pageStoreFactory =
-        new FileVersionCheckingFactory(new RandomAccessFileIOFactory(), new RandomAccessFileIOFactory(), memCfg);
-
-    /** */
-    private static final CacheConfiguration<Integer, Integer> defaultCacheCfg =
+    private CacheConfiguration<Integer, Integer> defaultCacheCfg =
         new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
@@ -183,63 +181,22 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param pageIdx Page index to track.
-     * @return {@code true} if
-     */
-    private boolean track(AtomicLong pageTrackBits, int pageIdx) {
-        assert pageIdx >= 0;
-
-        int mask = 1 << pageIdx;
-
-        long next = pageTrackBits.getAndUpdate(b -> b |= mask);
-
-        return (pageTrackBits.get() & mask) == mask;
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testShift() throws Exception {
-        final AtomicLong l = new AtomicLong();
-
-        for (int i = 5; i < 10; i ++)
-            track(l, i);
-
-        System.out.println(String.format("%064d", new BigInteger(Long.toBinaryString(l.get()))));
-    }
-
-    /**
      *
      */
     @Test
     public void testBackupLocalPartitions() throws Exception {
-        final CountDownLatch slowCopy = new CountDownLatch(1);
-
-        IgniteEx ig = startGrid(0);
-
-        ig.cluster().active(true);
-
-        for (int i = 0; i < 1024; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        CheckpointFuture cpFut = ig.context()
-            .cache()
-            .context()
-            .database()
-            .forceCheckpoint("the next one");
-
-        cpFut.finishFuture().get();
+        // Start grid node with data before each test.
+        IgniteEx ig = startGridWithCache(defaultCacheCfg);
 
         for (int i = 1024; i < 2048; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        Set<Integer> parts = Stream.iterate(0, n -> n + 1)
-            .limit(CACHE_PARTS_COUNT)
-            .collect(Collectors.toSet());
-
         Map<Integer, Set<Integer>> toBackup = new HashMap<>();
-        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME), parts);
+
+        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
+            Stream.iterate(0, n -> n + 1)
+            .limit(CACHE_PARTS_COUNT)
+            .collect(Collectors.toSet()));
 
         IgniteInternalFuture<?> backupFut = ig.context()
             .cache()
@@ -265,6 +222,115 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         assertEquals("Partitons the same after backup and after merge", origParts, bakcupCRCs);
     }
 
+    /**
+     *
+     */
+    @Test
+    public void testBackupLocalPartitionsNextCpStarted() throws Exception {
+        CountDownLatch slowCopy = new CountDownLatch(1);
+        AtomicBoolean stopper = new AtomicBoolean();
+
+        IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
+            .setPartitions(CACHE_PARTS_COUNT)));
+
+        AtomicLong key = new AtomicLong();
+        AtomicLong value = new AtomicLong();
+
+        GridTestUtils.runAsync(() -> {
+                try {
+                    while (!stopper.get() && !Thread.currentThread().isInterrupted()) {
+                        ig.cache(DEFAULT_CACHE_NAME)
+                            .put(key.incrementAndGet(), value.incrementAndGet());
+
+                        U.sleep(10);
+                    }
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+
+        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
+
+        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
+            Stream.iterate(0, n -> n + 1)
+                .limit(CACHE_PARTS_COUNT)
+                .collect(Collectors.toSet()));
+
+        File cacheWorkDir = ((FilePageStoreManager)ig.context()
+            .cache()
+            .context()
+            .pageStore())
+            .cacheWorkDir(defaultCacheCfg);
+
+        File zeroPart = getPartitionFile(cacheWorkDir, 0);
+
+        IgniteBackupManager mgr = ig.context()
+            .cache()
+            .context()
+            .backup();
+
+        IgniteInternalFuture<?> backupFut = mgr
+            .createLocalBackup("testBackup",
+                toBackup,
+                backupDir,
+                new IgniteTriClosure<File, File, Long, Supplier<File>>() {
+                    @Override public Supplier<File> apply(File from, File to, Long length) {
+                        return new Supplier<File>() {
+                            @Override public File get() {
+                                try {
+                                    if (from.getName().trim().equals(zeroPart.getName()))
+                                        U.await(slowCopy);
+
+                                    return mgr.partSupplierFactory(from, to, length).get();
+                                }
+                                catch (IgniteInterruptedCheckedException e) {
+                                    throw new IgniteException(e);
+                                }
+                            }
+                        };
+                    }
+                },
+                mgr::deltaSupplierFactory);
+
+        // Backup on the next checkpoint must copy page before write it to partition
+        CheckpointFuture cpFut = ig.context()
+            .cache()
+            .context()
+            .database()
+            .forceCheckpoint("second cp");
+
+        cpFut.finishFuture().get();
+
+        stopper.set(true);
+        slowCopy.countDown();
+
+        backupFut.get();
+    }
+
+    /** */
+    private IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
+        defaultCacheCfg = ccfg;
+
+        // Start grid node with data before each test.
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        for (int i = 0; i < 1024; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        CheckpointFuture cpFut = ig.context()
+            .cache()
+            .context()
+            .database()
+            .forceCheckpoint("the next one");
+
+        cpFut.finishFuture().get();
+
+        return ig;
+    }
+
     /** */
     private void partitionCRCs(PageStore pageStore, int partId) throws IgniteCheckedException {
         long pageId = PageIdUtils.pageId(partId, FLAG_DATA, 0);
@@ -287,5 +353,14 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         }
 
         U.log(log, sb.append("[pages=").append(pageStore.pages()).append("]\n").toString());
+    }
+
+    /**
+     *
+     */
+    private static class ZeroPartitionAffinityFunction extends RendezvousAffinityFunction {
+        @Override public int partition(Object key) {
+            return 0;
+        }
     }
 }
