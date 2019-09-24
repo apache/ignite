@@ -93,7 +93,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                                        Preprocessor<K, V> extractor) {
         M fit = wrapped.
             withEnvironmentBuilder(envBuilder)
@@ -165,7 +165,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> withDatasetMapping(DatasetMapping<L, L> mapping) {
         return of(new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
+            @Override public <K, V> M fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
                 return wrapped.fit(datasetBuilder, extractor.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
                     mapping.mapLabels((L)lv.label())

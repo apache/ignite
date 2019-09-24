@@ -127,20 +127,28 @@ public class MLPTrainerExample {
 
                 System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
                 System.out.println("\n>>> Distributed multilayer perceptron example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
 
-    /** Point data class. */
+    /**
+     * Point data class.
+     */
     private static class Point {
-        /** X coordinate. */
+        /**
+         * X coordinate.
+         */
         final double x;
 
-        /** Y coordinate. */
+        /**
+         * Y coordinate.
+         */
         final double y;
 
         /**
@@ -155,16 +163,20 @@ public class MLPTrainerExample {
         }
     }
 
-    /** Labeled point data class. */
+    /**
+     * Labeled point data class.
+     */
     private static class LabeledPoint extends Point {
-        /** Point label. */
+        /**
+         * Point label.
+         */
         final double lb;
 
         /**
          * Constructs a new instance of labeled point data.
          *
-         * @param x X coordinate.
-         * @param y Y coordinate.
+         * @param x  X coordinate.
+         * @param y  Y coordinate.
          * @param lb Point label.
          */
         LabeledPoint(double x, double y, double lb) {
