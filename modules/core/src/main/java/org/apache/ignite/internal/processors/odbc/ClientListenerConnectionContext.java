@@ -46,7 +46,7 @@ public interface ClientListenerConnectionContext {
     /**
      * @return Client protocol version.
      */
-    ClientListenerProtocolVersion clientVersion();
+    ClientListenerProtocolVersion currentVersion();
 
     /**
      * Initialize from handshake message.
@@ -90,6 +90,9 @@ public interface ClientListenerConnectionContext {
 
     /**
      * @return Connection type.
+     * @see ClientListenerNioListener#ODBC_CLIENT
+     * @see ClientListenerNioListener#JDBC_CLIENT
+     * @see ClientListenerNioListener#THIN_CLIENT
      */
     byte type();
 }

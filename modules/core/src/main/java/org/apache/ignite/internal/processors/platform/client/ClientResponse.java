@@ -76,7 +76,7 @@ public class ClientResponse extends ClientListenerResponse {
         ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
 
-        ClientListenerProtocolVersion ver = ctx.clientVersion();
+        ClientListenerProtocolVersion ver = ctx.currentVersion();
 
         assert ver != null;
 

@@ -98,7 +98,7 @@ public class ClientConnectionView {
         if (ctx == null)
             return null;
 
-        ClientListenerProtocolVersion ver = ctx.clientVersion();
+        ClientListenerProtocolVersion ver = ctx.currentVersion();
 
         return ver == null ? null : ver.asString();
     }

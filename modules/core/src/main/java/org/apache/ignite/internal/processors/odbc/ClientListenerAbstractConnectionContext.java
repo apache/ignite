@@ -138,7 +138,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProtocolVersion clientVersion() {
+    @Override public ClientListenerProtocolVersion currentVersion() {
         return ver;
     }
 
