@@ -30,8 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -228,27 +225,9 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testBackupLocalPartitionsNextCpStarted() throws Exception {
         CountDownLatch slowCopy = new CountDownLatch(1);
-        AtomicBoolean stopper = new AtomicBoolean();
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)));
-
-        AtomicLong key = new AtomicLong();
-        AtomicLong value = new AtomicLong();
-
-        GridTestUtils.runAsync(() -> {
-                try {
-                    while (!stopper.get() && !Thread.currentThread().isInterrupted()) {
-                        ig.cache(DEFAULT_CACHE_NAME)
-                            .put(key.incrementAndGet(), value.incrementAndGet());
-
-                        U.sleep(10);
-                    }
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            });
 
         Map<Integer, Set<Integer>> toBackup = new HashMap<>();
 
@@ -269,6 +248,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .cache()
             .context()
             .backup();
+
+        // Change data before backup
+        for (int i = 0; i < 1024; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
 
         IgniteInternalFuture<?> backupFut = mgr
             .createLocalBackup("testBackup",
@@ -293,6 +276,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
                 },
                 mgr::deltaSupplierFactory);
 
+        // Change data after backup
+        for (int i = 0; i < 1024; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, 3 * i);
+
         // Backup on the next checkpoint must copy page before write it to partition
         CheckpointFuture cpFut = ig.context()
             .cache()
@@ -302,7 +289,6 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
 
         cpFut.finishFuture().get();
 
-        stopper.set(true);
         slowCopy.countDown();
 
         backupFut.get();

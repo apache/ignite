@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -175,6 +176,35 @@ public class FileSerialPageStore implements Closeable {
         return pages.get();
     }
 
+    /**
+     * @param delete {@code true} if the file storage must be deleted.
+     */
+    private void close(boolean delete) {
+        lock.writeLock().lock();
+
+        try {
+            U.closeQuiet(fileIo);
+
+            if (delete)
+                Files.delete(cfgPath.get());
+        }
+        catch (IOException e) {
+            U.error(log, "Unable to delete serial store file: " + cfgPath.get());
+        }
+        finally {
+            fileIo = null;
+
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     *  Delete the stored file.
+     */
+    public void delete() {
+        close(true);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(FileSerialPageStore.class, this);
@@ -182,19 +212,6 @@ public class FileSerialPageStore implements Closeable {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        if (fileIo == null)
-            return;
-
-        lock.writeLock().lock();
-
-        try {
-            U.closeQuiet(fileIo);
-        }
-        finally {
-            fileIo = null;
-
-            lock.writeLock().unlock();
-        }
-
+        close(false);
     }
 }

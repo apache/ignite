@@ -538,6 +538,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 store.doRecover(serial);
 
                 U.log(log, "Partition delta storage applied to: " + from.getName());
+
+                serial.delete();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
