@@ -18,12 +18,13 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +45,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.lang.Integer.parseInt;
+import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.nonNull;
 import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.toMap;
@@ -266,8 +268,8 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         assertEquals(newNode.context().cache().cacheGroups().size(), logLsnr.statPerCacheGrps.size());
         assertEquals(1, logLsnr.totalStats.size());
 
-        Map<String, Integer> topicStats = perCacheGroupTopicStatistics(logLsnr.totalStats.get(0)).entrySet().stream()
-            .collect(toMap(Map.Entry::getKey, entry -> sumNum(entry.getValue(), "p=([0-9]+)")));
+        Map<String, Integer> topicStats = perCacheGroupTopicStatistics(logLsnr.totalStats.iterator().next()).entrySet()
+            .stream().collect(toMap(Map.Entry::getKey, entry -> sumNum(entry.getValue(), "p=([0-9]+)")));
 
         logLsnr.cacheGrpRebParts
             .forEach((cacheGrpName, parts) -> assertEquals(parts.size(), topicStats.get(cacheGrpName).intValue()));
@@ -386,19 +388,19 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         static final String STARTED_REBALANCE_ROUTINE_TEXT = "Started rebalance routine";
 
         /** Output statistics per cache group. */
-        List<String> statPerCacheGrps = new ArrayList<>();
+        Collection<String> statPerCacheGrps = new ConcurrentLinkedQueue<>();
 
         /** Output total statistics. */
-        List<String> totalStats = new ArrayList<>();
+        Collection<String> totalStats = new ConcurrentLinkedQueue<>();
 
         /** Rebalanced partitions by cache groups. */
-        Map<String, Set<Integer>> cacheGrpRebParts = new HashMap<>();
+        Map<String, Set<Integer>> cacheGrpRebParts = new ConcurrentHashMap<>();
 
         /** Pattern for extracting the name of a cache group. */
-        Pattern cacheGrpExtractor = compile(STARTED_REBALANCE_ROUTINE_TEXT + " \\[(.+?)\\,");
+        Pattern cacheGrpExtractor = compile(STARTED_REBALANCE_ROUTINE_TEXT + " \\[(.+?),");
 
         /** Pattern for extracting fullPartitions for a cache group. */
-        Pattern fullPartsExtractor = compile("fullPartitions=\\[(.+?)\\]");
+        Pattern fullPartsExtractor = compile("fullPartitions=\\[(.+?)]");
 
         /** {@inheritDoc} */
         @Override public void accept(String logStr) {
@@ -406,8 +408,10 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
                 (logStr.contains(TOTAL_INFORMATION_TEXT) ? totalStats : statPerCacheGrps).add(logStr);
 
             if (logStr.contains(STARTED_REBALANCE_ROUTINE_TEXT)) {
-                cacheGrpRebParts.computeIfAbsent(extractValue(cacheGrpExtractor, logStr), s -> new HashSet<>())
-                    .addAll(parseParts(extractValue(fullPartsExtractor, logStr)));
+                cacheGrpRebParts.computeIfAbsent(
+                    extractValue(cacheGrpExtractor, logStr),
+                    s -> newSetFromMap(new ConcurrentHashMap<>())
+                ).addAll(parseParts(extractValue(fullPartsExtractor, logStr)));
             }
         }
 
