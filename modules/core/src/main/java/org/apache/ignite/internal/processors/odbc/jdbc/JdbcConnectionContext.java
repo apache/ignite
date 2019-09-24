@@ -71,6 +71,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
+    /** Session. */
+    private final GridNioSession ses;
+
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
 
@@ -81,10 +84,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     private final int maxCursors;
 
     /** Message parser. */
-    private JdbcMessageParser parser;
+    private JdbcMessageParser parser = null;
 
     /** Request handler. */
-    private JdbcRequestHandler handler;
+    private JdbcRequestHandler handler = null;
 
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
@@ -110,8 +113,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
-        super(ctx, connId, ses);
+        super(ctx, connId);
 
+        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 

@@ -37,8 +37,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 
-import org.apache.ignite.internal.util.nio.GridNioSession;
-
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 
 /**
@@ -108,15 +106,14 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /**
      * Ctor.
-     *  @param ctx Kernal context.
+     *
+     * @param ctx Kernal context.
      * @param connId Connection ID.
      * @param maxCursors Max active cursors.
-     * @param ses Network session.
      * @param thinCfg Thin-client configuration.
      */
-    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors, ThinClientConfiguration thinCfg,
-        GridNioSession ses) {
-        super(ctx, connId, ses);
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors, ThinClientConfiguration thinCfg) {
+        super(ctx, connId);
 
         this.maxCursors = maxCursors;
         maxActiveTxCnt = thinCfg.getMaxActiveTxPerConnection();

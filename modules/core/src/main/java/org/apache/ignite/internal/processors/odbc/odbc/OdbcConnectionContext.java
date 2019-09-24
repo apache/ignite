@@ -100,7 +100,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * @param maxCursors Maximum allowed cursors.
      */
     public OdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId, int maxCursors) {
-        super(ctx, connId, ses);
+        super(ctx, connId);
 
         this.ses = ses;
         this.busyLock = busyLock;

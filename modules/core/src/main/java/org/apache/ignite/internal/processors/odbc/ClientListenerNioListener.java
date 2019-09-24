@@ -368,7 +368,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg, ses);
+                return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg);
         }
 
         throw new IgniteCheckedException("Unknown client type: " + clientType);

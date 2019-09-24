@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
-import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -36,9 +35,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
 /**
  * Base connection context.
  */
-public abstract class ClientListenerAbstractConnectionContext
-    implements ClientListenerConnectionContext {
-
+public abstract class ClientListenerAbstractConnectionContext implements ClientListenerConnectionContext {
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -47,9 +44,6 @@ public abstract class ClientListenerAbstractConnectionContext
 
     /** Connection ID. */
     private long connId;
-
-    /** Session. */
-    protected final GridNioSession ses;
 
     /** Client version. */
     private ClientListenerProtocolVersion ver;
@@ -62,12 +56,10 @@ public abstract class ClientListenerAbstractConnectionContext
      *
      * @param ctx Kernal context.
      * @param connId Connection id.
-     * @param ses Grid NIO session.
      */
-    protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId, GridNioSession ses) {
+    protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId) {
         this.ctx = ctx;
         this.connId = connId;
-        this.ses = ses;
     }
 
     /**
@@ -143,10 +135,6 @@ public abstract class ClientListenerAbstractConnectionContext
     @Override public void onDisconnected() {
         if (ctx.security().enabled())
             ctx.security().onSessionExpired(secCtx.subject().id());
-    }
-
-    public GridNioSession session() {
-        return ses;
     }
 
     /** {@inheritDoc} */
