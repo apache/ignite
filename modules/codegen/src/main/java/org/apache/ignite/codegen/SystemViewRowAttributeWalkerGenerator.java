@@ -202,7 +202,6 @@ public class SystemViewRowAttributeWalkerGenerator {
     /** Adds import to set imports set. */
     private void addImport(Set<String> imports, Class<?> cls) {
         imports.add("import " + cls.getName().replaceAll("\\$", ".") + ';');
-
     }
 
     /**
