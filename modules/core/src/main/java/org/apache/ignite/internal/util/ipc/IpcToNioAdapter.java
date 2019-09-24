@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterChain;
@@ -69,10 +69,10 @@ public class IpcToNioAdapter<T> {
     private final ByteBuffer writeBuf;
 
     /** Received bytes count metric. */
-    private final LongAdderMetric rcvdBytesCntMetric;
+    private final AtomicLongMetric rcvdBytesCntMetric;
 
     /** Sent bytes count metric. */
-    private final LongAdderMetric sentBytesCntMetric;
+    private final AtomicLongMetric sentBytesCntMetric;
 
     /** */
     private final GridNioMessageWriterFactory writerFactory;
@@ -90,9 +90,9 @@ public class IpcToNioAdapter<T> {
     ) {
         assert mreg != null;
 
-        rcvdBytesCntMetric = mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+        rcvdBytesCntMetric = mreg.longMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
 
-        sentBytesCntMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+        sentBytesCntMetric = mreg.longMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
 
         this.endp = endp;
         this.writerFactory = writerFactory;

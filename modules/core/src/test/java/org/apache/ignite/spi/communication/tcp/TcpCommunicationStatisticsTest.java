@@ -33,6 +33,9 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -44,6 +47,10 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_NODE_ID_METRIC_NAME;
+
 /**
  * Test for TcpCommunicationSpi statistics.
  */
@@ -52,7 +59,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     private final Object mux = new Object();
 
     /** */
-    private final CountDownLatch latch = new CountDownLatch(1);
+    private CountDownLatch latch = new CountDownLatch(1);
 
     static {
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
@@ -94,6 +101,8 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         TcpCommunicationSpi spi = new SynchronizedCommunicationSpi();
 
         cfg.setCommunicationSpi(spi);
@@ -131,6 +140,19 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         startGrids(2);
 
         try {
+            Object node0consistentId = grid(0).localNode().consistentId();
+            Object node1consistentId = grid(1).localNode().consistentId();
+
+            String node0regName = MetricUtils.metricName(
+                COMMUNICATION_METRICS_GROUP_NAME,
+                node0consistentId.toString()
+            );
+
+            String node1regName = MetricUtils.metricName(
+                COMMUNICATION_METRICS_GROUP_NAME,
+                node1consistentId.toString()
+            );
+
             // Send custom message from node0 to node1.
             grid(0).context().io().sendToGridTopic(grid(1).cluster().localNode(), GridTopic.TOPIC_IO_TEST, new GridTestMessage(), GridIoPolicy.PUBLIC_POOL);
 
@@ -179,6 +201,24 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
                 assertEquals(1, msgsSentByType0.get(GridTestMessage.class.getName()).longValue());
                 assertEquals(1, msgsReceivedByType1.get(GridTestMessage.class.getName()).longValue());
+
+                MetricRegistry mreg0 = grid(0).context().metric().registry(node1regName);
+                MetricRegistry mreg1 = grid(1).context().metric().registry(node0regName);
+
+                AtomicLongMetric sentMetric = mreg0.findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+                assertNotNull(sentMetric);
+                assertEquals(mbean0.getSentMessagesCount(), sentMetric.value());
+
+                AtomicLongMetric rcvMetric = mreg1.findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
+                assertNotNull(rcvMetric);
+                assertEquals(mbean1.getReceivedMessagesCount(), rcvMetric.value());
+
+                stopGrid(1);
+
+                mreg0 = grid(0).context().metric().registry(node1regName);
+
+                sentMetric = mreg0.findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+                assertNull(sentMetric);
             }
         }
         finally {
