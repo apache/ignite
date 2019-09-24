@@ -1099,21 +1099,31 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
                 try {
                     // Clone added to support ZookeeperDiscoverySpi.
-                    Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
-
-                    m.setAccessible(true);
-
-                    cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
+                    cfg.setDiscoverySpi(cloneDiscoverySpi(cfg.getDiscoverySpi()));
 
                     resetDiscovery = false;
                 }
-                catch (NoSuchMethodException e) {
+                catch (NoSuchMethodException ignore) {
                     // Ignore.
                 }
             }
         }
 
         return new IgniteProcessProxy(cfg, log, (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+    }
+
+    /**
+     * Clone added to support ZookeeperDiscoverySpi.
+     *
+     * @param discoverySpi Discovery spi.
+     * @return Clone of discovery spi.
+     */
+    protected DiscoverySpi cloneDiscoverySpi(DiscoverySpi discoverySpi) throws Exception {
+        Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
+
+        m.setAccessible(true);
+
+        return (DiscoverySpi) m.invoke(discoverySpi);
     }
 
     /**
