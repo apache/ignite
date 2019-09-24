@@ -17,6 +17,7 @@
 package org.apache.ignite.console.agent.handlers;
 
 import java.net.ConnectException;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.LoggerFactory;
 
@@ -98,21 +100,22 @@ public class ClusterHandler extends AbstractClusterHandler {
 
                 return res;
             }
-            catch (ConnectException | InterruptedException | TimeoutException ignored) {
+            catch (ConnectException | InterruptedException | TimeoutException | HttpResponseException | AsynchronousCloseException ignored) {
                 // No-op.
             }
             catch (Throwable e) {
                 LT.error(log, e, "Failed execute request on node [url=" + nodeUrl + ", parameters=" + params + "]");
 
                 if (e instanceof SSLException) {
-                    LT.warn(log, "Please check that connection to cluster node configured correctly.");
+                    LT.warn(log, "Check that connection to cluster node configured correctly.");
                     LT.warn(log, "Options to check: --node-uri, --node-key-store, --node-key-store-password, --node-trust-store, --node-trust-store-password.");
                 }
             }
         }
 
-        LT.warn(log, "Failed to connect to cluster. " +
-            "Please ensure that nodes have [ignite-rest-http] module in classpath " +
+        LT.warn(log, "Failed to connect to cluster.");
+        LT.warn(log, "Check that '--node-uri' configured correctly.");
+        LT.warn(log, "Ensure that cluster nodes have [ignite-rest-http] module in classpath " +
             "(was copied from libs/optional to libs folder).");
 
         throw new ConnectException("Failed connect to cluster [urls=" + nodeURIs + ", parameters=" + params + "]");
