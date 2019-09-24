@@ -255,6 +255,18 @@ public class IgniteBenchmarkArguments {
     private String walMode = "LOG_ONLY";
 
     /** */
+    @Parameter(names = {"-cpf", "--checkpointFrequency"}, description = "Checkpoint frequency")
+    private int cpFreq = DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
+
+    /** */
+    @Parameter(names = {"-wpc", "--walPageCompression"}, description = "WAL page snapshot records compression algorithm")
+    private String walPageCompression = "DISABLED";
+
+    /** */
+    @Parameter(names = {"-wpcl", "--walPageCompressionLevel"}, description = "WAL page compression level")
+    private Integer walPageCompressionLevel = null;
+
+    /** */
     @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
     private String streamerCachesPrefix = "streamer";
 
@@ -310,6 +322,27 @@ public class IgniteBenchmarkArguments {
      */
     public String walMode() {
         return walMode;
+    }
+
+    /**
+     * @return Checkpoint frequency.
+     */
+    public int checkpointFrequency() {
+        return cpFreq;
+    }
+
+    /**
+     * @return WAL page compression.
+     */
+    public String walPageCompression() {
+        return walPageCompression;
+    }
+
+    /**
+     * @return WAL page compression level.
+     */
+    public Integer walPageCompressionLevel() {
+        return walPageCompressionLevel;
     }
 
     /**
