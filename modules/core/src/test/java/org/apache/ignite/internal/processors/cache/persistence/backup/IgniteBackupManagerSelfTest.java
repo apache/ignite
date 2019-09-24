@@ -21,8 +21,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
@@ -49,11 +47,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,7 +58,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -299,7 +293,11 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         backupFut.get();
     }
 
-    /** */
+    /**
+     * @param ccfg Default cache configuration.
+     * @return Ignite instance.
+     * @throws Exception If fails.
+     */
     private IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
         defaultCacheCfg = ccfg;
 
@@ -320,30 +318,6 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         cpFut.finishFuture().get();
 
         return ig;
-    }
-
-    /** */
-    private void partitionCRCs(PageStore pageStore, int partId) throws IgniteCheckedException {
-        long pageId = PageIdUtils.pageId(partId, FLAG_DATA, 0);
-
-        ByteBuffer buf = ByteBuffer.allocate(pageStore.getPageSize())
-            .order(ByteOrder.nativeOrder());
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
-            buf.clear();
-
-            pageStore.read(pageId, buf, true);
-
-            sb.append("[pageId=")
-                .append(pageId)
-                .append(", crc=")
-                .append(PageIO.getCrc(buf))
-                .append("]\n");
-        }
-
-        U.log(log, sb.append("[pages=").append(pageStore.pages()).append("]\n").toString());
     }
 
     /**
