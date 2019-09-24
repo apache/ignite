@@ -46,7 +46,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     private long connId;
 
     /** Authorization context. */
-    protected AuthorizationContext authCtx;
+    private AuthorizationContext authCtx;
 
     /**
      * Constructor.
