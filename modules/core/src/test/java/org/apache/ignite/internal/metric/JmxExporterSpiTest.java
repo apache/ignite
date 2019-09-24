@@ -51,8 +51,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -72,6 +70,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.CURRENT_VER;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
@@ -329,13 +329,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 Consumer<CompositeData> checkThin = c -> {
                     assertEquals("THIN", c.get("type"));
                     assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
-                    assertEquals(c.get("version"), ClientConnectionContext.DEFAULT_VER.asString());
+                    assertEquals(c.get("version"), DEFAULT_VER.asString());
                 };
 
                 Consumer<CompositeData> checkJdbc = c -> {
                     assertEquals("JDBC", c.get("type"));
                     assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
-                    assertEquals(c.get("version"), JdbcConnectionContext.CURRENT_VER.asString());
+                    assertEquals(c.get("version"), CURRENT_VER.asString());
                 };
 
                 CompositeData c0 = conns.get(new Object[] {0});

@@ -42,7 +42,6 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -65,6 +64,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.CURRENT_VER;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
@@ -438,18 +438,16 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertEquals(jdbcConn.localAddress().getHostName(), jdbcConn.remoteAddress().getHostName());
                     assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                         jdbcConn.localAddress().getPort());
-                    assertEquals(jdbcConn.version(), JdbcConnectionContext.CURRENT_VER.asString());
+                    assertEquals(jdbcConn.version(), CURRENT_VER.asString());
                 }
             }
         }
     }
 
     /** */
-    private Iterator<ClientConnectionView> jdbcConnectionsIterator(
-        SystemView<ClientConnectionView> conns) {
+    private Iterator<ClientConnectionView> jdbcConnectionsIterator(SystemView<ClientConnectionView> conns) {
         return F.iterator(conns.iterator(), identity(), true, v -> "JDBC".equals(v.type()));
     }
-
 
     /** Test node filter. */
     public static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
@@ -458,5 +456,4 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             return true;
         }
     }
-
 }
