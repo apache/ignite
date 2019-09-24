@@ -205,6 +205,8 @@ public class GridH2Table extends TableBase {
         // Indexes must be created in the end when everything is ready.
         idxs = tblDesc.createSystemIndexes(this);
 
+        //TODO: add idxs to SqlIndexView here!!!
+
         assert idxs != null;
 
         List<Index> clones = new ArrayList<>(idxs.size());
