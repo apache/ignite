@@ -374,6 +374,6 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxEnlistResponse.class, this);
+        return S.toString(GridNearTxEnlistResponse.class, this, super.toString());
     }
 }

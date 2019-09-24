@@ -156,6 +156,6 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheContinuousQueryBatchAck.class, this);
+        return S.toString(CacheContinuousQueryBatchAck.class, this, super.toString());
     }
 }

@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheConfigurationValidat
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLifecycleAwareSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLocalTxStoreExceptionSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMissingCommitVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMixedPartitionExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManagerSelfTest;
@@ -362,6 +363,7 @@ public class IgniteCacheTestSuite {
         //GridTestUtils.addTestIfNeeded(suite, InterceptorWithKeepBinaryCacheFullApiTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, BinaryMetadataRegistrationInsideEntryProcessorTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheMessageTest.class, ignoredTests);
 
         suite.add(IgniteGetNonPlainKeyReadThroughSelfTest.class);
 

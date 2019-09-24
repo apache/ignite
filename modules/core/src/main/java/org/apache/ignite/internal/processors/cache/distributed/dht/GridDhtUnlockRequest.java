@@ -95,7 +95,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtUnlockRequest.class, this);
+        return S.toString(GridDhtUnlockRequest.class, this, super.toString());
     }
 
     /** {@inheritDoc} */

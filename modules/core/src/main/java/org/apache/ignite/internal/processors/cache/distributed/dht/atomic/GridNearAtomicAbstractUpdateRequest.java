@@ -689,6 +689,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             appendFlag(flags, "retVal");
 
         return S.toString(GridNearAtomicAbstractUpdateRequest.class, this,
-            "flags", flags.toString());
+            "flags", flags.toString(),
+            "super", super.toString());
     }
 }

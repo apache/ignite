@@ -96,7 +96,7 @@ public class TxLocksRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxLocksRequest.class, this);
+        return S.toString(TxLocksRequest.class, this, super.toString());
     }
 
     /** {@inheritDoc} */

@@ -176,6 +176,6 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxQueryResultsEnlistResponse.class, this);
+        return S.toString(GridNearTxQueryResultsEnlistResponse.class, this, super.toString());
     }
 }

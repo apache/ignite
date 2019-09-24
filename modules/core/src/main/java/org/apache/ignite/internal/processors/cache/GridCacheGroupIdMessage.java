@@ -105,6 +105,6 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheGroupIdMessage.class, this);
+        return S.toString(GridCacheGroupIdMessage.class, this, super.toString());
     }
 }

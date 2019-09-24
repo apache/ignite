@@ -359,6 +359,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearGetResponse.class, this);
+        return S.toString(GridNearGetResponse.class, this, super.toString());
     }
 }

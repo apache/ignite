@@ -403,6 +403,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryResponse.class, this);
+        return S.toString(GridCacheQueryResponse.class, this, super.toString());
     }
 }
