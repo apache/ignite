@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.GreaterOrEqual(metrics.LastCheckpointTotalPagesNumber, 1);
                 Assert.AreEqual(0, metrics.LastCheckpointDataPagesNumber);
-                Assert.AreEqual(0, metrics.LastCheckpointCopiedOnWritePagesNumber);
+                Assert.GreaterOrEqual(metrics.LastCheckpointCopiedOnWritePagesNumber, 0);
                 Assert.Greater(TimeSpan.FromSeconds(1), metrics.LastCheckpointLockWaitDuration);
 
                 Assert.Greater(metrics.LastCheckpointPagesWriteDuration, TimeSpan.Zero);

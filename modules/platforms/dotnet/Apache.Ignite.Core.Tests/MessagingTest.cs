@@ -105,7 +105,6 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestMessageDataTypes()
         {
-            var topic = "dataTypes";
             object lastMsg = null;
             var evt = new AutoResetEvent(false);
 
@@ -119,16 +118,15 @@ namespace Apache.Ignite.Core.Tests
                 return true;
             });
 
-            messaging1.LocalListen(listener, topic);
-
             foreach (var msg in Objects.Where(x => x != null))
             {
+                var topic = "dataTypes" + Guid.NewGuid();
+                messaging1.LocalListen(listener, topic);
                 messaging2.Send(msg, topic);
                 evt.WaitOne(500);
                 Assert.AreEqual(msg, lastMsg);
+                messaging1.StopLocalListen(listener, topic);
             }
-
-            messaging1.StopLocalListen(listener, topic);
         }
 
         /// <summary>
