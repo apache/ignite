@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -30,6 +32,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -64,13 +67,18 @@ public class RestProcessedCommandListenerTest extends GridCommonAbstractTest {
     public void testRestCommandListener() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        ignite.context().rest().listenProcessedCommands((req, res) -> !LISTENED_CMDS.add(req), CLUSTER_ACTIVATE);
+        BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>> lsnr =
+            (req, res) -> LISTENED_CMDS.add(req);
+
+        ignite.context().rest().addCommandListener(lsnr);
 
         GridClient client = startClient();
 
         checkListenedCommands(() -> performRemoteActivation(client), CLUSTER_ACTIVATE);
 
         ignite.cluster().active(false);
+
+        ignite.context().rest().removeCommandListener(lsnr);
 
         checkListenedCommands(() -> performRemoteActivation(client));
     }

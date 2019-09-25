@@ -29,14 +29,16 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -68,11 +70,11 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -83,7 +85,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -147,8 +148,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final Thread sesTimeoutCheckerThread;
 
     /** Listeners of a REST command processing completion. */
-    private final Map<GridRestCommand, Set<IgniteBiPredicate<GridRestRequest, IgniteInternalFuture<GridRestResponse>>>>
-        lsnrs = new ConcurrentHashMap<>();
+    private final Queue<BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>>> lsnrs =
+        new ConcurrentLinkedQueue<>();
 
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
@@ -401,37 +402,52 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /**
      * Adds a listener which will be notified when processing of the REST command is complete.
      *
-     * @param lsnr Predicate that is called on each processed REST command. If predicate returns {@code false},
-     *      it will be unregistered.
-     * @param cmds {@link GridRestCommand} types for which this listener will be notified.
-     * @throws NullPointerException If any of passed arguments are {@code null}.
-     * @throws IllegalArgumentException If {@code cmds} is empty.
+     * @param lsnr Listener that is notified on each processed REST command.
+     * @throws NullPointerException If specified listener is {@code null}.
      */
-    public void listenProcessedCommands(IgniteBiPredicate<GridRestRequest, IgniteInternalFuture<GridRestResponse>> lsnr,
-        GridRestCommand... cmds) {
-        A.notNull(lsnr, "lsnr");
-        A.notEmpty(cmds, "cmds");
+    public void addCommandListener(BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>> lsnr) {
+        A.notNull(lsnr, "lsnr");;
 
-        for (GridRestCommand cmd : cmds)
-            lsnrs.computeIfAbsent(cmd, k -> new GridConcurrentLinkedHashSet<>()).add(lsnr);
+        lsnrs.add(lsnr);
+    }
+
+    /**
+     * Removes command listener.
+     *
+     * @param lsnr Command listener to unregister.
+     * @return {@code True} if specified listener was unregistered successfully.
+     * @throws NullPointerException If specified listener is {@code null}.
+     */
+
+    public boolean removeCommandListener(
+        BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        return lsnrs.remove(lsnr);
     }
 
 
     /**
-     * Notifies all REST command listeners which are subscribed for specified by
-     * {@link GridRestRequest#command()} command type.
+     * Notifies all REST listeners of the receipt of a REST request.
      *
      * @param req Received REST request.
      * @param fut Result of REST request processing.
      */
     private void notifyCommandListeners(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
-        Set<IgniteBiPredicate<GridRestRequest, IgniteInternalFuture<GridRestResponse>>> cmdLsnrs =
-            lsnrs.get(req.command());
+        GridRestResponse resp = null;
 
-        if (cmdLsnrs == null)
-            return;
+        IgniteCheckedException cmdExecutionError = null;
 
-        cmdLsnrs.removeIf(lsnr -> !lsnr.apply(req, fut));
+        try {
+            resp = fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            cmdExecutionError = e;
+        }
+
+        T2<GridRestResponse, IgniteCheckedException> res = new T2<>(resp, cmdExecutionError);
+
+        lsnrs.forEach(lsnr -> lsnr.accept(req, res));
     }
 
     /**
