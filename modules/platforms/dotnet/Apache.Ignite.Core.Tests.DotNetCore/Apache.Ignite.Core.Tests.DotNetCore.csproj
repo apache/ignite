@@ -141,6 +141,12 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EnvVar.cs" Link="Common\EnvVar.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Ssl\SslConfigurationTest.cs" Link="Common\SslConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Unmanaged\JniThreadDetachTest.cs">
+      <Link>Unmanaged\JniThreadDetachTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Unmanaged\UnmanagedThreadTest.cs">
+      <Link>Unmanaged\UnmanagedThreadTest.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
