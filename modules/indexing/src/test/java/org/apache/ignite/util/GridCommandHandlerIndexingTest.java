@@ -20,110 +20,26 @@ package org.apache.ignite.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.tree.SearchRow;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
 
 /**
- *
+ * If you not necessary create nodes for each test you can try use
+ * {@link GridCommandHandlerIndexingClusterByClassTest}.
  */
-public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTest {
-    /** Test cache name. */
-    protected static final String CACHE_NAME = "persons-cache-vi";
-
-    /** Test group name. */
-    protected static final String GROUP_NAME = "group1";
-
-    /**
-     * Tests that validation doesn't fail if nothing is broken.
-     */
-    @Test
-    public void testValidateIndexesNoErrors() throws Exception {
-        prepareGridForTest();
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
-
-        assertContains(log, testOut.toString(), "no issues found");
-    }
-
-    /**
-     * Tests that missing rows in CacheDataTree are detected.
-     */
-    @Test
-    public void testBrokenCacheDataTreeShouldFailValidation() throws Exception {
-        Ignite ignite = prepareGridForTest();
-
-        breakCacheDataTree(ignite, CACHE_NAME, 1);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK,
-            execute(
-                "--cache",
-                "validate_indexes",
-                CACHE_NAME,
-                "--check-first", "10000",
-                "--check-through", "10"));
-
-        String out = testOut.toString();
-
-        assertContains(log, out, "issues found (listed above)");
-
-        assertContains(log, out, "Key is present in SQL index, but is missing in corresponding data page.");
-    }
-
-    /**
-     * Tests that missing rows in H2 indexes are detected.
-     */
-    @Test
-    public void testBrokenSqlIndexShouldFailValidation() throws Exception {
-        Ignite ignite = prepareGridForTest();
-
-        breakSqlIndex(ignite, CACHE_NAME);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
-
-        assertContains(log, testOut.toString(), "issues found (listed above)");
-    }
-
+public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
     @Test
     public void testValidateIndexesFailedOnNotIdleCluster() throws Exception {
@@ -133,7 +49,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
 
         AtomicBoolean stopFlag = new AtomicBoolean();
 
-        IgniteCache<Integer, Person> cache = ignite.cache(CACHE_NAME);
+        IgniteCache<Integer, GridCommandHandlerIndexingUtils.Person> cache = ignite.cache(CACHE_NAME);
 
         Thread loadThread = new Thread(() -> {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -141,7 +57,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
             while (!stopFlag.get()) {
                 int id = rnd.nextInt();
 
-                cache.put(id, new Person(id, "name" + id));
+                cache.put(id, new GridCommandHandlerIndexingUtils.Person(id, "name" + id));
 
                 if (Thread.interrupted())
                     break;
@@ -196,74 +112,18 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
     }
 
     /**
-     * Test to validate only specified cache, not all cache group.
-     */
-    @Test
-    public void testValidateSingleCacheShouldNotTriggerCacheGroupValidation() throws Exception {
-        Ignite ignite = prepareGridForTest();
-
-        ignite.getOrCreateCache(new CacheConfiguration<Integer, Person>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setGroupName(GROUP_NAME)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setBackups(1)
-            .setQueryEntities(F.asList(personEntity(true, true)))
-            .setAffinity(new RendezvousAffinityFunction(false, 32)));
-
-        try (IgniteDataStreamer<Integer, Person> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 10_000; i++)
-                streamer.addData(i, new Person(i, "val" + i));
-        }
-
-        forceCheckpoint();
-
-        breakCacheDataTree(ignite, CACHE_NAME, 1);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", DEFAULT_CACHE_NAME, "--check-through", "10"));
-        assertContains(log, testOut.toString(), "no issues found");
-    }
-
-    /**
-     * Test validate_indexes with empty cache list.
-     */
-    @Test
-    public void testCacheValidateIndexesPassEmptyCacheList() throws Exception {
-        prepareGridForTest();
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes"));
-        assertContains(log, testOut.toString(), "no issues found");
-    }
-
-    /**
+     * Create and fill nodes.
      *
+     * @throws Exception
      */
     private Ignite prepareGridForTest() throws Exception{
         Ignite ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
-        Ignite client = startGrid("client");
+        Ignite client = startGrid(CLIENT_NODE_NAME_PREFIX);
 
-        client.getOrCreateCache(new CacheConfiguration<Integer, Person>()
-                .setName(CACHE_NAME)
-                .setGroupName(GROUP_NAME)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setBackups(1)
-                .setQueryEntities(F.asList(personEntity(true, true)))
-                .setAffinity(new RendezvousAffinityFunction(false, 32)));
-
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-
-        try (IgniteDataStreamer<Integer, Person> streamer = client.dataStreamer(CACHE_NAME)) {
-            for (int i = 0; i < 10_000; i++)
-                streamer.addData(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
-        }
+        createAndFillCache(client, CACHE_NAME, GROUP_NAME);
 
         return ignite;
     }

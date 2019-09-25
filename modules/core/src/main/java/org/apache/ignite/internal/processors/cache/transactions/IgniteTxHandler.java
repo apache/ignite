@@ -796,8 +796,6 @@ public class IgniteTxHandler {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
 
-        ctx.tm().onFinishedRemote(nodeId, res.threadId());
-
         GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
         if (fut == null) {
@@ -2242,7 +2240,7 @@ public class IgniteTxHandler {
         }
 
         try {
-            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
+            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId(), req.topologyVersion()), SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignored) {
             if (txRecoveryMsgLog.isDebugEnabled())

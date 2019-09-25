@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -70,11 +71,13 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridFilteredClosableIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -612,7 +615,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             ig.context().cache().context().database().checkpointReadUnlock();
         }
 
-        Collection<FullPageId> cpPages = mem.beginCheckpoint();
+        Collection<FullPageId> cpPages = mem.beginCheckpoint(new GridFinishedFuture());
 
         ig.context().cache().context().database().checkpointReadLock();
 
@@ -643,7 +646,8 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                     buf.rewind();
 
-                    mem.getForCheckpoint(fullId, buf, null);
+                    mem.checkpointWritePage(fullId, buf, (fullPageId, buffer, tag) -> {
+                    }, null);
 
                     buf.position(PageIO.COMMON_HEADER_END);
 
@@ -941,7 +945,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             try {
                 snapshot = new HashMap<>(resMap);
 
-                pageIds = mem.beginCheckpoint();
+                pageIds = mem.beginCheckpoint(new GridFinishedFuture());
 
                 checkpoints--;
 
@@ -973,8 +977,16 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                     Integer tag;
 
+                    AtomicReference<Integer> tag0 = new AtomicReference<>();
+
+                    PageStoreWriter pageStoreWriter = (fullPageId, buf, tagx) -> {
+                        tag0.set(tagx);
+                    };
+
                     while (true) {
-                        tag = mem.getForCheckpoint(fullId, tmpBuf, null);
+                        mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null);
+
+                        tag = tag0.get();
 
                         if (tag != null && tag == PageMemoryImpl.TRY_AGAIN_TAG)
                             continue;

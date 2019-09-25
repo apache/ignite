@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * Predictions aggregator returning the most frequently prediction.
  */
-public class OnMajorityPredictionsAggregator implements PredictionsAggregator {
+public final class OnMajorityPredictionsAggregator implements PredictionsAggregator {
     /** {@inheritDoc} */
     @Override public Double apply(double[] estimations) {
         A.notEmpty(estimations, "estimations vector");

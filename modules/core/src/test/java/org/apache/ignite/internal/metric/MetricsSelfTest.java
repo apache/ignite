@@ -18,39 +18,43 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertNull;
-import static junit.framework.TestCase.assertTrue;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertArrayEquals;
 
 /** */
-public class MetricsSelfTest {
+public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private MetricRegistry mreg;
 
@@ -308,6 +312,52 @@ public class MetricsSelfTest {
 
         assertNotNull(mreg.findMetric("my.name"));
     }
+
+    /** */
+    @Test
+    public void testHitRateMetric() throws Exception {
+        long rateTimeInterval = 500;
+
+        HitRateMetric metric = mreg.hitRateMetric("testHitRate", null, rateTimeInterval, 10);
+
+        assertEquals(0, metric.value());
+
+        long startTs = U.currentTimeMillis();
+
+        GridTestUtils.runMultiThreaded(metric::increment, 10, "test-thread");
+
+        assertTrue(metric.value() > 0 || U.currentTimeMillis() - startTs > rateTimeInterval);
+
+        U.sleep(rateTimeInterval * 2);
+
+        assertEquals(0, metric.value());
+
+        assertEquals(rateTimeInterval, metric.rateTimeInterval());
+
+        metric.reset(rateTimeInterval * 2, 10);
+
+        assertEquals(rateTimeInterval * 2, metric.rateTimeInterval());
+    }
+
+    /** */
+    @Test
+    public void testHistogramNames() throws Exception {
+        HistogramMetric h = new HistogramMetric("test", null, new long[]{10, 50, 500});
+
+        Map<String, T2<long[], String[]>> cache = new HashMap<>();
+
+        String[] names = histogramBucketNames(h, cache);
+
+        assertArrayEquals(new String[] {
+            "test_0_10",
+            "test_10_50",
+            "test_50_500",
+            "test_500_inf"
+        }, names);
+
+        assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
+    }
+
 
     /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {

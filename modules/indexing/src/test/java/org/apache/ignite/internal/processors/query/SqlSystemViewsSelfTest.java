@@ -73,6 +73,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -102,9 +103,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         cleanPersistenceDir();
     }
 
-    /**
-     * @return System schema name.
-     */
+    /** @return System schema name. */
     protected String systemSchemaName() {
         return "SYS";
     }
@@ -875,8 +874,18 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
+        IgniteConfiguration cfg = super.getConfiguration()
+            .setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME))
+            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
+
+        return cfg;
     }
 
     /**
@@ -1241,13 +1250,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 "REBALANCE_BATCHES_PREFETCH_COUNT, REBALANCE_ORDER, " +
                 "EVICTION_FILTER, EVICTION_POLICY_FACTORY, " +
                 "IS_NEAR_CACHE_ENABLED, NEAR_CACHE_EVICTION_POLICY_FACTORY, NEAR_CACHE_START_SIZE, " +
-                "DEFAULT_LOCK_TIMEOUT, CACHE_INTERCEPTOR, CACHE_STORE_FACTORY, " +
+                "DEFAULT_LOCK_TIMEOUT, INTERCEPTOR, CACHE_STORE_FACTORY, " +
                 "IS_STORE_KEEP_BINARY, IS_READ_THROUGH, IS_WRITE_THROUGH, " +
                 "IS_WRITE_BEHIND_ENABLED, WRITE_BEHIND_COALESCING, WRITE_BEHIND_FLUSH_SIZE, " +
-                "WRITE_BEHIND_FLUSH_FREQUENCY, WRITE_BEHIND_FLUSH_THREAD_COUNT, WRITE_BEHIND_FLUSH_BATCH_SIZE, " +
+                "WRITE_BEHIND_FLUSH_FREQUENCY, WRITE_BEHIND_FLUSH_THREAD_COUNT, WRITE_BEHIND_BATCH_SIZE, " +
                 "MAX_CONCURRENT_ASYNC_OPERATIONS, CACHE_LOADER_FACTORY, CACHE_WRITER_FACTORY, EXPIRY_POLICY_FACTORY, " +
                 "IS_SQL_ESCAPE_ALL, SQL_SCHEMA, SQL_INDEX_MAX_INLINE_SIZE, IS_SQL_ONHEAP_CACHE_ENABLED, " +
-                "SQL_ONHEAP_CACHE_MAX_SIZE, QUERY_DETAILS_METRICS_SIZE, QUERY_PARALLELISM, MAX_QUERY_ITERATORS_COUNT, " +
+                "SQL_ONHEAP_CACHE_MAX_SIZE, QUERY_DETAIL_METRICS_SIZE, QUERY_PARALLELISM, MAX_QUERY_ITERATORS_COUNT, " +
             "DATA_REGION_NAME FROM " + systemSchemaName() + ".CACHES");
 
         assertColumnTypes(resAll.get(0),
@@ -1293,7 +1302,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(0L, execSql("SELECT COUNT(*) FROM " + systemSchemaName() + ".CACHES WHERE CACHE_NAME = 'no_such_cache'").get(0)
             .get(0));
 
-        assertEquals(0L, execSql("SELECT COUNT(*) FROM " + systemSchemaName() + ".CACHES WHERE CACHE_NAME = 1").get(0).get(0));
+        assertEquals(0L, execSql("SELECT COUNT(*) FROM " + systemSchemaName() + ".CACHES WHERE CACHE_NAME = '1'").get(0).get(0));
 
         assertEquals("TestNodeFilter", execSql("SELECT NODE_FILTER FROM " + systemSchemaName() + ".CACHES WHERE CACHE_NAME = " +
             "'cache_atomic_part'").get(0).get(0));

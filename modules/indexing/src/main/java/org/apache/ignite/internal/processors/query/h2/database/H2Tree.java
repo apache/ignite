@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -43,9 +46,8 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerI
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
@@ -59,6 +61,9 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
  * H2 tree index implementation.
  */
 public class H2Tree extends BPlusTree<H2Row, H2Row> {
+    /** */
+    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -105,7 +110,8 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     private final H2RowCache rowCache;
 
     /** How often real invocation of inline size calculation will be skipped. */
-    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
+    private final int inlineSizeThrottleThreshold =
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, 1_000);
 
     /** Counter of inline size calculation for throttling real invocations. */
     private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
@@ -155,6 +161,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         String tblName,
         ReuseList reuseList,
         int grpId,
+        String grpName,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
@@ -174,6 +181,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         super(
             name,
             grpId,
+            grpName,
             pageMem,
             wal,
             globalRmvId,
@@ -520,7 +528,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
         inlineSizeCalculationCntr.set(++invokeCnt);
 
-        boolean throttle = invokeCnt % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+        boolean throttle = invokeCnt % inlineSizeThrottleThreshold != 0;
 
         if (throttle)
             return;
@@ -650,5 +658,22 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2Tree.class, this, "super", super.toString());
+    }
+
+    /**
+     * Construct the exception and invoke failure processor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pageIds Pages ids.
+     * @return New CorruptedTreeException instance.
+     */
+    @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, cacheName, idxName, pageIds);
+
+        processFailure(FailureType.CRITICAL_ERROR, e);
+
+        return e;
     }
 }

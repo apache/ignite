@@ -467,7 +467,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     }
                 }
 
-                msg.append(", totalParts= " + grp.topology().localPartitions().size() + "]");
+                msg.append(", totalParts=" + grp.topology().localPartitions().size() + "]");
 
                 log.info(msg.toString());
             }
