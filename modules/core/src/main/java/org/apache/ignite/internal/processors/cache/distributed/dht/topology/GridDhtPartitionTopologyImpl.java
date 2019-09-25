@@ -41,6 +41,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -2748,6 +2749,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
+            WALPointer ptr = null;
+
             lock.readLock().lock();
 
             try {
@@ -2778,7 +2781,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                         gapStart - 1, gapStop - gapStart + 1);
 
                                     try {
-                                        ctx.wal().log(rec);
+                                        ptr = ctx.wal().log(rec);
                                     }
                                     catch (IgniteCheckedException e) {
                                         throw new IgniteException(e);
@@ -2793,7 +2796,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
             finally {
-                lock.readLock().unlock();
+                try {
+                    if (ptr != null)
+                        ctx.wal().flush(ptr, false);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+                finally {
+                    lock.readLock().unlock();
+                }
             }
         }
         finally {
