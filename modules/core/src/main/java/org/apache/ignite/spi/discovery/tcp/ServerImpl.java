@@ -2044,7 +2044,11 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param rmtPerms The second set of permissions.
      * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
      */
-    private boolean permissionsEqual(SecurityPermissionSet locPerms, SecurityPermissionSet rmtPerms) {
+    private boolean permissionsEqual(@Nullable SecurityPermissionSet locPerms,
+        @Nullable SecurityPermissionSet rmtPerms) {
+        if (locPerms == null || rmtPerms == null)
+            return false;
+
         boolean dfltAllowMatch = locPerms.defaultAllowAll() == rmtPerms.defaultAllowAll();
 
         boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
@@ -4737,12 +4741,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
                             );
 
-                            boolean subjIsNull = subj == null || subj.subject() == null;
-                            boolean coordSubjIsNull = coordSubj == null || coordSubj.subject() == null;
-
-                            if (subjIsNull ||
-                                coordSubjIsNull ||
-                                !permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
+                            if (!permissionsEqual(getPermissions(coordSubj), getPermissions(subj))) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication failed [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
@@ -4940,6 +4939,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
+        }
+
+        /**
+         * @param secCtx Sec context.
+         * @return Security permission set.
+         */
+        private @Nullable SecurityPermissionSet getPermissions(SecurityContext secCtx) {
+            if (secCtx == null || secCtx.subject() == null)
+                return null;
+
+            return secCtx.subject().permissions();
         }
 
         /**
