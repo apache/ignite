@@ -2735,6 +2735,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
             .collect(Collectors.toList());
 
+        grpToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
+
         if (!exchActions.cacheStopRequests().isEmpty())
             removeOffheapListenerAfterCheckpoint(grpToStop);
 
