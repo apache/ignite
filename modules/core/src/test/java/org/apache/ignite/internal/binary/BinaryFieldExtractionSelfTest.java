@@ -129,7 +129,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testChangeTypeIdOfBinaryField() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -163,7 +162,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testChangeTypeIdOfBinaryFieldCaseNotFoundExpectedTypeId() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
