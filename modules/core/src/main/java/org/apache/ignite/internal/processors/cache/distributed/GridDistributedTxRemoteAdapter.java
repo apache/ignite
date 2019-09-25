@@ -525,31 +525,20 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             GridDhtLocalPartition locPart =
                                     cacheCtx.group().topology().localPartition(txEntry.cached().partition());
 
-                            boolean reserved = false;
-
-                            if (!near() && locPart != null && !reservedParts.contains(locPart) &&
-                                    (!(reserved = locPart.reserve()) || locPart.state() == RENTING)) {
-                                LT.warn(log(), "Skipping update to partition that is concurrently evicting " +
-                                        "[grp=" + cacheCtx.group().cacheOrGroupName() + ", part=" + locPart + "]");
-
-                                // Reserved RENTING partition.
-                                if (reserved) {
-                                    assert locPart.state() != EVICTED && locPart.reservations() > 0;
+                            if (!near() && locPart != null ) {
+                                if (!reservedParts.contains(locPart) && locPart.reserve()) {
+                                    assert locPart.state() != EVICTED && locPart.reservations() > 0 : locPart;
 
                                     reservedParts.add(locPart);
                                 }
 
-                                continue;
+                                if (locPart.state() == RENTING || locPart.state() == EVICTED) {
+                                    LT.warn(log(), "Skipping update to partition that is concurrently evicting " +
+                                        "[grp=" + cacheCtx.group().cacheOrGroupName() + ", part=" + locPart + "]");
+
+                                    continue;
+                                }
                             }
-
-                            if (reserved) {
-                                assert locPart.state() != EVICTED && locPart.reservations() > 0;
-
-                                reservedParts.add(locPart);
-                            }
-
-                            assert near() || locPart == null ||
-                                    !(locPart.state() == RENTING || locPart.state() == EVICTED) : locPart;
 
                             boolean replicate = cacheCtx.isDrEnabled();
 
