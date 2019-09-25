@@ -66,56 +66,25 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean localResult();
 
-    /**
-     * Gets unique identifier for this transaction.
-     *
-     * @return Transaction UID.
-     */
+    /** {@inheritDoc} */
     @Override public IgniteUuid xid();
 
-    /**
-     * ID of the node on which this transaction started.
-     *
-     * @return Originating node ID.
-     */
+    /** {@inheritDoc} */
     @Override public UUID nodeId();
 
-    /**
-     * ID of the thread in which this transaction started.
-     *
-     * @return Thread ID.
-     */
+    /** {@inheritDoc} */
     @Override public long threadId();
 
-    /**
-     * Start time of this transaction.
-     *
-     * @return Start time of this transaction on this node.
-     */
+    /** {@inheritDoc} */
     @Override public long startTime();
 
-    /**
-     * Cache transaction isolation level.
-     *
-     * @return Isolation level.
-     */
+    /** {@inheritDoc} */
     @Override public TransactionIsolation isolation();
 
-    /**
-     * Cache transaction concurrency mode.
-     *
-     * @return Concurrency mode.
-     */
+    /** {@inheritDoc} */
     @Override public TransactionConcurrency concurrency();
 
-    /**
-     * Flag indicating whether transaction was started automatically by the
-     * system or not. System will start transactions implicitly whenever
-     * any cache {@code put(..)} or {@code remove(..)} operation is invoked
-     * outside of transaction.
-     *
-     * @return {@code True} if transaction was started implicitly.
-     */
+    /** {@inheritDoc} */
     @Override public boolean implicit();
 
     /**
@@ -131,19 +100,10 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean isInvalidate();
 
-    /**
-     * Gets current transaction state value.
-     *
-     * @return Current transaction state.
-     */
+    /** {@inheritDoc} */
     @Override public TransactionState state();
 
-    /**
-     * Gets timeout value in milliseconds for this transaction. If transaction times
-     * out prior to it's completion, {@link org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException} will be thrown.
-     *
-     * @return Transaction timeout value.
-     */
+    /** {@inheritDoc} */
     @Override public long timeout();
 
     /**
@@ -224,13 +184,7 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean storeWriteThrough();
 
-    /**
-     * Checks if this is system cache transaction. System transactions are isolated from user transactions
-     * because some of the public API methods may be invoked inside user transactions and internally start
-     * system cache transactions.
-     *
-     * @return {@code True} if transaction is started for system cache.
-     */
+    /** {@inheritDoc} */
     @Override public boolean system();
 
     /**
@@ -248,9 +202,7 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public AffinityTopologyVersion topologyVersionSnapshot();
 
-    /**
-     * @return Flag indicating whether transaction is implicit with only one key.
-     */
+    /** {@inheritDoc} */
     @Override public boolean implicitSingle();
 
     /**
@@ -358,29 +310,19 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean ownsLockUnsafe(GridCacheEntryEx entry);
 
-    /**
-     * @return {@code True} if near transaction.
-     */
+    /** {@inheritDoc} */
     @Override public boolean near();
 
-    /**
-     * @return {@code True} if DHT transaction.
-     */
+    /** {@inheritDoc} */
     @Override public boolean dht();
 
-    /**
-     * @return {@code True} if dht colocated transaction.
-     */
+    /** {@inheritDoc} */
     @Override public boolean colocated();
 
-    /**
-     * @return {@code True} if transaction is local, {@code false} if it's remote.
-     */
+    /** {@inheritDoc} */
     @Override public boolean local();
 
-    /**
-     * @return Subject ID initiated this transaction.
-     */
+    /** {@inheritDoc} */
     @Override public UUID subjectId();
 
     /**
@@ -628,14 +570,10 @@ public interface IgniteInternalTx extends TransactionView {
         Collection<GridCacheVersion> committed,
         Collection<GridCacheVersion> rolledback);
 
-    /**
-     * @return {@code True} if transaction has at least one internal entry.
-     */
+    /** {@inheritDoc} */
     @Override public boolean internal();
 
-    /**
-     * @return {@code True} if transaction is a one-phase-commit transaction.
-     */
+    /** {@inheritDoc} */
     @Override public boolean onePhaseCommit();
 
     /**
@@ -643,11 +581,7 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public void commitError(Throwable e);
 
-    /**
-     * Returns label of transactions.
-     *
-     * @return Label of transaction or {@code null} if there was not set.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public String label();
 
     /**
