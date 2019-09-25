@@ -88,7 +88,9 @@ import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
+import static org.apache.ignite.testframework.GridTestUtils.LOCAL_DATETIME_REGEXP;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertMatches;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -419,7 +421,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String testOutStr = testOut.toString();
 
-        assertContains(log, testOutStr, "Control utility has completed execution at: ");
+        assertMatches(log, testOutStr, "Time: " + LOCAL_DATETIME_REGEXP);
+        assertMatches(log, testOutStr, "Control utility has completed execution at: " + LOCAL_DATETIME_REGEXP);
+        assertMatches(log, testOutStr, "Execution time: \\d+ ms");
+
     }
 
     /** */
