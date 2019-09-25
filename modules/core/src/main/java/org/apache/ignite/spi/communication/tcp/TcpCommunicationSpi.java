@@ -403,7 +403,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
 
     /** Communication metrics group name. */
-    public static final String COMMUNICATION_METRICS_GROUP_NAME = "communication.tcp";
+    public static final String COMMUNICATION_METRICS_GROUP_NAME = MetricUtils.metricName("communication", "tcp");
 
     /** */
     public static final String SENT_MESSAGES_METRIC_NAME = "sentMessagesCount";
