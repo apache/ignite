@@ -17,36 +17,46 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
+import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
-import org.apache.ignite.internal.processors.service.DummyService;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -55,8 +65,10 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.lang.GridFunc.identity;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
@@ -386,6 +398,56 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             barrier.await();
         }
+    }
+
+    /** */
+    @Test
+    public void testClientsConnections() throws Exception {
+        try (IgniteEx g0 = startGrid(0)) {
+            String host = g0.configuration().getClientConnectorConfiguration().getHost();
+
+            if (host == null)
+                host = g0.configuration().getLocalHost();
+
+            int port = g0.configuration().getClientConnectorConfiguration().getPort();
+
+            SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_SYS_VIEW);
+
+            try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+                assertEquals(1, conns.size());
+
+                ClientConnectionView cliConn = conns.iterator().next();
+
+                assertEquals("THIN", cliConn.type());
+                assertEquals(cliConn.localAddress().getHostName(), cliConn.remoteAddress().getHostName());
+                assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
+                    cliConn.localAddress().getPort());
+                assertEquals(cliConn.version(), ProtocolVersion.CURRENT_VER.toString());
+
+                try (Connection conn =
+                         new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
+                    assertEquals(2, conns.size());
+                    assertEquals(1, F.size(jdbcConnectionsIterator(conns)));
+
+                    ClientConnectionView jdbcConn = jdbcConnectionsIterator(conns).next();
+
+                    assertEquals("JDBC", jdbcConn.type());
+                    assertEquals(jdbcConn.localAddress().getHostName(), jdbcConn.remoteAddress().getHostName());
+                    assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
+                        jdbcConn.localAddress().getPort());
+                    assertEquals(jdbcConn.version(), JdbcConnectionContext.CURRENT_VER.asString());
+                }
+            }
+
+            boolean res = GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000);
+
+            assertTrue(res);
+        }
+    }
+
+    /** */
+    private Iterator<ClientConnectionView> jdbcConnectionsIterator(SystemView<ClientConnectionView> conns) {
+        return F.iterator(conns.iterator(), identity(), true, v -> "JDBC".equals(v.type()));
     }
 
     /** Test node filter. */
