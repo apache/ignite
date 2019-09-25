@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.OpenOption;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -58,7 +55,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test scenarios with rebalancing, IGNITE_DISABLE_WAL_DURING_REBALANCING optimization and topology changes
@@ -131,6 +127,9 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        // This is required because some tests do full clearing of persistence folder losing BLT info on next join.
+        cfg.setConsistentId(igniteInstanceName);
+
         CacheConfiguration ccfg1 = new CacheConfiguration("cache1")
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.REPLICATED)
@@ -188,11 +187,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         for (int i = 1; i < 4; i++)
           fillCache(ig0.dataStreamer("cache" + i), CACHE_SIZE, GENERATING_FUNC);
 
-        String ig1Name = "node01-" + grid(1).localNode().consistentId();
+        String ig1Name = grid(1).name();
 
         stopGrid(1);
 
-        cleanPersistenceFiles(ig1Name);
+        cleanPersistenceDir(ig1Name);
 
         int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
 
@@ -298,9 +297,9 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         stopGrid(2);
 
         // Stop idx=1 and cleanup LFS to trigger full rebalancing after it restart.
-        String ig1Name = "node01-" + grid(1).localNode().consistentId();
+        String ig1Name = grid(1).name();
         stopGrid(1);
-        cleanPersistenceFiles(ig1Name);
+        cleanPersistenceDir(ig1Name);
 
         // Blocking fileIO and blockMessagePredicate to block checkpointer and rebalancing for node idx=1.
         useBlockingFileIO = true;
@@ -356,6 +355,43 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         verifyCache(ig1.cache(CACHE3_NAME), GENERATING_FUNC);
     }
 
+    /**
+     * Scenario: when rebalanced MOVING partitions are owning by checkpointer,
+     * concurrent no-op exchange should not trigger partition clearing.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalancedPartitionsOwningWithAffinitySwitch() throws Exception {
+        Ignite ig0 = startGridsMultiThreaded(4);
+        fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
+
+        // Stop idx=2 to prepare for baseline topology change later.
+        stopGrid(2);
+
+        // Stop idx=1 and cleanup LFS to trigger full rebalancing after it restart.
+        String ig1Name = grid(1).name();
+        stopGrid(1);
+        cleanPersistenceDir(ig1Name);
+
+        // Blocking fileIO and blockMessagePredicate to block checkpointer and rebalancing for node idx=1.
+        useBlockingFileIO = true;
+
+        // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
+        fileIoBlockingSemaphore.drainPermits();
+
+        // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
+        startGrid(1).cachex(CACHE3_NAME).context().group().preloader().rebalanceFuture().get();
+
+        startGrid("client");
+
+        fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid(0), CACHE3_NAME));
+    }
+
     /** FileIOFactory implementation that enables blocking of writes to disk so checkpoint can be blocked. */
     private static class BlockingCheckpointFileIOFactory implements FileIOFactory {
         /** Serial version uid. */
@@ -409,20 +445,6 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
                 }
             };
         }
-    }
-
-    /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
-        String ig1DbPath = Paths.get(DFLT_STORE_DIR, igName).toString();
-
-        File igDbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbPath, false);
-
-        U.delete(igDbDir);
-        Files.createDirectory(igDbDir.toPath());
-
-        String ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
     }
 
     /** */

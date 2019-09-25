@@ -123,6 +123,7 @@ import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -176,6 +177,9 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_J
 public class IgnitionEx {
     /** Default configuration path relative to Ignite home. */
     public static final String DFLT_CFG = "config/default-config.xml";
+
+    /** Class name for a SQL view exporter of system views. */
+    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.spi.systemview.SqlViewExporterSpi";
 
     /** Map of named Ignite instances. */
     private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
@@ -1572,6 +1576,12 @@ public class IgnitionEx {
         /** Query executor service. */
         private ThreadPoolExecutor schemaExecSvc;
 
+        /** Rebalance executor service. */
+        private ThreadPoolExecutor rebalanceExecSvc;
+
+        /** Rebalance striped executor service. */
+        private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
+
         /** Executor service. */
         private Map<String, ThreadPoolExecutor> customExecSvcs;
 
@@ -1882,7 +1892,9 @@ public class IgnitionEx {
                 cfg.getAsyncCallbackPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "callback",
-                oomeHnd);
+                oomeHnd,
+                false,
+                0);
 
             if (cfg.getConnectorConfiguration() != null) {
                 validateThreadPoolSize(cfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
@@ -1968,6 +1980,28 @@ public class IgnitionEx {
 
             schemaExecSvc.allowCoreThreadTimeOut(true);
 
+            validateThreadPoolSize(cfg.getRebalanceThreadPoolSize(), "rebalance");
+
+            rebalanceExecSvc = new IgniteThreadPoolExecutor(
+                "rebalance",
+                cfg.getIgniteInstanceName(),
+                cfg.getRebalanceThreadPoolSize(),
+                cfg.getRebalanceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                oomeHnd);
+
+            rebalanceExecSvc.allowCoreThreadTimeOut(true);
+
+            rebalanceStripedExecSvc = new IgniteStripedThreadPoolExecutor(
+                cfg.getRebalanceThreadPoolSize(),
+                cfg.getIgniteInstanceName(),
+                "rebalance-striped",
+                oomeHnd,
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME);
+
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 
@@ -2018,6 +2052,8 @@ public class IgnitionEx {
                     callbackExecSvc,
                     qryExecSvc,
                     schemaExecSvc,
+                    rebalanceExecSvc,
+                    rebalanceStripedExecSvc,
                     customExecSvcs,
                     new CA() {
                         @Override public void apply() {
@@ -2432,6 +2468,21 @@ public class IgnitionEx {
 
             if (F.isEmpty(cfg.getMetricExporterSpi()))
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+
+            if (F.isEmpty(cfg.getSystemViewExporterSpi())) {
+                if (IgniteUtils.inClassPath(SYSTEM_VIEW_SQL_SPI)) {
+                    try {
+                        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi(),
+                            U.newInstance(SYSTEM_VIEW_SQL_SPI));
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
+                }
+                else
+                    cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+            }
         }
 
         /**
@@ -2661,6 +2712,14 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), schemaExecSvc, log);
 
             schemaExecSvc = null;
+
+            U.shutdownNow(getClass(), rebalanceExecSvc, log);
+
+            rebalanceExecSvc = null;
+
+            U.shutdownNow(getClass(), rebalanceStripedExecSvc, log);
+
+            rebalanceStripedExecSvc = null;
 
             U.shutdownNow(getClass(), stripedExecSvc, log);
 
