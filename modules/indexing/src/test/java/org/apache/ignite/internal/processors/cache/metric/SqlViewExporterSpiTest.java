@@ -259,12 +259,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         int port = ignite.configuration().getClientConnectorConfiguration().getPort();
 
-        try (IgniteClient client =
-                 Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
-
-            try (Connection conn =
-                     new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
-
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+            try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
                 List<List<?>> conns = execute(ignite, "SELECT * FROM SYS.CLIENT_CONNECTIONS");
 
                 assertEquals(2, conns.size());
