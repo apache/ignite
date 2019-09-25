@@ -512,18 +512,17 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
-            final Map<? extends ComputeJob, ClusterNode> mappedJobs;
-
-            if (SecurityUtils.isSandboxEnabled()) {
+            if (SecurityUtils.isSandboxEnabled())
                 SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, task, ses, balancer, mapper));
-
-                mappedJobs = SecurityUtils.doPrivileged(() -> mappedJobs(shuffledNodes));
-            }
-            else {
+            else
                 ctx.resource().inject(dep, task, ses, balancer, mapper);
 
-                mappedJobs = mappedJobs(shuffledNodes);
-            }
+            final Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
+                new Callable<Map<? extends ComputeJob, ClusterNode>>() {
+                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
+                        return task.map(shuffledNodes, arg);
+                    }
+                });
 
             if (log.isDebugEnabled())
                 log.debug("Mapped task jobs to nodes [jobCnt=" + (mappedJobs != null ? mappedJobs.size() : 0) +
@@ -572,17 +571,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (e instanceof Error)
                 throw e;
         }
-    }
-
-    /** */
-    private Map<? extends ComputeJob, ClusterNode> mappedJobs(List<ClusterNode> shuffledNodes)
-        throws IgniteCheckedException {
-        return U.wrapThreadLoader(dep.classLoader(),
-            new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                @Override public Map<? extends ComputeJob, ClusterNode> call() {
-                    return task.map(shuffledNodes, arg);
-                }
-            });
     }
 
     /**
@@ -1162,9 +1150,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         try {
             try {
                 // Reduce results.
-                reduceRes = SecurityUtils.isSandboxEnabled()
-                    ? SecurityUtils.doPrivileged(() -> reduceRes(results))
-                    : reduceRes(results);
+                reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
+                    @Override public R call() {
+                        return task.reduce(results);
+                    }
+                });
             }
             finally {
                 synchronized (mux) {
@@ -1206,14 +1196,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         finally {
             finishTask(reduceRes, userE);
         }
-    }
-
-    private R reduceRes(List<ComputeJobResult> results) throws IgniteCheckedException {
-        return U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-            @Nullable @Override public R call() {
-                return task.reduce(results);
-            }
-        });
     }
 
     /**

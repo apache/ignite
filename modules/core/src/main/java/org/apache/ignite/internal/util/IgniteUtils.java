@@ -6942,14 +6942,17 @@ public abstract class IgniteUtils {
      * @return Return value.
      * @throws IgniteCheckedException If call failed.
      */
-    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
+    public static @Nullable <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
+        if (!checkClassLoader(ldr))
+            throw new IgniteCheckedException("Passed ldr cannot be used.");
+
         Thread curThread = Thread.currentThread();
 
         // Get original context class loader.
         ClassLoader ctxLdr = curThread.getContextClassLoader();
 
         try {
-            curThread.setContextClassLoader(ldr);
+            setCtxLdr(curThread, ldr);
 
             return c.call();
         }
@@ -6961,8 +6964,28 @@ public abstract class IgniteUtils {
         }
         finally {
             // Set the original class loader back.
-            curThread.setContextClassLoader(ctxLdr);
+            setCtxLdr(curThread, ctxLdr);
         }
+    }
+
+    /** */
+    private static boolean checkClassLoader(ClassLoader ldr) {
+        if (SecurityUtils.isSandboxEnabled()) {
+            ProtectionDomain pd = SecurityUtils.doPrivileged(
+                () -> ldr.getClass().getProtectionDomain());
+
+            return pd.implies(new RuntimePermission("setContextClassLoader"));
+        }
+
+        return true;
+    }
+
+    /** */
+    private static void setCtxLdr(Thread thread, ClassLoader ldr) {
+        if (SecurityUtils.isSandboxEnabled())
+            SecurityUtils.doPrivileged(() -> thread.setContextClassLoader(ldr));
+        else
+            thread.setContextClassLoader(ldr);
     }
 
     /**

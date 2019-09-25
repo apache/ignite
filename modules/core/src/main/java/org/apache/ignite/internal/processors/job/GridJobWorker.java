@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -565,7 +566,20 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 if (isTimedOut())
                     sndRes = false;
                 else {
-                    res = result();
+                    res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
+                        @Nullable @Override public Object call() {
+                            try {
+                                if (internal && ctx.config().isPeerClassLoadingEnabled())
+                                    ctx.job().internal(true);
+
+                                return job.execute();
+                            }
+                            finally {
+                                if (internal && ctx.config().isPeerClassLoadingEnabled())
+                                    ctx.job().internal(false);
+                            }
+                        }
+                    });
 
                     if (log.isDebugEnabled()) {
                         log.debug(S.toString("Job execution has successfully finished",
@@ -636,44 +650,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         finally {
             if (partsReservation != null)
                 partsReservation.release();
-        }
-    }
-
-    /** */
-    private Object result() throws IgniteCheckedException {
-        ClassLoader ldr = dep.classLoader();
-
-        Thread curThread = Thread.currentThread();
-
-        // Get original context class loader.
-        ClassLoader ctxLdr = curThread.getContextClassLoader();
-
-        try {
-            setCtxClassLoader(curThread, ldr);
-
-            try {
-                if (internal && ctx.config().isPeerClassLoadingEnabled())
-                    ctx.job().internal(true);
-
-                return job.execute();
-            }
-            finally {
-                if (internal && ctx.config().isPeerClassLoadingEnabled())
-                    ctx.job().internal(false);
-            }
-        }
-        catch (RuntimeException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            if(e instanceof IgniteCheckedException)
-                throw e;
-
-            throw new IgniteCheckedException(e);
-        }
-        finally {
-            // Set the original class loader back.
-            setCtxClassLoader(curThread, ctxLdr);
         }
     }
 
