@@ -15,7 +15,11 @@
  */
 
 export default class IgniteChartSeriesSelectorController {
-    constructor() {
+
+    static $inject = ['$sce'];
+
+    constructor($sce) {
+        this.$sce = $sce;
         this.charts = [];
         this.selectedCharts = [];
     }
@@ -52,10 +56,13 @@ export default class IgniteChartSeriesSelectorController {
         const labels = this.chartApi.config.datasetLegendMapping;
 
         return Object.keys(this.chartApi.config.datasetLegendMapping).map((key) => {
+            const datasetIndex = this.chartApi.config.data.datasets.findIndex((dataset) => dataset.label === key);
+
             return {
                 key,
-                label: labels[key].name || labels[key],
-                hidden: labels[key].hidden
+                label: this.$sce.trustAsHtml(`<div class='series-selector--color-map' style='background-color: ${this.chartApi.config.data.datasets[datasetIndex].borderColor};'>&nbsp;</div> <span>${labels[key].name || key}</span>`),
+                hidden: labels[key].hidden,
+                title: labels[key].name || labels[key]
             };
         });
     }

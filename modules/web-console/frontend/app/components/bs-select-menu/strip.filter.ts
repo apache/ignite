@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-import './style.scss';
-
-import component from './component';
-
-export default angular
-    .module('ignite-console.ignite-chart-series-selector', [])
-    .component('igniteChartSeriesSelector', component);
+export default function() {
+    return function(val?: string) {
+        return typeof val === 'string' ? val.replace(/(<\/?\w+>)/igm, '') : '';
+    };
+}
