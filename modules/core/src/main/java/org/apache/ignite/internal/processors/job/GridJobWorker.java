@@ -653,14 +653,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         }
     }
 
-    /** */
-    private void setCtxClassLoader(final Thread thread, final ClassLoader ldr) {
-        if (SecurityUtils.isSandboxEnabled())
-            SecurityUtils.doPrivileged(() -> thread.setContextClassLoader(ldr));
-        else
-            thread.setContextClassLoader(ldr);
-    }
-
     /**
      * Handles {@link Throwable} generic exception for task
      * deployment and execution.
