@@ -317,7 +317,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
                 partSize = part.dataStore().fullSize();
 
-                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id(), false);
+                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
                 while (it.hasNextX()) {
                     CacheDataRow row = it.nextX();

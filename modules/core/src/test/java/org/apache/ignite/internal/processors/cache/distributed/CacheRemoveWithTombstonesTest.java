@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -40,12 +45,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -190,12 +189,12 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
                 cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false)).findMetric("Tombstones");
 
         // On first node there should not be tombstones.
-        assertEquals(0, tombstoneMetric0.get());
+        assertEquals(0, tombstoneMetric0.value());
 
         if (expTombstone)
-            assertEquals(removed.size(), tombstoneMetric1.get());
+            assertEquals(removed.size(), tombstoneMetric1.value());
         else
-            assertEquals(0, tombstoneMetric1.get());
+            assertEquals(0, tombstoneMetric1.value());
 
         // Update some of removed keys, this should remove tombstones.
         for (int i = 0; i < KEYS; i++) {
@@ -208,12 +207,12 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
 
         assert !removed.isEmpty();
 
-        assertEquals(0, tombstoneMetric0.get());
+        assertEquals(0, tombstoneMetric0.value());
 
         if (expTombstone)
-            assertEquals(removed.size(), tombstoneMetric1.get());
+            assertEquals(removed.size(), tombstoneMetric1.value());
         else
-            assertEquals(0, tombstoneMetric1.get());
+            assertEquals(0, tombstoneMetric1.value());
 
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock();
 
@@ -231,11 +230,11 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
         // Tombstones should be removed after once rebalance is completed.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return tombstoneMetric1.get() == 0;
+                return tombstoneMetric1.value() == 0;
             }
         }, 30_000);
 
-        assertEquals(0, tombstoneMetric1.get());
+        assertEquals(0, tombstoneMetric1.value());
     }
 
     /**

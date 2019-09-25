@@ -2440,10 +2440,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void removeWithTombstone(
-                GridCacheContext cctx,
-                KeyCacheObject key,
-                GridCacheVersion ver,
-                GridDhtLocalPartition part) throws IgniteCheckedException {
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            GridCacheVersion ver,
+            GridDhtLocalPartition part
+        ) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);

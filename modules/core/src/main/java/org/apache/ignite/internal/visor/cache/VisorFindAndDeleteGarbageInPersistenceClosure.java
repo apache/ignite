@@ -266,7 +266,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             if (part.state() != GridDhtPartitionState.OWNING)
                 return Collections.emptyMap();
 
-            GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id(), false);
+            GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
             while (it.hasNextX()) {
                 CacheDataRow row = it.nextX();

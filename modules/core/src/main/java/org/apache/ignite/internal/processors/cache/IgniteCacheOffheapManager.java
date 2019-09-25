@@ -466,6 +466,15 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param part Partition number.
+     * @return Iterator for given partition that skips tombstones.
+     * @throws IgniteCheckedException If failed.
+     */
+    public default GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException {
+        return partitionIterator(part, false);
+    }
+
+    /**
+     * @param part Partition number.
      * @param topVer Topology version.
      * @return Iterator for given partition that will reserve partition state until it is closed.
      * @throws IgniteCheckedException If failed.
@@ -952,7 +961,8 @@ public interface IgniteCacheOffheapManager {
             GridCacheContext cctx,
             KeyCacheObject key,
             GridCacheVersion ver,
-            GridDhtLocalPartition part) throws IgniteCheckedException;
+            GridDhtLocalPartition part
+        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

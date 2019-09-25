@@ -437,8 +437,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheContext cctx,
         KeyCacheObject key,
         GridDhtLocalPartition part,
-        OffheapInvokeClosure c)
-        throws IgniteCheckedException {
+        OffheapInvokeClosure c
+    ) throws IgniteCheckedException {
         dataStore(part).invoke(cctx, key, c);
     }
 
@@ -621,7 +621,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheContext cctx,
         KeyCacheObject key,
         GridCacheVersion ver,
-        GridDhtLocalPartition part) throws IgniteCheckedException {
+        GridDhtLocalPartition part
+    ) throws IgniteCheckedException {
         assert part != null;
         assert !cctx.isNear();
         assert !cctx.isLocal();
@@ -2777,10 +2778,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void removeWithTombstone(
-                GridCacheContext cctx,
-                KeyCacheObject key,
-                GridCacheVersion ver,
-                GridDhtLocalPartition part) throws IgniteCheckedException {
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            GridCacheVersion ver,
+            GridDhtLocalPartition part
+        ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
@@ -2811,13 +2813,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cctx Cache context.
          * @param key Key.
          * @param oldRow Removed row.
-         * @tombstoneRow Tombstone row (if tombstone was created for remove).
+         * @param tombstoneRow Tombstone row (if tombstone was created for remove).
          * @throws IgniteCheckedException If failed.
          */
-        private void finishRemove(GridCacheContext cctx,
+        private void finishRemove(
+            GridCacheContext cctx,
             KeyCacheObject key,
             @Nullable CacheDataRow oldRow,
-            @Nullable CacheDataRow tombstoneRow) throws IgniteCheckedException {
+            @Nullable CacheDataRow tombstoneRow
+        ) throws IgniteCheckedException {
             boolean oldTombstone = isTombstone(oldRow);
             boolean oldNull = oldRow == null || oldTombstone;
 

@@ -241,7 +241,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     });
 
                     // Submit task to executor.
-                     cctx.kernalContext()
+                    cctx.kernalContext()
                         .closure()
                         .runLocalSafe(evictionTask, EVICT_POOL_PLC);
                 }
@@ -306,7 +306,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private class TasksStatistics {
+    private static class TasksStatistics {
         /** */
         private int total;
 
@@ -356,7 +356,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         private AtomicInteger totalTasks = new AtomicInteger();
 
         /** */
-        private Map<TaskType, TasksStatistics> stats = U.newHashMap(2);
+        private Map<TaskType, TasksStatistics> stats = U.newHashMap(TaskType.VALS.length);
 
         /**
          * @param grp Group context.
@@ -392,7 +392,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             if (shouldStop())
                 return;
 
-           stats.get(task.id.type).taskStarted();
+            stats.get(task.id.type).taskStarted();
 
             GridFutureAdapter<?> fut = task.finishFut;
 
@@ -652,8 +652,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param grpEvictionCtx Eviction context.
          */
         private ClearTombstonesTask(
-                GridDhtLocalPartition part,
-                GroupEvictionContext grpEvictionCtx
+            GridDhtLocalPartition part,
+            GroupEvictionContext grpEvictionCtx
         ) {
             super(part, grpEvictionCtx, TaskType.CLEAR_TOMBSTONES);
         }

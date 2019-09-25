@@ -595,7 +595,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 if (arg.checkCrc())
                     checkPartitionCrc(grpCtx, part, cpFlag);
 
-                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id(), false);
+                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
                 while (it.hasNextX()) {
                     CacheDataRow row = it.nextX();

@@ -446,7 +446,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             long partSize = part.dataStore().fullSize();
 
-            GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id(), false);
+            GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
             Object consId = ignite.context().discovery().localNode().consistentId();
 

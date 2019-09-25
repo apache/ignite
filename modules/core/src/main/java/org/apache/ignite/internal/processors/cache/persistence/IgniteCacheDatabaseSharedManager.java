@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import javax.management.InstanceNotFoundException;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
@@ -192,8 +192,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (val.cacheObjectType() == CacheObject.TYPE_REGULAR) {
             byte[] bytes = val.valueBytes(null);
 
-            if (Arrays.equals(tombstoneBytes, bytes))
-                return true;
+            return Arrays.equals(tombstoneBytes, bytes);
         }
 
         return false;

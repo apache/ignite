@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -35,16 +44,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -73,6 +72,9 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
         dsCfg.setPageSize(1024);
 
         cfg.setDataStorageConfiguration(dsCfg);
+
+        // Long rebalance.
+        cfg.setRebalanceThrottle(100);
 
         return cfg;
     }
@@ -280,11 +282,11 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return tombstones.get() == 0;
+                    return tombstones.value() == 0;
                 }
             }, 30_000);
 
-            assertEquals("Failed to wait for tombstone cleanup: " + node.name(), 0, tombstones.get());
+            assertEquals("Failed to wait for tombstone cleanup: " + node.name(), 0, tombstones.value());
         }
     }
 
