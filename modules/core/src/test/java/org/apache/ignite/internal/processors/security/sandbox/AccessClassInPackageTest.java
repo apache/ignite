@@ -57,6 +57,16 @@ public class AccessClassInPackageTest extends AbstractSandboxTest {
         "        }" +
         "}";
 
+    private static final String UTILS_CALLABLE = "import org.apache.ignite.internal.util.typedef.internal.U;\n" +
+        "import org.apache.ignite.lang.IgniteCallable;\n" +
+        "\n" +
+        "public class PrivateUtilsCallable implements IgniteCallable {\n" +
+        "    @Override public Object call() throws Exception {\n" +
+        "        System.out.println(\"MY_DEBUG PrivateUtilsCallable\");\n" +
+        "        return U.hexLong(101L);\n" +
+        "    }\n" +
+        "}";
+
     /** */
     private Path srcTmpDir;
 
@@ -114,10 +124,20 @@ public class AccessClassInPackageTest extends AbstractSandboxTest {
 
         assertNotNull(res);
 
-        //CLNT_FORBIDDEN node cannot create an instance of T2.
+        Object o = clntAllowed.compute(clntAllowed.cluster().forNodeId(srvId))
+            .call(callable("PrivateUtilsCallable", UTILS_CALLABLE));
+
+        assertNotNull(o);
+
+            //CLNT_FORBIDDEN node cannot create an instance of T2.
         assertThrowsWithCause(
             () -> clntForbidden.compute(clntForbidden.cluster().forNodeId(srvId))
                 .call(callable("TestIgniteCallable", CALLABLE_SRC)),
+            AccessControlException.class);
+
+        assertThrowsWithCause(
+            () -> clntForbidden.compute(clntForbidden.cluster().forNodeId(srvId))
+                .call(callable("PrivateUtilsCallable", UTILS_CALLABLE)),
             AccessControlException.class);
     }
 
