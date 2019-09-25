@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,7 +51,11 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -67,6 +74,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 
 /** */
 public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final FileIOFactory DFLT_IO_FACTORY = new RandomAccessFileIOFactory();
+
     /** */
     private static final String BACKUP_NAME = "testBackup";
 
@@ -219,7 +229,6 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File workDir = ((FilePageStoreManager) ig.context().cache().context().pageStore()).workDir();
         File cacheBackup = cacheWorkDir(new File(backupDir, BACKUP_NAME), defaultCacheCfg);
 
         File zeroPart = getPartitionFile(cacheWorkDir, 0);
@@ -306,6 +315,55 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             assertEquals(i * value_multiplier, ig2.cache(DEFAULT_CACHE_NAME).get(i));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBackupLocalPartitionNotEnoughSpace() throws Exception {
+        final AtomicInteger throwCntr = new AtomicInteger();
+
+        IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
+            .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
+
+        // Change data after backup
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
+
+        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
+
+        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
+            Stream.iterate(0, n -> n + 1)
+                .limit(CACHE_PARTS_COUNT)
+                .collect(Collectors.toSet()));
+
+        IgniteBackupManager mgr = ig.context()
+            .cache()
+            .context()
+            .backup();
+
+        mgr.ioFactory(new FileIOFactory() {
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                FileIO fileIo = DFLT_IO_FACTORY.create(file, modes);
+
+                if (file.getName().equals(IgniteBackupManager.getPartitionDeltaFileName(0)))
+                    return new FileIODecorator(fileIo) {
+                        @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                            if (throwCntr.incrementAndGet() == 3)
+                                throw new IOException("Test exception. Not enough space.");
+
+                            return super.writeFully(srcBuf);
+                        }
+                    };
+
+                return fileIo;
+            }
+        });
+
+        IgniteInternalFuture<?> backupFut = mgr.createLocalBackup(BACKUP_NAME, toBackup, backupDir);
+
+        backupFut.get();
     }
 
     /**

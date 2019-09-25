@@ -101,13 +101,14 @@ public class FileSerialPageStore implements Closeable {
             int crc = PageIO.getCrc(pageBuf);
             int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
 
-            // TODO remove debug
-            System.out.println("onPageWrite [pageId=" + pageId +
-                ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
-                ", part=" + cfgPath.get().toAbsolutePath() +
-                ", fileSize=" + fileIo.size() +
-                ", crcBuff=" + crc32 +
-                ", crcPage=" + crc + ']');
+            if (log.isDebugEnabled()) {
+                log.debug("onPageWrite [pageId=" + pageId +
+                    ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
+                    ", part=" + cfgPath.get().toAbsolutePath() +
+                    ", fileSize=" + fileIo.size() +
+                    ", crcBuff=" + crc32 +
+                    ", crcPage=" + crc + ']');
+            }
 
             pageBuf.rewind();
 

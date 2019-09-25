@@ -107,14 +107,14 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /** Total number of thread to perform local backup. */
     private static final int BACKUP_POOL_SIZE = 4;
 
-    /** Factory to working with {@link FileSerialPageStore} as file storage. */
-    private static final FileIOFactory ioFactory = new RandomAccessFileIOFactory();
-
     /** Map of registered cache backup processes and their corresponding contexts. */
     private final ConcurrentMap<String, BackupContext> backupCtxs = new ConcurrentHashMap<>();
 
     /** All registered page writers of all running backup processes. */
     private final ConcurrentMap<GroupPartitionId, List<PageStoreSerialWriter>> partWriters = new ConcurrentHashMap<>();
+
+    /** Factory to working with {@link FileSerialPageStore} as file storage. */
+    private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** Backup thread pool. */
     private IgniteThreadPoolExecutor backupRunner;
@@ -140,15 +140,22 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param tmpDir Temporary directory to store files.
+     * @param dir Backup directory to store files.
      * @param partId Cache partition identifier.
      * @return A file representation.
      */
-    private static File getPartionDeltaFile(File tmpDir, int partId) {
+    public static File getPartionDeltaFile(File dir, int partId) {
+        return new File(dir, getPartitionDeltaFileName(partId));
+    }
+
+    /**
+     * @param partId Partitoin id.
+     * @return File name of delta partition pages.
+     */
+    public static String getPartitionDeltaFileName(int partId) {
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
-        return partId == INDEX_PARTITION ? new File(tmpDir, INDEX_DELTA_NAME) :
-            new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
+        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
     }
 
     /** {@inheritDoc} */
@@ -334,7 +341,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     cacheDirName(gctx.config()), false);
 
                 U.ensureDirectory(grpDir,
-                    "temporary directory for cache group: " + gctx.groupId(),
+                    "bakcup directory for cache group: " + gctx.groupId(),
                     null);
 
                 CompletableFuture<Boolean> cpEndFut0 = bctx.cpEndFut;
@@ -485,11 +492,18 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         }
         catch (Exception e) {
             U.error(log, "An error occured in the process of page backup " +
-                "[pairId=" + pairId + ", pageId=" + pageId + ']');
+                "[pairId=" + pairId + ", pageId=" + pageId + ']', e);
 
             pageTrackErrors.putIfAbsent(pairId,
                 new IgniteCheckedException("Partition backup processing error [pageId=" + pageId + ']', e));
         }
+    }
+
+    /**
+     * @param ioFactory Factory to create IO interface over a page stores.
+     */
+    void ioFactory(FileIOFactory ioFactory) {
+        this.ioFactory = ioFactory;
     }
 
     /**
