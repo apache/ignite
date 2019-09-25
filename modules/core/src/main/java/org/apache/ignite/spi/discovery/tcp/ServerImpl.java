@@ -4737,7 +4737,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
                             );
 
-                            if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
+                            boolean subjIsNull = subj == null || subj.subject() == null;
+                            boolean coordSubjIsNull = coordSubj == null || coordSubj.subject() == null;
+
+                            if (subjIsNull ||
+                                coordSubjIsNull ||
+                                !permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication failed [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
