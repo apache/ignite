@@ -517,7 +517,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             else
                 ctx.resource().inject(dep, task, ses, balancer, mapper);
 
-            final Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
+            Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
                 new Callable<Map<? extends ComputeJob, ClusterNode>>() {
                     @Override public Map<? extends ComputeJob, ClusterNode> call() {
                         return task.map(shuffledNodes, arg);
@@ -862,11 +862,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                 }
 
-                final GridJobResultImpl jobRslt = jobRes;
-
-                ComputeJobResultPolicy plc = SecurityUtils.isSandboxEnabled()
-                    ? SecurityUtils.doPrivileged(() -> result(jobRslt, results))
-                    : result(jobRslt, results);
+                ComputeJobResultPolicy plc = result(jobRes, results);
 
                 if (plc == null) {
                     String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
@@ -1151,7 +1147,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             try {
                 // Reduce results.
                 reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                    @Override public R call() {
+                    @Nullable @Override public R call() {
                         return task.reduce(results);
                     }
                 });

@@ -6997,20 +6997,12 @@ public abstract class IgniteUtils {
      * @param <R> Return type.
      * @return Return value.
      */
-    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
-        Thread curThread = Thread.currentThread();
-
-        // Get original context class loader.
-        ClassLoader ctxLdr = curThread.getContextClassLoader();
-
+    public static @Nullable <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
         try {
-            curThread.setContextClassLoader(ldr);
-
-            return c.apply();
+            return wrapThreadLoader(ldr, (Callable<R>)c::apply);
         }
-        finally {
-            // Set the original class loader back.
-            curThread.setContextClassLoader(ctxLdr);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -7019,22 +7011,20 @@ public abstract class IgniteUtils {
      * resets thread context class loader to its initial value.
      *
      * @param ldr Class loader to run the closure under.
-     * @param c Closure to run.
+     * @param r Closure to run.
      */
-    public static void wrapThreadLoader(ClassLoader ldr, Runnable c) {
-        Thread curThread = Thread.currentThread();
-
-        // Get original context class loader.
-        ClassLoader ctxLdr = curThread.getContextClassLoader();
-
+    public static void wrapThreadLoader(ClassLoader ldr, Runnable r) {
         try {
-            curThread.setContextClassLoader(ldr);
+            wrapThreadLoader(ldr, new Callable<Void>() {
+                @Override public Void call() {
+                    r.run();
 
-            c.run();
+                    return null;
+                }
+            });
         }
-        finally {
-            // Set the original class loader back.
-            curThread.setContextClassLoader(ctxLdr);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
