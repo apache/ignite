@@ -88,16 +88,16 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
         case ar: AttributeReference ⇒
             val name =
                 if (useQualifier)
-                    ar.qualifier.map(_ + "." + ar.name).getOrElse(ar.name)
+                    ar.qualifier.map(_ + "." + ar.name)
                 else
                     ar.name
 
             if (ar.metadata.contains(ALIAS) &&
                 !isAliasEqualColumnName(ar.metadata.getString(ALIAS), ar.name) &&
                 useAlias) {
-                Some(aliasToString(name, ar.metadata.getString(ALIAS)))
+                Some(aliasToString(name.toString, ar.metadata.getString(ALIAS)))
             } else
-                Some(name)
+                Some(name.toString)
 
         case Alias(child, name) ⇒
             if (useAlias)

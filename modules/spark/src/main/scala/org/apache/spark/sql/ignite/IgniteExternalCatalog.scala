@@ -25,10 +25,10 @@ import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.IgniteSQLRelation.schema
 import org.apache.ignite.{Ignite, IgniteException}
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.{AnalysisException, SparkSession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.catalyst.catalog.{ExternalCatalog, _}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.types.StructType
@@ -43,8 +43,8 @@ import scala.collection.JavaConversions._
   *
   * @param igniteContext Ignite context to provide access to Ignite instance.
   */
-private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
-    extends ExternalCatalog {
+private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext, session: SparkSession)
+    extends ExternalCatalogWithListener(session.sharedState.externalCatalog) {
     /**
       * Default Ignite instance.
       */
@@ -221,44 +221,44 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
     override def listFunctions(db: String, pattern: String): Seq[String] = Seq.empty[String]
 
     /** @inheritdoc */
-    override def doAlterDatabase(dbDefinition: CatalogDatabase): Unit =
+    override def alterDatabase(dbDefinition: CatalogDatabase): Unit =
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override def doAlterFunction(db: String, funcDefinition: CatalogFunction): Unit =
+    override def alterFunction(db: String, funcDefinition: CatalogFunction): Unit =
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override def doAlterTableStats(db: String, table: String, stats: Option[CatalogStatistics]): Unit =
+    override def alterTableStats(db: String, table: String, stats: Option[CatalogStatistics]): Unit =
         throw new UnsupportedOperationException("unsupported")
 
 	/** @inheritdoc */
-	override def doAlterTable(tableDefinition: CatalogTable): Unit =
+	override def alterTable(tableDefinition: CatalogTable): Unit =
 		throw new UnsupportedOperationException("unsupported")
 
 	/** @inheritdoc */
-	override def doAlterTableDataSchema(db: String, table: String, schema: StructType): Unit =
+	override def alterTableDataSchema(db: String, table: String, schema: StructType): Unit =
 		throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override protected def doCreateFunction(db: String, funcDefinition: CatalogFunction): Unit = { /* no-op */ }
+    override def createFunction(db: String, funcDefinition: CatalogFunction): Unit = { /* no-op */ }
 
     /** @inheritdoc */
-    override protected def doDropFunction(db: String, funcName: String): Unit = { /* no-op */ }
+    override def dropFunction(db: String, funcName: String): Unit = { /* no-op */ }
 
     /** @inheritdoc */
-    override protected def doRenameFunction(db: String, oldName: String, newName: String): Unit = { /* no-op */ }
+    override def renameFunction(db: String, oldName: String, newName: String): Unit = { /* no-op */ }
 
     /** @inheritdoc */
-    override protected def doCreateDatabase(dbDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
+    override def createDatabase(dbDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override protected def doDropDatabase(db: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit =
+    override def dropDatabase(db: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit =
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override protected def doCreateTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {
+    override def createTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {
         sqlTableInfo(ignite, tableDefinition.identifier.table, tableDefinition.identifier.database) match {
             case Some(_) ⇒
                 /* no-op */
@@ -280,7 +280,7 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
     }
 
     /** @inheritdoc */
-    override protected def doDropTable(db: String, tabName: String, ignoreIfNotExists: Boolean, purge: Boolean): Unit =
+    override def dropTable(db: String, tabName: String, ignoreIfNotExists: Boolean, purge: Boolean): Unit =
         sqlTableInfo(ignite, tabName, Some(schemaOrDefault(db, currentSchema))) match {
             case Some(table) ⇒
                 val tableName = table.tableName
@@ -293,7 +293,7 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
         }
 
     /** @inheritdoc */
-    override protected def doRenameTable(db: String, oldName: String, newName: String): Unit =
+    override def renameTable(db: String, oldName: String, newName: String): Unit =
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */

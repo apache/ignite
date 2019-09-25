@@ -84,7 +84,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     igniteQueryContext = igniteQueryContext,
                     table = Some(igniteSqlRelation.tableName),
                     tableExpression = None,
-                    outputExpressions = output.map(attr ⇒ attr.withQualifier(Some(igniteSqlRelation.tableName))))
+                    outputExpressions = output.map(attr ⇒ attr.withQualifier(Seq(igniteSqlRelation.tableName))))
 
             case project: Project if !stepSkipped && exprsAllowed(project.projectList) ⇒
                 //Project layer just changes output of current query.

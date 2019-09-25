@@ -163,7 +163,7 @@ private[apache] case class JoinSQLAccumulator(
       */
     private def fixQualifier0[T <: Expression](expr: T): T = expr match {
         case attr: AttributeReference ⇒
-            attr.withQualifier(Some(findQualifier(attr))).asInstanceOf[T]
+            attr.withQualifier(Seq(findQualifier(attr))).asInstanceOf[T]
 
         case _ ⇒
             expr.withNewChildren(fixQualifier(expr.children)).asInstanceOf[T]

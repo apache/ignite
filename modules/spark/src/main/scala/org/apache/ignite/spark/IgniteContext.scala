@@ -48,7 +48,7 @@ class IgniteContext(
 
         // Get required number of executors with default equals to number of available executors.
         val workers = sparkContext.getConf.getInt("spark.executor.instances",
-            sparkContext.getExecutorStorageStatus.length)
+            sparkContext.statusTracker.getExecutorInfos.size)
 
         if (workers <= 0)
             throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
@@ -166,7 +166,7 @@ class IgniteContext(
         if (sparkContext != null && shutdownIgniteOnWorkers) {
             // Get required number of executors with default equals to number of available executors.
             val workers = sparkContext.getConf.getInt("spark.executor.instances",
-                sparkContext.getExecutorStorageStatus.length)
+                sparkContext.statusTracker.getExecutorInfos.size)
 
             if (workers > 0) {
                 Logging.log.info("Will stop Ignite nodes on " + workers + " workers")

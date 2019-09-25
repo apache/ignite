@@ -70,7 +70,7 @@ class IgniteSparkSession private(
 
     /** @inheritdoc */
     @transient override lazy val sharedState: SharedState =
-        existingSharedState.getOrElse(new IgniteSharedState(ic, sparkContext))
+        existingSharedState.getOrElse(new IgniteSharedState(ic, sparkContext, proxy))
 
     /** @inheritdoc */
     @transient override lazy val sessionState: SessionState = {
