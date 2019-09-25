@@ -130,10 +130,8 @@ class TcpCommunicationMetricsListener {
             RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC
         );
 
-
         sentMsgsCntByConsistentIdMetricFactory = consistentId -> getOrCreateMetricRegistry(mmgr, consistentId)
             .findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
-
 
         rcvdMsgsCntByConsistentIdMetricFactory = consistentId -> getOrCreateMetricRegistry(mmgr, consistentId)
             .findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
