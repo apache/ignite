@@ -30,8 +30,6 @@ import java.util.function.Supplier;
 import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -99,7 +97,6 @@ public class FileSerialPageStore implements Closeable {
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                 + " should be same with " + ByteOrder.nativeOrder();
-            assert PageIdUtils.flag(pageId) == PageMemory.FLAG_DATA;
 
             int crc = PageIO.getCrc(pageBuf);
             int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());

@@ -78,6 +78,10 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
@@ -90,6 +94,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
     /** */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
+
+    /** */
+    public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
     /** */
     public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [name=%s]";
@@ -138,7 +145,10 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @return A file representation.
      */
     private static File getPartionDeltaFile(File tmpDir, int partId) {
-        return new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
+        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
+
+        return partId == INDEX_PARTITION ? new File(tmpDir, INDEX_DELTA_NAME) :
+            new File(tmpDir, String.format(PART_DELTA_TEMPLATE, partId));
     }
 
     /** {@inheritDoc} */
@@ -516,7 +526,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public File get() {
             try {
-                FilePageStore store = (FilePageStore)factory.createPageStore(FLAG_DATA,
+                byte type = INDEX_FILE_NAME.equals(from.getName()) ? FLAG_IDX : FLAG_DATA;
+
+                FilePageStore store = (FilePageStore)factory.createPageStore(type,
                     from::toPath,
                     new LongAdderMetric("NO_OP", null));
 

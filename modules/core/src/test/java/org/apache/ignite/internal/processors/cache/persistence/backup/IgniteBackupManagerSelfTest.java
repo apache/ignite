@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,7 +47,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,15 +62,22 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
 /** */
 public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     /** */
+    private static final String BACKUP_NAME = "testBackup";
+
+    /** */
     private static final int CACHE_PARTS_COUNT = 8;
 
     /** */
     private static final int PAGE_SIZE = 1024;
+
+    /** */
+    private static final int CACHE_KEYS_RANGE = 1024;
 
     /** */
     private static final DataStorageConfiguration memCfg = new DataStorageConfiguration()
@@ -143,9 +154,9 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testBackupLocalPartitions() throws Exception {
         // Start grid node with data before each test.
-        IgniteEx ig = startGridWithCache(defaultCacheCfg);
+        IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
-        for (int i = 1024; i < 2048; i++)
+        for (int i = CACHE_KEYS_RANGE; i < 2048; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
         Map<Integer, Set<Integer>> toBackup = new HashMap<>();
@@ -159,7 +170,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .cache()
             .context()
             .backup()
-            .createLocalBackup("testBackup", toBackup, backupDir);
+            .createLocalBackup(BACKUP_NAME, toBackup, backupDir);
 
         backupFut.get();
 
@@ -184,10 +195,11 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBackupLocalPartitionsNextCpStarted() throws Exception {
+        final int value_multiplier = 2;
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
-            .setPartitions(CACHE_PARTS_COUNT)));
+            .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
         Map<Integer, Set<Integer>> toBackup = new HashMap<>();
 
@@ -204,6 +216,11 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .pageStore())
             .cacheWorkDir(defaultCacheCfg);
+        File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
+            .checkpointDirectory();
+        File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
+        File workDir = ((FilePageStoreManager) ig.context().cache().context().pageStore()).workDir();
+        File cacheBackup = cacheWorkDir(new File(backupDir, BACKUP_NAME), defaultCacheCfg);
 
         File zeroPart = getPartitionFile(cacheWorkDir, 0);
 
@@ -213,11 +230,11 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .backup();
 
         // Change data before backup
-        for (int i = 0; i < 1024; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
         IgniteInternalFuture<?> backupFut = mgr
-            .createLocalBackup("testBackup",
+            .createLocalBackup(BACKUP_NAME,
                 toBackup,
                 backupDir,
                 new IgniteTriClosure<File, File, Long, Supplier<File>>() {
@@ -240,7 +257,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
                 mgr::deltaSupplierFactory);
 
         // Change data after backup
-        for (int i = 0; i < 1024; i++)
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 3 * i);
 
         // Backup on the next checkpoint must copy page before write it to partition
@@ -255,6 +272,55 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         slowCopy.countDown();
 
         backupFut.get();
+
+        // Now can stop the node and check created backups.
+
+        stopGrid(0);
+
+        delete(cpDir.toPath());
+        delete(walDir.toPath());
+
+        Files.walk(cacheBackup.toPath())
+            .map(Path::toFile)
+            .forEach(System.out::println);
+
+        // copy all backups to the cache directory
+        Files.walk(cacheBackup.toPath())
+            .map(Path::toFile)
+            .filter(f -> !f.isDirectory())
+            .forEach(f -> {
+                try {
+                    File target = new File(cacheWorkDir, f.getName());
+
+                    Files.copy(f.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+            });
+
+
+        IgniteEx ig2 = startGrid(0);
+
+        ig2.cluster().active(true);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            assertEquals(i * value_multiplier, ig2.cache(DEFAULT_CACHE_NAME).get(i));
+    }
+
+    /**
+     * @param dir Directory to delete.
+     * @throws IOException If fails.
+     */
+    public static void delete(Path dir) throws IOException {
+        Files.walk(dir)
+            .map(Path::toFile)
+            .forEach(File::delete);
+
+        Files.delete(dir);
+
+        assertFalse("Directory still exists",
+            Files.exists(dir));
     }
 
     /**
@@ -262,7 +328,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
      * @return Ignite instance.
      * @throws Exception If fails.
      */
-    private IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
+    private IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg, int range) throws Exception {
         defaultCacheCfg = ccfg;
 
         // Start grid node with data before each test.
@@ -270,7 +336,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        for (int i = 0; i < 1024; i++)
+        for (int i = 0; i < range; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
         CheckpointFuture cpFut = ig.context()
