@@ -80,7 +80,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer next() {
+    @Override public FileWALPointer next() {
         if (len == 0)
             throw new IllegalStateException("Failed to calculate next WAL pointer " +
                 "(this pointer is a terminal): " + this);

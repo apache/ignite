@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -36,6 +39,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 /**
  * Test to reproduce gg-2852.
  */
+@RunWith(JUnit4.class)
 public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -63,6 +67,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlock() throws Exception {
         try {
             Ignite g = startGrid(1);

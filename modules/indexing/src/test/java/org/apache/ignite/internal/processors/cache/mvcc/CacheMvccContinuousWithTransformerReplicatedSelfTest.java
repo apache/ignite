@@ -18,10 +18,15 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerReplicatedSelfTest;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMvccContinuousWithTransformerReplicatedSelfTest
     extends CacheContinuousWithTransformerReplicatedSelfTest {
     /** {@inheritDoc} */
@@ -30,7 +35,9 @@ public class CacheMvccContinuousWithTransformerReplicatedSelfTest
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
+    @Test
     @Override public void testExpired() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+        // No-op.
     }
 }

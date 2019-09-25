@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -77,6 +76,7 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -88,9 +88,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -113,9 +110,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     protected static final ObjectCodec<Integer> INTEGER_CODEC = new IntegerCodec();
 
@@ -172,8 +166,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         if (disableScheduledVacuum)
             cfg.setMvccVacuumFrequency(Integer.MAX_VALUE);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         if (testSpi)
             cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
@@ -687,19 +679,19 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 }
 
                                 case SQL_SUM: {
-                                    BigDecimal sum;
+                                    Long sum;
 
                                     if (rnd.nextBoolean()) {
                                         List<List<?>> res =  cache.cache.query(sumQry).getAll();
 
                                         assertEquals(1, res.size());
 
-                                        sum = (BigDecimal)res.get(0).get(0);
+                                        sum = (Long)res.get(0).get(0);
                                     }
                                     else {
                                         Map res = readAllByMode(cache.cache, keys, readMode, ACCOUNT_CODEC);
 
-                                        sum = (BigDecimal)((Map.Entry)res.entrySet().iterator().next()).getValue();
+                                        sum = (Long)((Map.Entry)res.entrySet().iterator().next()).getValue();
                                     }
 
                                     assertEquals(ACCOUNT_START_VAL * ACCOUNTS, sum.intValue());
@@ -945,6 +937,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                 tx.commit();
 
+                                v++;
+
                                 first = false;
                             }
 
@@ -952,10 +946,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 Map<Integer, Integer> res = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
 
                                 for (Integer k : keys)
-                                    assertEquals("key=" + k, v, (Object)res.get(k));
+                                    assertEquals("key=" + k, v - 1, (Object)res.get(k));
                             }
-
-                            v++;
                         }
                         catch (Exception e) {
                             handleTxException(e);
@@ -1367,6 +1359,13 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 }
             }, readers, "reader");
 
+            GridTestUtils.runAsync(() -> {
+                while (System.currentTimeMillis() < stopTime)
+                    doSleep(1000);
+
+                stop.set(true);
+            });
+
             while (System.currentTimeMillis() < stopTime && !stop.get()) {
                 Thread.sleep(1000);
 
@@ -1408,8 +1407,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                             Ignite srv = startGrid(idx);
 
+                            cache0 = new TestCache(srv.cache(DEFAULT_CACHE_NAME));
+
                             synchronized (caches) {
-                                caches.set(idx, new TestCache(srv.cache(DEFAULT_CACHE_NAME)));
+                                caches.set(idx, cache0);
                             }
 
                             awaitPartitionMapExchange();
@@ -1422,8 +1423,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     }
                 }
             }
-
-            stop.set(true);
 
             Exception ex = null;
 
@@ -1633,21 +1632,20 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 if (!cctx.userCache() || !cctx.group().mvccEnabled() || F.isEmpty(cctx.group().caches()) || cctx.shared().closed(cctx))
                     continue;
 
-                for (Iterator it = cache.withKeepBinary().iterator(); it.hasNext(); ) {
-                    IgniteBiTuple entry = (IgniteBiTuple)it.next();
+                try (GridCloseableIterator it = (GridCloseableIterator)cache.withKeepBinary().iterator()) {
+                    while (it.hasNext()) {
+                        IgniteBiTuple entry = (IgniteBiTuple)it.next();
 
-                    KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+                        KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
 
-                    List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key)
-                        .stream().filter(t -> t.get1() != null).collect(Collectors.toList());
+                        List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key)
+                            .stream().filter(t -> t.get1() != null).collect(Collectors.toList());
 
-                    if (vers.size() > 1) {
-                        if (failIfNotCleaned)
-                            fail("[key=" + key.value(null, false) + "; vers=" + vers + ']');
-                        else {
-                            U.closeQuiet((AutoCloseable)it);
-
-                            return false;
+                        if (vers.size() > 1) {
+                            if (failIfNotCleaned)
+                                fail("[key=" + key.value(null, false) + "; vers=" + vers + ']');
+                            else
+                                return false;
                         }
                     }
                 }

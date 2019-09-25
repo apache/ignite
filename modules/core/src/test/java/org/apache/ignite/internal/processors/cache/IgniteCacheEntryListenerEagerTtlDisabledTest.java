@@ -19,11 +19,19 @@ package org.apache.ignite.internal.processors.cache;
 
 
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Tests expire events when {@link CacheConfiguration#isEagerTtl()} is disabled.
  */
 public class IgniteCacheEntryListenerEagerTtlDisabledTest extends IgniteCacheEntryListenerTxTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+
+        super.beforeTestsStarted();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean eagerTtl() {
         return false;

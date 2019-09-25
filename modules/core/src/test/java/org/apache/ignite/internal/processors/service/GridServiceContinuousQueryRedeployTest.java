@@ -39,11 +39,15 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests whether concurrent service cancel and registering ContinuousQuery doesn't causes
  * service redeployment.
  */
+@RunWith(JUnit4.class)
 public class GridServiceContinuousQueryRedeployTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "TEST_CACHE";
@@ -62,6 +66,7 @@ public class GridServiceContinuousQueryRedeployTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceRedeploymentAfterCancel() throws Exception {
         final Ignite ignite = startGrid(0);
 

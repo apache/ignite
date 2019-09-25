@@ -31,10 +31,14 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests handling of job result serialization error.
  */
+@RunWith(JUnit4.class)
 public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
@@ -56,7 +60,8 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);
         final IgniteEx ignite1 = grid(1);
@@ -77,7 +82,8 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testExceptionSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);
         final IgniteEx ignite1 = grid(1);
@@ -98,7 +104,8 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testAttributesSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);
         final IgniteEx ignite1 = grid(1);

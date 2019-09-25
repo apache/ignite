@@ -77,6 +77,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
@@ -86,6 +90,7 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final short LONG_INNER_IO = 30000;
@@ -216,6 +221,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testFind() throws IgniteCheckedException {
         TestTree tree = createTestTree(true);
         TreeMap<Long, Long> map = new TreeMap<>();
@@ -234,6 +240,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testRetries() throws IgniteCheckedException {
         TestTree tree = createTestTree(true);
 
@@ -252,8 +259,33 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testIsEmpty() throws Exception {
+        TestTree tree = createTestTree(true);
+
+        assertTrue(tree.isEmpty());
+
+        for (long i = 1; i <= 500; i++) {
+            tree.put(i);
+
+            assertFalse(tree.isEmpty());
+        }
+
+        for (long i = 1; i <= 500; i++) {
+            assertFalse(tree.isEmpty());
+
+            tree.remove(i);
+        }
+
+        assertTrue(tree.isEmpty());
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testFindWithClosure() throws IgniteCheckedException {
         TestTree tree = createTestTree(true);
         TreeMap<Long, Long> map = new TreeMap<>();
@@ -350,6 +382,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_mm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -362,6 +395,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_mm_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -374,6 +408,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_pm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -386,6 +421,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_pm_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -398,6 +434,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_pp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -410,6 +447,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_pp_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -422,6 +460,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_mp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -434,6 +473,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_1_20_mp_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;
@@ -447,6 +487,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_mm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -459,6 +500,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_mm_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -471,6 +513,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_pm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -483,6 +526,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_pm_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -495,6 +539,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_pp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -507,6 +552,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_pp_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -519,6 +565,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_mp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -531,6 +578,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_2_40_mp_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 40;
@@ -544,6 +592,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_mm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -556,6 +605,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_mm_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -568,6 +618,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_pm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -580,6 +631,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_pm_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -592,6 +644,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_pp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -604,6 +657,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_pp_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -616,6 +670,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_mp_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -628,6 +683,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutRemove_3_60_mp_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 3;
         CNT = 60;
@@ -744,6 +800,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testRandomInvoke_1_30_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
@@ -754,6 +811,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testRandomInvoke_1_30_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
@@ -865,6 +923,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testRandomPutRemove_1_30_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
@@ -875,6 +934,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testRandomPutRemove_1_30_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
@@ -885,6 +945,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveRemove3_false() throws Exception {
         MAX_PER_PAGE = 3;
 
@@ -894,6 +955,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveRemove3_true() throws Exception {
         MAX_PER_PAGE = 3;
 
@@ -903,6 +965,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveRemove2_false() throws Exception {
         MAX_PER_PAGE = 2;
 
@@ -912,6 +975,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveRemove2_true() throws Exception {
         MAX_PER_PAGE = 2;
 
@@ -921,6 +985,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveRemove1_false() throws Exception {
         MAX_PER_PAGE = 1;
 
@@ -930,6 +995,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveRemove1_true() throws Exception {
         MAX_PER_PAGE = 1;
 
@@ -1004,6 +1070,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassivePut1_true() throws Exception {
         MAX_PER_PAGE = 1;
 
@@ -1013,6 +1080,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassivePut1_false() throws Exception {
         MAX_PER_PAGE = 1;
 
@@ -1022,12 +1090,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassivePut2_true() throws Exception {
         MAX_PER_PAGE = 2;
 
         doTestMassivePut(true);
     }
 
+    @Test
     public void testMassivePut2_false() throws Exception {
         MAX_PER_PAGE = 2;
 
@@ -1037,12 +1107,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMassivePut3_true() throws Exception {
         MAX_PER_PAGE = 3;
 
         doTestMassivePut(true);
     }
 
+    @Test
     public void testMassivePut3_false() throws Exception {
         MAX_PER_PAGE = 3;
 
@@ -1175,6 +1247,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testEmptyCursors() throws IgniteCheckedException {
         MAX_PER_PAGE = 5;
 
@@ -1205,6 +1278,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testCursorConcurrentMerge() throws IgniteCheckedException {
         MAX_PER_PAGE = 5;
 
@@ -1280,6 +1354,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testSizeForPutRmvSequential() throws IgniteCheckedException {
         MAX_PER_PAGE = 5;
 
@@ -1369,6 +1444,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeForRandomPutRmvMultithreaded_5_4() throws Exception {
         MAX_PER_PAGE = 5;
         CNT = 10_000;
@@ -1376,6 +1452,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestSizeForRandomPutRmvMultithreaded(4);
     }
 
+    @Test
     public void testSizeForRandomPutRmvMultithreaded_3_256() throws Exception {
         MAX_PER_PAGE = 3;
         CNT = 10_000;
@@ -1492,6 +1569,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      *
      * @see #doTestSizeForRandomPutRmvMultithreadedAsync doTestSizeForRandomPutRmvMultithreadedAsync() for details.
      */
+    @Test
     public void testSizeForRandomPutRmvMultithreadedAsync_16() throws Exception {
         doTestSizeForRandomPutRmvMultithreadedAsync(16);
     }
@@ -1502,6 +1580,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      *
      * @see #doTestSizeForRandomPutRmvMultithreadedAsync doTestSizeForRandomPutRmvMultithreadedAsync() for details.
      */
+    @Test
     public void testSizeForRandomPutRmvMultithreadedAsync_3() throws Exception {
         doTestSizeForRandomPutRmvMultithreadedAsync(3);
     }
@@ -1671,6 +1750,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed
      */
+    @Test
     public void testPutSizeLivelock() throws Exception {
         MAX_PER_PAGE = 5;
         CNT = 800;
@@ -1803,6 +1883,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRmvSizeSinglePageContention() throws Exception {
         MAX_PER_PAGE = 10;
         CNT = 20_000;
@@ -1924,6 +2005,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRmvFindSizeMultithreaded() throws Exception {
         MAX_PER_PAGE = 5;
         CNT = 60_000;
@@ -2061,6 +2143,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestRandomPutRemoveMultithreaded_1_30_0() throws Exception {
         MAX_PER_PAGE = 1;
         CNT = 30;
@@ -2071,6 +2154,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestRandomPutRemoveMultithreaded_1_30_1() throws Exception {
         MAX_PER_PAGE = 1;
         CNT = 30;
@@ -2081,6 +2165,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestRandomPutRemoveMultithreaded_2_50_0() throws Exception {
         MAX_PER_PAGE = 2;
         CNT = 50;
@@ -2091,6 +2176,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestRandomPutRemoveMultithreaded_2_50_1() throws Exception {
         MAX_PER_PAGE = 2;
         CNT = 50;
@@ -2101,6 +2187,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestRandomPutRemoveMultithreaded_3_70_0() throws Exception {
         MAX_PER_PAGE = 3;
         CNT = 70;
@@ -2111,6 +2198,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestRandomPutRemoveMultithreaded_3_70_1() throws Exception {
         MAX_PER_PAGE = 3;
         CNT = 70;
@@ -2121,6 +2209,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testFindFirstAndLast() throws IgniteCheckedException {
         MAX_PER_PAGE = 5;
 
@@ -2147,6 +2236,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterate() throws Exception {
         MAX_PER_PAGE = 5;
 
@@ -2177,6 +2267,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterateConcurrentPutRemove() throws Exception {
         iterateConcurrentPutRemove();
     }
@@ -2184,9 +2275,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7265")
+    @Test
     public void testIterateConcurrentPutRemove_1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7265");
-
         MAX_PER_PAGE = 1;
 
         iterateConcurrentPutRemove();
@@ -2195,6 +2286,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterateConcurrentPutRemove_5() throws Exception {
         MAX_PER_PAGE = 5;
 
@@ -2204,6 +2296,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratePutRemove_10() throws Exception {
         MAX_PER_PAGE = 10;
 
@@ -2349,6 +2442,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentGrowDegenerateTreeAndConcurrentRemove() throws Exception {
         //calculate tree size when split happens
         final TestTree t = createTestTree(true);

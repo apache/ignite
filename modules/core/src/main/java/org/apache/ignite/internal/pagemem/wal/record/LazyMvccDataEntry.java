@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation}. <br>
  * This Data entry was not converted to key, value pair during record deserialization.
  */
-public class LazyMvccDataEntry extends MvccDataEntry {
+public class LazyMvccDataEntry extends MvccDataEntry implements MarshalledDataEntry {
     /** */
     private GridCacheSharedContext cctx;
 
@@ -127,23 +127,23 @@ public class LazyMvccDataEntry extends MvccDataEntry {
         return val;
     }
 
-    /** @return Data Entry Key type code. See {@link CacheObject} for built-in value type codes */
-    public byte getKeyType() {
+    /** {@inheritDoc} */
+    @Override public byte getKeyType() {
         return keyType;
     }
 
-    /** @return Key value bytes. */
-    public byte[] getKeyBytes() {
+    /** {@inheritDoc} */
+    @Override public byte[] getKeyBytes() {
         return keyBytes;
     }
 
-    /** @return Data Entry Value type code. See {@link CacheObject} for built-in value type codes */
-    public byte getValType() {
+    /** {@inheritDoc} */
+    @Override public byte getValType() {
         return valType;
     }
 
-    /** @return Value value bytes. */
-    public byte[] getValBytes() {
+    /** {@inheritDoc} */
+    @Override public byte[] getValBytes() {
         return valBytes;
     }
 }

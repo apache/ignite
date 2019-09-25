@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -30,6 +31,7 @@ import java.util.UUID;
 /**
  * Schema operation status message.
  */
+@IgniteCodeGeneratingFail
 public class SchemaOperationStatusMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;

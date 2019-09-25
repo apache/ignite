@@ -21,6 +21,7 @@ import org.apache.ignite.examples.sql.SqlDdlExample;
 import org.apache.ignite.examples.sql.SqlDmlExample;
 import org.apache.ignite.examples.sql.SqlQueriesExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * SQL examples self test.
@@ -29,6 +30,7 @@ public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlJavaExample() throws Exception {
         SqlQueriesExample.main(EMPTY_ARGS);
     }
@@ -36,6 +38,7 @@ public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlDmlExample() throws Exception {
         SqlDmlExample.main(EMPTY_ARGS);
     }
@@ -43,6 +46,7 @@ public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlDdlExample() throws Exception {
         SqlDdlExample.main(EMPTY_ARGS);
     }

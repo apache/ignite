@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -55,7 +61,7 @@ javaMajorVersion() {
 #
 checkJava() {
     # Check JAVA_HOME.
-    if [ "$JAVA_HOME" = "" ]; then
+    if [ "${JAVA_HOME:-}" = "" ]; then
         JAVA=`type -p java`
         RETCODE=$?
 
@@ -96,7 +102,7 @@ setIgniteHome() {
     #
     # Set IGNITE_HOME, if needed.
     #
-    if [ "${IGNITE_HOME}" = "" ]; then
+    if [ "${IGNITE_HOME:-}" = "" ]; then
         export IGNITE_HOME=${IGNITE_HOME_TMP}
     fi
 

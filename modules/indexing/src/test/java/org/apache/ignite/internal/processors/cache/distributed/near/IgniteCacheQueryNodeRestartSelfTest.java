@@ -38,9 +38,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,15 +49,13 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Test for distributed queries with node restarts.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 3;
 
     /** */
     private static final int KEY_CNT = 1000;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -74,12 +72,6 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setConsistentId(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
 
@@ -104,6 +96,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testRestarts() throws Exception {
         int duration = 60 * 1000;
         int qryThreadNum = 10;

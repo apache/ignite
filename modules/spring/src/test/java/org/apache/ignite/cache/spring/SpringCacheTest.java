@@ -21,10 +21,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link SpringCache}
  */
+@RunWith(JUnit4.class)
 public class SpringCacheTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
@@ -70,6 +74,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetName() throws Exception {
         assertEquals(cacheName, springCache.getName());
     }
@@ -77,6 +82,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetNativeCache() throws Exception {
         assertEquals(nativeCache, springCache.getNativeCache());
     }
@@ -84,6 +90,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetByKey() throws Exception {
         String key = "key";
         String value = "value";
@@ -97,6 +104,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetByKeyType() throws Exception {
         String key = "key";
         String value = "value";
@@ -116,6 +124,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         String key = "key";
         assertNull(springCache.get(key));
@@ -129,6 +138,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         String key = "key";
         String expected = "value";
@@ -143,6 +153,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvict() throws Exception {
         String key = "key";
         assertNull(springCache.get(key));
@@ -157,6 +168,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClear() throws Exception {
         String key;
         springCache.put((key = "key1"), "value1");

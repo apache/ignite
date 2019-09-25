@@ -21,14 +21,19 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMvccSizeWithConcurrentTransactionTest extends CacheMvccAbstractFeatureTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSize() throws Exception {
         doTestConsistency(clo);
     }

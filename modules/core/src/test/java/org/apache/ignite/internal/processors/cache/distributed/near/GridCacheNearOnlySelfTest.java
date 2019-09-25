@@ -22,6 +22,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesAbstractSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -32,10 +35,12 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Near only self test.
  */
 @SuppressWarnings("RedundantMethodOverride")
+@RunWith(JUnit4.class)
 public abstract class GridCacheNearOnlySelfTest extends GridCacheClientModesAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateNearOnlyReader() throws Exception {
         IgniteCache<Object, Object> dhtCache = dhtCache();
 

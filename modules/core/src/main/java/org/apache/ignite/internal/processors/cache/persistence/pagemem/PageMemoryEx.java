@@ -36,7 +36,7 @@ public interface PageMemoryEx extends PageMemory {
      * @param grpId Group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
-     * @param restore Determines if the page is locked for restore.
+     * @param restore Determines if the page is locked for restore memory (crash recovery).
      * @return ByteBuffer for modifying the page.
      */
     long writeLock(int grpId, long pageId, long page, boolean restore);

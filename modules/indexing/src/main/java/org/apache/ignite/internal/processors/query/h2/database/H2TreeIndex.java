@@ -88,6 +88,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** */
     private final String idxName;
 
+    /** Tree name. */
+    private final String treeName;
+
     /** */
     private final IgniteLogger log;
 
@@ -135,9 +138,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
 
-        String treeName = (tbl.rowDescriptor() == null ? "" : typeId + "_") + idxName;
-
-        treeName = BPlusTree.treeName(treeName, "H2Tree");
+        treeName = BPlusTree.treeName((tbl.rowDescriptor() == null ? "" : typeId + "_") + idxName, "H2Tree");
 
         if (cctx.affinityNode()) {
             inlineIdxs = getAvailableInlineColumns(cols);
@@ -151,8 +152,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
 
-                try {
-                    RootPage page = getMetaPage(treeName, i);
+            try {
+                RootPage page = getMetaPage(i);
 
                     segments[i] = new H2Tree(
                         treeName,
@@ -194,6 +195,30 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         initDistributedJoinMessaging(tbl);
+    }
+
+    /**
+     * Check if index exists in store.
+     *
+     * @return {@code True} if exists.
+     */
+    public boolean rebuildRequired() {
+        assert segments != null;
+
+        for (int i = 0; i < segments.length; i++) {
+            try {
+                H2Tree segment = segments[i];
+
+                if (segment.created())
+                    return true;
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to check index tree root page existence [cacheName=" + cctx.name() +
+                    ", tblName=" + tblName + ", idxName=" + idxName + ", segment=" + i + ']');
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -413,7 +438,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                     tree.destroy();
 
-                    dropMetaPage(tree.getName(), i);
+                    dropMetaPage(i);
                 }
             }
         }
@@ -508,22 +533,20 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
-     * @param name Name.
      * @param segIdx Segment index.
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
      */
-    private RootPage getMetaPage(String name, int segIdx) throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
+    private RootPage getMetaPage(int segIdx) throws IgniteCheckedException {
+        return cctx.offheap().rootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 
     /**
-     * @param name Name.
      * @param segIdx Segment index.
      * @throws IgniteCheckedException If failed.
      */
-    private void dropMetaPage(String name, int segIdx) throws IgniteCheckedException {
-        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
+    private void dropMetaPage(int segIdx) throws IgniteCheckedException {
+        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 
     /** {@inheritDoc} */

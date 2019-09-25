@@ -26,6 +26,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -35,6 +38,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Check for specific support issue.
  */
+@RunWith(JUnit4.class)
 public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,6 +60,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateInPessimisticTxOnRemoteNode() throws Exception {
         try {
             Ignite ignite = startGrids(2);
@@ -99,6 +104,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadEvictedPartition() throws Exception {
         try {
             Ignite grid = startGrid(0);
@@ -127,12 +133,19 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             assertEquals(10, cache.get(key));
 
-            try (Transaction ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                assertEquals(10, cache.get(key));
-            }
+            if(((IgniteCacheProxy)cache).context().config().getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
+                try (Transaction ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                    assertEquals(10, cache.get(key));
+                }
 
-            try (Transaction ignored = grid.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                assertEquals(10, cache.get(key));
+                try (Transaction ignored = grid.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                    assertEquals(10, cache.get(key));
+                }
+            }
+            else {
+                try (Transaction ignored = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    assertEquals(10, cache.get(key));
+                }
             }
         }
         finally {

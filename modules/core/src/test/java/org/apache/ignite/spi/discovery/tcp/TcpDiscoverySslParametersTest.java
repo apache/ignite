@@ -23,10 +23,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cases when node connects to cluster with different set of cipher suites.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
 
     /** */
@@ -59,6 +63,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameCipherSuite() throws Exception {
         checkDiscoverySuccess(
             new String[][] {
@@ -80,6 +85,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonCipherSuite() throws Exception {
         checkDiscoverySuccess(
             new String[][] {
@@ -99,6 +105,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonCipherSuite() throws Exception {
         checkDiscoveryFailure(
             new String[][] {
@@ -117,6 +124,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonExistentCipherSuite() throws Exception {
         checkDiscoveryFailure(
             new String[][] {
@@ -138,6 +146,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonProtocols() throws Exception {
         checkDiscoveryFailure(
             null,
@@ -157,6 +166,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonExistentProtocol() throws Exception {
         checkDiscoveryFailure(
             null,
@@ -177,6 +187,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameProtocols() throws Exception {
         checkDiscoverySuccess(null,
             new String[][] {
@@ -195,6 +206,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonProtocol() throws Exception {
         checkDiscoverySuccess(null,
             new String[][] {

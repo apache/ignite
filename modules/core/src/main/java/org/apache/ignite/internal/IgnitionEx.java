@@ -1157,9 +1157,11 @@ public class IgnitionEx {
             try {
                 grid.start(startCtx);
             }
-            catch (IgniteInterruptedCheckedException e) {
-                if (grid.starterThreadInterrupted)
-                    Thread.interrupted();
+            catch (Exception e) {
+                if (X.hasCause(e, IgniteInterruptedCheckedException.class, InterruptedException.class)) {
+                    if (grid.starterThreadInterrupted)
+                        Thread.interrupted();
+                }
 
                 throw e;
             }

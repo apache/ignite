@@ -34,12 +34,13 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
@@ -47,6 +48,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 /**
  * Test cases for multi-threaded tests.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE2 = "cache2";
@@ -57,11 +59,16 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /** Grid 2. */
     private static Ignite ignite2;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Listeners. */
     private static Collection<IgnitePredicate<Event>> lsnrs = new ArrayList<>();
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -73,12 +80,6 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration ccfg1 = cacheConfiguration().setName(DEFAULT_CACHE_NAME);
         CacheConfiguration ccfg2 = cacheConfiguration().setName(CACHE2);
@@ -225,6 +226,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testBasicLock() throws Exception {
         IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -266,6 +268,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodeLock() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
@@ -324,6 +327,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodeLockWithKeyLists() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
@@ -401,6 +405,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testLockReentry() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -429,6 +434,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockMultithreaded() throws Exception {
         final IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -547,6 +553,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoCaches() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite1.cache(CACHE2);

@@ -30,11 +30,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,10 +46,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of grids to start. */
     private static final int GRID_CNT = 3;
 
@@ -57,6 +56,11 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        if (nearCacheConfiguration() != null)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         for (GridCacheTestStore store : stores)
             store.resetTimestamp();
     }
@@ -89,12 +93,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
@@ -124,6 +122,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromPrimary() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -137,6 +136,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromBackup() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -150,6 +150,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromNear() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -163,6 +164,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentFromPrimary() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -176,6 +178,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentFromBackup() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -189,6 +192,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentFromNear() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -202,6 +206,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAll() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -218,6 +223,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleOperations() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-class Cluster {
+export class Cluster {
     /** @type {String} */
     id;
 

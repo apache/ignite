@@ -94,6 +94,7 @@
         <module>modules/sqlline</module>
         <module>modules/ml</module>
         <module>modules/tensorflow</module>
+        <module>modules/h2</module>
     </modules>
 
     <profiles>

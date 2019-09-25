@@ -37,10 +37,14 @@ import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final int PAGE_SIZE = 8 * 1024;
@@ -59,6 +63,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageTearingInner() throws Exception {
         PageMemory mem = memory();
 
@@ -103,6 +108,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadedPagesCount() throws Exception {
         PageMemory mem = memory();
 
@@ -128,6 +134,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageTearingSequential() throws Exception {
         PageMemory mem = memory();
 
@@ -180,6 +187,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageHandleDeallocation() throws Exception {
         PageMemory mem = memory();
 
@@ -207,6 +215,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageIdRotation() throws Exception {
         PageMemory mem = memory();
 

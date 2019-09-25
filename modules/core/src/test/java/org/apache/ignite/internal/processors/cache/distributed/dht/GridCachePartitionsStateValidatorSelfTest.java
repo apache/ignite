@@ -33,12 +33,16 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 /**
  * Test correct behaviour of {@link GridDhtPartitionsStateValidator} class.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstractTest {
     /** Mocks and stubs. */
     private final UUID localNodeId = UUID.randomUUID();
@@ -100,6 +104,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
     /**
      * Test partition update counters validation.
      */
+    @Test
     public void testPartitionCountersValidation() {
         UUID remoteNode = UUID.randomUUID();
         UUID ignoreNode = UUID.randomUUID();
@@ -139,6 +144,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
     /**
      * Test partition cache sizes validation.
      */
+    @Test
     public void testPartitionCacheSizesValidation() {
         UUID remoteNode = UUID.randomUUID();
         UUID ignoreNode = UUID.randomUUID();

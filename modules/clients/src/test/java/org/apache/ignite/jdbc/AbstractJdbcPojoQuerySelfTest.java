@@ -31,9 +31,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -44,9 +41,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Test for Jdbc driver query without class on client
  */
 public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** TestObject class name. */
     protected static final String TEST_OBJECT = "org.apache.ignite.internal.JdbcTestObject";
 
@@ -70,11 +64,6 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setAtomicityMode(TRANSACTIONAL);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         QueryEntity queryEntity = new QueryEntity();

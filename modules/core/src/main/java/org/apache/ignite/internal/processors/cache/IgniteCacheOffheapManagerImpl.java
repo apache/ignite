@@ -60,6 +60,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapt
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -259,6 +261,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
+        return 0; // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void onKernalStop() {
         busyLock.block();
     }
@@ -336,6 +343,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             return part != null ? part.dataStore().fullSize() : 0;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int p) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Operation only applicable to caches with enabled persistence");
     }
 
     /**
@@ -675,13 +687,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
+    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
         throws IgniteCheckedException {
-        assert ver != null;
+        assert mvccSnapshot != null;
 
         CacheDataStore dataStore = dataStore(cctx, key);
 
-        CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, ver) : null;
+        CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, mvccSnapshot) : null;
 
         assert row == null || row.value() != null : row;
 
@@ -800,21 +812,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return 0;
     }
 
-    /**
-     * @param primary {@code True} if need return primary entries.
-     * @param backup {@code True} if need return backup entries.
-     * @param topVer Topology version to use.
-     * @return Entries iterator.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<Cache.Entry<K, V>> cacheEntriesIterator(
         final GridCacheContext cctx,
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary) throws IgniteCheckedException {
-        final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer, null);
+        final boolean keepBinary,
+        @Nullable final MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
+        final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer, mvccSnapshot);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
             /** */
@@ -1131,14 +1138,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
+    @Override public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
         long pageId = allocateForTree();
 
         return new RootPage(new FullPageId(pageId, grp.groupId()), true);
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
+    @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -1522,6 +1529,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return storageSize.get();
         }
 
+        /**
+         * @return {@code True} if there are no items in the store.
+         */
+        @Override public boolean isEmpty() {
+            try {
+                /*
+                 * TODO https://issues.apache.org/jira/browse/IGNITE-10082
+                 * Using of counters is cheaper than tree operations. Return size checking after the ticked is resolved.
+                 */
+                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to perform operation.", e);
+
+                return false;
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public void updateSize(int cacheId, long delta) {
             storageSize.addAndGet(delta);
@@ -1576,8 +1601,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void finalizeUpdateCountres() {
-            pCntr.finalizeUpdateCountres();
+        @Override public GridLongList finalizeUpdateCounters() {
+            return pCntr.finalizeUpdateCounters();
         }
 
         /** {@inheritDoc} */
@@ -1966,6 +1991,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     assert res == ResultType.PREV_NULL;
 
                 if (entryProc != null) {
+                    entryProc = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProc);
+
                     CacheInvokeEntry.Operation op = applyEntryProcessor(cctx, key, ver, entryProc, invokeArgs, updateRow, oldRow);
 
                     if (op == CacheInvokeEntry.Operation.NONE) {
@@ -3010,6 +3037,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
             return pendingEntries;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void preload() throws IgniteCheckedException {
+            // No-op.
         }
 
         /**

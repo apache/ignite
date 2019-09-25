@@ -81,6 +81,7 @@ public class MvccTxSnapshotRequest implements MvccMessage {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -101,6 +102,7 @@ public class MvccTxSnapshotRequest implements MvccMessage {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(MvccTxSnapshotRequest.class);

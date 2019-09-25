@@ -32,10 +32,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TM_JNDI_NAME = "java:/comp/env/tm/testtm1";
@@ -87,6 +91,7 @@ public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFactory() throws Exception {
         CacheJndiTmFactory f = new CacheJndiTmFactory("wrongJndiName", NOT_TM_JNDI_NAME, TM_JNDI_NAME2, TM_JNDI_NAME);
 
@@ -100,6 +105,7 @@ public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFactoryException() throws Exception {
         final CacheJndiTmFactory f = new CacheJndiTmFactory("wrongJndiName", NOT_TM_JNDI_NAME, "wrongJndiName2");
 

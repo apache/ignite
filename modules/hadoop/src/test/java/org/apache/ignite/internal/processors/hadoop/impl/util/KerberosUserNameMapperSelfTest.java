@@ -21,10 +21,14 @@ import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for Kerberos name mapper.
  */
+@RunWith(JUnit4.class)
 public class KerberosUserNameMapperSelfTest extends GridCommonAbstractTest {
     /** Test instance. */
     private static final String INSTANCE = "test_instance";
@@ -37,6 +41,7 @@ public class KerberosUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapper() throws Exception {
         KerberosUserNameMapper mapper = create(null, null);
 
@@ -49,6 +54,7 @@ public class KerberosUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapperInstance() throws Exception {
         KerberosUserNameMapper mapper = create(INSTANCE, null);
 
@@ -61,6 +67,7 @@ public class KerberosUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapperRealm() throws Exception {
         KerberosUserNameMapper mapper = create(null, REALM);
 
@@ -73,6 +80,7 @@ public class KerberosUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapperInstanceAndRealm() throws Exception {
         KerberosUserNameMapper mapper = create(INSTANCE, REALM);
 

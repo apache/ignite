@@ -37,10 +37,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -48,10 +48,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -71,8 +69,6 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -100,6 +96,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadOnlySafe() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
 
@@ -109,6 +106,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadOnlyAll() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
 
@@ -118,6 +116,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadWriteSafe() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
@@ -127,6 +126,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadWriteAll() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
 
@@ -136,6 +136,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testIgnore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5078");
 

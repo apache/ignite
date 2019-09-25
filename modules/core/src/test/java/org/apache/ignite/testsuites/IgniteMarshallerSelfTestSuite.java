@@ -34,25 +34,26 @@ import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.Set;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for all marshallers.
  */
-public class IgniteMarshallerSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteMarshallerSelfTestSuite {
     /**
      * @return Kernal test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
      * @param ignoredTests Ignored tests.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Ignite Marshaller Test Suite");
 
         GridTestUtils.addTestIfNeeded(suite, GridUnsafeDataOutputArraySizingSelfTest.class, ignoredTests);

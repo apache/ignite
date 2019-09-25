@@ -23,15 +23,20 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link GridBoundedConcurrentOrderedMap}.
  */
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridBoundedConcurrentOrderedMapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEvictionSingleElement() {
         SortedMap<Integer,String> m = new GridBoundedConcurrentOrderedMap<>(1);
 
@@ -52,6 +57,7 @@ public class GridBoundedConcurrentOrderedMapSelfTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testEvictionListener() {
         GridBoundedConcurrentOrderedMap<Integer,String> m = new GridBoundedConcurrentOrderedMap<>(1);
 

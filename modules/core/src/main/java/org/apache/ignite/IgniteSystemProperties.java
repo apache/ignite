@@ -260,6 +260,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
+     * System property to enable pending transaction tracker.
+     * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
+     * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
+     */
+    public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
+
+    /**
      * System property to override multicast group taken from configuration.
      * Used for testing purposes.
      */
@@ -900,6 +907,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
+     * Count of WAL compressor worker threads. Default value is 4.
+     */
+    public static final String IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT = "IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT";
+
+    /**
      * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
      * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
      *
@@ -998,6 +1010,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
 
     /**
+     * Timeout for waiting schema update if schema was not found for last accepted version.
+     */
+    public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
+
+    /**
+     * System property to override {@link CacheConfiguration#rebalanceThrottle} configuration property for all caches.
+     * {@code 0} by default, which means that override is disabled.
+     */
+    public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
+
+    /**
      * Maximum inactivity period for system worker in milliseconds. When this value is exceeded, worker is considered
      * blocked with consequent critical failure handler invocation.
      */
@@ -1007,6 +1030,40 @@ public final class IgniteSystemProperties {
      * Timeout for checkpoint read lock acquisition in milliseconds.
      */
     public static final String IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT = "IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT";
+
+    /**
+     * Enables start caches in parallel.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
+
+    /** For test purposes only. Force Mvcc mode. */
+    public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
+
+    /**
+     * Allows to log additional information about all restored partitions after binary and logical recovery phases.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
+
+    /**
+     * Disables cache interceptor triggering in case of conflicts.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
+
+    /**
+     * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
+     * case message contains only cluster metrics). By default cache metrics are included into the message and
+     * calculated each time the message is sent.
+     * <p>
+     * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
+     * metrics will be unavailable via JMX too.
+     */
+    public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
      * Enforces singleton.

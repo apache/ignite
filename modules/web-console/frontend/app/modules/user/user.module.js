@@ -20,6 +20,7 @@ import aclData from './permissions';
 
 import Auth from './Auth.service';
 import User from './User.service';
+import {registerInterceptor} from './emailConfirmationInterceptor';
 
 /**
  * @param {ng.auto.IInjectorService} $injector
@@ -35,7 +36,7 @@ function sessionRecoverer($injector, $q) {
 
                 const stateName = $injector.get('$uiRouterGlobals').current.name;
 
-                if (!_.includes(['', 'signin'], stateName))
+                if (!_.includes(['', 'signin', 'terms', '403', '404'], stateName))
                     $injector.get('$state').go('signin');
             }
 
@@ -76,20 +77,15 @@ function run($root, $transitions, AclService, User, Activities) {
 
     $transitions.onBefore({}, (trans) => {
         const $state = trans.router.stateService;
-        const {name, permission} = trans.to();
+        const {permission} = trans.to();
 
         if (_.isEmpty(permission))
             return;
 
         return trans.injector().get('User').read()
             .then(() => {
-                if (AclService.can(permission)) {
-                    Activities.post({action: $state.href(name, trans.params('to'))});
-
-                    return;
-                }
-
-                return $state.target(trans.to().failState || '403');
+                if (!AclService.can(permission))
+                    throw new Error('Illegal access error');
             })
             .catch(() => {
                 return $state.target(trans.to().failState || '403');
@@ -99,15 +95,17 @@ function run($root, $transitions, AclService, User, Activities) {
 
 run.$inject = ['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData'];
 
-angular.module('ignite-console.user', [
-    'mm.acl',
-    'ignite-console.config',
-    'ignite-console.core'
-])
-.factory('sessionRecoverer', sessionRecoverer)
-.config(['$httpProvider', ($httpProvider) => {
-    $httpProvider.interceptors.push('sessionRecoverer');
-}])
-.service('Auth', Auth)
-.service('User', User)
-.run(run);
+angular
+    .module('ignite-console.user', [
+        'mm.acl',
+        'ignite-console.config',
+        'ignite-console.core'
+    ])
+    .factory('sessionRecoverer', sessionRecoverer)
+    .config(registerInterceptor)
+    .config(['$httpProvider', ($httpProvider) => {
+        $httpProvider.interceptors.push('sessionRecoverer');
+    }])
+    .service('Auth', Auth)
+    .service('User', User)
+    .run(run);

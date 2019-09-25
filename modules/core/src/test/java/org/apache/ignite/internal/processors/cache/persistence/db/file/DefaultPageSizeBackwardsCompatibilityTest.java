@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -26,18 +25,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Client mode. */
     private boolean set2kPageSize = true;
 
@@ -50,9 +47,6 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(IP_FINDER);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
@@ -100,7 +94,8 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testStartFrom2kDefaultStore() throws Exception {
+    @Test
+    public void testStartFrom16kDefaultStore() throws Exception {
         startGrids(2);
 
         Ignite ig = ignite(0);
