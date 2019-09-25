@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -105,6 +106,12 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 @SkipDaemon
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class IgniteServiceProcessor extends ServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** */
+    public static final String SVCS_VIEW = "services";
+
+    /** */
+    public static final String SVCS_VIEW_DESC = "Services";
+
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
 
@@ -185,6 +192,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.systemView().registerView(SVCS_VIEW, SVCS_VIEW_DESC,
+            ServiceView.class,
+            registeredServices.values(),
+            ServiceView::new);
     }
 
     /** {@inheritDoc} */

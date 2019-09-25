@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,6 +50,22 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_
  * Tx metrics adapter.
  */
 public class TransactionMetricsAdapter implements TransactionMetrics {
+    /** Metric name for total system time on node. */
+    public static final String METRIC_TOTAL_SYSTEM_TIME = "totalNodeSystemTime";
+
+    /** Metric name for system time histogram on node. */
+    public static final String METRIC_SYSTEM_TIME_HISTOGRAM = "nodeSystemTimeHistogram";
+
+    /** Metric name for total user time on node. */
+    public static final String METRIC_TOTAL_USER_TIME = "totalNodeUserTime";
+
+    /** Metric name for user time histogram on node. */
+    public static final String METRIC_USER_TIME_HISTOGRAM = "nodeUserTimeHistogram";
+
+    /** Histogram buckets for metrics of system and user time. */
+    public static final long[] METRIC_TIME_BUCKETS =
+        new long[] { 1, 2, 4, 8, 16, 25, 50, 75, 100, 250, 500, 750, 1000, 3000, 5000, 10000, 25000, 60000};
+
     /** Grid kernal context. */
     private final GridKernalContext gridKernalCtx;
 
@@ -63,6 +81,18 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Last rollback time. */
     private final AtomicLongMetric rollbackTime;
 
+    /** Holds the reference to metric for total system time on node.*/
+    private LongAdderMetric totalTxSystemTime;
+
+    /** Holds the reference to metric for total user time on node. */
+    private LongAdderMetric totalTxUserTime;
+
+    /** Holds the reference to metric for system time histogram on node. */
+    private HistogramMetric txSystemTimeHistogram;
+
+    /** Holds the reference to metric for user time histogram on node. */
+    private HistogramMetric txUserTimeHistogram;
+
     /**
      * @param ctx Kernal context.
      */
@@ -75,6 +105,25 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         txRollbacks = mreg.intMetric("txRollbacks", "Number of transaction rollbacks.");
         commitTime = mreg.longMetric("commitTime", "Last commit time.");
         rollbackTime = mreg.longMetric("rollbackTime", "Last rollback time.");
+        totalTxSystemTime = mreg.longAdderMetric(METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node.");
+        totalTxUserTime = mreg.longAdderMetric(METRIC_TOTAL_USER_TIME, "Total transactions user time on node.");
+
+        txSystemTimeHistogram = mreg.histogram(
+            METRIC_SYSTEM_TIME_HISTOGRAM,
+            METRIC_TIME_BUCKETS,
+            "Transactions system times on node represented as histogram."
+        );
+
+        txUserTimeHistogram = mreg.histogram(
+            METRIC_USER_TIME_HISTOGRAM,
+            METRIC_TIME_BUCKETS,
+            "Transactions user times on node represented as histogram."
+        );
+    }
+
+    /** Callback invoked when {@link IgniteTxManager} started. */
+    public void onTxManagerStarted() {
+        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
         mreg.register("AllOwnerTransactions",
             this::getAllOwnerTransactions,
@@ -168,6 +217,26 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     }
 
     /**
+     * Callback for completion of near transaction. Writes metrics of single near transaction.
+     *
+     * @param systemTime Transaction system time.
+     * @param userTime Transaction user time.
+     */
+    public void onNearTxComplete(long systemTime, long userTime) {
+        if (systemTime >= 0) {
+            totalTxSystemTime.add(systemTime);
+
+            txSystemTimeHistogram.value(systemTime);
+        }
+
+        if (userTime >= 0) {
+            totalTxUserTime.add(userTime);
+
+            txUserTimeHistogram.value(userTime);
+        }
+    }
+
+    /**
      * Reset.
      */
     public void reset() {
@@ -258,6 +327,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      */
     private Collection<GridNearTxLocal> nearTxs(long duration) {
         final long start = System.currentTimeMillis();
+
         IgniteClosure<IgniteInternalTx, GridNearTxLocal> c = new IgniteClosure<IgniteInternalTx, GridNearTxLocal>() {
             @Override public GridNearTxLocal apply(IgniteInternalTx tx) {
                 return ((GridNearTxLocal)tx);
@@ -293,6 +363,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         long holdingLockCounter = 0;
 
         IgniteTxManager tm = gridKernalCtx.cache().context().tm();
+
         for (IgniteInternalTx tx : tm.activeTransactions()) {
             if ((tx.optimistic() && tx.state() == TransactionState.ACTIVE) || tx.empty() || !tx.local())
                 continue;
@@ -308,6 +379,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      */
     private long txLockedKeysNum() {
         GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccManager == null)
+            return 0;
 
         return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
     }

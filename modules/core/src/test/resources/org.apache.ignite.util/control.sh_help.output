@@ -1,0 +1,82 @@
+Control utility [ver. <!any!>
+2019 Copyright(C) Apache Software Foundation
+User: <!any!>
+Time: <!any!>
+Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
+
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [command] <command_parameters>
+
+
+This utility can do the following commands:
+  Activate cluster:
+    control.(sh|bat) --activate
+
+  Deactivate cluster:
+    control.(sh|bat) --deactivate [--yes]
+
+  Print current cluster state:
+    control.(sh|bat) --state
+
+  Print cluster baseline topology:
+    control.(sh|bat) --baseline
+
+  Add nodes into baseline topology:
+    control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
+
+  Remove nodes from baseline topology:
+    control.(sh|bat) --baseline remove consistentId1[,consistentId2,....,consistentIdN] [--yes]
+
+  Set baseline topology:
+    control.(sh|bat) --baseline set consistentId1[,consistentId2,....,consistentIdN] [--yes]
+
+  Set baseline topology based on version:
+    control.(sh|bat) --baseline version topologyVersion [--yes]
+
+  Set baseline autoadjustment settings:
+    control.(sh|bat) --baseline auto_adjust [disable|enable] [timeout <timeoutMillis>] [--yes]
+
+  List or kill transactions:
+    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--servers|--clients] [--nodes consistentId1[,consistentId2,....,consistentIdN]] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--info] [--yes]
+
+  Print detailed information (topology and key lock ownership) about specific transaction:
+    control.(sh|bat) --tx --info <TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|<TX identifier as UUID (can be retrieved via --tx command)>
+
+  View caches information in a cluster. For more details type:
+    control.(sh|bat) --cache help
+
+  Print absolute paths of unused archived wal segments on each node:
+    control.(sh|bat) --wal print [consistentId1,consistentId2,....,consistentIdN]
+
+  Delete unused archived wal segments on each node:
+    control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
+
+  View diagnostic information in a cluster. For more details type:
+    control.(sh|bat) --diagnostic
+
+  Enable read-only mode on active cluster:
+    control.(sh|bat) --read-only-on [--yes]
+
+  Disable read-only mode on active cluster:
+    control.(sh|bat) --read-only-off [--yes]
+
+By default commands affecting the cluster require interactive confirmation.
+Use --yes option to disable it.
+
+Default values:
+    HOST_OR_IP=127.0.0.1
+    PORT=11211
+    PING_INTERVAL=5000
+    PING_TIMEOUT=30000
+    SSL_PROTOCOL=TLS
+    SSL_KEY_ALGORITHM=SunX509
+    KEYSTORE_TYPE=JKS
+    TRUSTSTORE_TYPE=JKS
+
+Exit codes:
+    0 - successful execution.
+    1 - invalid arguments.
+    2 - connection failed.
+    3 - authentication failed.
+    4 - unexpected error.
+Control utility has completed execution at: <!any!>
+Execution time: <!any!>

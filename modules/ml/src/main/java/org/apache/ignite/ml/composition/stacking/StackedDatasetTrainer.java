@@ -230,7 +230,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> StackedModel<IS, IA, O, AM> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
 
         return new StackedModel<>(getTrainer().fit(datasetBuilder, preprocessor));
@@ -239,7 +239,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     /** {@inheritDoc} */
     @Override public <K, V> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
-
+        learningEnvironment().initDeployingContext(preprocessor);
         return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, preprocessor));
     }
 

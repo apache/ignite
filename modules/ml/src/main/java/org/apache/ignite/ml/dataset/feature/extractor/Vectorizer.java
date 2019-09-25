@@ -238,7 +238,7 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @param <C> Type of coordinate.
      * @param <L> Type od label.
      */
-    public static class VectorizerAdapter<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
+    public abstract static class VectorizerAdapter<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
         /** {@inheritDoc} */
         @Override protected Double feature(C coord, K key, V value) {
             throw new IllegalStateException();

@@ -63,6 +63,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     @GridToStringInclude
     private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions;
 
+    /** Lost partitions. */
+    @GridToStringInclude
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions;
+
     /** Exceptions. */
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
@@ -77,11 +81,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions,
         Map<ClusterNode, Exception> exceptions
     ) {
         this.cntrConflicts = cntrConflicts;
         this.hashConflicts = hashConflicts;
         this.movingPartitions = movingPartitions;
+        this.lostPartitions = lostPartitions;
         this.exceptions = exceptions;
     }
 
@@ -93,7 +99,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /** {@inheritDoc} */
@@ -102,6 +108,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         U.writeMap(out, hashConflicts);
         U.writeMap(out, movingPartitions);
         U.writeMap(out, exceptions);
+        U.writeMap(out, lostPartitions);
     }
 
     /** {@inheritDoc} */
@@ -113,6 +120,9 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         if (protoVer >= V2)
             exceptions = U.readMap(in);
+
+        if (protoVer >= V3)
+            lostPartitions = U.readMap(in);
     }
 
     /**
@@ -134,6 +144,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      */
     public Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions() {
         return movingPartitions;
+    }
+
+    /**
+     * @return Lost partitions.
+     */
+    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions() {
+        return lostPartitions;
     }
 
     /**
@@ -219,17 +236,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             else
                 printConflicts(printer);
 
-            if (!F.isEmpty(movingPartitions())) {
-                printer.accept("Verification was skipped for " + movingPartitions().size() + " MOVING partitions:\n");
-
-                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : movingPartitions().entrySet()) {
-                    printer.accept("Rebalancing partition: " + entry.getKey() + "\n");
-
-                    printer.accept("Partition instances: " + entry.getValue() + "\n");
-                }
-
-                printer.accept("\n");
-            }
+            printSkippedPartitions(printer, movingPartitions(), "MOVING");
+            printSkippedPartitions(printer, lostPartitions(), "LOST");
         }
         else {
             printer.accept("\nidle_verify failed.\n");
@@ -253,6 +261,31 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                     printer.accept(msg == null ? "" : msg + "\n");
                 }
             }
+        }
+    }
+
+    /**
+     * Print partitions which were skipped.
+     *
+     * @param printer Consumer for printing.
+     * @param map Partitions storage.
+     * @param partitionState Partition state.
+     */
+    private void printSkippedPartitions(
+        Consumer<String> printer,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> map,
+        String partitionState
+    ) {
+        if (!F.isEmpty(map)) {
+            printer.accept("Verification was skipped for " + map.size() + " " + partitionState + " partitions:\n");
+
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : map.entrySet()) {
+                printer.accept("Skipped partition: " + entry.getKey() + "\n");
+
+                printer.accept("Partition instances: " + entry.getValue() + "\n");
+            }
+
+            printer.accept("\n");
         }
     }
 
