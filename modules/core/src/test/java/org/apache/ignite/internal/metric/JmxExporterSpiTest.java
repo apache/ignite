@@ -18,15 +18,18 @@
 package org.apache.ignite.internal.metric;
 
 import java.lang.management.ManagementFactory;
+import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.function.Consumer;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
@@ -39,14 +42,20 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -68,6 +77,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
@@ -308,6 +318,53 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals("0", t.get("userVersion"));
 
         barrier.await();
+    }
+
+    /** */
+    @Test
+    public void testClientsConnections() throws Exception {
+        String host = ignite.configuration().getClientConnectorConfiguration().getHost();
+
+        if (host == null)
+            host = ignite.configuration().getLocalHost();
+
+        int port = ignite.configuration().getClientConnectorConfiguration().getPort();
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+            try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
+                TabularDataSupport conns = systemView(CLI_CONN_SYS_VIEW);
+
+                Consumer<CompositeData> checkThin = c -> {
+                    assertEquals("THIN", c.get("type"));
+                    assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
+                    assertEquals(c.get("version"), ProtocolVersion.CURRENT_VER.toString());
+                };
+
+                Consumer<CompositeData> checkJdbc = c -> {
+                    assertEquals("JDBC", c.get("type"));
+                    assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
+                    assertEquals(c.get("version"), JdbcConnectionContext.CURRENT_VER.asString());
+                };
+
+                CompositeData c0 = conns.get(new Object[] {0});
+                CompositeData c1 = conns.get(new Object[] {1});
+
+                if (c0.get("type").equals("JDBC")) {
+                    checkJdbc.accept(c0);
+                    checkThin.accept(c1);
+                }
+                else {
+                    checkJdbc.accept(c1);
+                    checkThin.accept(c0);
+                }
+
+                assertEquals(2, conns.size());
+            }
+        }
+
+        boolean res = GridTestUtils.waitForCondition(() -> systemView(CLI_CONN_SYS_VIEW).isEmpty(), 5_000);
+
+        assertTrue(res);
     }
 
     /** */

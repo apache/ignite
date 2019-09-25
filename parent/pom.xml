@@ -62,7 +62,7 @@
         <commons.lang.version>2.6</commons.lang.version>
         <commons.io.version>2.6</commons.io.version>
         <cron4j.version>2.2.5</cron4j.version>
-        <curator.version>2.9.1</curator.version>
+        <curator.version>4.2.0</curator.version>
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
@@ -136,7 +136,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.4.13</zookeeper.version>
+        <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
 
@@ -534,6 +534,10 @@
                                 <title>Metric SPI</title>
                                 <packages>org.apache.ignite.spi.metric*</packages>
                             </group>
+                            <group>
+                                <title>System view SPI</title>
+                                <packages>org.apache.ignite.spi.systemview*</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
@@ -926,6 +930,8 @@
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/main/java/org/mindrot/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_cache_help.output</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_help.output</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->

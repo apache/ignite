@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.metric;
 
+import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -251,6 +257,25 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(srvcCfg.getName(), sysView.get(0));
         assertEquals(DummyService.class.getName(), sysView.get(2));
         assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get(4));
+    }
+
+    /** */
+    @Test
+    public void testClientsConnections() throws Exception {
+        String host = ignite.configuration().getClientConnectorConfiguration().getHost();
+
+        if (host == null)
+            host = ignite.configuration().getLocalHost();
+
+        int port = ignite.configuration().getClientConnectorConfiguration().getPort();
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+            try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
+                List<List<?>> conns = execute(ignite, "SELECT * FROM SYS.CLIENT_CONNECTIONS");
+
+                assertEquals(2, conns.size());
+            }
+        }
     }
 
     /** */

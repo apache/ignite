@@ -343,6 +343,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.LOCAL_SQL_RUNNING_QUERIES",
                 "SYS.NODE_ATTRIBUTES",
                 "SYS.TABLES",
+                "SYS.CLIENT_CONNECTIONS",
                 "SYS.TRANSACTIONS"
             ))
         );
@@ -755,6 +756,13 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TASKS.JOB_ID.null.2147483647",
                 "SYS.TASKS.AFFINITY_PARTITION_ID.null.10",
                 "SYS.TASKS.TASK_CLASS_NAME.null.2147483647",
+                "SYS.TASKS.EXEC_NAME.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.CONNECTION_ID.null.19",
+                "SYS.CLIENT_CONNECTIONS.LOCAL_ADDRESS.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.TYPE.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.USER.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647",
                 "SYS.TASKS.EXEC_NAME.null.2147483647",
                 "SYS.TRANSACTIONS.NODE_ID.null.2147483647",
                 "SYS.TRANSACTIONS.STATE.null.2147483647",
