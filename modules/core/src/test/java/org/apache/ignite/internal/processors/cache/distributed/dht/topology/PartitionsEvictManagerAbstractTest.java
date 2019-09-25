@@ -52,7 +52,6 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
-
         cfg.setFailureHandler(new AbstractFailureHandler() {
             /** {@inheritDoc} */
             @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
