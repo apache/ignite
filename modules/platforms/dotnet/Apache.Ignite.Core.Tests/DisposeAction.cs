@@ -20,24 +20,27 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Environment variable utilities.
+    /// Wraps an action to be executed on Dispose call.
     /// </summary>
-    public static class EnvVar
+    public class DisposeAction : IDisposable
     {
+        /** */
+        private readonly Action _action;
+
         /// <summary>
-        /// Sets the environment variable and returns an object that resets the variable back when disposed.
+        /// Initializes a new instance of <see cref="DisposeAction"/>.
         /// </summary>
-        /// <param name="name">Name.</param>
-        /// <param name="value">Value.</param>
-        /// <returns>Object that resets environment variable to previous value when disposed.</returns>
-        public static IDisposable Set(string name, string value)
+        /// <param name="action">Action.</param>
+        public DisposeAction(Action action)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(action, "action");
+            _action = action;
+        }
 
-            var oldValue = Environment.GetEnvironmentVariable(name);
-            Environment.SetEnvironmentVariable(name, value);
-
-            return new DisposeAction(() => Environment.SetEnvironmentVariable(name, oldValue));
+        /** <inheritdoc /> */
+        public void Dispose()
+        {
+            _action();
         }
     }
 }

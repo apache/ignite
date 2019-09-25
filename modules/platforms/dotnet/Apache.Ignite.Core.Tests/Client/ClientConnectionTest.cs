@@ -402,10 +402,10 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var client = StartClient())
             {
                 var cache = client.GetOrCreateCache<int, int>("foo");
-                Parallel.For(0, count, new ParallelOptions {MaxDegreeOfParallelism = 16},
+                Parallel.For(0, count, new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount},
                     i =>
                     {
-                        ops[i] = cache.PutAsync(i, i);
+                        ops[i] = cache.PutAllAsync(Enumerable.Range(i*100, 100).ToDictionary(x => x, x => x));
                     });
             }
 
