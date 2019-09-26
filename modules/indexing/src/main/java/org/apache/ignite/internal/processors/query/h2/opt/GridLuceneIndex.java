@@ -241,7 +241,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry,
-        IndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
         IndexReader reader;
 
         try {
@@ -280,7 +280,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 .add(filter, BooleanClause.Occur.FILTER)
                 .build();
 
-            docs = searcher.search(query, Integer.MAX_VALUE);
+            docs = searcher.search(query, limit > 0 ? limit : Integer.MAX_VALUE);
         }
         catch (Exception e) {
             U.closeQuiet(reader);

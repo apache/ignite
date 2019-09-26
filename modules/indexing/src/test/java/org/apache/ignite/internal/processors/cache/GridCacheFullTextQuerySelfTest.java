@@ -58,6 +58,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
     /** Cache name */
     private static final String PERSON_CACHE = "Person";
+    private static final int QUERY_LIMIT = 5;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -93,7 +94,15 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTextQueryWithField() throws Exception {
-        checkTextQuery("name:1*", false, false);
+        checkTextQuery("name:1*", 0, false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testTextQueryWithFieldLimited() throws Exception {
+        checkTextQuery("name:1*", QUERY_LIMIT, false, false);
     }
 
     /**
@@ -116,6 +125,14 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @Test
+    public void testLocalTextQueryLimited() throws Exception {
+        checkTextQuery(null, QUERY_LIMIT, true, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
     public void testTextQueryWithKeepBinary() throws Exception {
         checkTextQuery(false, true);
     }
@@ -124,8 +141,24 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @Test
+    public void testTextQueryWithKeepBinaryLimited() throws Exception {
+        checkTextQuery(null, QUERY_LIMIT, false, true);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
     public void testTextQuery() throws Exception {
-        checkTextQuery(false, true);
+        checkTextQuery(false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testTextQueryLimited() throws Exception {
+        checkTextQuery(null, QUERY_LIMIT, false, true);
     }
 
     /**
@@ -133,7 +166,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param keepBinary keep binary flag.
      */
     private void checkTextQuery(boolean loc, boolean keepBinary) throws Exception {
-        checkTextQuery(null, loc, keepBinary);
+        checkTextQuery(null, 0, loc, keepBinary);
     }
 
     /**
@@ -141,7 +174,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param loc local query flag.
      * @param keepBinary keep binary flag.
      */
-    private void checkTextQuery(String clause, boolean loc, boolean keepBinary) throws Exception {
+    private void checkTextQuery(String clause, int limit, boolean loc, boolean keepBinary) throws Exception {
         final IgniteEx ignite = grid(0);
 
         if (F.isEmpty(clause))
@@ -156,7 +189,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         });
 
         // 2. Validate results.
-        TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(loc);
+        TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(loc).setLimit(limit);
 
         validateQueryResults(ignite, qry, exp, keepBinary);
 
@@ -212,7 +245,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException if failed.
      */
-    private static void validateQueryResults(IgniteEx ignite, Query qry, Set<Integer> exp,
+    private static void validateQueryResults(IgniteEx ignite, TextQuery qry, Set<Integer> exp,
         boolean keepBinary) throws IgniteCheckedException {
         IgniteCache<Integer, Person> cache = ignite.cache(PERSON_CACHE);
 
@@ -234,7 +267,11 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
                     exp0.remove(entry.getKey());
                 }
 
-                checkForMissedKeys(ignite, exp0, all);
+                if (qry.getLimit() > 0){
+                    assertEquals(QUERY_LIMIT, all.size());
+                } else {
+                    checkForMissedKeys(ignite, exp0, all);
+                }
             }
 
             try (QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor = cache0.query(qry)) {
@@ -252,7 +289,11 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
                     exp0.remove(entry.getKey());
                 }
 
-                checkForMissedKeys(ignite, exp0, all);
+                if (qry.getLimit() > 0){
+                    assertEquals(QUERY_LIMIT, all.size());
+                } else {
+                    checkForMissedKeys(ignite, exp0, all);
+                }
             }
         }
         else {
@@ -271,7 +312,12 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
                     exp0.remove(entry.getKey());
                 }
 
-                checkForMissedKeys(ignite, exp0, all);
+                if (qry.getLimit() > 0){
+                    assertEquals(QUERY_LIMIT, all.size());
+                } else {
+                    checkForMissedKeys(ignite, exp0, all);
+                }
+
             }
 
             try (QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry)) {
@@ -289,7 +335,11 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
                     exp0.remove(entry.getKey());
                 }
 
-                checkForMissedKeys(ignite, exp0, all);
+                if (qry.getLimit() > 0){
+                    assertEquals(QUERY_LIMIT, all.size());
+                } else {
+                    checkForMissedKeys(ignite, exp0, all);
+                }
             }
         }
     }

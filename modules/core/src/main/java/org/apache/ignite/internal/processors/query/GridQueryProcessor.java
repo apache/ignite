@@ -2712,7 +2712,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
-        final String resType, final IndexingQueryFilter filters) throws IgniteCheckedException {
+        final String resType, final IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -2727,7 +2727,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         String typeName = typeName(cacheName, resType);
                         String schemaName = idx.schema(cacheName);
 
-                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters);
+                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters, limit);
                     }
                 }, true);
         }

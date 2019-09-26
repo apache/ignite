@@ -98,6 +98,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
 
+    /** Limits returned records quantity*/
+    private int limit;
+
     /** Transformer. */
     private IgniteClosure<?, ?> transform;
 
@@ -251,6 +254,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         @Nullable String clsName,
         String clause,
+        int limit,
         boolean incMeta,
         boolean keepBinary,
         UUID subjId,
@@ -270,6 +274,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.clsName = clsName;
         this.clause = clause;
+        this.limit = limit;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.subjId = subjId;
@@ -385,6 +390,18 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         A.ensure(timeout >= 0, "timeout >= 0");
 
         this.timeout = timeout;
+
+        return this;
+    }
+
+    public int limit() {
+        return limit;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public CacheQuery<T> limit(int limit) {
+        this.limit = limit;
 
         return this;
     }
