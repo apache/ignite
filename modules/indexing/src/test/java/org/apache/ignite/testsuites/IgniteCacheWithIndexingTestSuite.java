@@ -95,8 +95,6 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
 
         suite.addTestSuite(ClusterReadOnlyModeSqlTest.class);
 
-        suite.addTestSuite(RebuildIndexLogMessageTest.class);
-
         suite.addTestSuite(CacheTtlReadOnlyModeSelfTest.class);
 
         suite.addTestSuite(H2TreeCorruptedTreeExceptionTest.class);
