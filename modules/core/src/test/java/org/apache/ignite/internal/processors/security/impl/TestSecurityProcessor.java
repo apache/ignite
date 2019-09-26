@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,6 +54,53 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** Users security data. */
     private final Collection<TestSecurityData> predefinedAuthData;
+
+    /** Authorize records. */
+    private final List<AuthorizeRecord> authorizeRecords = new ArrayList<>();
+
+    /**
+     *
+     */
+    public static class AuthorizeRecord {
+        /** */
+        private final String actName;
+        /** With permition. */
+        private final SecurityPermission withPermition;
+        /** Login. */
+        private final String login;
+
+        /**
+         * @param actName Action name.
+         * @param withPermition With permition.
+         * @param login Login.
+         */
+        public AuthorizeRecord(String actName, SecurityPermission withPermition, String login) {
+            this.actName = actName;
+            this.withPermition = withPermition;
+            this.login = login;
+        }
+
+        /**
+         *
+         */
+        public String getActName() {
+            return actName;
+        }
+
+        /**
+         *
+         */
+        public SecurityPermission getWithPermition() {
+            return withPermition;
+        }
+
+        /**
+         *
+         */
+        public String getLogin() {
+            return login;
+        }
+    }
 
     /**
      * Constructor.
@@ -109,6 +157,8 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
+        authorizeRecords.add(new AuthorizeRecord(name, perm, (String)securityCtx.subject().login()));
+
         if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
             throw new SecurityException("Authorization failed [perm=" + perm +
                 ", name=" + name +
@@ -145,5 +195,12 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         for (TestSecurityData data : predefinedAuthData)
             PERMS.remove(data.credentials());
+    }
+
+    /**
+     *
+     */
+    public List<AuthorizeRecord> getAuthorizeRecords() {
+        return authorizeRecords;
     }
 }
