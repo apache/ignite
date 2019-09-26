@@ -38,6 +38,7 @@ import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
@@ -78,6 +79,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CacheView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ClientConnectionView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
@@ -120,8 +122,8 @@ public class SystemViewRowAttributeWalkerGenerator {
         final List<String> code = new ArrayList<>();
         final Set<String> imports = new TreeSet<>();
 
-        imports.add("import " + SystemViewRowAttributeWalker.class.getName() + ';');
-        imports.add("import " + clazz.getName() + ';');
+        addImport(imports, SystemViewRowAttributeWalker.class);
+        addImport(imports, clazz);
 
         String simpleName = clazz.getSimpleName();
 
@@ -146,7 +148,7 @@ public class SystemViewRowAttributeWalkerGenerator {
             String line = TAB + TAB;
 
             if (!retClazz.isPrimitive() && !retClazz.getName().startsWith("java.lang"))
-                imports.add("import " + retClazz.getName() + ';');
+                addImport(imports, retClazz);
 
             line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class);";
 
@@ -205,6 +207,11 @@ public class SystemViewRowAttributeWalkerGenerator {
         addLicenseHeader(code);
 
         return code;
+    }
+
+    /** Adds import to set imports set. */
+    private void addImport(Set<String> imports, Class<?> cls) {
+        imports.add("import " + cls.getName().replaceAll("\\$", ".") + ';');
     }
 
     /**
