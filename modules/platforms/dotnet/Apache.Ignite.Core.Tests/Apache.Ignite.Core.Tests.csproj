@@ -206,6 +206,7 @@
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
     <Compile Include="Common\IgniteGuidTest.cs" />
     <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
+    <Compile Include="DisposeAction.cs" />
     <Compile Include="EnvVar.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
