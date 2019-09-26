@@ -148,6 +148,9 @@ const config = {
 
     // Load plugins.
     plugins: [
+        new webpack.DefinePlugin({
+            WEB_CONSOLE_VERSION: JSON.stringify(require('../package.json').version)
+        }),
         new webpack.ProvidePlugin({
             $: 'jquery',
             'window.jQuery': 'jquery',

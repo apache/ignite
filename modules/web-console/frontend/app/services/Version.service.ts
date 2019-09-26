@@ -16,7 +16,6 @@
 
 import { BehaviorSubject } from 'rxjs';
 import _ from 'lodash';
-import buildInfo from '../../build.json';
 
 /**
  * Utility service for version parsing and comparing
@@ -39,9 +38,10 @@ interface ParsedVersion {
 type VersionInfo = {label: string, ignite: string}
 
 export default class IgniteVersion {
-    webConsole = buildInfo.webConsoleVersion;
-    supportedVersions: VersionInfo[]
-    currentSbj: BehaviorSubject<VersionInfo>
+    // @ts-ignore
+    webConsole: string = WEB_CONSOLE_VERSION;
+    supportedVersions: VersionInfo[];
+    currentSbj: BehaviorSubject<VersionInfo>;
     constructor() {
         this.supportedVersions = [
             {
