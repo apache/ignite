@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -74,6 +73,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -926,7 +926,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Simple test for {@link SqlSystemViewTables}
+     * Simple test for {@link SqlTableView}
      */
     @Test
     public void testTablesView() throws Exception {
@@ -947,12 +947,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             "TABLE_NAME = 'CACHE_SQL'");
 
         List<?> expRow = asList(
+            "CACHE_SQL",         // TABLE_NAME
+            "PUBLIC",            // SCHEMA_NAME
+            "cache_sql",         // CACHE_NAME
             cacheSqlId,          // CACHE_GROUP_ID
             "cache_sql",         // CACHE_GROUP_NAME
             cacheSqlId,          // CACHE_ID
-            "cache_sql",         // CACHE_NAME
-            "PUBLIC",            // SCHEMA_NAME
-            "CACHE_SQL",         // TABLE_NAME
             null,                // AFFINITY_KEY_COLUMN
             "ID",                // KEY_ALIAS
             null,                // VALUE_ALIAS
@@ -971,12 +971,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<?> allExpRows = asList(
             expRow,
             asList(
+                "DFLT_CACHE",            // TABLE_NAME
+                "PUBLIC",                // SCHEMA_NAME
+                "SQL_PUBLIC_DFLT_CACHE", // CACHE_NAME
                 ddlTabId,                // CACHE_GROUP_ID
                 "SQL_PUBLIC_DFLT_CACHE", // CACHE_GROUP_NAME
                 ddlTabId,                // CACHE_ID
-                "SQL_PUBLIC_DFLT_CACHE", // CACHE_NAME
-                "PUBLIC",                // SCHEMA_NAME
-                "DFLT_CACHE",            // TABLE_NAME
                 "ID2",                   // AFFINITY_KEY_COLUMN
                 null,                    // KEY_ALIAS
                 "MY_VAL",                // VALUE_ALIAS
@@ -1458,6 +1458,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEqualsCollections(elevenExpVals, durationMetrics);
     }
+
 
     /**
      * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.

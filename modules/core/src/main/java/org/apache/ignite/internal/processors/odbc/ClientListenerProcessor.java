@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
  */
 public class ClientListenerProcessor extends GridProcessorAdapter {
     /** */
-    public static final String CLI_CONN_SYS_VIEW = metricName("client", "connections");
+    public static final String CLI_CONN_VIEW = metricName("client", "connections");
 
     /** */
     public static final String CLI_CONN_SYS_VIEW_DESC = "Client connections";
@@ -200,7 +200,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
 
-                ctx.systemView().registerView(CLI_CONN_SYS_VIEW, CLI_CONN_SYS_VIEW_DESC,
+                ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_SYS_VIEW_DESC,
                     ClientConnectionView.class,
                     srv.sessions(),
                     ClientConnectionView::new);

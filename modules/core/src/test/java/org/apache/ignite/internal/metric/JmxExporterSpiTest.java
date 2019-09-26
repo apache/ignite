@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
@@ -321,7 +321,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
             try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
-                TabularDataSupport conns = systemView(CLI_CONN_SYS_VIEW);
+                TabularDataSupport conns = systemView(CLI_CONN_VIEW);
 
                 Consumer<CompositeData> checkThin = c -> {
                     assertEquals("THIN", c.get("type"));
@@ -351,7 +351,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             }
         }
 
-        boolean res = GridTestUtils.waitForCondition(() -> systemView(CLI_CONN_SYS_VIEW).isEmpty(), 5_000);
+        boolean res = GridTestUtils.waitForCondition(() -> systemView(CLI_CONN_VIEW).isEmpty(), 5_000);
 
         assertTrue(res);
     }

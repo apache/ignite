@@ -46,8 +46,10 @@ import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
-import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_SYS_VIEW;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /** */
@@ -275,7 +277,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     @Test
     public void testSchemas() throws Exception {
         try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
-            SystemView<SqlSchemaView> schemasSysView = g.context().systemView().view(SQL_SCHEMA_SYS_VIEW);
+            SystemView<SqlSchemaView> schemasSysView = g.context().systemView().view(SQL_SCHEMA_VIEW);
 
             Set<String> schemaFromSysView = new HashSet<>();
 
@@ -285,7 +287,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
             assertEquals(schemaFromSysView, expSchemas);
 
-            List<List<?>> schemas = execute(g, "SELECT * FROM SYS.SQL_SCHEMAS");
+            List<List<?>> schemas = execute(g, "SELECT * FROM SYS.SCHEMAS");
 
             schemaFromSysView.clear();
             schemas.forEach(s -> schemaFromSysView.add(s.get(0).toString()));
@@ -294,7 +296,82 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
     }
 
-    //TODO: add sql.tables, sql.views, sql.column, sql.indexes tests.
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testViews() throws Exception {
+        Set<String> expViews = new HashSet<>(Arrays.asList(
+            "METRICS",
+            "SERVICES",
+            "CACHE_GROUPS",
+            "CACHES",
+            "TASKS",
+            "LOCAL_SQL_QUERY_HISTORY",
+            "NODES",
+            "SCHEMAS",
+            "NODE_METRICS",
+            "BASELINE_NODES",
+            "INDEXES",
+            "LOCAL_CACHE_GROUPS_IO",
+            "LOCAL_SQL_RUNNING_QUERIES",
+            "NODE_ATTRIBUTES",
+            "TABLES",
+            "CLIENT_CONNECTIONS",
+            "VIEWS"
+        ));
+
+        Set<String> actViews = new HashSet<>();
+
+        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.VIEWS");
+
+        for (List<?> row : res)
+            actViews.add(row.get(0).toString());
+
+        assertEquals(expViews, actViews);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTable() throws Exception {
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
+
+        execute(ignite, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR)");
+
+        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.TABLES");
+
+        assertEquals(1, res.size());
+
+        List tbl = res.get(0);
+
+        int cacheId = cacheId("SQL_PUBLIC_T1");
+        String cacheName = "SQL_PUBLIC_T1";
+
+        assertEquals("T1", tbl.get(0)); //TABLE_NAME
+        assertEquals(DFLT_SCHEMA, tbl.get(1)); //SCHEMA_NAME
+        assertEquals(cacheName, tbl.get(2)); //CACHE_NAME
+        assertEquals(cacheId, tbl.get(3)); //CACHE_GROUP_ID
+        assertEquals(cacheName, tbl.get(4)); //CACHE_GROUP_NAME
+        assertEquals(cacheId, tbl.get(5)); //CACHE_ID
+        assertNull(tbl.get(6)); //AFFINITY_KEY_COLUMN
+        assertEquals("ID", tbl.get(7)); //KEY_ALIAS
+        assertNull(tbl.get(8)); //VALUE_ALIAS
+        assertEquals("java.lang.Long", tbl.get(9)); //KEY_TYPE_NAME
+        assertNotNull(tbl.get(10)); //VALUE_TYPE_NAME
+
+        execute(ignite, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
+
+        assertEquals(2, execute(ignite, "SELECT * FROM SYS.TABLES").size());
+
+        execute(ignite, "DROP TABLE T1");
+        execute(ignite, "DROP TABLE T2");
+
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
+    }
+
+    //TODO: add sql.tables, sql.column, sql.indexes tests.
 
     /**
      * Execute query on given node.

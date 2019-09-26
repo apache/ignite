@@ -65,7 +65,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
@@ -411,7 +411,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             int port = g0.configuration().getClientConnectorConfiguration().getPort();
 
-            SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_SYS_VIEW);
+            SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_VIEW);
 
             try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
                 assertEquals(1, conns.size());

@@ -32,15 +32,14 @@ public class SqlTableViewWalker implements SystemViewRowAttributeWalker<SqlTable
         v.accept(0, "tableName", String.class);
         v.accept(1, "schemaName", String.class);
         v.accept(2, "cacheName", String.class);
-        v.accept(3, "affinityKeyColumn", String.class);
-        v.accept(4, "cacheGroupId", int.class);
-        v.accept(5, "cacheGroupName", String.class);
-        v.accept(6, "cacheId", int.class);
-        v.accept(7, "identifierString", String.class);
-        v.accept(8, "keyAlias", String.class);
+        v.accept(3, "cacheGroupId", int.class);
+        v.accept(4, "cacheGroupName", String.class);
+        v.accept(5, "cacheId", int.class);
+        v.accept(6, "affinityKeyColumn", String.class);
+        v.accept(7, "keyAlias", String.class);
+        v.accept(8, "valueAlias", String.class);
         v.accept(9, "keyTypeName", String.class);
-        v.accept(10, "valueAlias", String.class);
-        v.accept(11, "valueTypeName", String.class);
+        v.accept(10, "valueTypeName", String.class);
     }
 
     /** {@inheritDoc} */
@@ -48,19 +47,18 @@ public class SqlTableViewWalker implements SystemViewRowAttributeWalker<SqlTable
         v.accept(0, "tableName", String.class, row.tableName());
         v.accept(1, "schemaName", String.class, row.schemaName());
         v.accept(2, "cacheName", String.class, row.cacheName());
-        v.accept(3, "affinityKeyColumn", String.class, row.affinityKeyColumn());
-        v.acceptInt(4, "cacheGroupId", row.cacheGroupId());
-        v.accept(5, "cacheGroupName", String.class, row.cacheGroupName());
-        v.acceptInt(6, "cacheId", row.cacheId());
-        v.accept(7, "identifierString", String.class, row.identifierString());
-        v.accept(8, "keyAlias", String.class, row.keyAlias());
+        v.acceptInt(3, "cacheGroupId", row.cacheGroupId());
+        v.accept(4, "cacheGroupName", String.class, row.cacheGroupName());
+        v.acceptInt(5, "cacheId", row.cacheId());
+        v.accept(6, "affinityKeyColumn", String.class, row.affinityKeyColumn());
+        v.accept(7, "keyAlias", String.class, row.keyAlias());
+        v.accept(8, "valueAlias", String.class, row.valueAlias());
         v.accept(9, "keyTypeName", String.class, row.keyTypeName());
-        v.accept(10, "valueAlias", String.class, row.valueAlias());
-        v.accept(11, "valueTypeName", String.class, row.valueTypeName());
+        v.accept(10, "valueTypeName", String.class, row.valueTypeName());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 12;
+        return 11;
     }
 }

@@ -343,7 +343,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.LOCAL_SQL_RUNNING_QUERIES",
                 "SYS.NODE_ATTRIBUTES",
                 "SYS.TABLES",
-                "SYS.CLIENT_CONNECTIONS"
+                "SYS.CLIENT_CONNECTIONS",
+                "SYS.VIEWS"
             ))
         );
     }
@@ -719,7 +720,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
                 "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
                 "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
-                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
                 "SYS.TABLES.CACHE_GROUP_ID.null.10",
                 "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.TABLES.CACHE_ID.null.10",
@@ -761,7 +761,23 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.TYPE.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.USER.null.2147483647",
-                "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647"
+                "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647",
+                "SYS.SCHEMAS.NAME.null.2147483647",
+                "SYS.SCHEMAS.PREDEFINED.null.1",
+                "SYS.TABLES.CACHE_GROUP_ID.null.10",
+                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
+                "SYS.TABLES.CACHE_ID.null.10",
+                "SYS.TABLES.CACHE_NAME.null.2147483647",
+                "SYS.TABLES.SCHEMA_NAME.null.2147483647",
+                "SYS.TABLES.TABLE_NAME.null.2147483647",
+                "SYS.TABLES.AFFINITY_KEY_COLUMN.null.2147483647",
+                "SYS.TABLES.KEY_ALIAS.null.2147483647",
+                "SYS.TABLES.VALUE_ALIAS.null.2147483647",
+                "SYS.TABLES.KEY_TYPE_NAME.null.2147483647",
+                "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647",
+                "SYS.VIEWS.NAME.null.2147483647",
+                "SYS.VIEWS.DESCRIPTION.null.2147483647",
+                "SYS.VIEWS.SCHEMA.null.2147483647"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
