@@ -39,7 +39,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
     var igniteSession: IgniteSparkSession = _
 
     describe("Optimized queries") {
-        it("SELECT name as city_name FROM city") {
+/*        it("SELECT name as city_name FROM city") {
             val df = igniteSession.sql("SELECT name as city_name FROM city")
 
             checkOptimizationResult(df, "SELECT name as city_name FROM city")
@@ -114,7 +114,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
                 (2, 3))
 
             checkQueryData(df, data)
-        }
+        }*/
 
         it("SELECT id FROM city HAVING id > 1") {
             val df = igniteSession.sql("SELECT id FROM city HAVING id > 1")
@@ -126,7 +126,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
             checkQueryData(df, data)
         }
 
-        it("SELECT DISTINCT name FROM city ORDER BY name") {
+        /*it("SELECT DISTINCT name FROM city ORDER BY name") {
             val df = igniteSession.sql("SELECT DISTINCT name FROM city ORDER BY name")
 
             checkOptimizationResult(df, "SELECT name FROM city GROUP BY name ORDER BY name")
@@ -258,10 +258,10 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
                 (1, "JPerson-1", null))
 
             checkQueryData(p, data)
-        }
+        }*/
     }
 
-    describe("Not Optimized Queries") {
+    /*describe("Not Optimized Queries") {
         it("SELECT id, name FROM json_cities") {
             val citiesDataFrame = igniteSession.read.json(
                 resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
@@ -303,7 +303,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
 
             checkOptimizationResult(df)
         }
-    }
+    }*/
 
     def readTable(tblName: String): Dataset[Row] =
         igniteSession.read

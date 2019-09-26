@@ -43,8 +43,8 @@ import scala.collection.JavaConversions._
   *
   * @param igniteContext Ignite context to provide access to Ignite instance.
   */
-private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext, session: SparkSession)
-    extends ExternalCatalogWithListener(session.sharedState.externalCatalog) {
+private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
+    extends ExternalCatalog {
     /**
       * Default Ignite instance.
       */

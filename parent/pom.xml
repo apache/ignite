@@ -122,8 +122,8 @@
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.7.2</snappy.version>
-        <spark.hadoop.version>2.6.5</spark.hadoop.version>
-        <spark.version>2.3.0</spark.version>
+        <spark.hadoop.version>2.7.5</spark.hadoop.version>
+        <spark.version>2.4.4</spark.version>
         <spring.data.version>1.13.14.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
         <spring.version>4.3.18.RELEASE</spring.version><!-- don't forget to update spring-data version -->
         <spring.data-2.0.version>2.0.9.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
@@ -1070,9 +1070,9 @@
 
         <profile>
             <id>java-9+</id>
-            <activation>
+            <!--<activation>
                 <jdk>[1.9,)</jdk>
-            </activation>
+            </activation>-->
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
                 <maven.compiler.target>11</maven.compiler.target>

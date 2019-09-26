@@ -88,16 +88,17 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
         case ar: AttributeReference ⇒
             val name =
                 if (useQualifier)
-                    ar.qualifier.map(_ + "." + ar.name)
+                    // TODO: add ticket to handle seq with two elements with qualifier for database name: related to the [SPARK-19602][SQL] ticket
+                    ar.qualifier.map(_ + "." + ar.name).seq.last
                 else
                     ar.name
 
             if (ar.metadata.contains(ALIAS) &&
                 !isAliasEqualColumnName(ar.metadata.getString(ALIAS), ar.name) &&
                 useAlias) {
-                Some(aliasToString(name.toString, ar.metadata.getString(ALIAS)))
+                Some(aliasToString(name, ar.metadata.getString(ALIAS)))
             } else
-                Some(name.toString)
+                Some(name)
 
         case Alias(child, name) ⇒
             if (useAlias)

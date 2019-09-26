@@ -67,7 +67,7 @@ class IgniteOptimizationSystemFuncSpec extends AbstractDataFrameSpec {
         it("IFNULL") {
             val df = igniteSession.sql("SELECT IFNULL(int_val1, int_val2) FROM numbers WHERE id IN (1, 2, 3)")
 
-            checkOptimizationResult(df, "SELECT COALESCE(int_val1, int_val2) as \"ifnull(numbers.`int_val1`, numbers.`int_val2`)\" FROM numbers WHERE id IN (1, 2, 3)")
+            checkOptimizationResult(df, "SELECT COALESCE(int_val1, int_val2) as \"ifnull(default.numbers.`int_val1`, default.numbers.`int_val2`)\" FROM numbers WHERE id IN (1, 2, 3)")
 
             val data = (1, 2, 3)
 
