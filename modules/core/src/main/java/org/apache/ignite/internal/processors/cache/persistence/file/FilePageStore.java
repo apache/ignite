@@ -432,10 +432,10 @@ public class FilePageStore implements PageStore {
     }
 
     /**
-     * @param serialStrg Serial page storage to reover current storage with.
+     * @param deltaStore Serial page storage to reover current storage with.
      * @throws IgniteCheckedException If fails.
      */
-    public void doRecover(FileDeltaPageStore serialStrg) throws IgniteCheckedException {
+    public void doRecover(FileDeltaPageStore deltaStore) throws IgniteCheckedException {
         lock.writeLock().lock();
 
         try {
@@ -443,10 +443,11 @@ public class FilePageStore implements PageStore {
 
             ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
                 .order(ByteOrder.nativeOrder());
-            long pages = serialStrg.pages();
+
+            long pages = deltaStore.pages();
 
             for (int seq = 0; seq < pages; seq++) {
-                serialStrg.readPage(pageBuf, seq);
+                deltaStore.readPage(pageBuf, seq);
 
                 write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
 
