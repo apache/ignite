@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.backup.FileDeltaPageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -434,7 +435,7 @@ public class FilePageStore implements PageStore {
      * @param serialStrg Serial page storage to reover current storage with.
      * @throws IgniteCheckedException If fails.
      */
-    public void doRecover(FileSerialPageStore serialStrg) throws IgniteCheckedException {
+    public void doRecover(FileDeltaPageStore serialStrg) throws IgniteCheckedException {
         lock.writeLock().lock();
 
         try {

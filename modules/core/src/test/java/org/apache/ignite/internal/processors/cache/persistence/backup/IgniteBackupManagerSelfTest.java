@@ -320,7 +320,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
+    @Test(expected = IgniteCheckedException.class)
     public void testBackupLocalPartitionNotEnoughSpace() throws Exception {
         final AtomicInteger throwCntr = new AtomicInteger();
 

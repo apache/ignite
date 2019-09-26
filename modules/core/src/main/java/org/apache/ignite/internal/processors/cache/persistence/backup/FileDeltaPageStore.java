@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.file;
+package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -30,6 +30,8 @@ import java.util.function.Supplier;
 import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -40,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class FileSerialPageStore implements Closeable {
+public class FileDeltaPageStore implements Closeable {
     /** Ignite logger to use. */
     @GridToStringExclude
     private final IgniteLogger log;
@@ -66,7 +68,7 @@ public class FileSerialPageStore implements Closeable {
      * @param factory Factory to produce an IO interface over underlying file.
      * @param pageSize Page size of stored pages.
      */
-    public FileSerialPageStore(
+    public FileDeltaPageStore(
         IgniteLogger log,
         Supplier<Path> cfgPath,
         FileIOFactory factory,
@@ -75,7 +77,7 @@ public class FileSerialPageStore implements Closeable {
         A.notNull(cfgPath, "Configurations path cannot be empty");
         A.notNull(factory, "File configuration factory cannot be empty");
 
-        this.log = log.getLogger(FileSerialPageStore.class);
+        this.log = log.getLogger(FileDeltaPageStore.class);
         this.cfgPath = cfgPath;
         this.pageSize = pageSize;
 
@@ -205,7 +207,7 @@ public class FileSerialPageStore implements Closeable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(FileSerialPageStore.class, this);
+        return S.toString(FileDeltaPageStore.class, this);
     }
 
     /** {@inheritDoc} */
