@@ -83,7 +83,7 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
     protected void awaitEvictionQueueIsEmpty(IgniteEx node, int ms) throws IgniteInterruptedCheckedException {
         PartitionsEvictManager.BucketQueue evictionQueue = node.context().cache().context().evict().evictionQueue;
 
-        assertTrue(GridTestUtils.waitForCondition(() -> evictionQueue.size() == 0, ms));
+        assertTrue(GridTestUtils.waitForCondition(evictionQueue::isEmpty, ms));
     }
 
     /**
@@ -93,7 +93,7 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
     protected void awaitEvictionQueueForFilling(IgniteEx node, int ms) throws IgniteInterruptedCheckedException {
         PartitionsEvictManager.BucketQueue evictionQueue = node.context().cache().context().evict().evictionQueue;
 
-        assertTrue(GridTestUtils.waitForCondition(() -> evictionQueue.size() != 0, ms));
+        assertTrue(GridTestUtils.waitForCondition(() -> !evictionQueue.isEmpty(), ms));
     }
 
     /**
