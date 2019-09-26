@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -59,6 +59,16 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /** Cache name */
     private static final String PERSON_CACHE = "Person";
     private static final int QUERY_LIMIT = 5;
+
+    private static final class TestPair{
+
+        public final Set<Integer> expected;
+        public final List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+
+        public TestPair(Set<Integer> exp) {
+            this.expected = new HashSet<>(exp);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -253,95 +263,76 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, BinaryObject> cache0 = cache.withKeepBinary();
 
             try (QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor = cache0.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpectedWithBinary(exp, cursor);
 
-                for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
-                    all.add(entry);
-
-                    assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
-
-                    assertEquals(entry.getKey(), entry.getValue().field("age"));
-
-                    exp0.remove(entry.getKey());
-                }
-
-                if (qry.getLimit() > 0){
-                    assertEquals(QUERY_LIMIT, all.size());
-                } else {
-                    checkForMissedKeys(ignite, exp0, all);
-                }
+                assertResult(ignite, qry, testPair);
             }
 
             try (QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor = cache0.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpectedWithBinary(exp, cursor);
 
-                for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
-                    all.add(entry);
-
-                    assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
-
-                    assertEquals(entry.getKey(), entry.getValue().field("age"));
-
-                    exp0.remove(entry.getKey());
-                }
-
-                if (qry.getLimit() > 0){
-                    assertEquals(QUERY_LIMIT, all.size());
-                } else {
-                    checkForMissedKeys(ignite, exp0, all);
-                }
+                assertResult(ignite, qry, testPair);
             }
         }
         else {
             try (QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpected(exp, cursor);
 
-                for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
-                    all.add(entry);
-
-                    assertEquals(entry.getKey().toString(), entry.getValue().name);
-
-                    assertEquals(entry.getKey(), Integer.valueOf(entry.getValue().age));
-
-                    exp0.remove(entry.getKey());
-                }
-
-                if (qry.getLimit() > 0){
-                    assertEquals(QUERY_LIMIT, all.size());
-                } else {
-                    checkForMissedKeys(ignite, exp0, all);
-                }
+                assertResult(ignite, qry, testPair);
 
             }
 
             try (QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpected(exp, cursor);
 
-                for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
-                    all.add(entry);
-
-                    assertEquals(entry.getKey().toString(), entry.getValue().name);
-
-                    assertEquals(entry.getKey().intValue(), entry.getValue().age);
-
-                    exp0.remove(entry.getKey());
-                }
-
-                if (qry.getLimit() > 0){
-                    assertEquals(QUERY_LIMIT, all.size());
-                } else {
-                    checkForMissedKeys(ignite, exp0, all);
-                }
+                assertResult(ignite, qry, testPair);
             }
         }
+    }
+
+    private static void assertResult(IgniteEx ignite, TextQuery qry,
+        TestPair testPair) throws IgniteCheckedException {
+        if (qry.getLimit() > 0){
+            assertTrue(testPair.all.size() <= QUERY_LIMIT);
+        } else {
+            checkForMissedKeys(ignite, testPair.expected, testPair.all);
+        }
+    }
+
+    @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpectedWithBinary(Set<Integer> exp,
+        QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor) {
+        TestPair testPair = new TestPair(exp);
+
+        for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
+            testPair.all.add(entry);
+
+            assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
+
+            assertEquals(entry.getKey(), entry.getValue().field("age"));
+
+            testPair.expected.remove(entry.getKey());
+        }
+        return testPair;
+    }
+
+    @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpected(Set<Integer> exp,
+        QueryCursor<Cache.Entry<Integer, Person>> cursor) {
+        TestPair testPair = new TestPair(exp);
+
+        for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
+            testPair.all.add(entry);
+
+            assertEquals(entry.getKey().toString(), entry.getValue().name);
+
+            assertEquals(entry.getKey().intValue(), entry.getValue().age);
+
+            testPair.expected.remove(entry.getKey());
+        }
+        return testPair;
     }
 
     /**
