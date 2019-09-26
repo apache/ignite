@@ -127,12 +127,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /** Configured data storage page size. */
     private int pageSize;
 
-    //// BELOW IS NOT USED
-
-    /** Keep only the first page error. */
-    private final ConcurrentMap<GroupPartitionId, IgniteCheckedException> pageTrackErrors = new ConcurrentHashMap<>();
-
-    /** */
+    /**
+     * @param ctx Kernal context.
+     */
     public IgniteBackupManager(GridKernalContext ctx) {
         assert CU.isPersistenceEnabled(ctx.config());
 
