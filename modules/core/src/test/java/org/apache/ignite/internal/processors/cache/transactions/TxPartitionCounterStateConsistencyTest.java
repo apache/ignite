@@ -253,6 +253,79 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
+     * Test primary-backup partitions consistency while restarting backup nodes under load with changing BLT.
+     */
+    public void testPartitionConsistencyWithBackupRestart_ChangeBLT() throws Exception {
+        if (true) // TODO https://ggsystems.atlassian.net/browse/GG-24303
+            return;
+
+        backups = 2;
+
+        final int srvNodes = SERVER_NODES + 1; // Add one non-owner node to test to increase entropy.
+
+        Ignite prim = startGrids(srvNodes);
+
+        prim.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
+
+        List<Integer> primaryKeys = primaryKeys(cache, 10_000);
+
+        List<Ignite> backups = backupNodes(primaryKeys.get(0), DEFAULT_CACHE_NAME);
+
+        assertFalse(backups.contains(prim));
+
+        long stop = U.currentTimeMillis() + 30_000;
+
+        long seed = System.nanoTime();
+
+        log.info("Seed: " + seed);
+
+        Random r = new Random(seed);
+
+        assertTrue(prim == grid(0));
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            while (U.currentTimeMillis() < stop) {
+                doSleep(1_000);
+
+                Ignite restartNode = grid(1 + r.nextInt(backups.size()));
+
+                assertFalse(prim == restartNode);
+
+                String name = restartNode.name();
+
+                stopGrid(true, name);
+
+                try {
+                    waitForTopology(SERVER_NODES);
+
+                    resetBaselineTopology();
+
+                    awaitPartitionMapExchange();
+
+                    doSleep(5_000);
+
+                    startGrid(name);
+
+                    resetBaselineTopology();
+
+                    awaitPartitionMapExchange();
+                }
+                catch (Exception e) {
+                    fail(X.getFullStackTrace(e));
+                }
+            }
+        }, 1, "node-restarter");
+
+        // Wait with timeout to avoid hanging suite.
+        doRandomUpdates(r, prim, primaryKeys, cache, stop).get(stop + 30_000);
+        fut.get();
+
+        assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
+    }
+
+    /**
      * Tests reproduces the problem: deferred removal queue should never be cleared during rebalance OR rebalanced
      * entries could undo deletion causing inconsistency.
      */
