@@ -28,6 +28,7 @@ import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.ClusterProcessorCheckGlobalStateComputeRequestTest;
 import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
+import org.apache.ignite.internal.DiagnosticLogForPartitionStatesTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -87,6 +88,8 @@ import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
@@ -246,10 +249,13 @@ import org.junit.runners.Suite;
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
     DistributedMetaStorageHistoryCacheTest.class,
+    DmsDataWriterWorkerTest.class,
+    InMemoryCachedDistributedMetaStorageBridgeTest.class,
     DistributedConfigurationInMemoryTest.class,
     BaselineAutoAdjustMXBeanTest.class,
 
     ConsistentIdImplicitlyExplicitlyTest.class,
+    DiagnosticLogForPartitionStatesTest.class,
 
     // Tests against configuration variations framework.
     ParametersTest.class,

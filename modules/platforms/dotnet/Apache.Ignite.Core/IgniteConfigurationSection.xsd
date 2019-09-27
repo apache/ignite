@@ -1479,6 +1479,20 @@
                         <xs:documentation>Client connector configuration (JDBC, ODBC, thin clients).</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
+                        <xs:all>
+                            <xs:element name="thinClientConfiguration" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Thin client specific configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="maxActiveTxPerConnection" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Active transactions count per connection limit.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
                         <xs:attribute name="port" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Connector port.</xs:documentation>

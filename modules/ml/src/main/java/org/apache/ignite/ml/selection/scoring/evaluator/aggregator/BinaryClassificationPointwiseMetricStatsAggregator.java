@@ -45,22 +45,22 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
     private L truthLabel;
 
     /**
-     * Count of true positives.
+     * Amount of true positives.
      */
     private int truePositive;
 
     /**
-     * Count of false positives.
+     * Amount of false positives.
      */
     int falsePositive;
 
     /**
-     * Count of true negatives.
+     * Amount of true negatives.
      */
     int trueNegative;
 
     /**
-     * Count of false negatives.
+     * Amount of false negatives.
      */
     int falseNegative;
 
@@ -75,10 +75,10 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
      *
      * @param falseLabel    False label.
      * @param truthLabel    Truth label.
-     * @param truePositive  True positives count.
-     * @param falsePositive False positives count.
-     * @param trueNegative  True negatives count.
-     * @param falseNegative False negatives count.
+     * @param truePositive  True positives amount.
+     * @param falsePositive False positives amount.
+     * @param trueNegative  True negatives amount.
+     * @param falseNegative False negatives amount.
      */
     public BinaryClassificationPointwiseMetricStatsAggregator(L falseLabel, L truthLabel,
         int truePositive, int falsePositive, int trueNegative, int falseNegative) {

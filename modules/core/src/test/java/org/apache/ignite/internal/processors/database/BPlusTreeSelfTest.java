@@ -47,6 +47,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -64,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
@@ -74,11 +77,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
 import static org.apache.ignite.internal.processors.database.BPlusTreeSelfTest.TestTree.threadId;
@@ -88,6 +94,7 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
 
 /**
  */
+@WithSystemProperty(key = IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, value = "20000")
 public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final short LONG_INNER_IO = 30000;
@@ -137,6 +144,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** Future. */
     private volatile GridCompoundFuture<?, ?> asyncRunFut;
 
+    /** Tracking of locks holding. */
+    private PageLockTrackerManager lockTrackerManager;
+
     /**
      * Check that we do not keep any locks at the moment.
      */
@@ -157,6 +167,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         pageMem = createPageMemory();
 
         reuseList = createReuseList(CACHE_ID, pageMem, 0, true);
+
+        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager");
+
+        lockTrackerManager.start();
     }
 
     /**
@@ -207,6 +221,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         finally {
             if (pageMem != null)
                 pageMem.stop(true);
+
+            if (lockTrackerManager != null)
+                lockTrackerManager.stop();
 
             MAX_PER_PAGE = 0;
             PUT_INC = 1;
@@ -2701,7 +2718,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      */
     protected TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = new TestTree(
-            reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage().pageId(), new TestPageLockListener());
+            reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage().pageId(), lockTrackerManager);
 
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
@@ -2738,7 +2755,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             int cacheId,
             PageMemory pageMem,
             long metaPageId,
-            TestPageLockListener lsnr
+            PageLockTrackerManager lockTrackerManager
         ) throws IgniteCheckedException {
             super(
                 "test",
@@ -2751,8 +2768,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)),
                 new IOVersions<>(new LongLeafIO()),
-                null,
-                lsnr
+                new FailureProcessor(new GridTestKernalContext(log)) {
+                    @Override public boolean process(FailureContext failureCtx) {
+                        lockTrackerManager.dumpLocksToLog();
+
+                        return true;
+                    }
+                },
+                new TestPageLockListener(lockTrackerManager.createPageLockTracker("testTree"))
             );
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
@@ -3036,19 +3059,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** */
         static ConcurrentMap<Object, Map<Long, Long>> writeLocks = new ConcurrentHashMap<>();
 
+        /** */
+        private final PageLockListener delegate;
+
+        /**
+         * @param delegate Real implementation of page lock listener.
+         */
+        private TestPageLockListener(
+            PageLockListener delegate) {
+
+            this.delegate = delegate;
+        }
 
         /** {@inheritDoc} */
         @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
+            delegate.onBeforeReadLock(cacheId, pageId, page);
+
             if (PRINT_LOCKS)
                 X.println("  onBeforeReadLock: " + U.hexLong(pageId));
-//
-//            U.dumpStack();
 
             assertNull(beforeReadLock.put(threadId(), pageId));
         }
 
         /** {@inheritDoc} */
         @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
+            delegate.onReadLock(cacheId, pageId, page, pageAddr);
+
             if (PRINT_LOCKS)
                 X.println("  onReadLock: " + U.hexLong(pageId));
 
@@ -3065,6 +3101,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
+            delegate.onReadUnlock(cacheId, pageId, page, pageAddr);
+
             if (PRINT_LOCKS)
                 X.println("  onReadUnlock: " + U.hexLong(pageId));
 
@@ -3077,6 +3115,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
+            delegate.onBeforeWriteLock(cacheId, pageId, page);
+
             if (PRINT_LOCKS)
                 X.println("  onBeforeWriteLock: " + U.hexLong(pageId));
 
@@ -3085,10 +3125,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
+            delegate.onWriteLock(cacheId, pageId, page, pageAddr);
+
             if (PRINT_LOCKS)
                 X.println("  onWriteLock: " + U.hexLong(pageId));
-//
-//            U.dumpStack();
 
             if (pageAddr != 0L) {
                 checkPageId(pageId, pageAddr);
@@ -3106,6 +3146,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
+            delegate.onWriteUnlock(cacheId, pageId, page, pageAddr);
+
             if (PRINT_LOCKS)
                 X.println("  onWriteUnlock: " + U.hexLong(pageId));
 
