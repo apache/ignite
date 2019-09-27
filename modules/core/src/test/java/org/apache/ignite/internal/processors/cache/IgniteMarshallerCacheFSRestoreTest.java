@@ -99,11 +99,11 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
         cleanUpWorkDir();
 
         cleanPersistenceDir();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
