@@ -180,10 +180,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param recovery Flag indicates that partition is created during recovery phase.
      */
     public GridDhtLocalPartition(
-            GridCacheSharedContext ctx,
-            CacheGroupContext grp,
-            int id,
-            boolean recovery
+        GridCacheSharedContext ctx,
+        CacheGroupContext grp,
+        int id,
+        boolean recovery
     ) {
         super(ENTRY_FACTORY);
 
