@@ -28,44 +28,28 @@ import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
-import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
-import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RemoteRoutineInfo;
+import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RoutineInfo;
 
 /**
  *
  */
 public class ContinuousQueryView {
-    /** Remote CQ info. */
-    private final RemoteRoutineInfo rmtQry;
-
-    /** Local CQ info. */
-    private final LocalRoutineInfo locQry;
+    /** Routine info. */
+    private final RoutineInfo qry;
 
     /** CQ Handler. */
     private final GridContinuousHandler hnd;
 
-    /** CQ id */
+    /** Routine id */
     private final UUID routineId;
 
     /**
-     * @param rmtQry Remote CQ info.
-     * @param routineId CQ id.
+     * @param routineId Routine id.
+     * @param qry Query info.
      */
-    public ContinuousQueryView(RemoteRoutineInfo rmtQry, UUID routineId) {
-        this.locQry = null;
-        this.rmtQry = rmtQry;
-        this.hnd = rmtQry.handler();
-        this.routineId = routineId;
-    }
-
-    /**
-     * @param locQry Local CQ info.
-     * @param routineId CQ id.
-     */
-    public ContinuousQueryView(LocalRoutineInfo locQry, UUID routineId) {
-        this.locQry = locQry;
-        this.rmtQry = null;
-        this.hnd = locQry.handler();
+    public ContinuousQueryView(UUID routineId, RoutineInfo qry) {
+        this.qry = qry;
+        this.hnd = qry.handler();
         this.routineId = routineId;
     }
 
@@ -76,10 +60,7 @@ public class ContinuousQueryView {
 
     /** @return Node id. */
     public UUID nodeId() {
-        if (locQry != null)
-            return locQry.nodeId();
-
-        return rmtQry.nodeId();
+        return qry.nodeId();
     }
 
     /** @return Cache name. */
@@ -95,26 +76,17 @@ public class ContinuousQueryView {
 
     /** @return Buffer size. */
     public int bufferSize() {
-        if (locQry != null)
-            return locQry.bufferSize();
-
-        return rmtQry.bufferSize();
+        return qry.bufferSize();
     }
 
     /** @return Notify interval. */
     public long interval() {
-        if (locQry != null)
-            return locQry.interval();
-
-        return rmtQry.interval();
+        return qry.interval();
     }
 
     /** @return Auto unsubscribe flag value. */
     public boolean autoUnsubscribe() {
-        if (locQry != null)
-            return locQry.autoUnsubscribe();
-
-        return rmtQry.autoUnsubscribe();
+        return qry.autoUnsubscribe();
     }
 
     /** @return {@code True} if CQ registered to receive events. */
@@ -160,18 +132,12 @@ public class ContinuousQueryView {
     /** @return Last send time. */
     @Order(5)
     public long lastSendTime() {
-        if (locQry != null)
-            return -1;
-
-        return rmtQry.lastSendTime();
+        return qry.lastSendTime();
     }
 
     /** @return Delayed register flag. */
     public boolean delayedRegister() {
-        if (locQry != null)
-            return false;
-
-        return rmtQry.delayedRegister();
+        return qry.delayedRegister();
     }
 
     /**

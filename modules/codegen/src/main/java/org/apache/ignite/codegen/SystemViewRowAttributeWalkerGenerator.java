@@ -35,6 +35,7 @@ import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
@@ -75,6 +76,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClientConnectionView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ContinuousQueryView.class, DFLT_SRC_DIR);
     }
 
     /**

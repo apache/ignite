@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -92,6 +93,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
@@ -106,11 +108,18 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_ACK;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_NOTIFICATION;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Processor for continuous routines.
  */
 public class GridContinuousProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String CQ_SYS_VIEW = metricName("query", "continuous");
+
+    /** */
+    public static final String CQ_SYS_VIEW_DESC = "Continuous queries";
+
     /** Local infos. */
     private final ConcurrentMap<UUID, LocalRoutineInfo> locInfos = new ConcurrentHashMap<>();
 
@@ -171,6 +180,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        ctx.systemView().registerView(CQ_SYS_VIEW, CQ_SYS_VIEW_DESC,
+            ContinuousQueryView.class,
+            new ReadOnlyCollectionView2X<>(rmtInfos.entrySet(), locInfos.entrySet()),
+            e -> new ContinuousQueryView(e.getKey(), e.getValue()));
+
         discoProtoVer = ctx.discovery().mutableCustomMessages() ? 1 : 2;
 
         if (discoProtoVer == 2)
@@ -2034,10 +2048,34 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
     }
 
+    /** Routine interface info. */
+    public static interface RoutineInfo {
+        /** @return Handler. */
+        GridContinuousHandler handler();
+
+        /** @return Master node id. */
+        UUID nodeId();
+
+        /** @return Buffer size. */
+        int bufferSize();
+
+        /** @return Notify interval. */
+        long interval();
+
+        /** @return Auto unsubscribe flag value. */
+        boolean autoUnsubscribe();
+
+        /** @return Last send time. */
+        long lastSendTime();
+
+        /** @return Delayed register flag. */
+        boolean delayedRegister();
+    }
+
     /**
      * Local routine info.
      */
-    public static class LocalRoutineInfo implements Serializable {
+    public static class LocalRoutineInfo implements Serializable, RoutineInfo {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2060,6 +2098,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private boolean autoUnsubscribe;
 
         /**
+         * @param nodeId Node id.
          * @param prjPred Projection predicate.
          * @param hnd Continuous routine handler.
          * @param bufSize Buffer size.
@@ -2086,33 +2125,40 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.autoUnsubscribe = autoUnsubscribe;
         }
 
-        /**
-         * @return Handler.
-         */
-        public GridContinuousHandler handler() {
+        /** {@inheritDoc} */
+        @Override public GridContinuousHandler handler() {
             return hnd;
         }
 
-        /** @return Buffer size. */
-        public int bufferSize() {
+        /** {@inheritDoc} */
+        @Override public int bufferSize() {
             return bufSize;
         }
 
-        /** @return Notify interval. */
-        public long interval() {
+        /** {@inheritDoc} */
+        @Override public long interval() {
             return interval;
         }
 
-        /** @return Auto unsubscribe flag value. */
-        public boolean autoUnsubscribe() {
+        /** {@inheritDoc} */
+        @Override public boolean autoUnsubscribe() {
             return autoUnsubscribe;
         }
 
-        /** @return Source node id. */
-        public UUID nodeId() {
-            return nodeId;
+        /** {@inheritDoc} */
+        @Override public long lastSendTime() {
+            return -1;
         }
 
+        /** {@inheritDoc} */
+        @Override public boolean delayedRegister() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID nodeId() {
+            return nodeId;
+        }
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -2123,7 +2169,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * Remote routine info.
      */
-    public static class RemoteRoutineInfo {
+    public static class RemoteRoutineInfo implements RoutineInfo {
         /** Master node ID. */
         private UUID nodeId;
 
@@ -2174,41 +2220,40 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             batch = hnd.createBatch();
         }
 
-        /** @return Master node id. */
-        public UUID nodeId() {
+        /** {@inheritDoc} */
+        @Override public UUID nodeId() {
             return nodeId;
         }
 
-        /** @return Handler. */
-        public GridContinuousHandler handler() {
+        /** {@inheritDoc} */
+        @Override public GridContinuousHandler handler() {
             return hnd;
         }
 
-        /** @return Buffer size. */
-        public int bufferSize() {
+        /** {@inheritDoc} */
+        @Override public int bufferSize() {
             return bufSize;
         }
 
-        /** @return Notify interval. */
-        public long interval() {
+        /** {@inheritDoc} */
+        @Override public long interval() {
             return interval;
         }
 
-        /** @return Auto unsubscribe flag value. */
-        public boolean autoUnsubscribe() {
+        /** {@inheritDoc} */
+        @Override public boolean autoUnsubscribe() {
             return autoUnsubscribe;
         }
 
-        /** @return Last send time. */
-        public long lastSendTime() {
+        /** {@inheritDoc} */
+        @Override public long lastSendTime() {
             return lastSndTime;
         }
 
-        /** @return Delayed register flag. */
-        public boolean delayedRegister() {
+        /** {@inheritDoc} */
+        @Override public boolean delayedRegister() {
             return delayedRegister;
         }
-
 
         /**
          * Marks info to be registered when cache is started.
