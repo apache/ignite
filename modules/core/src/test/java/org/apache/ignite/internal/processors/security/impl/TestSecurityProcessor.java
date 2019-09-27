@@ -64,8 +64,10 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     public static class AuthorizeRecord {
         /** */
         private final String actName;
+
         /** With permition. */
         private final SecurityPermission withPermition;
+
         /** Login. */
         private final String login;
 
