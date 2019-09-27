@@ -114,7 +114,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers {@link SystemViewContainerAdapter} view which exports container content.
+     * Registers {@link SystemViewCollectionContainerAdapter} view which exports container content.
      *
      * @param name Name.
      * @param desc Description.
@@ -126,16 +126,39 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <C, R, D> void registerContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
+    public <C, R, D> void registerCollectionContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
         Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewContainerAdapter<>(name,
+        doRegister(name, new SystemViewCollectionContainerAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             container,
             dataExtractor,
             rowFunc));
+    }
 
+    /**
+     * Registers {@link SystemViewArrayContainerAdapter} view which exports container content.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param rowCls Row class.
+     * @param container Container of the data.
+     * @param dataExtractor Data extractor function.
+     * @param rowFunc Row function
+     * @param <C> Container entry type.
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <C, R, D> void registerArrayContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
+        Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        doRegister(name, new SystemViewArrayContainerAdapter<>(name,
+            desc,
+            rowCls,
+            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            container,
+            dataExtractor,
+            rowFunc));
     }
 
     /**

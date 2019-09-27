@@ -33,7 +33,7 @@ import static java.util.Collections.emptyIterator;
  *
  * @see SystemView
  */
-public class SystemViewContainerAdapter<C, R, D> extends AbstractSystemView<R> {
+public class SystemViewCollectionContainerAdapter<C, R, D> extends AbstractSystemView<R> {
     /** Collections of the data containers */
     private final Collection<C> containers;
 
@@ -52,7 +52,7 @@ public class SystemViewContainerAdapter<C, R, D> extends AbstractSystemView<R> {
      * @param dataExtractor Data extractor function.
      * @param rowFunc Row function.
      */
-    public SystemViewContainerAdapter(String name, String desc, Class<R> rowCls,
+    public SystemViewCollectionContainerAdapter(String name, String desc, Class<R> rowCls,
         SystemViewRowAttributeWalker<R> walker,
         Collection<C> containers,
         Function<C, Collection<D>> dataExtractor,
@@ -81,20 +81,20 @@ public class SystemViewContainerAdapter<C, R, D> extends AbstractSystemView<R> {
             private Iterator<C> containerIter = containers.iterator();
 
             /** Current container instance. */
-            private C curr = null;
+            private C cur = null;
 
             /** Data iterator */
-            private Iterator<D> d = emptyIterator();
+            private Iterator<D> data = emptyIterator();
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                while (!d.hasNext()) {
+                while (!data.hasNext()) {
                     if (!containerIter.hasNext())
                         return false;
 
-                    curr = containerIter.next();
+                    cur = containerIter.next();
 
-                    d = dataExtractor.apply(curr).iterator();
+                    data = dataExtractor.apply(cur).iterator();
                 }
 
                 return true;
@@ -102,7 +102,7 @@ public class SystemViewContainerAdapter<C, R, D> extends AbstractSystemView<R> {
 
             /** {@inheritDoc} */
             @Override public R next() {
-                return rowFunc.apply(curr, d.next());
+                return rowFunc.apply(cur, data.next());
             }
         };
     }

@@ -32,11 +32,11 @@ import org.h2.index.Index;
  * Sql index representation for a {@link SystemView}.
  */
 public class SqlIndexView {
-    /** Index. */
-    private final Index idx;
-
     /** Table. */
     private final GridH2Table tbl;
+
+    /** Index. */
+    private final Index idx;
 
     /** Index type. */
     private final H2IndexType type;

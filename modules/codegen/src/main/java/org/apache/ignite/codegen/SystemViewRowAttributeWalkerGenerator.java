@@ -34,9 +34,11 @@ import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
+import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
+import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -85,6 +87,8 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlViewView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlIndexView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(SqlTableColumnView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(SqlViewColumnView.class, INDEXING_SRC_DIR);
     }
 
     /**

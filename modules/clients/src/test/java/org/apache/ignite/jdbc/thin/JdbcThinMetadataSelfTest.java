@@ -344,7 +344,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_ATTRIBUTES",
                 "SYS.TABLES",
                 "SYS.CLIENT_CONNECTIONS",
-                "SYS.VIEWS"
+                "SYS.VIEWS",
+                "SYS.TABLE_COLUMNS",
+                "SYS.VIEW_COLUMNS"
             ))
         );
     }
@@ -777,8 +779,32 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647",
                 "SYS.VIEWS.NAME.null.2147483647",
                 "SYS.VIEWS.DESCRIPTION.null.2147483647",
-                "SYS.VIEWS.SCHEMA.null.2147483647"
+                "SYS.VIEWS.SCHEMA.null.2147483647",
+                "SYS.TABLE_COLUMNS.AFFINITY_COLUMN.null.1",
+                "SYS.TABLE_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCALE.null.10",
+                "SYS.TABLE_COLUMNS.PK.null.1",
+                "SYS.TABLE_COLUMNS.TYPE.null.2147483647",
+                "SYS.TABLE_COLUMNS.DEFATULT.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.TABLE_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.NULLABLE.null.1",
+                "SYS.TABLE_COLUMNS.PRECISION.null.10",
+                "SYS.TABLE_COLUMNS.AUTO_INCREMENT.null.1",
+                "SYS.VIEW_COLUMNS.NULLABLE.null.1",
+                "SYS.VIEW_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.TYPE.null.2147483647",
+                "SYS.VIEW_COLUMNS.PRECISION.null.19",
+                "SYS.VIEW_COLUMNS.DEFATULT.null.2147483647",
+                "SYS.VIEW_COLUMNS.SCALE.null.10",
+                "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647"
             ));
+
+            for (String col : actualSystemCols) {
+                if (!expectedCols.contains(col))
+                    System.out.println(col);
+            }
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }

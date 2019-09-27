@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -62,12 +63,16 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
+import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.index.Index;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
@@ -96,6 +101,18 @@ public class SchemaManager {
 
     /** */
     public static final String SQL_IDXS_VIEW_DESC = "SQL indexes";
+
+    /** */
+    public static final String SQL_TBL_COLS_VIEW = metricName("table", "columns");
+
+    /** */
+    public static final String SQL_TBL_COLS_VIEW_DESC = "SQL table columns";
+
+    /** */
+    public static final String SQL_VIEW_COLS_VIEW = metricName("view", "columns");
+
+    /** */
+    public static final String SQL_VIEW_COLS_VIEW_DESC = "SQL view columns";
 
     /** Connection manager. */
     private final ConnectionManager connMgr;
@@ -148,11 +165,23 @@ public class SchemaManager {
             systemViews,
             SqlViewView::new);
 
-        ctx.systemView().registerContainerView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
+        ctx.systemView().registerCollectionContainerView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
             SqlIndexView.class,
             dataTables.values(),
             GridH2Table::getIndexes,
             SqlIndexView::new);
+
+        ctx.systemView().registerArrayContainerView(SQL_TBL_COLS_VIEW, SQL_TBL_COLS_VIEW_DESC,
+            SqlTableColumnView.class,
+            dataTables.values(),
+            GridH2Table::getColumns,
+            SqlTableColumnView::new);
+
+        ctx.systemView().registerArrayContainerView(SQL_VIEW_COLS_VIEW, SQL_VIEW_COLS_VIEW_DESC,
+            SqlViewColumnView.class,
+            systemViews,
+            SqlSystemView::getColumns,
+            SqlViewColumnView::new);
     }
 
     /**
