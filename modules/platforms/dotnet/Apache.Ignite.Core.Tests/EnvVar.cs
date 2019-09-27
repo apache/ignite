@@ -38,36 +38,7 @@ namespace Apache.Ignite.Core.Tests
             var oldValue = Environment.GetEnvironmentVariable(name);
             Environment.SetEnvironmentVariable(name, value);
 
-            return new EnvVarDisposableRestore(name, oldValue);
-        }
-
-        /// <summary>
-        /// Disposable helper.
-        /// </summary>
-        private class EnvVarDisposableRestore : IDisposable
-        {
-            /** */
-            private readonly string _name;
-
-            /** */
-            private readonly string _value;
-
-            /// <summary>
-            /// Ctor.
-            /// </summary>
-            /// <param name="name">Name.</param>
-            /// <param name="value">Value.</param>
-            public EnvVarDisposableRestore(string name, string value)
-            {
-                _name = name;
-                _value = value;
-            }
-
-            /** <inheritDoc /> */
-            public void Dispose()
-            {
-                Environment.SetEnvironmentVariable(_name, _value);
-            }
+            return new DisposeAction(() => Environment.SetEnvironmentVariable(name, oldValue));
         }
     }
 }
