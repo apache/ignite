@@ -764,7 +764,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.USER.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647",
                 "SYS.TASKS.EXEC_NAME.null.2147483647",
-                "SYS.TRANSACTIONS.NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.LOCAL_NODE_ID.null.2147483647",
                 "SYS.TRANSACTIONS.STATE.null.2147483647",
                 "SYS.TRANSACTIONS.XID.null.2147483647",
                 "SYS.TRANSACTIONS.LABEL.null.2147483647",
@@ -782,8 +782,18 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.SUBJECT_ID.null.2147483647",
                 "SYS.TRANSACTIONS.SYSTEM.null.1",
                 "SYS.TRANSACTIONS.THREAD_ID.null.19",
-                "SYS.TRANSACTIONS.TIMEOUT.null.19"
+                "SYS.TRANSACTIONS.TIMEOUT.null.19",
+                "SYS.TRANSACTIONS.DURATION.null.19",
+                "SYS.TRANSACTIONS.ORIGINATING_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.OTHER_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.TOP_VER.null.2147483647",
+                "SYS.TRANSACTIONS.KEYS_COUNT.null.10"
             ));
+
+            for (String col : actualSystemCols) {
+                if (!expectedCols.contains(col))
+                    System.out.println(col);
+            }
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }

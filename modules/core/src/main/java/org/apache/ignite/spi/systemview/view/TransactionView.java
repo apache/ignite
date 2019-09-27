@@ -17,9 +17,11 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -39,171 +41,131 @@ public class TransactionView {
         this.tx = tx;
     }
 
-    /**
-     * ID of the node on which this transaction started.
-     *
-     * @return Originating node ID.
-     */
-    @Order
-    public UUID nodeId() {
+    /** @return Local node ID. */
+    public UUID localNodeId() {
         return tx.nodeId();
     }
 
-    /**
-     * ID of the thread in which this transaction started.
-     *
-     * @return Thread ID.
-     */
+    /** @return ID of the thread in which this transaction started. */
     public long threadId() {
         return tx.threadId();
     }
 
-    /**
-     * Start time of this transaction.
-     *
-     * @return Start time of this transaction on this node.
-     */
+    /** @return Start time of this transaction on this node. */
     @Order(4)
     public long startTime() {
         return tx.startTime();
     }
 
-    /**
-     * Cache transaction isolation level.
-     *
-     * @return Isolation level.
-     */
+    /** @return Isolation level. */
     @Order(5)
     public TransactionIsolation isolation() {
         return tx.isolation();
     }
 
-    /**
-     * Cache transaction concurrency mode.
-     *
-     * @return Concurrency mode.
-     */
+    /** @return Concurrency mode. */
     @Order(6)
     public TransactionConcurrency concurrency() {
         return tx.concurrency();
     }
 
-    /**
-     * Gets current transaction state value.
-     *
-     * @return Current transaction state.
-     */
+    /** @return Current transaction state. */
     @Order(1)
     public TransactionState state() {
         return tx.state();
     }
 
-    /**
-     * Gets timeout value in milliseconds for this transaction. If transaction times
-     * out prior to it's completion, {@link org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException} will be thrown.
-     *
-     * @return Transaction timeout value.
-     */
+    /** @return Transaction timeout value. */
     public long timeout() {
         return tx.timeout();
     }
 
-    /**
-     * Flag indicating whether transaction was started automatically by the
-     * system or not. System will start transactions implicitly whenever
-     * any cache {@code put(..)} or {@code remove(..)} operation is invoked
-     * outside of transaction.
-     *
-     * @return {@code True} if transaction was started implicitly.
-     */
+    /** @return {@code True} if transaction was started implicitly. */
     public boolean implicit() {
         return tx.implicit();
     }
 
-    /**
-     * Gets unique identifier for this transaction.
-     *
-     * @return Transaction UID.
-     */
+    /** @return Transaction UID. */
     @Order(2)
     public IgniteUuid xid() {
         return tx.xid();
     }
 
-    /**
-     * Checks if this is system cache transaction. System transactions are isolated from user transactions
-     * because some of the public API methods may be invoked inside user transactions and internally start
-     * system cache transactions.
-     *
-     * @return {@code True} if transaction is started for system cache.
-     */
+    /** @return {@code True} if transaction is started for system cache. */
     public boolean system() {
         return tx.system();
     }
 
-    /**
-     * @return Flag indicating whether transaction is implicit with only one key.
-     */
+    /** @return Flag indicating whether transaction is implicit with only one key. */
     public boolean implicitSingle() {
         return tx.implicitSingle();
     }
 
-    /**
-     * @return {@code True} if near transaction.
-     */
+    /** @return {@code True} if near transaction. */
     public boolean near() {
         return tx.near();
     }
 
-    /**
-     * @return {@code True} if DHT transaction.
-     */
+    /** @return {@code True} if DHT transaction. */
     public boolean dht() {
         return tx.dht();
     }
 
-    /**
-     * @return {@code True} if dht colocated transaction.
-     */
+    /** @return {@code True} if dht colocated transaction. */
     public boolean colocated() {
         return tx.colocated();
     }
 
-    /**
-     * @return {@code True} if transaction is local, {@code false} if it's remote.
-     */
+    /** @return {@code True} if transaction is local, {@code false} if it's remote. */
     public boolean local() {
         return tx.local();
     }
 
-    /**
-     * @return Subject ID initiated this transaction.
-     */
+    /** @return Subject ID initiated this transaction. */
     public UUID subjectId() {
         return tx.subjectId();
     }
 
-    /**
-     * Returns label of transactions.
-     *
-     * @return Label of transaction or {@code null} if there was not set.
-     */
+    /** @return Label of transaction or {@code null} if there was not set. */
     @Order(3)
     public String label() {
         return tx.label();
     }
 
-    /**
-     * @return {@code True} if transaction is a one-phase-commit transaction.
-     */
+    /** @return {@code True} if transaction is a one-phase-commit transaction. */
     public boolean onePhaseCommit() {
         return tx.onePhaseCommit();
     }
 
-    /**
-     * @return {@code True} if transaction has at least one internal entry.
-     */
+    /** @return {@code True} if transaction has at least one internal entry. */
     public boolean internal() {
         return tx.internal();
+    }
+
+    /** @return Originating node id. */
+    @Order
+    public UUID originatingNodeId() {
+        return tx.originatingNodeId();
+    }
+
+    /** @return Other node id. */
+    public UUID otherNodeId() {
+        return tx.otherNodeId();
+    }
+
+    /** @return Topology version. */
+    public String topVer() {
+        return Objects.toString(tx.topologyVersion());
+    }
+
+    /** @return Duration in millis. */
+    public long duration() {
+        return U.currentTimeMillis() - tx.startTime();
+    }
+
+    /** @return Keys count. */
+    @Order(7)
+    public int keysCount() {
+        return tx.allEntries().size();
     }
 }

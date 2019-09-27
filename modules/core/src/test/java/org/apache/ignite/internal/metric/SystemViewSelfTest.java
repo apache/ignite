@@ -497,7 +497,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 TransactionView txv = txs.iterator().next();
 
-                assertEquals(g.localNode().id(), txv.nodeId());
+                assertEquals(g.localNode().id(), txv.localNodeId());
                 assertEquals(txv.isolation(), REPEATABLE_READ);
                 assertEquals(txv.concurrency(), PESSIMISTIC);
                 assertEquals(txv.state(), ACTIVE);
@@ -535,7 +535,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     if (PESSIMISTIC == tx.concurrency())
                         continue;
 
-                    assertEquals(g.localNode().id(), txv.nodeId());
+                    assertEquals(g.localNode().id(), txv.localNodeId());
                     assertEquals(tx.isolation(), SERIALIZABLE);
                     assertEquals(tx.concurrency(), OPTIMISTIC);
                     assertEquals(tx.state(), ACTIVE);
