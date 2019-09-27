@@ -33,7 +33,7 @@ public class TransactionView {
     private final IgniteInternalTx tx;
 
     /**
-     * @param tx Transaction;
+     * @param tx Transaction.
      */
     public TransactionView(IgniteInternalTx tx) {
         this.tx = tx;
