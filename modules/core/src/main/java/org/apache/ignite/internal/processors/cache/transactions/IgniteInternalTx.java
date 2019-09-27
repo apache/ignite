@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -45,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteInternalTx extends TransactionView {
+public interface IgniteInternalTx {
     /**
      *
      */
@@ -66,26 +65,57 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean localResult();
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid xid();
+    /**
+     * Gets unique identifier for this transaction.
+     *
+     * @return Transaction UID.
+     */
+    public IgniteUuid xid();
 
-    /** {@inheritDoc} */
-    @Override public UUID nodeId();
+    /**
+     * ID of the node on which this transaction started.
+     *
+     * @return Originating node ID.
+     */
+    public UUID nodeId();
 
-    /** {@inheritDoc} */
-    @Override public long threadId();
+    /**
+     * ID of the thread in which this transaction started.
+     *
+     * @return Thread ID.
+     */
+    public long threadId();
 
-    /** {@inheritDoc} */
-    @Override public long startTime();
+    /**
+     * Start time of this transaction.
+     *
+     * @return Start time of this transaction on this node.
+     */
+    public long startTime();
 
-    /** {@inheritDoc} */
-    @Override public TransactionIsolation isolation();
+    /**
+     * Cache transaction isolation level.
+     *
+     * @return Isolation level.
+     */
+    public TransactionIsolation isolation();
 
-    /** {@inheritDoc} */
-    @Override public TransactionConcurrency concurrency();
+    /**
+     * Cache transaction concurrency mode.
+     *
+     * @return Concurrency mode.
+     */
+    public TransactionConcurrency concurrency();
 
-    /** {@inheritDoc} */
-    @Override public boolean implicit();
+    /**
+     * Flag indicating whether transaction was started automatically by the
+     * system or not. System will start transactions implicitly whenever
+     * any cache {@code put(..)} or {@code remove(..)} operation is invoked
+     * outside of transaction.
+     *
+     * @return {@code True} if transaction was started implicitly.
+     */
+    public boolean implicit();
 
     /**
      * Get invalidation flag for this transaction. If set to {@code true}, then
@@ -100,11 +130,20 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean isInvalidate();
 
-    /** {@inheritDoc} */
-    @Override public TransactionState state();
+    /**
+     * Gets current transaction state value.
+     *
+     * @return Current transaction state.
+     */
+    public TransactionState state();
 
-    /** {@inheritDoc} */
-    @Override public long timeout();
+    /**
+     * Gets timeout value in milliseconds for this transaction. If transaction times
+     * out prior to it's completion, {@link org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException} will be thrown.
+     *
+     * @return Transaction timeout value.
+     */
+    public long timeout();
 
     /**
      * Sets transaction timeout value. This value can be set only before a first operation
@@ -184,8 +223,14 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean storeWriteThrough();
 
-    /** {@inheritDoc} */
-    @Override public boolean system();
+    /**
+     * Checks if this is system cache transaction. System transactions are isolated from user transactions
+     * because some of the public API methods may be invoked inside user transactions and internally start
+     * system cache transactions.
+     *
+     * @return {@code True} if transaction is started for system cache.
+     */
+    public boolean system();
 
     /**
      * @return Pool where message for the given transaction must be processed.
@@ -202,8 +247,10 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public AffinityTopologyVersion topologyVersionSnapshot();
 
-    /** {@inheritDoc} */
-    @Override public boolean implicitSingle();
+    /**
+     * @return Flag indicating whether transaction is implicit with only one key.
+     */
+    public boolean implicitSingle();
 
     /**
      * @return Transaction state.
@@ -310,20 +357,30 @@ public interface IgniteInternalTx extends TransactionView {
      */
     public boolean ownsLockUnsafe(GridCacheEntryEx entry);
 
-    /** {@inheritDoc} */
-    @Override public boolean near();
+    /**
+     * @return {@code True} if near transaction.
+     */
+    public boolean near();
 
-    /** {@inheritDoc} */
-    @Override public boolean dht();
+    /**
+     * @return {@code True} if DHT transaction.
+     */
+    public boolean dht();
 
-    /** {@inheritDoc} */
-    @Override public boolean colocated();
+    /**
+     * @return {@code True} if dht colocated transaction.
+     */
+    public boolean colocated();
 
-    /** {@inheritDoc} */
-    @Override public boolean local();
+    /**
+     * @return {@code True} if transaction is local, {@code false} if it's remote.
+     */
+    public boolean local();
 
-    /** {@inheritDoc} */
-    @Override public UUID subjectId();
+    /**
+     * @return Subject ID initiated this transaction.
+     */
+    public UUID subjectId();
 
     /**
      * Task name hash in case if transaction was initiated within task execution.
@@ -570,19 +627,27 @@ public interface IgniteInternalTx extends TransactionView {
         Collection<GridCacheVersion> committed,
         Collection<GridCacheVersion> rolledback);
 
-    /** {@inheritDoc} */
-    @Override public boolean internal();
+    /**
+     * @return {@code True} if transaction has at least one internal entry.
+     */
+    public boolean internal();
 
-    /** {@inheritDoc} */
-    @Override public boolean onePhaseCommit();
+    /**
+     * @return {@code True} if transaction is a one-phase-commit transaction.
+     */
+    public boolean onePhaseCommit();
 
     /**
      * @param e Commit error.
      */
     public void commitError(Throwable e);
 
-    /** {@inheritDoc} */
-    @Override @Nullable public String label();
+    /**
+     * Returns label of transactions.
+     *
+     * @return Label of transaction or {@code null} if there was not set.
+     */
+    @Nullable public String label();
 
     /**
      * @param mvccSnapshot Mvcc snapshot.

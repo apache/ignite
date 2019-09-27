@@ -19,6 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -27,21 +28,35 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  * Transaction representation for a {@link SystemView}.
  */
-public interface TransactionView {
+public class TransactionView {
+    /** Transaction. */
+    private final IgniteInternalTx tx;
+
+    /**
+     * @param tx Transaction;
+     */
+    public TransactionView(IgniteInternalTx tx) {
+        this.tx = tx;
+    }
+
     /**
      * ID of the node on which this transaction started.
      *
      * @return Originating node ID.
      */
     @Order
-    public UUID nodeId();
+    public UUID nodeId() {
+        return tx.nodeId();
+    }
 
     /**
      * ID of the thread in which this transaction started.
      *
      * @return Thread ID.
      */
-    public long threadId();
+    public long threadId() {
+        return tx.threadId();
+    }
 
     /**
      * Start time of this transaction.
@@ -49,7 +64,9 @@ public interface TransactionView {
      * @return Start time of this transaction on this node.
      */
     @Order(4)
-    public long startTime();
+    public long startTime() {
+        return tx.startTime();
+    }
 
     /**
      * Cache transaction isolation level.
@@ -57,7 +74,9 @@ public interface TransactionView {
      * @return Isolation level.
      */
     @Order(5)
-    public TransactionIsolation isolation();
+    public TransactionIsolation isolation() {
+        return tx.isolation();
+    }
 
     /**
      * Cache transaction concurrency mode.
@@ -65,7 +84,9 @@ public interface TransactionView {
      * @return Concurrency mode.
      */
     @Order(6)
-    public TransactionConcurrency concurrency();
+    public TransactionConcurrency concurrency() {
+        return tx.concurrency();
+    }
 
     /**
      * Gets current transaction state value.
@@ -73,7 +94,9 @@ public interface TransactionView {
      * @return Current transaction state.
      */
     @Order(1)
-    public TransactionState state();
+    public TransactionState state() {
+        return tx.state();
+    }
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times
@@ -81,7 +104,9 @@ public interface TransactionView {
      *
      * @return Transaction timeout value.
      */
-    public long timeout();
+    public long timeout() {
+        return tx.timeout();
+    }
 
     /**
      * Flag indicating whether transaction was started automatically by the
@@ -91,7 +116,9 @@ public interface TransactionView {
      *
      * @return {@code True} if transaction was started implicitly.
      */
-    public boolean implicit();
+    public boolean implicit() {
+        return tx.implicit();
+    }
 
     /**
      * Gets unique identifier for this transaction.
@@ -99,7 +126,9 @@ public interface TransactionView {
      * @return Transaction UID.
      */
     @Order(2)
-    public IgniteUuid xid();
+    public IgniteUuid xid() {
+        return tx.xid();
+    }
 
     /**
      * Checks if this is system cache transaction. System transactions are isolated from user transactions
@@ -108,37 +137,51 @@ public interface TransactionView {
      *
      * @return {@code True} if transaction is started for system cache.
      */
-    public boolean system();
+    public boolean system() {
+        return tx.system();
+    }
 
     /**
      * @return Flag indicating whether transaction is implicit with only one key.
      */
-    public boolean implicitSingle();
+    public boolean implicitSingle() {
+        return tx.implicitSingle();
+    }
 
     /**
      * @return {@code True} if near transaction.
      */
-    public boolean near();
+    public boolean near() {
+        return tx.near();
+    }
 
     /**
      * @return {@code True} if DHT transaction.
      */
-    public boolean dht();
+    public boolean dht() {
+        return tx.dht();
+    }
 
     /**
      * @return {@code True} if dht colocated transaction.
      */
-    public boolean colocated();
+    public boolean colocated() {
+        return tx.colocated();
+    }
 
     /**
      * @return {@code True} if transaction is local, {@code false} if it's remote.
      */
-    public boolean local();
+    public boolean local() {
+        return tx.local();
+    }
 
     /**
      * @return Subject ID initiated this transaction.
      */
-    public UUID subjectId();
+    public UUID subjectId() {
+        return tx.subjectId();
+    }
 
     /**
      * Returns label of transactions.
@@ -146,15 +189,21 @@ public interface TransactionView {
      * @return Label of transaction or {@code null} if there was not set.
      */
     @Order(3)
-    public String label();
+    public String label() {
+        return tx.label();
+    }
 
     /**
      * @return {@code True} if transaction is a one-phase-commit transaction.
      */
-    public boolean onePhaseCommit();
+    public boolean onePhaseCommit() {
+        return tx.onePhaseCommit();
+    }
 
     /**
      * @return {@code True} if transaction has at least one internal entry.
      */
-    public boolean internal();
+    public boolean internal() {
+        return tx.internal();
+    }
 }

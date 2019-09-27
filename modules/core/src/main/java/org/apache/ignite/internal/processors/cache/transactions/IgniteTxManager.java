@@ -353,7 +353,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.kernalContext().systemView().registerView(TXS_MON_LIST, TXS_MON_LIST_DESC,
             TransactionView.class,
             new ReadOnlyCollectionView2X<>(idMap.values(), nearIdMap.values()),
-            tx -> tx);
+            TransactionView::new);
     }
 
     /** {@inheritDoc} */
