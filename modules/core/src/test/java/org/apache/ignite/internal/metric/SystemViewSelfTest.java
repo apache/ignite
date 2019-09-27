@@ -530,6 +530,30 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 res = waitForCondition(() -> txs.size() == 10, 5_000L);
 
                 assertTrue(res);
+
+                for (TransactionView tx : txs) {
+                    if (PESSIMISTIC == tx.concurrency())
+                        continue;
+
+                    assertEquals(g.localNode().id(), txv.nodeId());
+                    assertEquals(tx.isolation(), SERIALIZABLE);
+                    assertEquals(tx.concurrency(), OPTIMISTIC);
+                    assertEquals(tx.state(), ACTIVE);
+                    assertNotNull(tx.xid());
+                    assertFalse(tx.system());
+                    assertFalse(tx.implicit());
+                    assertFalse(tx.implicitSingle());
+                    assertTrue(tx.near());
+                    assertFalse(tx.dht());
+                    assertTrue(tx.colocated());
+                    assertTrue(tx.local());
+                    assertNull(tx.label());
+                    assertFalse(tx.onePhaseCommit());
+                    assertFalse(tx.internal());
+                    assertEquals(0, tx.timeout());
+                    assertTrue(tx.startTime() <= System.currentTimeMillis());
+                }
+
             }
             finally {
                 latch.countDown();

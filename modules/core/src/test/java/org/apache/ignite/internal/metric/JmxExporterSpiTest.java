@@ -502,6 +502,31 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             res = waitForCondition(() -> systemView(TXS_MON_LIST).size() == 10, 5_000L);
 
             assertTrue(res);
+
+            for (int i=0; i<9; i++) {
+                txv = systemView(TXS_MON_LIST).get(new Object[] {i});
+
+                if (PESSIMISTIC.name().equals(txv.get("concurrency")))
+                    continue;
+
+                assertEquals(ignite.localNode().id().toString(), txv.get("nodeId"));
+                assertEquals(SERIALIZABLE.name(), txv.get("isolation"));
+                assertEquals(OPTIMISTIC.name(), txv.get("concurrency"));
+                assertEquals(ACTIVE.name(), txv.get("state"));
+                assertNotNull(txv.get("xid"));
+                assertFalse((boolean)txv.get("system"));
+                assertFalse((boolean)txv.get("implicit"));
+                assertFalse((boolean)txv.get("implicitSingle"));
+                assertTrue((boolean)txv.get("near"));
+                assertFalse((boolean)txv.get("dht"));
+                assertTrue((boolean)txv.get("colocated"));
+                assertTrue((boolean)txv.get("local"));
+                assertNull(txv.get("label"));
+                assertFalse((boolean)txv.get("onePhaseCommit"));
+                assertFalse((boolean)txv.get("internal"));
+                assertEquals(0L, txv.get("timeout"));
+                assertTrue(((long)txv.get("startTime")) <= System.currentTimeMillis());
+            }
         }
         finally {
             latch.countDown();

@@ -286,6 +286,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TRANSACTIONS").isEmpty());
+
         CountDownLatch latch1 = new CountDownLatch(10);
         CountDownLatch latch2 = new CountDownLatch(1);
 
