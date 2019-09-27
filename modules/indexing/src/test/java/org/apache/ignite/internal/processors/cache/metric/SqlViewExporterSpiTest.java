@@ -371,7 +371,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
     }
 
-    //TODO: add sql.tables, sql.column, sql.indexes tests.
+    //TODO: add sql.column, sql.indexes tests.
 
     /**
      * Execute query on given node.

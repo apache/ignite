@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
@@ -92,7 +93,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers view which exports {@link Collection} content.
+     * Registers {@link SystemViewAdapter} view which exports {@link Collection} content.
      *
      * @param name Name.
      * @param desc Description.
@@ -104,14 +105,46 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <R, D> void registerView(String name, String desc, Class<R> rowCls, Collection<D> data,
         Function<D, R> rowFunc) {
-
-        SystemView sysView = new SystemViewAdapter<>(name,
+        doRegister(name, new SystemViewAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             data,
-            rowFunc);
+            rowFunc));
+    }
 
+    /**
+     * Registers {@link SystemViewContainerAdapter} view which exports container content.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param rowCls Row class.
+     * @param container Container of the data.
+     * @param dataExtractor Data extractor function.
+     * @param rowFunc Row function
+     * @param <C> Container entry type.
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <C, R, D> void registerContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
+        Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        doRegister(name, new SystemViewContainerAdapter<>(name,
+            desc,
+            rowCls,
+            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            container,
+            dataExtractor,
+            rowFunc));
+
+    }
+
+    /**
+     * Registers view and notifies listeners.
+     *
+     * @param name Name
+     * @param sysView System view.
+     */
+    private void doRegister(String name, SystemView sysView) {
         SystemView<?> old = systemViews.putIfAbsent(name, sysView);
 
         assert old == null;

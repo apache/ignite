@@ -241,43 +241,60 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         execSql("CREATE INDEX IDX_AFF_1 ON PUBLIC.DFLT_AFF_CACHE(ID2 DESC, ID1, MY_VAL DESC)");
 
-        String idxSql = "SELECT * FROM " + systemSchemaName() + ".INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
+        String idxSql = "SELECT " +
+            "  CACHE_GROUP_ID," +
+            "  CACHE_GROUP_NAME," +
+            "  CACHE_ID," +
+            "  CACHE_NAME," +
+            "  SCHEMA_NAME," +
+            "  TABLE_NAME," +
+            "  INDEX_NAME," +
+            "  INDEX_TYPE," +
+            "  COLUMNS," +
+            "  IS_PK," +
+            "  IS_UNIQUE," +
+            "  INLINE_SIZE" +
+            " FROM " + systemSchemaName() + ".INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
 
         List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
 
         List<List<?>> clientNodeNodeIndexes = execSql(client, idxSql);
 
-        Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
+        assertTrue(srvNodeIndexes.containsAll(clientNodeNodeIndexes));
 
         //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
 
         String[][] expectedResults = {
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID2\" ASC, \"ID1\" ASC", "false", "false", "10"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "false", "true", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "true", "true", "0"},
 
             {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", "false", "false", "13"},
-            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2_proxy", "BTREE", "\"ID\" DESC, \"ID\" ASC", "false", "false", "0"},
             {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", "true", "true", "5"},
-            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", "false", "true", "null"},
+            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
+            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", "true", "true", "0"},
+            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_proxy", "BTREE", "\"ID\" ASC", "false", "false", "0"},
 
             {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
             {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "BTREE", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "false", "false", "10"},
-            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
             {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
-            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", "false", "true", "null"},
+            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
+            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", "true", "true", "0"},
 
             {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_1", "BTREE", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
             {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_3", "BTREE", "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
-            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
             {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
-            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC", "false", "true", "null"},
+            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
+            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "0"},
 
             {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "TST1_INDEX", "BTREE", "\"KEY\" ASC, \"_KEY\" ASC", "false", "false", "10"},
-            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "TST1_INDEX_proxy", "BTREE", "\"_KEY\" ASC, \"KEY\" ASC", "false", "false", "0"},
             {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "_key_PK", "BTREE", "\"_KEY\" ASC", "true", "true", "10"},
-            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "_key_PK_hash", "HASH", "\"_KEY\" ASC", "false", "true", "null"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "_key_PK_hash", "HASH", "\"_KEY\" ASC", "true", "true", "0"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "_key_PK_proxy", "BTREE", "\"KEY\" ASC", "false", "false", "0"}
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {
@@ -288,7 +305,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals(expRow[j], String.valueOf(resRow.get(j)));
+                assertEquals("[" + i + ',' + j + ']', expRow[j], String.valueOf(resRow.get(j)));
         }
     }
 
@@ -1458,7 +1475,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEqualsCollections(elevenExpVals, durationMetrics);
     }
-
 
     /**
      * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.

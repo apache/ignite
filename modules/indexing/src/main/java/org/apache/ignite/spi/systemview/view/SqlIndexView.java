@@ -18,9 +18,14 @@
 package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
+import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex;
 import org.h2.index.Index;
 
 /**
@@ -36,19 +41,11 @@ public class SqlIndexView {
     /** Index type. */
     private final H2IndexType type;
 
-    /** Inline size. */
-    private final int inlineSz;
-
-    /** Cache group name. */
-    private String cacheGrpName;
-
     /** */
-    public SqlIndexView(GridH2Table tbl, String cacheGrpName, Index idx, H2IndexType type, int inlineSz) {
+    public SqlIndexView(GridH2Table tbl, Index idx) {
         this.tbl = tbl;
-        this.cacheGrpName = cacheGrpName;
         this.idx = idx;
-        this.type = type;
-        this.inlineSz = inlineSz;
+        this.type = type(idx);
     }
 
     /** @return Cache group id. */
@@ -58,7 +55,7 @@ public class SqlIndexView {
 
     /** @return Cache group name. */
     public String cacheGroupName() {
-        return cacheGrpName;
+        return CacheGroupContext.cacheOrGroupName(tbl.cacheInfo().config());
     }
 
     /** @return Cache id. */
@@ -127,6 +124,25 @@ public class SqlIndexView {
 
     /** @return Inline size. */
     public int inlineSize() {
-        return inlineSz;
+        return idx instanceof H2TreeIndexBase ? ((H2TreeIndexBase)idx).inlineSize() : 0;
+    }
+
+    /**
+     * @param idx Index
+     * @return Index type.
+     */
+    private static H2IndexType type(Index idx) {
+        if (idx instanceof H2TreeIndexBase) {
+            return H2IndexType.BTREE;
+        } else if (idx instanceof H2PkHashIndex)
+            return H2IndexType.HASH;
+        else if (idx instanceof H2TableScanIndex)
+            return H2IndexType.SCAN;
+        else if (idx instanceof GridH2ProxyIndex)
+            return type(((GridH2ProxyIndex)idx).underlyingIndex());
+        else if (idx.getIndexType().isSpatial())
+            return H2IndexType.SPATIAL;
+
+        return null;
     }
 }
