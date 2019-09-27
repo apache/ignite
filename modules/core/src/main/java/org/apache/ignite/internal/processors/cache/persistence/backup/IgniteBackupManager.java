@@ -431,11 +431,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
                     return file;
                 })
+                // Wait for both futures - checkpoint end, copy partition
                 .thenCombineAsync(bctx.cpEndFut,
                     (from, res) -> {
                         assert res;
 
-                        // Call the factory which creates tasks for page delta processing.
                         return bctx.deltaSuppFactory.apply(from,
                             bctx.partDeltaWriters
                                 .get(pair)
