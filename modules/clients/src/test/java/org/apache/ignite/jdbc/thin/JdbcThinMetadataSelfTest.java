@@ -801,11 +801,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647"
             ));
 
-            for (String col : actualSystemCols) {
-                if (!expectedCols.contains(col))
-                    System.out.println(col);
-            }
-
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }
