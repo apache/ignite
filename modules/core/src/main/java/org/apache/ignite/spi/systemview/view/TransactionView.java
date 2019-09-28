@@ -21,6 +21,8 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -167,5 +169,22 @@ public class TransactionView {
     @Order(7)
     public int keysCount() {
         return tx.allEntries().size();
+    }
+
+    /** @return Cache ids. */
+    @Order(8)
+    public String cacheIds() {
+        SB b = new SB();
+
+        GridIntList cacheIds = tx.txState().cacheIds();
+
+        for (int i = 0; i < cacheIds.size(); i++) {
+            if (i != 0)
+                b.a(',');
+
+            b.a(cacheIds.get(i));
+        }
+
+        return b.toString();
     }
 }

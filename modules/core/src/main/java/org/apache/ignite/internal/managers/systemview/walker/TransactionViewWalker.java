@@ -42,22 +42,23 @@ public class TransactionViewWalker implements SystemViewRowAttributeWalker<Trans
         v.accept(5, "isolation", TransactionIsolation.class);
         v.accept(6, "concurrency", TransactionConcurrency.class);
         v.accept(7, "keysCount", int.class);
-        v.accept(8, "colocated", boolean.class);
-        v.accept(9, "dht", boolean.class);
-        v.accept(10, "duration", long.class);
-        v.accept(11, "implicit", boolean.class);
-        v.accept(12, "implicitSingle", boolean.class);
-        v.accept(13, "internal", boolean.class);
-        v.accept(14, "local", boolean.class);
-        v.accept(15, "localNodeId", UUID.class);
-        v.accept(16, "near", boolean.class);
-        v.accept(17, "onePhaseCommit", boolean.class);
-        v.accept(18, "otherNodeId", UUID.class);
-        v.accept(19, "subjectId", UUID.class);
-        v.accept(20, "system", boolean.class);
-        v.accept(21, "threadId", long.class);
-        v.accept(22, "timeout", long.class);
-        v.accept(23, "topVer", String.class);
+        v.accept(8, "cacheIds", String.class);
+        v.accept(9, "colocated", boolean.class);
+        v.accept(10, "dht", boolean.class);
+        v.accept(11, "duration", long.class);
+        v.accept(12, "implicit", boolean.class);
+        v.accept(13, "implicitSingle", boolean.class);
+        v.accept(14, "internal", boolean.class);
+        v.accept(15, "local", boolean.class);
+        v.accept(16, "localNodeId", UUID.class);
+        v.accept(17, "near", boolean.class);
+        v.accept(18, "onePhaseCommit", boolean.class);
+        v.accept(19, "otherNodeId", UUID.class);
+        v.accept(20, "subjectId", UUID.class);
+        v.accept(21, "system", boolean.class);
+        v.accept(22, "threadId", long.class);
+        v.accept(23, "timeout", long.class);
+        v.accept(24, "topVer", String.class);
     }
 
     /** {@inheritDoc} */
@@ -70,26 +71,27 @@ public class TransactionViewWalker implements SystemViewRowAttributeWalker<Trans
         v.accept(5, "isolation", TransactionIsolation.class, row.isolation());
         v.accept(6, "concurrency", TransactionConcurrency.class, row.concurrency());
         v.acceptInt(7, "keysCount", row.keysCount());
-        v.acceptBoolean(8, "colocated", row.colocated());
-        v.acceptBoolean(9, "dht", row.dht());
-        v.acceptLong(10, "duration", row.duration());
-        v.acceptBoolean(11, "implicit", row.implicit());
-        v.acceptBoolean(12, "implicitSingle", row.implicitSingle());
-        v.acceptBoolean(13, "internal", row.internal());
-        v.acceptBoolean(14, "local", row.local());
-        v.accept(15, "localNodeId", UUID.class, row.localNodeId());
-        v.acceptBoolean(16, "near", row.near());
-        v.acceptBoolean(17, "onePhaseCommit", row.onePhaseCommit());
-        v.accept(18, "otherNodeId", UUID.class, row.otherNodeId());
-        v.accept(19, "subjectId", UUID.class, row.subjectId());
-        v.acceptBoolean(20, "system", row.system());
-        v.acceptLong(21, "threadId", row.threadId());
-        v.acceptLong(22, "timeout", row.timeout());
-        v.accept(23, "topVer", String.class, row.topVer());
+        v.accept(8, "cacheIds", String.class, row.cacheIds());
+        v.acceptBoolean(9, "colocated", row.colocated());
+        v.acceptBoolean(10, "dht", row.dht());
+        v.acceptLong(11, "duration", row.duration());
+        v.acceptBoolean(12, "implicit", row.implicit());
+        v.acceptBoolean(13, "implicitSingle", row.implicitSingle());
+        v.acceptBoolean(14, "internal", row.internal());
+        v.acceptBoolean(15, "local", row.local());
+        v.accept(16, "localNodeId", UUID.class, row.localNodeId());
+        v.acceptBoolean(17, "near", row.near());
+        v.acceptBoolean(18, "onePhaseCommit", row.onePhaseCommit());
+        v.accept(19, "otherNodeId", UUID.class, row.otherNodeId());
+        v.accept(20, "subjectId", UUID.class, row.subjectId());
+        v.acceptBoolean(21, "system", row.system());
+        v.acceptLong(22, "threadId", row.threadId());
+        v.acceptLong(23, "timeout", row.timeout());
+        v.accept(24, "topVer", String.class, row.topVer());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 24;
+        return 25;
     }
 }

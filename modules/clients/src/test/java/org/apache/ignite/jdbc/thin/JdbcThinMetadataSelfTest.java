@@ -787,7 +787,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.ORIGINATING_NODE_ID.null.2147483647",
                 "SYS.TRANSACTIONS.OTHER_NODE_ID.null.2147483647",
                 "SYS.TRANSACTIONS.TOP_VER.null.2147483647",
-                "SYS.TRANSACTIONS.KEYS_COUNT.null.10"
+                "SYS.TRANSACTIONS.KEYS_COUNT.null.10",
+                "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647"
             ));
 
             for (String col : actualSystemCols) {

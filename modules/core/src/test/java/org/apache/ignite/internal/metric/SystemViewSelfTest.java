@@ -70,6 +70,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
@@ -467,7 +468,10 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTransactions() throws Exception {
         try(IgniteEx g = startGrid(0)) {
-            IgniteCache<Integer, Integer> cache = g.createCache(new CacheConfiguration<Integer, Integer>("c")
+            IgniteCache<Integer, Integer> cache1 = g.createCache(new CacheConfiguration<Integer, Integer>("c1")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+            IgniteCache<Integer, Integer> cache2 = g.createCache(new CacheConfiguration<Integer, Integer>("c2")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
             SystemView<TransactionView> txs = g.context().systemView().view(TXS_MON_LIST);
@@ -481,8 +485,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
                     try(Transaction tx = g.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
-                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
 
                         latch.await();
                     }
@@ -495,30 +499,35 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(res);
 
-                TransactionView txv = txs.iterator().next();
+                {
+                    TransactionView txv = txs.iterator().next();
 
-                assertEquals(g.localNode().id(), txv.localNodeId());
-                assertEquals(txv.isolation(), REPEATABLE_READ);
-                assertEquals(txv.concurrency(), PESSIMISTIC);
-                assertEquals(txv.state(), ACTIVE);
-                assertNotNull(txv.xid());
-                assertFalse(txv.system());
-                assertFalse(txv.implicit());
-                assertFalse(txv.implicitSingle());
-                assertTrue(txv.near());
-                assertFalse(txv.dht());
-                assertTrue(txv.colocated());
-                assertTrue(txv.local());
-                assertEquals("test", txv.label());
-                assertFalse(txv.onePhaseCommit());
-                assertFalse(txv.internal());
-                assertEquals(0, txv.timeout());
-                assertTrue(txv.startTime() <= System.currentTimeMillis());
+                    assertEquals(g.localNode().id(), txv.localNodeId());
+                    assertEquals(txv.isolation(), REPEATABLE_READ);
+                    assertEquals(txv.concurrency(), PESSIMISTIC);
+                    assertEquals(txv.state(), ACTIVE);
+                    assertNotNull(txv.xid());
+                    assertFalse(txv.system());
+                    assertFalse(txv.implicit());
+                    assertFalse(txv.implicitSingle());
+                    assertTrue(txv.near());
+                    assertFalse(txv.dht());
+                    assertTrue(txv.colocated());
+                    assertTrue(txv.local());
+                    assertEquals("test", txv.label());
+                    assertFalse(txv.onePhaseCommit());
+                    assertFalse(txv.internal());
+                    assertEquals(0, txv.timeout());
+                    assertTrue(txv.startTime() <= System.currentTimeMillis());
+                    assertEquals(2, txv.keysCount());
+                    assertEquals(String.valueOf(cacheId(cache1.getName())), txv.cacheIds());
+                }
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
                     try(Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
-                        cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                        cache2.put(cntr.incrementAndGet(), cntr.incrementAndGet());
 
                         latch.await();
                     }
@@ -535,7 +544,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     if (PESSIMISTIC == tx.concurrency())
                         continue;
 
-                    assertEquals(g.localNode().id(), txv.localNodeId());
+                    assertEquals(g.localNode().id(), tx.localNodeId());
                     assertEquals(tx.isolation(), SERIALIZABLE);
                     assertEquals(tx.concurrency(), OPTIMISTIC);
                     assertEquals(tx.state(), ACTIVE);
@@ -552,8 +561,13 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertFalse(tx.internal());
                     assertEquals(0, tx.timeout());
                     assertTrue(tx.startTime() <= System.currentTimeMillis());
-                }
+                    assertEquals(3, tx.keysCount());
 
+                    String s1 = cacheId(cache1.getName()) + "," + cacheId(cache2.getName());
+                    String s2 = cacheId(cache2.getName()) + "," + cacheId(cache1.getName());
+
+                    assertTrue(s1.equals(tx.cacheIds()) || s2.equals(tx.cacheIds()));
+                }
             }
             finally {
                 latch.countDown();
