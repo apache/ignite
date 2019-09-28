@@ -343,7 +343,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.LOCAL_SQL_RUNNING_QUERIES",
                 "SYS.NODE_ATTRIBUTES",
                 "SYS.TABLES",
-                "SYS.CLIENT_CONNECTIONS"
+                "SYS.CLIENT_CONNECTIONS",
+                "SYS.QUERY_CONTINUOUS"
             ))
         );
     }
@@ -761,7 +762,26 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.TYPE.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.USER.null.2147483647",
-                "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647"
+                "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.NOTIFY_EXISTING.null.1",
+                "SYS.QUERY_CONTINUOUS.OLD_VALUE_REQUIRED.null.1",
+                "SYS.QUERY_CONTINUOUS.KEEP_BINARY.null.1",
+                "SYS.QUERY_CONTINUOUS.IS_MESSAGING.null.1",
+                "SYS.QUERY_CONTINUOUS.AUTO_UNSUBSCRIBE.null.1",
+                "SYS.QUERY_CONTINUOUS.LAST_SEND_TIME.null.19",
+                "SYS.QUERY_CONTINUOUS.LOCAL_TRANSFORMED_LISTENER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.TOPIC.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.BUFFER_SIZE.null.10",
+                "SYS.QUERY_CONTINUOUS.REMOTE_TRANSFORMER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.DELAYED_REGISTER.null.1",
+                "SYS.QUERY_CONTINUOUS.IS_QUERY.null.1",
+                "SYS.QUERY_CONTINUOUS.NODE_ID.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.INTERVAL.null.19",
+                "SYS.QUERY_CONTINUOUS.IS_EVENTS.null.1",
+                "SYS.QUERY_CONTINUOUS.ROUTINE_ID.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.REMOTE_FILTER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.CACHE_NAME.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.LOCAL_LISTENER.null.2147483647"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);

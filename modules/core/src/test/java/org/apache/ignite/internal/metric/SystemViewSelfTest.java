@@ -33,6 +33,9 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -55,6 +58,7 @@ import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -65,6 +69,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
@@ -442,6 +447,61 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             boolean res = GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000);
 
             assertTrue(res);
+        }
+    }
+
+    /** */
+    @Test
+    public void testContinuousQuery() throws Exception {
+        try(IgniteEx g0 = startGrid(0); IgniteEx g1 = startGrid(1)) {
+            IgniteCache<Integer, Integer> cache = g0.createCache("cache-1");
+
+            QueryCursor qry = cache.query(new ContinuousQuery<>()
+                .setInitialQuery(new ScanQuery<>())
+                .setPageSize(100)
+                .setTimeInterval(1000)
+                .setLocalListener(evts -> {
+                    // No-op.
+                })
+                .setRemoteFilterFactory(() -> evt -> true)
+            );
+
+            for (int i=0; i<100; i++)
+                cache.put(i, i);
+
+            SystemView<ContinuousQueryView> qrys = g0.context().systemView().view(CQ_SYS_VIEW);
+
+            assertEquals(1, qrys.size());
+
+            //Info on originating node.
+            for (ContinuousQueryView cq : qrys) {
+                assertEquals("cache-1", cq.cacheName());
+                assertEquals(100, cq.bufferSize());
+                assertEquals(1000, cq.interval());
+                assertEquals(g0.localNode().id(), cq.nodeId());
+                //Local listener not null on originating node.
+                assertTrue(cq.localListener().startsWith(getClass().getName()));
+                assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
+                assertNull(cq.localTransformedListener());
+                assertNull(cq.remoteTransformer());
+            }
+
+            qrys = g1.context().systemView().view(CQ_SYS_VIEW);
+
+            assertEquals(1, qrys.size());
+
+            //Info on remote node.
+            for (ContinuousQueryView cq : qrys) {
+                assertEquals("cache-1", cq.cacheName());
+                assertEquals(100, cq.bufferSize());
+                assertEquals(1000, cq.interval());
+                assertEquals(g0.localNode().id(), cq.nodeId());
+                //Local listener is null on remote nodes.
+                assertNull(cq.localListener());
+                assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
+                assertNull(cq.localTransformedListener());
+                assertNull(cq.remoteTransformer());
+            }
         }
     }
 
