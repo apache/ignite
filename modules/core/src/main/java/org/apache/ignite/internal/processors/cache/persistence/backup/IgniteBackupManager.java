@@ -521,7 +521,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                  .getFilePageStoreFactory()
                  .createPageStore(type,
                      partStore::toPath,
-                     new LongAdderMetric("NO_OP", null));
+                     new LongAdderMetric("NO_OP", null))
         ) {
             ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
                 .order(ByteOrder.nativeOrder());
@@ -653,7 +653,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final GridFutureAdapter<Void> backupFut;
 
         /** IO over the underlying file */
-        private final FileIO fileIo;
+        private volatile FileIO fileIo;
 
         /** {@code true} if current writer is stopped. */
         private volatile boolean partProcessed;
@@ -761,12 +761,10 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          * @throws IOException If page writing failed (IO error occurred).
          */
         private void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
-            assert fileIo != null : "Delta pages storage is not inited: " + this;
-
-            if (!lock.readLock().tryLock())
-                return;
+            lock.readLock().lock();
 
             try {
+                assert fileIo != null : "Delta pages storage is not inited: " + this;
                 assert pageBuf.position() == 0;
                 assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                     + " should be same with " + ByteOrder.nativeOrder();
@@ -799,6 +797,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
             try {
                 U.closeQuiet(fileIo);
+
+                fileIo = null;
             }
             finally {
                 lock.writeLock().unlock();
