@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -306,17 +305,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return Delta supplier factory.
-     */
-    Supplier<File> deltaSupplierFactory(File from, FileDeltaPageStore delta) {
-        return new PartitionDeltaSupplier(log,
-            ((FilePageStoreManager)cctx.pageStore())
-                .getFilePageStoreFactory(),
-            from,
-            delta);
-    }
-
-    /**
      * @return Factory which procudes workers for backup partition recovery.
      */
     Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory() {
@@ -446,21 +434,21 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      * @param bctx Context to handle.
      */
-    private void submitTasks(BackupContext bctx, File cacheWorkDir) {
+    private void submitTasks(BackupContext bctx, File workDir) {
         List<CompletableFuture<Void>> futs = new ArrayList<>(bctx.parts.size());
 
         U.log(log, "Partition allocated lengths: " + bctx.partFileLengths);
 
         for (GroupPartitionId pair : bctx.parts) {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
+            File cacheBackupDir = new File(bctx.backupDir, cacheDirName(ccfg));
 
             CompletableFuture<Void> fut0 = CompletableFuture.supplyAsync(
                 bctx.partSuppFactory.apply(
                     getPartitionFileEx(
-                        cacheWorkDir(cacheWorkDir, ccfg),
+                        cacheWorkDir(workDir, ccfg),
                         pair.getPartitionId()),
-                    new File(bctx.backupDir,
-                        cacheDirName(ccfg)),
+                    cacheBackupDir,
                     bctx.partFileLengths.get(pair)),
                 bctx.execSvc)
                 .thenApply(file -> {
@@ -470,11 +458,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 })
                 // Wait for the completion of both futures - checkpoint end, copy partition
                 .runAfterBothAsync(bctx.cpEndFut,
-                    () -> {
-                        // backup cache dir
-                        bctx.deltaWorkerFactory.get()
-                            .accept(new File(bctx.backupDir, cacheDirName(ccfg)), pair);
-                    },
+                    () -> bctx.deltaWorkerFactory.get().accept(cacheBackupDir, pair),
                     bctx.execSvc);
 
             futs.add(fut0);
@@ -562,7 +546,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
                 int crc = PageIO.getCrc(pageBuf);
 
-                U.log(log, "Read page from serial storage [path=" + deltaStore.getName() +
+                U.log(log, "Read page given delta file [path=" + deltaStore.getName() +
                     ", pageId=" + pageId + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
                     ", crcBuff=" + crc32 + ", crcPage=" + crc + ']');
 
@@ -577,60 +561,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteException(e);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class PartitionDeltaSupplier implements Supplier<File> {
-        /** Ignite logger to use. */
-        private final IgniteLogger log;
-
-        /** File page store factory */
-        private final FilePageStoreFactory factory;
-
-        /** Copied partition file to apply delta pages to. */
-        private final File from;
-
-        /** Delta pages storage for the given partition. */
-        private final FileDeltaPageStore deltaStore;
-
-        /**
-         * @param deltaStore Storage with delta pages.
-         */
-        public PartitionDeltaSupplier(
-            IgniteLogger log,
-            FilePageStoreFactory factory,
-            File from,
-            FileDeltaPageStore deltaStore
-        ) {
-            this.log = log.getLogger(PartitionDeltaSupplier.class);
-            this.factory = factory;
-            this.from = from;
-            this.deltaStore = deltaStore;
-        }
-
-        /** {@inheritDoc} */
-        @Override public File get() {
-            try {
-                byte type = INDEX_FILE_NAME.equals(from.getName()) ? FLAG_IDX : FLAG_DATA;
-
-                FilePageStore store = (FilePageStore)factory.createPageStore(type,
-                    from::toPath,
-                    new LongAdderMetric("NO_OP", null));
-
-                store.doRecover(deltaStore);
-
-                U.log(log, "Partition delta storage applied to: " + from.getName());
-
-                deltaStore.delete();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-
-            return from;
         }
     }
 
