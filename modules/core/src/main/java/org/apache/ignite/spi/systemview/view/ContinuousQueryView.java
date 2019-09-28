@@ -31,16 +31,16 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RoutineInfo;
 
 /**
- *
+ * Continuous query representation for a {@link SystemView}.
  */
 public class ContinuousQueryView {
     /** Routine info. */
     private final RoutineInfo qry;
 
-    /** CQ Handler. */
+    /** Continuous query handler. */
     private final GridContinuousHandler hnd;
 
-    /** Routine id */
+    /** Routine id. */
     private final UUID routineId;
 
     /**
@@ -53,7 +53,7 @@ public class ContinuousQueryView {
         this.routineId = routineId;
     }
 
-    /** @return CQ id. */
+    /** @return Continuous query id. */
     public UUID routineId() {
         return routineId;
     }
@@ -69,7 +69,7 @@ public class ContinuousQueryView {
         return hnd.cacheName();
     }
 
-    /** @return Topic for CQ messages. */
+    /** @return Topic for continuous query messages. */
     public String topic() {
         return String.valueOf(hnd.orderedTopic());
     }
@@ -89,17 +89,17 @@ public class ContinuousQueryView {
         return qry.autoUnsubscribe();
     }
 
-    /** @return {@code True} if CQ registered to receive events. */
+    /** @return {@code True} if continuous query registered to receive events. */
     public boolean isEvents() {
         return hnd.isEvents();
     }
 
-    /** @return {@code True} if CQ registered for messaging. */
+    /** @return {@code True} if continuous query registered for messaging. */
     public boolean isMessaging() {
         return hnd.isMessaging();
     }
 
-    /** @return {@code True} if regular CQ. */
+    /** @return {@code True} if regular continuous query. */
     public boolean isQuery() {
         return hnd.isQuery();
     }
@@ -112,7 +112,7 @@ public class ContinuousQueryView {
         return hnd.keepBinary();
     }
 
-    /** @return {@code True} if CQ should receive notification for existing entries. */
+    /** @return {@code True} if continuous query should receive notification for existing entries. */
     public boolean notifyExisting() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
@@ -141,7 +141,7 @@ public class ContinuousQueryView {
     }
 
     /**
-     * @return String representation of local listener
+     * @return String representation of local listener.
      * @see ContinuousQuery#setLocalListener(CacheEntryUpdatedListener)
      */
     @Order(1)
@@ -155,7 +155,7 @@ public class ContinuousQueryView {
     }
 
     /**
-     * @return String representation of remote filter
+     * @return String representation of remote filter.
      * @see ContinuousQuery#setRemoteFilter(CacheEntryEventSerializableFilter)
      * @see ContinuousQuery#setRemoteFilterFactory(Factory)
      */
