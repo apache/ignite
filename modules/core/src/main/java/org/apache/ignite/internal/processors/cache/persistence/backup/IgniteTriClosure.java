@@ -25,7 +25,7 @@ import java.io.Serializable;
  *
  * @param <E1> Type of the first parameter.
  * @param <E2> Type of the second parameter.
- * @param <E3> Type of the second parameter.
+ * @param <E3> Type of the third parameter.
  * @param <R> Type of the closure's return value.
  */
 @FunctionalInterface

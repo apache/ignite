@@ -304,8 +304,11 @@ public class FilePageStore implements PageStore {
         return fileSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean delete) throws StorageException {
+    /**
+     * @param delete {@code True} to delete file.
+     * @throws IOException If fails.
+     */
+    private void stop0(boolean delete) throws IOException {
         lock.writeLock().lock();
 
         try {
@@ -331,10 +334,6 @@ public class FilePageStore implements PageStore {
                 fileExists = false;
             }
         }
-        catch (IOException e) {
-            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
-                + ", delete=" + delete + "]", e);
-        }
         finally {
             allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
 
@@ -342,6 +341,22 @@ public class FilePageStore implements PageStore {
 
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean delete) throws StorageException {
+        try {
+            stop0(delete);
+        }
+        catch (IOException e) {
+            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
+                + ", delete=" + delete + "]", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        stop0(false);
     }
 
     /** {@inheritDoc} */

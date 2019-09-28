@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,6 +43,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
@@ -65,6 +68,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -72,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -266,6 +270,22 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      * @param name Unique backup name.
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
+     * @param remoteId The remote node to connect to.
+     * @param topic The remote topic to connect to.
+     * @throws IgniteCheckedException If initialiation fails.
+     */
+    public void sendBackup(
+        String name,
+        Map<Integer, Set<Integer>> parts,
+        UUID remoteId,
+        Object topic
+    ) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
+     * @param name Unique backup name.
+     * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @param dir Local directory to save cache partition deltas to.
      * @return Future which will be completed when backup is done.
      * @throws IgniteCheckedException If initialiation fails.
@@ -275,7 +295,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         Map<Integer, Set<Integer>> parts,
         File dir
     ) throws IgniteCheckedException {
-        return createLocalBackup(name, parts, dir, this::partSupplierFactory, this::deltaSupplierFactory);
+        return createLocalBackup(name, parts, dir, this::partSupplierFactory, deltaWorkerFactory());
     }
 
     /**
@@ -297,11 +317,23 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Factory which procudes workers for backup partition recovery.
+     */
+    Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory() {
+        return () -> new BiConsumer<File, GroupPartitionId>() {
+            @Override public void accept(File dir, GroupPartitionId pair) {
+                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),
+                    getPartionDeltaFile(dir, pair.getPartitionId()));
+            }
+        };
+    }
+
+    /**
      * @param name Unique backup name.
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @param dir Local directory to save cache partition deltas to.
      * @param partSuppFactory Factory which produces partition suppliers.
-     * @param deltaSuppFactory Factory which produces partition delta suppliers.
+     * @param deltaWorkerFactory Factory which produces partition delta suppliers.
      * @return Future which will be completed when backup is done.
      * @throws IgniteCheckedException If initialiation fails.
      */
@@ -310,7 +342,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         Map<Integer, Set<Integer>> parts,
         File dir,
         IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory,
-        IgniteBiClosure<File, FileDeltaPageStore, Supplier<File>> deltaSuppFactory
+        Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory
     ) throws IgniteCheckedException {
         if (backupCtxs.containsKey(name))
             throw new IgniteCheckedException("Backup with requested name is already scheduled: " + name);
@@ -327,7 +359,12 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 parts,
                 backupRunner,
                 partSuppFactory,
-                deltaSuppFactory);
+                () -> new BiConsumer<File, GroupPartitionId>() {
+                    @Override public void accept(File dir, GroupPartitionId pair) {
+                        partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),
+                            getPartionDeltaFile(dir, pair.getPartitionId()));
+                    }
+                });
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
@@ -410,14 +447,14 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @param bctx Context to handle.
      */
     private void submitTasks(BackupContext bctx, File cacheWorkDir) {
-        List<CompletableFuture<File>> futs = new ArrayList<>(bctx.parts.size());
+        List<CompletableFuture<Void>> futs = new ArrayList<>(bctx.parts.size());
 
         U.log(log, "Partition allocated lengths: " + bctx.partFileLengths);
 
         for (GroupPartitionId pair : bctx.parts) {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
 
-            CompletableFuture<File> fut0 = CompletableFuture.supplyAsync(
+            CompletableFuture<Void> fut0 = CompletableFuture.supplyAsync(
                 bctx.partSuppFactory.apply(
                     getPartitionFileEx(
                         cacheWorkDir(cacheWorkDir, ccfg),
@@ -431,16 +468,12 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
                     return file;
                 })
-                // Wait for both futures - checkpoint end, copy partition
-                .thenCombineAsync(bctx.cpEndFut,
-                    (from, res) -> {
-                        assert res;
-
-                        return bctx.deltaSuppFactory.apply(from,
-                            bctx.partDeltaWriters
-                                .get(pair)
-                                .deltaStore)
-                            .get();
+                // Wait for the completion of both futures - checkpoint end, copy partition
+                .runAfterBothAsync(bctx.cpEndFut,
+                    () -> {
+                        // backup cache dir
+                        bctx.deltaWorkerFactory.get()
+                            .accept(new File(bctx.backupDir, cacheDirName(ccfg)), pair);
                     },
                     bctx.execSvc);
 
@@ -488,6 +521,63 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      */
     void ioFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
+    }
+
+    /**
+     * @param partStore Partition file previously backuped.
+     * @param deltaStore File with delta pages.
+     */
+    public void partitionRecovery(File partStore, File deltaStore) {
+        U.log(log, "Start partition backup recovery with the given delta page file [part=" + partStore +
+            ", delta=" + deltaStore + ']');
+
+        byte type = INDEX_FILE_NAME.equals(partStore.getName()) ? FLAG_IDX : FLAG_DATA;
+
+        try (FileIO fileIo = ioFactory.create(deltaStore);
+             FilePageStore store = (FilePageStore)((FilePageStoreManager)cctx.pageStore())
+                 .getFilePageStoreFactory()
+                 .createPageStore(type,
+                     partStore::toPath,
+                     new LongAdderMetric("NO_OP", null));
+        ) {
+            ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
+                .order(ByteOrder.nativeOrder());
+
+            long totalBytes = fileIo.size();
+
+            assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + fileIo.size();
+
+            store.beginRecover();
+
+            for (long pos = 0; pos < totalBytes; pos += pageSize) {
+                long read = fileIo.readFully(pageBuf, pos);
+
+                assert read == pageBuf.capacity();
+
+                pageBuf.flip();
+
+                long pageId = PageIO.getPageId(pageBuf);
+
+                int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
+
+                int crc = PageIO.getCrc(pageBuf);
+
+                U.log(log, "Read page from serial storage [path=" + deltaStore.getName() +
+                    ", pageId=" + pageId + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
+                    ", crcBuff=" + crc32 + ", crcPage=" + crc + ']');
+
+                pageBuf.rewind();
+
+                store.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
+
+                pageBuf.flip();
+            }
+
+            store.finishRecover();
+        }
+        catch (IOException | IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -762,7 +852,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         /** Factory to create executable tasks for partition delta pages processing. */
         @GridToStringExclude
-        private final IgniteBiClosure<File, FileDeltaPageStore, Supplier<File>> deltaSuppFactory;
+        private final Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory;
 
         /** Collection of partition to be backuped. */
         private final List<GroupPartitionId> parts = new ArrayList<>();
@@ -785,20 +875,20 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             Map<Integer, Set<Integer>> parts,
             ExecutorService execSvc,
             IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory,
-            IgniteBiClosure<File, FileDeltaPageStore, Supplier<File>> deltaSuppFactory
+            Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory
         ) {
             A.notNull(name, "Backup name cannot be empty or null");
             A.notNull(backupDir, "You must secify correct backup directory");
             A.ensure(backupDir.isDirectory(), "Specified path is not a directory");
             A.notNull(execSvc, "Executor service must be not null");
             A.notNull(partSuppFactory, "Factory which procudes backup tasks to execute must be not null");
-            A.notNull(deltaSuppFactory, "Factory which processes delta pages storage must be not null");
+            A.notNull(deltaWorkerFactory, "Factory which processes delta pages storage must be not null");
 
             this.name = name;
             this.backupDir = backupDir;
             this.execSvc = execSvc;
             this.partSuppFactory = partSuppFactory;
-            this.deltaSuppFactory = deltaSuppFactory;
+            this.deltaWorkerFactory = deltaWorkerFactory;
 
             result.listen(f -> {
                 if (f.error() != null)

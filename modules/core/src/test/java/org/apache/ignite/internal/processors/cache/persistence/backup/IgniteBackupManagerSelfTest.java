@@ -263,7 +263,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
                         };
                     }
                 },
-                mgr::deltaSupplierFactory);
+                mgr.deltaWorkerFactory());
 
         // Change data after backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
