@@ -297,14 +297,14 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         Map<Integer, Set<Integer>> parts,
         File dir
     ) throws IgniteCheckedException {
-        return createLocalBackup(name, parts, dir, this::partSupplierFactory, deltaWorkerFactory());
+        return createLocalBackup(name, parts, dir, partWorkerFactory(), deltaWorkerFactory());
     }
 
     /**
      * @return Partition supplier factory.
      */
-    Supplier<File> partSupplierFactory(File from, File to, long length) {
-        return new PartitionCopySupplier(log, from, to, length);
+    Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory() {
+        return () -> new PartitionCopySupplier(log);
     }
 
     /**
@@ -326,7 +326,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @param name Unique backup name.
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @param dir Local directory to save cache partition deltas to.
-     * @param partSuppFactory Factory which produces partition suppliers.
+     * @param partWorkerFactory Factory which produces partition suppliers.
      * @param deltaWorkerFactory Factory which produces partition delta suppliers.
      * @return Future which will be completed when backup is done.
      * @throws IgniteCheckedException If initialiation fails.
@@ -335,7 +335,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         String name,
         Map<Integer, Set<Integer>> parts,
         File dir,
-        IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory,
+        Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory,
         Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory
     ) throws IgniteCheckedException {
         if (backupCtxs.containsKey(name))
@@ -352,7 +352,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 backupDir,
                 parts,
                 backupRunner,
-                partSuppFactory,
+                partWorkerFactory,
                 deltaWorkerFactory);
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
@@ -442,19 +442,13 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
             File cacheBackupDir = new File(bctx.backupDir, cacheDirName(ccfg));
 
-            CompletableFuture<Void> fut0 = CompletableFuture.supplyAsync(
-                bctx.partSuppFactory.apply(
-                    getPartitionFileEx(
-                        cacheWorkDir(workDir, ccfg),
-                        pair.getPartitionId()),
-                    cacheBackupDir,
-                    bctx.partFileLengths.get(pair)),
+            CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() ->
+                    bctx.partWorkerFactory.get()
+                        .accept(getPartitionFileEx(cacheWorkDir(workDir, ccfg), pair.getPartitionId()),
+                            cacheBackupDir,
+                            bctx.partFileLengths.get(pair)),
                 bctx.execSvc)
-                .thenApply(file -> {
-                    bctx.partDeltaWriters.get(pair).partProcessed = true;
-
-                    return file;
-                })
+                .thenRun(() -> bctx.partDeltaWriters.get(pair).partProcessed = true)
                 // Wait for the completion of both futures - checkpoint end, copy partition
                 .runAfterBothAsync(bctx.cpEndFut,
                     () -> bctx.deltaWorkerFactory.get().accept(cacheBackupDir, pair),
@@ -566,49 +560,30 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class PartitionCopySupplier implements Supplier<File> {
+    private static class PartitionCopySupplier implements IgniteTriConsumer<File, File, Long> {
         /** Ignite logger to use. */
         private final IgniteLogger log;
 
-        /** Partition file. */
-        private final File from;
-
-        /** Destination copy file to copy partition to. */
-        private final File to;
-
-        /** Size of partition. */
-        private final long length;
-
         /**
          * @param log Ignite logger to use.
-         * @param from Partition file.
-         * @param dir Destination copy file.
-         * @param length Size of partition.
          */
-        public PartitionCopySupplier(
-            IgniteLogger log,
-            File from,
-            File dir,
-            long length
-        ) {
-            A.ensure(dir.isDirectory(), "Destination path must be a directory");
-
+        public PartitionCopySupplier(IgniteLogger log) {
             this.log = log.getLogger(PartitionCopySupplier.class);
-            this.from = from;
-            this.length = length;
-            to = new File(dir, from.getName());
         }
 
-        /** {@inheritDoc} */
-        @Override public File get() {
+        @Override public void accept(File part, File backupDir, Long length) {
+            assert backupDir.isDirectory() : "Destination path must be a directory";
+
+            File to = new File(backupDir, part.getName());
+
             try {
                 if (!to.exists() || to.delete())
                     to.createNewFile();
 
                 if (length == 0)
-                    return to;
+                    return;
 
-                try (FileChannel src = new FileInputStream(from).getChannel();
+                try (FileChannel src = new FileInputStream(part).getChannel();
                      FileChannel dest = new FileOutputStream(to).getChannel()) {
                     src.position(0);
 
@@ -618,14 +593,12 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                         written += src.transferTo(written, length - written, dest);
                 }
 
-                U.log(log, "Partition file has been copied [from=" + from.getAbsolutePath() +
-                    ", fromSize=" + from.length() + ", to=" + to.getAbsolutePath() + ']');
+                U.log(log, "Partition file has been copied [from=" + part.getAbsolutePath() +
+                    ", fromSize=" + part.length() + ", to=" + to.getAbsolutePath() + ']');
             }
             catch (IOException ex) {
                 throw new IgniteException(ex);
             }
-
-            return to;
         }
     }
 
@@ -839,7 +812,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         /** Factory to create executable tasks for partition processing. */
         @GridToStringExclude
-        private final IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory;
+        private final Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory;
 
         /** Factory to create executable tasks for partition delta pages processing. */
         @GridToStringExclude
@@ -858,27 +831,27 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
          * @param name Unique identifier of backup process.
          * @param backupDir Backup storage directory.
          * @param execSvc Service to perform partitions copy.
-         * @param partSuppFactory Factory to create executable tasks for partition processing.
+         * @param partWorkerFactory Factory to create executable tasks for partition processing.
          */
         public BackupContext(
             String name,
             File backupDir,
             Map<Integer, Set<Integer>> parts,
             ExecutorService execSvc,
-            IgniteTriClosure<File, File, Long, Supplier<File>> partSuppFactory,
+            Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory,
             Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory
         ) {
             A.notNull(name, "Backup name cannot be empty or null");
             A.notNull(backupDir, "You must secify correct backup directory");
             A.ensure(backupDir.isDirectory(), "Specified path is not a directory");
             A.notNull(execSvc, "Executor service must be not null");
-            A.notNull(partSuppFactory, "Factory which procudes backup tasks to execute must be not null");
+            A.notNull(partWorkerFactory, "Factory which procudes backup tasks to execute must be not null");
             A.notNull(deltaWorkerFactory, "Factory which processes delta pages storage must be not null");
 
             this.name = name;
             this.backupDir = backupDir;
             this.execSvc = execSvc;
-            this.partSuppFactory = partSuppFactory;
+            this.partWorkerFactory = partWorkerFactory;
             this.deltaWorkerFactory = deltaWorkerFactory;
 
             result.listen(f -> {

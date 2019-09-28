@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -246,21 +245,18 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .createLocalBackup(BACKUP_NAME,
                 toBackup,
                 backupDir,
-                new IgniteTriClosure<File, File, Long, Supplier<File>>() {
-                    @Override public Supplier<File> apply(File from, File to, Long length) {
-                        return new Supplier<File>() {
-                            @Override public File get() {
-                                try {
-                                    if (from.getName().trim().equals(zeroPart.getName()))
-                                        U.await(slowCopy);
+                () -> new IgniteTriConsumer<File, File, Long>() {
+                    @Override public void accept(File part, File backupDir, Long length) {
+                        try {
+                            if (part.getName().trim().equals(zeroPart.getName()))
+                                U.await(slowCopy);
 
-                                    return mgr.partSupplierFactory(from, to, length).get();
-                                }
-                                catch (IgniteInterruptedCheckedException e) {
-                                    throw new IgniteException(e);
-                                }
-                            }
-                        };
+                            mgr.partWorkerFactory().get()
+                                .accept(part, backupDir, length);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new IgniteException(e);
+                        }
                     }
                 },
                 mgr.deltaWorkerFactory());

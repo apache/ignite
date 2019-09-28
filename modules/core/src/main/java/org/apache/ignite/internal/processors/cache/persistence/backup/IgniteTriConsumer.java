@@ -26,10 +26,9 @@ import java.io.Serializable;
  * @param <E1> Type of the first parameter.
  * @param <E2> Type of the second parameter.
  * @param <E3> Type of the third parameter.
- * @param <R> Type of the closure's return value.
  */
 @FunctionalInterface
-public interface IgniteTriClosure<E1, E2, E3, R> extends Serializable {
+public interface IgniteTriConsumer<E1, E2, E3> extends Serializable {
     /**
      * Closure body.
      *
@@ -38,5 +37,5 @@ public interface IgniteTriClosure<E1, E2, E3, R> extends Serializable {
      * @param e3 Third parameter.
      * @return Closure return value.
      */
-    public R apply(E1 e1, E2 e2, E3 e3);
+    public void accept(E1 e1, E2 e2, E3 e3);
 }
