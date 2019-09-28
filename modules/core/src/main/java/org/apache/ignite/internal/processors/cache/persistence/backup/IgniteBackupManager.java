@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -40,6 +41,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -115,7 +118,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /** All registered page writers of all running backup processes. */
     private final ConcurrentMap<GroupPartitionId, List<PageStoreSerialWriter>> partWriters = new ConcurrentHashMap<>();
 
-    /** Factory to working with {@link FileDeltaPageStore} as file storage. */
+    /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** Backup thread pool. */
@@ -310,8 +313,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory() {
         return () -> new BiConsumer<File, GroupPartitionId>() {
             @Override public void accept(File dir, GroupPartitionId pair) {
-                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),
-                    getPartionDeltaFile(dir, pair.getPartitionId()));
+                File delta = getPartionDeltaFile(dir, pair.getPartitionId());
+
+                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),delta);
+
+                delta.delete();
             }
         };
     }
@@ -347,12 +353,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 parts,
                 backupRunner,
                 partSuppFactory,
-                () -> new BiConsumer<File, GroupPartitionId>() {
-                    @Override public void accept(File dir, GroupPartitionId pair) {
-                        partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),
-                            getPartionDeltaFile(dir, pair.getPartitionId()));
-                    }
-                });
+                deltaWorkerFactory);
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
@@ -371,13 +372,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     final GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
 
                     bctx.partDeltaWriters.put(pair,
-                        new PageStoreSerialWriter(
-                            new FileDeltaPageStore(log,
-                                () -> getPartionDeltaFile(grpDir, partId).toPath(),
-                                ioFactory,
-                                pageSize),
+                        new PageStoreSerialWriter(log,
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
                             bctx.result,
+                            () -> getPartionDeltaFile(grpDir, partId).toPath(),
+                            ioFactory,
                             pageSize));
                 }
             }
@@ -634,8 +633,15 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      *
      */
     private static class PageStoreSerialWriter implements Closeable {
-        /** Storage to write pages to. */
-        private final FileDeltaPageStore deltaStore;
+        /** Ignite logger to use. */
+        @GridToStringExclude
+        private final IgniteLogger log;
+
+        /** Configuration file path provider. */
+        private final Supplier<Path> cfgPath;
+
+        /** Buse lock to perform write opertions. */
+        private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
         /** Local buffer to perpform copy-on-write operations. */
         private final ThreadLocal<ByteBuffer> localBuff;
@@ -645,6 +651,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         /** If backup has been stopped due to an error. */
         private final GridFutureAdapter<Void> backupFut;
+
+        /** IO over the underlying file */
+        private final FileIO fileIo;
 
         /** {@code true} if current writer is stopped. */
         private volatile boolean partProcessed;
@@ -656,22 +665,29 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private volatile AtomicIntegerArray pagesWrittenBits;
 
         /**
-         * @param deltaStore Serial storage to write to.
+         * @param log Ignite logger to use.
          * @param checkpointComplete Checkpoint finish flag.
          * @param pageSize Size of page to use for local buffer.
+         * @param cfgPath Configuration file path provider.
+         * @param factory Factory to produce an IO interface over underlying file.
          */
         public PageStoreSerialWriter(
-            FileDeltaPageStore deltaStore,
+            IgniteLogger log,
             BooleanSupplier checkpointComplete,
             GridFutureAdapter<Void> backupFut,
+            Supplier<Path> cfgPath,
+            FileIOFactory factory,
             int pageSize
-        ) {
-            this.deltaStore = deltaStore;
+        ) throws IOException {
             this.checkpointComplete = checkpointComplete;
             this.backupFut = backupFut;
+            this.log = log.getLogger(PageStoreSerialWriter.class);
+            this.cfgPath = cfgPath;
 
             localBuff = ThreadLocal.withInitial(() ->
                 ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder()));
+
+            fileIo = factory.create(cfgPath.get().toFile());
         }
 
         /**
@@ -725,11 +741,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
                     locBuf.flip();
 
-                    deltaStore.writePage(pageId, locBuf);
+                    writePage0(pageId, locBuf);
                 }
                 else {
                     // Direct buffre is needs to be written, associated checkpoint not finished yet.
-                    deltaStore.writePage(pageId, buf);
+                    writePage0(pageId, buf);
 
                     buf.rewind();
                 }
@@ -739,9 +755,54 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             }
         }
 
+        /**
+         * @param pageId Page ID.
+         * @param pageBuf Page buffer to write.
+         * @throws IOException If page writing failed (IO error occurred).
+         */
+        private void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
+            assert fileIo != null : "Delta pages storage is not inited: " + this;
+
+            if (!lock.readLock().tryLock())
+                return;
+
+            try {
+                assert pageBuf.position() == 0;
+                assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
+                    + " should be same with " + ByteOrder.nativeOrder();
+
+                int crc = PageIO.getCrc(pageBuf);
+                int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
+
+                if (log.isDebugEnabled()) {
+                    log.debug("onPageWrite [pageId=" + pageId +
+                        ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
+                        ", part=" + cfgPath.get().toAbsolutePath() +
+                        ", fileSize=" + fileIo.size() +
+                        ", crcBuff=" + crc32 +
+                        ", crcPage=" + crc + ']');
+                }
+
+                pageBuf.rewind();
+
+                // Write buffer to the end of the file.
+                fileIo.writeFully(pageBuf);
+            }
+            finally {
+                lock.readLock().unlock();
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public void close() {
-            U.closeQuiet(deltaStore);
+            lock.writeLock().lock();
+
+            try {
+                U.closeQuiet(fileIo);
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
         }
     }
 

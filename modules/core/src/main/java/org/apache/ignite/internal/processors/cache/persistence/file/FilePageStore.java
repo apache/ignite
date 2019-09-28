@@ -35,7 +35,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.backup.FileDeltaPageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -443,38 +442,6 @@ public class FilePageStore implements PageStore {
         catch (IOException e) {
             throw new StorageException("Failed to update partition file allocated pages " +
                 "[file=" + getFileAbsolutePath() + "]", e);
-        }
-    }
-
-    /**
-     * @param deltaStore Serial page storage to reover current storage with.
-     * @throws IgniteCheckedException If fails.
-     */
-    public void doRecover(FileDeltaPageStore deltaStore) throws IgniteCheckedException {
-        lock.writeLock().lock();
-
-        try {
-            recover = true;
-
-            ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
-                .order(ByteOrder.nativeOrder());
-
-            long pages = deltaStore.pages();
-
-            for (int seq = 0; seq < pages; seq++) {
-                deltaStore.readPage(pageBuf, seq);
-
-                write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
-
-                pageBuf.clear();
-            }
-
-            updateAllocatedPages();
-
-            recover = false;
-        }
-        finally {
-            lock.writeLock().unlock();
         }
     }
 
