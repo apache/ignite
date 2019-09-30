@@ -76,6 +76,9 @@
     <ClCompile Include="..\..\src\cluster\ignite_cluster.cpp">
       <Filter>Code\cluster</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\cache_affinity_impl.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -275,6 +278,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\ignite_product_version.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_affinity_impl.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_affinity.h">
+      <Filter>Code\cache</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

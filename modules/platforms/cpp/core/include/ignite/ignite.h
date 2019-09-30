@@ -26,6 +26,7 @@
 
 #include <ignite/ignite_configuration.h>
 #include <ignite/cache/cache.h>
+#include <ignite/cache/cache_affinity.h>
 #include <ignite/transactions/transactions.h>
 #include <ignite/compute/compute.h>
 #include <ignite/cluster/ignite_cluster.h>
@@ -54,6 +55,26 @@ namespace ignite
          */
         Ignite(impl::IgniteImpl* impl);
         
+        /**
+         * Get affinity service to provide information about data partitioning and distribution.
+         *
+         * @tparam K Cache affinity key type.
+         *
+         * @param cacheName Cache name.
+         * @return Cache data affinity service.
+         */
+        template<typename K>
+        cache::CacheAffinity<K> GetAffinity(const std::string& cacheName)
+        {
+            IgniteError err;
+
+            cache::CacheAffinity<K> ret(impl.Get()->GetAffinity(cacheName, err));
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return ret;
+        }
+
         /**
          * Get Ignite instance name.
          *

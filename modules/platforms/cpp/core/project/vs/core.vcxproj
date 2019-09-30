@@ -191,6 +191,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\cache\cache.h" />
+    <ClInclude Include="..\..\include\ignite\cache\cache_affinity.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_entry.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h" />
@@ -220,6 +221,7 @@
     <ClInclude Include="..\..\include\ignite\ignition.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\bindings.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_affinity_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_argument.h" />
@@ -264,6 +266,7 @@
     <ClCompile Include="..\..\src\ignite.cpp" />
     <ClCompile Include="..\..\src\ignition.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\cache_affinity_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_batch.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp" />

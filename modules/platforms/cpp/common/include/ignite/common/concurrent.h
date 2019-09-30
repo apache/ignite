@@ -45,6 +45,17 @@ namespace ignite
             }
 
             /**
+             * Empty deleter implementation.
+             *
+             * @param obj Object to be deleted.
+             */
+            template<typename T>
+            IGNITE_IMPORT_EXPORT void SharedPointerEmptyDeleter(T* obj)
+            {
+                // No-op.
+            }
+
+            /**
              * Holder of shared pointer data.
              */
             class IGNITE_IMPORT_EXPORT SharedPointerImpl

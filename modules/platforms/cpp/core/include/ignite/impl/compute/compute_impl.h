@@ -48,6 +48,8 @@ namespace ignite
                 {
                     enum Type
                     {
+                        AFFINITY = 1,
+
                         BROADCAST = 2,
 
                         UNICAST = 5,
@@ -63,6 +65,55 @@ namespace ignite
                 ComputeImpl(common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
 
                 /**
+                 * Executes given job asynchronously on the node where data for
+                 * provided affinity key is located (a.k.a. affinity co-location).
+                 *
+                 * @tparam R Call return type. BinaryType should be specialized for
+                 *  the type if it is not primitive. Should not be void. For
+                 *  non-returning methods see Compute::AffinityRun().
+                 * @tparam K Affinity key type.
+                 * @tparam F Compute function type. Should implement ComputeFunc<R>
+                 *  class.
+                 * @param cacheName Cache name to use for affinity co-location.
+                 * @param key Affinity key.
+                 * @param func Compute function to call.
+                 * @return Future that can be used to access computation result once
+                 *  it's ready.
+                 * @throw IgniteError in case of error.
+                 */
+                template<typename R, typename K, typename F>
+                Future<R> AffinityCallAsync(const std::string& cacheName, const K& key, const F& func)
+                {
+                    typedef ComputeJobHolderImpl<F, R> JobType;
+                    typedef SingleJobComputeTaskHolder<F, R> TaskType;
+
+                    return PerformAffinityTask<R, K, F, JobType, TaskType>(cacheName, key, func);
+                }
+
+                /**
+                 * Executes given job asynchronously on the node where data for
+                 * provided affinity key is located (a.k.a. affinity co-location).
+                 *
+                 * @tparam K Affinity key type.
+                 * @tparam F Compute function type. Should implement ComputeFunc<R>
+                 *  class.
+                 * @param cacheName Cache names to use for affinity co-location.
+                 * @param key Affinity key.
+                 * @param action Compute action to call.
+                 * @return Future that can be used to access computation result once
+                 *  it's ready.
+                 * @throw IgniteError in case of error.
+                 */
+                template<typename K, typename F>
+                Future<void> AffinityRunAsync(const std::string& cacheName, const K& key, const F& action)
+                {
+                    typedef ComputeJobHolderImpl<F, void> JobType;
+                    typedef SingleJobComputeTaskHolder<F, void> TaskType;
+
+                    return PerformAffinityTask<void, K, F, JobType, TaskType>(cacheName, key, action);
+                }
+
+                /**
                  * Asyncronuously calls provided ComputeFunc on a node within
                  * the underlying cluster group.
                  *
@@ -72,7 +123,7 @@ namespace ignite
                  *  for the type if it is not primitive. Should not be void. For
                  *  non-returning methods see Compute::Run().
                  * @param func Compute function to call.
-                 * @return Future that can be used to acess computation result
+                 * @return Future that can be used to access computation result
                  *  once it's ready.
                  */
                 template<typename R, typename F>
@@ -113,7 +164,7 @@ namespace ignite
                  *  for the type if it is not primitive. Should not be void. For
                  *  non-returning methods see Compute::Run().
                  * @param func Compute function to call.
-                 * @return Future that can be used to acess computation result
+                 * @return Future that can be used to access computation result
                  *  once it's ready.
                  */
                 template<typename R, typename F>
@@ -132,7 +183,7 @@ namespace ignite
                  * @tparam F Compute function type. Should implement
                  *  ComputeFunc<R> class.
                  * @param func Compute function to call.
-                 * @return Future that can be used to acess computation result
+                 * @return Future that can be used to access computation result
                  *  once it's ready.
                  */
                 template<typename F, bool>
@@ -157,7 +208,7 @@ namespace ignite
                  *
                  * @param operation Operation type.
                  * @param func Function.
-                 * @return Future that can be used to acess computation result
+                 * @return Future that can be used to access computation result
                  *  once it's ready.
                  */
                 template<typename R, typename F, typename J, typename T>
@@ -214,6 +265,60 @@ namespace ignite
                     std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
 
                     return cancelable;
+                }
+
+                /**
+                 * Perform job in case of cache affinity.
+                 *
+                 * @tparam R Call return type. BinaryType should be specialized for
+                 *  the type if it is not primitive. Should not be void. For
+                 *  non-returning methods see Compute::AffinityRun().
+                 * @tparam K Affinity key type.
+                 * @tparam F Compute function type. Should implement
+                 *  ComputeFunc<R> class.
+                 * @tparam J Job type.
+                 * @tparam T Task type.
+                 * @param cacheName Cache name to use for affinity co-location.
+                 * @param key Affinity key.
+                 * @param func Function.
+                 * @return Future that can be used to access computation result
+                 *  once it's ready.
+                 */
+                template<typename R, typename K, typename F, typename J, typename T>
+                Future<R> PerformAffinityTask(const std::string& cacheName, const K& key, const F& func)
+                {
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(mem.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    common::concurrent::SharedPointer<ComputeJobHolder> job(new J(func));
+
+                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
+
+                    T* taskPtr = new T(jobHandle);
+                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
+
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    writer.WriteInt64(taskHandle);
+                    writer.WriteInt32(1);
+                    writer.WriteInt64(jobHandle);
+                    writer.WriteObject<F>(func);
+                    writer.WriteString(cacheName);
+                    writer.WriteObject<K>(key);
+
+                    out.Synchronize();
+
+                    IgniteError err;
+                    jobject target = InStreamOutObject(Operation::AFFINITY, *mem.Get(), err);
+                    IgniteError::ThrowIfNeeded(err);
+
+                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+
+                    common::Promise<R>& promise = taskPtr->GetPromise();
+                    promise.SetCancelTarget(cancelable);
+
+                    return promise.GetFuture();
                 }
 
                 IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);

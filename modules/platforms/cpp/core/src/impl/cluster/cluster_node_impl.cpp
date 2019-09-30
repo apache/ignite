@@ -55,63 +55,63 @@ namespace ignite
                 // No-op.
             }
 
-            std::vector<std::string> ClusterNodeImpl::GetAddresses()
+            std::vector<std::string> ClusterNodeImpl::GetAddresses() const
             {
                 return *addrs.Get();
             }
 
-            bool ClusterNodeImpl::IsAttributeSet(std::string name)
+            bool ClusterNodeImpl::IsAttributeSet(std::string name) const
             {
                 return attrs.Get()->find(name) != attrs.Get()->end() ? true : false;
             }
 
-            std::vector<std::string> ClusterNodeImpl::GetAttributes()
+            std::vector<std::string> ClusterNodeImpl::GetAttributes() const
             {
                 std::vector<std::string> ret;
 
-                for (std::map<std::string, int32_t>::iterator it = attrs.Get()->begin();
+                for (std::map<std::string, int32_t>::const_iterator it = attrs.Get()->begin();
                     it != attrs.Get()->end(); ++it)
                     ret.push_back(it->first);
 
                 return ret;
             }
 
-            std::string ClusterNodeImpl::GetConsistentId()
+            std::string ClusterNodeImpl::GetConsistentId() const
             {
                 return *consistentId.Get();
             }
 
-            std::vector<std::string> ClusterNodeImpl::GetHostNames()
+            std::vector<std::string> ClusterNodeImpl::GetHostNames() const
             {
                 return *hosts.Get();
             }
 
-            Guid ClusterNodeImpl::GetId()
+            Guid ClusterNodeImpl::GetId() const
             {
                 return id;
             }
 
-            bool ClusterNodeImpl::IsClient()
+            bool ClusterNodeImpl::IsClient() const
             {
                 return isClient;
             }
 
-            bool ClusterNodeImpl::IsDaemon()
+            bool ClusterNodeImpl::IsDaemon() const
             {
                 return isDaemon;
             }
 
-            bool ClusterNodeImpl::IsLocal()
+            bool ClusterNodeImpl::IsLocal() const
             {
                 return isLocal;
             }
 
-            long ClusterNodeImpl::GetOrder()
+            long ClusterNodeImpl::GetOrder() const
             {
                 return order;
             }
 
-            const IgniteProductVersion& ClusterNodeImpl::GetVersion()
+            const IgniteProductVersion& ClusterNodeImpl::GetVersion() const
             {
                 return *ver.Get();
             }
