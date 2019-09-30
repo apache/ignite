@@ -198,8 +198,10 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, GridQueryProperty> properties() {
+    /**
+     * @return Properties.
+     */
+    public Map<String, GridQueryProperty> properties() {
         return props;
     }
 
