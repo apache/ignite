@@ -18,8 +18,7 @@ package org.apache.ignite.internal.util.io;
 
 import java.io.File;
 import java.io.IOException;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import java.nio.channels.FileChannel;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -30,50 +29,32 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * General files manipulation utilities.
  */
 public class GridFileUtils {
-    /** Copy buffer size. */
-    private static final int COPY_BUFFER_SIZE = 1024 * 1024;
-
     /**
      * Copy file
      *
-     * @param src Source.
-     * @param dst Dst.
-     * @param maxBytes Max bytes.
-     */
-    public static void copy(FileIO src, FileIO dst, long maxBytes) throws IOException {
-        assert maxBytes >= 0;
-
-        long bytes = Math.min(src.size(), maxBytes);
-
-        byte[] buf = new byte[COPY_BUFFER_SIZE];
-
-        while (bytes > 0)
-            bytes -= dst.writeFully(buf, 0, src.readFully(buf, 0, (int)Math.min(COPY_BUFFER_SIZE, bytes)));
-
-        dst.force();
-    }
-
-    /**
-     * Copy file
-     *
-     * @param srcFactory Source factory.
-     * @param src Source.
-     * @param dstFactory Dst factory.
-     * @param dst Dst.
-     * @param maxBytes Max bytes.
+     * @param src Source file.
+     * @param dst Destination file.
+     * @param maxBytes Number of bytes to copy from source to destination.
      */
     public static void copy(
-            FileIOFactory srcFactory,
             File src,
-            FileIOFactory dstFactory,
             File dst,
             long maxBytes
     ) throws IOException {
         boolean err = true;
 
-        try (FileIO dstIO = dstFactory.create(dst, CREATE, TRUNCATE_EXISTING, WRITE)) {
-            try (FileIO srcIO = srcFactory.create(src, READ)) {
-                copy(srcIO, dstIO, maxBytes);
+        try (FileChannel dstChannel = FileChannel.open(dst.toPath(), CREATE, TRUNCATE_EXISTING, WRITE)) {
+            try (FileChannel srcChannel = FileChannel.open(src.toPath(), READ)) {
+                long limit = Math.min(srcChannel.size(), maxBytes);
+                long position = 0;
+                long writtenBytes;
+
+                while (position < limit) {
+                    writtenBytes = srcChannel.transferTo(position, limit, dstChannel);
+
+                    position += writtenBytes;
+                    limit -= writtenBytes;
+                }
 
                 err = false;
             }
