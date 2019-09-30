@@ -46,6 +46,11 @@ namespace ignite
             return ClusterGroup(impl.Get()->ForClientNodes(cacheName));
         }
 
+        ClusterGroup ClusterGroup::ForClients()
+        {
+            return ClusterGroup(impl.Get()->ForClients());
+        }
+
         ClusterGroup ClusterGroup::ForDaemons()
         {
             return ClusterGroup(impl.Get()->ForDaemons());
@@ -59,6 +64,16 @@ namespace ignite
         ClusterGroup ClusterGroup::ForHost(ClusterNode node)
         {
             return ClusterGroup(impl.Get()->ForHost(node));
+        }
+
+        ClusterGroup ClusterGroup::ForHost(std::string hostName)
+        {
+            return ClusterGroup(impl.Get()->ForHost(hostName));
+        }
+
+        ClusterGroup ClusterGroup::ForHosts(std::vector<std::string> hostNames)
+        {
+            return ClusterGroup(impl.Get()->ForHosts(hostNames));
         }
 
         ClusterGroup ClusterGroup::ForNode(ClusterNode node)
@@ -84,6 +99,11 @@ namespace ignite
         ClusterGroup ClusterGroup::ForOldest()
         {
             return ClusterGroup(impl.Get()->ForOldest());
+        }
+
+        ClusterGroup ClusterGroup::ForPredicate(IgnitePredicate<ClusterNode>* pred)
+        {
+            return ClusterGroup(impl.Get()->ForPredicate(pred));
         }
 
         ClusterGroup ClusterGroup::ForRandom()
@@ -124,6 +144,11 @@ namespace ignite
         std::vector<ClusterNode> ClusterGroup::GetNodes()
         {
             return impl.Get()->GetNodes();
+        }
+
+        IgnitePredicate<ClusterNode>* ClusterGroup::GetPredicate()
+        {
+            return impl.Get()->GetPredicate();
         }
 
         SP_ClusterGroupImpl ClusterGroup::GetImpl()

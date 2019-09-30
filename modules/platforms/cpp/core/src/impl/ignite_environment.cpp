@@ -101,6 +101,12 @@ namespace ignite
             std::map<Guid, SP_ClusterNodeImpl> nodes;
 
         public:
+            ClusterNodesHolder() :
+                nodesLock()
+            {
+                // No-op.
+            }
+
             void AddNode(SP_ClusterNodeImpl node)
             {
                 CsLockGuard mtx(nodesLock);

@@ -234,8 +234,8 @@ BOOST_AUTO_TEST_CASE(IgniteGetOrder)
 
     BOOST_REQUIRE(nodes.size() == 2);
 
-    long order1 = nodes[0].GetOrder();
-    long order2 = nodes[1].GetOrder();
+    int64_t order1 = nodes[0].GetOrder();
+    int64_t order2 = nodes[1].GetOrder();
 
     BOOST_REQUIRE(order1 > 0 && order2 > 0);
 }

@@ -24,7 +24,7 @@ namespace ignite
 {
     namespace cluster
     {
-        IgniteCluster::IgniteCluster(SharedPointer<ignite::impl::cluster::IgniteClusterImpl> impl) :
+        IgniteCluster::IgniteCluster(SharedPointer<IgniteClusterImpl> impl) :
             impl(impl)
         {
             // No-op.
@@ -55,12 +55,12 @@ namespace ignite
             return impl.Get()->IsWalEnabled(cacheName);
         }
 
-        void IgniteCluster::SetBaselineTopologyVersion(long topVer)
+        void IgniteCluster::SetBaselineTopologyVersion(int64_t topVer)
         {
             impl.Get()->SetBaselineTopologyVersion(topVer);
         }
 
-        void IgniteCluster::SetTxTimeoutOnPartitionMapExchange(long timeout)
+        void IgniteCluster::SetTxTimeoutOnPartitionMapExchange(int64_t timeout)
         {
             impl.Get()->SetTxTimeoutOnPartitionMapExchange(timeout);
         }
@@ -70,19 +70,19 @@ namespace ignite
             return impl.Get()->PingNode(nid);
         }
 
-        std::vector<ClusterNode> IgniteCluster::GetTopology(long version)
+        std::vector<ClusterNode> IgniteCluster::GetTopology(int64_t version)
         {
             return impl.Get()->GetTopology(version);
         }
 
-        long IgniteCluster::GetTopologyVersion()
+        int64_t IgniteCluster::GetTopologyVersion()
         {
             return impl.Get()->GetTopologyVersion();
         }
 
-        cluster::ClusterGroup IgniteCluster::AsClusterGroup()
+        ClusterGroup IgniteCluster::AsClusterGroup()
         {
-            return cluster::ClusterGroup(impl.Get()->AsClusterGroup());
+            return ClusterGroup(impl.Get()->AsClusterGroup());
         }
     }
 }

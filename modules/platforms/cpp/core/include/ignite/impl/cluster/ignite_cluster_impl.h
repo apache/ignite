@@ -93,14 +93,14 @@ namespace ignite
                  *
                  * @param topVer Topology version.
                  */
-                void SetBaselineTopologyVersion(long topVer);
+                void SetBaselineTopologyVersion(int64_t topVer);
 
                 /**
                  * Set transaction timeout on partition map exchange.
                  *
                  * @param timeout Timeout in milliseconds.
                  */
-                void SetTxTimeoutOnPartitionMapExchange(long timeout);
+                void SetTxTimeoutOnPartitionMapExchange(int64_t timeout);
 
                 /**
                  * Ping node.
@@ -116,14 +116,14 @@ namespace ignite
                  * @param version Topology version.
                  * @return Nodes collection for the requested topology version.
                  */
-                std::vector<ignite::cluster::ClusterNode> GetTopology(long version);
+                std::vector<ignite::cluster::ClusterNode> GetTopology(int64_t version);
 
                 /**
                  * Get current topology version.
                  *
                  * @return Current topology version.
                  */
-                long GetTopologyVersion();
+                int64_t GetTopologyVersion();
 
                 /**
                  * Get cluster group consisting of all cluster nodes.
