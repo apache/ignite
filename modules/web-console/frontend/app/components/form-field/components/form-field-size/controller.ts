@@ -58,7 +58,7 @@ export default class PCFormFieldSizeController<T> implements IInputErrorNotifier
         ],
         seconds: [
             {label: 'ns', translationId: 'scale.time.nanosecond.short', value: 1 / 1000},
-            {label: 'ms', translationId: 'scale.time.milisecond.short', value: 1},
+            {label: 'ms', translationId: 'scale.time.millisecond.short', value: 1},
             {label: 's', translationId: 'scale.time.second.short', value: 1000}
         ],
         time: [

@@ -23,7 +23,7 @@ export default class IgniteUiGrid {
     /** @type {import('ui-grid').IGridOptions} */
     grid;
 
-    /** @type */
+    /** @type {import('ui-grid').IGridApi} */
     gridApi;
 
     /** @type */

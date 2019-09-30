@@ -4,7 +4,7 @@
             "nanosecond": {
                 "short": "ns"
             },
-            "milisecond": {
+            "millisecond": {
                 "short": "ms"
             },
             "second": {

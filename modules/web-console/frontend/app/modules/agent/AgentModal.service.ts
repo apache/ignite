@@ -15,24 +15,30 @@
  */
 
 import angular from 'angular';
+import {StateService} from '@uirouter/angularjs';
 import _ from 'lodash';
 import templateUrl from 'views/templates/agent-download.tpl.pug';
 import {User, UserService} from 'app/modules/user/User.service';
 import {tap} from 'rxjs/operators';
+import {default as MessagesFactory} from '../../services/Messages.service';
 
 export default class AgentModal {
     static $inject = ['User', '$state', '$modal', 'IgniteMessages'];
 
-    /**
-     * @param {import('@uirouter/angularjs').StateService} $state
-     * @param {mgcrea.ngStrap.modal.IModalService} $modal
-     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
-     */
-    constructor(private User: UserService, $state, $modal, Messages) {
-        const self = this;
+    status: string;
+    backText: string;
 
-        this.$state = $state;
-        this.Messages = Messages;
+    private modal: mgcrea.ngStrap.modal.IModal;
+    private backState: string;
+    private user: User;
+
+    constructor(
+        private User: UserService,
+        private $state: StateService,
+        $modal: mgcrea.ngStrap.modal.IModalService,
+        private Messages: ReturnType<typeof MessagesFactory>
+    ) {
+        const self = this;
 
         // Pre-fetch modal dialogs.
         this.modal = $modal({
@@ -46,8 +52,6 @@ export default class AgentModal {
 
         User.current$.pipe(tap((user) => this.user = user)).subscribe();
     }
-
-    user: User;
 
     hide() {
         this.modal.hide();
@@ -67,11 +71,7 @@ export default class AgentModal {
             this.$state.go(this.backState);
     }
 
-    /**
-     * @param {String} backState
-     * @param {String} [backText]
-     */
-    agentDisconnected(backText, backState) {
+    agentDisconnected(backText: string, backState?: string) {
         this.backText = backText;
         this.backState = backState;
 
@@ -80,11 +80,7 @@ export default class AgentModal {
         this.modal.$promise.then(() => this.modal.show());
     }
 
-    /**
-     * @param {String} backState
-     * @param {String} [backText]
-     */
-    clusterDisconnected(backText, backState) {
+    clusterDisconnected(backText: string, backState?: string) {
         this.backText = backText;
         this.backState = backState;
 
@@ -94,6 +90,6 @@ export default class AgentModal {
     }
 
     get securityToken() {
-        return this.user.becameToken || this.user.token;
+        return this.user.token;
     }
 }
