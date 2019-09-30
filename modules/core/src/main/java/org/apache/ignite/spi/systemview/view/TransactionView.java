@@ -266,15 +266,22 @@ public class TransactionView {
         if (sz == 0)
             return null;
 
-        SB b = new SB();
+        //GridIntList is not synchronized. If we fail while iterating just ignore.
+        try {
+            SB b = new SB();
 
-        for (int i = 0; i < sz; i++) {
-            if (i != 0)
-                b.a(',');
+            for (int i = 0; i < sz; i++) {
+                if (i != 0)
+                    b.a(',');
 
-            b.a(cacheIds.get(i));
+                b.a(cacheIds.get(i));
+            }
+
+            return b.toString();
+        }
+        catch (Throwable e) {
+            return null;
         }
 
-        return b.toString();
     }
 }
