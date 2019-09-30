@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -148,7 +147,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final Thread sesTimeoutCheckerThread;
 
     /** Listeners of a REST command processing completion. */
-    private final Queue<BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>>> lsnrs =
+    private final Queue<BiConsumer<GridRestRequest, RestCommandProcessingResult>> lsnrs =
         new ConcurrentLinkedQueue<>();
 
     /** Protocol handler. */
@@ -160,7 +159,16 @@ public class GridRestProcessor extends GridProcessorAdapter {
         @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
             IgniteInternalFuture<GridRestResponse> fut = handleAsync0(req);
 
-            fut.listen(f -> notifyCommandListeners(req, f));
+            fut.listen(f -> {
+                try {
+                    GridRestResponse resp = fut.get();
+
+                    notifyCommandListeners(req, resp, null);
+                }
+                catch (IgniteCheckedException e) {
+                    notifyCommandListeners(req, null, e);
+                }
+            });
 
             return fut;
         }
@@ -405,7 +413,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param lsnr Listener that is notified on each processed REST command.
      * @throws NullPointerException If specified listener is {@code null}.
      */
-    public void addCommandListener(BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>> lsnr) {
+    public void addCommandListener(BiConsumer<GridRestRequest, RestCommandProcessingResult> lsnr) {
         A.notNull(lsnr, "lsnr");;
 
         lsnrs.add(lsnr);
@@ -419,35 +427,29 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @throws NullPointerException If specified listener is {@code null}.
      */
 
-    public boolean removeCommandListener(
-        BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>> lsnr) {
+    public boolean removeCommandListener(BiConsumer<GridRestRequest, RestCommandProcessingResult> lsnr) {
         A.notNull(lsnr, "lsnr");
 
         return lsnrs.remove(lsnr);
     }
 
-
     /**
-     * Notifies all REST listeners of the receipt of a REST request.
+     * Notifies all REST command listeners.
      *
      * @param req Received REST request.
-     * @param fut Result of REST request processing.
+     * @param resp Result of REST request processing.
+     * @param err Error occured while REST request processing.
      */
-    private void notifyCommandListeners(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
-        GridRestResponse resp = null;
+    private void notifyCommandListeners(GridRestRequest req, GridRestResponse resp, IgniteCheckedException err) {
+        lsnrs.forEach(lsnr -> lsnr.accept(req, new RestCommandProcessingResult() {
+            @Override public IgniteCheckedException error() {
+                return err;
+            }
 
-        IgniteCheckedException cmdExecutionError = null;
-
-        try {
-            resp = fut.get();
-        }
-        catch (IgniteCheckedException e) {
-            cmdExecutionError = e;
-        }
-
-        T2<GridRestResponse, IgniteCheckedException> res = new T2<>(resp, cmdExecutionError);
-
-        lsnrs.forEach(lsnr -> lsnr.accept(req, res));
+            @Override public GridRestResponse result() {
+                return resp;
+            }
+        }));
     }
 
     /**
@@ -1247,5 +1249,19 @@ public class GridRestProcessor extends GridProcessorAdapter {
         @Override public String toString() {
             return S.toString(Session.class, this);
         }
+    }
+
+    /** Comprehensive result of REST command processing. */
+    public static interface RestCommandProcessingResult {
+        /**
+         * @return Result of processing the rest command if it completed successfully.
+         */
+        public GridRestResponse result();
+
+        /**
+         * @return Error occured while REST command processing.
+         */
+        public IgniteCheckedException error();
+
     }
 }

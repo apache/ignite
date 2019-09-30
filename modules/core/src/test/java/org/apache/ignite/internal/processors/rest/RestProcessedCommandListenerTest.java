@@ -23,7 +23,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.processors.rest.GridRestProcessor.RestCommandProcessingResult;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,7 +48,8 @@ public class RestProcessedCommandListenerTest extends GridCommonAbstractTest {
     private static final int BINARY_PORT = 11212;
 
     /** */
-    private static final Queue<GridRestRequest> LISTENED_CMDS = new ConcurrentLinkedQueue<>();
+    private static final Queue<T2<GridRestRequest, RestCommandProcessingResult>> LISTENED_CMDS =
+        new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -67,8 +68,8 @@ public class RestProcessedCommandListenerTest extends GridCommonAbstractTest {
     public void testRestCommandListener() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        BiConsumer<GridRestRequest, T2<GridRestResponse, IgniteCheckedException>> lsnr =
-            (req, res) -> LISTENED_CMDS.add(req);
+        BiConsumer<GridRestRequest, RestCommandProcessingResult> lsnr =
+            (req, res) -> LISTENED_CMDS.add(new T2<>(req, res));
 
         ignite.context().rest().addCommandListener(lsnr);
 
@@ -103,6 +104,7 @@ public class RestProcessedCommandListenerTest extends GridCommonAbstractTest {
             Arrays.stream(cmds)
                 .allMatch(cmd ->
                     LISTENED_CMDS.stream()
+                        .map(T2::get1)
                         .map(GridRestRequest::command)
                         .collect(Collectors.toList())
                         .contains(cmd)),
