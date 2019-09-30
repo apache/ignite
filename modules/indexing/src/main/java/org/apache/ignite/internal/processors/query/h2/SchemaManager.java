@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewQuer
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewRunningQueries;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewSchemas;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
+import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,6 +73,9 @@ import org.jetbrains.annotations.Nullable;
  * Schema manager. Responsible for all manipulations on schema objects.
  */
 public class SchemaManager {
+    /** */
+    private final SchemaChangeListener lsnr;
+
     /** Connection manager. */
     private final ConnectionManager connMgr;
 
@@ -98,14 +102,14 @@ public class SchemaManager {
 
     /**
      * Constructor.
-     *
-     * @param ctx Kernal context.
+     *  @param ctx Kernal context.
      * @param connMgr Connection manager.
      */
     public SchemaManager(GridKernalContext ctx, ConnectionManager connMgr) {
         this.ctx = ctx;
         this.connMgr = connMgr;
 
+        lsnr = schemaChangeListener(ctx);
         log = ctx.log(SchemaManager.class);
     }
 
@@ -261,6 +265,7 @@ public class SchemaManager {
             conn = connMgr.connectionForThread().connection(schema.schemaName());
 
             GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
+            lsnr.onSqlTypeCreate(schemaName, type, cacheInfo);
 
             schema.add(tblDesc);
 
@@ -297,6 +302,7 @@ public class SchemaManager {
                     tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
                     dropTable(tbl);
+                    lsnr.onSqlTypeDrop(schemaName, tbl.type(), tbl.cacheInfo());
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -362,6 +368,7 @@ public class SchemaManager {
      */
     private void createSchema0(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
+        lsnr.onSchemaCreate(schema);
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -526,6 +533,7 @@ public class SchemaManager {
      */
     private void dropSchema(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
+        lsnr.onSchemaDrop(schema);
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
@@ -765,5 +773,60 @@ public class SchemaManager {
         }
 
         return null;
+    }
+
+    /** */
+    private SchemaChangeListener schemaChangeListener(GridKernalContext ctx) {
+        List<SchemaChangeListener> subscribers = new ArrayList<>(ctx.internalSubscriptionProcessor().getSchemaChangeSubscribers());
+
+        if (F.isEmpty(subscribers))
+            return new NoOpSchemaChangeListener();
+
+        return subscribers.size() == 1 ? subscribers.get(0) : new CompoundSchemaChangeListener(subscribers);
+    }
+
+    /** */
+    private static final class NoOpSchemaChangeListener implements SchemaChangeListener {
+        /** {@inheritDoc} */
+        @Override public void onSchemaCreate(String schemaName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSchemaDrop(String schemaName) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {}
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {}
+    }
+
+    /** */
+    private static final class CompoundSchemaChangeListener implements SchemaChangeListener {
+        /** */
+        private final List<SchemaChangeListener> lsnrs;
+
+        private CompoundSchemaChangeListener(List<SchemaChangeListener> lsnrs) {
+            this.lsnrs = lsnrs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSchemaCreate(String schemaName) {
+            lsnrs.forEach(lsnr -> lsnr.onSchemaCreate(schemaName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSchemaDrop(String schemaName) {
+            lsnrs.forEach(lsnr -> lsnr.onSchemaCreate(schemaName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeCreate(schemaName, typeDescriptor, cacheInfo));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDrop(schemaName, typeDescriptor, cacheInfo));
+        }
     }
 }
