@@ -463,7 +463,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 }
             }, 5, "xxx");
 
-            boolean res = waitForCondition(() -> systemView(TXS_MON_LIST).size() == 5, 5_000L);
+            boolean res = waitForCondition(() -> systemView(TXS_MON_LIST).size() == 5, 10_000L);
 
             assertTrue(res);
 
@@ -499,7 +499,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 }
             }, 5, "xxx");
 
-            res = waitForCondition(() -> systemView(TXS_MON_LIST).size() == 10, 5_000L);
+            res = waitForCondition(() -> systemView(TXS_MON_LIST).size() == 10, 10_000L);
 
             assertTrue(res);
 
@@ -532,7 +532,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             latch.countDown();
         }
 
-        boolean res = waitForCondition(() -> systemView(TXS_MON_LIST).isEmpty(), 5_000L);
+        boolean res = waitForCondition(() -> systemView(TXS_MON_LIST).isEmpty(), 10_000L);
 
         assertTrue(res);
     }

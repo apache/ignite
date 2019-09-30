@@ -495,7 +495,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     }
                 }, 5, "xxx");
 
-                boolean res = waitForCondition(() -> txs.size() == 5, 5_000L);
+                boolean res = waitForCondition(() -> txs.size() == 5, 10_000L);
 
                 assertTrue(res);
 
@@ -518,7 +518,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertFalse(txv.internal());
                 assertEquals(0, txv.timeout());
                 assertTrue(txv.startTime() <= System.currentTimeMillis());
-                assertEquals(2, txv.keysCount());
                 assertEquals(String.valueOf(cacheId(cache1.getName())), txv.cacheIds());
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
@@ -534,7 +533,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     }
                 }, 5, "xxx");
 
-                res = waitForCondition(() -> txs.size() == 10, 5_000L);
+                res = waitForCondition(() -> txs.size() == 10, 10_000L);
 
                 assertTrue(res);
 
@@ -559,7 +558,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     assertFalse(tx.internal());
                     assertEquals(0, tx.timeout());
                     assertTrue(tx.startTime() <= System.currentTimeMillis());
-                    assertEquals(3, tx.keysCount());
 
                     String s1 = cacheId(cache1.getName()) + "," + cacheId(cache2.getName());
                     String s2 = cacheId(cache2.getName()) + "," + cacheId(cache1.getName());
@@ -571,7 +569,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 latch.countDown();
             }
 
-            boolean res = waitForCondition(() -> txs.size() == 0, 5_000L);
+            boolean res = waitForCondition(() -> txs.size() == 0, 10_000L);
 
             assertTrue(res);
         }
