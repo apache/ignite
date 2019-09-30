@@ -765,18 +765,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647"
             ));
 
-            for (String col : actualSystemCols) {
-                if (!expectedCols.contains(col))
-                    System.out.println(col);
-            }
-
-            System.out.println("==================");
-
-            for (String col : expectedCols) {
-                if (!actualSystemCols.contains(col))
-                    System.out.println(col);
-            }
-
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }
