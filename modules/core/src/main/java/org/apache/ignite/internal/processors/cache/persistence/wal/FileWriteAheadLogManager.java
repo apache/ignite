@@ -1986,7 +1986,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         switchSegmentRecordOffset.set((int)segIdx, 0);
 
                         if (offs < origFile.length()) {
-                            GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
+                            GridFileUtils.copy(origFile, dstTmpFile, offs);
 
                             copied = true;
                         }
