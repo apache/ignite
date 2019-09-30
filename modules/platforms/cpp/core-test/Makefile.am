@@ -53,6 +53,7 @@ ignite_tests_LDFLAGS = \
 	-rdynamic
 
 ignite_tests_SOURCES = \
+	src/affinity_test.cpp \
 	src/reference_test.cpp \
 	src/bits_test.cpp \
 	src/binary_identity_resolver_test.cpp \

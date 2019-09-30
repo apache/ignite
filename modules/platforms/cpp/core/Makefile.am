@@ -63,6 +63,7 @@ libignite_la_SOURCES = \
 	src/impl/cache/query/continuous/continuous_query_handle_impl.cpp \
 	src/impl/cache/query/query_impl.cpp \
 	src/impl/cache/cache_impl.cpp \
+	src/impl/cache/cache_affinity_impl.cpp \
 	src/impl/cache/query/query_batch.cpp \
 	src/impl/interop/interop_external_memory.cpp \
 	src/impl/interop/interop_target.cpp \

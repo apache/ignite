@@ -146,8 +146,8 @@ namespace ignite
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
 
-				jclass c_PlatformUtils;
-				jmethodID m_PlatformUtils_getFullStackTrace;
+                jclass c_PlatformUtils;
+                jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -163,7 +163,7 @@ namespace ignite
                  * Write error information.
                  */
                 bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen,
-					char** stackTrace, int* stackTraceLen);
+                    char** stackTrace, int* stackTraceLen);
             };
 
             /**

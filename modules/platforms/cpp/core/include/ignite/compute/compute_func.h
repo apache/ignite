@@ -24,6 +24,7 @@
 
 namespace ignite
 {
+    class Ignite;
     class IgniteBinding;
 
     namespace compute
@@ -39,10 +40,21 @@ namespace ignite
         template<typename R>
         class ComputeFunc
         {
+            template<typename TF, typename TR>
+            friend class ignite::impl::compute::ComputeJobHolderImpl;
             friend class ignite::IgniteBinding;
 
             typedef R ReturnType;
         public:
+            /**
+             * Constructor.
+             */
+            ComputeFunc() :
+                ignite(0)
+            {
+                // No-op.
+            }
+
             /**
              * Destructor.
              */
@@ -57,6 +69,34 @@ namespace ignite
              * @return Computation result.
              */
             virtual R Call() = 0;
+
+        protected:
+            /*
+             * Get ignite node pointer.
+             * Return pointer to the node on which this function was called.
+             *
+             * @return Ignite node pointer.
+             */
+            Ignite& GetIgnite()
+            {
+                assert(ignite != 0);
+
+                return *ignite;
+            }
+
+        private:
+            /*
+             * Set ignite node pointer.
+             *
+             * @param ignite Ignite node pointer.
+             */
+            void SetIgnite(Ignite* ignite)
+            {
+                this->ignite = ignite;
+            }
+
+            /** Ignite node pointer. */
+            Ignite* ignite;
         };
     }
 }

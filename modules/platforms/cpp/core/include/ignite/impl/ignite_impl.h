@@ -24,6 +24,7 @@
 #include <ignite/cluster/cluster_group.h>
 
 #include <ignite/impl/ignite_environment.h>
+#include <ignite/impl/cache/cache_affinity_impl.h>
 #include <ignite/impl/cache/cache_impl.h>
 #include <ignite/impl/transactions/transactions_impl.h>
 #include <ignite/impl/cluster/cluster_group_impl.h>
@@ -44,6 +45,7 @@ namespace ignite
             typedef common::concurrent::SharedPointer<cluster::IgniteClusterImpl> SP_IgniteClusterImpl;
             typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
             typedef common::concurrent::SharedPointer<IgniteBindingImpl> SP_IgniteBindingImpl;
+            typedef common::concurrent::SharedPointer<cache::CacheAffinityImpl> SP_CacheAffinityImpl;
         public:
             /**
              * Constructor used to create new instance.
@@ -52,6 +54,14 @@ namespace ignite
              */
             IgniteImpl(SP_IgniteEnvironment env);
 
+            /**
+             * Get affinity service to provide information about data partitioning and distribution.
+             *
+             * @param name Cache name.
+             * @param err Error.
+             * @return Pointer to cache affinity implementation.
+             */
+            SP_CacheAffinityImpl GetAffinity(const std::string& cacheName, IgniteError& err);
             /**
              * Get name of the Ignite.
              *

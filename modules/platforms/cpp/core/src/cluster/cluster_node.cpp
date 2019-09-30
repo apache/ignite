@@ -29,57 +29,57 @@ namespace ignite
             // No-op.
         }
 
-        std::vector<std::string> ClusterNode::GetAddresses()
+        std::vector<std::string> ClusterNode::GetAddresses() const
         {
             return impl.Get()->GetAddresses();
         }
 
-        std::string ClusterNode::GetConsistentId()
+        std::string ClusterNode::GetConsistentId() const
         {
             return impl.Get()->GetConsistentId();
         }
 
-        std::vector<std::string> ClusterNode::GetHostNames()
+        std::vector<std::string> ClusterNode::GetHostNames() const
         {
             return impl.Get()->GetHostNames();
         }
 
-        bool ClusterNode::IsAttributeSet(std::string name)
+        bool ClusterNode::IsAttributeSet(std::string name) const
         {
             return impl.Get()->IsAttributeSet(name);
         }
 
-        std::vector<std::string> ClusterNode::GetAttributes()
+        std::vector<std::string> ClusterNode::GetAttributes() const
         {
             return impl.Get()->GetAttributes();
         }
 
-        Guid ClusterNode::GetId()
+        Guid ClusterNode::GetId() const
         {
             return impl.Get()->GetId();
         }
 
-        bool ClusterNode::IsClient()
+        bool ClusterNode::IsClient() const
         {
             return impl.Get()->IsClient();
         }
 
-        bool ClusterNode::IsDaemon()
+        bool ClusterNode::IsDaemon() const
         {
             return impl.Get()->IsDaemon();
         }
 
-        bool ClusterNode::IsLocal()
+        bool ClusterNode::IsLocal() const
         {
             return impl.Get()->IsLocal();
         }
 
-        long ClusterNode::GetOrder()
+        long ClusterNode::GetOrder() const
         {
             return impl.Get()->GetOrder();
         }
 
-        const IgniteProductVersion& ClusterNode::GetVersion()
+        const IgniteProductVersion& ClusterNode::GetVersion() const
         {
             return impl.Get()->GetVersion();
         }

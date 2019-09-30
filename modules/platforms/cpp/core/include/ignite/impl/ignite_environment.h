@@ -29,6 +29,9 @@
 
 namespace ignite
 {
+    /* Forward declaration. */
+    class Ignite;
+
     namespace impl
     {
         /* Forward declarations. */
@@ -38,7 +41,6 @@ namespace ignite
         namespace cluster {
             class ClusterNodeImpl;
         }
-        
 
         /**
          * Defines environment in which Ignite operates.
@@ -292,6 +294,13 @@ namespace ignite
             int32_t ComputeTaskJobResult(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
+             * Get pointer to ignite node.
+             *
+             * @return Pointer to ignite node.
+             */
+            ignite::Ignite* GetIgnite();
+
+            /**
              * InLongOutLong callback.
              * Allow access to private nodes member.
              *
@@ -334,6 +343,9 @@ namespace ignite
 
             /** Cluster nodes. */
             common::concurrent::SharedPointer<ClusterNodesHolder> nodes;
+
+            /** Ignite node. */
+            ignite::Ignite* ignite;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

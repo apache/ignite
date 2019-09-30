@@ -77,6 +77,16 @@ namespace ignite
                  * Internal out operation.
                  *
                  * @param opType Operation type.
+                 * @param inMem Input memory.
+                 * @param err Error.
+                 * @return Result.
+                 */
+                bool OutOp(int32_t opType, InteropMemory& inMem, IgniteError& err);
+
+                /**
+                 * Internal out operation.
+                 *
+                 * @param opType Operation type.
                  * @param inOp Input.
                  * @param err Error.
                  * @return Result.
@@ -142,6 +152,16 @@ namespace ignite
                  * @return Operation result.
                  */
                 OperationResult::Type InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
+
+                /**
+                 * In stream out long operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param inOp Input opeartion.
+                 * @param err Error.
+                 * @return Operation result or long value.
+                 */
+                int64_t InStreamOutLong(int32_t opType, InputOperation& inOp, IgniteError& err);
 
                 /**
                  * In stream out object operation.
