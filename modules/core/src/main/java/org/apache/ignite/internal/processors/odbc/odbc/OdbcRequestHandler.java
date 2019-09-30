@@ -338,8 +338,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
         qry.setArgs(args);
-        qry.setTimeout(timeout, TimeUnit.SECONDS);
         qry.setAutoCommit(autoCommit);
+
+        if (timeout >= 0) {
+            qry.setTimeout(timeout, TimeUnit.SECONDS);
+        }
 
         return qry;
     }
