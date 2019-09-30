@@ -259,7 +259,7 @@ class IgniteRDD[K, V] (
      * @param f Transformation function.
      * @param overwrite Boolean flag indicating whether the call on this method should overwrite existing
      *      values in Ignite cache.
-      * @param skipStore Sets flag indicating that write-through behavior should be disabled for data streaming.
+     * @param skipStore Sets flag indicating that write-through behavior should be disabled for data streaming.
      */
     def savePairs[T](rdd: RDD[T], f: (T, IgniteContext) ⇒ (K, V), overwrite: Boolean, skipStore: Boolean) = {
         rdd.foreachPartition(it ⇒ {
