@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,135 +44,209 @@ public class TransactionView {
         this.tx = tx;
     }
 
-    /** @return Local node ID. */
+    /**
+     * @return Local node ID.
+     * @see IgniteInternalTx#nodeId()
+     */
     public UUID localNodeId() {
         return tx.nodeId();
     }
 
-    /** @return ID of the thread in which this transaction started. */
+    /**
+     * @return ID of the thread in which this transaction started.
+     * @see IgniteInternalTx#threadId()
+     */
     public long threadId() {
         return tx.threadId();
     }
 
-    /** @return Start time of this transaction on this node. */
+    /**
+     * @return Start time of this transaction on this node.
+     * @see IgniteInternalTx#startTime()
+     */
     @Order(4)
     public long startTime() {
         return tx.startTime();
     }
 
-    /** @return Isolation level. */
+    /**
+     * @return Isolation level.
+     * @see IgniteInternalTx#isolation()
+     */
     @Order(5)
     public TransactionIsolation isolation() {
         return tx.isolation();
     }
 
-    /** @return Concurrency mode. */
+    /**
+     * @return Concurrency mode.
+     * @see IgniteInternalTx#concurrency()
+     */
     @Order(6)
     public TransactionConcurrency concurrency() {
         return tx.concurrency();
     }
 
-    /** @return Current transaction state. */
+    /**
+     * @return Current transaction state.
+     * @see IgniteInternalTx#state()
+     */
     @Order(1)
     public TransactionState state() {
         return tx.state();
     }
 
-    /** @return Transaction timeout value. */
+    /**
+     * @return Transaction timeout value.
+     * @see IgniteInternalTx#timeout()
+     */
     public long timeout() {
         return tx.timeout();
     }
 
-    /** @return {@code True} if transaction was started implicitly. */
+    /**
+     * @return {@code True} if transaction was started implicitly.
+     * @see IgniteInternalTx#implicit()
+     */
     public boolean implicit() {
         return tx.implicit();
     }
 
-    /** @return Transaction UID. */
+    /**
+     * @return Transaction UID.
+     * @see IgniteInternalTx#xid()
+     */
     @Order(2)
     public IgniteUuid xid() {
         return tx.xid();
     }
 
-    /** @return {@code True} if transaction is started for system cache. */
+    /**
+     * @return {@code True} if transaction is started for system cache.
+     * @see IgniteInternalTx#system()
+     */
     public boolean system() {
         return tx.system();
     }
 
-    /** @return Flag indicating whether transaction is implicit with only one key. */
+    /**
+     * @return Flag indicating whether transaction is implicit with only one key.
+     * @see IgniteInternalTx#implicitSingle()
+     */
     public boolean implicitSingle() {
         return tx.implicitSingle();
     }
 
-    /** @return {@code True} if near transaction. */
+    /**
+     * @return {@code True} if near transaction.
+     * @see IgniteInternalTx#near()
+     */
     public boolean near() {
         return tx.near();
     }
 
-    /** @return {@code True} if DHT transaction. */
+    /**
+     * @return {@code True} if DHT transaction.
+     * @see IgniteInternalTx#dht()
+     */
     public boolean dht() {
         return tx.dht();
     }
 
-    /** @return {@code True} if dht colocated transaction. */
+    /**
+     * @return {@code True} if dht colocated transaction.
+     * @see IgniteInternalTx#colocated()
+     */
     public boolean colocated() {
         return tx.colocated();
     }
 
-    /** @return {@code True} if transaction is local, {@code false} if it's remote. */
+    /**
+     * @return {@code True} if transaction is local, {@code false} if it's remote.
+     * @see IgniteInternalTx#local()
+     */
     public boolean local() {
         return tx.local();
     }
 
-    /** @return Subject ID initiated this transaction. */
+    /**
+     * @return Subject ID initiated this transaction.
+     * @see IgniteInternalTx#subjectId()
+     */
     public UUID subjectId() {
         return tx.subjectId();
     }
 
-    /** @return Label of transaction or {@code null} if there was not set. */
+    /**
+     * @return Label of transaction or {@code null} if there was not set.
+     * @see IgniteInternalTx#label()
+     */
     @Order(3)
     public String label() {
         return tx.label();
     }
 
-    /** @return {@code True} if transaction is a one-phase-commit transaction. */
+    /**
+     * @return {@code True} if transaction is a one-phase-commit transaction.
+     * @see IgniteInternalTx#onePhaseCommit()
+     */
     public boolean onePhaseCommit() {
         return tx.onePhaseCommit();
     }
 
-    /** @return {@code True} if transaction has at least one internal entry. */
+    /**
+     * @return {@code True} if transaction has at least one internal entry.
+     */
     public boolean internal() {
         return tx.internal();
     }
 
-    /** @return Originating node id. */
+    /**
+     * @return Originating node id.
+     * @see IgniteInternalTx#originatingNodeId()
+     */
     @Order
     public UUID originatingNodeId() {
         return tx.originatingNodeId();
     }
 
-    /** @return Other node id. */
+    /**
+     * @return Other node id.
+     * @see IgniteInternalTx#otherNodeId()
+     */
     public UUID otherNodeId() {
         return tx.otherNodeId();
     }
 
-    /** @return Topology version. */
+    /**
+     * @return Topology version.
+     * @see IgniteInternalTx#topologyVersion()
+     */
     public String topVer() {
         return Objects.toString(tx.topologyVersion());
     }
 
-    /** @return Duration in millis. */
+    /**
+     * @return Duration in millis.
+     * @see IgniteInternalTx#startTime()
+     */
     public long duration() {
         return U.currentTimeMillis() - tx.startTime();
     }
 
-    /** @return Keys count. */
+    /**
+     * @return Count of the cache keys participatint in transaction.
+     * @see IgniteInternalTx#allEntries()
+     */
     @Order(7)
     public int keysCount() {
         return tx.allEntries().size();
     }
 
-    /** @return Cache ids. */
+    /**
+     * @return Id of the cashes participating in transaction.
+     * @see IgniteTxState#cacheIds()
+     */
     @Order(8)
     public String cacheIds() {
         SB b = new SB();

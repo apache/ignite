@@ -499,29 +499,27 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(res);
 
-                {
-                    TransactionView txv = txs.iterator().next();
+                TransactionView txv = txs.iterator().next();
 
-                    assertEquals(g.localNode().id(), txv.localNodeId());
-                    assertEquals(txv.isolation(), REPEATABLE_READ);
-                    assertEquals(txv.concurrency(), PESSIMISTIC);
-                    assertEquals(txv.state(), ACTIVE);
-                    assertNotNull(txv.xid());
-                    assertFalse(txv.system());
-                    assertFalse(txv.implicit());
-                    assertFalse(txv.implicitSingle());
-                    assertTrue(txv.near());
-                    assertFalse(txv.dht());
-                    assertTrue(txv.colocated());
-                    assertTrue(txv.local());
-                    assertEquals("test", txv.label());
-                    assertFalse(txv.onePhaseCommit());
-                    assertFalse(txv.internal());
-                    assertEquals(0, txv.timeout());
-                    assertTrue(txv.startTime() <= System.currentTimeMillis());
-                    assertEquals(2, txv.keysCount());
-                    assertEquals(String.valueOf(cacheId(cache1.getName())), txv.cacheIds());
-                }
+                assertEquals(g.localNode().id(), txv.localNodeId());
+                assertEquals(txv.isolation(), REPEATABLE_READ);
+                assertEquals(txv.concurrency(), PESSIMISTIC);
+                assertEquals(txv.state(), ACTIVE);
+                assertNotNull(txv.xid());
+                assertFalse(txv.system());
+                assertFalse(txv.implicit());
+                assertFalse(txv.implicitSingle());
+                assertTrue(txv.near());
+                assertFalse(txv.dht());
+                assertTrue(txv.colocated());
+                assertTrue(txv.local());
+                assertEquals("test", txv.label());
+                assertFalse(txv.onePhaseCommit());
+                assertFalse(txv.internal());
+                assertEquals(0, txv.timeout());
+                assertTrue(txv.startTime() <= System.currentTimeMillis());
+                assertEquals(2, txv.keysCount());
+                assertEquals(String.valueOf(cacheId(cache1.getName())), txv.cacheIds());
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
                     try(Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
