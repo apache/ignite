@@ -99,6 +99,7 @@
         <module>modules/ml/tensorflow-model-parser</module>
         <module>modules/tensorflow</module>
         <module>modules/opencensus</module>
+        <module>modules/calcite</module>
     </modules>
 
     <profiles>

@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -97,6 +98,13 @@ public enum IgniteComponentType {
         CompressionProcessor.class.getName(),
         "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
         "ignite-compress"
+    ),
+
+    /** Experimental calcite based query engine. */
+    QUERY_ENGINE(
+        QueryEngine.NoOpQueryEngine.class.getName(),
+        "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor",
+        "ignite-calcite"
     );
 
     /** No-op class name. */
