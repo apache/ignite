@@ -26,12 +26,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
@@ -39,6 +41,7 @@ import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -76,6 +79,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         registerWalker(ServiceView.class, new ServiceViewWalker());
         registerWalker(ComputeTaskView.class, new ComputeTaskViewWalker());
         registerWalker(ClientConnectionView.class, new ClientConnectionViewWalker());
+        registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -110,6 +114,34 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             data,
+            rowFunc);
+
+        SystemView<?> old = systemViews.putIfAbsent(name, sysView);
+
+        assert old == null;
+
+        notifyListeners(sysView, viewCreationLsnrs, log);
+    }
+
+    /**
+     * Registers view which exports {@link Collection} content provided by specified {@code Supplier}.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param rowCls Row class.
+     * @param dataSupplier Data supplier.
+     * @param rowFunc value to row function.
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <R, D> void registerView(String name, String desc, Class<R> rowCls, Supplier<Collection<D>> dataSupplier,
+        Function<D, R> rowFunc) {
+
+        SystemView sysView = new SystemViewAdapter<>(name,
+            desc,
+            rowCls,
+            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            dataSupplier,
             rowFunc);
 
         SystemView<?> old = systemViews.putIfAbsent(name, sysView);

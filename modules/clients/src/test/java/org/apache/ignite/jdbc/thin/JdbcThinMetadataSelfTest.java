@@ -656,7 +656,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODES.VERSION.null.2147483647",
                 "SYS.NODES.IS_CLIENT.null.1",
                 "SYS.NODES.IS_DAEMON.null.1",
-                "SYS.NODES.NODE_ORDER.null.10",
+                "SYS.NODES.IS_LOCAL.null.1",
+                "SYS.NODES.NODE_ORDER.null.19",
                 "SYS.NODES.ADDRESSES.null.2147483647",
                 "SYS.NODES.HOSTNAMES.null.2147483647",
                 "SYS.NODE_ATTRIBUTES.NODE_ID.null.2147483647",
@@ -763,6 +764,18 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.USER.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647"
             ));
+
+            for (String col : actualSystemCols) {
+                if (!expectedCols.contains(col))
+                    System.out.println(col);
+            }
+
+            System.out.println("==================");
+
+            for (String col : expectedCols) {
+                if (!actualSystemCols.contains(col))
+                    System.out.println(col);
+            }
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }

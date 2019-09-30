@@ -54,6 +54,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -63,11 +64,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
 
 /** Tests for {@link SystemView}. */
@@ -443,6 +446,63 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertTrue(res);
         }
+    }
+
+    /** */
+    @Test
+    public void testNodes() throws Exception {
+        try(IgniteEx g1 = startGrid(0)) {
+            SystemView<ClusterNodeView> nodes = g1.context().systemView().view(NODES_SYS_VIEW);
+
+            assertEquals(1, nodes.size());
+
+            checkNodeView(nodes.iterator().next(), g1.localNode(), true);
+
+            try(IgniteEx g2 = startGrid(1)) {
+                awaitPartitionMapExchange();
+
+                assertEquals(2, nodes.size());
+
+                boolean found = false;
+
+                for (ClusterNodeView node : nodes) {
+                    if (!node.nodeId().equals(g2.localNode().id()))
+                        continue;
+
+                    checkNodeView(node, g2.localNode(), false);
+
+                    found = true;
+
+                    break;
+                }
+
+                assertTrue(found);
+
+                SystemView<ClusterNodeView> nodes2 = g2.context().systemView().view(NODES_SYS_VIEW);
+
+                assertEquals(2, nodes2.size());
+
+                for (ClusterNodeView node : nodes2) {
+                    if(node.nodeId().equals(g2.localNode().id()))
+                        checkNodeView(node, g2.localNode(), true);
+                    else
+                        checkNodeView(node, g1.localNode(), false);
+                }
+            }
+        }
+    }
+
+    /** */
+    private void checkNodeView(ClusterNodeView n, ClusterNode loc, boolean isLocal) {
+        assertEquals(loc.id(), n.nodeId());
+        assertEquals(loc.consistentId().toString(), n.consistentId());
+        assertEquals(toStringSafe(loc.addresses()), n.addresses());
+        assertEquals(toStringSafe(loc.hostNames()), n.hostnames());
+        assertEquals(loc.order(), n.nodeOrder());
+        assertEquals(loc.version().toString(), n.version());
+        assertEquals(isLocal, n.isLocal());
+        assertEquals(loc.isDaemon(), n.isDaemon());
+        assertEquals(loc.isClient(), n.isClient());
     }
 
     /** */
