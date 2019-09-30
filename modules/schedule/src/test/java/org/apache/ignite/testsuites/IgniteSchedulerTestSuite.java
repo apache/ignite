@@ -17,6 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.schedule.GridScheduleSelfTest;
+import org.apache.ignite.product.SchedulingFeatureIsAvailableTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,7 +26,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridScheduleSelfTest.class
+    GridScheduleSelfTest.class,
+    SchedulingFeatureIsAvailableTest.class
 })
 public class IgniteSchedulerTestSuite {
 }
