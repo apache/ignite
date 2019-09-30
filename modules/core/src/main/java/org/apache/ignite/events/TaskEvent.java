@@ -145,7 +145,8 @@ public class TaskEvent extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID initiated this task event, if available. This property
+     * Gets security subject ID initiated this task event if IgniteSecurity is
+     * enabled, otherwise returns null. This property
      * is not available for GridEventType#EVT_TASK_SESSION_ATTR_SET task event.
      * <p>
      * Subject ID will be set either to node ID or client ID initiated
