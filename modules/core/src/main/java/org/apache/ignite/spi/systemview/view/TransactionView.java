@@ -17,10 +17,12 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -240,7 +242,12 @@ public class TransactionView {
      */
     @Order(7)
     public int keysCount() {
-        return tx.allEntries().size();
+        Collection<IgniteTxEntry> entries = tx.allEntries();
+
+        if (entries == null)
+            return 0;
+
+        return entries.size();
     }
 
     /**
@@ -249,11 +256,19 @@ public class TransactionView {
      */
     @Order(8)
     public String cacheIds() {
-        SB b = new SB();
-
         GridIntList cacheIds = tx.txState().cacheIds();
 
-        for (int i = 0; i < cacheIds.size(); i++) {
+        if (cacheIds == null)
+            return null;
+
+        int sz = cacheIds.size();
+
+        if (sz == 0)
+            return null;
+
+        SB b = new SB();
+
+        for (int i = 0; i < sz; i++) {
             if (i != 0)
                 b.a(',');
 
