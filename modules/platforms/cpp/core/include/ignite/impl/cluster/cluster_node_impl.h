@@ -59,7 +59,7 @@ namespace ignite
                  *
                  * @return Collection of addresses this node is known by.
                  */
-                std::vector<std::string> GetAddresses() const;
+                const std::vector<std::string>& GetAddresses() const;
 
                 /**
                  * Check if node attribute is set.
@@ -114,10 +114,10 @@ namespace ignite
                  *
                  * @return Collection of host names this node is known by.
                  */
-                std::vector<std::string> GetHostNames() const;
+                const std::vector<std::string>& GetHostNames() const;
 
                 /**
-                 * Gets globally unique ID.
+                 * Get globally unique ID.
                  *
                  * @return Cluster Node Guid.
                  */
@@ -149,7 +149,7 @@ namespace ignite
                  *
                  * @return Node order.
                  */
-                long GetOrder() const;
+                int64_t GetOrder() const;
 
                 /**
                  * Get node version.
@@ -221,7 +221,7 @@ namespace ignite
                 bool isLocal;
 
                 /** Order. */
-                long order;
+                int64_t order;
 
                 /** Consistent ID */
                 common::concurrent::SharedPointer<std::string> consistentId;

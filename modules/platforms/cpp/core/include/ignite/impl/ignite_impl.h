@@ -232,14 +232,14 @@ namespace ignite
              *
              * @param topVer Topology version.
              */
-            void SetBaselineTopologyVersion(long topVer);
+            void SetBaselineTopologyVersion(int64_t topVer);
 
             /**
              * Set transaction timeout on partition map exchange.
              *
              * @param timeout Timeout in milliseconds.
              */
-            void SetTxTimeoutOnPartitionMapExchange(long timeout);
+            void SetTxTimeoutOnPartitionMapExchange(int64_t timeout);
 
         private:
             /**

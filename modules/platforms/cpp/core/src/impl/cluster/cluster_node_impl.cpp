@@ -41,7 +41,7 @@ namespace ignite
                 ReadAddresses(reader);
                 ReadHosts(reader);
 
-                order = static_cast<long>(reader.ReadInt64());
+                order = reader.ReadInt64();
                 isLocal = reader.ReadBool();
                 isDaemon = reader.ReadBool();
                 isClient = reader.ReadBool();
@@ -55,7 +55,7 @@ namespace ignite
                 // No-op.
             }
 
-            std::vector<std::string> ClusterNodeImpl::GetAddresses() const
+            const std::vector<std::string>& ClusterNodeImpl::GetAddresses() const
             {
                 return *addrs.Get();
             }
@@ -81,7 +81,7 @@ namespace ignite
                 return *consistentId.Get();
             }
 
-            std::vector<std::string> ClusterNodeImpl::GetHostNames() const
+            const std::vector<std::string>& ClusterNodeImpl::GetHostNames() const
             {
                 return *hosts.Get();
             }
@@ -106,7 +106,7 @@ namespace ignite
                 return isLocal;
             }
 
-            long ClusterNodeImpl::GetOrder() const
+            int64_t ClusterNodeImpl::GetOrder() const
             {
                 return order;
             }
