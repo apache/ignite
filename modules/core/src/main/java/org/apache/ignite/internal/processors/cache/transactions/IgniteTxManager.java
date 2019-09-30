@@ -350,6 +350,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
 
+        cctx.txMetrics().onTxManagerStarted();
+
         cctx.kernalContext().systemView().registerView(TXS_MON_LIST, TXS_MON_LIST_DESC,
             TransactionView.class,
             new ReadOnlyCollectionView2X<>(idMap.values(), nearIdMap.values()),

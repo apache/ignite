@@ -469,7 +469,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             CompositeData txv = systemView(TXS_MON_LIST).get(new Object[] {0});
 
-            assertEquals(ignite.localNode().id().toString(), txv.get("nodeId"));
+            assertEquals(ignite.localNode().id().toString(), txv.get("localNodeId"));
             assertEquals(REPEATABLE_READ.name(), txv.get("isolation"));
             assertEquals(PESSIMISTIC.name(), txv.get("concurrency"));
             assertEquals(ACTIVE.name(), txv.get("state"));
@@ -509,7 +509,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 if (PESSIMISTIC.name().equals(txv.get("concurrency")))
                     continue;
 
-                assertEquals(ignite.localNode().id().toString(), txv.get("nodeId"));
+                assertEquals(ignite.localNode().id().toString(), txv.get("localNodeId"));
                 assertEquals(SERIALIZABLE.name(), txv.get("isolation"));
                 assertEquals(OPTIMISTIC.name(), txv.get("concurrency"));
                 assertEquals(ACTIVE.name(), txv.get("state"));
