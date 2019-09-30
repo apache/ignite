@@ -138,7 +138,8 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Continuously and asynchronously wait for data from server.
-            TaskRunner.Run(WaitForMessages);
+            // TaskCreationOptions.LongRunning actually means a new thread.
+            TaskRunner.Run(WaitForMessages, TaskCreationOptions.LongRunning);
         }
 
         /// <summary>
@@ -195,6 +196,9 @@ namespace Apache.Ignite.Core.Impl.Client
             var task = SendRequestAsync(ref reqMsg);
 
             // Decode.
+            // NOTE: ContWith explicitly uses TaskScheduler.Default,
+            // which runs DecodeResponse (and any user continuations) on a thread pool thread,
+            // so that WaitForMessages thread does not do anything except reading from the socket.
             return task.ContWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc));
         }
 
