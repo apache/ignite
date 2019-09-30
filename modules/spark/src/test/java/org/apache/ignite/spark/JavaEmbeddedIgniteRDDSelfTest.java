@@ -173,7 +173,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testStoreDataToIgniteWithDataStreamerUsage() throws Exception {
+    public void testStoreDataToIgniteWithEnabledOptionSkipStore() throws Exception {
         storeMap = new ConcurrentHashMap<>();
         store = new TestStore();
 
