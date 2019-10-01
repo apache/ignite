@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -363,10 +364,47 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test(expected = IgniteCheckedException.class)
+    public void testCreateLocalBackupCopyPartitionFail() throws Exception {
+        IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
+
+        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
+
+        toBackup.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new HashSet<>())
+            .add(0);
+
+        IgniteBackupManager mgr = ig.context()
+            .cache()
+            .context()
+            .backup();
+
+        IgniteInternalFuture<?> fut = mgr.createLocalBackup(BACKUP_NAME,
+            toBackup,
+            backupDir,
+            new Supplier<IgniteTriConsumer<File, File, Long>>() {
+                @Override public IgniteTriConsumer<File, File, Long> get() {
+                    return new IgniteTriConsumer<File, File, Long>() {
+                        @Override public void accept(File part, File backupDir, Long length) {
+                            if (String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0).equals(part.getName()))
+                                throw new IgniteException("Test. Fail to copy partition: " + part.getName());
+
+                            mgr.partWorkerFactory().get().accept(part, backupDir, length);
+                        }
+                    };
+                }
+            },
+            mgr.deltaWorkerFactory());
+
+        fut.get();
+    }
+
+    /**
      * @param dir Directory to delete.
      * @throws IOException If fails.
      */
-    public static void delete(Path dir) throws IOException {
+    private static void delete(Path dir) throws IOException {
         Files.walk(dir)
             .map(Path::toFile)
             .forEach(File::delete);

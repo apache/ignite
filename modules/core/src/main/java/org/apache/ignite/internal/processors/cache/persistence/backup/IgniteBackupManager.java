@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -304,7 +303,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @return Partition supplier factory.
      */
     Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory() {
-        return () -> new PartitionCopySupplier(log);
+        return () -> new PartitionCopyConsumer(ioFactory, log);
     }
 
     /**
@@ -560,15 +559,20 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class PartitionCopySupplier implements IgniteTriConsumer<File, File, Long> {
+    private static class PartitionCopyConsumer implements IgniteTriConsumer<File, File, Long> {
         /** Ignite logger to use. */
         private final IgniteLogger log;
+
+        /** Factory to produce IO channels. */
+        private final FileIOFactory ioFactory;
+
 
         /**
          * @param log Ignite logger to use.
          */
-        public PartitionCopySupplier(IgniteLogger log) {
-            this.log = log.getLogger(PartitionCopySupplier.class);
+        public PartitionCopyConsumer(FileIOFactory ioFactory, IgniteLogger log) {
+            this.log = log.getLogger(PartitionCopyConsumer.class);
+            this.ioFactory = ioFactory;
         }
 
         @Override public void accept(File part, File backupDir, Long length) {
@@ -583,7 +587,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 if (length == 0)
                     return;
 
-                try (FileChannel src = new FileInputStream(part).getChannel();
+                try (FileIO src = ioFactory.create(part);
                      FileChannel dest = new FileOutputStream(to).getChannel()) {
                     src.position(0);
 
@@ -802,7 +806,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         /**
          * Map of partitions to backup and theirs corresponding delta PageStores.
          * Writers are pinned to the backup context due to controlling partition
-         * processing supplier (see {@link PartitionCopySupplier}).
+         * processing supplier (see {@link PartitionCopyConsumer}).
          */
         private final Map<GroupPartitionId, PageStoreSerialWriter> partDeltaWriters = new HashMap<>();
 
