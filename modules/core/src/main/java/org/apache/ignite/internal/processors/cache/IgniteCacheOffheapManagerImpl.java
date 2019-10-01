@@ -1688,8 +1688,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void invoke0(GridCacheContext cctx, CacheSearchRow row, OffheapInvokeClosure c)
             throws IgniteCheckedException {
-            assert !grp.dataRegion().config().isPersistenceEnabled() ||
-                cctx.shared().database().checkpointLockIsHeldByThread();
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             dataTree.invoke(row, CacheDataRowAdapter.RowData.NO_KEY, c);
 
@@ -1766,7 +1765,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 for (DataRowCacheAware row : rows) {
                     row.storeCacheId(cacheIdAwareGrp);
 
-                    if (!initPred.applyx(row) && row.value() != null)
+                    if (!initPred.apply(row) && row.value() != null)
                         rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
             }

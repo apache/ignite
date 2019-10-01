@@ -417,8 +417,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            assert !cctx.group().dataRegion().config().isPersistenceEnabled() ||
-                cctx.shared().database().checkpointLockIsHeldByThread();
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             return tree.putx(row);
         }
