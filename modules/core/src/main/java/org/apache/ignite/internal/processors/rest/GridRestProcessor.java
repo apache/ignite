@@ -1050,21 +1050,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param fut Result of REST request processing.
      */
     private void logRestRequestResult(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
-        if (log == null || !log.isDebugEnabled())
+        if (!log.isDebugEnabled())
             return;
 
-        GridRestResponse resp = null;
+        String reqProcErr = fut.isCancelled() ? "Future was cancelled [fut= " + fut + ']':
+            fut.error() == null ? null : fut.error().getMessage();
 
-        IgniteCheckedException reqProcErr = null;
-
-        try {
-            resp = fut.get();
-        }
-        catch (IgniteCheckedException e) {
-            reqProcErr = e;
-        }
-
-        log.debug(String.format("REST request handled [req=%s, resp=%s, err=%s].", req, resp, reqProcErr));
+        log.debug(String.format("REST request handled [req=%s, resp=%s, err=%s].", req, fut.result(), reqProcErr));
     }
 
     /**
