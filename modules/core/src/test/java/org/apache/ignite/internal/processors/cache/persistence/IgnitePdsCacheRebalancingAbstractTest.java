@@ -78,11 +78,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /** Cache with enabled indexes. */
     private static final String INDEXED_CACHE = "indexed";
 
-    /** In-memory cache with enabled indexes. */
-    private static final String INDEXED_CACHE_IN_MEMORY = "indexed-in-mem";
+    /** Cache with enabled indexes. */
+    private static final String INDEXED_CACHE_IN_MEMORY = "indexed-in-memory";
 
     /** In memory region. */
-    private static final String IN_MEMORY_REGION = "in-mem-region";
+    private static final String IN_MEMORY_REGION = "in-memory-region";
 
     /** */
     protected boolean explicitTx;
@@ -113,9 +113,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         CacheConfiguration ccfg3 = cacheConfiguration(INDEXED_CACHE_IN_MEMORY)
-            .setBackups(2)
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setDataRegionName(IN_MEMORY_REGION);
 
         QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
@@ -162,7 +159,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 .setPersistenceEnabled(true)
                 .setMaxSize(512 * 1024 * 1024)
             ).setDataRegionConfigurations(new DataRegionConfiguration()
-                .setName(IN_MEMORY_REGION));
+                .setName(IN_MEMORY_REGION)
+                .setMaxSize(512 * 1024 * 1024)
+            );
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -338,6 +337,23 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      */
     @Test
     public void testTopologyChangesWithConstantLoad() throws Exception {
+        doTestTopologyChangesWithConstantLoad(INDEXED_CACHE);
+    }
+
+    /**
+     * Test rebalancing of in-memory cache on the node with mixed data region configuration.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTopologyChangesWithConstantLoadOnInMemoryCache() throws Exception {
+        doTestTopologyChangesWithConstantLoad(INDEXED_CACHE_IN_MEMORY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestTopologyChangesWithConstantLoad(String name) throws Exception {
         final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
         final int entriesCnt = 10_000;
@@ -355,22 +371,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite.cluster().active(true);
 
-        try (IgniteDataStreamer<Integer, TestValue> ds = ignite.dataStreamer(INDEXED_CACHE)) {
+        try (IgniteDataStreamer<Integer, TestValue> ds = ignite.dataStreamer(name)) {
             for (int i = 0; i < entriesCnt; i++) {
                 ds.addData(i, new TestValue(i, i, i));
                 map.put(i, new TestValue(i, i, i));
             }
         }
 
-        try (IgniteDataStreamer<Integer, TestValue> ds = ignite.dataStreamer(INDEXED_CACHE_IN_MEMORY)) {
-            for (int i = 0; i < entriesCnt; i++) {
-                ds.addData(i, new TestValue(i, i, i));
-                map.put(i, new TestValue(i, i, i));
-            }
-        }
-
-        IgniteCache<Integer, TestValue> cache = ignite.cache(INDEXED_CACHE);
-        IgniteCache<Integer, TestValue> cacheInMem = ignite.cache(INDEXED_CACHE);
+        IgniteCache<Integer, TestValue> cache = ignite.cache(name);
 
         final AtomicLong orderCounter = new AtomicLong(entriesCnt);
 
@@ -431,17 +439,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         tx = ignite.transactions().txStart();
 
                     try {
-                        IgniteCache<Object, Object> cache = ignite.cache(INDEXED_CACHE);
-                        IgniteCache<Object, Object> cacheInMem = ignite.cache(INDEXED_CACHE_IN_MEMORY);
+                        IgniteCache<Object, Object> cache = ignite.cache(name);
 
-                        if (remove) {
+                        if (remove)
                             cache.remove(k);
-                            cacheInMem.remove(k);
-                        }
-                        else {
+                        else
                             cache.put(k, new TestValue(order, v1, v2));
-                            cacheInMem.put(k, new TestValue(order, v1, v2));
-                        }
                     }
                     catch (Exception ignored) {
                         success = false;
@@ -510,7 +513,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 for (Map.Entry<Integer, TestValue> entry : map.entrySet()) {
                     final String assertMsg = "Iteration: " + it + ". Changes: " + Objects.toString(topChangesHistory)
-                            + ". Key: " + Integer.toString(entry.getKey());
+                        + ". Key: " + Integer.toString(entry.getKey());
 
                     TestValue expected = entry.getValue();
 
@@ -518,11 +521,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         continue;
 
                     TestValue actual = cache.get(entry.getKey());
-                    TestValue actualInMem = cacheInMem.get(entry.getKey());
 
                     if (expected.removed) {
                         assertNull(assertMsg + " should be removed.", actual);
-                        assertNull(assertMsg + " should be removed (in memory).", actualInMem);
 
                         continue;
                     }
@@ -531,7 +532,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         continue;
 
                     assertEquals(assertMsg, expected, actual);
-                    assertEquals(assertMsg + " (in memory).", expected, actualInMem);
                 }
 
                 // Resume progress for loader.
