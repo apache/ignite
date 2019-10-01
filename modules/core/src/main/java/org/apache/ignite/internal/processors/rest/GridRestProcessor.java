@@ -1050,7 +1050,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param fut Result of REST request processing.
      */
     private void logRestRequestResult(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
-        if (log == null || !log.isInfoEnabled())
+        if (log == null || !log.isDebugEnabled())
             return;
 
         GridRestResponse resp = null;
@@ -1064,7 +1064,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             reqProcErr = e;
         }
 
-        log.info(String.format("REST request handled [req=%s, resp=%s, err=%s].", req, resp, reqProcErr));
+        log.debug(String.format("REST request handled [req=%s, resp=%s, err=%s].", req, resp, reqProcErr));
     }
 
     /**
