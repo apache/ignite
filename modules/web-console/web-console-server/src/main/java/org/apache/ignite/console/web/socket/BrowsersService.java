@@ -297,6 +297,10 @@ public class BrowsersService extends AbstractSocketHandler {
             igniteVisor("query.VisorQueryCleanupTask"),
             igniteVisor("query.VisorQueryCleanupTaskArg"));
 
+        registerVisorTask("queryPing",
+            igniteVisor("query.VisorQueryPingTask"),
+            igniteVisor("query.VisorQueryNextPageTaskArg"));
+
         registerVisorTask("toggleClusterState",
             igniteVisor("misc.VisorChangeGridActiveStateTask"),
             igniteVisor("misc.VisorChangeGridActiveStateTaskArg"));
