@@ -29,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVICTION_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * Class that serves asynchronous part eviction process.
@@ -83,7 +85,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      *  Is not thread-safe.
      *  All method should be called under mux synchronization.
      */
-    private volatile BucketQueue evictionQueue;
+    volatile BucketQueue evictionQueue;
 
     /** Lock object. */
     private final Object mux = new Object();
@@ -529,7 +531,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private abstract class AbstractEvictionTask implements Runnable {
+    abstract class AbstractEvictionTask implements Runnable {
         /** Partition to evict. */
         protected final GridDhtLocalPartition part;
 
@@ -600,8 +602,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                         false,
                         true);
                 }
-                else
+                else {
                     LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
+
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, ex));
+                }
             }
         }
     }
@@ -674,12 +679,15 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private class BucketQueue {
+    class BucketQueue {
         /** Queues contains partitions scheduled for eviction. */
         private final Queue<AbstractEvictionTask>[] buckets;
 
         /** */
         private final long[] bucketSizes;
+
+        /** Queues contains partitions scheduled for eviction. */
+        final Queue<PartitionEvictionTask>[] buckets;
 
         /**
          * @param buckets Number of buckets.

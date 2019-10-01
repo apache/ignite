@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,17 +15,33 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
+namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Runtime.InteropServices;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Delegates for JavaVM JNI entity.
+    /// Wraps an action to be executed on Dispose call.
     /// </summary>
-    internal static class JvmDelegates
+    public class DisposeAction : IDisposable
     {
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal delegate JniResult AttachCurrentThread(IntPtr jvm, out IntPtr env, IntPtr args);
+        /** */
+        private readonly Action _action;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="DisposeAction"/>.
+        /// </summary>
+        /// <param name="action">Action.</param>
+        public DisposeAction(Action action)
+        {
+            IgniteArgumentCheck.NotNull(action, "action");
+            _action = action;
+        }
+
+        /** <inheritdoc /> */
+        public void Dispose()
+        {
+            _action();
+        }
     }
 }
