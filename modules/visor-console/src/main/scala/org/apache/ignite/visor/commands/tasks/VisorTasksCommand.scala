@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
 import org.apache.ignite.internal.visor.node.{VisorNodeEventsCollectorTask, VisorNodeEventsCollectorTaskArg}
-import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
@@ -1212,7 +1211,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                 eLst.foreach(e => {
                     e.nodeIds.foreach(id => {
-                        TU.sortAddresses(ignite.cluster.node(id).addresses).headOption.foreach(host => {
+                        U.sortAddresses(ignite.cluster.node(id).addresses).headOption.foreach(host => {
                             var eSet = hMap.getOrElse(host, Set.empty[VisorExecution])
 
                             eSet += e

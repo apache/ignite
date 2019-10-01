@@ -209,7 +209,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                         t += ("Node Type", if (node.isClient) "Client" else "Server")
                         t += ("Order", node.order)
 
-                        (0 /: sortAddresses(node.addresses))((b, a) => { t += ("Address (" + b + ")", a); b + 1 })
+                        (0 /: U.sortAddresses(node.addresses))((b, a) => { t += ("Address (" + b + ")", a); b + 1 })
 
                         t += ("OS info", "" +
                             node.attribute("os.name") + " " +
