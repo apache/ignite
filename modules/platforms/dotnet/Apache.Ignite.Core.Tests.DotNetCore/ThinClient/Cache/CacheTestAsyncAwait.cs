@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,17 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
+namespace Apache.Ignite.Core.Tests.DotNetCore.ThinClient.Cache
 {
-    using System;
-    using System.Runtime.InteropServices;
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Tests.Client;
+    using NUnit.Framework;
 
     /// <summary>
-    /// Delegates for JavaVM JNI entity.
+    /// Tests cache operations with async/await.
     /// </summary>
-    internal static class JvmDelegates
+    public class CacheTestAsyncAwait : ClientTestBase
     {
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal delegate JniResult AttachCurrentThread(IntPtr jvm, out IntPtr env, IntPtr args);
+        /// <summary>
+        /// Tests that async continuations are executed on a ThreadPool thread, not on response handler thread.
+        /// </summary>
+        [Test]
+        public async Task TestAsyncAwaitContinuationIsExecutedOnThreadPool()
+        {
+            var cache = GetClientCache<int>();
+            await cache.PutAsync(1, 1).ConfigureAwait(false);
+
+            // This causes deadlock if async continuation is executed on response handler thread.
+            cache.PutAsync(2, 2).Wait();
+            Assert.AreEqual(2, cache.Get(2));
+        }
     }
 }

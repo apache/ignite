@@ -24,11 +24,16 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -42,6 +47,8 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
@@ -53,6 +60,11 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** */
 public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
@@ -273,6 +285,58 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 assertEquals(2, conns.size());
             }
         }
+    }
+
+    /** */
+    @Test
+    public void testTransactions() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TRANSACTIONS").isEmpty());
+
+        CountDownLatch latch1 = new CountDownLatch(10);
+        CountDownLatch latch2 = new CountDownLatch(1);
+
+        AtomicInteger cntr = new AtomicInteger();
+
+        GridTestUtils.runMultiThreadedAsync(() -> {
+            try (Transaction tx = ignite.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                latch1.countDown();
+                latch2.await();
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }, 5, "xxx");
+
+        GridTestUtils.runMultiThreadedAsync(() -> {
+            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+                cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
+
+                latch1.countDown();
+                latch2.await();
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }, 5, "yyy");
+
+        latch1.await(5, TimeUnit.SECONDS);
+
+        List<List<?>> txs = execute(ignite, "SELECT * FROM SYS.TRANSACTIONS");
+
+        assertEquals(10, txs.size());
+
+        latch2.countDown();
+
+        boolean res = waitForCondition(() -> execute(ignite, "SELECT * FROM SYS.TRANSACTIONS").isEmpty(), 5_000);
+
+        assertTrue(res);
     }
 
     /** */
