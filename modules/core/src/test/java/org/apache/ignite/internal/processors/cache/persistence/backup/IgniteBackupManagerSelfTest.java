@@ -141,7 +141,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     public void beforeTestBackup() throws Exception {
         cleanPersistenceDir();
 
-        backupDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "backup", true);
+        backupDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "test_backups", true);
     }
 
     /** */
@@ -243,9 +243,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
         IgniteInternalFuture<?> backupFut = mgr
-            .createLocalBackup(BACKUP_NAME,
+            .scheduleBackup(BACKUP_NAME,
                 toBackup,
                 backupDir,
+                mgr.backupExecutorService(),
                 () -> new IgniteTriConsumer<File, File, Long>() {
                     @Override public void accept(File part, File backupDir, Long length) {
                         try {
@@ -380,9 +381,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .backup();
 
-        IgniteInternalFuture<?> fut = mgr.createLocalBackup(BACKUP_NAME,
+        IgniteInternalFuture<?> fut = mgr.scheduleBackup(BACKUP_NAME,
             toBackup,
             backupDir,
+            mgr.backupExecutorService(),
             new Supplier<IgniteTriConsumer<File, File, Long>>() {
                 @Override public IgniteTriConsumer<File, File, Long> get() {
                     return new IgniteTriConsumer<File, File, Long>() {
