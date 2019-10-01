@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  *
  */
@@ -45,5 +47,10 @@ public class GridRestReadOnlyChangeModeRequest extends GridRestRequest {
     /** */
     public boolean readOnly() {
         return readOnly;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestReadOnlyChangeModeRequest.class, this, super.toString());
     }
 }

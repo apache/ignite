@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Sql query request.
  */
@@ -172,6 +174,11 @@ public class RestQueryRequest extends GridRestRequest {
      */
     public QueryType queryType() {
         return type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RestQueryRequest.class, this, super.toString());
     }
 
     /**

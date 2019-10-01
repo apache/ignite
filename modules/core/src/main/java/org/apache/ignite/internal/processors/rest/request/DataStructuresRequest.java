@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  *
  */
@@ -70,5 +72,10 @@ public class DataStructuresRequest extends GridRestRequest {
      */
     public void initial(Long init) {
         this.init = init;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataStructuresRequest.class, this, super.toString());
     }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  *
  */
@@ -53,5 +55,10 @@ public class GridRestChangeStateRequest extends GridRestRequest {
      */
     public void reqCurrentState() {
         reqCurrentState = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRestChangeStateRequest.class, this, super.toString());
     }
 }

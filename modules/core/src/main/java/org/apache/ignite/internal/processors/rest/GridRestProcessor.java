@@ -150,7 +150,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
-            return handleAsync0(req);
+            IgniteInternalFuture<GridRestResponse> res = handleAsync0(req);
+
+            res.listen(fut -> logRestRequestResult(req, fut));
+
+            return res;
         }
     };
 
@@ -1037,6 +1041,30 @@ public class GridRestProcessor extends GridProcessorAdapter {
         X.println(">>> REST processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   protosSize: " + protos.size());
         X.println(">>>   handlersSize: " + handlers.size());
+    }
+
+    /**
+     * Logs REST request processing result.
+     *
+     * @param req Received REST request.
+     * @param fut Result of REST request processing.
+     */
+    private void logRestRequestResult(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
+        if (log == null || !log.isInfoEnabled())
+            return;
+
+        GridRestResponse resp = null;
+
+        IgniteCheckedException reqProcErr = null;
+
+        try {
+            resp = fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            reqProcErr = e;
+        }
+
+        log.info(String.format("REST request handled [req=%s, resp=%s, err=%s].", req, resp, reqProcErr));
     }
 
     /**
