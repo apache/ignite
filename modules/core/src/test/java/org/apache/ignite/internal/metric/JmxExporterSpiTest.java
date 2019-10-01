@@ -23,14 +23,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.function.Consumer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -43,9 +44,10 @@ import javax.management.openmbean.TabularDataSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -486,6 +488,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertFalse((boolean)txv.get("internal"));
             assertEquals(0L, txv.get("timeout"));
             assertTrue(((long)txv.get("startTime")) <= System.currentTimeMillis());
+
+            //Only pessimistic transactions are supported when MVCC is enabled.
+            if(Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
+                return;
 
             GridTestUtils.runMultiThreadedAsync(() -> {
                 try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
