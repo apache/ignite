@@ -303,50 +303,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return Partition supplier factory.
-     */
-    Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory() {
-        return () -> new PartitionCopyConsumer(ioFactory, log);
-    }
-
-    /**
-     * @return Factory which procudes workers for backup partition recovery.
-     */
-    Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory() {
-        return () -> new BiConsumer<File, GroupPartitionId>() {
-            @Override public void accept(File dir, GroupPartitionId pair) {
-                File delta = getPartionDeltaFile(dir, pair.getPartitionId());
-
-                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),delta);
-
-                delta.delete();
-            }
-        };
-    }
-
-    /**
-     * @return Factory which procudes senders of partition files.
-     */
-    Supplier<IgniteTriConsumer<File, File, Long>> partSenderFactory(GridIoManager.TransmissionSender sndr) {
-        return () -> new PartitionCopyConsumer(ioFactory, log);
-    }
-
-    /**
-     * @return Factory which procudes senders of partition deltas.
-     */
-    Supplier<BiConsumer<File, GroupPartitionId>> deltaSenderFactory(GridIoManager.TransmissionSender sndr) {
-        return () -> new BiConsumer<File, GroupPartitionId>() {
-            @Override public void accept(File dir, GroupPartitionId pair) {
-                File delta = getPartionDeltaFile(dir, pair.getPartitionId());
-
-                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),delta);
-
-                delta.delete();
-            }
-        };
-    }
-
-    /**
      * @param name Unique backup name.
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @param remoteId The remote node to connect to.
@@ -475,6 +431,50 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         }
 
         return bctx.result;
+    }
+
+    /**
+     * @return Partition supplier factory.
+     */
+    Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory() {
+        return () -> new PartitionCopyConsumer(ioFactory, log);
+    }
+
+    /**
+     * @return Factory which procudes workers for backup partition recovery.
+     */
+    Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory() {
+        return () -> new BiConsumer<File, GroupPartitionId>() {
+            @Override public void accept(File dir, GroupPartitionId pair) {
+                File delta = getPartionDeltaFile(dir, pair.getPartitionId());
+
+                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),delta);
+
+                delta.delete();
+            }
+        };
+    }
+
+    /**
+     * @return Factory which procudes senders of partition files.
+     */
+    Supplier<IgniteTriConsumer<File, File, Long>> partSenderFactory(GridIoManager.TransmissionSender sndr) {
+        return () -> new PartitionCopyConsumer(ioFactory, log);
+    }
+
+    /**
+     * @return Factory which procudes senders of partition deltas.
+     */
+    Supplier<BiConsumer<File, GroupPartitionId>> deltaSenderFactory(GridIoManager.TransmissionSender sndr) {
+        return () -> new BiConsumer<File, GroupPartitionId>() {
+            @Override public void accept(File dir, GroupPartitionId pair) {
+                File delta = getPartionDeltaFile(dir, pair.getPartitionId());
+
+                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),delta);
+
+                delta.delete();
+            }
+        };
     }
 
     /**
