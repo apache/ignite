@@ -18,13 +18,9 @@
 package org.apache.ignite.spark;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
-import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,7 +35,6 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import scala.Tuple2;
 
@@ -47,12 +42,6 @@ import scala.Tuple2;
  * Tests for {@link JavaIgniteRDD} (embedded mode).
  */
 public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static ConcurrentHashMap<Object, Object> storeMap;
-
-    /** */
-    private TestStore store;
-
     /** For Ignite instance names generation */
     private static AtomicInteger cntr = new AtomicInteger(1);
 
@@ -84,14 +73,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Tuple2<String, String> call(Integer i) {
             return new Tuple2<>(String.valueOf(i), "val" + i);
-        }
-    };
-
-    /** To pair function. */
-    private static final PairFunction<Integer, Integer, Integer> SIMPLE_FUNCTION = new PairFunction<Integer, Integer, Integer>() {
-        /** {@inheritDoc} */
-        @Override public Tuple2<Integer, Integer> call(Integer i) {
-            return new Tuple2<>(i, i);
         }
     };
 
@@ -159,59 +140,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
                 assertNotNull("Value was not put to cache for key: " + i, val);
                 assertEquals("Invalid value stored for key: " + i, "val" + i, val);
-            }
-        }
-        finally {
-            if (ic != null)
-                ic.close(true);
-
-            sc.stop();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStoreDataToIgniteWithEnabledOptionSkipStore() throws Exception {
-        storeMap = new ConcurrentHashMap<>();
-        store = new TestStore();
-
-        JavaSparkContext sc = createContext();
-
-        JavaIgniteContext<Integer, Integer> ic = null;
-
-        try {
-            ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
-
-            Ignite ignite = ic.ignite();
-
-            IgniteCache<Integer, Integer> cache = ignite.cache(PARTITIONED_CACHE_NAME);
-
-            // 1000 entries in store; 1000 entries in cache
-            for (int i = 0; i < 1000; i++)
-                storeMap.put(i, i);
-
-            // 1000 entries in store and cache; 1000 another entries in cache writing to store
-            ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(1000, 2000), GRID_CNT).mapToPair(SIMPLE_FUNCTION), true, false);
-
-            // check 2000 entries in store
-            for (int i = 0; i < 2000; i++)
-                assertEquals(i, storeMap.get(i));
-
-            // add 1000 entries to cache but skip store
-            ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(2000, 3000), GRID_CNT).mapToPair(SIMPLE_FUNCTION), true, true);
-
-            for (int i = 2000; i < 3000; i++)
-                assertNull(storeMap.get(i));
-
-            for (int i = 0; i < 3000; i++) {
-                Integer val = cache.get(i);
-
-                assertNotNull("Value was not put to cache for key: " + i, val);
-                assertEquals("Invalid value stored for key: " + i, Integer.valueOf(i), val);
             }
         }
         finally {
@@ -379,11 +307,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         ccfg.setIndexedTypes(String.class, Entity.class);
 
-        ccfg.setCacheStoreFactory(FactoryBuilder.factoryOf(TestStore.class));
-
-        ccfg.setReadThrough(true);
-        ccfg.setWriteThrough(true);
-
         return ccfg;
     }
 
@@ -410,27 +333,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public V call(Tuple2<K, V> t) throws Exception {
             return t._2();
-        }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class TestStore extends CacheStoreAdapter<Object, Object> {
-        /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
-            return storeMap.get(key);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<?, ?> entry) {
-            storeMap.put(entry.getKey(), entry.getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void delete(Object key) {
-            storeMap.remove(key);
         }
     }
 }
