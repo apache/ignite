@@ -978,7 +978,7 @@ public class GridDhtPartitionDemander {
      */
     private boolean preloadEntry(CacheDataRow row, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert !grp.mvccEnabled();
-        assert ctx.database().checkpointLockIsHeldByThread();
+        assert !grp.dataRegion().config().isPersistenceEnabled() || ctx.database().checkpointLockIsHeldByThread();
 
         updateGroupMetrics();
 

@@ -78,6 +78,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /** Cache with enabled indexes. */
     private static final String INDEXED_CACHE = "indexed";
 
+    /** Cache with enabled indexes. */
+    private static final String INDEXED_CACHE_IN_MEMORY = "indexed-in-mem";
+
+    /** In memory region. */
+    private static final String IN_MEMORY_REGION = "in-mem-region";
+
     /** */
     protected boolean explicitTx;
 
@@ -106,6 +112,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
+        CacheConfiguration ccfg3 = cacheConfiguration(INDEXED_CACHE_IN_MEMORY)
+            .setBackups(2)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setDataRegionName(IN_MEMORY_REGION);
+
         QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
@@ -120,19 +132,21 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         qryEntity.setIndexes(Collections.singleton(qryIdx));
 
         ccfg2.setQueryEntities(Collections.singleton(qryEntity));
+        ccfg3.setQueryEntities(Collections.singleton(qryEntity));
 
         List<CacheConfiguration> cacheCfgs = new ArrayList<>();
         cacheCfgs.add(ccfg1);
         cacheCfgs.add(ccfg2);
+        cacheCfgs.add(ccfg3);
 
         if (filteredCacheEnabled && !gridName.endsWith("0")) {
-            CacheConfiguration ccfg3 = cacheConfiguration(FILTERED_CACHE)
+            CacheConfiguration ccfg4 = cacheConfiguration(FILTERED_CACHE)
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
                 .setBackups(2)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setNodeFilter(new CoordinatorNodeFilter());
 
-            cacheCfgs.add(ccfg3);
+            cacheCfgs.add(ccfg4);
         }
 
         cfg.setCacheConfiguration(asArray(cacheCfgs));
@@ -147,7 +161,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
                 .setMaxSize(512 * 1024 * 1024)
-            );
+            ).setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName(IN_MEMORY_REGION));
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -347,7 +362,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             }
         }
 
+        try (IgniteDataStreamer<Integer, TestValue> ds = ignite.dataStreamer(INDEXED_CACHE_IN_MEMORY)) {
+            for (int i = 0; i < entriesCnt; i++) {
+                ds.addData(i, new TestValue(i, i, i));
+                map.put(i, new TestValue(i, i, i));
+            }
+        }
+
         IgniteCache<Integer, TestValue> cache = ignite.cache(INDEXED_CACHE);
+        IgniteCache<Integer, TestValue> cacheInMem = ignite.cache(INDEXED_CACHE);
 
         final AtomicLong orderCounter = new AtomicLong(entriesCnt);
 
@@ -409,11 +432,16 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                     try {
                         IgniteCache<Object, Object> cache = ignite.cache(INDEXED_CACHE);
+                        IgniteCache<Object, Object> cacheInMem = ignite.cache(INDEXED_CACHE_IN_MEMORY);
 
-                        if (remove)
+                        if (remove) {
                             cache.remove(k);
-                        else
+                            cacheInMem.remove(k);
+                        }
+                        else {
                             cache.put(k, new TestValue(order, v1, v2));
+                            cacheInMem.put(k, new TestValue(order, v1, v2));
+                        }
                     }
                     catch (Exception ignored) {
                         success = false;
@@ -490,9 +518,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         continue;
 
                     TestValue actual = cache.get(entry.getKey());
+                    TestValue actualInMem = cacheInMem.get(entry.getKey());
 
                     if (expected.removed) {
                         assertNull(assertMsg + " should be removed.", actual);
+                        assertNull(assertMsg + " should be removed (in memory).", actualInMem);
 
                         continue;
                     }
@@ -501,6 +531,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         continue;
 
                     assertEquals(assertMsg, expected, actual);
+                    assertEquals(assertMsg + " (in memory).", expected, actualInMem);
                 }
 
                 // Resume progress for loader.
