@@ -87,7 +87,23 @@ goto checkIgniteHome2
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
-if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m
+if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx2g -server -XX:MaxMetaspaceSize=256m
+
+::
+:: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
+::
+set JVM_OPTS=%JVM_OPTS% -XX:+UseG1GC
+
+::
+:: Uncomment if you get StackOverflowError.
+:: On 64 bit systems this value can be larger, e.g. -Xss16m
+::
+:: set JVM_OPTS=%JVM_OPTS% -Xss4m
+
+::
+:: Uncomment to set preference to IPv4 stack.
+::
+:: set JVM_OPTS=%JVM_OPTS% -Djava.net.preferIPv4Stack=true
 
 ::
 :: Final JVM_OPTS for Java 9+ compatibility
