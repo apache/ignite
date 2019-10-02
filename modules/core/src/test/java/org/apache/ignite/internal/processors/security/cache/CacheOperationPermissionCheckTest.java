@@ -45,8 +45,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-
-    private final String NEW_CACHE="NEW_CACHE";
+    /** New cache for tests. */
+    protected static final String NEW_CACHE="NEW_CACHE";
     /**
      *
      */
