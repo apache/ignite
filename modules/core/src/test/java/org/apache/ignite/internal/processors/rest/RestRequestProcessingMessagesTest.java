@@ -55,29 +55,29 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
     private static final int BINARY_PORT = 11211;
 
     /** */
-    private static final LogListener reqReceivedLsnr = LogListener.matches(
+    private static final LogListener REQ_RECEIVED_LSNR = LogListener.matches(
         Pattern.compile("REST request received \\[req=.+]\\.")).build();
 
     /** */
-    private static final LogListener reqSucceedLsnr = LogListener.matches(
+    private static final LogListener REQ_SUCCEED_LSNR = LogListener.matches(
         Pattern.compile("REST request result \\[req=.+, resp=.+]\\.")).build();
 
     /** */
-    private static final LogListener reqFailedLsnr = LogListener.matches(
+    private static final LogListener REQ_FAILED_LSNR = LogListener.matches(
         Pattern.compile("REST request failed \\[req=.+, err=(.+\\s?)*]\\.")).build();
 
     /** */
-    private static final LogListener futCancelledLsnr = LogListener.matches(
+    private static final LogListener FUT_CANCELLED_LSNR = LogListener.matches(
         Pattern.compile("REST request failed \\[req=.+, err=Future was cancelled \\[fut=.+]]\\.")).build();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         ListeningTestLogger log = new ListeningTestLogger(true, log());
 
-        log.registerListener(reqFailedLsnr);
-        log.registerListener(reqSucceedLsnr);
-        log.registerListener(reqReceivedLsnr);
-        log.registerListener(futCancelledLsnr);
+        log.registerListener(REQ_FAILED_LSNR);
+        log.registerListener(REQ_SUCCEED_LSNR);
+        log.registerListener(REQ_RECEIVED_LSNR);
+        log.registerListener(FUT_CANCELLED_LSNR);
 
         return super.getConfiguration(igniteInstanceName)
             .setGridLogger(log)
@@ -100,9 +100,9 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
         validReq.active(true);
         validReq.command(CLUSTER_ACTIVATE);
 
-        checkListeners(() -> hnd.handleAsync(validReq), reqReceivedLsnr, reqSucceedLsnr);
+        checkListeners(() -> hnd.handleAsync(validReq), REQ_RECEIVED_LSNR, REQ_SUCCEED_LSNR);
 
-        checkListeners(() -> hnd.handleAsync(new GridRestChangeStateRequest()), reqReceivedLsnr, reqFailedLsnr);
+        checkListeners(() -> hnd.handleAsync(new GridRestChangeStateRequest()), REQ_RECEIVED_LSNR, REQ_FAILED_LSNR);
 
         GridRestTaskRequest cancelledReq = new GridRestTaskRequest();
 
@@ -116,7 +116,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
             }
-        }, reqReceivedLsnr, reqFailedLsnr);
+        }, REQ_RECEIVED_LSNR, REQ_FAILED_LSNR);
     }
 
     /** */
