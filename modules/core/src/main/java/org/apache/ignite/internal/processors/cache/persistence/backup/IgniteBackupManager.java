@@ -409,6 +409,8 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 partWorkerFactory,
                 deltaWorkerFactory);
 
+            bctx.result.listen(f -> backupCtxs.remove(name));
+
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
 
