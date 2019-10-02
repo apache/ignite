@@ -166,6 +166,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             "]].");
                     }
                     else {
+                        assert fut.error() != null;
+
                         log.debug("REST request failed [req=" + req + ", err=" + X.getFullStackTrace(fut.error()) +
                             "].");
                     }
