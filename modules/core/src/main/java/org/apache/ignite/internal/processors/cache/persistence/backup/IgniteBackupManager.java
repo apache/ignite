@@ -60,6 +60,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -501,7 +502,16 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @return Factory which procudes senders of partition files.
      */
     Supplier<IgniteTriConsumer<File, File, Long>> partSenderFactory(GridIoManager.TransmissionSender sndr) {
-        return () -> new PartitionCopyConsumer(ioFactory, log);
+        return () -> new IgniteTriConsumer<File, File, Long>() {
+            @Override public void accept(File part, File backupDir, Long length) {
+                try {
+                    sndr.send(part, 0, length, new HashMap<>(), TransmissionPolicy.FILE);
+                }
+                catch (IgniteCheckedException | InterruptedException | IOException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        };
     }
 
     /**
@@ -549,7 +559,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         for (GroupPartitionId pair : bctx.parts) {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
-            File cacheBackupDir = new File(bctx.backupDir, cacheDirName(ccfg));
+            File cacheBackupDir = cacheWorkDir(bctx.backupDir, ccfg);
 
             CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() ->
                     bctx.partWorkerFactory.get()
