@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -176,7 +175,7 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
                             new SearchRow(cacheId, ctx.toCacheKeyObject(entry.getKey())));
 
                         if (oldRow != null)
-                            U.invoke(rowStore.getClass(), rowStore, "removeRow", oldRow.link(), IoStatisticsHolderNoOp.INSTANCE);
+                            U.invoke(rowStore.getClass(), rowStore, "removeRow", oldRow.link());
                     }
                     catch (IgniteCheckedException e) {
                         log.error("Failed to remove key skipping indexes: " + entry);
