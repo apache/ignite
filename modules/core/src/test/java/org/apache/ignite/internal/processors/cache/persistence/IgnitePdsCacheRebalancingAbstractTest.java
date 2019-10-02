@@ -38,6 +38,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -54,6 +55,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -337,23 +339,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      */
     @Test
     public void testTopologyChangesWithConstantLoad() throws Exception {
-        doTestTopologyChangesWithConstantLoad(INDEXED_CACHE);
-    }
-
-    /**
-     * Test rebalancing of in-memory cache on the node with mixed data region configuration.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTopologyChangesWithConstantLoadOnInMemoryCache() throws Exception {
-        doTestTopologyChangesWithConstantLoad(INDEXED_CACHE_IN_MEMORY);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doTestTopologyChangesWithConstantLoad(String name) throws Exception {
         final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
         final int entriesCnt = 10_000;
@@ -371,14 +356,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite.cluster().active(true);
 
-        try (IgniteDataStreamer<Integer, TestValue> ds = ignite.dataStreamer(name)) {
+        try (IgniteDataStreamer<Integer, TestValue> ds = ignite.dataStreamer(INDEXED_CACHE)) {
             for (int i = 0; i < entriesCnt; i++) {
                 ds.addData(i, new TestValue(i, i, i));
                 map.put(i, new TestValue(i, i, i));
             }
         }
 
-        IgniteCache<Integer, TestValue> cache = ignite.cache(name);
+        IgniteCache<Integer, TestValue> cache = ignite.cache(INDEXED_CACHE);
 
         final AtomicLong orderCounter = new AtomicLong(entriesCnt);
 
@@ -439,7 +424,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         tx = ignite.transactions().txStart();
 
                     try {
-                        IgniteCache<Object, Object> cache = ignite.cache(name);
+                        IgniteCache<Object, Object> cache = ignite.cache(INDEXED_CACHE);
 
                         if (remove)
                             cache.remove(k);
@@ -513,7 +498,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 for (Map.Entry<Integer, TestValue> entry : map.entrySet()) {
                     final String assertMsg = "Iteration: " + it + ". Changes: " + Objects.toString(topChangesHistory)
-                        + ". Key: " + Integer.toString(entry.getKey());
+                            + ". Key: " + Integer.toString(entry.getKey());
 
                     TestValue expected = entry.getValue();
 
@@ -694,6 +679,60 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             }
 
             assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
+        }
+    }
+
+    /**
+     * Test rebalancing of in-memory cache on the node with mixed data region configurations.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalancingWithMixedDataRegionConfigurations() throws Exception {
+        int entriesCount = 10_000;
+
+        Ignite ignite0 = startGrids(2);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, TestValue> cachePds = ignite0.cache(INDEXED_CACHE);
+        IgniteCache<Integer, TestValue> cacheInMem = ignite0.cache(INDEXED_CACHE_IN_MEMORY);
+
+        for (int i = 0; i < entriesCount / 2; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            cachePds.put(i, value);
+            cacheInMem.put(i, value);
+        }
+
+        forceCheckpoint();
+
+        stopGrid(1);
+
+        for (int i = entriesCount / 2; i < entriesCount; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            cachePds.put(i, value);
+            cacheInMem.put(i, value);
+        }
+
+        IgniteEx ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteInternalCache<Integer, TestValue> cachePds1 = ignite1.cachex(INDEXED_CACHE);
+        IgniteInternalCache<Integer, TestValue> cacheInMem1 = ignite1.cachex(INDEXED_CACHE_IN_MEMORY);
+
+        CachePeekMode[] peekAll = new CachePeekMode[] {CachePeekMode.ALL};
+
+        assertEquals(entriesCount, cachePds1.localSize(peekAll));
+        assertEquals(entriesCount, cacheInMem1.localSize(peekAll));
+
+        for (int i = 0; i < entriesCount; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            assertEquals(value, cachePds1.localPeek(i, peekAll));
+            assertEquals(value, cacheInMem1.localPeek(i, peekAll));
         }
     }
 
