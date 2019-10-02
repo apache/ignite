@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RoutineInfo;
 
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+
 /**
  * Continuous query representation for a {@link SystemView}.
  */
@@ -71,7 +73,7 @@ public class ContinuousQueryView {
 
     /** @return Topic for continuous query messages. */
     public String topic() {
-        return String.valueOf(hnd.orderedTopic());
+        return toStringSafe(hnd.orderedTopic());
     }
 
     /** @return Buffer size. */
@@ -123,10 +125,7 @@ public class ContinuousQueryView {
     public boolean oldValueRequired() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
-        if (hnd0 == null)
-            return false;
-
-        return hnd0.oldValueRequired();
+        return hnd0 != null && hnd0.oldValueRequired();
     }
 
     /** @return Last send time. */
@@ -141,7 +140,7 @@ public class ContinuousQueryView {
     }
 
     /**
-     * @return String representation of local listener.
+     * @return Class name of the local transformed listener.
      * @see ContinuousQuery#setLocalListener(CacheEntryUpdatedListener)
      */
     @Order(1)
@@ -151,7 +150,7 @@ public class ContinuousQueryView {
         if (hnd0 == null || hnd0.localListener() == null)
             return null;
 
-        return hnd0.localListener().getClass().getName();
+        return toStringSafe(hnd0.localListener());
     }
 
     /**
@@ -167,7 +166,7 @@ public class ContinuousQueryView {
             if (hnd0 == null || hnd0.getEventFilter() == null)
                 return null;
 
-            return hnd0.getEventFilter().getClass().getName();
+            return toStringSafe(hnd0.getEventFilter());
         }
         catch (IgniteCheckedException e) {
             return null;
@@ -186,7 +185,7 @@ public class ContinuousQueryView {
         if (hnd0 == null || hnd0.getTransformer() == null)
             return null;
 
-        return hnd0.getTransformer().getClass().getName();
+        return toStringSafe(hnd0.getTransformer());
     }
 
     /**
@@ -201,7 +200,7 @@ public class ContinuousQueryView {
         if (hnd0 == null || hnd0.localTransformedEventListener() == null)
             return null;
 
-        return hnd0.localTransformedEventListener().getClass().getName();
+        return toStringSafe(hnd0.localTransformedEventListener());
     }
 
     /** */

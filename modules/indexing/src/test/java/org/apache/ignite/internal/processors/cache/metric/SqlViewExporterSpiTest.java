@@ -33,7 +33,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -342,7 +341,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         try(IgniteEx g1 = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
 
-            QueryCursor qry = cache.query(new ContinuousQuery<>()
+            try(QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
                 .setPageSize(100)
                 .setTimeInterval(1000)
@@ -350,65 +349,64 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                     // No-op.
                 })
                 .setRemoteFilterFactory(() -> evt -> true)
-            );
+            )) {
+                for (int i=0; i<100; i++)
+                    cache.put(i, i);
 
-            for (int i=0; i<100; i++)
-                cache.put(i, i);
+                List<List<?>> qrys = execute(ignite,
+                    "SELECT " +
+                        "  CACHE_NAME, " +
+                        "  BUFFER_SIZE, " +
+                        "  INTERVAL, " +
+                        "  NODE_ID, " +
+                        "  LOCAL_LISTENER, " +
+                        "  REMOTE_FILTER, " +
+                        "  LOCAL_TRANSFORMED_LISTENER, " +
+                        "  REMOTE_TRANSFORMER " +
+                        "FROM SYS.QUERY_CONTINUOUS");
 
-            List<List<?>> qrys = execute(ignite,
-                "SELECT " +
-                "  CACHE_NAME, " +
-                "  BUFFER_SIZE, " +
-                "  INTERVAL, " +
-                "  NODE_ID, " +
-                "  LOCAL_LISTENER, " +
-                "  REMOTE_FILTER, " +
-                "  LOCAL_TRANSFORMED_LISTENER, " +
-                "  REMOTE_TRANSFORMER " +
-                "FROM SYS.QUERY_CONTINUOUS");
+                assertEquals(1, qrys.size());
 
-            assertEquals(1, qrys.size());
+                for (List<?> cq : qrys)
+                    checkContinuousQuery(cq, true);
 
-            //Info on originating node.
-            for (List<?> cq : qrys) {
-                assertEquals("cache-1", cq.get(0));
-                assertEquals(100, cq.get(1));
-                assertEquals(1000L, cq.get(2));
-                assertEquals(ignite.localNode().id(), cq.get(3));
-                //Local listener not null on originating node.
-                assertTrue(cq.get(4).toString().startsWith(getClass().getName()));
-                assertTrue(cq.get(5).toString().startsWith(getClass().getName()));
-                assertNull(cq.get(6));
-                assertNull(cq.get(7));
-            }
+                qrys = execute(g1,
+                    "SELECT " +
+                        "  CACHE_NAME, " +
+                        "  BUFFER_SIZE, " +
+                        "  INTERVAL, " +
+                        "  NODE_ID, " +
+                        "  LOCAL_LISTENER, " +
+                        "  REMOTE_FILTER, " +
+                        "  LOCAL_TRANSFORMED_LISTENER, " +
+                        "  REMOTE_TRANSFORMER " +
+                        "FROM SYS.QUERY_CONTINUOUS");
 
-            qrys = execute(g1,
-                "SELECT " +
-                    "  CACHE_NAME, " +
-                    "  BUFFER_SIZE, " +
-                    "  INTERVAL, " +
-                    "  NODE_ID, " +
-                    "  LOCAL_LISTENER, " +
-                    "  REMOTE_FILTER, " +
-                    "  LOCAL_TRANSFORMED_LISTENER, " +
-                    "  REMOTE_TRANSFORMER " +
-                    "FROM SYS.QUERY_CONTINUOUS");
+                assertEquals(1, qrys.size());
 
-            assertEquals(1, qrys.size());
-
-            //Info on remote node.
-            for (List<?> cq : qrys) {
-                assertEquals("cache-1", cq.get(0));
-                assertEquals(100, cq.get(1));
-                assertEquals(1000L, cq.get(2));
-                assertEquals(ignite.localNode().id(), cq.get(3));
-                //Local listener is null on remote nodes.
-                assertNull(cq.get(4));
-                assertTrue(cq.get(5).toString().startsWith(getClass().getName()));
-                assertNull(cq.get(6));
-                assertNull(cq.get(7));
+                for (List<?> cq : qrys)
+                    checkContinuousQuery(cq, false);
             }
         }
+    }
+
+    /** */
+    private void checkContinuousQuery(List<?> cq, boolean loc) {
+        assertEquals("cache-1", cq.get(0));
+        assertEquals(100, cq.get(1));
+        assertEquals(1000L, cq.get(2));
+        assertEquals(ignite.localNode().id(), cq.get(3));
+
+        if (loc)
+            assertTrue(cq.get(4).toString().startsWith(getClass().getName()));
+        else
+            assertNull(cq.get(4));
+
+        assertTrue(cq.get(5).toString().startsWith(getClass().getName()));
+        assertNull(cq.get(6));
+        assertNull(cq.get(7));
+
+
     }
 
     /**

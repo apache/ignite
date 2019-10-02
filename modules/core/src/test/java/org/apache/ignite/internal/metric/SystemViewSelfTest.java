@@ -472,7 +472,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         try(IgniteEx g0 = startGrid(0); IgniteEx g1 = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = g0.createCache("cache-1");
 
-            QueryCursor qry = cache.query(new ContinuousQuery<>()
+            try(QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
                 .setPageSize(100)
                 .setTimeInterval(1000)
@@ -480,45 +480,43 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     // No-op.
                 })
                 .setRemoteFilterFactory(() -> evt -> true)
-            );
+            )) {
+                for (int i=0; i<100; i++)
+                    cache.put(i, i);
 
-            for (int i=0; i<100; i++)
-                cache.put(i, i);
+                SystemView<ContinuousQueryView> qrys = g0.context().systemView().view(CQ_SYS_VIEW);
 
-            SystemView<ContinuousQueryView> qrys = g0.context().systemView().view(CQ_SYS_VIEW);
+                assertEquals(1, qrys.size());
 
-            assertEquals(1, qrys.size());
+                for (ContinuousQueryView cq : qrys)
+                    checkContinuousQueryView(g0, cq, true);
 
-            //Info on originating node.
-            for (ContinuousQueryView cq : qrys) {
-                assertEquals("cache-1", cq.cacheName());
-                assertEquals(100, cq.bufferSize());
-                assertEquals(1000, cq.interval());
-                assertEquals(g0.localNode().id(), cq.nodeId());
-                //Local listener not null on originating node.
-                assertTrue(cq.localListener().startsWith(getClass().getName()));
-                assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
-                assertNull(cq.localTransformedListener());
-                assertNull(cq.remoteTransformer());
-            }
+                qrys = g1.context().systemView().view(CQ_SYS_VIEW);
 
-            qrys = g1.context().systemView().view(CQ_SYS_VIEW);
+                assertEquals(1, qrys.size());
 
-            assertEquals(1, qrys.size());
-
-            //Info on remote node.
-            for (ContinuousQueryView cq : qrys) {
-                assertEquals("cache-1", cq.cacheName());
-                assertEquals(100, cq.bufferSize());
-                assertEquals(1000, cq.interval());
-                assertEquals(g0.localNode().id(), cq.nodeId());
-                //Local listener is null on remote nodes.
-                assertNull(cq.localListener());
-                assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
-                assertNull(cq.localTransformedListener());
-                assertNull(cq.remoteTransformer());
+                for (ContinuousQueryView cq : qrys)
+                    checkContinuousQueryView(g0, cq, false);
             }
         }
+    }
+
+    /** */
+    private void checkContinuousQueryView(IgniteEx g0, ContinuousQueryView cq, boolean loc) {
+        assertEquals("cache-1", cq.cacheName());
+        assertEquals(100, cq.bufferSize());
+        assertEquals(1000, cq.interval());
+        assertEquals(g0.localNode().id(), cq.nodeId());
+
+        if (loc)
+            assertTrue(cq.localListener().startsWith(getClass().getName()));
+        else
+            assertNull(cq.localListener());
+
+        assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
+        assertNull(cq.localTransformedListener());
+        assertNull(cq.remoteTransformer());
+
     }
 
     /** */
