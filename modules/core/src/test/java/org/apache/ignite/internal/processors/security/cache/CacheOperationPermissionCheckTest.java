@@ -51,23 +51,23 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      *
      */
     @Test
-    public void testServerNodeAllowAll() throws Exception {
-        testCrudCachePermissionsAllowAll(false);
+    public void testServerNode() throws Exception {
+        testCrudCachePermissions(false);
     }
 
     /**
      *
      */
     @Test
-    public void testClientNodeAllowAll() throws Exception {
-        testCrudCachePermissionsAllowAll(true);
+    public void testClientNode() throws Exception {
+        testCrudCachePermissions(true);
     }
 
     /**
      * @param isClient True if is client mode.
      * @throws Exception If failed.
      */
-    private void testCrudCachePermissionsAllowAll(boolean isClient) throws Exception {
+    private void testCrudCachePermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             SecurityPermissionSetBuilder.create() // defaultAllowAll == true
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
