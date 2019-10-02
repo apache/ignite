@@ -58,19 +58,19 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
 
     /** */
     private static final LogListener REQ_RECEIVED_LSNR = LogListener.matches(
-        Pattern.compile("REST request received \\[req=.+]\\.")).build();
+        Pattern.compile("REST request received \\[req=.+]")).build();
 
     /** */
     private static final LogListener REQ_SUCCEED_LSNR = LogListener.matches(
-        Pattern.compile("REST request result \\[req=.+, resp=.+]\\.")).build();
+        Pattern.compile("REST request result \\[req=.+, resp=.+]")).build();
 
     /** */
     private static final LogListener REQ_FAILED_LSNR = LogListener.matches(
-        Pattern.compile("REST request failed \\[req=.+, err=(.+\\s?)*]\\.")).build();
+        Pattern.compile("REST request failed \\[req=.+, err=(.+\\s?)*]")).build();
 
     /** */
     private static final LogListener FUT_CANCELLED_LSNR = LogListener.matches(
-        Pattern.compile("REST request failed \\[req=.+, err=Future was cancelled \\[fut=.+]]\\.")).build();
+        Pattern.compile("REST request future was cancelled \\[req=.+, fut=.+]")).build();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -119,7 +119,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
             }
-        }, REQ_RECEIVED_LSNR, REQ_FAILED_LSNR);
+        }, REQ_RECEIVED_LSNR, FUT_CANCELLED_LSNR);
     }
 
     /** */
