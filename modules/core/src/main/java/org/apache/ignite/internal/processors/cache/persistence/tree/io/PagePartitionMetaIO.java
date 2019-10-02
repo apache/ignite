@@ -228,11 +228,18 @@ public class PagePartitionMetaIO extends PageMetaIO {
             "this PagePartitionMetaIO version: ver=" + getVersion());
     }
 
+    /**
+     * @param pageAddr Page address.
+     */
     public long getTombstonesCount(long pageAddr) {
         throw new UnsupportedOperationException("Tombstones count is not supported by " +
             "this PagePartitionMetaIO version: ver=" + getVersion());
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @param tombstonesCount Tombstones count.
+     */
     public boolean setTombstonesCount(long pageAddr, long tombstonesCount) {
         throw new UnsupportedOperationException("Tombstones count is not supported by " +
             "this PagePartitionMetaIO version: ver=" + getVersion());
