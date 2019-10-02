@@ -149,7 +149,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
             return F.asMap(
                 new ComputeJob() {
                     @Override public void cancel() {
-                        // No-op
+                        // No-op.
                     }
 
                     @Override public Object execute() throws IgniteException {
