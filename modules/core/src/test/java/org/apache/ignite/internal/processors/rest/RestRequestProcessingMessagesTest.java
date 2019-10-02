@@ -119,9 +119,9 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that the specified listeners intercepted the message after executing {@code r}.
+     * Verifies that specified listeners intercepted the message produced by {@code r} executing.
      *
-     * @param r {@link Runnable} after which execution messeges will be checked..
+     * @param r {@link Runnable} after which execution messeges will be checked.
      * @param lsnrs Listeners to be checked.
      */
     private void checkListeners(Runnable r, LogListener... lsnrs) throws Exception{
