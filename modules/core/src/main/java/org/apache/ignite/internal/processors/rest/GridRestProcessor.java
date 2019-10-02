@@ -159,16 +159,16 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 res.listen(fut -> {
                     GridRestResponse resp = fut.result();
 
-                    if (resp != null) {
+                    if (resp != null)
                         log.debug("REST request result [req=" + req + ", resp=" + resp + "].");
-
-                        return;
+                    else if (res.isCancelled()) {
+                        log.debug("REST request failed [req=" + req + ", err=Future was cancelled [fut= " + fut +
+                            "]].");
                     }
-
-                    String reqProcErr = fut.isCancelled() ? "Future was cancelled [fut= " + fut + ']' :
-                        fut.error() == null ? null : X.getFullStackTrace(fut.error());
-
-                    log.debug(String.format("REST request failed [req=%s, err=%s].", req, reqProcErr));
+                    else {
+                        log.debug("REST request failed [req=" + req + ", err=" + X.getFullStackTrace(fut.error()) +
+                            "].");
+                    }
                 });
             }
 
