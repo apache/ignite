@@ -107,6 +107,30 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
     }
 
     /**
+     * Verifies that when client without SSL tries to connect to SSL-enabled cluster,
+     * it fails and prints clear message with possible causes to output.
+     *
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testClientWithoutSslConnectsToSslEnabledCluster() throws Exception {
+        startGrid(0);
+
+        List<String> params = new ArrayList<>();
+
+        params.add("--activate");
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_CONNECTION_FAILED, execute(params));
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "firewall settings");
+        assertContains(log, out, "SSL configuration");
+    }
+
+    /**
      * @throws Exception If test failed.
      */
     @Test

@@ -28,6 +28,10 @@ import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
@@ -44,6 +48,10 @@ public class RandomForestRegressionFromSparkExample {
      * Path to Spark Random Forest regression model.
      */
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/rfreg";
+
+    /** Learning environment. */
+    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+        .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
      * Run example.
@@ -63,7 +71,8 @@ public class RandomForestRegressionFromSparkExample {
 
                 ModelsComposition mdl = (ModelsComposition)SparkModelParser.parse(
                     SPARK_MDL_PATH,
-                    SupportedSparkModels.RANDOM_FOREST_REGRESSION
+                    SupportedSparkModels.RANDOM_FOREST_REGRESSION,
+                    env
                 );
 
                 System.out.println(">>> Random Forest regression model: " + mdl);

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.ClusterProcessorCheckGlobalStateComputeRequestTest;
 import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
+import org.apache.ignite.internal.DiagnosticLogForPartitionStatesTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -68,6 +69,8 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestor
 import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.DropCacheContextDuringEvictionTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictionTaskFailureHandlerTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
@@ -87,6 +90,8 @@ import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
@@ -177,6 +182,9 @@ import org.junit.runners.Suite;
     SetTxTimeoutOnPartitionMapExchangeTest.class,
     DiscoveryDataDeserializationFailureHanderTest.class,
 
+    PartitionsEvictionTaskFailureHandlerTest.class,
+    DropCacheContextDuringEvictionTest.class,
+
     IgniteExceptionInNioWorkerSelfTest.class,
     IgniteLocalNodeMapBeforeStartTest.class,
     OdbcConfigurationValidationSelfTest.class,
@@ -244,10 +252,13 @@ import org.junit.runners.Suite;
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
     DistributedMetaStorageHistoryCacheTest.class,
+    DmsDataWriterWorkerTest.class,
+    InMemoryCachedDistributedMetaStorageBridgeTest.class,
     DistributedConfigurationInMemoryTest.class,
     BaselineAutoAdjustMXBeanTest.class,
 
     ConsistentIdImplicitlyExplicitlyTest.class,
+    DiagnosticLogForPartitionStatesTest.class,
 
     // Tests against configuration variations framework.
     ParametersTest.class,

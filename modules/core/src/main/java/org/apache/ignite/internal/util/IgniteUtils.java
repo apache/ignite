@@ -138,6 +138,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -1072,13 +1073,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return Value of {@link System#nanoTime()} in microseconds.
-     */
-    public static long microTime() {
-        return System.nanoTime() / 1000;
-    }
-
-    /**
      * Convert milliseconds time interval to nanoseconds.
      *
      * @param millis Original time interval.
@@ -1693,6 +1687,22 @@ public abstract class IgniteUtils {
         finally {
             if (ctor != null && set)
                 ctor.setAccessible(false);
+        }
+    }
+
+    /**
+     * Check whether class is in classpath.
+     *
+     * @return {@code True} if in classpath.
+     */
+    public static boolean inClassPath(String clsName) {
+        try {
+            Class.forName(clsName);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
         }
     }
 
@@ -7055,6 +7065,30 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get string representation of an object properly catching all exceptions.
+     *
+     * @param obj Object.
+     * @return Result or {@code null}.
+     */
+    @Nullable public static String toStringSafe(@Nullable Object obj) {
+        if (obj == null)
+            return null;
+        else {
+            try {
+                return obj.toString();
+            }
+            catch (Exception e) {
+                try {
+                    return "Failed to convert object to string: " + e.getMessage();
+                }
+                catch (Exception e0) {
+                    return "Failed to convert object to string (error message is not available)";
+                }
+            }
+        }
+    }
+
+    /**
      * Converts collection of integers into array.
      *
      * @param c Collection of integers.
@@ -11541,5 +11575,26 @@ public abstract class IgniteUtils {
      */
     public static boolean isFlagSet(int flags, int flag) {
         return (flags & flag) == flag;
+    }
+
+    /**
+     * Notifies provided {@code lsnrs} with the value {@code t}.
+     *
+     * @param t Consumed object.
+     * @param lsnrs Listeners.
+     * @param <T> Type of consumed object.
+     */
+    public static <T> void notifyListeners(T t, Collection<Consumer<T>> lsnrs, IgniteLogger log) {
+        if (lsnrs == null)
+            return;
+
+        for (Consumer<T> lsnr : lsnrs) {
+            try {
+                lsnr.accept(t);
+            }
+            catch (Exception e) {
+                U.warn(log, "Listener error", e);
+            }
+        }
     }
 }

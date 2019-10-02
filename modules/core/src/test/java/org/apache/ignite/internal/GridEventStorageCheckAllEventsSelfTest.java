@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CheckpointEvent;
 import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -98,6 +99,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         // TODO: IGNITE-3099 (hotfix the test to check the event order in common case).
         cfg.setPublicThreadPoolSize(1);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

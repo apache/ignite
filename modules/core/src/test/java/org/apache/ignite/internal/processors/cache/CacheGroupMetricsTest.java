@@ -175,6 +175,8 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             );
         }
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
