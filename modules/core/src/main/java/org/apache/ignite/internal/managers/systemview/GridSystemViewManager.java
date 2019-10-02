@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.systemview;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -141,7 +142,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers {@link SystemViewArrayContainerAdapter} view which exports container content.
+     * Registers {@link SystemViewCollectionContainerAdapter} view which exports container content.
      *
      * @param name Name.
      * @param desc Description.
@@ -155,12 +156,12 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <C, R, D> void registerArrayContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
         Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewArrayContainerAdapter<>(name,
+        doRegister(name, new SystemViewCollectionContainerAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             container,
-            dataExtractor,
+            c -> Arrays.asList(dataExtractor.apply(c)),
             rowFunc));
     }
 
