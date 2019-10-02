@@ -48,27 +48,23 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 
-/** */
+/**
+ * Tests messages occured while rest request processing.
+ */
 public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
-    /** */
-    private static final String HOST = "127.0.0.1";
-
-    /** */
-    private static final int BINARY_PORT = 11211;
-
-    /** */
+    /** Listener of received request message. */
     private static final LogListener REQ_RECEIVED_LSNR = LogListener.matches(
         Pattern.compile("REST request received \\[req=.+]")).build();
 
-    /** */
+    /** Listener of succeed request message. */
     private static final LogListener REQ_SUCCEED_LSNR = LogListener.matches(
         Pattern.compile("REST request result \\[req=.+, resp=.+]")).build();
 
-    /** */
+    /** Listener of failed request message. */
     private static final LogListener REQ_FAILED_LSNR = LogListener.matches(
-        Pattern.compile("REST request failed \\[req=.+, err=(.+\\s?)*]")).build();
+        Pattern.compile("REST request failed \\[req=.+, err=(.+\\s?)+]")).build();
 
-    /** */
+    /** Listener of cancelled future message. */
     private static final LogListener FUT_CANCELLED_LSNR = LogListener.matches(
         Pattern.compile("REST request future was cancelled \\[req=.+, fut=.+]")).build();
 
@@ -85,12 +81,12 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
             .setGridLogger(log)
             .setConnectorConfiguration(
                 new ConnectorConfiguration()
-                    .setHost(HOST)
-                    .setPort(BINARY_PORT)
             );
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testRestRequestMessages() throws Exception {
         IgniteEx ignite = startGrid(1);
@@ -109,7 +105,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
         GridRestTaskRequest cancelledReq = new GridRestTaskRequest();
 
         cancelledReq.command(EXE);
-        cancelledReq.taskName(StuckTask.class.getName());
+        cancelledReq.taskName(TestTask.class.getName());
         cancelledReq.params(Collections.singletonList(getTestTimeout()));
 
         checkListeners(() -> {
@@ -122,18 +118,26 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
         }, REQ_RECEIVED_LSNR, FUT_CANCELLED_LSNR);
     }
 
-    /** */
-    private void checkListeners(Runnable r, LogListener... lsnr) throws Exception{
-        Arrays.stream(lsnr).forEach(LogListener::reset);
+    /**
+     * Verifies that the specified listeners intercepted the message after executing {@code r}.
+     *
+     * @param r {@link Runnable} after which execution messeges will be checked..
+     * @param lsnrs Listeners to be checked.
+     */
+    private void checkListeners(Runnable r, LogListener... lsnrs) throws Exception{
+        Arrays.stream(lsnrs).forEach(LogListener::reset);
 
         r.run();
 
         assertTrue(GridTestUtils.waitForCondition(() ->
-            Arrays.stream(lsnr).allMatch(LogListener::check), getTestTimeout()));
+            Arrays.stream(lsnrs).allMatch(LogListener::check), getTestTimeout()));
     }
 
-    /** */
-    private static class StuckTask extends ComputeTaskAdapter<Long, Void> {
+    /**
+     * Test task, which provides ability to imitate task processing stuck.
+     * First task parameter is used as waiting time upper bound.
+     */
+    private static class TestTask extends ComputeTaskAdapter<Long, Void> {
         /** */
         public final CountDownLatch latch = new CountDownLatch(1);
 
