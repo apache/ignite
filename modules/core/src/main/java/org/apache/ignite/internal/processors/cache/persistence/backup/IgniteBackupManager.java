@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -500,7 +501,37 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @return Factory which produces workers for partition supply.
      */
     Supplier<IgniteTriConsumer<String, GroupPartitionId, Long>> partWorkerFactory(File workDir, File backupDir) {
-        return () -> new PartitionCopyConsumer(log, ioFactory, workDir, backupDir);
+        return () -> new IgniteTriConsumer<String, GroupPartitionId, Long>() {
+            @Override public void accept(String cacheDirName, GroupPartitionId pair, Long length) {
+                File part = getPartitionFileEx(cacheWorkDir(workDir, cacheDirName), pair.getPartitionId());
+
+                File to = new File(cacheWorkDir(backupDir, cacheDirName), part.getName());
+
+                try {
+                    if (!to.exists() || to.delete())
+                        to.createNewFile();
+
+                    if (length == 0)
+                        return;
+
+                    try (FileIO src = ioFactory.create(part);
+                         FileChannel dest = new FileOutputStream(to).getChannel()) {
+                        src.position(0);
+
+                        long written = 0;
+
+                        while (written < length)
+                            written += src.transferTo(written, length - written, dest);
+                    }
+
+                    U.log(log, "Partition file has been copied [from=" + part.getAbsolutePath() +
+                        ", fromSize=" + part.length() + ", to=" + to.getAbsolutePath() + ']');
+                }
+                catch (IOException ex) {
+                    throw new IgniteException(ex);
+                }
+            }
+        };
     }
 
     /**
@@ -531,7 +562,12 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 try {
                     File part = getPartitionFileEx(cacheWorkDir(workDir, cacheDirName), pair.getPartitionId());
 
-                    sndr.send(part, 0, length, new HashMap<>(), TransmissionPolicy.FILE);
+                    Map<String, Serializable> params = new HashMap<>();
+
+                    params.put(String.valueOf(pair.getGroupId()), String.valueOf(pair.getGroupId()));
+                    params.put(String.valueOf(pair.getPartitionId()), String.valueOf(pair.getPartitionId()));
+
+                    sndr.send(part, 0, length, params, TransmissionPolicy.FILE);
                 }
                 catch (IgniteCheckedException | InterruptedException | IOException e) {
                     throw new IgniteException(e);
@@ -699,70 +735,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteException(e);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class PartitionCopyConsumer implements IgniteTriConsumer<String, GroupPartitionId, Long> {
-        /** Ignite logger to use. */
-        private final IgniteLogger log;
-
-        /** Factory to produce IO channels. */
-        private final FileIOFactory ioFactory;
-
-        /** Ignite instance working directory. */
-        private final File workDir;
-
-        /** Backup directory. */
-        private final File backupDir;
-
-        /**
-         * @param log Ignite logger to use.
-         */
-        public PartitionCopyConsumer(
-            IgniteLogger log,
-            FileIOFactory ioFactory,
-            File workDir,
-            File backupDir
-        ) {
-            assert backupDir.isDirectory() : "Destination path must be a directory";
-
-            this.log = log.getLogger(PartitionCopyConsumer.class);
-            this.ioFactory = ioFactory;
-            this.workDir = workDir;
-            this.backupDir = backupDir;
-        }
-
-        @Override public void accept(String cacheDirName, GroupPartitionId pair, Long length) {
-            File part = getPartitionFileEx(cacheWorkDir(workDir, cacheDirName), pair.getPartitionId());
-
-            File to = new File(cacheWorkDir(backupDir, cacheDirName), part.getName());
-
-            try {
-                if (!to.exists() || to.delete())
-                    to.createNewFile();
-
-                if (length == 0)
-                    return;
-
-                try (FileIO src = ioFactory.create(part);
-                     FileChannel dest = new FileOutputStream(to).getChannel()) {
-                    src.position(0);
-
-                    long written = 0;
-
-                    while (written < length)
-                        written += src.transferTo(written, length - written, dest);
-                }
-
-                U.log(log, "Partition file has been copied [from=" + part.getAbsolutePath() +
-                    ", fromSize=" + part.length() + ", to=" + to.getAbsolutePath() + ']');
-            }
-            catch (IOException ex) {
-                throw new IgniteException(ex);
-            }
         }
     }
 
@@ -966,7 +938,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         /**
          * Map of partitions to backup and theirs corresponding delta PageStores.
          * Writers are pinned to the backup context due to controlling partition
-         * processing supplier (see {@link PartitionCopyConsumer}).
+         * processing supplier.
          */
         private final Map<GroupPartitionId, PageStoreSerialWriter> partDeltaWriters = new HashMap<>();
 
