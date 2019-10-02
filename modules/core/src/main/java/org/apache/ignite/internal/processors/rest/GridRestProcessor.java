@@ -150,10 +150,27 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+            if (log.isDebugEnabled())
+                log.debug("REST request received [req=" + req + "].");
+
             IgniteInternalFuture<GridRestResponse> res = handleAsync0(req);
 
-            if (log.isDebugEnabled())
-                res.listen(fut -> logRestRequestResult(req, fut));
+            if (log.isDebugEnabled()) {
+                res.listen(fut -> {
+                    GridRestResponse resp = fut.result();
+
+                    if (resp != null) {
+                        log.debug("REST request result [req=" + req + ", resp=" + resp + "].");
+
+                        return;
+                    }
+
+                    String reqProcErr = fut.isCancelled() ? "Future was cancelled [fut= " + fut + ']' :
+                        fut.error() == null ? null : X.getFullStackTrace(fut.error());
+
+                    log.debug(String.format("REST request failed [req=%s, err=%s].", req, reqProcErr));
+                });
+            }
 
             return res;
         }
@@ -1042,27 +1059,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
         X.println(">>> REST processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   protosSize: " + protos.size());
         X.println(">>>   handlersSize: " + handlers.size());
-    }
-
-    /**
-     * Logs REST request processing result.
-     *
-     * @param req Received REST request.
-     * @param fut Result of REST request processing.
-     */
-    private void logRestRequestResult(GridRestRequest req, IgniteInternalFuture<GridRestResponse> fut) {
-        GridRestResponse resp = fut.result();
-
-        if (resp != null) {
-            log.debug(String.format("REST request handled [req=%s, resp=%s].", req, resp));
-
-            return;
-        }
-
-        String reqProcErr = fut.isCancelled() ? "Future was cancelled [fut= " + fut + ']':
-            fut.error() == null ? null : fut.error().getMessage();
-
-        log.debug(String.format("REST request handled [req=%s, err=%s].", req, reqProcErr));
     }
 
     /**
