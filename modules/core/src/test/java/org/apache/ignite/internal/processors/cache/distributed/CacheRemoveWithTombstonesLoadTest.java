@@ -19,17 +19,19 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,112 +39,162 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
 import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
+    /** Dummy data. */
+    private static final byte[] DUMMY_DATA = {};
+
+    /** Test parameters. */
+    @Parameterized.Parameters(name = "persistenceEnabled={0}, historicalRebalance={1}")
+    public static Collection parameters() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean persistenceEnabled : new boolean[] {false, true}) {
+            for (boolean histRebalance : new boolean[] {false, true}) {
+                if (!persistenceEnabled && histRebalance)
+                    continue;
+
+                res.add(new Object[]{persistenceEnabled, histRebalance});
+            }
+        }
+
+        return res;
+    }
+
     /** */
-    private boolean persistence;
+    @Parameterized.Parameter(0)
+    public boolean persistence;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean histRebalance;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setConsistentId(gridName);
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         if (persistence) {
             dsCfg.setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
-                    .setWalMode(WALMode.LOG_ONLY);
+                new DataRegionConfiguration()
+                    .setInitialSize(256L * 1024 * 1024)
+                    .setMaxSize(256L * 1024 * 1024)
+                    .setPersistenceEnabled(true))
+                .setWalMode(WALMode.LOG_ONLY);
         }
 
         dsCfg.setPageSize(1024);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
-        // Long rebalance.
+        // Throttle rebalance.
         cfg.setRebalanceThrottle(100);
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    /**
+     *
+     */
+    @BeforeClass
+    public static void beforeTests() {
         Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
+    /**
+     *
+     */
+    @Before
+    public void before() throws Exception {
         cleanPersistenceDir();
+
+        stopAllGrids();
+
+        if (histRebalance)
+            System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /**
+     *
+     */
+    @After
+    public void after() throws Exception {
+        if (histRebalance)
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        super.afterTest();
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testRemoveAndRebalance() throws Exception {
-        removeAndRebalance();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRemoveAndRebalanceWithPersistence() throws Exception {
-        persistence = true;
-
-        testRemoveAndRebalance();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void removeAndRebalance() throws Exception {
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void removeAndRebalance() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        if (persistence)
+        IgniteCache<TestKey, TestValue> cache0;
+
+        final int ADD_NODES = persistence ? 2 : 3;
+        final int KEYS = persistence ? 5_000 : 10_000;
+
+        if (persistence) {
+            // Preload initial data to all nodes to have start point for WAL rebalance.
+            for (int i = 0, idx = 1; i < ADD_NODES; i++, idx++)
+                startGrid(idx);
+
             ignite0.cluster().active(true);
 
+            awaitPartitionMapExchange();
+
+            cache0 = ignite0.getOrCreateCache(cacheConfiguration());
+
+            for (int k = 0; k < KEYS; k++)
+                cache0.put(new TestKey(k, DUMMY_DATA), new TestValue(DUMMY_DATA));
+
+            forceCheckpoint();
+
+            for (int i = 0, idx = 1; i < ADD_NODES; i++, idx++) {
+                stopGrid(idx);
+
+                awaitPartitionMapExchange();
+            }
+        }
+
         final int pageSize = ignite0.configuration().getDataStorageConfiguration().getPageSize();
-
-        assert pageSize > 0;
-
-        IgniteCache<TestKey, TestValue> cache0 = ignite0.createCache(cacheConfiguration());
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         List<TestKey> keys = new ArrayList<>();
 
         Map<TestKey, TestValue> data = new HashMap<>();
-
-        final int KEYS = persistence ? 5_000 : 10_000;
-        final int ADD_NODES = persistence ? 2 : 3;
 
         for (int i = 0; i < KEYS; i++) {
             TestKey key = new TestKey(i, new byte[rnd.nextInt(pageSize * 3)]);
@@ -152,24 +204,26 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
             data.put(key, new TestValue(new byte[rnd.nextInt(pageSize * 3)]));
         }
 
+        cache0 = ignite0.getOrCreateCache(cacheConfiguration());
+
         cache0.putAll(data);
 
         AtomicInteger nodeIdx = new AtomicInteger();
 
         for (int iter = 0; iter < ADD_NODES; iter++) {
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    int idx = nodeIdx.incrementAndGet();
+            IgniteInternalFuture<?> nodeStartFut = GridTestUtils.runAsync(() -> {
+                int idx = nodeIdx.incrementAndGet();
 
-                    info("Start node: " + idx);
+                info("Start node: " + idx);
 
-                    return startGrid(idx);
-                }
+                U.sleep(500);
+
+                return startGrid(idx);
             });
 
-            long endTime = System.currentTimeMillis() + 2500;
+            long endTime = U.currentTimeMillis() + 5_000;
 
-            while (System.currentTimeMillis() < endTime) {
+            while (U.currentTimeMillis() < endTime) {
                 for (int i = 0; i < 100; i++) {
                     TestKey key = keys.get(rnd.nextInt(keys.size()));
 
@@ -177,18 +231,19 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
                         cache0.remove(key);
 
                         data.remove(key);
-                    } else {
+                    }
+                    else {
                         TestValue val = new TestValue(new byte[rnd.nextInt(pageSize * 3)]);
 
                         cache0.put(key, val);
                         data.put(key, val);
                     }
 
-                    Thread.sleep(10);
+                    U.sleep(10);
                 }
             }
 
-            fut.get(30_000);
+            nodeStartFut.get(30_000);
 
             checkData(keys, data);
 
@@ -200,23 +255,21 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         for (int iter = 0; iter < ADD_NODES; iter++) {
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    int idx = nodeIdx.getAndDecrement();
+            IgniteInternalFuture<?> nodeStopFut = GridTestUtils.runAsync(() -> {
+                int idx = nodeIdx.getAndDecrement();
 
-                    info("Stop node: " + idx);
+                info("Stop node: " + idx);
 
-                    stopGrid(idx);
+                stopGrid(idx);
 
-                    awaitPartitionMapExchange();
+                awaitPartitionMapExchange();
 
-                    return null;
-                }
+                return null;
             });
 
-            long endTime = System.currentTimeMillis() + 2500;
+            long endTime = U.currentTimeMillis() + 2_500;
 
-            while (System.currentTimeMillis() < endTime) {
+            while (U.currentTimeMillis() < endTime) {
                 for (int i = 0; i < 100; i++) {
                     TestKey key = keys.get(rnd.nextInt(keys.size()));
 
@@ -232,10 +285,10 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
                     }
                 }
 
-                Thread.sleep(10);
+                U.sleep(10);
             }
 
-            fut.get(30_000);
+            nodeStopFut.get(30_000);
 
             checkData(keys, data);
 
@@ -251,9 +304,6 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
      */
     private void checkData(List<TestKey> keys, Map<TestKey, TestValue> data) {
         for (Ignite node : Ignition.allGrids()) {
-            if (!node.name().endsWith("CacheRemoveWithTombstonesLoadTest1"))
-                continue;
-
             info("Check node: " + node.name());
 
             IgniteCache<TestKey, TestValue> cache = node.cache(DEFAULT_CACHE_NAME);
@@ -278,13 +328,9 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
     private void waitTombstoneCleanup() throws Exception {
         for (Ignite node : Ignition.allGrids()) {
             final LongMetric tombstones =  ((IgniteEx)node).context().metric().registry(
-                cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false)).findMetric("Tombstones");
+                MetricUtils.cacheGroupMetricsRegistryName(DEFAULT_CACHE_NAME)).findMetric("Tombstones");
 
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return tombstones.value() == 0;
-                }
-            }, 30_000);
+            GridTestUtils.waitForCondition(() -> tombstones.value() == 0, 30_000);
 
             assertEquals("Failed to wait for tombstone cleanup: " + node.name(), 0, tombstones.value());
         }
@@ -298,9 +344,11 @@ public class CacheRemoveWithTombstonesLoadTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-        ccfg.setRebalanceMode(ASYNC);
+        ccfg.setBackups(2);
+        ccfg.setRebalanceMode(SYNC);
+        ccfg.setReadFromBackup(true);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         return ccfg;
     }

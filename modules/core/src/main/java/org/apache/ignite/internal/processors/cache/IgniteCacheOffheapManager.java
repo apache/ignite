@@ -1142,5 +1142,10 @@ public interface IgniteCacheOffheapManager {
          * Partition storage.
          */
         public PartitionMetaStorage<SimpleDataRow> partStorage();
+
+        /**
+         * @return Number of tombstone entries.
+         */
+        public long tombstonesCount();
     }
 }

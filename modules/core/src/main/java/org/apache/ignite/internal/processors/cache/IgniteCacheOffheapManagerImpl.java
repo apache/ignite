@@ -1472,6 +1472,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final PageHandler<MvccDataRow, Boolean> mvccApplyChanges = new MvccApplyChangesHandler();
 
+        /** Tombstones counter. */
+        private final AtomicLong tombstonesCnt = new AtomicLong();
+
         /**
          * @param partId Partition number.
          * @param rowStore Row store.
@@ -1732,7 +1735,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     assert !isTombstone(c.newRow());
 
                     if (isTombstone(c.oldRow())) {
-                        cctx.tombstoneRemoved();
+                        tombstoneRemoved();
 
                         incrementSize(cctx.cacheId());
                     }
@@ -2667,7 +2670,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             updateIgfsMetrics(cctx, key, (oldNull ? null : oldRow.value()), newRow.value());
 
             if (oldTombstone)
-                cctx.tombstoneRemoved();
+                tombstoneRemoved();
         }
 
         /**
@@ -2797,10 +2800,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert c.operationType() == PUT || c.operationType() == IN_PLACE : c.operationType();
 
-                part.tombstoneCreated();
-
                 if (!isTombstone(c.oldRow))
-                    cctx.tombstoneCreated();
+                    tombstoneCreated();
 
                 finishRemove(cctx, key, c.oldRow, c.newRow);
             }
@@ -2842,7 +2843,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             updateIgfsMetrics(cctx, key, (oldNull ? null : oldRow.value()), null);
 
             if (oldTombstone && tombstoneRow == null)
-                cctx.tombstoneRemoved();
+                tombstoneRemoved();
         }
 
         /**
@@ -3233,17 +3234,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param size Size to init.
          * @param updCntr Update counter.
          * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
-         * @param cntrUpdData Counter updates.
+         * @param updCntrGapsData Update counters gaps raw data.
+         * @param tombstonesCnt Tombstones count.
          */
-        public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] cntrUpdData) {
-            pCntr.init(updCntr, cntrUpdData);
+        public void restoreState(
+            long size,
+            long updCntr,
+            Map<Integer, Long> cacheSizes,
+            byte[] updCntrGapsData,
+            long tombstonesCnt
+        ) {
+            pCntr.init(updCntr, updCntrGapsData);
 
             storageSize.set(size);
 
-            if (cacheSizes != null) {
-                for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
-                    this.cacheSizes.put(e.getKey(), new AtomicLong(e.getValue()));
-            }
+            for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
+                this.cacheSizes.put(e.getKey(), new AtomicLong(e.getValue()));
+
+            this.tombstonesCnt.set(tombstonesCnt);
         }
 
         /** {@inheritDoc} */
@@ -3264,6 +3272,25 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long tombstonesCount() {
+            return tombstonesCnt.get();
+        }
+
+        /**
+         * Called when tombstone has removed from partition.
+         */
+        private void tombstoneRemoved() {
+            tombstonesCnt.decrementAndGet();
+        }
+
+        /**
+         * Called when tombstone has created in partition.
+         */
+        private void tombstoneCreated() {
+            tombstonesCnt.incrementAndGet();
         }
 
         /**

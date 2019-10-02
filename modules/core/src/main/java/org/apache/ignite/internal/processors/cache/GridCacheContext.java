@@ -2384,26 +2384,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
     }
 
-    /**
-     * Increments tombstones counter.
-     */
-    public void tombstoneCreated() {
-        GridCacheAdapter cache = this.cache;
-
-        if (cache != null)
-            cache.metrics0().tombstoneCreated();
-    }
-
-    /**
-     * Decrements tombstones counter.
-     */
-    public void tombstoneRemoved() {
-        GridCacheAdapter cache = this.cache;
-
-        if (cache != null)
-            cache.metrics0().tombstoneRemoved();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return "GridCacheContext: " + name();

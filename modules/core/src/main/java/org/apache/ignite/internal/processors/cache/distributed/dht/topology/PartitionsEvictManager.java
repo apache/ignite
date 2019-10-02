@@ -603,7 +603,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                         true);
                 }
                 else {
-                    LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
+                    LT.error(log, ex, "Partition eviction failed.");
 
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, ex));
                 }
@@ -614,7 +614,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      * Task for self-scheduled partition eviction / clearing.
      */
-    private class PartitionEvictionTask extends AbstractEvictionTask {
+    class PartitionEvictionTask extends AbstractEvictionTask {
         /**
          * @param part Partition.
          * @param grpEvictionCtx Eviction context.
@@ -651,7 +651,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private class ClearTombstonesTask extends AbstractEvictionTask {
+    class ClearTombstonesTask extends AbstractEvictionTask {
         /**
          * @param part Partition.
          * @param grpEvictionCtx Eviction context.
@@ -681,13 +681,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      */
     class BucketQueue {
         /** Queues contains partitions scheduled for eviction. */
-        private final Queue<AbstractEvictionTask>[] buckets;
+        final Queue<AbstractEvictionTask>[] buckets;
 
         /** */
         private final long[] bucketSizes;
-
-        /** Queues contains partitions scheduled for eviction. */
-        final Queue<PartitionEvictionTask>[] buckets;
 
         /**
          * @param buckets Number of buckets.

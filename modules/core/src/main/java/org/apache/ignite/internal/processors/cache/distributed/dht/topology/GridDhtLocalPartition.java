@@ -170,9 +170,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
-    /** Set if tombstone was created in partition. */
-    private volatile boolean tombstoneCreated;
-
     /**
      * @param ctx Context.
      * @param grp Cache group.
@@ -609,8 +606,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             assert partState == MOVING || partState == LOST;
 
             if (casState(state, OWNING)) {
-                if (grp.supportsTombstone() && tombstoneCreated)
-                    grp.shared().evict().clearTombstonesAsync(grp, this);
+                if (hasTombstones())
+                    clearTombstonesAsync();
 
                 return true;
             }
@@ -764,6 +761,21 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             return;
 
         clearAsync0(false);
+    }
+
+    /**
+     * @return {@code True} if partition has tombstone entries.
+     */
+    boolean hasTombstones() {
+        return grp.supportsTombstone() && dataStore().tombstonesCount() > 0;
+    }
+
+    /**
+     * Adds async task that will clear tombstone entries from partition.
+     * @see #clearTombstones(EvictionContext).
+     */
+    void clearTombstonesAsync() {
+        grp.shared().evict().clearTombstonesAsync(grp, this);
     }
 
     /**
@@ -1130,16 +1142,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Iterates over partition entries and removes tombstone entries.
      *
+     * @param evictionCtx Eviction context.
      */
-    public void tombstoneCreated() {
-        tombstoneCreated = true;
-    }
+    void clearTombstones(EvictionContext evictionCtx) {
+        if (evictionCtx.shouldStop())
+            return;
 
-    /**
-     *
-     */
-    public void clearTombstones(EvictionContext evictionCtx) {
         final int stopCheckingFreq = 1000;
 
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;

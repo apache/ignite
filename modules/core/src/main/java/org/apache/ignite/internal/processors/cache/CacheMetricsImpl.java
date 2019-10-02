@@ -27,8 +27,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
@@ -163,9 +161,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Number of currently clearing partitions for rebalancing. */
     private final AtomicLongMetric rebalanceClearingPartitions;
-
-    /** */
-    private LongAdderMetric tombstones;
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -316,8 +311,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rebalanceClearingPartitions = mreg.longMetric("RebalanceClearingPartitionsLeft",
             "Number of partitions need to be cleared before actual rebalance start.");
-
-        tombstones = mreg.longAdderMetric("Tombstones", "Number of tombstone entries");
     }
 
     /**
@@ -1025,20 +1018,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.addPutAndGetTimeNanos(duration);
-    }
-
-    /**
-     * Increments tombstones counter.
-     */
-    public void tombstoneCreated() {
-        tombstones.increment();
-    }
-
-    /**
-     * Decrements tombstones counter.
-     */
-    public void tombstoneRemoved() {
-        tombstones.decrement();
     }
 
     /** {@inheritDoc} */
