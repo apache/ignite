@@ -31,6 +31,9 @@ public class SqlTableView {
     /** Affinity column name. */
     private String affColName;
 
+    /**
+     * @param tbl Table.
+     */
     public SqlTableView(GridH2Table tbl) {
         this.tbl = tbl;
 
@@ -43,6 +46,7 @@ public class SqlTableView {
             }
         }
     }
+
     /** @return Cache id. */
     @Order(3)
     public int cacheId() {

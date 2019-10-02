@@ -129,8 +129,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <C, R, D> void registerCollectionContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
-        Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
+    public <C, R, D> void registerCollectionContainerView(String name, String desc, Class<R> rowCls,
+        Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
         doRegister(name, new SystemViewCollectionContainerAdapter<>(name,
             desc,
             rowCls,

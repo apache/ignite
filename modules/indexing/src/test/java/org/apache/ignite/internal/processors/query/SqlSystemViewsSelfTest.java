@@ -303,7 +303,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals("[" + i + ',' + j + ']', expRow[j], String.valueOf(resRow.get(j)));
+                assertEquals(expRow[j], String.valueOf(resRow.get(j)));
         }
     }
 
@@ -941,7 +941,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Simple test for {@link SqlTableView}
+     * Simple test for {@link SqlTableView}.
      */
     @Test
     public void testTablesView() throws Exception {

@@ -362,9 +362,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testViews() throws Exception {
         Set<String> expViews = new HashSet<>(asList(
@@ -400,9 +398,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(expViews, actViews);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testTable() throws Exception {
         assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
@@ -438,9 +434,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testTableColumns() throws Exception {
         assertTrue(execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
@@ -477,9 +471,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testViewColumns() throws Exception {
         execute(ignite, "SELECT * FROM SYS.VIEW_COLUMNS");

@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
  * @see SystemView
  */
 public class SystemViewCollectionContainerAdapter<C, R, D> extends AbstractSystemView<R> {
-    /** Collections of the data containers */
+    /** Collections of the data containers. */
     private final Collection<C> containers;
 
     /** Function to extract collection of the data from container. */

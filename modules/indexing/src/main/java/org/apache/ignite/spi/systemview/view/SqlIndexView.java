@@ -118,7 +118,7 @@ public class SqlIndexView {
     }
 
     /**
-     * @param idx Index
+     * @param idx Inde.
      * @return Index type.
      */
     private static H2IndexType type(Index idx) {
