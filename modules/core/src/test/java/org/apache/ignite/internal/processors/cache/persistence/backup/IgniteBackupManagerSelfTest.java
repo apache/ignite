@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -67,13 +68,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager.backupDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
-/** */
+/**
+ * TODO backup must fail in case of parallel cache stop operation
+ */
 public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final FileIOFactory DFLT_IO_FACTORY = new RandomAccessFileIOFactory();
@@ -108,7 +111,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
                 .setPartitions(CACHE_PARTS_COUNT));
 
     /** Directory to store temporary files on testing cache backup process. */
-    private File backupDir;
+    private File backupWorkDir;
 
     /**
      * Calculate CRC for all partition files of specified cache.
@@ -142,7 +145,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     public void beforeTestBackup() throws Exception {
         cleanPersistenceDir();
 
-        backupDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "test_backups", true);
+        backupWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "test_backups", true);
     }
 
     /** */
@@ -189,8 +192,8 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(new File(mgr.backupDir()
-            .getAbsolutePath(), BACKUP_NAME), cacheDirName(defaultCacheCfg)));
+        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(backupDir(mgr.backupWorkDir(),
+            BACKUP_NAME), cacheDirName(defaultCacheCfg)));
 
         assertEquals("Partitons the same after backup and after merge", origParts, bakcupCRCs);
     }
@@ -216,17 +219,16 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         toBackup.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), p -> new HashSet<>())
             .add(PageIdAllocator.INDEX_PARTITION);
 
-        File cacheWorkDir = ((FilePageStoreManager)ig.context()
+        FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
             .cache()
             .context()
-            .pageStore())
-            .cacheWorkDir(defaultCacheCfg);
+            .pageStore();
+
+        File cacheWorkDir = storeMgr.cacheWorkDir(defaultCacheCfg);
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(new File(backupDir, BACKUP_NAME), defaultCacheCfg);
-
-        File zeroPart = getPartitionFile(cacheWorkDir, 0);
+        File cacheBackup = cacheWorkDir(backupDir(backupWorkDir, BACKUP_NAME), defaultCacheCfg);
 
         IgniteBackupManager mgr = ig.context()
             .cache()
@@ -237,19 +239,21 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
+        File backupDir0 = backupDir(backupWorkDir, BACKUP_NAME);
+
         IgniteInternalFuture<?> backupFut = mgr
             .scheduleBackup(BACKUP_NAME,
                 toBackup,
-                backupDir,
+                backupDir0,
                 mgr.backupExecutorService(),
-                () -> new IgniteTriConsumer<File, File, Long>() {
-                    @Override public void accept(File part, File backupDir, Long length) {
+                () -> new IgniteTriConsumer<String, GroupPartitionId, Long>() {
+                    @Override public void accept(String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
-                            if (part.getName().trim().equals(zeroPart.getName()))
+                            if (pair.getPartitionId() == 0)
                                 U.await(slowCopy);
 
-                            mgr.partWorkerFactory().get()
-                                .accept(part, backupDir, length);
+                            mgr.partWorkerFactory(storeMgr.workDir(), backupDir0).get()
+                                .accept(cacheDirName, pair, length);
                         }
                         catch (IgniteInterruptedCheckedException e) {
                             throw new IgniteException(e);
@@ -365,6 +369,11 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         toBackup.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new HashSet<>())
             .add(0);
 
+        FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
+            .cache()
+            .context()
+            .pageStore();
+
         IgniteBackupManager mgr = ig.context()
             .cache()
             .context()
@@ -372,16 +381,17 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = mgr.scheduleBackup(BACKUP_NAME,
             toBackup,
-            backupDir,
+            backupWorkDir,
             mgr.backupExecutorService(),
-            new Supplier<IgniteTriConsumer<File, File, Long>>() {
-                @Override public IgniteTriConsumer<File, File, Long> get() {
-                    return new IgniteTriConsumer<File, File, Long>() {
-                        @Override public void accept(File part, File backupDir, Long length) {
-                            if (String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0).equals(part.getName()))
-                                throw new IgniteException("Test. Fail to copy partition: " + part.getName());
+            new Supplier<IgniteTriConsumer<String, GroupPartitionId, Long>>() {
+                @Override public IgniteTriConsumer<String, GroupPartitionId, Long> get() {
+                    return new IgniteTriConsumer<String, GroupPartitionId, Long>() {
+                        @Override public void accept(String cacheDirName, GroupPartitionId pair, Long length) {
+                            if (pair.getPartitionId() == 0)
+                                throw new IgniteException("Test. Fail to copy partition: " + pair);
 
-                            mgr.partWorkerFactory().get().accept(part, backupDir, length);
+                            mgr.partWorkerFactory(storeMgr.workDir(), backupWorkDir).get()
+                                .accept(cacheDirName, pair, length);
                         }
                     };
                 }
