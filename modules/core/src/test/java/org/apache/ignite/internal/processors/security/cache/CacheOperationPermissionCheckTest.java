@@ -78,7 +78,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
                 .build(),
             isClient);
 
-        node.getOrCreateCache(NEW_CACHE);
+        node.createCache(NEW_CACHE);
 
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(CACHE_NAME));
