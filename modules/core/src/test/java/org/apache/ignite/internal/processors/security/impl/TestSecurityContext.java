@@ -47,10 +47,12 @@ public class TestSecurityContext implements SecurityContext, Serializable {
         switch (perm) {
             case CACHE_CREATE:
             case CACHE_DESTROY:
+                return systemOperationAllowed(perm) || cacheOperationAllowed(opName, perm);
+
             case CACHE_PUT:
             case CACHE_READ:
             case CACHE_REMOVE:
-                return systemOperationAllowed(perm) || cacheOperationAllowed(opName, perm);
+                return cacheOperationAllowed(opName, perm);
 
             case TASK_CANCEL:
             case TASK_EXECUTE:

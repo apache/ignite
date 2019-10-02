@@ -37,7 +37,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -71,9 +70,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             SecurityPermissionSetBuilder.create() // defaultAllowAll == true
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
-                // CACHE_CREATE is needed so that the CacheConfiguration can create cache
                 .appendCachePermissions(FORBIDDEN_CACHE, CACHE_CREATE)
-                .appendTaskPermissions("org.apache.ignite.internal.processors.cache.GridCacheAdapter$ClearTask",TASK_EXECUTE)
                 .appendSystemPermissions(JOIN_AS_SERVER)
                 .build(),
             isClient);
