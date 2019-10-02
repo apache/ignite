@@ -39,7 +39,7 @@ services:
   e2e:
     build: './testcafe'
     environment:
-      - APP_URL=http://frontend
+      - APP_URL=http://frontend:8008
       - REPORTER=teamcity
       - QUARANTINE_MODE=true
     depends_on:

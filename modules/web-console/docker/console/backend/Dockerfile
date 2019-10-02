@@ -27,6 +27,11 @@ COPY ./ignite-web-console-*/web-console.sh ./
 COPY ./ignite-web-console-*/libs ./libs
 COPY ./ignite-web-console-*/agent_dists ./agent_dists
 
+RUN chgrp -R 0 ${WEB_CONSOLE_HOME} && \
+    chmod -R g=u ${WEB_CONSOLE_HOME}
+
+USER 10001
+
 EXPOSE 3000
 
 CMD ./web-console.sh

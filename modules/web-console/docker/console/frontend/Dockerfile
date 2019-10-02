@@ -21,4 +21,10 @@ COPY ./ignite-web-console-*/frontend /data/www
 COPY ./frontend/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./frontend/nginx/web-console.conf /etc/nginx/web-console.conf
 
-EXPOSE 80
+RUN mkdir -p /var/cache/nginx && \
+    chgrp -R 0 /var/cache/nginx && \
+    chmod -R g=u /var/cache/nginx
+
+USER 10001
+
+EXPOSE 8008

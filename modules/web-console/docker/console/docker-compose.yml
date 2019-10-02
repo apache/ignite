@@ -46,4 +46,4 @@ services:
         condition: service_healthy
     ports:
       # Proxy HTTP nginx port (HOST_PORT:DOCKER_PORT)
-      - 80:80
+      - 80:8008
