@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -108,6 +110,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
 
         cancelledReq.command(EXE);
         cancelledReq.taskName(StuckTask.class.getName());
+        cancelledReq.params(Collections.singletonList(getTestTimeout()));
 
         checkListeners(() -> {
             try {
@@ -130,15 +133,15 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class StuckTask extends ComputeTaskAdapter<String, String> {
+    private static class StuckTask extends ComputeTaskAdapter<Long, Void> {
         /** */
         public final CountDownLatch latch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
         @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable String arg) throws IgniteException {
+            @Nullable Long arg) throws IgniteException {
             try {
-               latch.await();
+               latch.await(arg, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ignored) {
             }
@@ -158,7 +161,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
         }
     }
