@@ -66,7 +66,7 @@ public class SqlViewColumnView {
     }
 
     /** @return Field default. */
-    public String defatult() {
+    public String defaultValue() {
         return String.valueOf(col.getDefaultExpression());
     }
 

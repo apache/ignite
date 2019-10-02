@@ -36,12 +36,10 @@ public class SqlIndexViewWalker implements SystemViewRowAttributeWalker<SqlIndex
         v.accept(3, "schemaName", String.class);
         v.accept(4, "tableName", String.class);
         v.accept(5, "cacheName", String.class);
-        v.accept(6, "cacheGroupId", int.class);
-        v.accept(7, "cacheGroupName", String.class);
-        v.accept(8, "cacheId", int.class);
-        v.accept(9, "inlineSize", int.class);
-        v.accept(10, "isPk", boolean.class);
-        v.accept(11, "isUnique", boolean.class);
+        v.accept(6, "cacheId", int.class);
+        v.accept(7, "inlineSize", int.class);
+        v.accept(8, "isPk", boolean.class);
+        v.accept(9, "isUnique", boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -52,16 +50,14 @@ public class SqlIndexViewWalker implements SystemViewRowAttributeWalker<SqlIndex
         v.accept(3, "schemaName", String.class, row.schemaName());
         v.accept(4, "tableName", String.class, row.tableName());
         v.accept(5, "cacheName", String.class, row.cacheName());
-        v.acceptInt(6, "cacheGroupId", row.cacheGroupId());
-        v.accept(7, "cacheGroupName", String.class, row.cacheGroupName());
-        v.acceptInt(8, "cacheId", row.cacheId());
-        v.acceptInt(9, "inlineSize", row.inlineSize());
-        v.acceptBoolean(10, "isPk", row.isPk());
-        v.acceptBoolean(11, "isUnique", row.isUnique());
+        v.acceptInt(6, "cacheId", row.cacheId());
+        v.acceptInt(7, "inlineSize", row.inlineSize());
+        v.acceptBoolean(8, "isPk", row.isPk());
+        v.acceptBoolean(9, "isUnique", row.isUnique());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 12;
+        return 10;
     }
 }

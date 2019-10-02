@@ -32,7 +32,7 @@ public class SqlViewColumnViewWalker implements SystemViewRowAttributeWalker<Sql
         v.accept(0, "columnName", String.class);
         v.accept(1, "viewName", String.class);
         v.accept(2, "schemaName", String.class);
-        v.accept(3, "defatult", String.class);
+        v.accept(3, "defaultValue", String.class);
         v.accept(4, "nullable", boolean.class);
         v.accept(5, "precision", long.class);
         v.accept(6, "scale", int.class);
@@ -44,7 +44,7 @@ public class SqlViewColumnViewWalker implements SystemViewRowAttributeWalker<Sql
         v.accept(0, "columnName", String.class, row.columnName());
         v.accept(1, "viewName", String.class, row.viewName());
         v.accept(2, "schemaName", String.class, row.schemaName());
-        v.accept(3, "defatult", String.class, row.defatult());
+        v.accept(3, "defaultValue", String.class, row.defaultValue());
         v.acceptBoolean(4, "nullable", row.nullable());
         v.acceptLong(5, "precision", row.precision());
         v.acceptInt(6, "scale", row.scale());

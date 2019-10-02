@@ -386,7 +386,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "CLIENT_CONNECTIONS",
             "VIEWS",
             "TABLE_COLUMNS",
-            "VIEW_COLUMNS"
+            "VIEW_COLUMNS",
+            "TRANSACTIONS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -420,14 +421,12 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals("T1", tbl.get(0)); //TABLE_NAME
         assertEquals(DFLT_SCHEMA, tbl.get(1)); //SCHEMA_NAME
         assertEquals(cacheName, tbl.get(2)); //CACHE_NAME
-        assertEquals(cacheId, tbl.get(3)); //CACHE_GROUP_ID
-        assertEquals(cacheName, tbl.get(4)); //CACHE_GROUP_NAME
-        assertEquals(cacheId, tbl.get(5)); //CACHE_ID
-        assertNull(tbl.get(6)); //AFFINITY_KEY_COLUMN
-        assertEquals("ID", tbl.get(7)); //KEY_ALIAS
-        assertNull(tbl.get(8)); //VALUE_ALIAS
-        assertEquals("java.lang.Long", tbl.get(9)); //KEY_TYPE_NAME
-        assertNotNull(tbl.get(10)); //VALUE_TYPE_NAME
+        assertEquals(cacheId, tbl.get(3)); //CACHE_ID
+        assertNull(tbl.get(4)); //AFFINITY_KEY_COLUMN
+        assertEquals("ID", tbl.get(5)); //KEY_ALIAS
+        assertNull(tbl.get(6)); //VALUE_ALIAS
+        assertEquals("java.lang.Long", tbl.get(7)); //KEY_TYPE_NAME
+        assertNotNull(tbl.get(8)); //VALUE_TYPE_NAME
 
         execute(ignite, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
 

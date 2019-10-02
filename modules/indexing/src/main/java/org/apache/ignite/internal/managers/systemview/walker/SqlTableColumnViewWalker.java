@@ -34,7 +34,7 @@ public class SqlTableColumnViewWalker implements SystemViewRowAttributeWalker<Sq
         v.accept(2, "schemaName", String.class);
         v.accept(3, "affinityColumn", boolean.class);
         v.accept(4, "autoIncrement", boolean.class);
-        v.accept(5, "defatult", String.class);
+        v.accept(5, "defaultValue", String.class);
         v.accept(6, "nullable", boolean.class);
         v.accept(7, "pk", boolean.class);
         v.accept(8, "precision", int.class);
@@ -49,7 +49,7 @@ public class SqlTableColumnViewWalker implements SystemViewRowAttributeWalker<Sq
         v.accept(2, "schemaName", String.class, row.schemaName());
         v.acceptBoolean(3, "affinityColumn", row.affinityColumn());
         v.acceptBoolean(4, "autoIncrement", row.autoIncrement());
-        v.accept(5, "defatult", String.class, row.defatult());
+        v.accept(5, "defaultValue", String.class, row.defaultValue());
         v.acceptBoolean(6, "nullable", row.nullable());
         v.acceptBoolean(7, "pk", row.pk());
         v.acceptInt(8, "precision", row.precision());

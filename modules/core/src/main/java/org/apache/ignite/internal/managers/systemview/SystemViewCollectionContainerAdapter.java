@@ -21,11 +21,10 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
-
-import static java.util.Collections.emptyIterator;
 
 /**
  * System view backed by {@code data} container.
@@ -76,34 +75,8 @@ public class SystemViewCollectionContainerAdapter<C, R, D> extends AbstractSyste
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator() {
-        return new Iterator<R>() {
-            /** Containers iterator. */
-            private Iterator<C> containerIter = containers.iterator();
-
-            /** Current container instance. */
-            private C cur = null;
-
-            /** Data iterator */
-            private Iterator<D> data = emptyIterator();
-
-            /** {@inheritDoc} */
-            @Override public boolean hasNext() {
-                while (!data.hasNext()) {
-                    if (!containerIter.hasNext())
-                        return false;
-
-                    cur = containerIter.next();
-
-                    data = dataExtractor.apply(cur).iterator();
-                }
-
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public R next() {
-                return rowFunc.apply(cur, data.next());
-            }
-        };
+        return F.concat(F.iterator(containers,
+                c -> F.iterator(dataExtractor.apply(c).iterator(),
+                    d -> rowFunc.apply(c, d), true), true));
     }
 }

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.managers.systemview;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
@@ -74,38 +76,8 @@ public class SystemViewArrayContainerAdapter<C, R, D> extends AbstractSystemView
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator() {
-        return new Iterator<R>() {
-            /** Containers iterator. */
-            private Iterator<C> containerIter = containers.iterator();
-
-            /** Current container instance. */
-            private C cur;
-
-            /** Data array. */
-            private D[] data;
-
-            /** Array index. */
-            private int idx;
-
-            /** {@inheritDoc} */
-            @Override public boolean hasNext() {
-                while (data == null || data.length == idx) {
-                    if (!containerIter.hasNext())
-                        return false;
-
-                    cur = containerIter.next();
-
-                    data = dataExtractor.apply(cur);
-                    idx = 0;
-                }
-
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public R next() {
-                return rowFunc.apply(cur, data[idx++]);
-            }
-        };
+        return F.concat(F.iterator(containers,
+            c -> F.iterator(Arrays.asList(dataExtractor.apply(c)).iterator(),
+                d -> rowFunc.apply(c, d), true), true));
     }
 }

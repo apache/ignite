@@ -77,7 +77,7 @@ public class SqlTableColumnView {
     }
 
     /** @return Field default. */
-    public String defatult() {
+    public String defaultValue() {
         if (prop == null)
             return null;
 

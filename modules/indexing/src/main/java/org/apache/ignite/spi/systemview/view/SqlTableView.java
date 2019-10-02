@@ -43,21 +43,8 @@ public class SqlTableView {
             }
         }
     }
-
-    /** @return Cache group id. */
-    @Order(3)
-    public int cacheGroupId() {
-        return tbl.cacheInfo().groupId();
-    }
-
-    /** @return Cache group name. */
-    @Order(4)
-    public String cacheGroupName() {
-        return tbl.cacheInfo().cacheContext().group().cacheOrGroupName();
-    }
-
     /** @return Cache id. */
-    @Order(5)
+    @Order(3)
     public int cacheId() {
         return tbl.cacheId();
     }
@@ -81,31 +68,31 @@ public class SqlTableView {
     }
 
     /** @return Affinity key column. */
-    @Order(6)
+    @Order(4)
     public String affinityKeyColumn() {
         return affColName;
     }
 
     /** @return Key alias. */
-    @Order(7)
+    @Order(5)
     public String keyAlias() {
         return tbl.rowDescriptor().type().keyFieldAlias();
     }
 
     /** @return Value alias. */
-    @Order(8)
+    @Order(6)
     public String valueAlias() {
         return tbl.rowDescriptor().type().valueFieldAlias();
     }
 
     /** @return Key type name. */
-    @Order(9)
+    @Order(7)
     public String keyTypeName() {
         return tbl.rowDescriptor().type().keyTypeName();
     }
 
     /** @return Value type name. */
-    @Order(10)
+    @Order(8)
     public String valueTypeName() {
         return tbl.rowDescriptor().type().valueTypeName();
     }

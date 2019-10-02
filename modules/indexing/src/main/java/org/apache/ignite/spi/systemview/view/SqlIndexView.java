@@ -48,16 +48,6 @@ public class SqlIndexView {
         this.type = type(idx);
     }
 
-    /** @return Cache group id. */
-    public int cacheGroupId() {
-        return tbl.cacheInfo().groupId();
-    }
-
-    /** @return Cache group name. */
-    public String cacheGroupName() {
-        return CacheGroupContext.cacheOrGroupName(tbl.cacheInfo().config());
-    }
-
     /** @return Cache id. */
     public int cacheId() {
         return tbl.cacheId();
