@@ -44,7 +44,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** */
     public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
         TestSecurityData... clientData) {
-        this(login, pwd, perms, new Permissions(), clientData);
+        this(login, pwd, perms, null, clientData);
     }
 
     /** */
@@ -53,7 +53,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
         this.login = login;
         this.pwd = pwd;
         this.perms = perms;
-        this.sandboxPerms = sandboxPerms;
+        this.sandboxPerms = sandboxPerms != null ? sandboxPerms : new Permissions();
         this.clientData = clientData.clone();
     }
 

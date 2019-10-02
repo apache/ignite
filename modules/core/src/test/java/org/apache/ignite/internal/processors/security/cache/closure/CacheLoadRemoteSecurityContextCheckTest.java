@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processors.security.impl.TestStoreFactory;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;

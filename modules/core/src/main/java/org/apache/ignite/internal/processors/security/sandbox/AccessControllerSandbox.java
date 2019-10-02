@@ -50,7 +50,7 @@ public class AccessControllerSandbox implements IgniteSandbox {
     /** Instance of IgniteSecurity. */
     private final IgniteSecurity security;
 
-    /** Ctor. */
+    /** Constructor. */
     public AccessControllerSandbox(IgniteSecurity security) {
         this.security = security;
     }

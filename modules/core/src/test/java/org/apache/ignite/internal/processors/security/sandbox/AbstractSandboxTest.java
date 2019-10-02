@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.security.AllPermission;
 import java.security.CodeSource;
+import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.Policy;
@@ -28,7 +29,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityManager;
-import org.apache.ignite.internal.processors.security.impl.TestPermissionsBuilder;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -148,6 +148,43 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         finally {
             if (isLocked)
                 LOCK.unlock();
+        }
+    }
+
+    /** */
+     protected static class TestPermissionsBuilder {
+        /** */
+        public static TestPermissionsBuilder create() {
+            return new TestPermissionsBuilder();
+        }
+
+        /** */
+        public static Permissions createAllowAll() {
+            Permissions res = new Permissions();
+
+            res.add(new AllPermission());
+
+            return res;
+        }
+
+        /** */
+        private final Permissions perms;
+
+        /** */
+        private TestPermissionsBuilder() {
+            perms = new Permissions();
+        }
+
+        /** */
+        public TestPermissionsBuilder add(Permission perm) {
+            perms.add(perm);
+
+            return this;
+        }
+
+        /** */
+        public Permissions get() {
+            return perms;
         }
     }
 }

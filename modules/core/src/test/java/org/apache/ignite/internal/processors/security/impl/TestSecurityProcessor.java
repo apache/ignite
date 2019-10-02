@@ -49,6 +49,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** Permissions. */
     private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
+    /** Sandbox permissions. */
     private static final Map<SecurityCredentials, Permissions> SANDBOX_PERMS = new ConcurrentHashMap<>();
 
     /** Node security data. */

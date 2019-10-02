@@ -18,13 +18,22 @@
 package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.security.AccessControlException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.security.impl.TestFutureAdapter;
-import org.apache.ignite.internal.processors.security.impl.TestComputeTask;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -107,5 +116,48 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
         }
 
         assertFalse(IS_STARTED.get());
+    }
+
+    /** */
+    static class TestComputeTask implements ComputeTask<Object, Object> {
+        /** */
+        private final IgniteRunnable r;
+
+        /** */
+        public TestComputeTask(IgniteRunnable r) {
+            this.r = r;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            Object arg) throws IgniteException {
+            return Collections.singletonMap(
+                new ComputeJob() {
+                    @Override public void cancel() {
+                        // No-op.
+                    }
+
+                    @Override public Object execute() {
+                        r.run();
+
+                        return null;
+                    }
+                }, subgrid.stream().findFirst().orElseThrow(IllegalStateException::new)
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res,
+            List<ComputeJobResult> rcvd) throws IgniteException {
+            if (res.getException() != null)
+                throw res.getException();
+
+            return ComputeJobResultPolicy.REDUCE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
+            return null;
+        }
     }
 }
