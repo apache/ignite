@@ -47,12 +47,10 @@ public class TestSecurityContext implements SecurityContext, Serializable {
         switch (perm) {
             case CACHE_CREATE:
             case CACHE_DESTROY:
-                return systemOperationAllowed(perm) || cacheOperationAllowed(opName, perm);
-
             case CACHE_PUT:
             case CACHE_READ:
             case CACHE_REMOVE:
-                return cacheOperationAllowed(opName, perm);
+                return systemOperationAllowed(perm) || cacheOperationAllowed(opName, perm);
 
             case TASK_CANCEL:
             case TASK_EXECUTE:
@@ -114,8 +112,6 @@ public class TestSecurityContext implements SecurityContext, Serializable {
     private boolean hasPermission(Collection<SecurityPermission> perms, SecurityPermission perm) {
         if (perms==null)
             return subject.permissions().defaultAllowAll();
-//        if (perms.isEmpty())
-//            return subject.permissions().defaultAllowAll();
 
         return perms.stream().anyMatch(p -> perm == p);
     }
