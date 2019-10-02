@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -169,18 +170,13 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         for (int i = CACHE_KEYS_RANGE; i < 2048; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
-
-        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
-            Stream.iterate(0, n -> n + 1)
-            .limit(CACHE_PARTS_COUNT)
-            .collect(Collectors.toSet()));
-
-        IgniteInternalFuture<?> backupFut = ig.context()
+        IgniteBackupManager mgr = ig.context()
             .cache()
             .context()
-            .backup()
-            .createLocalBackup(BACKUP_NAME, toBackup, backupDir);
+            .backup();
+
+        IgniteInternalFuture<?> backupFut = mgr.createLocalBackup(BACKUP_NAME,
+            Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
         backupFut.get();
 
@@ -193,9 +189,8 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(new File(backupDir.getAbsolutePath(),
-            "testBackup"),
-            cacheDirName(defaultCacheCfg)));
+        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(new File(mgr.backupDir()
+            .getAbsolutePath(), BACKUP_NAME), cacheDirName(defaultCacheCfg)));
 
         assertEquals("Partitons the same after backup and after merge", origParts, bakcupCRCs);
     }
@@ -329,13 +324,6 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
 
-        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
-
-        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
-            Stream.iterate(0, n -> n + 1)
-                .limit(CACHE_PARTS_COUNT)
-                .collect(Collectors.toSet()));
-
         IgniteBackupManager mgr = ig.context()
             .cache()
             .context()
@@ -359,7 +347,8 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture<?> backupFut = mgr.createLocalBackup(BACKUP_NAME, toBackup, backupDir);
+        IgniteInternalFuture<?> backupFut = mgr.createLocalBackup(BACKUP_NAME,
+            Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
         backupFut.get();
     }

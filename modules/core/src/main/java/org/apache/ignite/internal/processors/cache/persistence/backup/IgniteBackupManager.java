@@ -26,17 +26,20 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -45,6 +48,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -288,51 +293,86 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param name Unique backup name.
-     * @param parts Collection of pairs group and appropratate cache partition to be backuped.
-     * @param dir Local directory to save cache partition deltas to.
-     * @return Future which will be completed when backup is done.
-     * @throws IgniteCheckedException If initialiation fails.
+     * @return Backup directory used by manager.
      */
-    public IgniteInternalFuture<?> createLocalBackup(
-        String name,
-        Map<Integer, Set<Integer>> parts,
-        File dir
-    ) throws IgniteCheckedException {
-        return scheduleBackup(name, parts, dir, backupRunner, partWorkerFactory(), deltaWorkerFactory());
+    public File backupDir() {
+        assert backupDir != null;
+
+        return backupDir;
     }
 
     /**
      * @param name Unique backup name.
+     * @return Future which will be completed when backup is done.
+     * @throws IgniteCheckedException If initialiation fails.
+     */
+    public IgniteInternalFuture<String> createLocalBackup(
+        String name,
+        List<Integer> grpIds
+    ) throws IgniteCheckedException {
+        // Collection of pairs group and appropratate cache partition to be backuped.
+        Map<Integer, Set<Integer>> parts = grpIds.stream()
+            .collect(Collectors.toMap(grpId -> grpId,
+                grpId -> {
+                    int partsCnt = cctx.cache()
+                        .cacheGroup(grpId)
+                        .affinity()
+                        .partitions();
+
+                    return Stream.iterate(0, n -> n + 1)
+                        .limit(partsCnt)
+                        .collect(Collectors.toSet());
+                }));
+
+        return scheduleBackup(name, parts, backupDir, backupRunner, partWorkerFactory(), deltaWorkerFactory());
+    }
+
+    /**
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @param remoteId The remote node to connect to.
      * @param topic The remote topic to connect to.
      * @throws IgniteCheckedException If initialiation fails.
      */
     public void sendBackup(
-        String name,
         Map<Integer, Set<Integer>> parts,
-        ExecutorService execSvc,
+        byte plc,
         UUID remoteId,
         Object topic
     ) throws IgniteCheckedException {
-        File backupDir0 = new File(backupDir, name);
+        String backupName = UUID.randomUUID().toString();
+
+        File backupDir0 = new File(backupDir, backupName);
 
         GridIoManager.TransmissionSender sndr = cctx.gridIO().openTransmissionSender(remoteId, topic);
 
-        IgniteInternalFuture<?> fut = scheduleBackup(name,
-            parts,
-            backupDir0,
-            execSvc,
-            partSenderFactory(sndr),
-            deltaSenderFactory(sndr));
+        try {
+            IgniteInternalFuture<?> fut = scheduleBackup(backupName,
+                parts,
+                backupDir0,
+                new SerialExecutor(cctx.kernalContext()
+                    .pools()
+                    .poolForPolicy(plc)),
+                partSenderFactory(sndr),
+                deltaSenderFactory(sndr));
 
-        fut.listen(f -> {
-            if (log.isInfoEnabled()) {
-                log.info("The requested bakcup has been send [result=" + (f.error() == null) +
-                    ", name=" + name + ']');
-            }
-        });
+            fut.listen(f -> {
+                if (log.isInfoEnabled()) {
+                    log.info("The requested bakcup has been send [result=" + (f.error() == null) +
+                        ", name=" + backupName + ']');
+                }
+
+                U.closeQuiet(sndr);
+
+                boolean done = backupDir0.delete();
+
+                assert done;
+            });
+        }
+        catch (IgniteCheckedException e) {
+            U.closeQuiet(sndr);
+
+            throw e;
+        }
     }
 
     /**
@@ -344,11 +384,11 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
      * @return Future which will be completed when backup is done.
      * @throws IgniteCheckedException If initialiation fails.
      */
-    IgniteInternalFuture<?> scheduleBackup(
+    IgniteInternalFuture<String> scheduleBackup(
         String name,
         Map<Integer, Set<Integer>> parts,
         File dir,
-        ExecutorService execSvc,
+        Executor exec,
         Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory,
         Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory
     ) throws IgniteCheckedException {
@@ -365,7 +405,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             bctx = new BackupContext(name,
                 backupDir0,
                 parts,
-                execSvc,
+                exec,
                 partWorkerFactory,
                 deltaWorkerFactory);
 
@@ -514,12 +554,12 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                         .accept(getPartitionFileEx(cacheWorkDir(workDir, ccfg), pair.getPartitionId()),
                             cacheBackupDir,
                             bctx.partFileLengths.get(pair)),
-                bctx.execSvc)
+                bctx.exec)
                 .thenRun(() -> bctx.partDeltaWriters.get(pair).partProcessed = true)
                 // Wait for the completion of both futures - checkpoint end, copy partition
                 .runAfterBothAsync(bctx.cpEndFut,
                     () -> bctx.deltaWorkerFactory.get().accept(cacheBackupDir, pair),
-                    bctx.execSvc);
+                    bctx.exec);
 
             futs.add(fut0);
         }
@@ -528,7 +568,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
              .whenComplete(new BiConsumer<Void, Throwable>() {
                  @Override public void accept(Void res, Throwable t) {
                      if (t == null)
-                         bctx.result.onDone();
+                         bctx.result.onDone(bctx.name);
                      else
                          bctx.result.onDone(t);
                  }
@@ -695,7 +735,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final BooleanSupplier checkpointComplete;
 
         /** If backup has been stopped due to an error. */
-        private final GridFutureAdapter<Void> backupFut;
+        private final GridFutureAdapter<?> backupFut;
 
         /** IO over the underlying file */
         private volatile FileIO fileIo;
@@ -719,7 +759,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         public PageStoreSerialWriter(
             IgniteLogger log,
             BooleanSupplier checkpointComplete,
-            GridFutureAdapter<Void> backupFut,
+            GridFutureAdapter<?> backupFut,
             Supplier<Path> cfgPath,
             FileIOFactory factory,
             int pageSize
@@ -862,7 +902,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         private final File backupDir;
 
         /** Service to perform partitions copy. */
-        private final ExecutorService execSvc;
+        private final Executor exec;
 
         /**
          * The length of file size per each cache partiton file.
@@ -880,7 +920,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         /** Future of result completion. */
         @GridToStringExclude
-        private final GridFutureAdapter<Void> result = new GridFutureAdapter<>();
+        private final GridFutureAdapter<String> result = new GridFutureAdapter<>();
 
         /** Factory to create executable tasks for partition processing. */
         @GridToStringExclude
@@ -902,27 +942,27 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         /**
          * @param name Unique identifier of backup process.
          * @param backupDir Backup storage directory.
-         * @param execSvc Service to perform partitions copy.
+         * @param exec Service to perform partitions copy.
          * @param partWorkerFactory Factory to create executable tasks for partition processing.
          */
         public BackupContext(
             String name,
             File backupDir,
             Map<Integer, Set<Integer>> parts,
-            ExecutorService execSvc,
+            Executor exec,
             Supplier<IgniteTriConsumer<File, File, Long>> partWorkerFactory,
             Supplier<BiConsumer<File, GroupPartitionId>> deltaWorkerFactory
         ) {
             A.notNull(name, "Backup name cannot be empty or null");
             A.notNull(backupDir, "You must secify correct backup directory");
             A.ensure(backupDir.isDirectory(), "Specified path is not a directory");
-            A.notNull(execSvc, "Executor service must be not null");
+            A.notNull(exec, "Executor service must be not null");
             A.notNull(partWorkerFactory, "Factory which procudes backup tasks to execute must be not null");
             A.notNull(deltaWorkerFactory, "Factory which processes delta pages storage must be not null");
 
             this.name = name;
             this.backupDir = backupDir;
-            this.execSvc = execSvc;
+            this.exec = exec;
             this.partWorkerFactory = partWorkerFactory;
             this.deltaWorkerFactory = deltaWorkerFactory;
 
@@ -958,6 +998,55 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(BackupContext.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SerialExecutor implements Executor {
+        /** */
+        private final Queue<Runnable> tasks = new ArrayDeque<>();
+
+        /** */
+        private final Executor executor;
+
+        /** */
+        private volatile Runnable active;
+
+        /**
+         * @param executor Executor to run tasks on.
+         */
+        public SerialExecutor(Executor executor) {
+            this.executor = executor;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void execute(final Runnable r) {
+            tasks.offer(new Runnable() {
+                /** {@inheritDoc} */
+                @Override public void run() {
+                    try {
+                        r.run();
+                    }
+                    finally {
+                        scheduleNext();
+                    }
+                }
+            });
+
+            if (active == null) {
+                scheduleNext();
+            }
+        }
+
+        /**
+         *
+         */
+        protected synchronized void scheduleNext() {
+            if ((active = tasks.poll()) != null) {
+                executor.execute(active);
+            }
         }
     }
 }
