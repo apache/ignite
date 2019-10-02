@@ -110,7 +110,7 @@ public class TestSecurityContext implements SecurityContext, Serializable {
      * @param perm Permission.
      */
     private boolean hasPermission(Collection<SecurityPermission> perms, SecurityPermission perm) {
-        if (perms==null)
+        if (perms == null)
             return subject.permissions().defaultAllowAll();
 
         return perms.stream().anyMatch(p -> perm == p);
