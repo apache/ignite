@@ -43,11 +43,15 @@ public class TestSecurityContext implements SecurityContext, Serializable {
      * @param perm Permission.
      */
     public boolean operationAllowed(String opName, SecurityPermission perm) {
+
         switch (perm) {
+            case CACHE_CREATE:
+            case CACHE_DESTROY:
+                return systemOperationAllowed(perm) || cacheOperationAllowed(opName, perm);
+
             case CACHE_PUT:
             case CACHE_READ:
             case CACHE_REMOVE:
-
                 return cacheOperationAllowed(opName, perm);
 
             case TASK_CANCEL:
@@ -65,8 +69,6 @@ public class TestSecurityContext implements SecurityContext, Serializable {
             case ADMIN_CACHE:
             case ADMIN_QUERY:
             case ADMIN_OPS:
-            case CACHE_CREATE:
-            case CACHE_DESTROY:
             case JOIN_AS_SERVER:
                 return systemOperationAllowed(perm);
 
@@ -110,8 +112,10 @@ public class TestSecurityContext implements SecurityContext, Serializable {
      * @param perm Permission.
      */
     private boolean hasPermission(Collection<SecurityPermission> perms, SecurityPermission perm) {
-        if (perms == null)
+        if (perms==null)
             return subject.permissions().defaultAllowAll();
+//        if (perms.isEmpty())
+//            return subject.permissions().defaultAllowAll();
 
         return perms.stream().anyMatch(p -> perm == p);
     }

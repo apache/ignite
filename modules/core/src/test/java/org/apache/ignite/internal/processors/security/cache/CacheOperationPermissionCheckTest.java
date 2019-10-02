@@ -31,9 +31,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -41,23 +45,44 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /** */
+    /**
+     *
+     */
     @Test
-    public void testServerNode() throws Exception {
-        testCrudCachePermissions(false);
+    public void testServerNodeAllowAll() throws Exception {
+        beforeTestAllowAll();
+        testCrudCachePermissionsAllowAll(false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
-    public void testClientNode() throws Exception {
-        testCrudCachePermissions(true);
+    public void testClientNodeAllowAll() throws Exception {
+        beforeTestAllowAll();
+        testCrudCachePermissionsAllowAll(true);
+    }
+
+    @Test
+    public void testServerNodeForbid() throws Exception {
+        beforeTestForbid();
+        testCrudCachePermissionsForbid(false);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testClientNodeForbid() throws Exception {
+        beforeTestForbid();
+        testCrudCachePermissionsForbid(true);
     }
 
     /**
      * @param isClient True if is client mode.
      * @throws Exception If failed.
      */
-    private void testCrudCachePermissions(boolean isClient) throws Exception {
+    private void testCrudCachePermissionsAllowAll(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             SecurityPermissionSetBuilder.create()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
@@ -90,4 +115,54 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
             c -> c.getAndReplace("key", "value")
         );
     }
+
+    private void testCrudCachePermissionsForbid(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
+            SecurityPermissionSetBuilder.create()
+                .defaultAllowAll(false)
+                .appendSystemPermissions(JOIN_AS_SERVER)
+                .appendTaskPermissions("org.apache.ignite.internal.processors.cache.GridCacheAdapter$ClearTask",TASK_EXECUTE)
+                .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
+                .appendCachePermissions(FORBIDDEN_CACHE, CACHE_CREATE).build(), isClient);
+
+        for (Consumer<IgniteCache<String, String>> c : operations()) {
+            c.accept(node.cache(CACHE_NAME));
+
+            assertThrowsWithCause(() -> c.accept(node.cache(FORBIDDEN_CACHE)), SecurityException.class);
+        }
+
+        node.cache(CACHE_NAME).destroy();
+        assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).destroy(), SecurityException.class);
+        assertThrowsWithCause(() -> node.getOrCreateCache("MY_CACHE").destroy(), SecurityException.class);
+    }
+
+    protected void beforeTestAllowAll() throws Exception {
+        super.beforeTestsStarted();
+    }
+
+    protected void beforeTestForbid() throws Exception {
+        startGrid("SERVER",
+            SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                .appendSystemPermissions(JOIN_AS_SERVER)
+                .appendTaskPermissions("org.apache.ignite.internal.processors.cache.GridCacheAdapter$ClearTask",TASK_EXECUTE)
+                .appendCachePermissions(CACHE_NAME, CACHE_CREATE)
+                .appendCachePermissions(FORBIDDEN_CACHE, CACHE_CREATE)
+                .build(),
+            false)
+            .cluster().active(true);
+    }
+
+    @Override protected void beforeTestsStarted() throws Exception {
+        /*nothing*/
+    }
+
+    @Override protected void beforeTest() throws Exception {
+        /*nothing*/
+    }
+
+    @Override protected void afterTest() throws Exception {
+        super.afterTestsStopped();
+    }
+
+
 }
