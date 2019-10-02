@@ -99,13 +99,13 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
             c -> c.containsKey("key"),
             c -> c.remove("key"),
             c -> c.removeAll(Collections.singleton("key")),
-            IgniteCache::clear,
             c -> c.replace("key", "value"),
             c -> c.putIfAbsent("key", "value"),
             c -> c.getAndPut("key", "value"),
             c -> c.getAndRemove("key"),
             c -> c.getAndReplace("key", "value"),
-            c -> c.destroy()
+            IgniteCache::clear,
+            IgniteCache::destroy
         );
     }
 }
