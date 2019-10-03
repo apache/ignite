@@ -164,19 +164,19 @@ public class SchemaManager {
             systemViews,
             SqlViewView::new);
 
-        ctx.systemView().registerCollectionContainerView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
+        ctx.systemView().registerInnerCollectionView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
             SqlIndexView.class,
             dataTables.values(),
             GridH2Table::getIndexes,
             SqlIndexView::new);
 
-        ctx.systemView().registerArrayContainerView(SQL_TBL_COLS_VIEW, SQL_TBL_COLS_VIEW_DESC,
+        ctx.systemView().registerInnerArrayView(SQL_TBL_COLS_VIEW, SQL_TBL_COLS_VIEW_DESC,
             SqlTableColumnView.class,
             dataTables.values(),
             GridH2Table::getColumns,
             SqlTableColumnView::new);
 
-        ctx.systemView().registerArrayContainerView(SQL_VIEW_COLS_VIEW, SQL_VIEW_COLS_VIEW_DESC,
+        ctx.systemView().registerInnerArrayView(SQL_VIEW_COLS_VIEW, SQL_VIEW_COLS_VIEW_DESC,
             SqlViewColumnView.class,
             systemViews,
             SqlSystemView::getColumns,

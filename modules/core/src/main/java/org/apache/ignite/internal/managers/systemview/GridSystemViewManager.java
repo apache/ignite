@@ -130,7 +130,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <C, R, D> void registerCollectionContainerView(String name, String desc, Class<R> rowCls,
+    public <C, R, D> void registerInnerCollectionView(String name, String desc, Class<R> rowCls,
         Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
         doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
@@ -154,7 +154,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <R> View row type.
      * @param <D> Collection data type.
      */
-    public <C, R, D> void registerArrayContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
+    public <C, R, D> void registerInnerArrayView(String name, String desc, Class<R> rowCls, Collection<C> container,
         Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
         doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
