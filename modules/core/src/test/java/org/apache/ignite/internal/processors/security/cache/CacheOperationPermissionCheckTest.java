@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
@@ -43,9 +43,16 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  * Test CRUD cache permissions.
  */
 @RunWith(JUnit4.class)
-public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
+public class CacheOperationPermissionCheckTest extends AbstractSecurityTest {
     /** New cache for tests. */
-    protected static final String NEW_CACHE="NEW_CACHE";
+    protected static final String NEW_CACHE = "NEW_CACHE";
+
+    /** Cache name for tests. */
+    protected static final String ALL_PERM_TEST_CACHE = "ALL_PERM_TEST_CACHE";
+
+    /** Forbidden caches. */
+    protected static final String CREATE_TEST_CACHE = "CREATE_TEST_CACHE";
+    protected static final String EMPTY_PERM_TEST_CACHE = "EMPTY_PERM_TEST_CACHE";
 
     /** */
     @Test
@@ -64,21 +71,27 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      * @throws Exception If failed.
      */
     private void testCrudCachePermissions(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
+        String login = isClient ? "client" : "server";
+        Ignite node = startGrid(login + "_test_node",
             SecurityPermissionSetBuilder.create() // defaultAllowAll == true
-                .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
-                .appendCachePermissions(FORBIDDEN_CACHE, CACHE_CREATE)
+                .appendCachePermissions(ALL_PERM_TEST_CACHE, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
+                .appendCachePermissions(CREATE_TEST_CACHE, CACHE_CREATE)
+                .appendCachePermissions(EMPTY_PERM_TEST_CACHE, EMPTY_PERMS)
                 .appendSystemPermissions(JOIN_AS_SERVER)
                 .build(),
             isClient);
 
-        node.createCache(NEW_CACHE);
+        node.createCache(NEW_CACHE); // if defaultAllowAll == false, there will be exeption
+        node.createCache(ALL_PERM_TEST_CACHE);
+        node.createCache(CREATE_TEST_CACHE);
+
+        assertThrowsWithCause(() -> node.createCache(EMPTY_PERM_TEST_CACHE), SecurityException.class);
 
         for (Consumer<IgniteCache<String, String>> c : operations()) {
-            c.accept(node.cache(CACHE_NAME));
-            c.accept(node.cache(NEW_CACHE));
+            c.accept(node.cache(ALL_PERM_TEST_CACHE));
+            c.accept(node.cache(NEW_CACHE)); // if defaultAllowAll == false, there will be exeption
 
-            assertThrowsWithCause(() -> c.accept(node.cache(FORBIDDEN_CACHE)), SecurityException.class);
+            assertThrowsWithCause(() -> c.accept(node.cache(CREATE_TEST_CACHE)), SecurityException.class);
         }
     }
 
@@ -102,5 +115,23 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
             IgniteCache::clear,
             IgniteCache::destroy
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startGrid("server",
+            SecurityPermissionSetBuilder.create().defaultAllowAll(false).build(),
+            false).cluster().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+        cleanPersistenceDir();
     }
 }
