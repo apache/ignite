@@ -356,39 +356,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 for (int i=0; i<100; i++)
                     cache.put(i, i);
 
-                List<List<?>> qrys = execute(ignite,
-                    "SELECT " +
-                        "  CACHE_NAME, " +
-                        "  BUFFER_SIZE, " +
-                        "  INTERVAL, " +
-                        "  NODE_ID, " +
-                        "  LOCAL_LISTENER, " +
-                        "  REMOTE_FILTER, " +
-                        "  LOCAL_TRANSFORMED_LISTENER, " +
-                        "  REMOTE_TRANSFORMER " +
-                        "FROM SYS.QUERY_CONTINUOUS");
-
-                assertEquals(1, qrys.size());
-
-                for (List<?> cq : qrys)
-                    checkContinuousQuery(cq, true);
-
-                qrys = execute(remoteNode,
-                    "SELECT " +
-                        "  CACHE_NAME, " +
-                        "  BUFFER_SIZE, " +
-                        "  INTERVAL, " +
-                        "  NODE_ID, " +
-                        "  LOCAL_LISTENER, " +
-                        "  REMOTE_FILTER, " +
-                        "  LOCAL_TRANSFORMED_LISTENER, " +
-                        "  REMOTE_TRANSFORMER " +
-                        "FROM SYS.QUERY_CONTINUOUS");
-
-                assertEquals(1, qrys.size());
-
-                for (List<?> cq : qrys)
-                    checkContinuousQuery(cq, false);
+                checkContinuouQueryView(ignite, true);
+                checkContinuouQueryView(remoteNode, false);
             }
 
             assertTrue(execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
@@ -397,7 +366,23 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    private void checkContinuousQuery(List<?> cq, boolean loc) {
+    private void checkContinuouQueryView(IgniteEx g, boolean loc) {
+        List<List<?>> qrys = execute(g,
+            "SELECT " +
+                "  CACHE_NAME, " +
+                "  BUFFER_SIZE, " +
+                "  INTERVAL, " +
+                "  NODE_ID, " +
+                "  LOCAL_LISTENER, " +
+                "  REMOTE_FILTER, " +
+                "  LOCAL_TRANSFORMED_LISTENER, " +
+                "  REMOTE_TRANSFORMER " +
+                "FROM SYS.QUERY_CONTINUOUS");
+
+        assertEquals(1, qrys.size());
+
+        List<?> cq = qrys.iterator().next();
+
         assertEquals("cache-1", cq.get(0));
         assertEquals(100, cq.get(1));
         assertEquals(1000L, cq.get(2));
@@ -411,8 +396,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(cq.get(5).toString().startsWith(getClass().getName()));
         assertNull(cq.get(6));
         assertNull(cq.get(7));
-
-
     }
 
     /**

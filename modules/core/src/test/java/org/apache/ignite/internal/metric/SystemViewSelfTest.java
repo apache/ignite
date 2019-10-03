@@ -490,16 +490,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 for (int i=0; i<100; i++)
                     cache.put(i, i);
 
-
-                assertEquals(1, origQrys.size());
-
-                for (ContinuousQueryView cq : origQrys)
-                    checkContinuousQueryView(originNode, cq, true);
-
-                assertEquals(1, remoteQrys.size());
-
-                for (ContinuousQueryView cq : remoteQrys)
-                    checkContinuousQueryView(originNode, cq, false);
+                checkContinuousQueryView(originNode, origQrys, true);
+                checkContinuousQueryView(originNode, remoteQrys, false);
             }
 
             assertEquals(0, origQrys.size());
@@ -508,21 +500,24 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkContinuousQueryView(IgniteEx g0, ContinuousQueryView cq, boolean loc) {
-        assertEquals("cache-1", cq.cacheName());
-        assertEquals(100, cq.bufferSize());
-        assertEquals(1000, cq.interval());
-        assertEquals(g0.localNode().id(), cq.nodeId());
+    private void checkContinuousQueryView(IgniteEx g, SystemView<ContinuousQueryView> qrys, boolean loc) {
+        assertEquals(1, qrys.size());
 
-        if (loc)
-            assertTrue(cq.localListener().startsWith(getClass().getName()));
-        else
-            assertNull(cq.localListener());
+        for (ContinuousQueryView cq : qrys) {
+            assertEquals("cache-1", cq.cacheName());
+            assertEquals(100, cq.bufferSize());
+            assertEquals(1000, cq.interval());
+            assertEquals(g.localNode().id(), cq.nodeId());
 
-        assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
-        assertNull(cq.localTransformedListener());
-        assertNull(cq.remoteTransformer());
+            if (loc)
+                assertTrue(cq.localListener().startsWith(getClass().getName()));
+            else
+                assertNull(cq.localListener());
 
+            assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
+            assertNull(cq.localTransformedListener());
+            assertNull(cq.remoteTransformer());
+        }
     }
 
     /** */
