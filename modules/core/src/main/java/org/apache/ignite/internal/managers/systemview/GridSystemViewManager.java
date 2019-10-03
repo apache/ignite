@@ -118,7 +118,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers {@link SystemViewCollectionContainerAdapter} view which exports container content.
+     * Registers {@link SystemViewInnerCollectionsAdapter} view which exports container content.
      *
      * @param name Name.
      * @param desc Description.
@@ -132,7 +132,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <C, R, D> void registerCollectionContainerView(String name, String desc, Class<R> rowCls,
         Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewCollectionContainerAdapter<>(name,
+        doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
@@ -142,7 +142,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers {@link SystemViewCollectionContainerAdapter} view which exports container content.
+     * Registers {@link SystemViewInnerCollectionsAdapter} view which exports container content.
      *
      * @param name Name.
      * @param desc Description.
@@ -156,7 +156,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <C, R, D> void registerArrayContainerView(String name, String desc, Class<R> rowCls, Collection<C> container,
         Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewCollectionContainerAdapter<>(name,
+        doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),

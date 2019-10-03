@@ -32,7 +32,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @see SystemView
  */
-public class SystemViewCollectionContainerAdapter<C, R, D> extends AbstractSystemView<R> {
+public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemView<R> {
     /** Collections of the data containers. */
     private final Collection<C> containers;
 
@@ -51,7 +51,7 @@ public class SystemViewCollectionContainerAdapter<C, R, D> extends AbstractSyste
      * @param dataExtractor Data extractor function.
      * @param rowFunc Row function.
      */
-    public SystemViewCollectionContainerAdapter(String name, String desc, Class<R> rowCls,
+    public SystemViewInnerCollectionsAdapter(String name, String desc, Class<R> rowCls,
         SystemViewRowAttributeWalker<R> walker,
         Collection<C> containers,
         Function<C, Collection<D>> dataExtractor,
