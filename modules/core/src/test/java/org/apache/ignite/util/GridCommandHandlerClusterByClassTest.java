@@ -457,6 +457,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
 
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "-6-dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
         if (fileNameMatcher.find()) {
@@ -464,15 +466,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             assertContains(log, dumpWithZeros, "idle_verify check has finished, found " + parts + " partitions");
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
-            assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
+            assertContains(log, dumpWithZeros, "updateCntr=0, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
 
             assertSort(parts, dumpWithZeros);
         }
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
-
-        fileNameMatcher = dumpFileNameMatcher();
 
         if (fileNameMatcher.find()) {
             String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
@@ -481,7 +479,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertContains(log, dumpWithoutZeros, (parts - keysCount) + " partitions was skipped");
             assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
 
-            assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
+            assertNotContains(log, dumpWithoutZeros, "updateCntr=0, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
 
@@ -1404,22 +1402,5 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         execute("--help");
 
         assertNotContains(log, testOut.toString(), WAL.text());
-    }
-
-    /**
-     * Wal commands should ignored and print warning in case
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
-     * */
-    public void testWalCommandsInCaseDisableExperimentalCommand() {
-        withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, FALSE.toString());
-
-        injectTestSystemOut();
-
-        String warning = String.format("For use experimental command add %s=true to JVM_OPTS in %s",
-            IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME);
-
-        of("print", "delete")
-            .peek(c -> assertEquals(EXIT_CODE_OK, execute(WAL.text(), c)))
-            .forEach(c -> assertContains(log, testOut.toString(), warning));
     }
 }

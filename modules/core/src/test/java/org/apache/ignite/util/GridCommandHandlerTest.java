@@ -1603,42 +1603,4 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
             execute("--baseline", "set", "non-existing-node-id ," + consistentIds(ignite)));
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheIdleVerifyPrintLostPartitions() throws Exception {
-        IgniteEx ignite = startGrids(3);
-
-        ignite.cluster().active(true);
-
-        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 16))
-            .setCacheMode(PARTITIONED)
-            .setPartitionLossPolicy(READ_ONLY_SAFE)
-            .setBackups(1));
-
-        try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 10000; i++)
-                streamer.addData(i, new byte[i]);
-        }
-
-        String g1Name = grid(1).name();
-
-        stopGrid(1);
-
-        cleanPersistenceDir(g1Name);
-
-        //Start node 2 with empty PDS. Rebalance will be started.
-        startGrid(1);
-
-        //During rebalance stop node 3. Rebalance will be stopped which lead to lost partitions.
-        stopGrid(2);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--yes"));
-
-        assertContains(log, testOut.toString(), "LOST partitions:");
-    }
 }
