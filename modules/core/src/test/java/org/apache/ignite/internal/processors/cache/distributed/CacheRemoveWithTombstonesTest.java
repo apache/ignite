@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -165,16 +164,13 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
         if (persistence)
             ignite0.cluster().active(true);
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.createCache(cacheConfiguration(atomicityMode));
+        IgniteCache<Object, Object> cache0 = ignite0.createCache(cacheConfiguration(atomicityMode));
 
-        if (MvccFeatureChecker.forcedMvcc())
-            expTombstone = false;
-
-        final int KEYS = 1024 * 64;
+        final int KEYS = 1024 * 256;
 
         if (histRebalance) {
             // Preload initial data to have start point for WAL rebalance.
-            try (IgniteDataStreamer<Integer, Integer> streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<Object, Object> streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 for (int i = 0; i < KEYS; i++)
@@ -186,7 +182,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
             stopGrid(1);
         }
 
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
+        try (IgniteDataStreamer<Object, Object> streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
 
             for (int i = 0; i < KEYS; i++)
@@ -279,16 +275,13 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-
-        ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(2);
-        ccfg.setRebalanceMode(ASYNC);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 64));
-
-        return ccfg;
+    private CacheConfiguration<Object, Object> cacheConfiguration(CacheAtomicityMode atomicityMode) {
+        return new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(atomicityMode)
+            .setCacheMode(PARTITIONED)
+            .setBackups(2)
+            .setRebalanceMode(ASYNC)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAffinity(new RendezvousAffinityFunction(false, 64));
     }
 }

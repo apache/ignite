@@ -1720,7 +1720,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.group().shouldCreateTombstone(localPartition())) {
                 cctx.offheap().removeWithTombstone(cctx, key, newVer, localPartition());
 
-                assert cctx.group().shouldCreateTombstone(localPartition()) : "Partition state is changed: " + localPartition();
+                // Partition may change his state during remove.
+                if (!cctx.group().shouldCreateTombstone(localPartition()))
+                    removeTombstone0(newVer);
             }
             else
                 removeValue();

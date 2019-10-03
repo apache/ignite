@@ -26,9 +26,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectio
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRemoveWithTombstonesLoadTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheRemoveWithTombstonesTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.CacheRemoveWithTombstonesFailoverTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyHistoryRebalanceTest;
 import org.apache.ignite.internal.metric.IoStatisticsCachePersistenceSelfTest;
 import org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest;
@@ -90,7 +92,9 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(IoStatisticsCachePersistenceSelfTest.class);
 
         // Tombstones are not created with mvcc.
+        ignoredTests.add(CacheRemoveWithTombstonesTest.class);
         ignoredTests.add(CacheRemoveWithTombstonesLoadTest.class);
+        ignoredTests.add(CacheRemoveWithTombstonesFailoverTest.class);
 
         return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
     }
