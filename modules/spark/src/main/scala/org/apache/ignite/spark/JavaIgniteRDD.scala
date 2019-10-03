@@ -82,20 +82,21 @@ class JavaIgniteRDD[K, V](override val rdd: IgniteRDD[K, V])
 
     def saveValues[T](jrdd: JavaRDD[T], f: (T, IgniteContext) ⇒ V) = rdd.saveValues(JavaRDD.toRDD(jrdd), f)
 
-    def savePairs(jrdd: JavaPairRDD[K, V], overwrite: Boolean) = {
+    def savePairs(jrdd: JavaPairRDD[K, V], overwrite: Boolean, skipStore: Boolean) = {
         val rrdd: RDD[(K, V)] = JavaPairRDD.toRDD(jrdd)
 
-        rdd.savePairs(rrdd, overwrite)
+        rdd.savePairs(rrdd, overwrite, skipStore)
     }
 
-    def savePairs(jrdd: JavaPairRDD[K, V]) : Unit = savePairs(jrdd, overwrite = false)
+    def savePairs(jrdd: JavaPairRDD[K, V]): Unit = savePairs(jrdd, overwrite = false, skipStore = false)
 
-    def savePairs[T](jrdd: JavaRDD[T], f: (T, IgniteContext) ⇒ (K, V), overwrite: Boolean = false) = {
-        rdd.savePairs(JavaRDD.toRDD(jrdd), f, overwrite)
+    def savePairs[T](jrdd: JavaRDD[T], f: (T, IgniteContext) ⇒ (K, V), overwrite: Boolean = false,
+        skipStore: Boolean = false) = {
+        rdd.savePairs(JavaRDD.toRDD(jrdd), f, overwrite, skipStore)
     }
 
     def savePairs[T](jrdd: JavaRDD[T], f: (T, IgniteContext) ⇒ (K, V)): Unit =
-        savePairs(jrdd, f, overwrite = false)
+        savePairs(jrdd, f, overwrite = false, skipStore = false)
 
     def clear(): Unit = rdd.clear()
 
