@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -56,6 +58,21 @@ public class CacheGroupMetricsImpl {
 
     /** Number of partitions need processed for finished indexes create or rebuilding. */
     private final AtomicLongMetric idxBuildCntPartitionsLeft;
+
+    /** Number of rebalanced partitions left. */
+    private final AtomicLongMetric rebalancingPartitionsLeft;
+
+    /** Rebalanced keys count. */
+    private final AtomicLongMetric rebalancingReceivedKeys;
+
+    /** Rebalanced bytes count. */
+    private final AtomicLongMetric rebalancingReceivedBytes;
+
+    /** Rebalancing start time. */
+    private final AtomicLongMetric rebalancingStartTime;
+
+    /** Rebalancing finish time. */
+    private final AtomicLongMetric rebalancingFinishTime;
 
     /** Cache group context. */
     private final CacheGroupContext ctx;
@@ -104,6 +121,25 @@ public class CacheGroupMetricsImpl {
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
+
+        rebalancingPartitionsLeft = mreg.longMetric("rebalancingPartitionsLeft",
+            "Number of rebalanced partitions left.");
+
+        rebalancingReceivedKeys = mreg.longMetric("rebalancingReceivedKeys",
+            "Number of already rebalanced keys.");
+
+        rebalancingReceivedBytes = mreg.longMetric("rebalancingReceivedBytes",
+            "Number of already rebalanced bytes.");
+
+        rebalancingStartTime = mreg.longMetric("rebalancingStartTime",
+            "Rebalancing start time.");
+
+        rebalancingStartTime.value(-1L);
+
+        rebalancingFinishTime = mreg.longMetric("rebalancingFinishTime",
+            "Rebalancing finish time.");
+
+        rebalancingFinishTime.value(-1L);
 
         DataRegion region = ctx.dataRegion();
 
@@ -186,6 +222,98 @@ public class CacheGroupMetricsImpl {
      */
     public void decrementIndexBuildCountPartitionsLeft() {
         idxBuildCntPartitionsLeft.decrement();
+    }
+
+    /**
+     * Number of rebalanced partitions left.
+     */
+    public long getRebalancingPartitionsLeft() {
+        return rebalancingPartitionsLeft.value();
+    }
+
+    /**
+     * Add rebalancing partitions.
+     *
+     * @param numPartitions Number of partitions to rebalance.
+     */
+    public void addRebalancingPartitions(long numPartitions) {
+        rebalancingPartitionsLeft.add(numPartitions);
+    }
+
+    /**
+     * Сancel rebalancing partitions.
+     *
+     * @param numPartitions Number of cancelled partitions.
+     */
+    public void cancelRebalancingPartitions(long numPartitions) {
+        rebalancingPartitionsLeft.add(-numPartitions);
+    }
+
+    /**
+     * Rebalance partition callback.
+     */
+    public void onPartitionRebalanced() {
+        rebalancingPartitionsLeft.decrement();
+    }
+
+    /**
+     * Rebalance entry store callback.
+     */
+    public void onRebalanceKeyReceived() {
+        rebalancingReceivedKeys.increment();
+    }
+
+    /**
+     * Rebalanced keys count.
+     */
+    public long getRebalancingReceivedKeys() {
+        return rebalancingReceivedKeys.value();
+    }
+
+    /**
+     * Rebalanced bytes count.
+     */
+    public long getRebalancingReceivedBytes() {
+        return rebalancingReceivedBytes.value();
+    }
+
+    /**
+     * Rebalance supply message callback.
+     *
+     * @param batchSize Batch size in bytes.
+     */
+    public void onRebalanceBatchReceived(long batchSize) {
+        rebalancingReceivedBytes.add(batchSize);
+    }
+
+    /**
+     * Rebalancing start time.
+     */
+    public long getRebalancingStartTime() {
+        return rebalancingStartTime.value();
+    }
+
+    /**
+     * Set the current time to rebalancing start time.
+     *
+     * @param delay Delay in milliseconds.
+     */
+    public void startRebalance(long delay) {
+        rebalancingStartTime.value(delay + U.currentTimeMillis());
+    }
+
+    /**
+     * Rebalancing finish time.
+     */
+    public long getRebalancingFinishTime() {
+        return rebalancingFinishTime.value();
+    }
+
+    /**
+     * Set the current time to rebalancing finish time.
+     */
+    public void finishRebalance() {
+        rebalancingFinishTime.value(U.currentTimeMillis());
     }
 
     /** */
@@ -477,5 +605,25 @@ public class CacheGroupMetricsImpl {
     /** @return Metric group name. */
     private String metricGroupName() {
         return metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName());
+    }
+
+    /**
+     * Clear rebalance counters.
+     */
+    public void clearRebalanceCounters() {
+        rebalancingPartitionsLeft.reset();
+
+        rebalancingReceivedKeys.reset();
+
+        rebalancingReceivedBytes.reset();
+
+        rebalancingStartTime.value(-1L);
+
+        rebalancingFinishTime.value(-1L);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheGroupMetricsImpl.class, this);
     }
 }

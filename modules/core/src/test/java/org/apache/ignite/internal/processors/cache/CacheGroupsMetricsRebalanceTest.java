@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -47,6 +49,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -64,10 +68,27 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     private static final String CACHE3 = "cache3";
 
     /** */
-    private static final long REBALANCE_DELAY = 5_000;
+    private static final String CACHE4 = "cache4";
 
     /** */
-    private static final String GROUP = "group1";
+    private static final String CACHE5 = "cache5";
+
+    /** */
+    private static final String CACHE6 = "cache6";
+
+    /** */
+    private static final long REBALANCE_DELAY_5000 = 5_000;
+
+    /** */
+    private static final long REBALANCE_DELAY_500 = 500;
+
+    /** */
+    private static final String GROUP1 = "group1";
+
+    /** */
+    private static final String GROUP2 = "group2";
+
+    private static final int KEYS_COUNT = 10_000;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -88,7 +109,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         CacheConfiguration cfg1 = new CacheConfiguration()
             .setName(CACHE1)
-            .setGroupName(GROUP)
+            .setGroupName(GROUP1)
             .setCacheMode(CacheMode.PARTITIONED)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
@@ -105,9 +126,21 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true)
-            .setRebalanceDelay(REBALANCE_DELAY);
+            .setRebalanceDelay(REBALANCE_DELAY_5000);
 
-        cfg.setCacheConfiguration(cfg1, cfg2, cfg3);
+        CacheConfiguration cfg4 = new CacheConfiguration()
+            .setName(CACHE4)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setRebalanceDelay(REBALANCE_DELAY_500)
+            .setGroupName(GROUP2);
+
+        CacheConfiguration cfg5 = new CacheConfiguration(cfg4)
+            .setName(CACHE5);
+
+        CacheConfiguration cfg6 = new CacheConfiguration(cfg4)
+            .setName(CACHE6);
+
+        cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4, cfg5, cfg6);
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
@@ -118,13 +151,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testRebalance() throws Exception {
+    public void testCacheRebalance() throws Exception {
         Ignite ignite = startGrids(4);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
         IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < KEYS_COUNT; i++) {
             cache1.put(i, CACHE1 + "-" + i);
 
             if (i % 2 == 0)
@@ -170,6 +203,91 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         log.info("Ratio: " + ratio);
 
         assertTrue(ratio > 0.9 && ratio < 1.1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheGroupRebalance() throws Exception {
+        List<String> cachesNames = Lists.newArrayList(CACHE4, CACHE5, CACHE6);
+
+        IgniteEx ignite = startGrid(1);
+
+        for (String name : cachesNames) {
+            IgniteCache<Integer, String> cache = ignite.getOrCreateCache(name);
+
+            for (int i = 0; i < KEYS_COUNT; i++) {
+                cache.put(i, name);
+            }
+        }
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch finishLatch = new CountDownLatch(cachesNames.size());
+
+        long nodeStartTime = U.currentTimeMillis();
+
+        (ignite = startGrid(2)).events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                String cacheName = ((CacheRebalancingEvent)evt).cacheName();
+                boolean started = evt.type() == EVT_CACHE_REBALANCE_STARTED;
+
+                if (cachesNames.contains(cacheName)) {
+                    if (started)
+                        startLatch.countDown();
+                    else
+                        finishLatch.countDown();
+
+                    log.info("CountDown rebalance " + (started ? "start" : "stop") + " latch: " + cacheName);
+                }
+
+                return true;
+            }
+        }, EVT_CACHE_REBALANCE_STARTED, EVT_CACHE_REBALANCE_STOPPED);
+
+        assertTrue("Rebalancing for caches " + cachesNames + " not started",
+            startLatch.await(5, TimeUnit.SECONDS));
+
+        CacheGroupMetricsImpl metrics = cachGroupMetrics(ignite, GROUP2);
+
+        assertTrue("Invalid rebalancing start time [nodeStartTime=" + nodeStartTime + ", rebalancingStartTime=" +
+            metrics.getRebalancingStartTime() + "]",nodeStartTime < metrics.getRebalancingStartTime());
+
+        assertTrue("Invalid rebalancing start time [rebalancingStartTime=" + metrics.getRebalancingStartTime() +
+            ", currentTime=" + U.currentTimeMillis() + ", delay=" + REBALANCE_DELAY_500 + "]",
+            metrics.getRebalancingStartTime() < U.currentTimeMillis() + REBALANCE_DELAY_500);
+
+        assertEquals("Rebalancing finish time must be -1 before rebalancing stops", -1L,
+            metrics.getRebalancingFinishTime());
+
+        assertTrue("Not a positive rebalancing partitions left:" + metrics.getRebalancingPartitionsLeft(),
+            metrics.getRebalancingPartitionsLeft() > 0);
+
+        assertTrue("Rebalancing stopped for " + (cachesNames.size() - finishLatch.getCount()) + " caches from " +
+                cachesNames.size(), finishLatch.await(5, TimeUnit.SECONDS));
+
+        metrics = cachGroupMetrics(ignite, GROUP2);
+
+        assertTrue("Invalid rebalancing finish time [rebalancingStartTime=" + metrics.getRebalancingStartTime() +
+            ", rebalancingFinishTime=" + metrics.getRebalancingFinishTime() + "]",
+            metrics.getRebalancingStartTime() < metrics.getRebalancingFinishTime());
+
+        assertTrue("Invalid rebalancing finish time [rebalancingFinishTime=" + metrics.getRebalancingFinishTime() +
+            ",currentTime=" + U.currentTimeMillis() + "]", metrics.getRebalancingFinishTime() <= U.currentTimeMillis());
+
+        assertEquals("Not all partitions rebalanced:" + metrics.getRebalancingPartitionsLeft(),
+            0, metrics.getRebalancingPartitionsLeft());
+
+        assertEquals("Not all keys received:" + metrics.getRebalancingReceivedKeys() + " from " + (KEYS_COUNT *
+                cachesNames.size()), cachesNames.size() * KEYS_COUNT, metrics.getRebalancingReceivedKeys());
+    }
+
+    private static CacheGroupMetricsImpl cachGroupMetrics(IgniteEx ignite, String cacheGroupName) {
+        return ignite.context().cache().cacheGroups().stream()
+            .filter(grCtx -> grCtx.cacheOrGroupName().equals(cacheGroupName))
+            .findAny()
+            .get()
+            .metrics();
     }
 
     /**
@@ -390,7 +508,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             }
         }, 5_000);
 
-        assert(cache.localMetrics().getRebalancingStartTime() < U.currentTimeMillis() + REBALANCE_DELAY);
-        assert(cache.localMetrics().getRebalancingStartTime() > beforeStartTime + REBALANCE_DELAY);
+        assert(cache.localMetrics().getRebalancingStartTime() < U.currentTimeMillis() + REBALANCE_DELAY_5000);
+        assert(cache.localMetrics().getRebalancingStartTime() > beforeStartTime + REBALANCE_DELAY_5000);
     }
 }
