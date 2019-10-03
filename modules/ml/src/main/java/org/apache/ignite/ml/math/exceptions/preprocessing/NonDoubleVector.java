@@ -18,18 +18,19 @@
 package org.apache.ignite.ml.math.exceptions.preprocessing;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Indicates an unknown categorial feature value for Encoder.
+ * Indicates a vector with non-double data.
  */
-public class UnknownCategorialFeatureValueException extends IgniteException {
+public class NonDoubleVector extends IgniteException {
     /** */
     private static final long serialVersionUID = 310L;
 
     /**
-     * @param unknownStr Categorial value that caused this exception.
+     * @param row The data of vector.
      */
-    public UnknownCategorialFeatureValueException(String unknownStr) {
-        super("This categorial value is unknown for Encoder: " + unknownStr);
+    public NonDoubleVector(Vector row) {
+        super("This categorial value is unknown for Encoder: " + row.toString());
     }
 }

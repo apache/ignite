@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteException;
  */
 public class IllegalLabelTypeException extends IgniteException {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 120L;
 
     /**
      * @param illegalClass The illegal type.

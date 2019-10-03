@@ -184,7 +184,7 @@ public class SandboxMLCache {
             // TODO_ZALESLAW: for debug purposes
             Object[] res = new Object[cells.length];
 
-            if ("p".equals(cells[0]))
+            if (cells[0].contains("p"))
                 res[0] = 0.0;
             else
                 res[0] = 1.0;

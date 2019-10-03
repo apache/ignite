@@ -84,10 +84,6 @@ public class EncoderExampleWithNormalization {
                     .withP(1)
                     .fit(ignite, dataCache, encoderPreprocessor);
 
-                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, dataCache, normalizer)) {
-                    new DatasetHelper(dataset).describe();
-                }
-
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 // Train decision tree model.
