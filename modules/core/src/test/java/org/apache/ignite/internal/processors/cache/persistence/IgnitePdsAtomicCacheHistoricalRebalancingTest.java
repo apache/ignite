@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
-import org.junit.Ignore;
-import org.junit.Test;
 
 /**
  *
