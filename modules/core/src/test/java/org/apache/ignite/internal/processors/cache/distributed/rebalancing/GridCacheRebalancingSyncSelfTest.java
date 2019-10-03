@@ -163,7 +163,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
-        iCfg.setRebalanceThreadPoolSize(3);
+        iCfg.setRebalanceThreadPoolSize(4);
 
         return iCfg;
     }
@@ -523,7 +523,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
                 awaitPartitionMapExchange();
 
-                //New cache should start rebalancing.
+                // New cache should start rebalancing.
                 CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
                 cacheRCfg.setName(CACHE_NAME_DHT_PARTITIONED + "_NEW");
@@ -580,7 +580,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         Thread t4 = new Thread() {
             @Override public void run() {
                 generateData(ignite3, 0, 2);
-
             }
         };
 

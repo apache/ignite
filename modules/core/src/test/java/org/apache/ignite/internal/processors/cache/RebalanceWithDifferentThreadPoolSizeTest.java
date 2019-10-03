@@ -54,7 +54,7 @@ public class RebalanceWithDifferentThreadPoolSizeTest extends GridCommonAbstract
         cfg.setRebalanceThreadPoolSize(rebalancePoolSize);
 
         cfg.setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
-            .setRebalanceMode(CacheRebalanceMode.SYNC) // Wait reblance finish before node start
+            .setRebalanceMode(CacheRebalanceMode.SYNC) // Wait rebalance finish before node start
             .setAffinity(new RendezvousAffinityFunction(false, 32)));
 
         return cfg;

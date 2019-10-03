@@ -57,6 +57,9 @@ public class GridIoPolicy {
     /** Schema pool.  */
     public static final byte SCHEMA_POOL = 12;
 
+    /** Rebalance pool.  */
+    public static final byte REBALANCE_POOL = 13;
+
     /**
      * Defines the range of reserved pools that are not available for plugins.
      * @param key The key.

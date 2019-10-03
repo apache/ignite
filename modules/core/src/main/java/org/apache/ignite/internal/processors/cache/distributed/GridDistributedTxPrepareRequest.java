@@ -276,7 +276,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return IO policy.
      */
-    public byte policy() {
+    @Override public byte policy() {
         return plc;
     }
 

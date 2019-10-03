@@ -473,18 +473,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             if (grp != null) {
                                 if (m instanceof GridDhtPartitionSupplyMessage) {
-                                    grp.preloader().handleSupplyMessage(idx, id, (GridDhtPartitionSupplyMessage) m);
+                                    grp.preloader().handleSupplyMessage(id, (GridDhtPartitionSupplyMessage)m);
 
                                     return;
                                 }
                                 else if (m instanceof GridDhtPartitionDemandMessage) {
-                                    grp.preloader().handleDemandMessage(idx, id, (GridDhtPartitionDemandMessage) m);
+                                    grp.preloader().handleDemandMessage(idx, id, (GridDhtPartitionDemandMessage)m);
 
                                     return;
                                 }
                                 else if (m instanceof GridDhtPartitionDemandLegacyMessage) {
                                     grp.preloader().handleDemandMessage(idx, id,
-                                        new GridDhtPartitionDemandMessage((GridDhtPartitionDemandLegacyMessage) m));
+                                        new GridDhtPartitionDemandMessage((GridDhtPartitionDemandLegacyMessage)m));
 
                                     return;
                                 }
@@ -3321,7 +3321,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // Just pick first worker to do this, so we don't
                             // invoke topology callback more than once for the
                             // same event.
-
                             boolean changed = false;
 
                             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {

@@ -631,6 +631,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getSchemaExecutorService();
 
     /**
+     * Executor service that is in charge of processing rebalance messages.
+     *
+     * @return Executor service that is in charge of processing rebalance messages.
+     */
+    public ExecutorService getRebalanceExecutorService();
+
+    /**
      * Gets exception registry.
      *
      * @return Exception registry.

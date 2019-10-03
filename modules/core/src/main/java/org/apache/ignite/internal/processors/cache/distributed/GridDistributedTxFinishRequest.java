@@ -230,7 +230,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /**
      * @return IO policy.
      */
-    public byte policy() {
+    @Override public byte policy() {
         return plc;
     }
 

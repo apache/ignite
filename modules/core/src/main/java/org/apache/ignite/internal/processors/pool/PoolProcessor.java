@@ -144,6 +144,11 @@ public class PoolProcessor extends GridProcessorAdapter {
 
                 return ctx.getSchemaExecutorService();
 
+            case GridIoPolicy.REBALANCE_POOL:
+                assert ctx.getRebalanceExecutorService() != null : "Rebalance pool is not configured.";
+
+                return ctx.getRebalanceExecutorService();
+
             default: {
                 if (plc < 0)
                     throw new IgniteCheckedException("Policy cannot be negative: " + plc);
