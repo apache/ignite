@@ -120,6 +120,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MAN
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.REBALANCE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -1018,7 +1019,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
             // as thread pool may not have any available threads to give.
-            byte plc = msg.policy();
+            byte plc = msg.message().policy();
+
+            // If override policy is not defined use sender defined policy.
+            if (plc == GridIoPolicy.UNDEFINED)
+                plc = msg.policy();
 
             switch (plc) {
                 case P2P_POOL: {
@@ -1037,6 +1042,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case QUERY_POOL:
                 case SCHEMA_POOL:
                 case SERVICE_POOL:
+                case REBALANCE_POOL:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);

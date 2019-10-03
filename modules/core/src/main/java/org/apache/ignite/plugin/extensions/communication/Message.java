@@ -18,6 +18,7 @@ package org.apache.ignite.plugin.extensions.communication;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 
 /**
  * Base class for all communication messages.
@@ -62,4 +63,15 @@ public interface Message extends Serializable {
      * Method called when ack message received.
      */
     public void onAckReceived();
+
+    /**
+     * Message processing policy.
+     * Overrides processing policy defined by sender.
+     *
+     * @return Processing policy.
+     */
+    public default byte policy() {
+        return GridIoPolicy.UNDEFINED;
+    }
+
 }

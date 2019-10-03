@@ -455,8 +455,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean storeValue(CacheObject val, long expireTime, GridCacheVersion ver) {
-        return false;
+    @Override protected void storeValue(CacheObject val, long expireTime, GridCacheVersion ver) {
         // No-op: queries are disabled for near cache.
     }
 

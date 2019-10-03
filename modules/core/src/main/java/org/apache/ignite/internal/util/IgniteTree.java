@@ -124,7 +124,7 @@ public interface IgniteTree<L, T> {
         /**
          * @return Operation type for this closure or {@code null} if it is unknown.
          *      After method {@link #call(Object)} has been called, operation type must
-         *      be know and this method can not return {@code null}.
+         *      be known and this method can not return {@code null}.
          */
         OperationType operationType();
     }

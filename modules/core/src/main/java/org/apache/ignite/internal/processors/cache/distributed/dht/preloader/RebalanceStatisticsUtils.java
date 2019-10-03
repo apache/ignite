@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.valueOf;
 import static java.lang.System.currentTimeMillis;
@@ -48,7 +49,6 @@ import static java.util.Comparator.comparingInt;
 import static java.util.Comparator.comparingLong;
 import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
-import static java.util.stream.Collector.of;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.mapping;
@@ -87,8 +87,8 @@ class RebalanceStatisticsUtils {
         /** End rebalance time in mills. */
         private volatile long endTime = startTime;
 
-        /** First key - topic id. Second key - supplier node. */
-        private final Map<Integer, Map<ClusterNode, RebalanceMessageStatistics>> msgStats = new ConcurrentHashMap<>();
+        /** Per node stats. */
+        private final Map<ClusterNode, RebalanceMessageStatistics> msgStats = new ConcurrentHashMap<>();
 
         /** Is needed or not to print rebalance statistics. */
         private final boolean printRebalanceStatistics = printRebalanceStatistics();
@@ -100,20 +100,15 @@ class RebalanceStatisticsUtils {
          * This method add new message statistics if
          * {@link #printRebalanceStatistics} == true.
          *
-         * @param topicId Topic id, require not null.
          * @param supplierNode Supplier node, require not null.
          * @see RebalanceMessageStatistics
-         * @see #addReceivePartitionStatistics(Integer, ClusterNode, GridDhtPartitionSupplyMessage)
+         * @see #addReceivePartitionStatistics(ClusterNode, GridDhtPartitionSupplyMessage)
          */
-        public void addMessageStatistics(final Integer topicId, final ClusterNode supplierNode) {
-            assert nonNull(topicId);
-            assert nonNull(supplierNode);
-
+        public void addMessageStatistics(final @NotNull ClusterNode supplierNode) {
             if (!printRebalanceStatistics)
                 return;
 
-            msgStats.computeIfAbsent(topicId, integer -> new ConcurrentHashMap<>())
-                .put(supplierNode, new RebalanceMessageStatistics(currentTimeMillis()));
+            msgStats.putIfAbsent(supplierNode, new RebalanceMessageStatistics(currentTimeMillis()));
         }
 
         /**
@@ -122,18 +117,15 @@ class RebalanceStatisticsUtils {
          * demand message. This method add new message statistics if
          * {@link #printRebalanceStatistics} == true.
          *
-         * @param topicId Topic id, require not null.
          * @param supplierNode Supplier node, require not null.
          * @param supplyMsg Supply message, require not null.
          * @see ReceivePartitionStatistics
-         * @see #addMessageStatistics(Integer, ClusterNode)
+         * @see #addMessageStatistics(ClusterNode)
          */
         public void addReceivePartitionStatistics(
-            final Integer topicId,
             final ClusterNode supplierNode,
             final GridDhtPartitionSupplyMessage supplyMsg
         ) {
-            assert nonNull(topicId);
             assert nonNull(supplierNode);
             assert nonNull(supplyMsg);
 
@@ -144,7 +136,7 @@ class RebalanceStatisticsUtils {
                 .map(entry -> new PartitionStatistics(entry.getKey(), entry.getValue().infos().size()))
                 .collect(toList());
 
-            msgStats.get(topicId).get(supplierNode).receivePartStats
+            msgStats.get(supplierNode).receivePartStats
                 .add(new ReceivePartitionStatistics(currentTimeMillis(), supplyMsg.messageSize(), partStats));
         }
 
@@ -287,8 +279,7 @@ class RebalanceStatisticsUtils {
         AtomicInteger nodeCnt = new AtomicInteger();
 
         Map<ClusterNode, Integer> nodeAliases = toRebalanceFutureStream(rebFutrs)
-            .flatMap(future -> future.stat.msgStats.entrySet().stream())
-            .flatMap(entry -> entry.getValue().keySet().stream())
+            .flatMap(future -> future.stat.msgStats.keySet().stream())
             .distinct()
             .collect(toMap(identity(), node -> nodeCnt.getAndIncrement()));
 
@@ -324,14 +315,11 @@ class RebalanceStatisticsUtils {
         long maxEndTime = maxEndTime(toRebalanceFutureStream(rebFutrs));
 
         joiner.add("Total information (" + SUCCESSFUL_OR_NOT_REBALANCE_TEXT + "):")
-            .add("Time").add("[" + toStartEndDuration(minStartTime, maxEndTime) + "]");
-
-        Map<Integer, List<RebalanceMessageStatistics>> topicStat =
-            toTopicStatistics(toRebalanceFutureStream(rebFutrs));
-        writeTopicRebalanceStatistics(topicStat, joiner);
+            .add("[" + toStartEndDuration(minStartTime, maxEndTime) + "]");
 
         Map<ClusterNode, List<RebalanceMessageStatistics>> supplierStat =
             toSupplierStatistics(toRebalanceFutureStream(rebFutrs));
+
         writeSupplierRebalanceStatistics(supplierStat, nodeAliases, joiner);
     }
 
@@ -341,34 +329,31 @@ class RebalanceStatisticsUtils {
      * If {@code finish} == true then add {@link #SUCCESSFUL_OR_NOT_REBALANCE_TEXT} else add {@link
      * #SUCCESSFUL_REBALANCE_TEXT} into header.
      *
-     * @param rebFutrs Participating in successful and not rebalances, require not null.
+     * @param rebFuts Participating in successful and not rebalances, require not null.
      * @param nodeAliases For print nodeId=1 instead long string, require not null.
      * @param joiner For write statistics, require not null.
      * @param finish Is finish rebalance.
      */
     private static void writeCacheGroupsRebalanceStatistics(
-        final Map<CacheGroupContext, Collection<RebalanceFuture>> rebFutrs,
+        final Map<CacheGroupContext, Collection<RebalanceFuture>> rebFuts,
         final Map<ClusterNode, Integer> nodeAliases,
         final boolean finish,
         final StringJoiner joiner
     ) {
-        assert nonNull(rebFutrs);
+        assert nonNull(rebFuts);
         assert nonNull(nodeAliases);
         assert nonNull(joiner);
 
         joiner.add("Information per cache group (" +
             (finish ? SUCCESSFUL_OR_NOT_REBALANCE_TEXT : SUCCESSFUL_REBALANCE_TEXT) + "):");
 
-        rebFutrs.forEach((context, futures) -> {
+        rebFuts.forEach((context, futures) -> {
             long minStartTime = minStartTime(futures.stream());
             long maxEndTime = maxEndTime(futures.stream());
 
             joiner.add("[id=" + context.groupId() + ",")
                 .add("name=" + context.cacheOrGroupName() + ",")
                 .add(toStartEndDuration(minStartTime, maxEndTime) + "]");
-
-            Map<Integer, List<RebalanceMessageStatistics>> topicStat = toTopicStatistics(futures.stream());
-            writeTopicRebalanceStatistics(topicStat, joiner);
 
             Map<ClusterNode, List<RebalanceMessageStatistics>> supplierStat = toSupplierStatistics(futures.stream());
             writeSupplierRebalanceStatistics(supplierStat, nodeAliases, joiner);
@@ -432,13 +417,10 @@ class RebalanceStatisticsUtils {
 
             Map<PartitionStatistics, ClusterNode> supplierNodeRcvParts = new TreeMap<>(partIdCmp);
 
-            for (Entry<Integer, Map<ClusterNode, RebalanceMessageStatistics>> topicStatEntry : lastSuccessFuture.stat
-                .msgStats.entrySet()) {
-                for (Entry<ClusterNode, RebalanceMessageStatistics> supplierStatEntry : topicStatEntry.getValue().entrySet()) {
-                    for (ReceivePartitionStatistics receivePartStat : supplierStatEntry.getValue().receivePartStats) {
-                        for (PartitionStatistics partStat : receivePartStat.parts)
-                            supplierNodeRcvParts.put(partStat, supplierStatEntry.getKey());
-                    }
+            for (Entry<ClusterNode, RebalanceMessageStatistics> entry : lastSuccessFuture.stat.msgStats.entrySet()) {
+                for (ReceivePartitionStatistics receivePartStat : entry.getValue().receivePartStats) {
+                    for (PartitionStatistics partStat : receivePartStat.parts)
+                        supplierNodeRcvParts.put(partStat, entry.getKey());
                 }
             }
 
@@ -460,31 +442,6 @@ class RebalanceStatisticsUtils {
         }
 
         writeAliasesRebalanceStatistics("pr - primary, bu - backup, su - supplier node", nodeAliases, joiner);
-    }
-
-    /**
-     * Write statistics per topic.
-     *
-     * @param topicStat Statistics by topics (in successful and not rebalances), require not null.
-     * @param joiner For write statistics, require not null.
-     */
-    private static void writeTopicRebalanceStatistics(
-        final Map<Integer, List<RebalanceMessageStatistics>> topicStat,
-        final StringJoiner joiner
-    ) {
-        assert nonNull(topicStat);
-        assert nonNull(joiner);
-
-        joiner.add("Topic statistics:");
-
-        topicStat.forEach((topicId, msgStats) -> {
-            long partCnt = sum(msgStats, rps -> rps.parts.size());
-            long byteSum = sum(msgStats, rps -> rps.msgSize);
-            long entryCount = sum(msgStats, rps -> rps.parts.stream().mapToLong(ps -> ps.entryCount).sum());
-
-            joiner.add("[id=" + topicId + ",")
-                .add(toPartitionsEntriesBytes(partCnt, entryCount, byteSum) + "]");
-        });
     }
 
     /**
@@ -595,33 +552,6 @@ class RebalanceStatisticsUtils {
     }
 
     /**
-     * Aggregates statistics by topic number.
-     *
-     * @param stream Stream rebalance future's, require not null.
-     * @return Statistic by topics.
-     */
-    private static Map<Integer, List<RebalanceMessageStatistics>> toTopicStatistics(
-        final Stream<RebalanceFuture> stream) {
-        assert nonNull(stream);
-
-        return stream.flatMap(future -> future.stat.msgStats.entrySet().stream())
-            .collect(groupingBy(
-                Entry::getKey,
-                mapping(
-                    entry -> entry.getValue().values(),
-                    of(
-                        ArrayList::new,
-                        Collection::addAll,
-                        (ms1, ms2) -> {
-                            ms1.addAll(ms2);
-                            return ms1;
-                        }
-                    )
-                )
-            ));
-    }
-
-    /**
      * Aggregates statistics by supplier node.
      *
      * @param stream Stream rebalance future's, require not null.
@@ -633,7 +563,6 @@ class RebalanceStatisticsUtils {
         assert nonNull(stream);
 
         return stream.flatMap(future -> future.stat.msgStats.entrySet().stream())
-            .flatMap(entry -> entry.getValue().entrySet().stream())
             .collect(groupingBy(Entry::getKey, mapping(Entry::getValue, toList())));
     }
 
@@ -646,7 +575,7 @@ class RebalanceStatisticsUtils {
      * @see #REBALANCE_STATISTICS_DTF
      */
     private static String toStartEndDuration(final long start, final long end) {
-        return "start=" + REBALANCE_STATISTICS_DTF.format(toLocalDateTime(start)) + ", end=" +
+        return "startTime=" + REBALANCE_STATISTICS_DTF.format(toLocalDateTime(start)) + ", finishTime=" +
             REBALANCE_STATISTICS_DTF.format(toLocalDateTime(end)) + ", d=" + (end - start) + " ms";
     }
 

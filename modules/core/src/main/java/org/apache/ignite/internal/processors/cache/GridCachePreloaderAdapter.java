@@ -124,12 +124,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void unwindUndeploys() {
-        grp.unwindUndeploys();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void handleSupplyMessage(int idx, UUID id, GridDhtPartitionSupplyMessage s) {
+    @Override public void handleSupplyMessage(UUID id, GridDhtPartitionSupplyMessage s) {
         // No-op.
     }
 

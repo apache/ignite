@@ -356,7 +356,6 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         try {
             IgniteEx grid0 = startGrid(0);
             grid0.cluster().active(true);
-            grid0.cluster().baselineAutoAdjustEnabled(false);
 
             grid0.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
