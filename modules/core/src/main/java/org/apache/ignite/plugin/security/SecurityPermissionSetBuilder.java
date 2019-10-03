@@ -143,7 +143,7 @@ public class SecurityPermissionSetBuilder {
      * @return {@link SecurityPermissionSetBuilder} refer to same permission builder.
      */
     public SecurityPermissionSetBuilder appendSystemPermissions(SecurityPermission... perms) {
-        validate(toCollection("EVENTS_", "ADMIN_", "JOIN_AS_SERVER", "CACHE_CREATE", "CACHE_DESTROY"), perms);
+        validate(toCollection("EVENTS_", "ADMIN_", "CACHE_CREATE", "CACHE_DESTROY", "JOIN_AS_SERVER"), perms);
 
         sysPerms.addAll(toCollection(perms));
 

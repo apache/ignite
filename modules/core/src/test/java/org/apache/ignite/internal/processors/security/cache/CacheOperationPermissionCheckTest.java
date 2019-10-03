@@ -46,17 +46,14 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /** New cache for tests. */
     protected static final String NEW_CACHE="NEW_CACHE";
-    /**
-     *
-     */
+
+    /** */
     @Test
     public void testServerNode() throws Exception {
         testCrudCachePermissions(false);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testClientNode() throws Exception {
         testCrudCachePermissions(true);
@@ -80,6 +77,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(CACHE_NAME));
             c.accept(node.cache(NEW_CACHE));
+
             assertThrowsWithCause(() -> c.accept(node.cache(FORBIDDEN_CACHE)), SecurityException.class);
         }
     }
