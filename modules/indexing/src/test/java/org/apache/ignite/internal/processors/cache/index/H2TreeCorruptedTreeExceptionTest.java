@@ -48,7 +48,12 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
     /** */
     private final LogListener logListener = new MessageOrderLogListener(
-        ".*?Tree is corrupted.*?cacheId=.*?, cacheName=SQL_PUBLIC_A, indexName=" + IDX_NAME + ", groupName=" + GRP_NAME + ".*"
+        String.format(
+                ".*?Tree is corrupted.*?cacheId=-1578586276, cacheName=SQL_PUBLIC_A, indexName=%s, groupName=%s" +
+                    ", msg=Runtime failure on row: Row@.*?key: 11, val: .*",
+                IDX_NAME,
+                GRP_NAME
+        )
     );
 
     /** {@inheritDoc} */
