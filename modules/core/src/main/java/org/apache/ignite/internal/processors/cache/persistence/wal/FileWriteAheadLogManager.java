@@ -1268,7 +1268,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 throw e;
             }
 
-            next.writeHeader();
+            try {
+                next.writeHeader();
+            }
+            catch (StorageException e) {
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+
+                throw e;
+            }
 
             if (rec != null) {
                 WALPointer ptr = next.addRecord(rec);

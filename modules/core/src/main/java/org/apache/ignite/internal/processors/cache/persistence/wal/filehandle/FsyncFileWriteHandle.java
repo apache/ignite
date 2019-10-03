@@ -203,7 +203,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
             head.set(new FakeRecord(new FileWALPointer(getSegmentId(), (int)updatedPosition, 0), false));
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Unable to write serializer version for segment " + getSegmentId(), e);
+            throw new StorageException("Unable to write serializer version for segment " + getSegmentId(), e);
         }
     }
 
