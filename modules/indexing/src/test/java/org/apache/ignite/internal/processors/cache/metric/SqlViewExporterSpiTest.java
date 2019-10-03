@@ -369,15 +369,15 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     private void checkContinuouQueryView(IgniteEx g, boolean loc) {
         List<List<?>> qrys = execute(g,
             "SELECT " +
-                "  CACHE_NAME, " +
-                "  BUFFER_SIZE, " +
-                "  INTERVAL, " +
-                "  NODE_ID, " +
-                "  LOCAL_LISTENER, " +
-                "  REMOTE_FILTER, " +
-                "  LOCAL_TRANSFORMED_LISTENER, " +
-                "  REMOTE_TRANSFORMER " +
-                "FROM SYS.QUERY_CONTINUOUS");
+            "  CACHE_NAME, " +
+            "  BUFFER_SIZE, " +
+            "  INTERVAL, " +
+            "  NODE_ID, " +
+            "  LOCAL_LISTENER, " +
+            "  REMOTE_FILTER, " +
+            "  LOCAL_TRANSFORMED_LISTENER, " +
+            "  REMOTE_TRANSFORMER " +
+            "FROM SYS.QUERY_CONTINUOUS");
 
         assertEquals(1, qrys.size());
 
