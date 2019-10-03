@@ -2708,6 +2708,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param filters Key and value filters.
      * @param <K> Key type.
      * @param <V> Value type.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */

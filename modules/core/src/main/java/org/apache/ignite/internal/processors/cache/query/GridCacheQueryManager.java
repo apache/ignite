@@ -1951,9 +1951,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @GridInternal
     private static class MetadataJob implements IgniteCallable<Collection<CacheSqlMetadata>> {
-        /**
-         *
-         */
+        /** */
         private static final long serialVersionUID = 0L;
 
         /**
@@ -2751,6 +2749,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param clsName Query class name.
      * @param search Search clause.
      * @param keepBinary Keep binary flag.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,

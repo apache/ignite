@@ -58,6 +58,8 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
     /** Cache name */
     private static final String PERSON_CACHE = "Person";
+
+    /** Limitation to query response size */
     private static final int QUERY_LIMIT = 5;
 
     private static final class TestPair{
@@ -294,6 +296,14 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Checks query for missed keys or if limit is set - for limitation correctness.
+     *
+     * @param ignite Ignite context.
+     * @param qry Initial text query.
+     * @param testPair  pair containing expected and all entries.
+     * @throws IgniteCheckedException if key check failed.
+     */
     private static void assertResult(IgniteEx ignite, TextQuery qry,
         TestPair testPair) throws IgniteCheckedException {
         if (qry.getLimit() > 0){
@@ -303,6 +313,14 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Checks cursor with binary entries for correct keys and values.
+     * Removes valid entries from expected list copy.
+     *
+     * @param cursor Query cursor with response
+     * @param exp List of expected values.
+     * @return Altered expected values list.
+     */
     @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpectedWithBinary(Set<Integer> exp,
         QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor) {
         TestPair testPair = new TestPair(exp);
@@ -319,6 +337,14 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         return testPair;
     }
 
+    /**
+     * Checks cursor entries for correct keys and values.
+     * Removes valid entries from expected list copy.
+     *
+     * @param cursor Query cursor with response
+     * @param exp List of expected values.
+     * @return Altered expected values list.
+     */
     @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpected(Set<Integer> exp,
         QueryCursor<Cache.Entry<Integer, Person>> cursor) {
         TestPair testPair = new TestPair(exp);

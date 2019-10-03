@@ -1420,10 +1420,14 @@ public class PlatformCache extends PlatformAbstractTarget {
         boolean loc = reader.readBoolean();
         String txt = reader.readString();
         String typ = reader.readString();
-        final int limit = reader.readInt();
         final int pageSize = reader.readInt();
 
-        return new TextQuery(typ, txt, limit).setPageSize(pageSize).setLocal(loc);
+        //TODO uncomment when limit parameter is added to Platforms
+        //
+        // final int limit = reader.readInt();
+        // return new TextQuery(typ, txt, limit).setPageSize(pageSize).setLocal(loc);
+
+        return new TextQuery(typ, txt).setPageSize(pageSize).setLocal(loc);
     }
 
     /**

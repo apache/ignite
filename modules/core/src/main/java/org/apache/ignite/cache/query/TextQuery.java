@@ -87,7 +87,7 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param type Type.
      * @param txt Search string.
-     * @param limit Limit.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      */
     public TextQuery(String type, String txt, int limit) {
         setType(type);
