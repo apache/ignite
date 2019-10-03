@@ -414,15 +414,15 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         int cacheId = cacheId("SQL_PUBLIC_T1");
         String cacheName = "SQL_PUBLIC_T1";
 
-        assertEquals("T1", tbl.get(0)); //TABLE_NAME
-        assertEquals(DFLT_SCHEMA, tbl.get(1)); //SCHEMA_NAME
-        assertEquals(cacheName, tbl.get(2)); //CACHE_NAME
-        assertEquals(cacheId, tbl.get(3)); //CACHE_ID
-        assertNull(tbl.get(4)); //AFFINITY_KEY_COLUMN
-        assertEquals("ID", tbl.get(5)); //KEY_ALIAS
-        assertNull(tbl.get(6)); //VALUE_ALIAS
-        assertEquals("java.lang.Long", tbl.get(7)); //KEY_TYPE_NAME
-        assertNotNull(tbl.get(8)); //VALUE_TYPE_NAME
+        assertEquals("T1", tbl.get(0)); // TABLE_NAME
+        assertEquals(DFLT_SCHEMA, tbl.get(1)); // SCHEMA_NAME
+        assertEquals(cacheName, tbl.get(2)); // CACHE_NAME
+        assertEquals(cacheId, tbl.get(3)); // CACHE_ID
+        assertNull(tbl.get(4)); // AFFINITY_KEY_COLUMN
+        assertEquals("ID", tbl.get(5)); // KEY_ALIAS
+        assertNull(tbl.get(6)); // VALUE_ALIAS
+        assertEquals("java.lang.Long", tbl.get(7)); // KEY_TYPE_NAME
+        assertNotNull(tbl.get(8)); // VALUE_TYPE_NAME
 
         execute(ignite, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
 
