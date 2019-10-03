@@ -258,7 +258,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                         }
                     }
                     catch (IgniteCheckedException e) {
-                        bctx0.result.onDone(e);
+                        bctx0.backupFut.onDone(e);
                     }
                 }
 
@@ -269,7 +269,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
             @Override public void onCheckpointBegin(Context ctx) {
                 for (BackupContext bctx0 : backupCtxs.values()) {
-                    if (bctx0.started || bctx0.result.isDone())
+                    if (bctx0.started || bctx0.backupFut.isDone())
                         continue;
 
                     // Submit all tasks for partitions and deltas processing.
@@ -429,7 +429,13 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                 partWorkerFactory,
                 deltaWorkerFactory);
 
-            bctx.result.listen(f -> backupCtxs.remove(name));
+            final BackupContext bctx0 = bctx;
+
+            bctx.backupFut.listen(f -> {
+                backupCtxs.remove(name);
+
+                closeBackupResources(bctx0);
+            });
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
@@ -450,7 +456,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
                     bctx.partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(log,
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
-                            bctx.result,
+                            bctx.backupFut,
                             () -> getPartionDeltaFile(grpDir, partId).toPath(),
                             ioFactory,
                             pageSize));
@@ -492,7 +498,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             throw new IgniteCheckedException(e);
         }
 
-        return bctx.result;
+        return bctx.backupFut;
     }
 
     /**
@@ -542,7 +548,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             @Override public void accept(File dir, GroupPartitionId pair) {
                 File delta = getPartionDeltaFile(dir, pair.getPartitionId());
 
-                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()),delta);
+                partitionRecovery(getPartitionFileEx(dir, pair.getPartitionId()), delta);
 
                 delta.delete();
             }
@@ -603,7 +609,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      * @param bctx Context to clouse all resources.
      */
-    private static void closeBackupResources(BackupContext bctx) {
+    private void closeBackupResources(BackupContext bctx) {
         if (bctx == null)
             return;
 
@@ -642,9 +648,9 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
              .whenComplete(new BiConsumer<Void, Throwable>() {
                  @Override public void accept(Void res, Throwable t) {
                      if (t == null)
-                         bctx.result.onDone(bctx.name);
+                         bctx.backupFut.onDone(bctx.name);
                      else
-                         bctx.result.onDone(t);
+                         bctx.backupFut.onDone(t);
                  }
              });
     }
@@ -944,7 +950,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
 
         /** Future of result completion. */
         @GridToStringExclude
-        private final GridFutureAdapter<String> result = new GridFutureAdapter<>();
+        private final GridFutureAdapter<String> backupFut = new GridFutureAdapter<>();
 
         /** Factory to create executable tasks for partition processing. */
         @GridToStringExclude
@@ -989,11 +995,6 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
             this.exec = exec;
             this.partWorkerFactory = partWorkerFactory;
             this.deltaWorkerFactory = deltaWorkerFactory;
-
-            result.listen(f -> {
-                if (f.error() != null)
-                    closeBackupResources(this);
-            });
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 for (Integer partId : e.getValue())
