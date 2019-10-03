@@ -325,36 +325,44 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test the configuration of IsBaselineAutoAdjustEnabled flag
         /// </summary>
+        [Ignore("Until baseline auto-adjust will be back")]
         [Test]
         public void TestBaselineTopologyAutoAdjustEnabledDisabled()
         {
-            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            using (EnvVar.Set("IGNITE_BASELINE_AUTO_ADJUST_FEATURE_SUPPORT", "true"))
             {
-                ICluster cluster = ignite.GetCluster();
-                cluster.SetActive(true);
+                using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+                {
+                    ICluster cluster = ignite.GetCluster();
+                    cluster.SetActive(true);
 
-                bool isEnabled = cluster.IsBaselineAutoAdjustEnabled();
-                cluster.SetBaselineAutoAdjustEnabledFlag(!isEnabled);
+                    bool isEnabled = cluster.IsBaselineAutoAdjustEnabled();
+                    cluster.SetBaselineAutoAdjustEnabledFlag(!isEnabled);
 
-                Assert.AreNotEqual(isEnabled, cluster.IsBaselineAutoAdjustEnabled());
+                    Assert.AreNotEqual(isEnabled, cluster.IsBaselineAutoAdjustEnabled());
+                }
             }
         }
 
         /// <summary>
         /// Test the configuration of BaselineAutoAdjustTimeout property
         /// </summary>
+        [Ignore("Until baseline auto-adjust will be back")]
         [Test]
         public void TestBaselineTopologyAutoAdjustTimeoutWriteRead()
         {
             const long newTimeout = 333000;
-            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            using (EnvVar.Set("IGNITE_BASELINE_AUTO_ADJUST_FEATURE_SUPPORT", "true"))
             {
-                ICluster cluster = ignite.GetCluster();
-                cluster.SetActive(true);
+                using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+                {
+                    ICluster cluster = ignite.GetCluster();
+                    cluster.SetActive(true);
 
-                cluster.SetBaselineAutoAdjustTimeout(newTimeout);
+                    cluster.SetBaselineAutoAdjustTimeout(newTimeout);
 
-                Assert.AreEqual(newTimeout, cluster.GetBaselineAutoAdjustTimeout());
+                    Assert.AreEqual(newTimeout, cluster.GetBaselineAutoAdjustTimeout());
+                }
             }
         }
 

@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -83,7 +82,7 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
     @Test
     public void testPartitionsRemovedIfJoiningNodeNotInBaseline() throws Exception {
         //given: start 3 nodes with data
-        Ignite ignite0 = startGrids(3);
+        IgniteEx ignite0 = startGrids(3);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
         ignite0.cluster().active(true);

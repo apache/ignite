@@ -16,12 +16,12 @@
 
 package org.apache.ignite.internal.managers;
 
+import javax.management.JMException;
+import javax.management.ObjectName;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import javax.management.JMException;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
@@ -54,6 +54,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_AUTO_ADJUST_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.isFeatureEnabled;
 
 /**
  * Class that registers and unregisters MBeans for kernal.
@@ -146,9 +148,11 @@ public class IgniteMBeansManager {
         registerMBean("DataStorage", dataStorageMXBean.getClass().getSimpleName(), dataStorageMXBean, DataStorageMXBean.class);
 
         // Baseline configuration
-        BaselineAutoAdjustMXBean baselineAutoAdjustMXBean = new BaselineAutoAdjustMXBeanImpl(ctx);
-        registerMBean("Baseline", baselineAutoAdjustMXBean.getClass().getSimpleName(), baselineAutoAdjustMXBean,
-            BaselineAutoAdjustMXBean.class);
+        if(isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE)) {
+            BaselineAutoAdjustMXBean baselineAutoAdjustMXBean = new BaselineAutoAdjustMXBeanImpl(ctx);
+            registerMBean("Baseline", baselineAutoAdjustMXBean.getClass().getSimpleName(), baselineAutoAdjustMXBean,
+                BaselineAutoAdjustMXBean.class);
+        }
 
         // Executors
         registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);

@@ -18,12 +18,12 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.UUID;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_ID_AND_TAG_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_CLUSTER_ID_AND_TAG_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.isFeatureEnabled;
 import static org.apache.ignite.internal.commandline.CommandList.STATE;
 
 /**
@@ -46,7 +46,7 @@ public class StateCommand implements Command<Void> {
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientClusterState state = client.state();
 
-            if (clusterIdAndTagSupport()) {
+            if (isFeatureEnabled(IGNITE_CLUSTER_ID_AND_TAG_FEATURE)) {
                 UUID id = state.id();
                 String tag = state.tag();
 
@@ -83,14 +83,5 @@ public class StateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public String name() {
         return STATE.toCommandName();
-    }
-
-    /**
-     * @return {@code true} if the feature is enabled.
-     **/
-    private static boolean clusterIdAndTagSupport() {
-        return IgniteSystemProperties.getBoolean(
-            IGNITE_CLUSTER_ID_AND_TAG_FEATURE, false
-        );
     }
 }

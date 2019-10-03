@@ -585,6 +585,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 
+                    log.warning(errorMsg);
                     return new IgniteNodeValidationResult(node.id(), errorMsg);
                 }
                 else

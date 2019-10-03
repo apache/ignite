@@ -105,7 +105,7 @@ public class IgnitePdsPageReplacementDuringPartitionClearTest extends GridCommon
         AtomicBoolean stop = new AtomicBoolean(false);
 
         try {
-            Ignite ig = ignite(0);
+            IgniteEx ig = ignite(0);
 
             ig.cluster().active(true);
 

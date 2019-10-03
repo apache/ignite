@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -30,6 +29,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -163,7 +163,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
      */
     @Test
     public void testCleanupSlow() throws Exception {
-        Ignite ignite = startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
 

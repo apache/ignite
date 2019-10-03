@@ -55,11 +55,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.isFeatureEnabled;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
@@ -140,9 +141,7 @@ public class GridAffinityAssignmentCache {
     private final boolean persistentCache;
 
     /** */
-    private final boolean bltForInMemoryCachesSupport = IgniteSystemProperties.getBoolean(
-        IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT, false
-    );
+    private final boolean bltForInMemoryCachesSupport = isFeatureEnabled(IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE);
 
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;

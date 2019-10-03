@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -173,7 +174,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      * @throws Exception if failed.
      */
     private void failWhilePut(boolean failWhileStart) throws Exception {
-        Ignite ig = startGrids(gridCount());
+        IgniteEx ig = startGrids(gridCount());
 
         ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);

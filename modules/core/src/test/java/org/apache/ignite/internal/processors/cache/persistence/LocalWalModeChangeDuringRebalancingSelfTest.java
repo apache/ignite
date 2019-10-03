@@ -249,7 +249,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void doTestSimple() throws Exception {
-        Ignite ignite = startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
@@ -328,7 +328,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         enablePendingTxTracker = true;
         dfltCacheBackupCnt = 2;
 
-        Ignite ignite = startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
@@ -383,7 +383,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
-        Ignite ignite = startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
@@ -497,7 +497,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void doTestParallelExchange(AtomicReference<CountDownLatch> latchRef) throws Exception {
-        Ignite ignite = startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
@@ -547,7 +547,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
-        Ignite ignite = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
@@ -597,7 +597,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testWalNotDisabledAfterShrinkingBaselineTopology() throws Exception {
-        Ignite ignite = startGrids(4);
+        IgniteEx ignite = startGrids(4);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);

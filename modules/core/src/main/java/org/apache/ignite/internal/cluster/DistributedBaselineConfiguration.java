@@ -34,6 +34,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.format;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_AUTO_ADJUST_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.isFeatureEnabled;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 
@@ -50,6 +54,7 @@ public class DistributedBaselineConfiguration {
     /** Message of baseline auto-adjust parameter was changed. */
     private static final String PROPERTY_UPDATE_MESSAGE =
         "Baseline parameter '%s' was changed from '%s' to '%s'";
+
     /** */
     private volatile long dfltTimeout;
     /** Default auto-adjust enable/disable. */
@@ -76,10 +81,20 @@ public class DistributedBaselineConfiguration {
         IgniteLogger log) {
         this.log = log;
 
+        if (isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE) && (
+            !isFeatureEnabled(IGNITE_DISTRIBUTED_META_STORAGE_FEATURE)
+                || !isFeatureEnabled(IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE)
+        ))
+            throw new IllegalArgumentException(
+                IGNITE_BASELINE_AUTO_ADJUST_FEATURE + " depends on "
+                    + IGNITE_DISTRIBUTED_META_STORAGE_FEATURE + " and "
+                    + IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE
+                    + " so please keep all of them in same state");
+
         boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
 
         dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
-        dfltEnabled = !persistenceEnabled;
+        dfltEnabled = isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE) && !persistenceEnabled;
 
         isp.registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
@@ -135,7 +150,10 @@ public class DistributedBaselineConfiguration {
     /**
      * Called when cluster performing activation.
      */
-    public void onActivate() {
+    public void onActivate() throws IgniteCheckedException {
+        if(!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
+            return;
+
         if (log.isInfoEnabled())
             log.info(format(AUTO_ADJUST_CONFIGURED_MESSAGE,
                 (isBaselineAutoAdjustEnabled() ? "enabled" : "disabled"),
@@ -156,6 +174,9 @@ public class DistributedBaselineConfiguration {
      */
     public GridFutureAdapter<?> updateBaselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled)
         throws IgniteCheckedException {
+        if(!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
+            return finishFuture();
+
         return this.baselineAutoAdjustEnabled.propagateAsync(!baselineAutoAdjustEnabled, baselineAutoAdjustEnabled);
     }
 
@@ -174,6 +195,20 @@ public class DistributedBaselineConfiguration {
      */
     public GridFutureAdapter<?> updateBaselineAutoAdjustTimeoutAsync(
         long baselineAutoAdjustTimeout) throws IgniteCheckedException {
+        if(!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
+            return finishFuture();
+
         return this.baselineAutoAdjustTimeout.propagateAsync(baselineAutoAdjustTimeout);
+    }
+
+    /**
+     * @return Finished future.
+     */
+    @NotNull private GridFutureAdapter<?> finishFuture() {
+        GridFutureAdapter<Object> adapter = new GridFutureAdapter<>();
+
+        adapter.onDone();
+
+        return adapter;
     }
 }

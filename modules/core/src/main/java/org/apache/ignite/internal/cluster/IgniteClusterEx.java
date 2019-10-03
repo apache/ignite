@@ -19,6 +19,8 @@ package org.apache.ignite.internal.cluster;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 
 /**
  *
@@ -63,4 +65,36 @@ public interface IgniteClusterEx extends IgniteCluster, ClusterGroupEx {
      *  Also provided tag is checked for max length.
      */
     public void tag(String tag) throws IgniteCheckedException;
+
+    /**
+     * @return Value of manual baseline control or auto adjusting baseline. {@code True} If cluster in auto-adjust.
+     * {@code False} If cluster in manual.
+     */
+    public boolean isBaselineAutoAdjustEnabled();
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @throws IgniteException If operation failed.
+     */
+    public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException;
+
+    /**
+     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * (node join/left/fail).
+     * @throws IgniteException If operation failed.
+     */
+    public long baselineAutoAdjustTimeout();
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @throws IgniteException If failed.
+     */
+    public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException;
+
+    /**
+     * @return Status of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus();
 }

@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
 
 /**
  * Tests discovery cache reuse between topology events.
@@ -50,7 +50,7 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key=IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value="true")
     public void testDiscoCacheReuseOnNodeJoin() throws Exception {
-        Ignite ignite1 = startGridsMultiThreaded(2);
+        IgniteEx ignite1 = (IgniteEx)startGridsMultiThreaded(2);
 
         ignite1.cluster().baselineAutoAdjustEnabled(false);
         // The final topology version after 2 node joins and one CacheAffinityChange message.

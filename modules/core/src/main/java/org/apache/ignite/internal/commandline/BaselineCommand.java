@@ -37,12 +37,15 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 
 import static java.lang.Boolean.TRUE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_BASELINE_AUTO_ADJUST_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.isFeatureEnabled;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.AUTO_ADJUST;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
 
 /**
@@ -65,8 +68,12 @@ public class BaselineCommand implements Command<BaselineArguments> {
             optional(CMD_AUTO_CONFIRMATION));
         Command.usage(logger, "Set baseline topology based on version:", BASELINE,
             BaselineSubcommands.VERSION.text() + " topologyVersion", optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger, "Set baseline autoadjustment settings:", BASELINE,
-            BaselineSubcommands.AUTO_ADJUST.text(), "[disable|enable] [timeout <timeoutMillis>]", optional(CMD_AUTO_CONFIRMATION));
+
+        if (isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
+            Command.usage(logger, "Set baseline autoadjustment settings:", BASELINE,
+                AUTO_ADJUST.text(), "[disable|enable] [timeout <timeoutMillis>]",
+                optional(CMD_AUTO_CONFIRMATION)
+            );
     }
 
     /** {@inheritDoc} */
@@ -122,7 +129,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
      * @return Task argument.
      */
     private VisorBaselineTaskArg toVisorArguments(BaselineArguments args) {
-        if (args.getCmd() == BaselineSubcommands.AUTO_ADJUST) {
+        if (args.getCmd() == AUTO_ADJUST) {
             return new VisorBaselineTaskArg(
                 args.getCmd().visorBaselineOperation(),
                 args.getTopVer(),
@@ -147,7 +154,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
         logger.info("Cluster state: " + (res.isActive() ? "active" : "inactive"));
         logger.info("Current topology version: " + res.getTopologyVersion());
 
-        if (res.isAutoAdjustEnabled() != null) {
+        if (res.isAutoAdjustEnabled() != null && isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE)) {
             logger.info("Baseline auto adjustment " + (TRUE.equals(res.isAutoAdjustEnabled()) ? "enabled" : "disabled") +
                 ": softTimeout=" + res.getAutoAdjustAwaitingTime()
             );
@@ -231,7 +238,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
 
         BaselineSubcommands cmd = of(argIter.nextArg("Expected baseline action"));
 
-        if (cmd == null)
+        if (cmd == null || (!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE) && cmd == AUTO_ADJUST))
             throw new IllegalArgumentException("Expected correct baseline action");
 
         BaselineArguments.Builder baselineArgs = new BaselineArguments.Builder(cmd);

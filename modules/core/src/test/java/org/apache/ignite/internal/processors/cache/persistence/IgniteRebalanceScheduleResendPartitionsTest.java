@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -106,7 +105,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
      */
     @Test
     public void test() throws Exception {
-        Ignite ig0 = startGrids(3);
+        IgniteEx ig0 = startGrids(3);
 
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().active(true);

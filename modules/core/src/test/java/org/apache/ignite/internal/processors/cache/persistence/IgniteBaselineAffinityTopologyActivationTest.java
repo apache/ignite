@@ -171,7 +171,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      */
     @Test
     public void testBltChangeTopVerRemoveOnlineNodeFails() throws Exception {
-        Ignite ignite = startGridWithConsistentId("A");
+        IgniteEx ignite = (IgniteEx)startGridWithConsistentId("A");
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
@@ -205,7 +205,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     public void testOnlineNodesCannotBeRemovedFromBaselineTopology() throws Exception {
         Ignite nodeA = startGridWithConsistentId("A");
         Ignite nodeB = startGridWithConsistentId("B");
-        Ignite nodeC = startGridWithConsistentId("OnlineConsID");
+        IgniteEx nodeC = (IgniteEx)startGridWithConsistentId("OnlineConsID");
 
         nodeC.cluster().baselineAutoAdjustEnabled(false);
         nodeC.cluster().active(true);
@@ -233,7 +233,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     public void testNodeFailsToJoinWithIncompatiblePreviousBaselineTopology() throws Exception {
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
-        Ignite nodeC = startGridWithConsistentId("C");
+        IgniteEx nodeC = (IgniteEx)startGridWithConsistentId("C");
 
         nodeC.cluster().baselineAutoAdjustEnabled(false);
         nodeC.active(true);
@@ -592,7 +592,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             }
         };
 
-        Ignite nodeA = startGridWithConsistentId("A");
+        IgniteEx nodeA = (IgniteEx)startGridWithConsistentId("A");
         startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
 
@@ -615,7 +615,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         stopAllGrids(false);
 
-        nodeA = startGridWithConsistentId("A");
+        nodeA = (IgniteEx)startGridWithConsistentId("A");
         nodeC = startGridWithConsistentId("C");
 
         activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -648,7 +648,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             }
         };
 
-        Ignite nodeA = startGridWithConsistentId("A");
+        IgniteEx nodeA = (IgniteEx)startGridWithConsistentId("A");
         Ignite nodeB = startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
 
@@ -673,7 +673,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             }
         };
 
-        Ignite nodeA = startGridWithConsistentId("A");
+        IgniteEx nodeA = (IgniteEx)startGridWithConsistentId("A");
         Ignite nodeB = startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
 
@@ -871,7 +871,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             }
         };
 
-        Ignite nodeA = startGridWithConsistentId("A");
+        IgniteEx nodeA = (IgniteEx)startGridWithConsistentId("A");
         startGridWithConsistentId("B");
         startGridWithConsistentId("C");
 
@@ -924,7 +924,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             }
         };
 
-        Ignite nodeA = startGridWithConsistentId("A");
+        IgniteEx nodeA = (IgniteEx)startGridWithConsistentId("A");
         startGridWithConsistentId("B");
         startGridWithConsistentId("C");
 

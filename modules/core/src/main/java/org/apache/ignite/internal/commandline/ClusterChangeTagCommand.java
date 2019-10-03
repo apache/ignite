@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -27,7 +26,8 @@ import org.apache.ignite.internal.visor.id_and_tag.VisorClusterChangeTagTask;
 import org.apache.ignite.internal.visor.id_and_tag.VisorClusterChangeTagTaskArg;
 import org.apache.ignite.internal.visor.id_and_tag.VisorClusterChangeTagTaskResult;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_ID_AND_TAG_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.IGNITE_CLUSTER_ID_AND_TAG_FEATURE;
+import static org.apache.ignite.internal.SupportFeaturesUtils.isFeatureEnabled;
 import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
@@ -48,7 +48,7 @@ public class ClusterChangeTagCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
-        if (!clusterIdAndTagSupport())
+        if (!isFeatureEnabled(IGNITE_CLUSTER_ID_AND_TAG_FEATURE))
             return null;
 
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -87,7 +87,7 @@ public class ClusterChangeTagCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        if (!clusterIdAndTagSupport())
+        if (!isFeatureEnabled(IGNITE_CLUSTER_ID_AND_TAG_FEATURE))
             return;
 
         Command.usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG, "newTagValue", optional(CMD_AUTO_CONFIRMATION));
@@ -117,14 +117,5 @@ public class ClusterChangeTagCommand implements Command<String> {
     /** */
     private VisorClusterChangeTagTaskArg toVisorArguments() {
         return new VisorClusterChangeTagTaskArg(newTagArg);
-    }
-
-    /**
-     * @return {@code true} if the feature is enabled.
-     **/
-    private static boolean clusterIdAndTagSupport() {
-        return IgniteSystemProperties.getBoolean(
-            IGNITE_CLUSTER_ID_AND_TAG_FEATURE, false
-        );
     }
 }

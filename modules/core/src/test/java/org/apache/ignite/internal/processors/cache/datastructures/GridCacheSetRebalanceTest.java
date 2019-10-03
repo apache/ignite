@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
@@ -86,7 +87,7 @@ public class GridCacheSetRebalanceTest extends GridCommonAbstractTest {
     public void testCollocatedSet() throws Exception {
         useExtendedClasses = true;
 
-        Ignite ignite0 = startGrid(0);
+        IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
         ignite0.cluster().active(true);
