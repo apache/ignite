@@ -338,7 +338,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testContinuousQuery() throws Exception {
-        try(IgniteEx g1 = startGrid(1)) {
+        try(IgniteEx remoteNode = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
 
             try(QueryCursor qry = cache.query(new ContinuousQuery<>()
@@ -370,7 +370,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 for (List<?> cq : qrys)
                     checkContinuousQuery(cq, true);
 
-                qrys = execute(g1,
+                qrys = execute(remoteNode,
                     "SELECT " +
                         "  CACHE_NAME, " +
                         "  BUFFER_SIZE, " +

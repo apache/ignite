@@ -469,8 +469,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContinuousQuery() throws Exception {
-        try(IgniteEx g0 = startGrid(0); IgniteEx g1 = startGrid(1)) {
-            IgniteCache<Integer, Integer> cache = g0.createCache("cache-1");
+        try(IgniteEx originNode = startGrid(0); IgniteEx remoteNode = startGrid(1)) {
+            IgniteCache<Integer, Integer> cache = originNode.createCache("cache-1");
 
             try(QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
@@ -484,19 +484,19 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 for (int i=0; i<100; i++)
                     cache.put(i, i);
 
-                SystemView<ContinuousQueryView> qrys = g0.context().systemView().view(CQ_SYS_VIEW);
+                SystemView<ContinuousQueryView> qrys = originNode.context().systemView().view(CQ_SYS_VIEW);
 
                 assertEquals(1, qrys.size());
 
                 for (ContinuousQueryView cq : qrys)
-                    checkContinuousQueryView(g0, cq, true);
+                    checkContinuousQueryView(originNode, cq, true);
 
-                qrys = g1.context().systemView().view(CQ_SYS_VIEW);
+                qrys = remoteNode.context().systemView().view(CQ_SYS_VIEW);
 
                 assertEquals(1, qrys.size());
 
                 for (ContinuousQueryView cq : qrys)
-                    checkContinuousQueryView(g0, cq, false);
+                    checkContinuousQueryView(originNode, cq, false);
             }
         }
     }
