@@ -70,8 +70,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
 
         exp.setServicePermissions(permSrvc);
 
-        exp.setSystemPermissions(permissions(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE,
-            CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_DESTROY));
+        exp.setSystemPermissions(permissions(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY));
 
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
 
@@ -100,7 +99,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                     }
                 }, IgniteException.class,
                 "you can assign permission only start with [EVENTS_, ADMIN_, JOIN_AS_SERVER, CACHE_CREATE, " +
-                    "CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_DESTROY], but you try TASK_EXECUTE"
+                    "CACHE_DESTROY], but you try TASK_EXECUTE"
         );
 
         assertThrows(log, new Callable<Object>() {
@@ -110,7 +109,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 }
             }, IgniteException.class,
             "you can assign permission only start with [EVENTS_, ADMIN_, JOIN_AS_SERVER, CACHE_CREATE, " +
-                "CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_DESTROY], but you try SERVICE_INVOKE"
+                "CACHE_DESTROY], but you try SERVICE_INVOKE"
         );
 
         permsBuilder
@@ -127,8 +126,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
             .appendSystemPermissions(ADMIN_VIEW)
             .appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE)
             .appendSystemPermissions(JOIN_AS_SERVER)
-            .appendSystemPermissions(CACHE_READ, CACHE_CREATE)
-            .appendSystemPermissions(CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_DESTROY);
+            .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY);
 
         SecurityPermissionSet actual = permsBuilder.build();
 
