@@ -341,6 +341,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         try(IgniteEx remoteNode = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
 
+            assertTrue(execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+            assertTrue(execute(remoteNode, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+
             try(QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
                 .setPageSize(100)
@@ -387,6 +390,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 for (List<?> cq : qrys)
                     checkContinuousQuery(cq, false);
             }
+
+            assertTrue(execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+            assertTrue(execute(remoteNode, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
         }
     }
 

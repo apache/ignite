@@ -472,6 +472,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         try(IgniteEx originNode = startGrid(0); IgniteEx remoteNode = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = originNode.createCache("cache-1");
 
+            SystemView<ContinuousQueryView> origQrys = originNode.context().systemView().view(CQ_SYS_VIEW);
+            SystemView<ContinuousQueryView> remoteQrys = remoteNode.context().systemView().view(CQ_SYS_VIEW);
+
+            assertEquals(0, origQrys.size());
+            assertEquals(0, remoteQrys.size());
+
             try(QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
                 .setPageSize(100)
@@ -484,20 +490,20 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 for (int i=0; i<100; i++)
                     cache.put(i, i);
 
-                SystemView<ContinuousQueryView> qrys = originNode.context().systemView().view(CQ_SYS_VIEW);
 
-                assertEquals(1, qrys.size());
+                assertEquals(1, origQrys.size());
 
-                for (ContinuousQueryView cq : qrys)
+                for (ContinuousQueryView cq : origQrys)
                     checkContinuousQueryView(originNode, cq, true);
 
-                qrys = remoteNode.context().systemView().view(CQ_SYS_VIEW);
+                assertEquals(1, remoteQrys.size());
 
-                assertEquals(1, qrys.size());
-
-                for (ContinuousQueryView cq : qrys)
+                for (ContinuousQueryView cq : remoteQrys)
                     checkContinuousQueryView(originNode, cq, false);
             }
+
+            assertEquals(0, origQrys.size());
+            assertEquals(0, remoteQrys.size());
         }
     }
 
