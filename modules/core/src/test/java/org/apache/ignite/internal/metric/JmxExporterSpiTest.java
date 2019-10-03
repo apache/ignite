@@ -376,13 +376,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testContinuousQuery() throws Exception {
-        try(IgniteEx remoteNode = startGrid(1)) {
+        try (IgniteEx remoteNode = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
 
             assertEquals(0, systemView(CQ_SYS_VIEW).size());
             assertEquals(0, systemView(remoteNode, CQ_SYS_VIEW).size());
 
-            try(QueryCursor qry = cache.query(new ContinuousQuery<>()
+            try (QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
                 .setPageSize(100)
                 .setTimeInterval(1000)
@@ -391,7 +391,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 })
                 .setRemoteFilterFactory(() -> evt -> true)
             )) {
-                for (int i=0; i<100; i++)
+                for (int i = 0; i < 100; i++)
                     cache.put(i, i);
 
                 checkContinuousQueryView(ignite, ignite);
