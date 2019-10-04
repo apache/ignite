@@ -99,7 +99,7 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     public long deleteByFirstName(String firstName);
 
     /** Remove Query */
-    public List<Person> removeByFirstName(String firstName);
+    public long removeByFirstName(String firstName);
 
     /** Delete using @Query */
     @Query("DELETE FROM Person WHERE secondName = ?")
