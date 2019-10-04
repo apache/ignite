@@ -75,6 +75,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -416,6 +417,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             @Override public void onConnected(GridNioSession ses) {
+                metricsLsnr.initLogger(log);
+
                 if (ses.accepted()) {
                     if (log.isInfoEnabled())
                         log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
@@ -1940,6 +1943,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return metricsLsnr.sentMessagesByNode();
     }
 
+    /**
+     * @return Map containing histogram metrics for outcoming messages by node by message class name.
+     */
+    public Map<UUID, Map<String, HistogramMetric>> getOutMetricsByNodeByMsgClass() {
+        return metricsLsnr.outMetricsByNodeByMsgClass();
+    }
+
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
         GridNioServer<Message> srv = nioSrvr;
@@ -2643,6 +2653,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
         }
+
+        metricsLsnr.clearNodeMetrics(nodeId);
     }
 
     /** {@inheritDoc} */
@@ -2754,6 +2766,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (!client.async())
                         nodeId = node.id();
+
+                    metricsLsnr.writeMessageSendTimestamp(msg);
 
                     retry = client.sendMessage(nodeId, msg, ackC);
 
@@ -5070,6 +5084,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Override public Map<UUID, Long> getSentMessagesByNode() {
             return TcpCommunicationSpi.this.getSentMessagesByNode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<UUID, Map<String, HistogramMetric>> getOutMetricsByNodeByMsgClass() {
+            return TcpCommunicationSpi.this.getOutMetricsByNodeByMsgClass();
         }
 
         /** {@inheritDoc} */

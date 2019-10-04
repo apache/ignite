@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -50,7 +51,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -290,6 +290,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             req.id(),
             req.includeMetaData(),
             req.allPages(),
+            req.sendTimestamp(),
+            req.receiveTimestamp(),
             req.arguments()
         );
     }
@@ -447,10 +449,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (e != null) {
             if (loc)
                 fut.onPage(null, null, e, true);
-            else
-                sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e, cctx.deploymentEnabled()),
-                    qryInfo.query().timeout());
+            else {
+                GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e,
+                    cctx.deploymentEnabled());
+
+                copyReqTimestamps(qryInfo, res);
+
+                sendQueryResponse(qryInfo.senderId(), res, qryInfo.query().timeout());
+            }
 
             return true;
         }
@@ -464,11 +470,24 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             res.data(data);
             res.finished(finished);
 
+            copyReqTimestamps(qryInfo, res);
+
             if (!sendQueryResponse(qryInfo.senderId(), res, qryInfo.query().timeout()))
                 return false;
         }
 
         return true;
+    }
+
+    /**
+     * Writes timestamps to response.
+     *
+     * @param qryInfo Query info.
+     * @param res Response message.
+     */
+    private void copyReqTimestamps(GridCacheQueryInfo qryInfo, GridCacheQueryResponse res) {
+        res.reqReceivedTimestamp(qryInfo.reqReceivedTimestamp());
+        res.reqSentTimestamp(qryInfo.reqSentTimestamp());
     }
 
     /** {@inheritDoc} */

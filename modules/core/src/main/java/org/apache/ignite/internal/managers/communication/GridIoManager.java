@@ -915,7 +915,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param nodeId Node ID.
+     * @param nodeId Sender node ID.
      * @param msg Message bytes.
      * @param msgC Closure to call when message processing finished.
      */

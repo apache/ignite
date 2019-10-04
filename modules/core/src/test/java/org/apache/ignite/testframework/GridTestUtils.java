@@ -1627,7 +1627,20 @@ public final class GridTestUtils {
         try {
             Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
-            Field field = cls.getDeclaredField(fieldName);
+            Field field = null;
+
+            while (cls != null) {
+                try {
+                     field = cls.getDeclaredField(fieldName);
+
+                     break;
+                } catch (NoSuchFieldException e) {
+                    cls = cls.getSuperclass();
+                }
+            }
+
+            if (field == null)
+                throw new NoSuchFieldException();
 
             synchronized (field) {
                 // Backup accessible field state.

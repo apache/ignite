@@ -463,6 +463,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             true,
             cctx.deploymentEnabled());
 
+        copyReqTimestamp(req, res);
+
         ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
             "before response is received: " + req.nodeId());
 
@@ -485,9 +487,18 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             e instanceof ClusterTopologyCheckedException,
             cctx.deploymentEnabled());
 
+        copyReqTimestamp(req, res);
+
         res.addFailedKeys(req.keys(), e);
 
         onPrimaryResponse(req.nodeId(), res, true);
+    }
+
+    /** */
+    private void copyReqTimestamp(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+        // For full sync mode response can be sent to node that didn't send request.
+        if (req.syncMode != FULL_SYNC)
+            res.copyTimestamps(req);
     }
 
     /**
