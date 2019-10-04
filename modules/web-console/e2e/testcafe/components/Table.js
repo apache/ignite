@@ -17,17 +17,31 @@
 import {Selector, t} from 'testcafe';
 
 const findCell = Selector((table, rowIndex, columnLabel) => {
+    const _findRowElement = (table, containerSelector) => {
+        const columnIndex = [].constructor.from(
+            table.querySelectorAll(`${containerSelector} .ui-grid-header-cell:not(.ui-grid-header-span)`),
+            (e) => e.textContent
+        ).findIndex((t) => t.includes(columnLabel));
+
+        if (columnIndex < 0)
+            return null;
+
+        const element = table.querySelector(`${containerSelector} .ui-grid-viewport .ui-grid-row:nth-of-type(${rowIndex + 1})`);
+
+        return {element, columnIndex}
+    };
+
     table = table();
 
-    const columnIndex = [].constructor.from(
-        table.querySelectorAll('.ui-grid-render-container:not(.left) .ui-grid-header-cell:not(.ui-grid-header-span)'),
-        (e) => e.textContent
-    ).findIndex((t) => t.includes(columnLabel));
+    let row = _findRowElement(table, '.ui-grid-render-container.left');
 
-    const row = table.querySelector(`.ui-grid-render-container:not(.left) .ui-grid-viewport .ui-grid-row:nth-of-type(${rowIndex + 1})`);
-    const cell = row.querySelectorAll(`.ui-grid-cell`)[columnIndex];
+    if (!row)
+        row = _findRowElement(table, '.ui-grid-render-container:not(.left)');
 
-    return cell;
+    if (row)
+        return row.element.querySelectorAll(`.ui-grid-cell`)[row.columnIndex];
+
+    return null;
 });
 
 export class Table {
