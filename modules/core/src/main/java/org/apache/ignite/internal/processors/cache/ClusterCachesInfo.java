@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -138,6 +139,9 @@ class ClusterCachesInfo {
     /** {@code True} if joined cluster while cluster state change was in progress. */
     private boolean joinOnTransition;
 
+    /** Flag that caches were already filtered out. */
+    private final AtomicBoolean alreadyFiltered = new AtomicBoolean();
+
     /**
      * @param ctx Context.
      */
@@ -157,6 +161,9 @@ class ClusterCachesInfo {
         if (ctx.isDaemon())
             return;
 
+        if (!alreadyFiltered.compareAndSet(false, true))
+            return;
+
         filterRegisteredCachesAndCacheGroups(localCachesOnStart);
 
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = locJoinCachesCtx.caches();
@@ -171,7 +178,8 @@ class ClusterCachesInfo {
             locJoinStartCaches,
             initCaches,
             registeredCacheGrps,
-            registeredCaches);
+            registeredCaches
+        );
     }
 
     /**

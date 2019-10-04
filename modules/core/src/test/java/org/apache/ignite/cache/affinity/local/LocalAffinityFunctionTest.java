@@ -21,6 +21,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -59,8 +60,6 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccf = node.cache(CACHE1).getConfiguration(CacheConfiguration.class);
 
-        assertEquals("org.apache.ignite.internal.processors.cache.GridCacheProcessor$LocalAffinityFunction",
-            ccf.getAffinity().getClass().getName());
+        assertEquals(LocalAffinityFunction.class, ccf.getAffinity().getClass());
     }
-
 }
