@@ -17,25 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
-import java.io.Serializable;
+import java.io.Closeable;
+import java.io.File;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 
 /**
- * Defines generic closure with three parameters. Tri-Closure is a simple executable which
- * accepts three parameters and returns a value.
  *
- * @param <E1> Type of the first parameter.
- * @param <E2> Type of the second parameter.
- * @param <E3> Type of the third parameter.
  */
-@FunctionalInterface
-public interface IgniteTriConsumer<E1, E2, E3> extends Serializable {
+interface PartitionSnapshotReceiver extends Closeable {
     /**
-     * Closure body.
-     *
-     * @param e1 First parameter.
-     * @param e2 Second parameter.
-     * @param e3 Third parameter.
-     * @return Closure return value.
+     * @param part Partition file to receive.
+     * @param cacheDirName Cache group directory.
+     * @param pair Group id with partition id pair.
+     * @param length Partition length.
      */
-    public void accept(E1 e1, E2 e2, E3 e3);
+    public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length);
+
+    /**
+     * @param delta Delta pages file.
+     * @param pair Group id with partition id pair.
+     */
+    public void receiveDelta(File delta, GroupPartitionId pair);
 }

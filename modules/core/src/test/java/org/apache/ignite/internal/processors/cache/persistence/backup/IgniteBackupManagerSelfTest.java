@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,7 +67,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
-import static org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager.backupDir;
+import static org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager.snapshotDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -82,7 +81,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     private static final FileIOFactory DFLT_IO_FACTORY = new RandomAccessFileIOFactory();
 
     /** */
-    private static final String BACKUP_NAME = "testBackup";
+    private static final String SNAPSHOT_NAME = "testBackup";
 
     /** */
     private static final int CACHE_PARTS_COUNT = 8;
@@ -178,7 +177,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .backup();
 
-        IgniteInternalFuture<?> backupFut = mgr.createLocalBackup(BACKUP_NAME,
+        IgniteInternalFuture<?> backupFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
             Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
         backupFut.get();
@@ -192,10 +191,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(backupDir(mgr.backupWorkDir(),
-            BACKUP_NAME), cacheDirName(defaultCacheCfg)));
+        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(snapshotDir(mgr.backupWorkDir(),
+            SNAPSHOT_NAME), cacheDirName(defaultCacheCfg)));
 
-        assertEquals("Partitons the same after backup and after merge", origParts, bakcupCRCs);
+        assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
     }
 
     /**
@@ -228,7 +227,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(backupDir(backupWorkDir, BACKUP_NAME), defaultCacheCfg);
+        File cacheBackup = cacheWorkDir(snapshotDir(backupWorkDir, SNAPSHOT_NAME), defaultCacheCfg);
 
         IgniteBackupManager mgr = ig.context()
             .cache()
@@ -239,28 +238,27 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
-        File backupDir0 = backupDir(backupWorkDir, BACKUP_NAME);
+        File backupDir0 = snapshotDir(backupWorkDir, SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> backupFut = mgr
-            .scheduleBackup(BACKUP_NAME,
+            .scheduleSnapshot(SNAPSHOT_NAME,
                 toBackup,
                 backupDir0,
                 mgr.backupExecutorService(),
-                () -> new IgniteTriConsumer<String, GroupPartitionId, Long>() {
-                    @Override public void accept(String cacheDirName, GroupPartitionId pair, Long length) {
+                () -> new DeleagatePartitionSnapshotReceiver(mgr.localSnapshotReceiver(backupDir0)) {
+                    @Override
+                    public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
                             if (pair.getPartitionId() == 0)
                                 U.await(slowCopy);
 
-                            mgr.partWorkerFactory(storeMgr.workDir(), backupDir0).get()
-                                .accept(cacheDirName, pair, length);
+                            super.receivePart(part, cacheDirName, pair, length);
                         }
                         catch (IgniteInterruptedCheckedException e) {
                             throw new IgniteException(e);
                         }
                     }
-                },
-                mgr.deltaWorkerFactory());
+                });
 
         // Change data after backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
@@ -351,7 +349,7 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture<?> backupFut = mgr.createLocalBackup(BACKUP_NAME,
+        IgniteInternalFuture<?> backupFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
             Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
         backupFut.get();
@@ -379,24 +377,18 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .backup();
 
-        IgniteInternalFuture<?> fut = mgr.scheduleBackup(BACKUP_NAME,
+        IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
             toBackup,
             backupWorkDir,
             mgr.backupExecutorService(),
-            new Supplier<IgniteTriConsumer<String, GroupPartitionId, Long>>() {
-                @Override public IgniteTriConsumer<String, GroupPartitionId, Long> get() {
-                    return new IgniteTriConsumer<String, GroupPartitionId, Long>() {
-                        @Override public void accept(String cacheDirName, GroupPartitionId pair, Long length) {
-                            if (pair.getPartitionId() == 0)
-                                throw new IgniteException("Test. Fail to copy partition: " + pair);
+            () -> new DeleagatePartitionSnapshotReceiver(mgr.localSnapshotReceiver(backupWorkDir)) {
+                @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                    if (pair.getPartitionId() == 0)
+                        throw new IgniteException("Test. Fail to copy partition: " + pair);
 
-                            mgr.partWorkerFactory(storeMgr.workDir(), backupWorkDir).get()
-                                .accept(cacheDirName, pair, length);
-                        }
-                    };
+                    super.receivePart(part, cacheDirName, pair, length);
                 }
-            },
-            mgr.deltaWorkerFactory());
+            });
 
         fut.get();
     }
@@ -449,6 +441,33 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
     private static class ZeroPartitionAffinityFunction extends RendezvousAffinityFunction {
         @Override public int partition(Object key) {
             return 0;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class DeleagatePartitionSnapshotReceiver implements PartitionSnapshotReceiver {
+        /** Delegate call to. */
+        private final PartitionSnapshotReceiver delegate;
+
+        /**
+         * @param delegate Delegate call to.
+         */
+        public DeleagatePartitionSnapshotReceiver(PartitionSnapshotReceiver delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+            delegate.receivePart(part, cacheDirName, pair, length);
+        }
+
+        @Override public void receiveDelta(File delta, GroupPartitionId pair) {
+            delegate.receiveDelta(delta, pair);
+        }
+
+        @Override public void close() throws IOException {
+            delegate.close();
         }
     }
 }

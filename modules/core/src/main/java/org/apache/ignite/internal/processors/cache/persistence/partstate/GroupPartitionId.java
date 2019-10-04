@@ -57,6 +57,13 @@ public class GroupPartitionId implements Comparable<GroupPartitionId> {
     }
 
     /**
+     * @return flag to be used for partition.
+     */
+    public byte partType() {
+        return getFlagByPartId(partId);
+    }
+
+    /**
      * @return cache ID
      */
     public int getGroupId() {
