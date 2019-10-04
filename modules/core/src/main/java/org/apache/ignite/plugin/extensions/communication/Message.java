@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 
 /**
  * Base class for all communication messages.
+ * NOTE: methods {@code writeTo}, {@code readFrom} and {@code fieldsCount}
+ * must not be altered manually. Use {@code MessageCodeGenerator} instead.
  */
 public interface Message extends Serializable {
     /** Direct type size in bytes. */

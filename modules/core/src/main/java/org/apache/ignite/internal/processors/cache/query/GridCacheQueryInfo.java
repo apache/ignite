@@ -57,6 +57,12 @@ class GridCacheQueryInfo {
     /** */
     private Object[] args;
 
+    /** */
+    private long reqSentTimestamp;
+
+    /** */
+    private long reqReceivedTimestamp;
+
     /**
      * @param loc {@code true} if local query.
      * @param trans Transforming closure.
@@ -67,6 +73,8 @@ class GridCacheQueryInfo {
      * @param reqId Request id in case of distributed query.
      * @param incMeta Include meta data or not.
      * @param all Whether to load all pages.
+     * @param reqSentTimestamp Request send timestamp.
+     * @param reqReceivedTimestamp Request receive timestamp.
      * @param args Arguments.
      */
     GridCacheQueryInfo(
@@ -79,6 +87,8 @@ class GridCacheQueryInfo {
         long reqId,
         boolean incMeta,
         boolean all,
+        long reqSentTimestamp,
+        long reqReceivedTimestamp,
         Object[] args
     ) {
         this.loc = loc;
@@ -90,6 +100,8 @@ class GridCacheQueryInfo {
         this.reqId = reqId;
         this.incMeta = incMeta;
         this.all = all;
+        this.reqSentTimestamp = reqSentTimestamp;
+        this.reqReceivedTimestamp = reqReceivedTimestamp;
         this.args = args;
     }
 
@@ -154,6 +166,20 @@ class GridCacheQueryInfo {
      */
     boolean allPages() {
         return all;
+    }
+
+    /**
+     * @return Request send timestamp.
+     */
+    public long reqSentTimestamp() {
+        return reqSentTimestamp;
+    }
+
+    /**
+     * @return Request receive timestamp.
+     */
+    public long reqReceivedTimestamp() {
+        return reqReceivedTimestamp;
     }
 
     /**

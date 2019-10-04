@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         };
 
         /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties = {};
+        private static readonly string[] MissingProperties = {"OutMetricsByNodeByMsgClass"};
 
         /// <summary>
         /// Tests the cache configuration parity.
