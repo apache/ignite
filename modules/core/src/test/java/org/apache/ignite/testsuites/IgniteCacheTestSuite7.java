@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
 import org.apache.ignite.internal.processors.cache.GridTransactionsSystemUserTimeMetricsTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
+import org.apache.ignite.internal.processors.cache.SafeLogTxFinishErrorTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
@@ -117,6 +118,8 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(TxCrossCacheMapOnInvalidTopologyTest.class);
 
         suite.addTestSuite(GridTransactionsSystemUserTimeMetricsTest.class);
+
+        suite.addTestSuite(SafeLogTxFinishErrorTest.class);
 
         return suite;
     }
