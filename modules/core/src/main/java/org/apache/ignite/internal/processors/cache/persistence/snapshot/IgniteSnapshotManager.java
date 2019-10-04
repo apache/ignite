@@ -327,9 +327,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         .affinity()
                         .partitions();
 
-                    return Stream.iterate(0, n -> n + 1)
+                    Set<Integer> grpParts = Stream.iterate(0, n -> n + 1)
                         .limit(partsCnt)
                         .collect(Collectors.toSet());
+
+                    grpParts.add(INDEX_PARTITION);
+
+                    return grpParts;
                 }));
 
         File snapshotDir0 = snapshotDir(snpWorkDir, snapshotName);
