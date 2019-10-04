@@ -22,16 +22,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.tutorial.Step_1_Read_and_Learn;
-import org.apache.ignite.examples.ml.util.DatasetHelper;
-import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.ObjectArrayVectorizer;
-import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.FMeasure;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
@@ -53,7 +50,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
-public class BrokenEncoderExampleWithStringLabels {
+public class LabelEncoderExample {
     /**
      * Run example.
      */
@@ -68,7 +65,7 @@ public class BrokenEncoderExampleWithStringLabels {
 
                 final Vectorizer<Integer, Object[], Integer, Object> vectorizer = new ObjectArrayVectorizer<Integer>(1, 2).labeled(0);
 
-                Preprocessor<Integer, Object[]> encoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Object[]> stringEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(0)
                     .withEncodedFeature(1)
@@ -77,9 +74,12 @@ public class BrokenEncoderExampleWithStringLabels {
                         vectorizer
                     );
 
-                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, dataCache, encoderPreprocessor)) {
-                    new DatasetHelper(dataset).describe();
-                }
+                Preprocessor<Integer, Object[]> labelEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                    .withEncoderType(EncoderType.LABEL_ENCODER)
+                    .fit(ignite,
+                        dataCache,
+                        stringEncoderPreprocessor
+                    );
 
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
@@ -87,7 +87,7 @@ public class BrokenEncoderExampleWithStringLabels {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    encoderPreprocessor
+                    labelEncoderPreprocessor
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);
@@ -95,8 +95,8 @@ public class BrokenEncoderExampleWithStringLabels {
                 double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    encoderPreprocessor,
-                    new Accuracy<>()
+                    labelEncoderPreprocessor,
+                    new FMeasure()
                 );
 
                 System.out.println("\n>>> Accuracy " + accuracy);

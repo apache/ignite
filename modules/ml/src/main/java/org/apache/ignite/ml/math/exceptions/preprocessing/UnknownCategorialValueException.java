@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.encoding;
+package org.apache.ignite.ml.math.exceptions.preprocessing;
+
+import org.apache.ignite.IgniteException;
 
 /**
- * Describes Encoder preprocessor types to define resulting model in EncoderTrainer.
- *
- * @see EncoderTrainer
+ * Indicates an unknown categorial feature value for Encoder.
  */
-public enum EncoderType {
-    /** One hot encoder. */
-    ONE_HOT_ENCODER,
+public class UnknownCategorialValueException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 310L;
 
-    /** String encoder. */
-    STRING_ENCODER,
-
-    /** Frequency encoder. */
-    FREQUENCY_ENCODER,
-
-    /** Label encoder. */
-    LABEL_ENCODER
+    /**
+     * @param unknownStr Categorial value that caused this exception.
+     */
+    public UnknownCategorialValueException(String unknownStr) {
+        super("This categorial value is unknown for Encoder: " + unknownStr);
+    }
 }

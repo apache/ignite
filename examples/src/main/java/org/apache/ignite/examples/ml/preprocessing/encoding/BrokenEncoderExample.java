@@ -22,11 +22,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.tutorial.Step_1_Read_and_Learn;
-import org.apache.ignite.examples.ml.util.DatasetHelper;
-import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.ObjectArrayVectorizer;
-import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
@@ -77,10 +74,6 @@ public class BrokenEncoderExample {
                         dataCache,
                         vectorizer
                     );
-
-                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, dataCache, encoderPreprocessor)) {
-                    new DatasetHelper(dataset).describe();
-                }
 
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
