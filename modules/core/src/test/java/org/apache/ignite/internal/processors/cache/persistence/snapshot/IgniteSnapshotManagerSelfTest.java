@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
@@ -31,12 +32,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -116,9 +119,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false)
                 .setPartitions(CACHE_PARTS_COUNT));
 
-    /** Directory to store temporary files on testing cache snapshot process. */
-    private File snapshotWorkDir;
-
     /**
      * Calculate CRC for all partition files of specified cache.
      *
@@ -150,8 +150,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     @Before
     public void beforeTestSnapshot() throws Exception {
         cleanPersistenceDir();
-
-        snapshotWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "test_snapshots", true);
     }
 
     /** */
@@ -178,6 +176,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         for (int i = CACHE_KEYS_RANGE; i < 2048; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 2048; i++)
+                ds.addData(i, new TestOrderItem(i, i));
+        }
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
@@ -236,22 +239,23 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .pageStore();
 
-        File cacheWorkDir = storeMgr.cacheWorkDir(defaultCacheCfg);
-        File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
-            .checkpointDirectory();
-        File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(snapshotDir(snapshotWorkDir, SNAPSHOT_NAME), defaultCacheCfg);
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
             .snapshotMgr();
 
+        File cacheWorkDir = storeMgr.cacheWorkDir(defaultCacheCfg);
+        File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
+            .checkpointDirectory();
+        File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
+        File cacheBackup = cacheWorkDir(snapshotDir(mgr.snapshotWorkDir(), SNAPSHOT_NAME), defaultCacheCfg);
+
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
-        File snapshotDir0 = snapshotDir(snapshotWorkDir, SNAPSHOT_NAME);
+        File snapshotDir0 = snapshotDir(mgr.snapshotWorkDir(), SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = mgr
             .scheduleSnapshot(SNAPSHOT_NAME,
@@ -390,11 +394,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
+        File snpDir0 = new File(mgr.snapshotWorkDir(), SNAPSHOT_NAME);
+
         IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
             parts,
-            snapshotWorkDir,
+            snpDir0,
             mgr.snapshotExecutorService(),
-            new DeleagateSnapshotReceiver(mgr.localSnapshotReceiver(snapshotWorkDir)) {
+            new DeleagateSnapshotReceiver(mgr.localSnapshotReceiver(snpDir0)) {
                 @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
@@ -481,6 +487,46 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         @Override public void close() throws IOException {
             delegate.close();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestOrderItem implements Serializable {
+        /** Order key. */
+        private final int key;
+
+        /** Order value. */
+        private final int value;
+
+        public TestOrderItem(int key, int value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestOrderItem item = (TestOrderItem)o;
+
+            return key == item.key &&
+                value == item.value;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(key, value);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestOrderItem [key=" + key + ", value=" + value + ']';
         }
     }
 }
