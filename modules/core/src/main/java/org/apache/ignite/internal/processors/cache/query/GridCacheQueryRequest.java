@@ -39,16 +39,18 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.TimeLoggableRequest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
+import static org.apache.ignite.plugin.extensions.communication.ProcessingTimeLoggableResponse.INVALID_TIMESTAMP;
 
 /**
  * Query request.
  */
-public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, TimeLoggableRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -128,6 +130,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** */
     private AffinityTopologyVersion topVer;
+
+    /** @see TimeLoggableRequest#sendTimestamp(). */
+    private long sendTimestamp = INVALID_TIMESTAMP;
+
+    /** @see TimeLoggableRequest#receiveTimestamp(). */
+    @GridDirectTransient
+    private long receiveTimestamp = INVALID_TIMESTAMP;
 
     /**
      * Required by {@link Externalizable}
@@ -486,6 +495,26 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** {@inheritDoc} */
+    @Override public long sendTimestamp() {
+        return sendTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendTimestamp(long sendTimestamp) {
+        this.sendTimestamp = sendTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long receiveTimestamp() {
+        return receiveTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void receiveTimestamp(long receiveTimestamp) {
+        this.receiveTimestamp = receiveTimestamp;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -572,49 +601,55 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 writer.incrementState();
 
-            case 16:
+            case 17:
                 if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 18:
                 if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 19:
                 if (!writer.writeByteArray("rdcBytes", rdcBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
             case 20:
-                if (!writer.writeInt("taskHash", taskHash))
+                if (!writer.writeLong("sendTimestamp", sendTimestamp))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeByteArray("transBytes", transBytes))
+                if (!writer.writeInt("taskHash", taskHash))
                     return false;
 
                 writer.incrementState();
 
             case 23:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeByteArray("transBytes", transBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
                 if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
@@ -732,7 +767,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 16:
+            case 17:
                 pageSize = reader.readInt("pageSize");
 
                 if (!reader.isLastRead())
@@ -740,7 +775,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 17:
+            case 18:
                 part = reader.readInt("part");
 
                 if (!reader.isLastRead())
@@ -748,7 +783,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 18:
+            case 19:
                 rdcBytes = reader.readByteArray("rdcBytes");
 
                 if (!reader.isLastRead())
@@ -756,16 +791,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 19:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 20:
-                taskHash = reader.readInt("taskHash");
+                sendTimestamp = reader.readLong("sendTimestamp");
 
                 if (!reader.isLastRead())
                     return false;
@@ -773,7 +800,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 21:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -781,7 +808,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 22:
-                transBytes = reader.readByteArray("transBytes");
+                taskHash = reader.readInt("taskHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -789,6 +816,22 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 23:
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                transBytes = reader.readByteArray("transBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 25:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -812,7 +855,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 24;
+        return 26;
     }
 
     /** {@inheritDoc} */

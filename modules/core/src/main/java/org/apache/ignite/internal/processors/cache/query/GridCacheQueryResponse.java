@@ -41,12 +41,14 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.ProcessingTimeLoggableResponse;
+import org.apache.ignite.plugin.extensions.communication.TimeLoggableResponse;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Query request.
  */
-public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, ProcessingTimeLoggableResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,6 +84,17 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /** */
     @GridDirectTransient
     private Collection<Object> data;
+
+    /** @see ProcessingTimeLoggableResponse#reqSentTimestamp(). */
+    @GridDirectTransient
+    private long reqSentTimestamp = INVALID_TIMESTAMP;
+
+    /** @see ProcessingTimeLoggableResponse#reqReceivedTimestamp(). */
+    @GridDirectTransient
+    private long reqReceivedTimestamp = INVALID_TIMESTAMP;
+
+    /** @see TimeLoggableResponse#reqTimeData(). */
+    private long reqTimeData = INVALID_TIMESTAMP;
 
     /**
      * Empty constructor for {@link Externalizable}
@@ -253,6 +266,36 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         this.finished = finished;
     }
 
+    /** {@inheritDoc} */
+    @Override public void reqSentTimestamp(long reqSentTimestamp) {
+        this.reqSentTimestamp = reqSentTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqSentTimestamp() {
+        return reqSentTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reqReceivedTimestamp(long reqReceivedTimestamp) {
+        this.reqReceivedTimestamp = reqReceivedTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqReceivedTimestamp() {
+        return reqReceivedTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reqTimeData(long reqTimeData) {
+        this.reqTimeData = reqTimeData;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqTimeData() {
+        return reqTimeData;
+    }
+
     /**
      * @return Request id.
      */
@@ -323,6 +366,12 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeLong("reqTimeData", reqTimeData))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -387,6 +436,14 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
                 reader.incrementState();
 
+            case 10:
+                reqTimeData = reader.readLong("reqTimeData");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridCacheQueryResponse.class);
@@ -399,7 +456,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */

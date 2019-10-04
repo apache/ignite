@@ -348,13 +348,13 @@ public class MessageCodeGenerator {
             }
 
             if (!writeFound)
-                System.out.println("    writeTo method doesn't exist.");
+                System.out.println("    writeTo method doesn't exist for " + cls.getSimpleName());
 
             if (!readFound)
-                System.out.println("    readFrom method doesn't exist.");
+                System.out.println("    readFrom method doesn't exist for " + cls.getSimpleName());
 
             if (!fieldCntFound)
-                System.out.println("    fieldCount method doesn't exist.");
+                System.out.println("    fieldCount method doesn't exist for " + cls.getSimpleName());
         }
         finally {
             if (rdr != null)

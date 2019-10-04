@@ -1110,6 +1110,8 @@ public class CacheGroupContext {
             topVer,
             assignment.assignment());
 
+        res.copyTimestamps(req);
+
         if (aff.centralizedAffinityFunction()) {
             assert assignment.idealAssignment() != null;
 

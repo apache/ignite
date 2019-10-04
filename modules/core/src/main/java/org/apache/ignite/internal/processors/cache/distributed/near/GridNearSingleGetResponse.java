@@ -32,12 +32,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.ProcessingTimeLoggableResponse;
+import org.apache.ignite.plugin.extensions.communication.TimeLoggableResponse;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable, ProcessingTimeLoggableResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,6 +67,17 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
     /** */
     private byte flags;
+
+    /** @see ProcessingTimeLoggableResponse#reqSentTimestamp(). */
+    @GridDirectTransient
+    private long reqSentTimestamp = INVALID_TIMESTAMP;
+
+    /** @see ProcessingTimeLoggableResponse#reqReceivedTimestamp(). */
+    @GridDirectTransient
+    private long reqReceivedTimestamp = INVALID_TIMESTAMP;
+
+    /** @see TimeLoggableResponse#reqTimeData(). */
+    private long reqTimeData = INVALID_TIMESTAMP;
 
     /**
      * Empty constructor required for {@link Message}.
@@ -153,6 +166,37 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         return futId;
     }
 
+
+    /** {@inheritDoc} */
+    @Override public void reqSentTimestamp(long reqSentTimestamp) {
+        this.reqSentTimestamp = reqSentTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqSentTimestamp() {
+        return reqSentTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reqReceivedTimestamp(long reqReceivedTimestamp) {
+        this.reqReceivedTimestamp = reqReceivedTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqReceivedTimestamp() {
+        return reqReceivedTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reqTimeData(long reqTimeData) {
+        this.reqTimeData = reqTimeData;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqTimeData() {
+        return reqTimeData;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -225,12 +269,18 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("res", res))
+                if (!writer.writeLong("reqTimeData", reqTimeData))
                     return false;
 
                 writer.incrementState();
 
             case 8:
+                if (!writer.writeMessage("res", res))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
@@ -277,7 +327,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 reader.incrementState();
 
             case 7:
-                res = reader.readMessage("res");
+                reqTimeData = reader.readLong("reqTimeData");
 
                 if (!reader.isLastRead())
                     return false;
@@ -285,6 +335,14 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 reader.incrementState();
 
             case 8:
+                res = reader.readMessage("res");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -309,7 +367,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 
     /** {@inheritDoc} */

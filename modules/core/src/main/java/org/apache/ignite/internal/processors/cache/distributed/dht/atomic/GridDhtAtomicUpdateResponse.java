@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -34,11 +35,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.ProcessingTimeLoggableResponse;
+import org.apache.ignite.plugin.extensions.communication.TimeLoggableResponse;
 
 /**
  * DHT atomic cache backup update response.
  */
-public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable, ProcessingTimeLoggableResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,6 +61,17 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
     /** */
     private int partId;
+
+    /** @see ProcessingTimeLoggableResponse#reqSentTimestamp(). */
+    @GridDirectTransient
+    private long reqSentTimestamp = INVALID_TIMESTAMP;
+
+    /** @see ProcessingTimeLoggableResponse#reqReceivedTimestamp(). */
+    @GridDirectTransient
+    private long reqReceivedTimestamp = INVALID_TIMESTAMP;
+
+    /** @see TimeLoggableResponse#reqTimeData(). */
+    private long reqTimeData = INVALID_TIMESTAMP;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -165,6 +179,36 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     }
 
     /** {@inheritDoc} */
+    @Override public void reqSentTimestamp(long reqSentTimestamp) {
+        this.reqSentTimestamp = reqSentTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqSentTimestamp() {
+        return reqSentTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reqReceivedTimestamp(long reqReceivedTimestamp) {
+        this.reqReceivedTimestamp = reqReceivedTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqReceivedTimestamp() {
+        return reqReceivedTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reqTimeData(long reqTimeData) {
+        this.reqTimeData = reqTimeData;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reqTimeData() {
+        return reqTimeData;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -199,6 +243,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
             case 7:
                 if (!writer.writeInt("partId", partId))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeLong("reqTimeData", reqTimeData))
                     return false;
 
                 writer.incrementState();
@@ -251,6 +301,14 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
                 reader.incrementState();
 
+            case 8:
+                reqTimeData = reader.readLong("reqTimeData");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtAtomicUpdateResponse.class);
@@ -263,7 +321,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

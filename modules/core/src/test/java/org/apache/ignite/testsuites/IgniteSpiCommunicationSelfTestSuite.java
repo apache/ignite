@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.msgtimelogging.CacheMessagesTimeLoggingTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConfigSelfTest;
@@ -82,6 +83,7 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConfigSelfTest.class));
+        suite.addTest(new TestSuite(CacheMessagesTimeLoggingTest.class));
 
         suite.addTest(new TestSuite(TcpCommunicationSpiSkipMessageSendTest.class));
 

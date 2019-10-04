@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -35,12 +36,15 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.TimeLoggableRequest;
+
+import static org.apache.ignite.plugin.extensions.communication.ProcessingTimeLoggableResponse.INVALID_TIMESTAMP;
 
 /**
  * Force keys request. This message is sent by node while preloading to force
  * another node to put given keys into the next batch of transmitting entries.
  */
-public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable, TimeLoggableRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,6 +61,13 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
     /** Topology version for which keys are requested. */
     private AffinityTopologyVersion topVer;
+
+    /** @see TimeLoggableRequest#sendTimestamp(). */
+    private long sendTimestamp = INVALID_TIMESTAMP;
+
+    /** @see TimeLoggableRequest#receiveTimestamp(). */
+    @GridDirectTransient
+    private long receiveTimestamp = INVALID_TIMESTAMP;
 
     /**
      * Required by {@link Externalizable}.
@@ -153,6 +164,26 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /** {@inheritDoc} */
+    @Override public long sendTimestamp() {
+        return sendTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendTimestamp(long sendTimestamp) {
+        this.sendTimestamp = sendTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long receiveTimestamp() {
+        return receiveTimestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void receiveTimestamp(long receiveTimestamp) {
+        this.receiveTimestamp = receiveTimestamp;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -186,6 +217,12 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 writer.incrementState();
 
             case 7:
+                if (!writer.writeLong("sendTimestamp", sendTimestamp))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
@@ -232,6 +269,14 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 reader.incrementState();
 
             case 7:
+                sendTimestamp = reader.readLong("sendTimestamp");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -251,7 +296,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

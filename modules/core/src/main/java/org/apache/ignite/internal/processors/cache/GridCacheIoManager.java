@@ -413,6 +413,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 dhtRes.nearEvicted(nearEvicted);
 
+                dhtRes.copyTimestamps(req);
+
                 sendMessageForMissedHandler(cacheMsg,
                     nodeId,
                     dhtRes,
@@ -752,6 +754,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     0,
                     false);
 
+                res.copyTimestamps(req);
+
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
 
@@ -766,6 +770,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.futureId(),
                     req.miniId(),
                     req.deployInfo() != null);
+
+                res.copyTimestamps(req);
 
                 res.error(req.classError());
 
@@ -782,6 +788,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.partition(),
                     req.futureId(),
                     false);
+
+                res.copyTimestamps(req);
 
                 res.onError(req.classError());
 
@@ -813,6 +821,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false,
                     false);
 
+                res.copyTimestamps(req);
+
                 res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
@@ -830,6 +840,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false
                 );
 
+                res.copyTimestamps(req);
+
                 res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
@@ -846,6 +858,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.miniId(),
                     req.version(),
                     req.deployInfo() != null);
+
+                res.copyTimestamps(req);
 
                 res.error(req.classError());
 
@@ -888,6 +902,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false,
                     false);
 
+                res.copyTimestamps(req);
+
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
 
@@ -910,6 +926,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.deployInfo() != null);
 
                 res.error(req.classError());
+
+                res.copyTimestamps(req);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
             }
@@ -955,6 +973,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 res.error(req.classError());
 
+                res.copyTimestamps(req);
+
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
 
@@ -991,6 +1011,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false,
                     false);
 
+                res.copyTimestamps(req);
+
                 res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
@@ -1008,6 +1030,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.partition(),
                     false,
                     false);
+
+                res.copyTimestamps(req);
 
                 res.error(req.classError());
 
@@ -1027,6 +1051,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false,
                     false);
 
+                res.copyTimestamps(req);
+
                 res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
@@ -1042,6 +1068,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.partition(),
                     req.futureId(),
                     false);
+
+                res.copyTimestamps(req);
 
                 res.onError(req.classError());
 

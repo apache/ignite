@@ -101,6 +101,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.plugin.extensions.communication.ProcessingTimeLoggableResponse.INVALID_TIMESTAMP;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
@@ -900,6 +901,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
+        copyReqTimestamps(res);
+
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
                 addDhtValues(res);
@@ -920,6 +923,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         res.filterFailedKeys(filterFailedKeys);
 
         return res;
+    }
+
+    /**  */
+    private void copyReqTimestamps(GridNearTxPrepareResponse res) {
+        res.reqReceivedTimestamp(req == null ? INVALID_TIMESTAMP : req.receiveTimestamp());
+        res.reqSentTimestamp(req == null ? INVALID_TIMESTAMP :req.sendTimestamp());
     }
 
     /**
