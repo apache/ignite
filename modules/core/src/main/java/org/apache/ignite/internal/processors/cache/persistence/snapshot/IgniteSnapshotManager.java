@@ -309,12 +309,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param snapshotName Unique snapshot name.
+     * @param snpName Unique snapshot name.
      * @return Future which will be completed when snapshot is done.
      * @throws IgniteCheckedException If initialiation fails.
      */
-    public IgniteInternalFuture<String> createLocalSnapshot(
-        String snapshotName,
+    public IgniteInternalFuture<?> createLocalSnapshot(
+        String snpName,
         List<Integer> grpIds
     ) throws IgniteCheckedException {
         // Collection of pairs group and appropratate cache partition to be snapshotted.
@@ -336,9 +336,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     return grpParts;
                 }));
 
-        File snapshotDir0 = snapshotDir(snpWorkDir, snapshotName);
+        File snapshotDir0 = snapshotDir(snpWorkDir, snpName);
 
-        return scheduleSnapshot(snapshotName,
+        return scheduleSnapshot(snpName,
             parts,
             snapshotDir0,
             snpRunner,
