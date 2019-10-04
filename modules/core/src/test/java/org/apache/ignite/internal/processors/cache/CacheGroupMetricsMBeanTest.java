@@ -159,6 +159,8 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
             );
         }
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
