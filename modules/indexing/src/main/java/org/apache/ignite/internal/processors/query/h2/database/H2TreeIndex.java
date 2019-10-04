@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -61,6 +62,8 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * H2 Index over {@link BPlusTree}.
@@ -276,8 +279,10 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             return tree.put(row);
         }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
+        catch (Throwable t) {
+            ctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw DbException.convert(t);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
@@ -297,8 +302,10 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             return tree.putx(row);
         }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
+        catch (Throwable t) {
+            ctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw DbException.convert(t);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
@@ -339,8 +346,10 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             return tree.removex(row);
         }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
+        catch (Throwable t) {
+            ctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw DbException.convert(t);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();

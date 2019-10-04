@@ -109,7 +109,7 @@ public class SchemaOperationWorker extends GridWorker {
 
             fut.onDone();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             fut.onDone(QueryUtils.wrapIfNeeded(e));
         }
     }

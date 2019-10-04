@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanS
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanWithEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlDmlErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlInsertValidationSelfTest;
+import org.apache.ignite.internal.processors.cache.index.StopNodeOnRebuildIndexFailureTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
 
@@ -53,6 +54,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheSqlInsertValidationSelfTest.class);
         suite.addTestSuite(IgniteCacheSqlDmlErrorSelfTest.class);
+        suite.addTestSuite(StopNodeOnRebuildIndexFailureTest.class);
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);
