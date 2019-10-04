@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.metric;
 
 import java.sql.Connection;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
@@ -49,9 +49,16 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
+import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -132,7 +139,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         List<List<?>> res = execute(ignite,
             "SELECT name, value, description FROM SYS.METRICS WHERE name LIKE 'other.prefix%'");
 
-        Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(Arrays.asList(
+        Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(asList(
             t("other.prefix.test", "42"),
             t("other.prefix.test2", "43"),
             t("other.prefix2.test3", "44")
@@ -149,7 +156,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testCachesView() throws Exception {
-        Set<String> cacheNames = new HashSet<>(Arrays.asList("cache-1", "cache-2"));
+        Set<String> cacheNames = new HashSet<>(asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
             ignite.createCache(name);
@@ -167,7 +174,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testCacheGroupsView() throws Exception {
-        Set<String> grpNames = new HashSet<>(Arrays.asList("grp-1", "grp-2"));
+        Set<String> grpNames = new HashSet<>(asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)
             ignite.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
@@ -330,6 +337,162 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         boolean res = waitForCondition(() -> execute(ignite, "SELECT * FROM SYS.TRANSACTIONS").isEmpty(), 5_000);
 
         assertTrue(res);
+    }
+
+    /** */
+    @Test
+    public void testSchemas() throws Exception {
+        try (IgniteEx g = startGrid(new IgniteConfiguration().setSqlSchemas("MY_SCHEMA", "ANOTHER_SCHEMA"))) {
+            SystemView<SqlSchemaView> schemasSysView = g.context().systemView().view(SQL_SCHEMA_VIEW);
+
+            Set<String> schemaFromSysView = new HashSet<>();
+
+            schemasSysView.forEach(v -> schemaFromSysView.add(v.name()));
+
+            HashSet<String> expSchemas = new HashSet<>(asList("MY_SCHEMA", "ANOTHER_SCHEMA", "SYS", "PUBLIC"));
+
+            assertEquals(schemaFromSysView, expSchemas);
+
+            List<List<?>> schemas = execute(g, "SELECT * FROM SYS.SCHEMAS");
+
+            schemaFromSysView.clear();
+            schemas.forEach(s -> schemaFromSysView.add(s.get(0).toString()));
+
+            assertEquals(schemaFromSysView, expSchemas);
+        }
+    }
+
+    /** */
+    @Test
+    public void testViews() throws Exception {
+        Set<String> expViews = new HashSet<>(asList(
+            "METRICS",
+            "SERVICES",
+            "CACHE_GROUPS",
+            "CACHES",
+            "TASKS",
+            "LOCAL_SQL_QUERY_HISTORY",
+            "NODES",
+            "SCHEMAS",
+            "NODE_METRICS",
+            "BASELINE_NODES",
+            "INDEXES",
+            "LOCAL_CACHE_GROUPS_IO",
+            "LOCAL_SQL_RUNNING_QUERIES",
+            "NODE_ATTRIBUTES",
+            "TABLES",
+            "CLIENT_CONNECTIONS",
+            "VIEWS",
+            "TABLE_COLUMNS",
+            "VIEW_COLUMNS",
+            "TRANSACTIONS"
+        ));
+
+        Set<String> actViews = new HashSet<>();
+
+        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.VIEWS");
+
+        for (List<?> row : res)
+            actViews.add(row.get(0).toString());
+
+        assertEquals(expViews, actViews);
+    }
+
+    /** */
+    @Test
+    public void testTable() throws Exception {
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
+
+        execute(ignite, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR)");
+
+        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.TABLES");
+
+        assertEquals(1, res.size());
+
+        List tbl = res.get(0);
+
+        int cacheId = cacheId("SQL_PUBLIC_T1");
+        String cacheName = "SQL_PUBLIC_T1";
+
+        assertEquals("T1", tbl.get(0)); // TABLE_NAME
+        assertEquals(DFLT_SCHEMA, tbl.get(1)); // SCHEMA_NAME
+        assertEquals(cacheName, tbl.get(2)); // CACHE_NAME
+        assertEquals(cacheId, tbl.get(3)); // CACHE_ID
+        assertNull(tbl.get(4)); // AFFINITY_KEY_COLUMN
+        assertEquals("ID", tbl.get(5)); // KEY_ALIAS
+        assertNull(tbl.get(6)); // VALUE_ALIAS
+        assertEquals("java.lang.Long", tbl.get(7)); // KEY_TYPE_NAME
+        assertNotNull(tbl.get(8)); // VALUE_TYPE_NAME
+
+        execute(ignite, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
+
+        assertEquals(2, execute(ignite, "SELECT * FROM SYS.TABLES").size());
+
+        execute(ignite, "DROP TABLE T1");
+        execute(ignite, "DROP TABLE T2");
+
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testTableColumns() throws Exception {
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
+
+        execute(ignite, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40))");
+
+        Set<?> actCols = execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS")
+            .stream()
+            .map(l -> l.get(0))
+            .collect(Collectors.toSet());
+
+        assertEquals(new HashSet<>(asList("ID", "NAME", "_KEY", "_VAL")), actCols);
+
+        execute(ignite, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR(50))");
+
+        List<List<?>> expRes = asList(
+            asList("ID", "T1", "PUBLIC", false, false, "null", true, true, -1, -1, Long.class.getName()),
+            asList("NAME", "T1", "PUBLIC", false, false, "null", true, false, 40, -1, String.class.getName()),
+            asList("_KEY", "T1", "PUBLIC", true, false, null, false, true, -1, -1, null),
+            asList("_VAL", "T1", "PUBLIC", false, false, null, true, false, -1, -1, null),
+            asList("ID", "T2", "PUBLIC", false, false, "null", true, true, -1, -1, Long.class.getName()),
+            asList("NAME", "T2", "PUBLIC", false, false, "null", true, false, 50, -1, String.class.getName()),
+            asList("_KEY", "T2", "PUBLIC", true, false, null, false, true, -1, -1, null),
+            asList("_VAL", "T2", "PUBLIC", false, false, null, true, false, -1, -1, null)
+        );
+
+        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS ORDER BY TABLE_NAME, COLUMN_NAME");
+
+        assertEquals(expRes, res);
+
+        execute(ignite, "DROP TABLE T1");
+        execute(ignite, "DROP TABLE T2");
+
+        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testViewColumns() throws Exception {
+        execute(ignite, "SELECT * FROM SYS.VIEW_COLUMNS");
+
+        List<List<?>> expRes = asList(
+            asList("CONNECTION_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, 19L, 0, Long.class.getName()),
+            asList("LOCAL_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
+                String.class.getName()),
+            asList("REMOTE_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
+                String.class.getName()),
+            asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
+                String.class.getName()),
+            asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
+                String.class.getName()),
+            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
+                String.class.getName())
+        );
+
+        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.VIEW_COLUMNS WHERE VIEW_NAME = 'CLIENT_CONNECTIONS'");
+
+        assertEquals(expRes, res);
     }
 
     /**

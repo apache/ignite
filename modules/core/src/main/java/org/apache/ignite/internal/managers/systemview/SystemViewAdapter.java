@@ -20,36 +20,18 @@ package org.apache.ignite.internal.managers.systemview;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * System view backed by {@code data} {@link Collection}.
  */
-public class SystemViewAdapter<R, D> implements SystemView<R> {
+public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     /** Data backed by this view. */
     private final Collection<D> data;
 
     /** Row function. */
     private final Function<D, R> rowFunc;
-
-    /** Name of the view. */
-    private final String name;
-
-    /** Description of the view. */
-    private final String desc;
-
-    /** Class of the row */
-    private final Class<R> rowCls;
-
-    /**
-     * Row attribute walker.
-     *
-     * @see "org.apache.ignite.codegen.MonitoringRowAttributeWalkerGenerator"
-     */
-    private final SystemViewRowAttributeWalker<R> walker;
 
     /**
      * @param name Name.
@@ -61,13 +43,7 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
      */
     public SystemViewAdapter(String name, String desc, Class<R> rowCls,
         SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
-        A.notNull(rowCls, "rowCls");
-        A.notNull(walker, "walker");
-
-        this.name = name;
-        this.desc = desc;
-        this.rowCls = rowCls;
-        this.walker = walker;
+        super(name, desc, rowCls, walker);
 
         this.data = data;
         this.rowFunc = rowFunc;
@@ -86,26 +62,6 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
                 return rowFunc.apply(data.next());
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public SystemViewRowAttributeWalker<R> walker() {
-        return walker;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<R> rowClass() {
-        return rowCls;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return desc;
     }
 
     /** {@inheritDoc} */
