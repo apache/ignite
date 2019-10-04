@@ -22,21 +22,30 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLHandshakeException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.console.demo.service.DemoCachesLoadService;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.utils.Utils;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.core.Is;
@@ -47,6 +56,9 @@ import org.junit.rules.ExpectedException;
 import org.mockserver.integration.ClientAndServer;
 
 import static org.apache.ignite.console.agent.AgentUtils.sslContextFactory;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
@@ -148,12 +160,12 @@ public class RestExecutorSelfTest {
      * @throws IOException If failed to parse.
      */
     private JsonNode toJson(RestResult res) throws IOException {
-        Assert.assertNotNull(res);
+        assertNotNull(res);
 
         String data = res.getData();
 
-        Assert.assertNotNull(data);
-        Assert.assertFalse(data.isEmpty());
+        assertNotNull(data);
+        assertFalse(data.isEmpty());
 
         return MAPPER.readTree(data);
     }
@@ -209,12 +221,12 @@ public class RestExecutorSelfTest {
 
             JsonNode json = toJson(res);
 
-            Assert.assertTrue(json.isArray());
+            assertTrue(json.isArray());
 
             for (JsonNode item : json) {
-                Assert.assertTrue(item.get("attributes").isNull());
-                Assert.assertTrue(item.get("metrics").isNull());
-                Assert.assertTrue(item.get("caches").isNull());
+                assertTrue(item.get("attributes").isNull());
+                assertTrue(item.get("metrics").isNull());
+                assertTrue(item.get("caches").isNull());
             }
         }
     }
@@ -392,12 +404,12 @@ public class RestExecutorSelfTest {
 
             JsonNode json = toJson(res);
 
-            Assert.assertTrue(json.isArray());
+            assertTrue(json.isArray());
 
             for (JsonNode item : json) {
-                Assert.assertTrue(item.get("attributes").isNull());
-                Assert.assertTrue(item.get("metrics").isNull());
-                Assert.assertTrue(item.get("caches").isNull());
+                assertTrue(item.get("attributes").isNull());
+                assertTrue(item.get("metrics").isNull());
+                assertTrue(item.get("caches").isNull());
             }
         }
     }
@@ -429,6 +441,83 @@ public class RestExecutorSelfTest {
         finally {
             if (mockSrv != null)
                 mockSrv.stop();
+        }
+    }
+
+    /** */
+    @Test
+    public void testLongRunningQueries() throws Throwable {
+        try(Ignite ignite = Ignition.getOrStart(nodeConfiguration(""))) {
+            DemoCachesLoadService load = new DemoCachesLoadService(0);
+
+            GridTestUtils.setFieldValue(load, "ignite", ignite);
+
+            load.init(null);
+
+            RestExecutor exec = new RestExecutor(new SslContextFactory.Client());
+
+            ExecutorService executor = Executors.newFixedThreadPool(2);
+
+            Future<Boolean> fut1 = executor.submit(() -> executeQuery(exec, "select *, sleep(30) from \"CarCache\".Car"));
+            Future<Boolean> fut2 = executor.submit(() -> executeQuery(exec, "select * from \"CarCache\".Car"));
+
+            assertFalse(fut1.isDone());
+            assertFalse(fut2.isDone());
+            assertFalse(fut2.get(1L, TimeUnit.SECONDS));
+
+            assertFalse(fut1.isDone());
+            assertTrue(fut2.isDone());
+            assertFalse(fut1.get(4L, TimeUnit.SECONDS));
+        }
+    }
+
+    /**
+     * @param exec Rest executor.
+     * @param qry Query text.
+     */
+    private boolean executeQuery(RestExecutor exec, String qry) throws Exception {
+        try {
+            JsonObject params = new JsonObject()
+                .add("cmd", GridRestCommand.EXE.key())
+                .add("name", VisorGatewayTask.class.getName())
+                .add("p1", null)
+                .add("p2", "org.apache.ignite.internal.visor.query.VisorQueryTask")
+                .add("p3", "org.apache.ignite.internal.visor.query.VisorQueryTaskArg")
+                .add("p4", "CarCache")
+                .add("p5", qry)
+                .add("p6", false)
+                .add("p7", false)
+                .add("p8", false)
+                .add("p9", false)
+                .add("p10", 1);
+
+            RestResult res = exec.sendRequest(HTTP_URI, params);
+
+            JsonNode json = toJson(res);
+
+            JsonNode taskRes = json.get("result").get("result");
+
+            String qryId = taskRes.get("queryId").asText();
+            String resNodeId = taskRes.get("responseNodeId").asText();
+
+            params = new JsonObject()
+                .add("cmd", GridRestCommand.EXE.key())
+                .add("name", VisorGatewayTask.class.getName())
+                .add("p1", resNodeId)
+                .add("p2", "org.apache.ignite.internal.visor.query.VisorQueryFetchFirstPageTask")
+                .add("p3", "org.apache.ignite.internal.visor.query.VisorQueryNextPageTaskArg")
+                .add("p4", qryId)
+                .add("p5", 100);
+
+            res = exec.sendRequest(HTTP_URI, params);
+
+            json = toJson(res);
+
+            taskRes = json.get("result").get("result");
+
+            return taskRes.get("hasMore").asBoolean();
+        } catch (Throwable e) {
+            throw U.cast(e);
         }
     }
 }

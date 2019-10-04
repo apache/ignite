@@ -16,6 +16,7 @@
 
 package org.apache.ignite.console.agent.handlers;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -338,22 +339,34 @@ public class WebSocketRouter implements AutoCloseable {
      */
     @OnWebSocketMessage
     public void onMessage(Session ses, String msg) {
-        WebSocketRequest evt = null;
-
         try {
-            evt = fromJson(msg, WebSocketRequest.class);
+            WebSocketRequest evt = fromJson(msg, WebSocketRequest.class);
 
+            if (AGENT_HANDSHAKE.equals(evt.getEventType())) {
+                AgentHandshakeResponse req0 = fromJson(evt.getPayload(), AgentHandshakeResponse.class);
+
+                processHandshakeResponse(req0);
+
+                if (closeLatch.getCount() > 0)
+                    watcher.startWatchTask(ses);
+
+                return;
+            }
+            
+            client.getExecutor().execute(() -> onMessage0(ses, evt));
+        }
+        catch (IOException e) {
+            log.error("Failed to process message: " + msg, e);
+        }
+    }
+
+    /**
+     * @param ses Session.
+     * @param evt Request event.
+     */
+    private void onMessage0(Session ses, WebSocketRequest evt) {
+        try {
             switch (evt.getEventType()) {
-                case AGENT_HANDSHAKE:
-                    AgentHandshakeResponse req0 = fromJson(evt.getPayload(), AgentHandshakeResponse.class);
-
-                    processHandshakeResponse(req0);
-
-                    if (closeLatch.getCount() > 0)
-                        watcher.startWatchTask(ses);
-
-                    break;
-
                 case AGENT_REVOKE_TOKEN:
                     processRevokeToken(evt.getPayload());
 
@@ -402,12 +415,6 @@ public class WebSocketRouter implements AutoCloseable {
             }
         }
         catch (Throwable e) {
-            if (evt == null) {
-                log.error("Failed to process message: " + msg, e);
-
-                return;
-            }
-            
             log.error("Failed to process message: " + evt, e);
 
             try {
