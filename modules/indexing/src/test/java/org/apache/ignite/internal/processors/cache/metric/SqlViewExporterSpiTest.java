@@ -388,7 +388,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "VIEWS",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
-            "TRANSACTIONS"
+            "TRANSACTIONS",
+            "QUERY_CONTINUOUS"
         ));
 
         Set<String> actViews = new HashSet<>();
