@@ -63,6 +63,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** Callbacks. */
         private readonly Callbacks _callbacks;
 
+        /** Thread exit callback id. */
+        private readonly int _threadExitCallbackId;
+
         /** Static instance */
         private static volatile Jvm _instance;
 
@@ -91,7 +94,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var func = **funcPtr;
             GetDelegate(func.AttachCurrentThread, out _attachCurrentThread);
 
+            // JVM is a singleton, so this is one-time subscription.
+            // This is a shortcut - we pass DetachCurrentThread pointer directly as a thread exit callback,
+            // because signatures happen to match exactly.
+            _threadExitCallbackId = UnmanagedThread.SetThreadExitCallback(func.DetachCurrentThread);
+
             var env = AttachCurrentThread();
+
             _methodId = new MethodId(env);
 
             // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core
@@ -180,6 +189,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                     throw new IgniteException("AttachCurrentThread failed: " + res);
                 }
 
+                _env = new Env(envPtr, this);
+                UnmanagedThread.EnableCurrentThreadExitEvent(_threadExitCallbackId, _jvmPtr);
+            }
+
+            return _env;
+        }
+
+        /// <summary>
+        /// Attaches current thread to the JVM using known envPtr and returns JNIEnv.
+        /// </summary>
+        public Env AttachCurrentThread(IntPtr envPtr)
+        {
+            if (_env == null || _env.EnvPtr != envPtr)
+            {
                 _env = new Env(envPtr, this);
             }
 

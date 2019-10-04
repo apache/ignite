@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             try
             {
                 var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
-                var env = _jvm.AttachCurrentThread();
+                var env = _jvm.AttachCurrentThread(envPtr);
 
                 var message0 = env.JStringToString(message);
                 var category0 = env.JStringToString(category);
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e);
+                _jvm.AttachCurrentThread(envPtr).ThrowToJava(e);
             }
         }
 
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e);
+                _jvm.AttachCurrentThread(env).ThrowToJava(e);
                 return false;
             }
         }
@@ -226,11 +226,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
 
+                _jvm.AttachCurrentThread(env);
+
                 return cbs.InLongLongLongObjectOutLong(op, arg1, arg2, arg3, arg);
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e);
+                _jvm.AttachCurrentThread(env).ThrowToJava(e);
                 return 0;
             }
         }
@@ -246,11 +248,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
 
+                _jvm.AttachCurrentThread(env);
+
                 return cbs.InLongOutLong(op, arg);
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e);
+                _jvm.AttachCurrentThread(env).ThrowToJava(e);
 
                 return 0;
             }
@@ -275,7 +279,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
                     if (writer != null)
                     {
-                        var env = _jvm.AttachCurrentThread();
+                        var env = _jvm.AttachCurrentThread(envPtr);
                         var msg = env.JStringToString(message);
 
                         writer.Write(msg, isError);
@@ -284,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e);
+                _jvm.AttachCurrentThread(envPtr).ThrowToJava(e);
             }
         }
     }
