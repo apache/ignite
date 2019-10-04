@@ -47,7 +47,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  * Test for {@link TwitterStreamer}. Tests Public Status streaming API https://dev.twitter.com/streaming/public.
  */
 public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
-
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 100;
 
@@ -79,8 +78,8 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
-    /** */
-    private void init() {
+    /** {@inheritDoc} */
+    @Override public void beforeTest() {
         grid().getOrCreateCache(defaultCacheConfiguration());
 
         mockServer.start();
