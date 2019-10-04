@@ -760,20 +760,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param cacheWorkDir Cache work directory.
      * @param partId Partition id.
-     */
-    @NotNull public static File getPartitionFile(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
-    }
-
-    /**
-     * @param cacheWorkDir Cache work directory.
-     * @param partId Partition id.
+     * @return Partition file.
      */
     @NotNull public static File getPartitionFileEx(File cacheWorkDir, int partId) {
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         return partId == INDEX_PARTITION ? new File(cacheWorkDir, INDEX_FILE_NAME) :
             new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
+    }
+
+    /**
+     * @param workDir Cache work directory.
+     * @param cacheDirName Cache directory name.
+     * @param partId Partition id.
+     * @return Partition file.
+     */
+    @NotNull public static File getPartitionFileEx(File workDir, String cacheDirName, int partId) {
+        return getPartitionFileEx(cacheWorkDir(workDir, cacheDirName), partId);
     }
 
     /** {@inheritDoc} */

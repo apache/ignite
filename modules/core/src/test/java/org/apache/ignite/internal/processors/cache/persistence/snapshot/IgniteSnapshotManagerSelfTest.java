@@ -81,7 +81,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     private static final FileIOFactory DFLT_IO_FACTORY = new RandomAccessFileIOFactory();
 
     /** */
-    private static final String SNAPSHOT_NAME = "testBackup";
+    private static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** */
     private static final int CACHE_PARTS_COUNT = 8;
@@ -109,8 +109,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false)
                 .setPartitions(CACHE_PARTS_COUNT));
 
-    /** Directory to store temporary files on testing cache backup process. */
-    private File backupWorkDir;
+    /** Directory to store temporary files on testing cache snapshot process. */
+    private File snapshotWorkDir;
 
     /**
      * Calculate CRC for all partition files of specified cache.
@@ -141,15 +141,15 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Before
-    public void beforeTestBackup() throws Exception {
+    public void beforeTestSnapshot() throws Exception {
         cleanPersistenceDir();
 
-        backupWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "test_backups", true);
+        snapshotWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "test_snapshots", true);
     }
 
     /** */
     @After
-    public void afterTestBackup() throws Exception {
+    public void afterTestSnapshot() throws Exception {
         stopAllGrids();
     }
 
@@ -165,7 +165,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testBackupLocalPartitions() throws Exception {
+    public void testSnapshotLocalPartitions() throws Exception {
         // Start grid node with data before each test.
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
@@ -177,10 +177,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-        IgniteInternalFuture<?> backupFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
+        IgniteInternalFuture<?> snpFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
             Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
-        backupFut.get();
+        snpFut.get();
 
         File cacheWorkDir = ((FilePageStoreManager)ig.context()
             .cache()
@@ -191,7 +191,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(snapshotDir(mgr.backupWorkDir(),
+        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(snapshotDir(mgr.snapshotWorkDir(),
             SNAPSHOT_NAME), cacheDirName(defaultCacheCfg)));
 
         assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
@@ -201,21 +201,21 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testBackupLocalPartitionsNextCpStarted() throws Exception {
+    public void testSnapshotLocalPartitionsNextCpStarted() throws Exception {
         final int value_multiplier = 2;
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
-        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
 
-        toBackup.put(CU.cacheId(DEFAULT_CACHE_NAME),
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME),
             Stream.iterate(0, n -> n + 1)
                 .limit(CACHE_PARTS_COUNT) // With index partition
                 .collect(Collectors.toSet()));
 
-        toBackup.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), p -> new HashSet<>())
+        parts.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), p -> new HashSet<>())
             .add(PageIdAllocator.INDEX_PARTITION);
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
@@ -227,7 +227,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(snapshotDir(backupWorkDir, SNAPSHOT_NAME), defaultCacheCfg);
+        File cacheBackup = cacheWorkDir(snapshotDir(snapshotWorkDir, SNAPSHOT_NAME), defaultCacheCfg);
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
@@ -238,14 +238,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
-        File backupDir0 = snapshotDir(backupWorkDir, SNAPSHOT_NAME);
+        File snapshotDir0 = snapshotDir(snapshotWorkDir, SNAPSHOT_NAME);
 
-        IgniteInternalFuture<?> backupFut = mgr
+        IgniteInternalFuture<?> snpFut = mgr
             .scheduleSnapshot(SNAPSHOT_NAME,
-                toBackup,
-                backupDir0,
-                mgr.backupExecutorService(),
-                () -> new DeleagatePartitionSnapshotReceiver(mgr.localSnapshotReceiver(backupDir0)) {
+                parts,
+                snapshotDir0,
+                mgr.snapshotExecutorService(),
+                new DeleagateSnapshotReceiver(mgr.localSnapshotReceiver(snapshotDir0)) {
                     @Override
                     public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -275,7 +275,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         slowCopy.countDown();
 
-        backupFut.get();
+        snpFut.get();
 
         // Now can stop the node and check created backups.
 
@@ -316,7 +316,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      *
      */
     @Test(expected = IgniteCheckedException.class)
-    public void testBackupLocalPartitionNotEnoughSpace() throws Exception {
+    public void testSnapshotLocalPartitionNotEnoughSpace() throws Exception {
         final AtomicInteger throwCntr = new AtomicInteger();
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
@@ -359,12 +359,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      *
      */
     @Test(expected = IgniteCheckedException.class)
-    public void testCreateLocalBackupCopyPartitionFail() throws Exception {
+    public void testSnapshotCreateLocalCopyPartitionFail() throws Exception {
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
-        Map<Integer, Set<Integer>> toBackup = new HashMap<>();
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
 
-        toBackup.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new HashSet<>())
+        parts.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new HashSet<>())
             .add(0);
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
@@ -378,10 +378,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .snapshotMgr();
 
         IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
-            toBackup,
-            backupWorkDir,
-            mgr.backupExecutorService(),
-            () -> new DeleagatePartitionSnapshotReceiver(mgr.localSnapshotReceiver(backupWorkDir)) {
+            parts,
+            snapshotWorkDir,
+            mgr.snapshotExecutorService(),
+            new DeleagateSnapshotReceiver(mgr.localSnapshotReceiver(snapshotWorkDir)) {
                 @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
@@ -447,14 +447,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DeleagatePartitionSnapshotReceiver implements PartitionSnapshotReceiver {
+    private static class DeleagateSnapshotReceiver implements SnapshotReceiver {
         /** Delegate call to. */
-        private final PartitionSnapshotReceiver delegate;
+        private final SnapshotReceiver delegate;
 
         /**
          * @param delegate Delegate call to.
          */
-        public DeleagatePartitionSnapshotReceiver(PartitionSnapshotReceiver delegate) {
+        public DeleagateSnapshotReceiver(SnapshotReceiver delegate) {
             this.delegate = delegate;
         }
 
@@ -462,8 +462,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             delegate.receivePart(part, cacheDirName, pair, length);
         }
 
-        @Override public void receiveDelta(File delta, GroupPartitionId pair) {
-            delegate.receiveDelta(delta, pair);
+        @Override public void receiveDelta(File delta, String cacheDirName, GroupPartitionId pair) {
+            delegate.receiveDelta(delta, cacheDirName, pair);
         }
 
         @Override public void close() throws IOException {

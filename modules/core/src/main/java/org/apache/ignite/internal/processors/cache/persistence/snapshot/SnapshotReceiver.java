@@ -24,10 +24,10 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 /**
  *
  */
-interface PartitionSnapshotReceiver extends Closeable {
+interface SnapshotReceiver extends Closeable {
     /**
      * @param part Partition file to receive.
-     * @param cacheDirName Cache group directory.
+     * @param cacheDirName Cache group directory name.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
      */
@@ -35,7 +35,8 @@ interface PartitionSnapshotReceiver extends Closeable {
 
     /**
      * @param delta Delta pages file.
+     * @param cacheDirName Cache group directory name.
      * @param pair Group id with partition id pair.
      */
-    public void receiveDelta(File delta, GroupPartitionId pair);
+    public void receiveDelta(File delta, String cacheDirName, GroupPartitionId pair);
 }
