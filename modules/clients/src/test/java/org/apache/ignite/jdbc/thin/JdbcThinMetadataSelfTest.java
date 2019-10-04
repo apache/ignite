@@ -812,7 +812,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.VIEW_COLUMNS.PRECISION.null.19",
                 "SYS.VIEW_COLUMNS.DEFAULT_VALUE.null.2147483647",
                 "SYS.VIEW_COLUMNS.SCALE.null.10",
-                "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647"
+                "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647",
                 "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647",
                 "SYS.QUERY_CONTINUOUS.NOTIFY_EXISTING.null.1",
