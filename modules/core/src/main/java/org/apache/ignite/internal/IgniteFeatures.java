@@ -55,7 +55,7 @@ public enum IgniteFeatures {
 
     /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
-    
+
     /** Support of cluster read-only mode. */
     CLUSTER_READ_ONLY_MODE(9),
 
@@ -76,11 +76,23 @@ public enum IgniteFeatures {
      */
     DR_DATA_NODE_SMART_THROTTLING(19),
 
-    /**
-     * Support enabling DR events from  Web Console.
-     */
-    WC_DR_EVENTS(20)
-    ;
+    /** Support of DR events from  Web Console. */
+    WC_DR_EVENTS(20),
+
+    /** Support of rolling upgrade status task for Web Console. */
+    WC_ROLLING_UPGRADE_STATUS(21),
+
+    /** Support of chain parameter in snapshot delete task for Web Console. */
+    WC_SNAPSHOT_CHAIN_MODE(22),
+
+    /** Support of baseline auto adjustment for Web Console. */
+    WC_BASELINE_AUTO_ADJUSTMENT(23),
+
+    /** Scheduling disabled. */
+    WC_SCHEDULING_NOT_AVAILABLE(24),
+
+    /** Support of DR-specific visor tasks used by control utility. */
+    DR_CONTROL_UTILITY(25);
 
     /**
      * Unique feature identifier.
