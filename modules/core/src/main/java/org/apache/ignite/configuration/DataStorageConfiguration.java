@@ -308,7 +308,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Initial size of a data region reserved for system cache.
+     * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}.
      *
+     * @see #setSystemRegionInitialSize(long).
      * @return Size in bytes.
      */
     public long getSystemRegionInitialSize() {
@@ -318,7 +320,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets initial size of a data region reserved for system cache.
      *
-     * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}
+     * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}.
      *
      * @param sysRegionInitSize Size in bytes.
      * @return {@code this} for chaining.
@@ -333,7 +335,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Maximum data region size reserved for system cache.
+     * Default value is {@link #DFLT_SYS_REG_MAX_SIZE}.
      *
+     * @see #setSystemRegionMaxSize(long).
      * @return Size in bytes.
      */
     public long getSystemRegionMaxSize() {
@@ -361,6 +365,7 @@ public class DataStorageConfiguration implements Serializable {
      * The page memory consists of one or more expandable data regions defined by {@link DataRegionConfiguration}.
      * Every data region is split on pages of fixed size that store actual cache entries.
      *
+     * @see #setPageSize(int).
      * @return Page size in bytes.
      */
     public int getPageSize() {
@@ -392,6 +397,7 @@ public class DataStorageConfiguration implements Serializable {
      * region. An Apache Ignite cache can be mapped to a specific region with
      * {@link CacheConfiguration#setDataRegionName(String)} method.
      *
+     * @see #setDataRegionConfigurations(DataRegionConfiguration...).
      * @return Array of configured data regions.
      */
     public DataRegionConfiguration[] getDataRegionConfigurations() {
@@ -414,6 +420,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * By default equals to the number of available CPUs.
      *
+     * @see #setConcurrencyLevel(int).
      * @return Mapping table concurrency level(always greater than 0).
      */
     public int getConcurrencyLevel() {
@@ -454,6 +461,8 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
+     *
+     * @see #setStoragePath(String).
      */
     public String getStoragePath() {
         return storagePath;
@@ -473,7 +482,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets checkpoint frequency.
+     * Default value {@link #DFLT_CHECKPOINT_FREQ} .
      *
+     * @see #setCheckpointFrequency(long).
      * @return Checkpoint frequency in milliseconds.
      */
     public long getCheckpointFrequency() {
@@ -497,7 +508,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets a number of threads to use for the checkpoint purposes.
+     * Default value is {@link #DFLT_CHECKPOINT_THREADS}.
      *
+     * @see #setCheckpointThreads(int).
      * @return Number of checkpoint threads.
      */
     public int getCheckpointThreads() {
@@ -506,6 +519,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets a number of threads to use for the checkpoint purposes.
+     * Default value is {@link #DFLT_CHECKPOINT_THREADS}.
      *
      * @param checkpointThreads Number of checkpoint threads. Four threads are used by default.
      * @return {@code this} for chaining.
@@ -518,7 +532,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Timeout in milliseconds to wait when acquiring persistence store lock file before failing the local node.
+     * Default value is {@link #DFLT_LOCK_WAIT_TIME}.
      *
+     * @see #setLockWaitTime(long).
      * @return Lock wait time in milliseconds.
      */
     public long getLockWaitTime() {
@@ -527,6 +543,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Timeout in milliseconds to wait when acquiring persistence store lock file before failing the local node.
+     * Default value is {@link #DFLT_LOCK_WAIT_TIME}.
      *
      * @param lockWaitTime Lock wait time in milliseconds.
      * @return {@code this} for chaining.
@@ -539,6 +556,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets a total number of checkpoints to keep in the WAL history.
+     * Default value is {@link #DFLT_WAL_HISTORY_SIZE}.
      *
      * @return Number of checkpoints to keep in WAL after a checkpoint is finished.
      * @see DataStorageConfiguration#getMaxWalArchiveSize()
@@ -551,6 +569,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets a total number of checkpoints to keep in the WAL history.
+     * Default value is {@link #DFLT_WAL_HISTORY_SIZE}.
      *
      * @param walHistSize Number of checkpoints to keep after a checkpoint is finished.
      * @return {@code this} for chaining.
@@ -575,7 +594,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets a max allowed size(in bytes) of WAL archives.
+     * Default value is {@link #DFLT_WAL_ARCHIVE_MAX_SIZE}.
      *
+     * @see #setMaxWalArchiveSize(long).
      * @return max size(in bytes) of WAL archive directory(always greater than 0).
      */
     public long getMaxWalArchiveSize() {
@@ -598,7 +619,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets a number of WAL segments to work with.
+     * Default value is {@link #DFLT_WAL_SEGMENTS}.
      *
+     * @see #setWalSegments(int).
      * @return Number of work WAL segments.
      */
     public int getWalSegments() {
@@ -608,6 +631,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets a number of WAL segments to work with. For performance reasons,
      * the whole WAL is split into files of fixed length called segments.
+     * Default value is {@link #DFLT_WAL_SEGMENTS}.
      *
      * @param walSegments Number of WAL segments.
      * @return {@code this} for chaining.
@@ -620,7 +644,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets size(in bytes) of a WAL segment.
+     * Default values is {@link #DFLT_WAL_SEGMENT_SIZE}.
      *
+     * @see #setWalSegmentSize(int).
      * @return WAL segment size(in bytes).
      */
     public int getWalSegmentSize() {
@@ -645,7 +671,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets a path to the directory where WAL is stored.
+     * Default value is {@link #DFLT_WAL_PATH}.
      *
+     * @see #setWalPath(String).
      * @return WAL persistence path, absolute or relative to Ignite work directory.
      */
     public String getWalPath() {
@@ -655,6 +683,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets a path to the directory where WAL is stored. If this path is relative, it will be resolved
      * relatively to Ignite work directory.
+     * Default value is {@link #DFLT_WAL_PATH}.
      *
      * @param walStorePath WAL persistence path, absolute or relative to Ignite work directory.
      * @return {@code this} for chaining.
@@ -667,7 +696,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets a path to the WAL archive directory.
+     * Default value is {@link #DFLT_WAL_ARCHIVE_PATH}.
      *
+     * @see #setWalArchivePath(String).
      * @return WAL archive directory.
      */
     public String getWalArchivePath() {
@@ -677,6 +708,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets a path for the WAL archive directory. Every WAL segment will be fully copied to this directory before
      * it can be reused for WAL purposes.
+     * Default value is {@link #DFLT_WAL_ARCHIVE_PATH}.
      *
      * @param walArchivePath WAL archive directory.
      * @return {@code this} for chaining.
@@ -691,6 +723,7 @@ public class DataStorageConfiguration implements Serializable {
      * Gets flag indicating whether persistence metrics collection is enabled.
      * Default value is {@link #DFLT_METRICS_ENABLED}.
      *
+     * @see #setWriteThrottlingEnabled(boolean).
      * @return Metrics enabled flag.
      */
     public boolean isMetricsEnabled() {
@@ -699,6 +732,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets flag indicating whether persistence metrics collection is enabled.
+     * Default value is {@link #DFLT_METRICS_ENABLED}.
      *
      * @param metricsEnabled Metrics enabled flag.
      */
@@ -710,6 +744,10 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets flag indicating whether write throttling is enabled.
+     * Default value is {@link #DFLT_WRITE_THROTTLING_ENABLED}.
+     *
+     * @see #setWriteThrottlingEnabled(boolean).
+     * @return Write throttling enabled flag.
      */
     public boolean isWriteThrottlingEnabled() {
         return writeThrottlingEnabled;
@@ -717,6 +755,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets flag indicating whether write throttling is enabled.
+     * Default value is {@link #DFLT_WRITE_THROTTLING_ENABLED}.
      *
      * @param writeThrottlingEnabled Write throttling enabled flag.
      */
@@ -729,7 +768,9 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Gets the length of the time interval for rate-based metrics. This interval defines a window over which
      * hits will be tracked. Default value is {@link #DFLT_RATE_TIME_INTERVAL_MILLIS}.
+     * Default value is {@link #DFLT_RATE_TIME_INTERVAL_MILLIS}.
      *
+     * @see #setMetricsRateTimeInterval(long).
      * @return Time interval in milliseconds.
      */
     public long getMetricsRateTimeInterval() {
@@ -739,6 +780,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets the length of the time interval for rate-based metrics. This interval defines a window over which
      * hits will be tracked.
+     * Default value is {@link #DFLT_RATE_TIME_INTERVAL_MILLIS}.
      *
      * @param metricsRateTimeInterval Time interval in milliseconds.
      */
@@ -752,6 +794,7 @@ public class DataStorageConfiguration implements Serializable {
      * Gets the number of sub-intervals to split the {@link #getMetricsRateTimeInterval()} into to track the update history.
      * Default value is {@link #DFLT_SUB_INTERVALS}.
      *
+     * @see #setMetricsSubIntervalCount(int).
      * @return The number of sub-intervals for history tracking.
      */
     public int getMetricsSubIntervalCount() {
@@ -760,6 +803,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets the number of sub-intervals to split the {@link #getMetricsRateTimeInterval()} into to track the update history.
+     * Default value is {@link #DFLT_SUB_INTERVALS}.
      *
      * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
      */
@@ -772,7 +816,9 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Property that defines behavior of wal fsync.
      * Different type provides different guarantees for consistency. See {@link WALMode} for details.
+     * Default value is {@link #DFLT_WAL_MODE}.
      *
+     * @see #setWalMode(WALMode).
      * @return WAL mode.
      */
     public WALMode getWalMode() {
@@ -782,6 +828,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets property that defines behavior of wal fsync.
      * Different type provides different guarantees for consistency. See {@link WALMode} for details.
+     * Default value is {@link #DFLT_WAL_MODE}.
      *
      * @param walMode Wal mode.
      */
@@ -797,7 +844,9 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Property for size of thread local buffer.
      * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
+     * Default value is {@link #DFLT_TLB_SIZE}.
      *
+     * @see #setWalThreadLocalBufferSize(int).
      * @return Thread local buffer size (in bytes).
      */
     public int getWalThreadLocalBufferSize() {
@@ -807,6 +856,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets size of thread local buffer.
      * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
+     * Default value is {@link #DFLT_TLB_SIZE}.
      *
      * @param walTlbSize Thread local buffer size (in bytes).
      */
@@ -820,6 +870,7 @@ public class DataStorageConfiguration implements Serializable {
      * Property defines size(in bytes) of WAL buffer.
      * Each WAL record will be serialized to this buffer before write in WAL file.
      *
+     * @see #setWalBufferSize(int).
      * @return WAL buffer size(in bytes).
      */
     public int getWalBufferSize() {
@@ -841,7 +892,9 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
      * all other WAL modes.
+     * Default value is {@link #DFLT_WAL_FLUSH_FREQ}.
      *
+     * @see #setWalFlushFrequency(long).
      * @return WAL flush frequency, in milliseconds.
      */
     public long getWalFlushFrequency() {
@@ -851,6 +904,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
      * all other WAL modes.
+     * Default value is {@link #DFLT_WAL_FLUSH_FREQ}.
      *
      * @param walFlushFreq WAL flush frequency, in milliseconds.
      */
@@ -865,6 +919,10 @@ public class DataStorageConfiguration implements Serializable {
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
+     * Default value is {@link #DFLT_WAL_FSYNC_DELAY}.
+     *
+     * @see #setWalFsyncDelayNanos(long).
+     * @return Wal fsync delay, in nanoseconds.
      */
     public long getWalFsyncDelayNanos() {
         return walFsyncDelay <= 0 ? DFLT_WAL_FSYNC_DELAY : walFsyncDelay;
@@ -875,6 +933,7 @@ public class DataStorageConfiguration implements Serializable {
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
+     * Default value is {@link #DFLT_WAL_FSYNC_DELAY}.
      *
      * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
      */
@@ -887,7 +946,9 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Property define how many bytes iterator read from
      * disk (for one reading), during go ahead wal.
+     * Default value is {@link #DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE}.
      *
+     * @see #setWalRecordIteratorBufferSize(int).
      * @return Record iterator buffer size.
      */
     public int getWalRecordIteratorBufferSize() {
@@ -897,6 +958,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets property defining how many bytes iterator read from
      * disk (for one reading), during go ahead wal.
+     * Default value is {@link #DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE}.
      *
      * @param walRecordIterBuffSize Wal record iterator buffer size.
      */
@@ -910,6 +972,9 @@ public class DataStorageConfiguration implements Serializable {
      * Gets flag that enforces writing full page to WAL on every change (instead of delta record).
      * Can be used for debugging purposes: every version of page will be present in WAL.
      * Note that WAL will take several times more space in this mode.
+     * Default value is {@link #DFLT_WAL_ALWAYS_WRITE_FULL_PAGES}.
+     *
+     * @see #setAlwaysWriteFullPages(boolean).
      */
     public boolean isAlwaysWriteFullPages() {
         return alwaysWriteFullPages;
@@ -919,6 +984,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag that enforces writing full page to WAL on every change (instead of delta record).
      * Can be used for debugging purposes: every version of page will be present in WAL.
      * Note that WAL will take several times more space in this mode.
+     * Default value is {@link #DFLT_WAL_ALWAYS_WRITE_FULL_PAGES}.
      *
      * @param alwaysWriteFullPages Always write full pages flag.
      */
@@ -932,6 +998,7 @@ public class DataStorageConfiguration implements Serializable {
      * Factory to provide implementation of FileIO interface
      * which is used for data storage files read/write operations
      *
+     * @see #setFileIOFactory(FileIOFactory).
      * @return File I/O factory
      */
     public FileIOFactory getFileIOFactory() {
@@ -966,6 +1033,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Returns time in millis to run auto archiving WAL segment (even if incomplete) after last record log.
+     *
+     * @see #setWalAutoArchiveAfterInactivity(long).
      * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
      */
     public long getWalAutoArchiveAfterInactivity() {
@@ -974,7 +1044,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * This property defines order of writing pages to disk storage during checkpoint.
+     * Default value is {@link #DFLT_CHECKPOINT_WRITE_ORDER}.
      *
+     * @see #setCheckpointWriteOrder(CheckpointWriteOrder).
      * @return Checkpoint write order.
      */
     public CheckpointWriteOrder getCheckpointWriteOrder() {
@@ -983,6 +1055,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * This property defines order of writing pages to disk storage during checkpoint.
+     * Default value is {@link #DFLT_CHECKPOINT_WRITE_ORDER}.
      *
      * @param checkpointWriteOrder Checkpoint write order.
      */
@@ -993,6 +1066,10 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Returns flag indicating whether WAL compaction is enabled or disabled.
+     * Default value is {@link #DFLT_WAL_COMPACTION_ENABLED}.
+     *
+     * @see #setWalCompactionEnabled(boolean).
      * @return Flag indicating whether WAL compaction is enabled.
      */
     public boolean isWalCompactionEnabled() {
@@ -1001,6 +1078,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets flag indicating whether WAL compaction is enabled.
+     * Default value is {@link #DFLT_WAL_COMPACTION_ENABLED}.
      *
      * @param walCompactionEnabled Wal compaction enabled flag.
      */
@@ -1011,6 +1089,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Returns WAL compaction level.
+     *
+     * @see #setWalCompactionLevel(int)
      * @return ZIP level to WAL compaction.
      */
     public int getWalCompactionLevel() {
@@ -1018,6 +1099,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Sets WAL compaction level.
+     * Default value is {@link #DFLT_WAL_COMPACTION_LEVEL}.
+     *
      * @param walCompactionLevel New ZIP level to WAL compaction.
      */
     public void setWalCompactionLevel(int walCompactionLevel) {
@@ -1027,7 +1111,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Returns timeout for checkpoint read lock acquisition.
      *
-     * @see #setCheckpointReadLockTimeout(long)
+     * @see #setCheckpointReadLockTimeout(long).
      * @return Returns timeout for checkpoint read lock acquisition in milliseconds.
      */
     public Long getCheckpointReadLockTimeout() {
@@ -1050,7 +1134,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Gets compression algorithm for WAL page snapshot records.
+     * Default value is {@link #DFLT_WAL_PAGE_COMPRESSION}.
      *
+     * @see #setWalPageCompression(DiskPageCompression).
      * @return Page compression algorithm.
      */
     public DiskPageCompression getWalPageCompression() {
@@ -1059,6 +1145,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets compression algorithm for WAL page snapshot records.
+     * Default value is {@link #DFLT_WAL_PAGE_COMPRESSION}.
      *
      * @param walPageCompression Page compression algorithm.
      * @return {@code this} for chaining.
@@ -1072,6 +1159,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Gets {@link #getWalPageCompression algorithm} specific WAL page compression level.
      *
+     * @see #setWalPageCompressionLevel(Integer).
      * @return WAL page snapshots compression level or {@code null} for default.
      */
     public Integer getWalPageCompressionLevel() {
