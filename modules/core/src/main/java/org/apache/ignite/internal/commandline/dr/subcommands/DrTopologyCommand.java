@@ -165,6 +165,8 @@ public class DrTopologyCommand extends
 
             log.info(DELIM);
         }
+
+        printUnrecognizedNodesMessage(log, true);
     }
 
     /** {@inheritDoc} */

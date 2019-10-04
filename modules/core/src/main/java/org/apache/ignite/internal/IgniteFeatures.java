@@ -99,8 +99,10 @@ public enum IgniteFeatures {
     WC_BASELINE_AUTO_ADJUSTMENT(23),
 
     /** Scheduling disabled. */
-    WC_SCHEDULING_NOT_AVAILABLE(24)
-    ;
+    WC_SCHEDULING_NOT_AVAILABLE(24),
+
+    /** Support of DR-specific visor tasks used by control utility. */
+    DR_CONTROL_UTILITY(25);
 
     /**
      * Unique feature identifier.

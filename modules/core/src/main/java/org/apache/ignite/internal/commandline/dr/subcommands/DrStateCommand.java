@@ -51,6 +51,8 @@ public class DrStateCommand extends
 
     /** {@inheritDoc} */
     @Override protected void printResult(VisorDrStateTaskResult res, Logger log) {
+        printUnrecognizedNodesMessage(log, false);
+
         log.info("Data Center ID: " + res.getDataCenterId());
 
         log.info(DELIM);
