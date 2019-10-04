@@ -216,6 +216,11 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Note: Test assumes that PDS size didn't change between the first checkpoint and after several node stops.
+     * It's not true anymore with free-list caching since the only final free-list state is persisted on checkpoint.
+     * Some changed, but currently empty buckets are not persisted and PDS size is smaller after the first checkpoint.
+     * Test makes sense only with disabled caching.
+     *
      * @throws Exception if fail.
      */
     @Test
@@ -304,7 +309,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test checks that free-list works and pages cache flushes correctly under the high concurrent load.
      */
     @Test
     public void testFreeListUnderLoadMultipleCheckpoints() throws Throwable {

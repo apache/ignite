@@ -1872,10 +1872,16 @@ public abstract class PagesList extends DataStructure {
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static class PagesCache {
         /** Pages cache max size. */
-        private static final int MAX_SIZE = 64;
+        private static final int MAX_SIZE =
+            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE", 64);
 
         /** Stripes count. Must be power of 2. */
-        private static final int STRIPES_COUNT = 4;
+        private static final int STRIPES_COUNT =
+            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_CACHING_STRIPES_COUNT", 4);
+
+        /** Threshold of flush calls on empty cache to allow GC of stripes (flush invoked twice per checkpoint). */
+        private static final int EMPTY_FLUSH_GC_THRESHOLD =
+            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD", 10);
 
         /** Mutexes for each stripe. */
         private final Object[] stripeLocks = new Object[STRIPES_COUNT];
@@ -1897,10 +1903,15 @@ public abstract class PagesList extends DataStructure {
         /** Cache size. */
         private volatile int size;
 
+        /** Count of flush calls with empty cache. */
+        private volatile int emptyFlushCnt;
+
         /**
          * Default constructor.
          */
         public PagesCache() {
+            assert U.isPow2(STRIPES_COUNT) : STRIPES_COUNT;
+
             for (int i = 0; i < STRIPES_COUNT; i++)
                 stripeLocks[i] = new Object();
         }
@@ -1953,10 +1964,39 @@ public abstract class PagesList extends DataStructure {
         }
 
         /**
-         * Flush all stripes to one list and clear stripes to allow garbage collection.
+         * Flush all stripes to one list and clear stripes.
          */
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         public GridLongList flush() {
             GridLongList res = null;
+
+            if (size == 0) {
+                boolean stripesChanged = false;
+
+                if (++emptyFlushCnt >= EMPTY_FLUSH_GC_THRESHOLD) {
+                    for (int i = 0; i < STRIPES_COUNT; i++) {
+                        synchronized (stripeLocks[i]) {
+                            GridLongList stripe = stripes[i];
+
+                            if (stripe != null) {
+                                if (stripe.isEmpty())
+                                    stripes[i] = null;
+                                else {
+                                    // Pages were concurrently added to the stripe.
+                                    stripesChanged = true;
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!stripesChanged)
+                    return null;
+            }
+
+            emptyFlushCnt = 0;
 
             for (int i = 0; i < STRIPES_COUNT; i++) {
                 synchronized (stripeLocks[i]) {
@@ -1969,9 +2009,9 @@ public abstract class PagesList extends DataStructure {
                         sizeUpdater.addAndGet(this, -stripe.size());
 
                         res.addAll(stripe);
-                    }
 
-                    stripes[i] = null;
+                        stripe.clear();
+                    }
                 }
             }
 
