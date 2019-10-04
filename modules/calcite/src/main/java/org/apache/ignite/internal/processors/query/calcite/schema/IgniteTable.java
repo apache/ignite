@@ -21,8 +21,6 @@ import java.util.function.Function;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistributionTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -30,8 +28,11 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -80,8 +81,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
         RelOptCluster cluster = context.getCluster();
         RelTraitSet traitSet = cluster.traitSet()
                 .replace(IgniteRel.LOGICAL_CONVENTION)
-                .replaceIf(RelDistributionTraitDef.INSTANCE, () -> getStatistic().getDistribution())
-                .replaceIfs(RelCollationTraitDef.INSTANCE, () -> getStatistic().getCollations());
+                .replaceIf(IgniteDistributionTraitDef.INSTANCE, () -> IgniteDistributions.hash(ImmutableIntList.of(0), ImmutableIntList.of()));
         return new IgniteLogicalTableScan(cluster, traitSet, relOptTable);
     }
 }

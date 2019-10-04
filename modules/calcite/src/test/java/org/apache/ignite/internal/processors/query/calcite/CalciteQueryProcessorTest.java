@@ -23,15 +23,13 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistributionTraitDef;
-import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -39,6 +37,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -135,9 +135,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertNotNull(ctx);
 
         RelTraitDef[] traitDefs = {
-            RelDistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE
+            IgniteDistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
         };
 
         RelRoot relRoot;
@@ -163,10 +162,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             // Transformation chain
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
-            RelTraitSet desired = rel.getTraitSet()
-                .replace(relRoot.collation)
+            RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteRel.LOGICAL_CONVENTION)
-                .replace(RelDistributions.ANY)
+                .replace(IgniteDistributions.single(ImmutableIntList.of()))
                 .simplify();
 
             rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);

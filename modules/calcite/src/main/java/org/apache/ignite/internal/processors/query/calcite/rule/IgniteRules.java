@@ -166,8 +166,8 @@ public class IgniteRules {
 
     public static List<RelOptRule> logicalRules(Context ctx) {
         return ImmutableList.<RelOptRule>builder()
-            .addAll(BASE_RULES)
-            .addAll(ABSTRACT_RULES)
+//            .addAll(BASE_RULES)
+//            .addAll(ABSTRACT_RULES)
             .addAll(ABSTRACT_RELATIONAL_RULES)
             .addAll(IGNITE_BASE_RULES)
             .build();

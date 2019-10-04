@@ -22,6 +22,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -55,5 +57,10 @@ public final class Commons {
             }
             return builder.build();
         };
+    }
+
+    public static boolean transformSubset(RelOptRuleCall call, RelTraitSet traits) {
+
+        return false;
     }
 }

@@ -45,7 +45,7 @@ import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableFunctionScan;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalValues;
-import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
+import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
@@ -69,6 +69,7 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 
@@ -88,11 +89,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final RexExecutor executor;
     private final SchemaPlus defaultSchema;
     private final JavaTypeFactory typeFactory;
-    private final RelMetadataProvider metadataProvider;
 
     private boolean open;
 
     private RelOptPlanner planner;
+    private RelMetadataProvider metadataProvider;
     private SqlValidator validator;
 
     /**
@@ -110,7 +111,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         executor = config.getExecutor();
         context = config.getContext();
         connectionConfig = connConfig();
-        metadataProvider = DefaultRelMetadataProvider.INSTANCE; // TODO: right costs
 
         RelDataTypeSystem typeSystem = connectionConfig
             .typeSystem(RelDataTypeSystem.class, RelDataTypeSystem.DEFAULT);
@@ -144,6 +144,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** {@inheritDoc} */
     @Override public void reset() {
         planner = null;
+        metadataProvider = null;
         validator = null;
 
         open = false;
@@ -153,6 +154,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         if (!open) {
             planner = new VolcanoPlanner(frameworkConfig.getCostFactory(), context);
             planner.setExecutor(executor);
+            metadataProvider = new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner);
 
             validator = new IgniteSqlValidator(operatorTable, createCatalogReader(), typeFactory, conformance());
             validator.setIdentifierExpansion(true);

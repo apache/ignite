@@ -17,19 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalFilter;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
 
 /**
  *
@@ -46,11 +49,24 @@ public class IgniteFilterRule extends RelOptRule {
         final RelNode input = filter.getInput();
         final RelOptCluster cluster = input.getCluster();
         final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet = cluster.traitSet()
-            .replace(IgniteRel.LOGICAL_CONVENTION)
-            .replaceIfs(RelCollationTraitDef.INSTANCE,
-                () -> RelMdCollation.filter(mq, input));
-        RelNode convertedInput = convert(input, traitSet);
-        call.transformTo(new IgniteLogicalFilter(cluster, traitSet, convertedInput, filter.getCondition(), filter.getVariablesSet()));
+
+        Set<RelNode> transformed = new HashSet<>();
+
+        RelSubset subset = (RelSubset) input;
+
+        for (RelNode relNode : subset.getRelList()) {
+            if (!(relNode instanceof IgniteRel))
+                continue;
+
+            final RelTraitSet traitSet = cluster.traitSet()
+                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replaceIf(IgniteDistributionTraitDef.INSTANCE,
+                    () -> IgniteMdDistribution.filter(mq, relNode, filter.getCondition()));
+
+            RelNode converted = convert(relNode, traitSet);
+
+            if (transformed.add(converted))
+                call.transformTo(new IgniteLogicalFilter(cluster, traitSet, converted, filter.getCondition(), filter.getVariablesSet()));
+        }
     }
 }
