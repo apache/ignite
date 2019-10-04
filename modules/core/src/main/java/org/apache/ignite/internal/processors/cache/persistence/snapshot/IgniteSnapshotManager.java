@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.backup;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Closeable;
 import java.io.File;
@@ -101,7 +101,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileEx;
 
 /** */
-public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
+public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
 
@@ -153,7 +153,7 @@ public class IgniteBackupManager extends GridCacheSharedManagerAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public IgniteBackupManager(GridKernalContext ctx) {
+    public IgniteSnapshotManager(GridKernalContext ctx) {
         assert CU.isPersistenceEnabled(ctx.config());
 
     }

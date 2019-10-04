@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.backup;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Closeable;
 import java.io.File;

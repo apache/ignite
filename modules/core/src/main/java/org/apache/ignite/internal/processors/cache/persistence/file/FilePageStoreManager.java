@@ -72,11 +72,11 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
@@ -719,8 +719,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     idxFile,
                     allocatedTracker);
 
-            if (cctx.backup() != null)
-                idxStore.setListener(new BackupPageStoreListener(grpId, INDEX_PARTITION, cctx.backup(), idxStore));
+            if (cctx.snapshotMgr() != null)
+                idxStore.setListener(new SnapshotPageStoreListener(grpId, INDEX_PARTITION, cctx.snapshotMgr(), idxStore));
 
             PageStore[] partStores = new PageStore[partitions];
 
@@ -733,8 +733,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         allocatedTracker);
 
-                if (cctx.backup() != null)
-                    partStore.setListener(new BackupPageStoreListener(grpId, partId, cctx.backup(), partStore));
+                if (cctx.snapshotMgr() != null)
+                    partStore.setListener(new SnapshotPageStoreListener(grpId, partId, cctx.snapshotMgr(), partStore));
 
                 partStores[partId] = partStore;
             }
@@ -1510,12 +1510,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** */
-    private static class BackupPageStoreListener implements PageStoreListener {
+    private static class SnapshotPageStoreListener implements PageStoreListener {
         /** Pair of group id and its partiton id. */
         private final GroupPartitionId key;
 
         /** Backup manager. */
-        private final IgniteBackupManager backup;
+        private final IgniteSnapshotManager snapshotMgr;
 
         /** Page store the listener associated with. */
         private final PageStore store;
@@ -1523,25 +1523,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /**
          * @param grpId Cache group id.
          * @param partId Partition id.
-         * @param backup Backup manager.
+         * @param snapshotMgr Backup manager.
          * @param store Page store the listener associated with.
          */
-        public BackupPageStoreListener(
+        public SnapshotPageStoreListener(
             int grpId,
             int partId,
-            IgniteBackupManager backup,
+            IgniteSnapshotManager snapshotMgr,
             PageStore store
         ) {
-            assert backup != null;
+            assert snapshotMgr != null;
 
             key = new GroupPartitionId(grpId, partId);
-            this.backup = backup;
+            this.snapshotMgr = snapshotMgr;
             this.store = store;
         }
 
         /** {@inheritDoc} */
         @Override public void onPageWrite(long pageId, ByteBuffer buf) {
-            backup.beforeStoreWrite(key, pageId, buf, store);
+            snapshotMgr.beforeStoreWrite(key, pageId, buf, store);
         }
     }
 }

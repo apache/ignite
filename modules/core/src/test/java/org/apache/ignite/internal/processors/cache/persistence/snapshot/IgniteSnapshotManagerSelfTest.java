@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.backup;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,16 +67,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
-import static org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager.snapshotDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotDir;
 
 /**
  * TODO backup must fail in case of parallel cache stop operation
  */
-public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
+public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final FileIOFactory DFLT_IO_FACTORY = new RandomAccessFileIOFactory();
 
@@ -172,10 +172,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         for (int i = CACHE_KEYS_RANGE; i < 2048; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        IgniteBackupManager mgr = ig.context()
+        IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
-            .backup();
+            .snapshotMgr();
 
         IgniteInternalFuture<?> backupFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
             Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
@@ -229,10 +229,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
         File cacheBackup = cacheWorkDir(snapshotDir(backupWorkDir, SNAPSHOT_NAME), defaultCacheCfg);
 
-        IgniteBackupManager mgr = ig.context()
+        IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
-            .backup();
+            .snapshotMgr();
 
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
@@ -326,16 +326,16 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
 
-        IgniteBackupManager mgr = ig.context()
+        IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
-            .backup();
+            .snapshotMgr();
 
         mgr.ioFactory(new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = DFLT_IO_FACTORY.create(file, modes);
 
-                if (file.getName().equals(IgniteBackupManager.getPartitionDeltaFileName(0)))
+                if (file.getName().equals(IgniteSnapshotManager.getPartitionDeltaFileName(0)))
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
@@ -372,10 +372,10 @@ public class IgniteBackupManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .pageStore();
 
-        IgniteBackupManager mgr = ig.context()
+        IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
-            .backup();
+            .snapshotMgr();
 
         IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
             toBackup,
