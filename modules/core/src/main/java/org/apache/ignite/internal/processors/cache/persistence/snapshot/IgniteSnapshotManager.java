@@ -536,7 +536,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
             String cacheDirName = cacheDirName(ccfg);
 
-            CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() ->
+            CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
                     bctx.snpRcv.receivePart(
                         getPartitionFileEx(
                             workDir,
@@ -544,17 +544,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             pair.getPartitionId()),
                         cacheDirName,
                         pair,
-                        bctx.partFileLengths.get(pair)),
+                        bctx.partFileLengths.get(pair));
+
+                    bctx.partDeltaWriters.get(pair).partProcessed = true;
+                },
                 bctx.exec)
-                .thenRun(() -> bctx.partDeltaWriters.get(pair).partProcessed = true)
                 // Wait for the completion of both futures - checkpoint end, copy partition
                 .runAfterBothAsync(bctx.cpEndFut,
-                    () -> bctx.snpRcv.receiveDelta(
-                        getPartionDeltaFile(
-                            cacheWorkDir(bctx.snpDir, cacheDirName),
-                            pair.getPartitionId()),
-                        cacheDirName,
-                        pair),
+                    () -> {
+                        File delta = getPartionDeltaFile(cacheWorkDir(bctx.snpDir, cacheDirName),
+                            pair.getPartitionId());
+
+                        bctx.snpRcv.receiveDelta(delta, cacheDirName, pair);
+
+                        boolean deleted = delta.delete();
+
+                        assert deleted;
+                    },
                     bctx.exec);
 
             futs.add(fut0);

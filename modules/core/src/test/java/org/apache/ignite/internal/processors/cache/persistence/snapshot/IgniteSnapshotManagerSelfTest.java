@@ -21,9 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,6 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DELTA_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotDir;
 
 /**
@@ -91,6 +94,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CACHE_KEYS_RANGE = 1024;
+
+    /** */
+    private static final PathMatcher DELTA_FILE_MATCHER =
+        FileSystems.getDefault().getPathMatcher("glob:**" + DELTA_SUFFIX);
 
     /** */
     private static final DataStorageConfiguration memCfg = new DataStorageConfiguration()
@@ -195,6 +202,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             SNAPSHOT_NAME), cacheDirName(defaultCacheCfg)));
 
         assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
+
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(
+            cacheWorkDir(new File(mgr.snapshotWorkDir(), SNAPSHOT_NAME), cacheDirName(defaultCacheCfg)).toPath(),
+            DELTA_FILE_MATCHER::matches)) {
+            assertFalse(".delta files must be cleaned after snapshot", files.iterator().hasNext());
+        }
     }
 
     /**
