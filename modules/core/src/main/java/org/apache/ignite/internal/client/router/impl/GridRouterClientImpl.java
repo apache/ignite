@@ -176,11 +176,6 @@ public class GridRouterClientImpl implements GridClient {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientData data() throws GridClientException {
-        return clientImpl.data();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientData data(String cacheName) throws GridClientException {
         return clientImpl.data(cacheName);
     }
