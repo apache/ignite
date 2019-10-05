@@ -57,33 +57,25 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
     /** Cache without permission. */
     protected static final String EMPTY_PERM_TEST_CACHE = "EMPTY_PERM_TEST_CACHE";
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCrudWithCachePermissionsOnServerNode() throws Exception {
         testCrudWithCachePermissions(false);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCrudWithCachePermissionsOnClientNode() throws Exception {
         testCrudWithCachePermissions(true);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCrudWithSystemPermissionsOnServerNode() throws Exception {
         testCrudWithSystemPermissions(false);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCrudWithSystemPermissionsOnClientNode() throws Exception {
         testCrudWithSystemPermissions(true);
