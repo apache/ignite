@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
@@ -180,31 +181,39 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        pageSize = cctx.kernalContext()
-            .config()
+        GridKernalContext ctx = cctx.kernalContext();
+
+        if (ctx.clientNode())
+            return;
+
+        pageSize = ctx.config()
             .getDataStorageConfiguration()
             .getPageSize();
 
         assert pageSize > 0;
 
-        if (!cctx.kernalContext().clientNode()) {
-            snpRunner = new IgniteThreadPoolExecutor(
-                SNAPSHOT_RUNNER_THREAD_PREFIX,
-                cctx.igniteInstanceName(),
-                SNAPSHOT_THEEAD_POOL_SIZE,
-                SNAPSHOT_THEEAD_POOL_SIZE,
-                30_000,
-                new LinkedBlockingQueue<>(),
-                SYSTEM_POOL,
-                (t, e) -> cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
-        }
+        PdsFolderSettings rslvDir = ctx.pdsFolderResolver().resolveFolders();
+
+        File snpDir = U.resolveWorkDirectory(rslvDir.persistentStoreRootPath().getAbsolutePath(),
+            DFLT_SNAPSHOT_DIRECTORY, false);
+
+        snpWorkDir = new File(snpDir, rslvDir.folderName());
+
+        U.ensureDirectory(snpWorkDir, "snapshot work directory", log);
+
+        snpRunner = new IgniteThreadPoolExecutor(
+            SNAPSHOT_RUNNER_THREAD_PREFIX,
+            cctx.igniteInstanceName(),
+            SNAPSHOT_THEEAD_POOL_SIZE,
+            SNAPSHOT_THEEAD_POOL_SIZE,
+            30_000,
+            new LinkedBlockingQueue<>(),
+            SYSTEM_POOL,
+            (t, e) -> ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
 
         IgnitePageStoreManager store = cctx.pageStore();
 
         assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
-
-        snpWorkDir = U.resolveWorkDirectory(((FilePageStoreManager)store).workDir().getAbsolutePath(),
-            DFLT_SNAPSHOT_DIRECTORY, false);
 
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
@@ -291,11 +300,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param snpWorkDir Current snapshot working directory.
      * @param snapshotName snapshot name.
      * @return snapshot directory.
      */
-    public static File snapshotDir(File snpWorkDir, String snapshotName) {
+    public File snapshotDir(String snapshotName) {
         return new File(snpWorkDir, snapshotName);
     }
 
@@ -336,7 +344,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     return grpParts;
                 }));
 
-        File snapshotDir0 = snapshotDir(snpWorkDir, snpName);
+        File snapshotDir0 = snapshotDir(snpName);
 
         return scheduleSnapshot(snpName,
             parts,
@@ -357,11 +365,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         UUID rmtNodeId,
         Object topic
     ) throws IgniteCheckedException {
-        String snapshotName = UUID.randomUUID().toString();
+        String snpName = UUID.randomUUID().toString();
 
-        File snapshotDir0 = snapshotDir(snpWorkDir, snapshotName);
+        File snapshotDir0 = snapshotDir(snpName);
 
-        IgniteInternalFuture<?> fut = scheduleSnapshot(snapshotName,
+        IgniteInternalFuture<?> fut = scheduleSnapshot(snpName,
             parts,
             snapshotDir0,
             new SerialExecutor(cctx.kernalContext()
@@ -372,7 +380,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         fut.listen(f -> {
             if (log.isInfoEnabled()) {
                 log.info("The requested bakcup has been send [result=" + (f.error() == null) +
-                    ", name=" + snapshotName + ']');
+                    ", name=" + snpName + ']');
             }
 
             boolean done = snapshotDir0.delete();
@@ -971,7 +979,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void receiveDelta(File delta, String cacheDirName, GroupPartitionId pair) {
             try {
-
                 sndr.send(delta, transmissionParams(cacheDirName, pair), TransmissionPolicy.CHUNK);
 
                 if (log.isInfoEnabled())
@@ -1130,7 +1137,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
-
+            // No-op.
         }
     }
 }

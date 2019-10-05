@@ -77,7 +77,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DELTA_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotDir;
 
 /**
  * TODO backup must fail in case of parallel cache stop operation
@@ -201,8 +200,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(snapshotDir(mgr.snapshotWorkDir(),
-            SNAPSHOT_NAME), cacheDirName(defaultCacheCfg)));
+        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(mgr.snapshotDir(SNAPSHOT_NAME),
+            cacheDirName(defaultCacheCfg)));
 
         assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
 
@@ -249,13 +248,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(snapshotDir(mgr.snapshotWorkDir(), SNAPSHOT_NAME), defaultCacheCfg);
+        File cacheBackup = cacheWorkDir(mgr.snapshotDir(SNAPSHOT_NAME), defaultCacheCfg);
 
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
-        File snapshotDir0 = snapshotDir(mgr.snapshotWorkDir(), SNAPSHOT_NAME);
+        File snapshotDir0 = mgr.snapshotDir(SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = mgr
             .scheduleSnapshot(SNAPSHOT_NAME,
