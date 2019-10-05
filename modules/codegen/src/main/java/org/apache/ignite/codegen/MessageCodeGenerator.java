@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
 import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRequestMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -244,6 +245,7 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridNearTxEnlistResponse.class);
 //        gen.generateAndWrite(GenerateEncryptionKeyRequest.class);
 //        gen.generateAndWrite(GenerateEncryptionKeyResponse.class);
+        gen.generateAndWrite(SnapshotRequestMessage.class);
     }
 
     /**

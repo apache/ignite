@@ -30,7 +30,6 @@ import java.nio.file.PathMatcher;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -64,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -223,15 +223,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
-        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        Set<Integer> ints = Stream.iterate(0, n -> n + 1)
+            .limit(CACHE_PARTS_COUNT) // With index partition
+            .collect(Collectors.toSet());
+        ints.add(PageIdAllocator.INDEX_PARTITION);
 
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME),
-            Stream.iterate(0, n -> n + 1)
-                .limit(CACHE_PARTS_COUNT) // With index partition
-                .collect(Collectors.toSet()));
+        Map<Integer, GridIntList> parts = new HashMap<>();
 
-        parts.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), p -> new HashSet<>())
-            .add(PageIdAllocator.INDEX_PARTITION);
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), GridIntList.valueOf(ints));
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
             .cache()
@@ -378,9 +377,9 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     public void testSnapshotCreateLocalCopyPartitionFail() throws Exception {
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
-        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        Map<Integer, GridIntList> parts = new HashMap<>();
 
-        parts.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new HashSet<>())
+        parts.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new GridIntList(1))
             .add(0);
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
