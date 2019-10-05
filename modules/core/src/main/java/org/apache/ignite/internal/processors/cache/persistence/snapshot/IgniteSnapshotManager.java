@@ -181,18 +181,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        GridKernalContext ctx = cctx.kernalContext();
+        GridKernalContext kctx = cctx.kernalContext();
 
-        if (ctx.clientNode())
+        if (kctx.clientNode())
             return;
 
-        pageSize = ctx.config()
+        pageSize = kctx.config()
             .getDataStorageConfiguration()
             .getPageSize();
 
         assert pageSize > 0;
 
-        PdsFolderSettings rslvDir = ctx.pdsFolderResolver().resolveFolders();
+        PdsFolderSettings rslvDir = kctx.pdsFolderResolver().resolveFolders();
 
         File snpDir = U.resolveWorkDirectory(rslvDir.persistentStoreRootPath().getAbsolutePath(),
             DFLT_SNAPSHOT_DIRECTORY, false);
@@ -209,7 +209,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             30_000,
             new LinkedBlockingQueue<>(),
             SYSTEM_POOL,
-            (t, e) -> ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
+            (t, e) -> kctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
 
         IgnitePageStoreManager store = cctx.pageStore();
 
@@ -219,12 +219,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
-                for (SnapshotContext bctx0 : snpCtxs.values()) {
-                    if (bctx0.started)
+                for (SnapshotContext sctx0 : snpCtxs.values()) {
+                    if (sctx0.started)
                         continue;
 
                     // Gather partitions metainfo for thouse which will be copied.
-                    ctx.gatherPartStats(bctx0.parts);
+                    ctx.gatherPartStats(sctx0.parts);
                 }
             }
 
@@ -234,8 +234,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             @Override public void onMarkCheckpointEnd(Context ctx) {
                 // Under the write lock here. It's safe to add new stores
-                for (SnapshotContext bctx0 : snpCtxs.values()) {
-                    if (bctx0.started)
+                for (SnapshotContext sctx0 : snpCtxs.values()) {
+                    if (sctx0.started)
                         continue;
 
                     try {
@@ -243,29 +243,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                         allocationMap.prepareForSnapshot();
 
-                        assert !allocationMap.isEmpty() : "Partitions statistics has not been gathered: " + bctx0;
+                        assert !allocationMap.isEmpty() : "Partitions statistics has not been gathered: " + sctx0;
 
                         final FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
-                        for (GroupPartitionId pair : bctx0.parts) {
+                        for (GroupPartitionId pair : sctx0.parts) {
                             PagesAllocationRange allocRange = allocationMap.get(pair);
 
-                            assert allocRange != null : "Pages not allocated [pairId=" + pair + ", ctx=" + bctx0 + ']';
+                            assert allocRange != null : "Pages not allocated [pairId=" + pair + ", ctx=" + sctx0 + ']';
 
                             PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
 
-                            bctx0.partFileLengths.put(pair, store.size());
-                            bctx0.partDeltaWriters.get(pair)
+                            sctx0.partFileLengths.put(pair, store.size());
+                            sctx0.partDeltaWriters.get(pair)
                                 .init(allocRange.getCurrAllocatedPageCnt());
                         }
 
-                        for (Map.Entry<GroupPartitionId, PageStoreSerialWriter> e : bctx0.partDeltaWriters.entrySet()) {
+                        for (Map.Entry<GroupPartitionId, PageStoreSerialWriter> e : sctx0.partDeltaWriters.entrySet()) {
                             partWriters.computeIfAbsent(e.getKey(), p -> new LinkedList<>())
                                 .add(e.getValue());
                         }
                     }
                     catch (IgniteCheckedException e) {
-                        bctx0.snpFut.onDone(e);
+                        sctx0.snpFut.onDone(e);
                     }
                 }
 
@@ -275,14 +275,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
 
             @Override public void onCheckpointBegin(Context ctx) {
-                for (SnapshotContext bctx0 : snpCtxs.values()) {
-                    if (bctx0.started || bctx0.snpFut.isDone())
+                for (SnapshotContext sctx0 : snpCtxs.values()) {
+                    if (sctx0.started || sctx0.snpFut.isDone())
                         continue;
 
                     // Submit all tasks for partitions and deltas processing.
-                    submitTasks(bctx0);
+                    submitTasks(sctx0);
 
-                    bctx0.started = true;
+                    sctx0.started = true;
                 }
             }
         });
@@ -407,75 +407,73 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         if (snpCtxs.containsKey(snpName))
             throw new IgniteCheckedException("snapshot with requested name is already scheduled: " + snpName);
 
-        SnapshotContext bctx = null;
+        SnapshotContext sctx = null;
 
         try {
             // Atomic operation, fails with exception if not.
             Files.createDirectory(snpDir.toPath());
 
-            bctx = new SnapshotContext(snpName,
+            sctx = new SnapshotContext(snpName,
                 snpDir,
                 parts,
                 exec,
                 snpRcv);
 
-            final SnapshotContext bctx0 = bctx;
+            final SnapshotContext sctx0 = sctx;
 
-            bctx.snpFut.listen(f -> {
+            sctx.snpFut.listen(f -> {
                 snpCtxs.remove(snpName);
 
-                closeSnapshotResources(bctx0);
+                closeSnapshotResources(sctx0);
             });
 
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
 
                 // Create cache snapshot directory if not.
-                File grpDir = U.resolveWorkDirectory(bctx.snpDir.getAbsolutePath(),
+                File grpDir = U.resolveWorkDirectory(sctx.snpDir.getAbsolutePath(),
                     cacheDirName(gctx.config()), false);
 
                 U.ensureDirectory(grpDir,
                     "bakcup directory for cache group: " + gctx.groupId(),
                     null);
 
-                CompletableFuture<Boolean> cpEndFut0 = bctx.cpEndFut;
+                CompletableFuture<Boolean> cpEndFut0 = sctx.cpEndFut;
 
                 for (int partId : e.getValue()) {
                     final GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
 
-                    bctx.partDeltaWriters.put(pair,
+                    sctx.partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(log,
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
-                            bctx.snpFut,
+                            sctx.snpFut,
                             getPartionDeltaFile(grpDir, partId),
                             ioFactory,
                             pageSize));
                 }
             }
 
-            SnapshotContext ctx0 = snpCtxs.putIfAbsent(snpName, bctx);
+            SnapshotContext ctx0 = snpCtxs.putIfAbsent(snpName, sctx);
 
             assert ctx0 == null : ctx0;
 
             CheckpointFuture cpFut = dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
 
-            SnapshotContext finalBctx = bctx;
-
             cpFut.finishFuture()
                 .listen(f -> {
                     if (f.error() == null)
-                        finalBctx.cpEndFut.complete(true);
+                        sctx0.cpEndFut.complete(true);
                     else
-                        finalBctx.cpEndFut.completeExceptionally(f.error());
+                        sctx0.cpEndFut.completeExceptionally(f.error());
                 });
 
             cpFut.beginFuture()
                 .get();
 
-            U.log(log, "snapshot operation scheduled with the following context: " + bctx);
+            U.log(log, "snapshot operation scheduled with the following context: " + sctx);
         }
         catch (IOException e) {
-            closeSnapshotResources(bctx);
+            closeSnapshotResources(sctx);
 
             try {
                 Files.delete(snpDir.toPath());
@@ -488,7 +486,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             throw new IgniteCheckedException(e);
         }
 
-        return bctx.snpFut;
+        return sctx.snpFut;
     }
 
     /**
@@ -536,55 +534,55 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param bctx Context to handle.
+     * @param sctx Context to handle.
      */
-    private void submitTasks(SnapshotContext bctx) {
-        List<CompletableFuture<Void>> futs = new ArrayList<>(bctx.parts.size());
+    private void submitTasks(SnapshotContext sctx) {
+        List<CompletableFuture<Void>> futs = new ArrayList<>(sctx.parts.size());
         File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
 
-        U.log(log, "Partition allocated lengths: " + bctx.partFileLengths);
+        U.log(log, "Partition allocated lengths: " + sctx.partFileLengths);
 
-        for (GroupPartitionId pair : bctx.parts) {
+        for (GroupPartitionId pair : sctx.parts) {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
             String cacheDirName = cacheDirName(ccfg);
 
             CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
-                    bctx.snpRcv.receivePart(
+                    sctx.snpRcv.receivePart(
                         getPartitionFileEx(
                             workDir,
                             cacheDirName,
                             pair.getPartitionId()),
                         cacheDirName,
                         pair,
-                        bctx.partFileLengths.get(pair));
+                        sctx.partFileLengths.get(pair));
 
-                    bctx.partDeltaWriters.get(pair).partProcessed = true;
+                    sctx.partDeltaWriters.get(pair).partProcessed = true;
                 },
-                bctx.exec)
+                sctx.exec)
                 // Wait for the completion of both futures - checkpoint end, copy partition
-                .runAfterBothAsync(bctx.cpEndFut,
+                .runAfterBothAsync(sctx.cpEndFut,
                     () -> {
-                        File delta = getPartionDeltaFile(cacheWorkDir(bctx.snpDir, cacheDirName),
+                        File delta = getPartionDeltaFile(cacheWorkDir(sctx.snpDir, cacheDirName),
                             pair.getPartitionId());
 
-                        bctx.snpRcv.receiveDelta(delta, cacheDirName, pair);
+                        sctx.snpRcv.receiveDelta(delta, cacheDirName, pair);
 
                         boolean deleted = delta.delete();
 
                         assert deleted;
                     },
-                    bctx.exec);
+                    sctx.exec);
 
             futs.add(fut0);
         }
 
-        CompletableFuture.allOf(futs.toArray(new CompletableFuture[bctx.parts.size()]))
+        CompletableFuture.allOf(futs.toArray(new CompletableFuture[sctx.parts.size()]))
              .whenComplete(new BiConsumer<Void, Throwable>() {
                  @Override public void accept(Void res, Throwable t) {
                      if (t == null)
-                         bctx.snpFut.onDone(bctx.snpName);
+                         sctx.snpFut.onDone(sctx.snpName);
                      else
-                         bctx.snpFut.onDone(t);
+                         sctx.snpFut.onDone(t);
                  }
              });
     }
