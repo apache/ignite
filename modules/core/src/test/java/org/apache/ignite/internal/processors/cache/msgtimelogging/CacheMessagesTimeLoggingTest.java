@@ -28,15 +28,12 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_COMM_SPI_TIME_HIST_BOUNDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_MESSAGES_TIME_LOGGING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -47,11 +44,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Tests for CommunicationSpi time metrics.
  */
-@WithSystemProperty(key = IGNITE_ENABLE_MESSAGES_TIME_LOGGING, value = "true")
 public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAbstractTest {
     /** */
-    @Test
-    public void testGridDhtTxPrepareRequestTimeLogging() {
+    public void testGridDhtTxPrepareRequestTimeLogging() throws Exception {
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "true");
+
+        startGrids(GRID_CNT);
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         populateCache(cache);
@@ -64,8 +63,11 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
      * for atomic caches with full sync mode.
      * Time logging must be disabled for this case.
      */
-    @Test
-    public void testAtomicFullSyncCache() {
+    public void testAtomicFullSyncCache() throws Exception {
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "true");
+
+        startGrids(GRID_CNT);
+
         IgniteCache<Integer, Integer> cache0 = grid(0).createCache(new CacheConfiguration<Integer, Integer>()
                                                                             .setName("fs_cache")
                                                                             .setBackups(1)
@@ -94,8 +96,11 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
     }
 
     /** */
-    @Test
-    public void testGridNearAtomicUpdateLogging() {
+    public void testGridNearAtomicUpdateLogging() throws Exception {
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "true");
+
+        startGrids(GRID_CNT);
+
         IgniteCache<Integer, Integer> cache0 = grid(0).createCache(new CacheConfiguration<Integer, Integer>()
                                                                             .setName("some_cache_0")
                                                                             .setBackups(1)
@@ -108,8 +113,11 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
     }
 
     /** */
-    @Test
-    public void testTransactions() {
+    public void testTransactions() throws Exception {
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "true");
+
+        startGrids(GRID_CNT);
+
         IgniteCache<Integer, Integer> cache0 = grid(0).createCache(new CacheConfiguration<Integer, Integer>()
                                                                             .setName("some_cache_0")
                                                                             .setAtomicityMode(TRANSACTIONAL));
@@ -123,75 +131,57 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
         checkTimeLoggableMsgsConsistancy();
     }
 
-    /** */
-    @Test
-    public void testGridNearTxEnlistRequest() {
-        IgniteCache<Integer, Integer> cache0 = grid(0).createCache(new CacheConfiguration<Integer, Integer>()
-                                                                            .setName("some_cache_0")
-                                                                            .setBackups(1)
-                                                                            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            populateCache(cache0);
-
-            tx.commit();
-        }
-
-        checkTimeLoggableMsgsConsistancy();
-    }
-
     /**
      * @throws Exception if failed to start grid.
      */
-    @Test
     public void testMetricBounds() throws Exception {
-        try {
-            IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "true");
 
-            populateCache(cache);
+        startGrids(GRID_CNT);
 
-            HistogramMetric metric = getMetric(0, 1, GridDhtTxPrepareResponse.class);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-            assertNotNull(metric);
+        populateCache(cache);
 
-            assertEquals(DEFAULT_HIST_BOUNDS.length + 1, metric.value().length);
+        HistogramMetric metric = getMetric(0, 1, GridDhtTxPrepareResponse.class);
 
-            // Checking custom metrics bound.
-            System.setProperty(IGNITE_COMM_SPI_TIME_HIST_BOUNDS, "1,10,100");
+        assertNotNull(metric);
 
-            IgniteEx grid3 = startGrid(GRID_CNT);
+        assertEquals(DEFAULT_HIST_BOUNDS.length + 1, metric.value().length);
 
-            IgniteCache<Integer, Integer> cache3 = grid3.createCache(new CacheConfiguration<Integer, Integer>()
-                                                                            .setName("cache3")
-                                                                            .setBackups(2)
-                                                                            .setBackups(GRID_CNT));
+        // Checking custom metrics bound.
+        System.setProperty(IGNITE_COMM_SPI_TIME_HIST_BOUNDS, "1,10,100");
 
-            cache3.put(1, 1);
+        IgniteEx grid3 = startGrid(GRID_CNT);
 
-            HistogramMetric metric3 = getMetric(GRID_CNT, 1, GridNearAtomicUpdateResponse.class);
-            assertNotNull(metric3);
+        IgniteCache<Integer, Integer> cache3 = grid3.createCache(new CacheConfiguration<Integer, Integer>()
+                                                                        .setName("cache3")
+                                                                        .setBackups(2)
+                                                                        .setBackups(GRID_CNT));
 
-            assertEquals(4, metric3.value().length);
+        cache3.put(1, 1);
 
-            // Checking invalid custom metrics bound.
-            System.setProperty(IGNITE_COMM_SPI_TIME_HIST_BOUNDS, "wrong_val");
+        HistogramMetric metric3 = getMetric(GRID_CNT, 1, GridNearAtomicUpdateResponse.class);
+        assertNotNull(metric3);
 
-            IgniteEx grid4 = startGrid(GRID_CNT + 1);
+        assertEquals(4, metric3.value().length);
 
-            IgniteCache<Integer, Integer> cache4 = grid4.createCache(new CacheConfiguration<Integer, Integer>()
-                                                                            .setName("cache4")
-                                                                            .setBackups(2)
-                                                                            .setBackups(GRID_CNT + 1));
+        // Checking invalid custom metrics bound.
+        System.setProperty(IGNITE_COMM_SPI_TIME_HIST_BOUNDS, "wrong_val");
 
-            cache4.put(1, 1);
+        IgniteEx grid4 = startGrid(GRID_CNT + 1);
 
-            HistogramMetric metric4 = getMetric(GRID_CNT + 1, 1, GridNearAtomicUpdateResponse.class);
-            assertNotNull(metric4);
+        IgniteCache<Integer, Integer> cache4 = grid4.createCache(new CacheConfiguration<Integer, Integer>()
+                                                                        .setName("cache4")
+                                                                        .setBackups(2)
+                                                                        .setBackups(GRID_CNT + 1));
 
-            assertEquals(DEFAULT_HIST_BOUNDS.length + 1, metric4.value().length);
-        } finally {
-            System.clearProperty(IGNITE_COMM_SPI_TIME_HIST_BOUNDS);
-        }
+        cache4.put(1, 1);
+
+        HistogramMetric metric4 = getMetric(GRID_CNT + 1, 1, GridNearAtomicUpdateResponse.class);
+        assertNotNull(metric4);
+
+        assertEquals(DEFAULT_HIST_BOUNDS.length + 1, metric4.value().length);
 
         checkTimeLoggableMsgsConsistancy();
     }
@@ -199,8 +189,11 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
     /**
      * @throws Exception if test failed.
      */
-    @Test
     public void testMetricClearOnNodeLeaving() throws Exception {
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "true");
+
+        startGrids(GRID_CNT);
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         populateCache(cache);
@@ -225,9 +218,11 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
     /**
      * Tests metrics disabling
      */
-    @Test
-    @WithSystemProperty(key = IGNITE_ENABLE_MESSAGES_TIME_LOGGING, value = "not boolean value")
-    public void testDisabledMetric() {
+    public void testDisabledMetric() throws Exception {
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "not boolean value");
+
+        startGrids(GRID_CNT);
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         populateCache(cache);
@@ -240,10 +235,12 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
     /**
      * Checks correctness of metrics values.
      */
-    @Test
-    @WithSystemProperty(key = IGNITE_ENABLE_MESSAGES_TIME_LOGGING, value = "true")
-    @WithSystemProperty(key = IGNITE_COMM_SPI_TIME_HIST_BOUNDS, value = "1,100, 250, 350")
-    public void accuracyTest() {
+    public void testAccuracy() throws Exception {
+        System.setProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING, "true");
+        System.setProperty(IGNITE_COMM_SPI_TIME_HIST_BOUNDS, "1,100, 250, 350");
+
+        startGrids(GRID_CNT);
+
         final int entriesNum = 5;
         final TcpCommunicationMetricsListener sml = new SleepingMetricsListener(300);
         final int targetNodeNum = 1;

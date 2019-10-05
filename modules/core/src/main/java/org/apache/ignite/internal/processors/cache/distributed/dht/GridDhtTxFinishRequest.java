@@ -415,37 +415,37 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeMessage("partUpdateCnt", partUpdateCnt))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeCollection("pendingVers", pendingVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 27:
                 if (!writer.writeLong("sendTimestamp", sendTimestamp))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 28:
                 if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 30:
+            case 29:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -487,7 +487,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
                 reader.incrementState();
 
-            case 25:
+            case 24:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -495,7 +495,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
                 reader.incrementState();
 
-            case 26:
+            case 25:
                 partUpdateCnt = reader.readMessage("partUpdateCnt");
 
                 if (!reader.isLastRead())
@@ -503,7 +503,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 pendingVers = reader.readCollection("pendingVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -511,7 +511,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
                 reader.incrementState();
 
-            case 28:
+            case 27:
                 sendTimestamp = reader.readLong("sendTimestamp");
 
                 if (!reader.isLastRead())
@@ -519,7 +519,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
                 reader.incrementState();
 
-            case 29:
+            case 28:
                 updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -527,7 +527,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
                 reader.incrementState();
 
-            case 30:
+            case 29:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -547,7 +547,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest imple
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 31;
+        return 30;
     }
 
     /** {@inheritDoc} */

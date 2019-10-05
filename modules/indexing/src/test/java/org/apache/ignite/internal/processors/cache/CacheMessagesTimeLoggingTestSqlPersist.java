@@ -18,14 +18,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_MESSAGES_TIME_LOGGING;
 
 /**
  * Checks messages network time logging with persistence.
  */
-@WithSystemProperty(key = IGNITE_ENABLE_MESSAGES_TIME_LOGGING, value = "true")
 public class CacheMessagesTimeLoggingTestSqlPersist extends CacheMessagesTimeLoggingTestSql {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

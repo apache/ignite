@@ -42,8 +42,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryFirstEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
@@ -58,8 +56,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
@@ -76,6 +72,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_COMM_SPI_TIME_HIST_BOUNDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_MESSAGES_TIME_LOGGING;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
@@ -117,15 +115,11 @@ public abstract class GridCacheMessagesTimeLoggingAbstractTest extends GridCommo
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        startGrids(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        System.clearProperty(IGNITE_ENABLE_MESSAGES_TIME_LOGGING);
+        System.clearProperty(IGNITE_COMM_SPI_TIME_HIST_BOUNDS);
 
         super.afterTest();
     }
@@ -425,9 +419,7 @@ public abstract class GridCacheMessagesTimeLoggingAbstractTest extends GridCommo
     private static Map<Class<? extends TimeLoggableResponse>, List<Class<? extends TimeLoggableRequest>>> initReqRespMappingStrict() {
         Map<Class<? extends TimeLoggableResponse>, List<Class<? extends TimeLoggableRequest>>> res = new HashMap<>();
 
-        addReqRespMapping(res, GridNearTxEnlistResponse.class, GridNearTxEnlistRequest.class);
         addReqRespMapping(res, GridNearTxPrepareResponse.class, GridNearTxPrepareRequest.class);
-        addReqRespMapping(res, GridDhtTxQueryEnlistResponse.class, GridDhtTxQueryFirstEnlistRequest.class);
         addReqRespMapping(res, GridDhtTxPrepareResponse.class, GridDhtTxPrepareRequest.class);
         addReqRespMapping(res, GridNearSingleGetResponse.class, GridNearSingleGetRequest.class);
         addReqRespMapping(res, GridNearGetResponse.class, GridNearGetRequest.class);
