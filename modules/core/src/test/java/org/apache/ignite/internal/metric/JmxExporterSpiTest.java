@@ -47,6 +47,9 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -73,6 +76,7 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
@@ -192,13 +196,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         IgniteCache c = ignite.createCache(n);
 
-        DynamicMBean cacheBean = mbean(CACHE_METRICS, n);
+        DynamicMBean cacheBean = mbean(ignite, CACHE_METRICS, n);
 
         assertNotNull(cacheBean);
 
         ignite.destroyCache(n);
 
-        assertThrowsWithCause(() -> mbean(CACHE_METRICS, n), IgniteException.class);
+        assertThrowsWithCause(() -> mbean(ignite, CACHE_METRICS, n), IgniteException.class);
     }
 
     /** */
@@ -370,9 +374,69 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
+    @Test
+    public void testContinuousQuery() throws Exception {
+        try (IgniteEx remoteNode = startGrid(1)) {
+            IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
+
+            assertEquals(0, systemView(CQ_SYS_VIEW).size());
+            assertEquals(0, systemView(remoteNode, CQ_SYS_VIEW).size());
+
+            try (QueryCursor qry = cache.query(new ContinuousQuery<>()
+                .setInitialQuery(new ScanQuery<>())
+                .setPageSize(100)
+                .setTimeInterval(1000)
+                .setLocalListener(evts -> {
+                    // No-op.
+                })
+                .setRemoteFilterFactory(() -> evt -> true)
+            )) {
+                for (int i = 0; i < 100; i++)
+                    cache.put(i, i);
+
+                checkContinuousQueryView(ignite, ignite);
+                checkContinuousQueryView(ignite, remoteNode);
+            }
+
+            assertEquals(0, systemView(CQ_SYS_VIEW).size());
+            assertEquals(0, systemView(remoteNode, CQ_SYS_VIEW).size());
+        }
+    }
+
+    /** */
+    private void checkContinuousQueryView(IgniteEx origNode, IgniteEx checkNode) {
+        TabularDataSupport qrys = systemView(checkNode, CQ_SYS_VIEW);
+
+        assertEquals(1, qrys.size());
+
+        for (int i = 0; i < qrys.size(); i++) {
+            CompositeData cq = qrys.get(new Object[] {i});
+
+            assertEquals("cache-1", cq.get("cacheName"));
+            assertEquals(100, cq.get("bufferSize"));
+            assertEquals(1000L, cq.get("interval"));
+            assertEquals(origNode.localNode().id().toString(), cq.get("nodeId"));
+
+            if (origNode.localNode().id().equals(checkNode.localNode().id()))
+                assertTrue(cq.get("localListener").toString().startsWith(getClass().getName()));
+            else
+                assertNull(cq.get("localListener"));
+
+            assertTrue(cq.get("remoteFilter").toString().startsWith(getClass().getName()));
+            assertNull(cq.get("localTransformedListener"));
+            assertNull(cq.get("remoteTransformer"));
+        }
+    }
+
+    /** */
     public TabularDataSupport systemView(String name) {
+        return systemView(ignite, name);
+    }
+
+    /** */
+    public TabularDataSupport systemView(IgniteEx g, String name) {
         try {
-            DynamicMBean caches = mbean(VIEWS, name);
+            DynamicMBean caches = mbean(g, VIEWS, name);
 
             MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
 
@@ -386,8 +450,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public DynamicMBean mbean(String grp, String name) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(ignite.name(), grp, name);
+    public DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
+        ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
