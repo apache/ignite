@@ -30,10 +30,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -385,7 +388,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "VIEWS",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
-            "TRANSACTIONS"
+            "TRANSACTIONS",
+            "QUERY_CONTINUOUS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -493,6 +497,69 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         List<List<?>> res = execute(ignite, "SELECT * FROM SYS.VIEW_COLUMNS WHERE VIEW_NAME = 'CLIENT_CONNECTIONS'");
 
         assertEquals(expRes, res);
+    }
+
+    /** */
+    @Test
+    public void testContinuousQuery() throws Exception {
+        try(IgniteEx remoteNode = startGrid(1)) {
+            IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
+
+            assertTrue(execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+            assertTrue(execute(remoteNode, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+
+            try(QueryCursor qry = cache.query(new ContinuousQuery<>()
+                .setInitialQuery(new ScanQuery<>())
+                .setPageSize(100)
+                .setTimeInterval(1000)
+                .setLocalListener(evts -> {
+                    // No-op.
+                })
+                .setRemoteFilterFactory(() -> evt -> true)
+            )) {
+                for (int i=0; i<100; i++)
+                    cache.put(i, i);
+
+                checkContinuouQueryView(ignite, true);
+                checkContinuouQueryView(remoteNode, false);
+            }
+
+            assertTrue(execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+            assertTrue(execute(remoteNode, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        }
+    }
+
+    /** */
+    private void checkContinuouQueryView(IgniteEx g, boolean loc) {
+        List<List<?>> qrys = execute(g,
+            "SELECT " +
+            "  CACHE_NAME, " +
+            "  BUFFER_SIZE, " +
+            "  INTERVAL, " +
+            "  NODE_ID, " +
+            "  LOCAL_LISTENER, " +
+            "  REMOTE_FILTER, " +
+            "  LOCAL_TRANSFORMED_LISTENER, " +
+            "  REMOTE_TRANSFORMER " +
+            "FROM SYS.QUERY_CONTINUOUS");
+
+        assertEquals(1, qrys.size());
+
+        List<?> cq = qrys.iterator().next();
+
+        assertEquals("cache-1", cq.get(0));
+        assertEquals(100, cq.get(1));
+        assertEquals(1000L, cq.get(2));
+        assertEquals(ignite.localNode().id(), cq.get(3));
+
+        if (loc)
+            assertTrue(cq.get(4).toString().startsWith(getClass().getName()));
+        else
+            assertNull(cq.get(4));
+
+        assertTrue(cq.get(5).toString().startsWith(getClass().getName()));
+        assertNull(cq.get(6));
+        assertNull(cq.get(7));
     }
 
     /**
