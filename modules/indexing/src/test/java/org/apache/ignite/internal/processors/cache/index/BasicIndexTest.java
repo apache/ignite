@@ -260,7 +260,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         String plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
             .getAll().get(0).get(0).toString().toUpperCase();
 
-        assertTrue("plan=" + plan, plan.contains(idx2));
+        assertTrue("plan=" + plan, plan.contains(idx1));
 
         sql = "explain select * from " + "TEST_TBL_NAME" + " where " +
             "LAST_NAME = 2 and ADDRESS >= 1 ";
