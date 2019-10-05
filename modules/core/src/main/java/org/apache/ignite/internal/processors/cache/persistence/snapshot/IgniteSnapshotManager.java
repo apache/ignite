@@ -201,8 +201,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         PdsFolderSettings rslvDir = kctx.pdsFolderResolver().resolveFolders();
 
         // todo must be available on storage configuration
-        snpWorkDir = initWorkDirectory(rslvDir, DFLT_SNAPSHOT_DIRECTORY, "snapshot work directory");
-        rmtSnpWorkDir = initWorkDirectory(rslvDir, DFLT_LOADED_SNAPSHOT_DIRECTORY, "work directory for remote snapshots");
+        snpWorkDir = initWorkDirectory(rslvDir, DFLT_SNAPSHOT_DIRECTORY, log, "snapshot work directory");
+        rmtSnpWorkDir = initWorkDirectory(rslvDir, DFLT_LOADED_SNAPSHOT_DIRECTORY, log, "work directory for remote snapshots");
 
         snpRunner = new IgniteThreadPoolExecutor(
             SNAPSHOT_RUNNER_THREAD_PREFIX,
@@ -559,6 +559,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         pair,
                         sctx.partFileLengths.get(pair));
 
+                    // Stop partition writer.
                     sctx.partDeltaWriters.get(pair).partProcessed = true;
                 },
                 sctx.exec)
@@ -629,9 +630,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Resolved working direcory.
      * @throws IgniteCheckedException If fails.
      */
-    private File initWorkDirectory(
+    private static File initWorkDirectory(
         PdsFolderSettings rslvr,
         String dirPath,
+        IgniteLogger log,
         String errorMsg
     ) throws IgniteCheckedException {
         File rmtSnpDir = U.resolveWorkDirectory(rslvr.persistentStoreRootPath().getAbsolutePath(), dirPath, false);
