@@ -117,6 +117,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** Default working directory for snapshot temporary files. */
     public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
 
+    /** Default snapshot directory for loading remote snapshots. */
+    public static final String DFLT_LOADED_SNAPSHOT_DIRECTORY = "snapshots/loaded";
+
     /** Prefix for snapshot threads. */
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
 
@@ -134,6 +137,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /** Main snapshot directory to store files. */
     private File snpWorkDir;
+
+    /** Working directory for loaded snapshots from remote nodes. */
+    private File rmtSnpWorkDir;
 
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -194,12 +200,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         PdsFolderSettings rslvDir = kctx.pdsFolderResolver().resolveFolders();
 
-        File snpDir = U.resolveWorkDirectory(rslvDir.persistentStoreRootPath().getAbsolutePath(),
-            DFLT_SNAPSHOT_DIRECTORY, false);
-
-        snpWorkDir = new File(snpDir, rslvDir.folderName());
-
-        U.ensureDirectory(snpWorkDir, "snapshot work directory", log);
+        // todo must be available on storage configuration
+        snpWorkDir = initWorkDirectory(rslvDir, DFLT_SNAPSHOT_DIRECTORY, "snapshot work directory");
+        rmtSnpWorkDir = initWorkDirectory(rslvDir, DFLT_LOADED_SNAPSHOT_DIRECTORY, "work directory for remote snapshots");
 
         snpRunner = new IgniteThreadPoolExecutor(
             SNAPSHOT_RUNNER_THREAD_PREFIX,
@@ -617,6 +620,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      */
     void ioFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
+    }
+
+    /**
+     * @param rslvr RDS resolver.
+     * @param dirPath Relative working directory path.
+     * @param errorMsg Error message in case of make direcotry fail.
+     * @return Resolved working direcory.
+     * @throws IgniteCheckedException If fails.
+     */
+    private File initWorkDirectory(
+        PdsFolderSettings rslvr,
+        String dirPath,
+        String errorMsg
+    ) throws IgniteCheckedException {
+        File rmtSnpDir = U.resolveWorkDirectory(rslvr.persistentStoreRootPath().getAbsolutePath(), dirPath, false);
+
+        File target = new File (rmtSnpDir, rslvr.folderName());
+
+        U.ensureDirectory(target, errorMsg, log);
+
+        return target;
     }
 
     /**
