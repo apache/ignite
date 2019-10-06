@@ -158,7 +158,7 @@ public class SandboxMLCache {
      * @return Filled Ignite Cache.
      * @throws FileNotFoundException If file not found.
      */
-    public IgniteCache<Integer, Object[]> fillObjectCacheWith(MLSandboxDatasets dataset) throws FileNotFoundException {
+    public IgniteCache<Integer, Object[]> fillObjectCacheWithDoubleLabels(MLSandboxDatasets dataset) throws FileNotFoundException {
 
         IgniteCache<Integer, Object[]> cache = getCache2();
 
@@ -181,7 +181,6 @@ public class SandboxMLCache {
 
             String[] cells = row.split(dataset.getSeparator());
 
-            // TODO_ZALESLAW: for debug purposes
             Object[] res = new Object[cells.length];
 
             if (cells[0].contains("p"))
@@ -191,7 +190,6 @@ public class SandboxMLCache {
 
             for (int i = 1; i < cells.length; i++)
                 res[i] = cells[i];
-            // TODO_ZALESLAW: for debug purposes
 
             cache.put(cnt++, res);
         }
@@ -206,7 +204,7 @@ public class SandboxMLCache {
      * @return Filled Ignite Cache.
      * @throws FileNotFoundException If file not found.
      */
-    public IgniteCache<Integer, Object[]> fillObjectCacheWith2(MLSandboxDatasets dataset) throws FileNotFoundException {
+    public IgniteCache<Integer, Object[]> fillObjectCacheWithCategoricalData(MLSandboxDatasets dataset) throws FileNotFoundException {
 
         IgniteCache<Integer, Object[]> cache = getCache2();
 

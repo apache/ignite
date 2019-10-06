@@ -70,7 +70,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
             (env, upstream, upstreamSize, ctx) -> {
                 EncoderPartitionData partData = new EncoderPartitionData();
 
-                if(encoderType == EncoderType.LABEL_ENCODER) {
+                if (encoderType == EncoderType.LABEL_ENCODER) {
                     Map<String, Integer> lbFrequencies = null;
 
                     while (upstream.hasNext()) {
@@ -81,7 +81,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     }
 
                     partData.withLabelFrequencies(lbFrequencies);
-                } else {
+                }
+                else {
                     // This array will contain not null values for handled indices
                     Map<String, Integer>[] categoryFrequencies = null;
 
@@ -109,8 +110,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 default:
                     throw new IllegalStateException("Define the type of the resulting prerocessor.");
             }
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -254,7 +255,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /**
      * Updates frequencies by values and features.
      *
-     * @param row                 Feature vector.
+     * @param row Feature vector.
      * @param categoryFrequencies Holds the frequencies of categories by values and features.
      * @return Updated frequencies by values and features.
      */
@@ -274,8 +275,9 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 if (featureVal.equals(Double.NaN)) {
                     strVal = EncoderPreprocessor.KEY_FOR_NULL_VALUES;
                     row.features().setRaw(i, strVal);
-                } else if (featureVal instanceof String)
-                    strVal = (String) featureVal;
+                }
+                else if (featureVal instanceof String)
+                    strVal = (String)featureVal;
                 else if (featureVal instanceof Double)
                     strVal = String.valueOf(featureVal);
                 else
@@ -292,11 +294,10 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
         return categoryFrequencies;
     }
 
-
     /**
      * Updates frequencies by values and features.
      *
-     * @param row                 Feature vector.
+     * @param row Feature vector.
      * @param labelFrequencies Holds the frequencies of categories by values and features.
      * @return Updated frequencies by values and features.
      */
@@ -309,7 +310,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
         Object lbVal = row.label();
 
         if (lbVal.equals(Double.NaN) || lbVal == null)
-            throw new UndefinedLabelException(row); // TODO: add test for this case
+            throw new UndefinedLabelException(row);
 
         else if (lbVal instanceof String)
             strVal = (String)lbVal;

@@ -23,14 +23,14 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Indicates a vector with non-double data.
  */
-public class NonDoubleVector extends IgniteException {
+public class NonDoubleVectorException extends IgniteException {
     /** */
     private static final long serialVersionUID = 310L;
 
     /**
      * @param row The data of vector.
      */
-    public NonDoubleVector(Vector row) {
+    public NonDoubleVectorException(Vector row) {
         super("This categorial value is unknown for Encoder: " + row.toString());
     }
 }

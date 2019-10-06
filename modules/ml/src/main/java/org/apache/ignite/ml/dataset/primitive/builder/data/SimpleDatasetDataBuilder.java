@@ -19,12 +19,11 @@ package org.apache.ignite.ml.dataset.primitive.builder.data;
 
 import java.io.Serializable;
 import java.util.Iterator;
-
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.exceptions.preprocessing.NonDoubleVector;
+import org.apache.ignite.ml.math.exceptions.preprocessing.NonDoubleVectorException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 
@@ -65,8 +64,7 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
             Vector row = preprocessor.apply(entry.getKey(), entry.getValue()).features();
-            if(row.isNumeric()) { // TODO: add better check on double that this.
-
+            if(row.isNumeric()) {
                 if (cols < 0) {
                     cols = row.size();
                     features = new double[Math.toIntExact(upstreamDataSize * cols)];
@@ -77,9 +75,8 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
                     features[Math.toIntExact(i * upstreamDataSize + ptr)] = row.get(i);
 
                 ptr++;
-            } else {
-                throw new NonDoubleVector(row);
-            }
+            } else
+                throw new NonDoubleVectorException(row);
         }
 
         return new SimpleDatasetData(features, Math.toIntExact(upstreamDataSize));

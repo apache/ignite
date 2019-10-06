@@ -21,27 +21,22 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.ml.tutorial.Step_1_Read_and_Learn;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.ObjectArrayVectorizer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.FMeasure;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
- * Let's add two categorial features "sex", "embarked" to predict more precisely than in {@link
- * Step_1_Read_and_Learn}..
+ * Example that shows how to use Label Encoder preprocessor to encode labels presented as a strings.
  * <p>
- * To encode categorial features the {@link EncoderTrainer} of the
- * <a href="https://en.wikipedia.org/wiki/One-hot">One-hot</a> type will be used.</p>
- * <p>
- * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on muschrooms dataset).</p>
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and encode string values (categories)
  * to double values in specified range.</p>
@@ -61,7 +56,7 @@ public class LabelEncoderExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
                 IgniteCache<Integer, Object[]> dataCache = new SandboxMLCache(ignite)
-                    .fillObjectCacheWith2(MLSandboxDatasets.MUSHROOMS);
+                    .fillObjectCacheWithCategoricalData(MLSandboxDatasets.MUSHROOMS);
 
                 final Vectorizer<Integer, Object[], Integer, Object> vectorizer = new ObjectArrayVectorizer<Integer>(1, 2).labeled(0);
 
@@ -96,13 +91,13 @@ public class LabelEncoderExample {
                     dataCache,
                     mdl,
                     labelEncoderPreprocessor,
-                    new FMeasure()
+                    new Accuracy()
                 );
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 3 (categorial with One-hot encoder) example started.");
+                System.out.println(">>> Train Decision Tree model on mushrooms.csv dataset.");
 
             }
             catch (FileNotFoundException e) {

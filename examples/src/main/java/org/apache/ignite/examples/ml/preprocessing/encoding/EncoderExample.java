@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.ml.tutorial.Step_1_Read_and_Learn;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.ObjectArrayVectorizer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
@@ -35,13 +34,9 @@ import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
- * Let's add two categorial features "sex", "embarked" to predict more precisely than in {@link
- * Step_1_Read_and_Learn}..
+ * Example that shows how to use String Encoder preprocessor to encode features presented as a strings.
  * <p>
- * To encode categorial features the {@link EncoderTrainer} of the
- * <a href="https://en.wikipedia.org/wiki/One-hot">One-hot</a> type will be used.</p>
- * <p>
- * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on muschrooms dataset).</p>
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and encode string values (categories)
  * to double values in specified range.</p>
@@ -61,7 +56,7 @@ public class EncoderExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
                 IgniteCache<Integer, Object[]> dataCache = new SandboxMLCache(ignite)
-                    .fillObjectCacheWith(MLSandboxDatasets.MUSHROOMS);
+                    .fillObjectCacheWithDoubleLabels(MLSandboxDatasets.MUSHROOMS);
 
                 final Vectorizer<Integer, Object[], Integer, Object> vectorizer = new ObjectArrayVectorizer<Integer>(1, 2, 3).labeled(0);
 
@@ -96,7 +91,7 @@ public class EncoderExample {
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 3 (categorial with One-hot encoder) example started.");
+                System.out.println(">>> Train Decision Tree model on mushrooms.csv dataset.");
 
             }
             catch (FileNotFoundException e) {
