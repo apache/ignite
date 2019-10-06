@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.encoding;
+package org.apache.ignite.ml.math.exceptions.preprocessing;
+
+import org.apache.ignite.IgniteException;
 
 /**
- * Describes Encoder preprocessor types to define resulting model in EncoderTrainer.
- *
- * @see EncoderTrainer
+ * Indicates an illegal label type and value.
  */
-public enum EncoderType {
-    /** One hot encoder. */
-    ONE_HOT_ENCODER,
+public class IllegalLabelTypeException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 120L;
 
-    /** String encoder. */
-    STRING_ENCODER,
-
-    /** Frequency encoder. */
-    FREQUENCY_ENCODER,
-
-    /** Label encoder. */
-    LABEL_ENCODER
+    /**
+     * @param illegalClass The illegal type.
+     * @param illegalVal The illegal value.
+     * @param desiredClass The desired type.
+     */
+    public IllegalLabelTypeException(Class illegalClass, Object illegalVal, Class desiredClass) {
+        super("The type of label " + illegalClass + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredClass);
+    }
 }

@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.encoding;
+package org.apache.ignite.ml.math.exceptions.preprocessing;
+
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Describes Encoder preprocessor types to define resulting model in EncoderTrainer.
- *
- * @see EncoderTrainer
+ * Indicates a vector with non-double data.
  */
-public enum EncoderType {
-    /** One hot encoder. */
-    ONE_HOT_ENCODER,
+public class NonDoubleVectorException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 310L;
 
-    /** String encoder. */
-    STRING_ENCODER,
-
-    /** Frequency encoder. */
-    FREQUENCY_ENCODER,
-
-    /** Label encoder. */
-    LABEL_ENCODER
+    /**
+     * @param row The data of vector.
+     */
+    public NonDoubleVectorException(Vector row) {
+        super("This categorial value is unknown for Encoder: " + row.toString());
+    }
 }
