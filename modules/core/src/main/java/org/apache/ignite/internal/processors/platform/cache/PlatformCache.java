@@ -1422,7 +1422,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         String typ = reader.readString();
         final int pageSize = reader.readInt();
 
-        //TODO: IGNIGE-12266, uncomment when limit parameter is added to Platforms
+        //TODO: IGNITE-12266, uncomment when limit parameter is added to Platforms
         //
         // final int limit = reader.readInt();
         // return new TextQuery(typ, txt, limit).setPageSize(pageSize).setLocal(loc);
