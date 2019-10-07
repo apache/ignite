@@ -87,15 +87,17 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      */
     private void testCrudWithCachePermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            SecurityPermissionSetBuilder.create() // defaultAllowAll is true.
+            SecurityPermissionSetBuilder.create()
+                // defaultAllowAll is true.
                 .appendCachePermissions(ALL_PERM_TEST_CACHE, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
                 .appendCachePermissions(CREATE_PERM_TEST_CACHE, CACHE_CREATE)
                 .appendCachePermissions(EMPTY_PERM_TEST_CACHE, EMPTY_PERMS)
                 .appendSystemPermissions(JOIN_AS_SERVER)
                 .build(),
             isClient);
+        // This won't fail since defaultAllowAll is true.
+        node.createCache(NEW_CACHE);
 
-        node.createCache(NEW_CACHE); // This won't fail since defaultAllowAll is true.
         node.createCache(ALL_PERM_TEST_CACHE);
         node.createCache(CREATE_PERM_TEST_CACHE);
         assertThrowsWithCause(() -> node.createCache(EMPTY_PERM_TEST_CACHE), SecurityException.class);
@@ -114,7 +116,8 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      */
     private void testCrudWithSystemPermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            SecurityPermissionSetBuilder.create() // defaultAllowAll is true.
+            SecurityPermissionSetBuilder.create()
+                // defaultAllowAll is true.
                 .appendCachePermissions(ALL_PERM_TEST_CACHE, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
                 .appendCachePermissions(CREATE_PERM_TEST_CACHE, CACHE_CREATE)
                 .appendCachePermissions(EMPTY_PERM_TEST_CACHE, EMPTY_PERMS)
@@ -162,7 +165,8 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
     protected void checkOperations(Ignite node) {
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(ALL_PERM_TEST_CACHE));
-            c.accept(node.cache(NEW_CACHE)); // If defaultAllowAll is false, there will be exeption.
+            // This won't fail since defaultAllowAll is true.
+            c.accept(node.cache(NEW_CACHE));
 
             assertThrowsWithCause(() -> c.accept(node.cache(CREATE_PERM_TEST_CACHE)), SecurityException.class);
         }
