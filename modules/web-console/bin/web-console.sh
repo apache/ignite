@@ -53,7 +53,7 @@ setWebConsoleHome() {
 setWebConsoleHome
 
 javaVersion() {
-    version=$("$1" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+    version=$("$1" -version 2>&1 | awk -F[\"\-] '/version/ {print $2}')
 }
 
 # Extract only major version of java to `version` variable.
