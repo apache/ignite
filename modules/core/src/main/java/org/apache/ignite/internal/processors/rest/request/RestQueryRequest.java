@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -27,6 +28,7 @@ public class RestQueryRequest extends GridRestRequest {
     private String sqlQry;
 
     /** Sql query arguments. */
+    @GridToStringExclude
     private Object[] args;
 
     /** Page size. */
