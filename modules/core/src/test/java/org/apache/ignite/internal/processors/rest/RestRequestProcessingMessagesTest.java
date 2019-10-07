@@ -117,7 +117,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
      * @param r {@link Runnable} after which execution messeges will be checked.
      * @param lsnrs Listeners to be checked.
      */
-    private void checkListeners(RunnableX r, LogListener... lsnrs) throws Exception{
+    private void checkListeners(RunnableX r, LogListener... lsnrs) throws Exception {
         Arrays.stream(lsnrs).forEach(LogListener::reset);
 
         r.run();
