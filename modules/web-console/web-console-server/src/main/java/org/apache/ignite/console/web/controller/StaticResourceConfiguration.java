@@ -16,7 +16,12 @@
 
 package org.apache.ignite.console.web.controller;
 
+import java.io.File;
+import java.net.URL;
 import java.util.Collections;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,8 +37,17 @@ import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
  */
 @Configuration
 public class StaticResourceConfiguration extends WebMvcConfigurerAdapter {
+    /** */
+    private static final Logger log = LoggerFactory.getLogger(StaticResourceConfiguration.class);
+
     /** Application context. */
     private final ApplicationContext applicationCtx;
+
+    /** Frontend folder url. */
+    private URL frontendFolder = U.resolveIgniteUrl("frontend", false);
+
+    /** Favicon resource url. */
+    private URL faviconUrl = U.resolveIgniteUrl("frontend/favicon.ico", false);
 
     /**
      * @param applicationCtx Application context.
@@ -50,8 +64,17 @@ public class StaticResourceConfiguration extends WebMvcConfigurerAdapter {
         registry.addResourceHandler("/webjars/**")
             .addResourceLocations("classpath:/META-INF/resources/webjars/");
 
-        registry.addResourceHandler("/**").
-            addResourceLocations("file:frontend/");
+        if (frontendFolder != null) {
+            registry.addResourceHandler("/**")
+                .addResourceLocations(frontendFolder.toExternalForm());
+        }
+        else {
+            registry.addResourceHandler("/**")
+                .addResourceLocations("file:frontend/");
+
+            log.info("If you are running Web Console on-premise, please ensure that " +
+                "folder with frontend resources is present in " + new File("frontend").getAbsolutePath());
+        }
     }
 
     /**
@@ -93,7 +116,10 @@ public class StaticResourceConfiguration extends WebMvcConfigurerAdapter {
     protected ResourceHttpRequestHandler customFaviconRequestHandler() {
         ResourceHttpRequestHandler reqHnd = new ResourceHttpRequestHandler();
 
-        reqHnd.setLocations(Collections.singletonList(applicationCtx.getResource("file:frontend/favicon.ico")));
+        if (faviconUrl != null)
+            reqHnd.setLocations(Collections.singletonList(applicationCtx.getResource(faviconUrl.toExternalForm())));
+        else if (frontendFolder != null)
+            log.warn("Favicon not found locally: " + new File("frontend/favicon.ico").getAbsolutePath());
 
         return reqHnd;
     }

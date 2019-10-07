@@ -49,9 +49,6 @@ import static org.springframework.http.HttpHeaders.PRAGMA;
  */
 @RestController
 public class AgentDownloadController {
-    /** Buffer size of 30Mb to handle Web Agent ZIP file manipulations. */
-    private static final int BUFFER_SZ = 30 * 1024 * 1024;
-
     /** Messages accessor. */
     private final MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
