@@ -45,16 +45,16 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /** New cache. */
-    protected static final String NEW_CACHE = "NEW_CACHE";
+    /** */
+    protected static final String NEW_TEST_CACHE = "NEW_CACHE";
 
-    /** Cache with all permission. */
+    /** */
     protected static final String ALL_PERM_TEST_CACHE = "ALL_PERM_TEST_CACHE";
 
-    /** Cache only with CACHE_CREATE permission. */
+    /** */
     protected static final String CREATE_PERM_TEST_CACHE = "CREATE_TEST_CACHE";
 
-    /** Cache without permission. */
+    /** */
     protected static final String EMPTY_PERM_TEST_CACHE = "EMPTY_PERM_TEST_CACHE";
 
     /** */
@@ -96,7 +96,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
                 .build(),
             isClient);
         // This won't fail since defaultAllowAll is true.
-        node.createCache(NEW_CACHE);
+        node.createCache(NEW_TEST_CACHE);
 
         node.createCache(ALL_PERM_TEST_CACHE);
         node.createCache(CREATE_PERM_TEST_CACHE);
@@ -104,7 +104,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
 
         checkOperations(node);
 
-        node.cache(NEW_CACHE).destroy();
+        node.cache(NEW_TEST_CACHE).destroy();
         node.cache(ALL_PERM_TEST_CACHE).destroy();
         assertThrowsWithCause(() -> node.cache(CREATE_PERM_TEST_CACHE).destroy(), SecurityException.class);
         assertThrowsWithCause(() -> node.cache(EMPTY_PERM_TEST_CACHE).destroy(), NullPointerException.class);
@@ -125,14 +125,14 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
                 .build(),
             isClient);
 
-        node.createCache(NEW_CACHE);
+        node.createCache(NEW_TEST_CACHE);
         node.createCache(ALL_PERM_TEST_CACHE);
         node.createCache(CREATE_PERM_TEST_CACHE);
         node.createCache(EMPTY_PERM_TEST_CACHE);
 
         checkOperations(node);
 
-        node.cache(NEW_CACHE).destroy();
+        node.cache(NEW_TEST_CACHE).destroy();
         node.cache(ALL_PERM_TEST_CACHE).destroy();
         node.cache(EMPTY_PERM_TEST_CACHE).destroy();
         node.cache(CREATE_PERM_TEST_CACHE).destroy();
@@ -166,7 +166,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(ALL_PERM_TEST_CACHE));
             // This won't fail since defaultAllowAll is true.
-            c.accept(node.cache(NEW_CACHE));
+            c.accept(node.cache(NEW_TEST_CACHE));
 
             assertThrowsWithCause(() -> c.accept(node.cache(CREATE_PERM_TEST_CACHE)), SecurityException.class);
         }
