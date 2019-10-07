@@ -1161,6 +1161,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
 
     /**
+     * Undocumented experimental internal API that must not be touched by regular users.
+     */
+    public static final String IGNITE_DISTRIBUTED_META_STORAGE_FEATURE = "IGNITE_DISTRIBUTED_META_STORAGE_FEATURE";
+
+    /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.
      */
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";

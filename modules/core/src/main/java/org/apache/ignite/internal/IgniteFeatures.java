@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcesso
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 
@@ -216,6 +217,10 @@ public enum IgniteFeatures {
 
             // Add only when scheduling is disabled.
             if (WC_SCHEDULING_NOT_AVAILABLE == value && !(ctx.schedule() instanceof IgniteNoopScheduleProcessor))
+                continue;
+
+            boolean dmsEnabled = getBoolean(IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, false);
+            if (DISTRIBUTED_METASTORAGE == value && !dmsEnabled)
                 continue;
 
             final int featureId = value.getFeatureId();

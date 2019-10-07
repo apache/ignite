@@ -108,6 +108,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
@@ -777,6 +778,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public DistributedMetaStorage distributedMetastorage() {
+        if (!IgniteSystemProperties.getBoolean(IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, false))
+            throw new UnsupportedOperationException("Distributed Meta Storage feature is not enabled.");
+
         return distributedMetastorage;
     }
 
