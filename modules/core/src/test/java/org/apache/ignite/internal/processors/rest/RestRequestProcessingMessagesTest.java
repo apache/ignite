@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
  */
 public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
     /** Listener of received request message. */
-    private static final LogListener REQ_RECEIVED_LSNR = LogListener.matches(
+    private static final LogListener REQ_RCV_LSNR = LogListener.matches(
         Pattern.compile("REST request received \\[req=.+]")).build();
 
     /** Listener of succeed request message. */
@@ -74,7 +74,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
 
         log.registerListener(REQ_FAILED_LSNR);
         log.registerListener(REQ_SUCCEED_LSNR);
-        log.registerListener(REQ_RECEIVED_LSNR);
+        log.registerListener(REQ_RCV_LSNR);
         log.registerListener(FUT_CANCELLED_LSNR);
 
         return super.getConfiguration(igniteInstanceName)
@@ -98,33 +98,26 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
         validReq.active(true);
         validReq.command(CLUSTER_ACTIVATE);
 
-        checkListeners(() -> hnd.handleAsync(validReq), REQ_RECEIVED_LSNR, REQ_SUCCEED_LSNR);
+        checkListeners(() -> hnd.handleAsync(validReq), REQ_RCV_LSNR, REQ_SUCCEED_LSNR);
 
-        checkListeners(() -> hnd.handleAsync(new GridRestChangeStateRequest()), REQ_RECEIVED_LSNR, REQ_FAILED_LSNR);
+        checkListeners(() -> hnd.handleAsync(new GridRestChangeStateRequest()), REQ_RCV_LSNR, REQ_FAILED_LSNR);
 
         GridRestTaskRequest cancelledReq = new GridRestTaskRequest();
 
         cancelledReq.command(EXE);
-        cancelledReq.taskName(TestTask.class.getName());
+        cancelledReq.taskName(StuckTask.class.getName());
         cancelledReq.params(Collections.singletonList(getTestTimeout()));
 
-        checkListeners(() -> {
-            try {
-                hnd.handleAsync(cancelledReq).cancel();
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
-        }, REQ_RECEIVED_LSNR, FUT_CANCELLED_LSNR);
+        checkListeners(() -> hnd.handleAsync(cancelledReq).cancel(), REQ_RCV_LSNR, FUT_CANCELLED_LSNR);
     }
 
     /**
-     * Verifies that specified listeners intercepted the message produced by {@code r} executing.
+     * Verifies that specified listeners intercepted the message produced by {@code r} execution.
      *
      * @param r {@link Runnable} after which execution messeges will be checked.
      * @param lsnrs Listeners to be checked.
      */
-    private void checkListeners(Runnable r, LogListener... lsnrs) throws Exception{
+    private void checkListeners(RunnableX r, LogListener... lsnrs) throws Exception{
         Arrays.stream(lsnrs).forEach(LogListener::reset);
 
         r.run();
@@ -137,15 +130,12 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
      * Test task, which provides ability to imitate task processing stuck.
      * First task parameter is used as waiting time upper bound.
      */
-    private static class TestTask extends ComputeTaskAdapter<Long, Void> {
-        /** */
-        public final CountDownLatch latch = new CountDownLatch(1);
-
+    private static class StuckTask extends ComputeTaskAdapter<Long, Void> {
         /** {@inheritDoc} */
         @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Long arg) throws IgniteException {
             try {
-               latch.await(arg, TimeUnit.MILLISECONDS);
+                new CountDownLatch(1).await(arg, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ignored) {
             }
