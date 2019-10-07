@@ -164,9 +164,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private FileIOFactory pageStoreFileIoFactory;
 
-    /** File page store factory. */
-    private FileVersionCheckingFactory pageStoreFactory;
-
     /**
      * File IO factory for page store V1 and for fast checking page store (non block read).
      * By default is taken from {@link #dsCfg}.
@@ -660,6 +657,38 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
+     * @param grpId Cache group id.
+     * @param encrypted {@code true} if cache group encryption enabled.
+     * @return Factory to create page stores.
+     */
+    public FilePageStoreFactory getPageStoreFactory(int grpId, boolean encrypted) {
+        FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
+        FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
+
+        if (encrypted) {
+            pageStoreFileIoFactory = new EncryptedFileIOFactory(
+                this.pageStoreFileIoFactory,
+                grpId,
+                pageSize(),
+                cctx.kernalContext().encryption(),
+                cctx.gridConfig().getEncryptionSpi());
+
+            pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
+                this.pageStoreV1FileIoFactory,
+                grpId,
+                pageSize(),
+                cctx.kernalContext().encryption(),
+                cctx.gridConfig().getEncryptionSpi());
+        }
+
+        return new FileVersionCheckingFactory(
+            pageStoreFileIoFactory,
+            pageStoreV1FileIoFactory,
+            igniteCfg.getDataStorageConfiguration()
+        );
+    }
+
+    /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
      * @param partitions Number of partitions.
@@ -681,30 +710,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
-            FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
-
-            if (encrypted) {
-                pageStoreFileIoFactory = new EncryptedFileIOFactory(
-                    this.pageStoreFileIoFactory,
-                    grpId,
-                    pageSize(),
-                    cctx.kernalContext().encryption(),
-                    cctx.gridConfig().getEncryptionSpi());
-
-                pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
-                    this.pageStoreV1FileIoFactory,
-                    grpId,
-                    pageSize(),
-                    cctx.kernalContext().encryption(),
-                    cctx.gridConfig().getEncryptionSpi());
-            }
-
-            pageStoreFactory = new FileVersionCheckingFactory(
-                pageStoreFileIoFactory,
-                pageStoreV1FileIoFactory,
-                igniteCfg.getDataStorageConfiguration()
-            );
+            FileVersionCheckingFactory pageStoreFactory = (FileVersionCheckingFactory)getPageStoreFactory(grpId, encrypted);
 
             if (encrypted) {
                 int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
@@ -1294,13 +1300,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FileIOFactory getPageStoreFileIoFactory() {
         return pageStoreFileIoFactory;
-    }
-
-    /**
-     * @return File page store factory currently used.
-     */
-    public FilePageStoreFactory getFilePageStoreFactory() {
-        return pageStoreFactory;
     }
 
     /**

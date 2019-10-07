@@ -30,6 +30,7 @@ import java.nio.file.PathMatcher;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -296,8 +298,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        delete(cpDir.toPath());
-        delete(walDir.toPath());
+        IgniteUtils.delete(cpDir);
+        IgniteUtils.delete(walDir);
 
         Files.walk(cacheBackup.toPath())
             .map(Path::toFile)
@@ -382,11 +384,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         parts.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new GridIntList(1))
             .add(0);
 
-        FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
-            .cache()
-            .context()
-            .pageStore();
-
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
@@ -411,18 +408,65 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param dir Directory to delete.
-     * @throws IOException If fails.
+     * @throws Exception If fails.
      */
-    private static void delete(Path dir) throws IOException {
-        Files.walk(dir)
-            .map(Path::toFile)
-            .forEach(File::delete);
+    @Test
+    public void testSnapshotRemotePartitions() throws Exception {
+        defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
+                .setPartitions(CACHE_PARTS_COUNT));
 
-        Files.delete(dir);
+        IgniteEx ig0 = startGrids(2);
 
-        assertFalse("Directory still exists",
-            Files.exists(dir));
+        ig0.cluster().active(true);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        CheckpointFuture cpFut = ig0.context()
+            .cache()
+            .context()
+            .database()
+            .forceCheckpoint("the next one");
+
+        cpFut.finishFuture().get();
+
+        IgniteSnapshotManager mgr = ig0.context()
+            .cache()
+            .context()
+            .snapshotMgr();
+
+//        Set<Integer> ints = Stream.iterate(0, n -> n + 1)
+//            .limit(CACHE_PARTS_COUNT) // With index partition
+//            .collect(Collectors.toSet());
+//        ints.add(PageIdAllocator.INDEX_PARTITION);
+        Set<Integer> ints = new HashSet<>();
+        ints.add(0);
+
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
+
+        final CountDownLatch awaitLatch = new CountDownLatch(ints.size());
+
+        mgr.addSnapshotListener(new SnapshotListener() {
+            @Override public void onPartition(String snpName, File part, int grpId, int partId) {
+                log.info("Snapshot partition received successfully [snpName=" + snpName +
+                    ", part=" + part.getAbsolutePath() + ", grpId=" + grpId + ", partId=" + partId + ']');
+
+                awaitLatch.countDown();
+            }
+
+            @Override public void onEnd(String snpName) {
+                log.info("Snapshot created successfully [snpName=" + snpName + ']');
+            }
+
+            @Override public void onException(String snpName, Throwable t) {
+                log.error("Error creating snapshot [snpName=" + snpName + ']', t);
+            }
+        });
+
+        String snpName = mgr.createRemoteSnapshot(parts, grid(1).localNode().id());
+
+        awaitLatch.await();
     }
 
     /**
