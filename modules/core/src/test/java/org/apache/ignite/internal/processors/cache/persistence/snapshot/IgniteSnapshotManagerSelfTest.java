@@ -30,7 +30,6 @@ import java.nio.file.PathMatcher;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -412,8 +411,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSnapshotRemotePartitions() throws Exception {
-        defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
-                .setPartitions(CACHE_PARTS_COUNT));
+//        defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
+//                .setPartitions(CACHE_PARTS_COUNT));
 
         IgniteEx ig0 = startGrids(2);
 
@@ -435,12 +434,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-//        Set<Integer> ints = Stream.iterate(0, n -> n + 1)
-//            .limit(CACHE_PARTS_COUNT) // With index partition
-//            .collect(Collectors.toSet());
-//        ints.add(PageIdAllocator.INDEX_PARTITION);
-        Set<Integer> ints = new HashSet<>();
-        ints.add(0);
+        Set<Integer> ints = Stream.iterate(0, n -> n + 1)
+            .limit(CACHE_PARTS_COUNT) // With index partition
+            .collect(Collectors.toSet());
+        ints.add(PageIdAllocator.INDEX_PARTITION);
+//        Set<Integer> ints = new HashSet<>();
+//        ints.add(0);
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);

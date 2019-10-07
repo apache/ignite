@@ -72,7 +72,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -113,6 +112,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
@@ -123,6 +123,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.partstate.
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
+
+    /** Empty file suffix. */
+    public static final String DUMMY_SUFFIX = ".dummy";
 
     /** File name template consists of delta pages. */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
@@ -168,6 +171,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /** Lock to protect the resources is used. */
     private final GridBusyLock busyLock = new GridBusyLock();
+
+    /** Partition file used as temporary file to send if there is no partition exist. */
+    private File dummyPartFile;
 
     /** Main snapshot directory to store files. */
     private File snpWorkDir;
@@ -256,12 +262,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             SYSTEM_POOL,
             (t, e) -> kctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
 
-        IgnitePageStoreManager storeMgr = cctx.pageStore();
+        assert cctx.pageStore() instanceof FilePageStoreManager;
 
-        assert storeMgr instanceof FilePageStoreManager : "Invalid page store manager was created: " + storeMgr;
+        FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
         storeFactory = ((FilePageStoreManager)storeMgr)::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+
+        // Create temporary partition file for use.
+        dummyPartFile = new File(snpWorkDir, PART_FILE_PREFIX + DUMMY_SUFFIX);
+
+        try {
+            dummyPartFile.createNewFile();
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
@@ -291,18 +307,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                         assert !allocationMap.isEmpty() : "Partitions statistics has not been gathered: " + sctx0;
 
-                        final FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
-
                         for (GroupPartitionId pair : sctx0.parts) {
                             PagesAllocationRange allocRange = allocationMap.get(pair);
 
-                            assert allocRange != null : "Pages not allocated [pairId=" + pair + ", ctx=" + sctx0 + ']';
+                            // Partition can be reserved
+                            // Partition can be MOVING\RENTING states
+                            // Index partition will be excluded if not all partition OWNING
+                            // There is no data assigned to partition, thus it haven't been created yet
+                            if (allocRange == null) {
+                                log.warning("Allocated info about requested partition is missing during snapshot " +
+                                    "operation [pair=" + pair + ", snmName=" + sctx0.snpName + ']');
+                            }
 
                             PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
 
-                            sctx0.partFileLengths.put(pair, store.size());
+                            sctx0.partFileLengths.put(pair, allocRange == null ? 0L : store.size());
                             sctx0.partDeltaWriters.get(pair)
-                                .init(allocRange.getCurrAllocatedPageCnt());
+                                .init(allocRange == null ? 0 : allocRange.getCurrAllocatedPageCnt());
                         }
 
                         for (Map.Entry<GroupPartitionId, PageStoreSerialWriter> e : sctx0.partDeltaWriters.entrySet()) {
@@ -483,6 +504,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                     file::toPath,
                                     new LongAdderMetric("NO_OP", null));
 
+                            pageStore.init();
+
                             loadedPageStores.put(new T4<>(nodeId, snpName, grpId, partId), pageStore);
                         }
                         catch (IgniteCheckedException e) {
@@ -497,16 +520,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        dbMgr.removeCheckpointListener(cpLsnr);
+        busyLock.block();
 
-        for (SnapshotContext ctx : snpCtxs.values())
-            closeSnapshotResources(ctx);
+        try {
+            dbMgr.removeCheckpointListener(cpLsnr);
 
-        partWriters.clear();
-        snpRunner.shutdown();
+            for (SnapshotContext ctx : snpCtxs.values())
+                closeSnapshotResources(ctx);
 
-        cctx.kernalContext().io().removeMessageListener(DFLT_RMT_SNAPSHOT_TOPIC);
-        cctx.kernalContext().io().removeTransmissionHandler(DFLT_RMT_SNAPSHOT_TOPIC);
+            partWriters.clear();
+            snpRunner.shutdown();
+
+            cctx.kernalContext().io().removeMessageListener(DFLT_RMT_SNAPSHOT_TOPIC);
+            cctx.kernalContext().io().removeTransmissionHandler(DFLT_RMT_SNAPSHOT_TOPIC);
+        }
+        finally {
+            busyLock.unblock();
+        }
     }
 
     /**
@@ -780,21 +810,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         List<CompletableFuture<Void>> futs = new ArrayList<>(sctx.parts.size());
         File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
 
-        U.log(log, "Partition allocated lengths: " + sctx.partFileLengths);
+        if (log.isInfoEnabled())
+            log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx.partFileLengths);
 
         for (GroupPartitionId pair : sctx.parts) {
             CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
             String cacheDirName = cacheDirName(ccfg);
 
             CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
+                Long length = sctx.partFileLengths.get(pair);
+
                     sctx.snpRcv.receivePart(
-                        getPartitionFileEx(
-                            workDir,
-                            cacheDirName,
-                            pair.getPartitionId()),
+                        length == 0 ? dummyPartFile : getPartitionFileEx(workDir, cacheDirName, pair.getPartitionId()),
                         cacheDirName,
                         pair,
-                        sctx.partFileLengths.get(pair));
+                        length);
 
                     // Stop partition writer.
                     sctx.partDeltaWriters.get(pair).partProcessed = true;
@@ -844,13 +874,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         assert buf.position() == 0 : buf.position();
         assert buf.order() == ByteOrder.nativeOrder() : buf.order();
 
-        List<PageStoreSerialWriter> writers = partWriters.get(pairId);
-
-        if (writers == null || writers.isEmpty())
+        if (!busyLock.enterBusy())
             return;
 
-        for (PageStoreSerialWriter writer : writers)
-            writer.write(pageId, buf, store);
+        try {
+            List<PageStoreSerialWriter> writers = partWriters.get(pairId);
+
+            if (writers == null || writers.isEmpty())
+                return;
+
+            for (PageStoreSerialWriter writer : writers)
+                writer.write(pageId, buf, store);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**

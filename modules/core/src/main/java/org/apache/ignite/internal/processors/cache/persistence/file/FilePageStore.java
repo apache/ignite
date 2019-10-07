@@ -536,7 +536,7 @@ public class FilePageStore implements PageStore {
     /**
      * @throws StorageException If failed to initialize store file.
      */
-    private void init() throws StorageException {
+    public void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 
