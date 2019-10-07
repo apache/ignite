@@ -472,6 +472,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertSort(parts, dumpWithZeros);
         }
 
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
         if (fileNameMatcher.find()) {
             String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
