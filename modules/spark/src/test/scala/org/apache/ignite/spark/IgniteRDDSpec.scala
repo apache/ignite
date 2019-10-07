@@ -90,6 +90,23 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
             }
         }
 
+        it("should correctly close the ignite context due to exception in PairFunction") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext(sc, () ⇒ configuration("client", client = true))
+
+                // Throw an exception in PairFunction.
+                ic.fromCache(STR_STR_CACHE_NAME).savePairs(
+                    sc.parallelize(0 to 10000, 2), (i: Int, ic) ⇒ (String.valueOf(i),
+                        throw new IllegalArgumentException("Emulated Exception")
+                ))
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
         it("should successfully store data to ignite using saveValues") {
             val sc = new SparkContext("local[*]", "test")
 

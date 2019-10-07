@@ -21,7 +21,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl
 import org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA
-import org.apache.ignite.spark.IgniteContext
+import org.apache.ignite.spark.{IgniteContext, Logging}
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
 import org.apache.ignite.{Ignite, IgniteException}
@@ -194,6 +194,12 @@ private[apache] object QueryHelper {
                 qryProcessor.streamUpdateQuery(tblInfo.cacheName,
                     tblInfo.schemaName, streamer, insertQry, args.toArray)
             }
+        }
+        catch {
+            case e:
+                Exception =>
+                Logging.log.error("Will stop Ignite nodes on because of exception: " + e)
+                ctx.close(true)
         }
         finally {
             streamer.close()

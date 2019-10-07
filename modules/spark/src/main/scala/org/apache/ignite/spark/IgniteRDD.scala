@@ -246,6 +246,12 @@ class IgniteRDD[K, V] (
                     streamer.addData(tup._1, tup._2)
                 })
             }
+            catch {
+                case e:
+                    Exception =>
+                    Logging.log.error("Will stop Ignite nodes on because of exception: " + e)
+                    ic.close(true)
+            }
             finally {
                 streamer.close()
             }
@@ -279,6 +285,12 @@ class IgniteRDD[K, V] (
 
                     streamer.addData(tup._1, tup._2)
                 })
+            }
+            catch {
+                case e:
+                    Exception =>
+                    Logging.log.error("Will stop Ignite nodes on because of exception: " + e)
+                    ic.close(true)
             }
             finally {
                 streamer.close()
