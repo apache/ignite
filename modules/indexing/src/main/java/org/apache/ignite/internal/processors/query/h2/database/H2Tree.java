@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -48,8 +49,11 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
@@ -675,5 +679,55 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         processFailure(FailureType.CRITICAL_ERROR, e);
 
         return e;
+    }
+
+    /**
+     * Purge all rows that belong to specific partitions from the index.
+     *
+     * @param parts Partitions.
+     * @param shouldStop Allows to check stop condition.
+     */
+    public void purge(Set<Integer> parts, IgniteCallable<Boolean> shouldStop) throws IgniteCheckedException {
+        assert !F.isEmpty(parts) : "empty parts";
+        assert shouldStop != null : "shouldStop is null";
+
+        TreeRowClosure<H2Row, H2Row> rowClo = (tree, io, pageAddr, idx) -> {
+            long link = ((H2RowLinkIO)io).getLink(pageAddr,idx);
+
+            int partId = PageIdUtils.partId(link);
+
+            return parts.contains(partId);
+        };
+
+        InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+
+        try {
+            if (shouldStop.call())
+                return;
+
+            GridCursor<Void> sweeper = sweep(rowClo);
+
+            while (sweeper.next()) {
+                if (shouldStop.call())
+                    return;
+
+                cctx.shared().database().checkpointReadLock();
+                try {
+                    sweeper.get(); // Reuse cursor interface for now.
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
+                }
+            }
+        }
+        catch (Exception e) {
+            throw U.cast(e);
+        }
+        finally {
+            InlineIndexHelper.clearCurrentInlineIndexes();
+        }
     }
 }

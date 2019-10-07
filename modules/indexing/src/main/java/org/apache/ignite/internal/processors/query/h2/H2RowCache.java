@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -115,6 +116,18 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      */
     public int size() {
         return rows.size();
+    }
+
+    /** {@inheritDoc} */
+    public void removeByPartition(Set<Integer> parts) {
+        Iterator<Map.Entry<Long, H2CacheRow>> iter = rows.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            H2CacheRow row = iter.next().getValue();
+
+            if (parts.contains(row.partition()))
+                iter.remove();
+        }
     }
 
     /**

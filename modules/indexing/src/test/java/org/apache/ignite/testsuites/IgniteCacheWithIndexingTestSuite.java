@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
 import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExceptionTest;
+import org.apache.ignite.internal.processors.cache.index.IndexPartitionPurgeTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
@@ -97,7 +98,9 @@ import org.junit.runners.Suite;
 
     RebuildIndexLogMessageTest.class,
 
-    H2TreeCorruptedTreeExceptionTest.class
+    H2TreeCorruptedTreeExceptionTest.class,
+
+    IndexPartitionPurgeTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }

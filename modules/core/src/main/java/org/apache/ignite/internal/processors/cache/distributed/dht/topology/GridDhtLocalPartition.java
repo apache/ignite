@@ -164,6 +164,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * reservation is released. */
     private volatile boolean delayedRenting;
 
+    /** Set if partition is requested for exclusive evict. */
+    private volatile boolean exclClear;
+
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
@@ -500,6 +503,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         rent(true);
                     else if (getPartState(state) == RENTING)
                         tryContinueClearing();
+                    else if (exclClear)
+                        ctx.evict().evictPartitionAsync(grp, this);
                 }
 
                 return;
@@ -808,7 +813,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (true) {
             int cnt = evictGuard.get();
 
-            assert cnt > 0;
+            assert cnt > 0 : cnt;
 
             if (evictGuard.compareAndSet(cnt, cnt - 1)) {
                 free = cnt == 1;
@@ -928,6 +933,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         long state = this.state.get();
 
         if (getReservations(state) != 0 || groupReserved())
+            return false;
+
+        if (exclClear)
             return false;
 
         if (addEvicting()) {
@@ -1467,6 +1475,43 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void beforeApplyBatch(boolean last) {
         // No-op.
+    }
+
+    /**
+     *
+     * @param fut Future to listen for clearing completion.
+     * @return {@code true} if successfully initialized.
+     */
+    public boolean exclusiveClearAsync(IgniteInternalFuture<Void> fut) {
+        long state = this.state.get();
+
+        GridDhtPartitionState state0 = getPartState(state);
+
+        if (state0 != MOVING && state0 != RENTING)
+            return false;
+
+        exclClear = true;
+
+        if (getReservations(state) != 0 || groupReserved())
+            return false;
+
+        if (!clearFuture.initialize(false, state0 == RENTING))
+            return false;
+
+        if (addEvicting()) {
+            fut.listen(f -> {
+                exclClear = false;
+
+                if (clearEvicting()) {
+                    if (f.error() == null)
+                        clearFuture.onDone();
+                    else
+                        clearFuture.onDone(f.error());
+                }
+            });
+        }
+
+        return true;
     }
 
     /**

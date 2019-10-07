@@ -49,6 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.SweepRemoveRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -1824,6 +1825,23 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Boolean res = (Boolean)doRemove(row, false);
 
         return res != null ? res : false;
+    }
+
+    /**
+     * Returns a cursor that removes rows when being iterated.
+     * Uses a specified closure as a predicate to filter rows.
+     *
+     * @param clo TreeRowClosure Closure to filter rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCursor<Void> sweep(TreeRowClosure<L, T> clo) throws IgniteCheckedException {
+        checkDestroyed();
+
+        SweepCursor cursor = new SweepCursor(clo);
+
+        cursor.start();
+
+        return cursor;
     }
 
     /** {@inheritDoc} */
@@ -5725,6 +5743,333 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override public boolean releaseAfterWrite(int cacheId, long pageId, long page, long pageAddr, G g, int lvl) {
             return g.canRelease(pageId, lvl);
+        }
+    }
+
+    /**
+     * Cursor that filters and removes rows.
+     *
+     * Most rows are expected to be deleted "in place" on a leaf page.
+     * The last row and the rightmost row on a page are deleted starting from root.
+     */
+    private class SweepCursor implements GridCursor<Void> {
+        /** Row filter. */
+        private final TreeRowClosure<L, T> clo;
+
+        /** Current page id. */
+        private long curPageId = 0L;
+
+        /** Last row to get back to if current page turns out removed. */
+        private L lastRow = null;
+
+        /** Row to remove starting "from root". */
+        private L removeRow = null;
+
+        /**
+         * Constructor.
+         *
+         * @param clo Row filter.
+         */
+        SweepCursor(TreeRowClosure clo) {
+            this.clo = clo;
+        }
+
+        /**
+         * Initializes the cursor.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        void start() throws IgniteCheckedException {
+            checkDestroyed();
+
+            long metaPage = acquirePage(metaPageId);
+            try {
+                curPageId = getFirstPageId(metaPageId, metaPage, 0);
+            }
+            finally {
+                releasePage(metaPageId, metaPage);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() throws IgniteCheckedException {
+            checkDestroyed();
+
+            if (curPageId == 0L && lastRow == null)
+                return false;
+
+            return next0(curPageId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void get() throws IgniteCheckedException {
+            checkDestroyed();
+
+            try {
+                doPurge(curPageId);
+
+                if (removeRow != null) {
+                    doRemove(removeRow, false);
+
+                    lastRow = removeRow;
+                    removeRow = null;
+                }
+            }
+            catch (RuntimeException | AssertionError e) {
+                throw new BPlusTreeRuntimeException(e, grpId);
+            }
+
+            return null;
+        }
+
+        /**
+         * Continues scanning the leaf pages of the tree.
+         *
+         * @param pageId Page id to start with.
+         * @return {@code true} if there is a row(s) to remove.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean next0(long pageId) throws IgniteCheckedException {
+            for (;;) {
+                if (pageId == 0L && lastRow != null) {
+                    ReinitHelper reinit = new ReinitHelper(lastRow);
+
+                    doFind(reinit);
+
+                    pageId = reinit.pageId();
+                }
+
+                long page = acquirePage(pageId);
+                try {
+                    long pageAddr = readLock(pageId, page);
+
+                    if (pageAddr == 0L) { // this page is deleted. Find from root using lastRow.
+                        pageId = 0L;
+
+                        continue;
+                    }
+
+                    try {
+                        for (;;) {
+                            BPlusIO<L> io = io(pageAddr);
+
+                            assert io.isLeaf();
+
+                            long nextPageId = io.getForward(pageAddr);
+
+                            int cnt = io.getCount(pageAddr);
+
+                            if (cnt == 0) {
+                                assert nextPageId == 0L;
+
+                                return false;
+                            }
+
+                            for (int idx = 0; idx < cnt; idx++) {
+                                if (clo.apply(BPlusTree.this, io, pageAddr, idx)) {
+                                    lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+                                    curPageId = pageId;
+
+                                    return true;
+                                }
+                            }
+                            lastRow = null;
+
+                            if (nextPageId == 0L)
+                                return false;
+
+                            long nextPage = acquirePage(nextPageId);
+                            try {
+                                long nextPageAddr = readLock(nextPageId, nextPage);
+
+                                assert nextPageAddr != 0L : "next page removed while back page is being locked";
+
+                                try {
+                                    long pa = pageAddr;
+                                    pageAddr = 0L;
+                                    readUnlock(pageId, page, pa);
+
+                                    long p = page;
+                                    page = 0L;
+                                    releasePage(pageId, p);
+
+                                    pageId = nextPageId;
+                                    page = nextPage;
+                                    pageAddr = nextPageAddr;
+
+                                    nextPageId = 0L;
+                                    nextPageAddr = 0L;
+                                    nextPage = 0L;
+                                }
+                                finally {
+                                    if (nextPageAddr != 0L)
+                                        readUnlock(nextPageId, nextPage, nextPageAddr);
+                                }
+                            }
+                            finally {
+                                if (nextPage != 0L)
+                                    releasePage(nextPageId, nextPage);
+                            }
+                        }
+                    }
+                    finally {
+                        if (pageAddr != 0L)
+                            readUnlock(pageId, page, pageAddr);
+                    }
+                }
+                finally {
+                    if (page != 0L)
+                        releasePage(pageId, page);
+                }
+            }
+        }
+
+        /**
+         * Removes the filtered rows from the page.
+         * Indicates the necessity to remove some row from "root".
+         *
+         * @param pageId Page id to start with.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void doPurge(long pageId) throws IgniteCheckedException {
+            final boolean walPlc = Boolean.TRUE;
+            boolean dirty = false;
+
+            long page = acquirePage(pageId);
+            try {
+                long pageAddr = writeLock(pageId, page);
+
+                // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
+                if (pageAddr == 0L) {
+                    assert lastRow != null;
+
+                    curPageId = 0L;
+
+                    return; // RETRY;
+                }
+
+                try {
+                    BPlusIO<L> io = io(pageAddr);
+
+                    assert io.isLeaf();
+
+                    int cnt = io.getCount(pageAddr);
+
+                    assert cnt > 0 : cnt; // Empty leaf is nonsensical.
+
+                    dirty = modifyPage(pageId, page, walPlc, io, pageAddr, cnt);
+                }
+                finally {
+                    writeUnlock(pageId, page, pageAddr, walPlc, dirty);
+                }
+            }
+            finally {
+                releasePage(pageId, page);
+            }
+        }
+
+        /**
+         * Does actual modifications on the page.
+         *
+         * @param io Page IO.
+         * @param pageAddr Page address.
+         * @param cnt Item count.
+         * @return {@code true} if page was modified.
+         */
+        private boolean modifyPage(long pageId, long page, Boolean walPlc, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+            int write = -1;
+            int read = -1;
+            int idx = 0;
+            boolean dirty = false;
+
+            boolean h = false;
+
+            int[] idxs = null;
+            int idxsCnt = 0;
+
+            while (idx < cnt) {
+                h = clo.apply(BPlusTree.this, io, pageAddr, idx);
+
+                if (h) {
+                    if (walPlc && h && (idx != cnt - 1)) {
+                        if (idxs == null) {
+                            idxs = new int[cnt - idx];
+
+                            idxs[idxsCnt++] = idx;
+                        }
+                    }
+
+                    if (write < 0)
+                        write = idx;
+                    else if (read >= 0) {
+                        int nb = idx - read;
+
+                        assert read != write: "write=" + write + ", read=" + read + ", cnt=" + cnt;
+
+                        io.copyItems(pageAddr, pageAddr, read, write, nb, false);
+
+                        write += nb;
+
+                        read = -1;
+
+                        dirty = true;
+                    }
+                }
+                else if (write >=0 && read < 0)
+                    read = idx;
+
+                idx++;
+            }
+
+            if (read < 0)
+                read = cnt - 1;
+
+            if (write >= 0 && read > write) {
+                int nb = idx - read;
+
+                io.copyItems(pageAddr, pageAddr, read, write, nb, false);
+
+                write += nb;
+
+                dirty = true;
+            }
+
+            if (dirty) {
+                assert write > 0;
+
+                cnt = write;
+
+                io.setCount(pageAddr, cnt);
+
+                if (needWalDeltaRecord(pageId, page, walPlc))
+                    wal.log(new SweepRemoveRecord(grpId, pageId, idxs, idxsCnt, cnt));
+            }
+
+            if (h) // The rightmost row is eligible for removal.
+                removeRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+
+            return dirty;
+        }
+
+        /**
+         * Helper class to re-initialize the scan.
+         */
+        private class ReinitHelper extends Get {
+            /**
+             * Constructor.
+             *
+             * @param row Row to find.
+             */
+            ReinitHelper(L row) {
+                super(row, false);
+            }
+
+            /**
+             * @return Page id where the specified row would have been stored.
+             */
+            public long pageId() {
+                return pageId;
+            }
         }
     }
 

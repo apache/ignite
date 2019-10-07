@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -27,15 +30,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.future.CountDownFuture;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVICTION_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -123,6 +137,16 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         int bucket;
 
         synchronized (mux) {
+            ExclusiveClearFuture exclFut = grpEvictionCtx.exclClearFut;
+
+            if (exclFut != null && exclFut.partIds.contains(part.id())) {
+                // Exclusive evict has been requested earlier.
+                if (part.exclusiveClearAsync(exclFut))
+                    exclFut.onInit(part);
+
+                return;
+            }
+
             if (!grpEvictionCtx.partIds.add(part.id()))
                 return;
 
@@ -158,7 +182,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 // Get task until we have permits.
                 while (permits >= 0) {
                     // Get task from bucket.
-                    PartitionEvictionTask evictionTask = evictionQueue.poll(bucket);
+                    BucketQueueTask evictionTask = evictionQueue.poll(bucket);
 
                     // If bucket empty try get from another.
                     if (evictionTask == null) {
@@ -180,7 +204,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     // Print current eviction progress.
                     showProgress();
 
-                    GroupEvictionContext grpEvictionCtx = evictionTask.grpEvictionCtx;
+                    GroupEvictionContext grpEvictionCtx = evictionTask.context();
 
                     // Check that group or node stopping.
                     if (grpEvictionCtx.shouldStop())
@@ -192,7 +216,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     // Register task future, may need if group or node will be stopped.
                     grpEvictionCtx.taskScheduled(evictionTask);
 
-                    evictionTask.finishFut.listen(f -> {
+                    evictionTask.finishFuture().listen(f -> {
                         synchronized (mux) {
                             // Return permit after task completed.
                             permits++;
@@ -275,6 +299,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** Deduplicate set partition ids. */
         private final Set<Integer> partIds = new HashSet<>();
 
+        /** Future for exclusive clear of a set of partitions. */
+        private ExclusiveClearFuture exclClearFut;
+
         /** Future for currently running partition eviction task. */
         private final Map<Integer, IgniteInternalFuture<?>> partsEvictFutures = new ConcurrentHashMap<>();
 
@@ -303,25 +330,28 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          *
          * @param task Partition eviction task.
          */
-        private synchronized void taskScheduled(PartitionEvictionTask task) {
+        private synchronized void taskScheduled(BucketQueueTask task) {
             if (shouldStop())
                 return;
 
             taskInProgress++;
 
-            GridFutureAdapter<?> fut = task.finishFut;
+            IgniteInternalFuture<?> fut = task.finishFuture();
 
-            int partId = task.part.id();
+            int partId = (task instanceof PartitionEvictionTask) ? ((PartitionEvictionTask)task).part.id() : -1;
 
-            partIds.remove(partId);
+            if (partId >= 0) {
+                partIds.remove(partId);
 
-            partsEvictFutures.put(partId, fut);
+                partsEvictFutures.put(partId, fut);
+            }
 
             fut.listen(f -> {
                 synchronized (this) {
                     taskInProgress--;
 
-                    partsEvictFutures.remove(partId, f);
+                    if (partId >= 0)
+                        partsEvictFutures.remove(partId, f);
 
                     if (totalTasks.decrementAndGet() == 0)
                         evictionGroupsMap.remove(grp.groupId());
@@ -334,6 +364,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          */
         private void stop() {
             stop = true;
+
+            synchronized (mux) {
+                ExclusiveClearFuture exclFut = exclClearFut;
+
+                if (exclFut != null)
+                    exclFut.stop();
+            }
         }
 
         /**
@@ -376,20 +413,48 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Base class for all tasks to queue.
+     */
+    private abstract static class BucketQueueTask extends GridFutureAdapter<Void> implements Runnable {
+        /** Eviction context. */
+        protected final GroupEvictionContext grpEvictionCtx;
+
+        /**
+         * @param grpEvictionCtx Group eviction context.
+         */
+        private BucketQueueTask(GroupEvictionContext grpEvictionCtx) {
+            this.grpEvictionCtx = grpEvictionCtx;
+        }
+
+        /**
+         * @return Group eviction context.
+         */
+        GroupEvictionContext context() {
+            return grpEvictionCtx;
+        }
+
+        /**
+         * @return Task size.
+         */
+        abstract long size();
+
+        /**
+         * @return Finish future.
+         */
+        IgniteInternalFuture<?> finishFuture() {
+            return this;
+        }
+    }
+
+    /**
      * Task for self-scheduled partition eviction / clearing.
      */
-    class PartitionEvictionTask implements Runnable {
+    class PartitionEvictionTask extends BucketQueueTask {
         /** Partition to evict. */
         private final GridDhtLocalPartition part;
 
         /** */
         private final long size;
-
-        /** Eviction context. */
-        private final GroupEvictionContext grpEvictionCtx;
-
-        /** */
-        private final GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
 
         /**
          * @param part Partition.
@@ -399,8 +464,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             GridDhtLocalPartition part,
             GroupEvictionContext grpEvictionCtx
         ) {
+            super(grpEvictionCtx);
+
             this.part = part;
-            this.grpEvictionCtx = grpEvictionCtx;
 
             size = part.fullSize();
         }
@@ -408,7 +474,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void run() {
             if (grpEvictionCtx.shouldStop()) {
-                finishFut.onDone();
+                onDone();
 
                 return;
             }
@@ -423,14 +489,14 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
                 // Complete eviction future before schedule new to prevent deadlock with
                 // simultaneous eviction stopping and scheduling new eviction.
-                finishFut.onDone();
+                onDone();
 
                 // Re-offer partition if clear was unsuccessful due to partition reservation.
                 if (!success)
                     evictPartitionAsync(grpEvictionCtx.grp, part);
             }
             catch (Throwable ex) {
-                finishFut.onDone(ex);
+                onDone(ex);
 
                 if (cctx.kernalContext().isStopping()) {
                     LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
@@ -444,6 +510,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 }
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public long size() {
+            return size;
+        }
     }
 
     /**
@@ -454,7 +525,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         private final long[] bucketSizes;
 
         /** Queues contains partitions scheduled for eviction. */
-        final Queue<PartitionEvictionTask>[] buckets;
+        final Queue<BucketQueueTask>[] buckets;
 
         /**
          * @param buckets Number of buckets.
@@ -474,11 +545,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param bucket Bucket index.
          * @return Partition evict task, or {@code null} if bucket queue is empty.
          */
-        PartitionEvictionTask poll(int bucket) {
-            PartitionEvictionTask task = buckets[bucket].poll();
+        BucketQueueTask poll(int bucket) {
+            BucketQueueTask task = buckets[bucket].poll();
 
             if (task != null)
-                bucketSizes[bucket] -= task.size;
+                bucketSizes[bucket] -= task.size();
 
             return task;
         }
@@ -488,7 +559,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          *
          * @return Partition evict task.
          */
-        PartitionEvictionTask pollAny() {
+        BucketQueueTask pollAny() {
             for (int bucket = 0; bucket < bucketSizes.length; bucket++){
                 if (!buckets[bucket].isEmpty())
                     return poll(bucket);
@@ -503,12 +574,12 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param task Eviction task.
          * @return Bucket index.
          */
-        int offer(PartitionEvictionTask task) {
+        int offer(BucketQueueTask task) {
             int bucket = calculateBucket();
 
             buckets[bucket].offer(task);
 
-            bucketSizes[bucket] += task.size;
+            bucketSizes[bucket] += task.size();
 
             return bucket;
         }
@@ -527,7 +598,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         int size(){
             int size = 0;
 
-            for (Queue<PartitionEvictionTask> queue : buckets)
+            for (Queue<BucketQueueTask> queue : buckets)
                 size += queue.size();
 
             return size;
@@ -557,14 +628,410 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          *
          * @return Queue for evict partitions.
          */
-        private Queue<PartitionEvictionTask> createEvictPartitionQueue() {
+        private Queue<BucketQueueTask> createEvictPartitionQueue() {
             switch (QUEUE_TYPE) {
                 case 1:
                     return new PriorityBlockingQueue<>(
-                        1000, Comparator.comparingLong(p -> p.part.fullSize()));
+                        1000, new Comparator<BucketQueueTask>() {
+                            /** {@inheritDoc} */
+                            @Override public int compare(BucketQueueTask a, BucketQueueTask b) {
+                                int a0 = (a instanceof RowCacheCleanerTask) ? 1 : 0;
+                                int b0 = (b instanceof RowCacheCleanerTask) ? 1 : 0;
+
+                                if (a0 == b0)
+                                    return Long.compare(a.size(), b.size());
+                                else
+                                    return Long.compare(a0, b0);
+                            }
+                    });
                 default:
                     return new LinkedBlockingQueue<>();
             }
+        }
+    }
+
+    /**
+     *
+     * @param grp Cache group context.
+     * @param parts Partitions.
+     * @throws IgniteCheckedException If failed.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Void> evictPartitionsExclusively(CacheGroupContext grp,
+        List<GridDhtLocalPartition> parts) throws IgniteCheckedException {
+        validateCacheGroupForExclusiveEvict(grp);
+
+        GroupEvictionContext grpEvictionCtx = evictionGroupsMap.computeIfAbsent(
+            grp.groupId(), (k) -> new GroupEvictionContext(grp));
+
+        ExclusiveClearFuture fut = new ExclusiveClearFuture(grpEvictionCtx, parts);
+
+        synchronized (mux) {
+            if (grpEvictionCtx.exclClearFut != null)
+                throw new IgniteCheckedException("Only one exclusive evict can be scheduled for the same cache group." +
+                    " [grpId=" + grp.groupId() + "]");
+
+            Set<Integer> res = new HashSet<>(grpEvictionCtx.partIds);
+
+            res.retainAll(fut.partIds);
+
+            if (!res.isEmpty())
+                throw new IgniteCheckedException("Can't schedule exclusive evict for a partition " +
+                    "due to scheduled regular evict for the same partition. [grpId=" + grp.groupId() + "]");
+
+            grpEvictionCtx.exclClearFut = fut;
+        }
+
+        for (GridDhtLocalPartition part : parts) {
+            if (part.exclusiveClearAsync(fut))
+                fut.onInit(part);
+        }
+
+        return fut.resFut;
+    }
+
+    /**
+     * Context of exclusive partition evict.
+     */
+    private class ExclusiveClearFuture extends GridCompoundFuture<Void, Void> {
+        /** Group eviction context. */
+        GroupEvictionContext grpEvictionCtx;
+
+        /** Partition ids. */
+        Set<Integer> partIds;
+
+        /** Partitions. */
+        List<GridDhtLocalPartition> parts;
+
+        /** All partitions initialized future. */
+        CountDownFuture initFut;
+
+        /** Future to return from an API call. */
+        CountDownFuture resFut;
+
+        /** Allows to cancel index tasks. */
+        GridCompoundFuture<Void, Void> cancelFut = new GridCompoundFuture<>();
+
+        /**
+         *
+         * @param grpEvictionCtx Group eviction context.
+         * @param parts Partitions.
+         */
+        public ExclusiveClearFuture(GroupEvictionContext grpEvictionCtx, List<GridDhtLocalPartition> parts) {
+            this.grpEvictionCtx = grpEvictionCtx;
+            this.parts = parts;
+
+            partIds = Collections.unmodifiableSet(
+                parts.stream().mapToInt(GridDhtLocalPartition::id).boxed().collect(Collectors.toSet()));
+
+            initFut = new CountDownFuture(parts.size());
+
+            resFut = new CountDownFuture(parts.size());
+
+            initFut.listen(f -> {
+                if (f.error() == null)
+                    initTasks();
+                else
+                    onDone(f.error());
+            });
+        }
+
+        /**
+         * Initializes partition for exclusive evict.
+         *
+         * @param part Partition.
+         */
+        public void onInit(GridDhtLocalPartition part) {
+            part.onClearFinished(f -> {
+                try {
+                    f.get();
+
+                    resFut.onDone();
+                }
+                catch (Throwable e) {
+                    resFut.onDone(e);
+                }
+            });
+
+            initFut.onDone();
+        }
+
+        /**
+         * Initializes tasks.
+         */
+        private void initTasks() {
+            List<BucketQueueTask> tasks = new ArrayList<>();
+            List<BucketQueueTask> idxTasks = new ArrayList<>();
+
+            for (GridDhtLocalPartition p : parts) {
+                ExclusiveEvictPerPartitionTask task = new ExclusiveEvictPerPartitionTask(grpEvictionCtx, p);
+
+                tasks.add(task);
+
+                add(task);
+            }
+
+            CacheGroupContext grp = grpEvictionCtx.grp;
+
+            GridCompoundFuture<Void, Void> idxFut = null;
+
+            if (grp.shared().kernalContext().query().moduleEnabled()) {
+                GridQueryIndexing idx = grp.shared().kernalContext().query().getIndexing();
+
+                GridQueryRowCacheCleaner rowCacheCleaner = idx.rowCacheCleaner(grp.groupId());
+
+                if (rowCacheCleaner != null) {
+                    RowCacheCleanerTask task = new RowCacheCleanerTask(grpEvictionCtx, rowCacheCleaner, partIds);
+
+                    tasks.add(task);
+
+                    add(task);
+                }
+
+                List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> idxPurgeList =
+                    idx.purgeIndexPartitions(grp, partIds);
+
+                assert idxPurgeList != null;
+
+                if (!idxPurgeList.isEmpty()) {
+                    idxFut = new GridCompoundFuture<>();
+
+                    for (IgniteBiTuple<Runnable, IgniteInternalFuture<Void>> r : idxPurgeList) {
+                        BucketQueueTask idxTask = new IndexEvictTask(grpEvictionCtx, r.get1(), r.get2());
+
+                        cancelFut.add(r.get2());
+
+                        idxFut.add(idxTask);
+
+                        idxTasks.add(idxTask);
+                    }
+
+                    cancelFut.markInitialized();
+
+                    idxFut.markInitialized();
+
+                    add(idxFut);
+                }
+            }
+
+            markInitialized();
+
+            if (idxFut == null) {
+                for (BucketQueueTask r0 : tasks)
+                    evictionQueue.offer(r0);
+
+                grpEvictionCtx.totalTasks.addAndGet(tasks.size());
+            }
+            else {
+                idxFut.listen(f -> {
+                    if (f.error() == null) {
+                        for (BucketQueueTask r0 : tasks)
+                            evictionQueue.offer(r0);
+
+                        grpEvictionCtx.totalTasks.addAndGet(tasks.size());
+
+                        scheduleNextPartitionEviction(0);
+                    }
+                });
+
+                for (BucketQueueTask r0 : idxTasks)
+                    evictionQueue.offer(r0);
+
+                grpEvictionCtx.totalTasks.addAndGet(idxTasks.size());
+            }
+
+            scheduleNextPartitionEviction(0);
+        }
+
+        /**
+         * Cancels index clearing tasks.
+         */
+        public void stop() {
+            try {
+                cancelFut.cancel();
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Error cancelling index clearing tasks", e);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param grp Cache group context.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateCacheGroupForExclusiveEvict(CacheGroupContext grp) throws IgniteCheckedException {
+        if (grp.hasContinuousQueryCaches())
+            throw new IgniteCheckedException("Group has active continuous queries. [grpId=" + grp.groupId() + "]");
+
+        if (grp.shared().kernalContext().indexing().enabled())
+            throw new IgniteCheckedException("IndexingSPI is enabled. [grpId=" + grp.groupId() + "]");
+
+        for (GridCacheContext cctx : grp.caches()) {
+            if (cctx.writeThrough() && !cctx.skipStore() && cctx.store().isLocal())
+                throw new IgniteCheckedException("Local cache store is enabled on cache." +
+                    " [grpId=" + grp.groupId() + ", cache=" + cctx.cache().name() + "]");
+
+            if (cctx.isDrEnabled())
+                throw new IgniteCheckedException("DR is enabled on cache. [grpId=" +
+                    grp.groupId() + ", cache=" + cctx.cache().name() + "]");
+
+            for (GridQueryTypeDescriptor type : grp.shared().kernalContext().query().types(cctx.name())) {
+                if (type.valueTextIndex() || type.textIndex() != null)
+                    throw new IgniteCheckedException("Full text index exists. [grpId=" + grp.groupId() +
+                        ", cache=" + cctx.cache().name() + "]");
+            }
+        }
+    }
+
+    /**
+     * Evicts partitions from single index.
+     */
+    private static class IndexEvictTask extends BucketQueueTask {
+        /** Actual worker that removes rows from the index. */
+        Runnable runnable;
+
+        /** Future internal to the worker. */
+        IgniteInternalFuture<?> fut;
+
+        /**
+         *
+         * @param grpEvictionCtx Group eviction context.
+         * @param runnable Actual worker that removes rows from the index.
+         * @param fut Future internal to the worker.
+         */
+        IndexEvictTask(GroupEvictionContext grpEvictionCtx, Runnable runnable, IgniteInternalFuture<?> fut) {
+            super(grpEvictionCtx);
+
+            this.runnable = runnable;
+
+            this.fut = fut;
+
+            fut.listen(f -> {
+                if (f.error() == null)
+                    onDone();
+                else
+                    onDone(f.error());
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            if (grpEvictionCtx.shouldStop()) {
+                onDone();
+
+                return;
+            }
+
+            runnable.run();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long size() {
+            return 0;
+        }
+    }
+
+    /**
+     * Removes links belonging to certain partitions from H2RowCache.
+     */
+    private static class RowCacheCleanerTask extends BucketQueueTask {
+        /** Row cache cleaner. */
+        GridQueryRowCacheCleaner cleaner;
+
+        /** Partitions. */
+        Set<Integer> parts;
+
+        /**
+         *
+         * @param grpEvictionCtx Group eviction context.
+         * @param cleaner Row cache cleaner.
+         * @param parts Partitions.
+         */
+        RowCacheCleanerTask(GroupEvictionContext grpEvictionCtx, GridQueryRowCacheCleaner cleaner, Set<Integer> parts) {
+            super(grpEvictionCtx);
+
+            this.cleaner = cleaner;
+            this.parts = parts;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            if (grpEvictionCtx.shouldStop()) {
+                onDone();
+
+                return;
+            }
+
+            try {
+                cleaner.removeByPartition(parts);
+
+                onDone();
+            }
+            catch (Throwable e) {
+                onDone(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public long size() {
+            return 0;
+        }
+    }
+
+    /**
+     * Performs per-partition actions in scope of exclusive partition set evict.
+     */
+    private static class ExclusiveEvictPerPartitionTask extends BucketQueueTask {
+        /** Partition. */
+        private final GridDhtLocalPartition part;
+
+        /**
+         *
+         * @param grpEvictionCtx Group eviction context.
+         * @param part Partition.
+         */
+        ExclusiveEvictPerPartitionTask(GroupEvictionContext grpEvictionCtx, GridDhtLocalPartition part) {
+            super(grpEvictionCtx);
+
+            this.part = part;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            if (grpEvictionCtx.shouldStop()) {
+                onDone();
+
+                return;
+            }
+
+            try {
+                part.cleanupRemoveQueue();
+
+                for (GridCacheContext cctx : grpEvictionCtx.grp.caches()) {
+                    if (grpEvictionCtx.shouldStop())
+                        break;
+
+                    GridCacheConcurrentMap.CacheMapHolder hld = part.entriesMapIfExists(cctx.cacheId());
+
+                    if (hld == null)
+                        continue;
+
+                    for (GridCacheMapEntry e : hld.map.values())
+                        e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false);
+                }
+
+                onDone();
+            }
+            catch (Throwable e) {
+                onDone(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public long size() {
+            return part.fullSize();
         }
     }
 }

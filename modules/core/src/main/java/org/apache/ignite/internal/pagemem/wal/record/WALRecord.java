@@ -221,7 +221,10 @@ public abstract class WALRecord {
         ROLLBACK_TX_RECORD (57, LOGICAL),
 
         /** */
-        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL);
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL),
+
+        /** Sweep remove. */
+        BTREE_PAGE_SWEEP_REMOVE (59, PHYSICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;
