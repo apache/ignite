@@ -20,10 +20,13 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.message.DbException;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
@@ -182,7 +185,8 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
 
         v = val;
-        sb.a(", val: ").a(v == null ? "nil" : v.getString());
+        sb.a(", val: ").a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() :
+            "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
 
         v = ver;
         sb.a(", ver: ").a(v == null ? "nil" : v.getString());
@@ -197,7 +201,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
                     sb.a(", ");
 
                 if (!desc.isKeyValueOrVersionColumn(i))
-                    sb.a(v == null ? "nil" : v.getString());
+                    sb.a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() : "data hidden"));
             }
         }
 
