@@ -411,9 +411,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSnapshotRemotePartitions() throws Exception {
-//        defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
-//                .setPartitions(CACHE_PARTS_COUNT));
-
         IgniteEx ig0 = startGrids(2);
 
         ig0.cluster().active(true);
@@ -438,8 +435,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .limit(CACHE_PARTS_COUNT) // With index partition
             .collect(Collectors.toSet());
         ints.add(PageIdAllocator.INDEX_PARTITION);
-//        Set<Integer> ints = new HashSet<>();
-//        ints.add(0);
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);

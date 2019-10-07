@@ -117,6 +117,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileEx;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionNameEx;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 
 /** */
@@ -434,9 +435,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 Integer partId = (Integer)fileMeta.params().get(SNP_PART_ID_PARAM);
                 String snpDirPath = (String)fileMeta.params().get(SNP_DIR_PATH_PARAM);
 
-                return Paths.get(rmtSnpWorkDir.getPath(), snpDirPath, String.format(PART_FILE_TEMPLATE, partId))
+                return Paths.get(rmtSnpWorkDir.getPath(), snpDirPath, getPartitionNameEx(partId))
                     .toAbsolutePath()
                     .toString();
+            }
+
+            /**
+             * @param pageStore Page store to finish recovery.
+             * @param snpName Snapshot name to notify listener with.
+             * @param part Partition file.
+             * @param grpId Cache group id.
+             * @param partId Partition id.
+             */
+            private void stopRecover(FilePageStore pageStore, String snpName, File part, Integer grpId, Integer partId) {
+                try {
+                    pageStore.finishRecover();
+
+                    U.closeQuiet(pageStore);
+
+                    if (snpLsnr != null) {
+                        snpLsnr.onPartition(snpName,
+                            part,
+                            grpId,
+                            partId);
+                    }
+                }
+                catch (StorageException e) {
+                    throw new IgniteException(e);
+                }
             }
 
             /** {@inheritDoc} */
@@ -455,26 +481,31 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 pageStore.beginRecover();
 
+                if (initMeta.count() == 0) {
+                    stopRecover(pageStore,
+                        snpName,
+                        new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
+                        grpId,
+                        partId);
+                }
+
                 return new Consumer<ByteBuffer>() {
                     final LongAdder transferred = new LongAdder();
 
                     @Override public void accept(ByteBuffer buff) {
                         try {
+                            assert initMeta.count() != 0 : initMeta;
+
                             pageStore.write(PageIO.getPageId(buff), buff, 0, false);
 
                             transferred.add(buff.capacity());
 
                             if (transferred.longValue() == initMeta.count()) {
-                                pageStore.finishRecover();
-
-                                U.closeQuiet(pageStore);
-
-                                if (snpLsnr != null) {
-                                    snpLsnr.onPartition(snpName,
-                                        new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
-                                        grpId,
-                                        partId);
-                                }
+                                stopRecover(pageStore,
+                                    snpName,
+                                    new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
+                                    grpId,
+                                    partId);
                             }
                         }
                         catch (IgniteCheckedException e) {
@@ -821,7 +852,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 Long length = sctx.partFileLengths.get(pair);
 
                     sctx.snpRcv.receivePart(
-                        length == 0 ? dummyPartFile : getPartitionFileEx(workDir, cacheDirName, pair.getPartitionId()),
+                        getPartitionFileEx(length == 0 ? sctx.snpDir : workDir, cacheDirName, pair.getPartitionId()),
                         cacheDirName,
                         pair,
                         length);
