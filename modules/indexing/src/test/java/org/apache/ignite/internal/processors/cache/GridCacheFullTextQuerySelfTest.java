@@ -62,6 +62,9 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /** Limitation to query response size */
     private static final int QUERY_LIMIT = 5;
 
+    /**
+     * Container for expected values and all available entries
+     */
     private static final class TestPair{
 
         public final Set<Integer> expected;
