@@ -73,7 +73,10 @@ public enum IgniteFeatures {
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
     /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
+
+    /** Persistence caches can be snapshotted.  */
+    PERSISTENCE_CACHE_SNAPSHOT(19);
 
     /**
      * Unique feature identifier.

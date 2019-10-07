@@ -52,6 +52,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
@@ -106,6 +107,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
+import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
@@ -197,8 +200,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param ctx Kernal context.
      */
     public IgniteSnapshotManager(GridKernalContext ctx) {
-        assert CU.isPersistenceEnabled(ctx.config());
-
+        // No-op.
     }
 
     /**
@@ -227,6 +229,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         GridKernalContext kctx = cctx.kernalContext();
 
         if (kctx.clientNode())
+            return;
+
+        if (!CU.isPersistenceEnabled(cctx.kernalContext().config()))
             return;
 
         pageSize = kctx.config()
@@ -536,7 +541,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     public IgniteInternalFuture<?> createLocalSnapshot(String snpName,
         List<Integer> grpIds) throws IgniteCheckedException {
         // Collection of pairs group and appropratate cache partition to be snapshotted.
-        // TODO filter in-memory caches
         Map<Integer, GridIntList> parts = grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
                 grpId -> {
@@ -570,10 +574,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If initialiation fails.
      */
     public String createRemoteSnapshot(Map<Integer, Set<Integer>> parts, UUID rmtNodeId) throws IgniteCheckedException {
-        // todo check node supports remote snapshot
         String snpName = "snapshot_" + UUID.randomUUID().getMostSignificantBits();
 
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
+
+        assert nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT) : "Snapshot on remote node is not supported: " + rmtNode.id();
 
         if (rmtNode == null)
             throw new IgniteCheckedException("Requested snpashot node doesn't exists [rmtNodeId=" + rmtNodeId + ']');
@@ -617,9 +622,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         SnapshotReceiver snpRcv
     ) throws IgniteCheckedException {
         if (snpCtxs.containsKey(snpName))
-            throw new IgniteCheckedException("snapshot with requested name is already scheduled: " + snpName);
+            throw new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName);
+
+        isCacheSnapshotSupported(parts.keySet(),
+            (grpId) -> !CU.isPersistentCache(cctx.cache().cacheGroup(grpId).config(),
+            cctx.kernalContext().config().getDataStorageConfiguration()),
+            "in-memory cache groups are not allowed");
+        isCacheSnapshotSupported(parts.keySet(),
+            (grpId) -> cctx.cache().cacheGroup(grpId).config().isEncryptionEnabled(),
+            "encryption cache groups are not allowed");
 
         SnapshotContext sctx = null;
+
+        if (!busyLock.enterBusy())
+            throw new IgniteCheckedException("Snapshot manager is stopping");
 
         try {
             // Atomic operation, fails with exception if not.
@@ -700,6 +716,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
 
             throw new IgniteCheckedException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
         }
 
         return sctx.snpFut;
@@ -871,6 +890,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      */
     private static String cacheSnapshotPath(String consistentId, String snpName, String cacheDirName) {
         return Paths.get(U.maskForFileName(consistentId), snpName, cacheDirName).toString();
+    }
+
+    /**
+     * @param grps Set of cache groups to check.
+     * @param grpPred Checking predicate.
+     * @param errCause Cause of error message if fails.
+     */
+    private static void isCacheSnapshotSupported(Set<Integer> grps, Predicate<Integer> grpPred, String errCause) {
+        Set<Integer> notAllowdGrps = grps.stream()
+            .filter(grpPred)
+            .collect(Collectors.toSet());
+
+        if (!notAllowdGrps.isEmpty()) {
+            throw new IgniteException("Snapshot is not supported for these groups [cause=" + errCause +
+                ", grps=" + notAllowdGrps + ']');
+        }
     }
 
     /**
