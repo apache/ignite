@@ -138,6 +138,7 @@ public class RestRequestProcessingMessagesTest extends GridCommonAbstractTest {
                 new CountDownLatch(1).await(arg, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ignored) {
+                // No-op.
             }
 
             return F.asMap(
