@@ -17,15 +17,17 @@
 export type ClusterStats = {
 	id: string,
 	name: string,
-	nids: string[],
-	addresses: {[id: string]: string},
-	clients: {[id: string]: boolean},
 	clusterVersion: string,
+	demo: boolean,
 	active: boolean,
 	secured: false,
 	gridgain: boolean,
 	ultimate: boolean,
-	supportedFeatures: string
+	supportedFeatures: string,
+	nodes: {[nodeId: string]: {
+        address: string,
+        client: boolean
+    }}
 }
 
 export type AgentsStatResponse = {
